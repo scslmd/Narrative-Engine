@@ -6,6 +6,7 @@ from time import sleep
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from app.api import build_jobs_router, build_projects_router
 from app.inference.base import InferenceBackend, InferenceBackendError
@@ -326,5 +327,7 @@ def test_local_executor_persists_mapped_runtime_error_for_p200_failures(tmp_path
     assert steps_response.json()["items"][0]["state"] == "FAILED"
     assert lineage_response.status_code == 200
     assert lineage_response.json()["items"] == []
-    assert sequence_response.status_code == 200
-    assert sequence_response.json()["content"] == ""
+    assert sequence_response.status_code == 404
+    assert sequence_response.json()["detail"] == "Artifact not found: sequence"
+    with pytest.raises(FileNotFoundError):
+        project_service.read_artifact(project_id, "sequence")

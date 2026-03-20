@@ -78,6 +78,9 @@ class ProjectService:
         if artifact_path is None or not artifact_path.exists():
             raise FileNotFoundError(f"Artifact not found: {artifact_name}")
 
+        if artifact_name != "manifest" and artifact_path.stat().st_size == 0:
+            raise FileNotFoundError(f"Artifact not found: {artifact_name}")
+
         content = artifact_path.read_text(encoding="utf-8")
         if artifact_name == "manifest":
             parsed = json.loads(content)

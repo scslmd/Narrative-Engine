@@ -10,6 +10,9 @@
 - [x] Update `app/services/role_model_checker.py` so runtime-backed checking can be enabled per role while preserving stub fallback.
 - [x] Map timeout, HTTP-status, and invalid-JSON failures in `app/inference/openai_compatible.py` to structured runtime error categories.
 - [x] Persist runtime telemetry for provider name, provider version when available, prompt hash, input hash, output hash, token usage, and finish reason on runtime-backed steps.
+- [x] Make project artifact endpoints for generated runtime outputs lineage-aware so failed `P-200`/`P-300` runs do not return placeholder `sequence` or `chapter-1` files as if they were successful canonical artifacts.
+- [x] Ignore bootstrapped empty upstream artifacts in downstream runtime phases so `P-300` does not record empty `sequence` context as a real dependency.
+- [x] Add explicit supersession behavior for rerun canonical job artifacts so repeated `P-200`/`P-300` successes do not leave multiple unsuperseded `CANONICAL` lineage rows.
 - [ ] Rebuild `LocalExecutor` job processing so phases after the current `P-100`, `P-200`, and `P-300` slices run through explicit runtime-backed step handlers instead of one-step stub completion.
 - [x] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
 - [x] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
@@ -61,7 +64,7 @@
 - [x] Move project reconciliation into an explicit sync or repair flow.
 - [x] Add step-record and artifact-lineage persistence for the local executor path.
 - [ ] Extend persistence to support orchestration attempts, richer artifact lineage, and projection endpoints.
-- [ ] Add artifact lineage supersession behavior for canonical project artifacts rather than checker-report-only lineage.
+- [x] Add artifact lineage supersession behavior for canonical project artifacts rather than checker-report-only lineage.
 - [ ] Persist chapter-packet, sequence, and future story-bible artifacts through lineage-aware registration instead of flat file assumptions.
 - [ ] Add persistence helpers for scene or chapter storyboard cards once frontend-backed planning state becomes canonical.
 
@@ -96,6 +99,8 @@
 - [x] Add retry-lineage coverage for explicit operator requeue of failed jobs and checker runs.
 - [x] Add failure-mode tests for partial persistence failure and lock contention.
 - [ ] Add broader integration coverage for orchestration and runtime behavior.
+- [x] Add regression coverage proving failed runtime jobs do not expose placeholder-generated project artifacts through `GET /projects/{project_id}/sequence` or `GET /projects/{project_id}/chapter-1`.
+- [x] Add regression coverage proving rerun canonical job artifacts supersede prior lineage rows instead of accumulating multiple active `CANONICAL` entries.
 - [x] Add API tests for `GET /jobs/{job_id}/steps`, `GET /jobs/{job_id}/lineage`, `GET /role-model-checker/{run_id}/steps`, and `GET /role-model-checker/{run_id}/lineage`.
 - [ ] Add pagination and future attempt-filter tests for `GET /jobs/{job_id}/steps` and `GET /jobs/{job_id}/lineage`.
 - [ ] Add pagination and future attempt-filter tests for `GET /role-model-checker/{run_id}/steps` and `GET /role-model-checker/{run_id}/lineage`.
@@ -128,3 +133,6 @@
 - [x] `Planck`: add deterministic tests for runtime telemetry fields persisted on `P-100` step records and artifact lineage.
 - [x] `Newton`: implement the first runtime-backed checker role slice in `app/services/role_model_checker.py` for `architect`, preserving stub fallback for the other roles.
 - [x] `Kuhn`: review and sync the backend docs after these runtime/error/telemetry changes land so the SRS and runtime blueprints remain reconstruction-grade.
+- [x] `Hypatia`: make project artifact reads lineage-aware for generated runtime outputs so failed `P-200`/`P-300` runs do not return placeholder `sequence` or `chapter-1` files through existing project endpoints.
+- [x] `Faraday`: update downstream runtime phases to ignore empty bootstrapped upstream artifacts and only record real dependency provenance in step input refs and source hashes.
+- [x] `Copernicus`: implement canonical lineage supersession for rerun `sequence` and `chapter_1` artifacts and add deterministic regression tests for repeated successful runs.

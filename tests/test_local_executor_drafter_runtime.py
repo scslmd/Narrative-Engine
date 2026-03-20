@@ -6,6 +6,7 @@ from time import sleep
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from app.api import build_jobs_router, build_projects_router
 from app.inference.base import InferenceBackend, InferenceBackendError
@@ -300,12 +301,15 @@ def test_local_executor_persists_mapped_runtime_error_for_p300_failures(tmp_path
     assert steps[0]["output_hash"] is None
     assert lineage == []
     assert output_path.read_text(encoding="utf-8") == ""
-    assert project_service.read_artifact(project_id, "chapter-1").content == ""
+    with pytest.raises(FileNotFoundError):
+        project_service.read_artifact(project_id, "chapter-1")
 
     assert steps_response.status_code == 200
     assert [item["step_name"] for item in steps_response.json()["items"]] == ["drafter"]
     assert steps_response.json()["items"][0]["state"] == "FAILED"
     assert lineage_response.status_code == 200
     assert lineage_response.json()["items"] == []
-    assert chapter_response.status_code == 200
-    assert chapter_response.json()["content"] == ""
+    assert chapter_response.status_code == 404
+    assert chapter_response.json()["detail"] == "Artifact not found: chapter-1"
+    with pytest.raises(FileNotFoundError):
+        project_service.read_artifact(project_id, "chapter-1")

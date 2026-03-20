@@ -174,6 +174,34 @@ class ArtifactLineageRepository:
     def __init__(self, db_path: Path) -> None:
         self.db_path = ensure_operations_db(db_path)
 
+    def _supersede_existing_canonical_rows(
+        self,
+        connection,
+        *,
+        project_id: str,
+        artifact_role: str,
+    ) -> int | None:
+        rows = connection.execute(
+            """
+            SELECT artifact_lineage_id
+            FROM artifact_lineage
+            WHERE project_id = ? AND artifact_role = ? AND status = 'CANONICAL'
+            ORDER BY artifact_lineage_id ASC
+            """,
+            (project_id, artifact_role),
+        ).fetchall()
+        if not rows:
+            return None
+        connection.execute(
+            """
+            UPDATE artifact_lineage
+            SET status = 'SUPERSEDED'
+            WHERE project_id = ? AND artifact_role = ? AND status = 'CANONICAL'
+            """,
+            (project_id, artifact_role),
+        )
+        return int(rows[-1]["artifact_lineage_id"])
+
     def create_lineage_record(
         self,
         *,
@@ -197,6 +225,13 @@ class ArtifactLineageRepository:
         output_of_step_record_id: int,
     ) -> int:
         with connect(self.db_path) as connection:
+            supersedes_id = supersedes_artifact_lineage_id
+            if supersedes_id is None and status == "CANONICAL" and project_id is not None:
+                supersedes_id = self._supersede_existing_canonical_rows(
+                    connection,
+                    project_id=project_id,
+                    artifact_role=artifact_role,
+                )
             cursor = connection.execute(
                 """
                 INSERT INTO artifact_lineage (
@@ -220,7 +255,7 @@ class ArtifactLineageRepository:
                     validation_state,
                     produced_at.isoformat(),
                     registered_at.isoformat() if registered_at is not None else None,
-                    supersedes_artifact_lineage_id,
+                    supersedes_id,
                     _json_list(source_artifact_refs),
                     _json_list(source_content_hashes),
                     output_of_step_record_id,

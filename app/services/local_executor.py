@@ -740,9 +740,12 @@ class LocalExecutor:
 
     def _read_optional_artifact(self, project_id: str, artifact_name: str) -> str | None:
         try:
-            return self._project_service.read_artifact(project_id, artifact_name).content
+            content = self._project_service.read_artifact(project_id, artifact_name).content
         except FileNotFoundError:
             return None
+        if not content.strip():
+            return None
+        return content
 
     def _process_checker(self, run_id: UUID) -> None:
         try:

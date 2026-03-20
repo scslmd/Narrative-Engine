@@ -17,6 +17,7 @@ from app.persistence.sqlite import (
 from app.persistence.steps import stable_hash_payload
 from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
 from app.schemas.jobs import JobCreateRequest
+from app.schemas.manifest import Manifest
 from app.schemas.role_model_checker import RoleCheckResult, RoleModelCheckStartRequest
 from app.services.job_manager import JobManager
 from app.services.local_executor import LocalExecutor
@@ -56,6 +57,90 @@ class FakeArchitectInferencer(InferenceBackend):
             usage=InferenceUsage(prompt_tokens=11, completion_tokens=22, total_tokens=33),
             raw_response={"provider": "fake", "backend_version": "2026.03"},
         )
+
+
+class FakePipelineInferencer(InferenceBackend):
+    def __init__(self, *, content_by_phase: dict[str, list[str]], model: str = "pipeline-test-model") -> None:
+        self.requests: list[InferenceRequest] = []
+        self._content_by_phase = {phase: list(contents) for phase, contents in content_by_phase.items()}
+        self._descriptor = InferenceProviderDescriptor(
+            backend="openai_compatible",
+            display_name="Fake Pipeline Runtime",
+            transport="openai_compatible_http",
+            base_url="http://127.0.0.1:9999/v1",
+            default_model=model,
+            timeout_seconds=30.0,
+            supports_model_listing=False,
+            supports_chat_completions=True,
+            aliases=["fake-pipeline"],
+        )
+
+    @property
+    def descriptor(self) -> InferenceProviderDescriptor:
+        return self._descriptor
+
+    def generate_text(self, request: InferenceRequest) -> InferenceResponse:
+        self.requests.append(request)
+        phase = str(request.metadata.get("phase") or "unknown")
+        contents = self._content_by_phase.get(phase)
+        if contents:
+            content = contents.pop(0) if len(contents) > 1 else contents[0]
+        else:
+            content = f"{phase} runtime output."
+        return InferenceResponse(
+            backend="openai_compatible",
+            model=request.model or self._descriptor.default_model,
+            content=content,
+            finish_reason="stop",
+            usage=InferenceUsage(prompt_tokens=17, completion_tokens=29, total_tokens=46),
+            raw_response={"provider": "fake", "backend_version": "2026.06"},
+        )
+
+
+def _wait_for_job_terminal_status(job_manager: JobManager, job_id, *, attempts: int = 40) -> str:
+    status = ""
+    for _ in range(attempts):
+        current = job_manager.get_status(job_id)
+        status = str(current.status)
+        if status in {"COMPLETED", "FAILED"}:
+            return status
+        sleep(0.05)
+    return status
+
+
+def _build_executor(tmp_path: Path, *, inferencer: InferenceBackend) -> tuple[LocalExecutor, JobManager, ProjectService]:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    models_root = tmp_path / "data" / "models"
+    reports_root = tmp_path / "data" / "role_model_checker_runs"
+    models_root.mkdir(parents=True, exist_ok=True)
+    project_service = ProjectService(tmp_path)
+    job_manager = JobManager(db_path)
+    checker_manager = RoleModelCheckManager(db_path)
+    step_records = StepRecordService(db_path)
+    executor = LocalExecutor(
+        job_manager=job_manager,
+        role_check_manager=checker_manager,
+        role_check_service=RoleModelCheckerService(models_root, reports_root, inferencer=inferencer),
+        inferencer=inferencer,
+        project_service=project_service,
+        step_record_service=step_records,
+        poll_interval_seconds=0.05,
+    )
+    return executor, job_manager, project_service
+
+
+def _make_manifest(project_id: str) -> Manifest:
+    return Manifest.model_validate(
+        {
+        "project_id": project_id,
+        "project_name": "Project Aurora",
+        "genre": "Science Fantasy",
+        "tone": "Wonder-driven",
+        "story_structure": "THREE_ACT",
+        "constraints": ["No time travel", "Third-person limited only"],
+        "premise_text": "A cartographer maps a city that rearranges itself every dusk.",
+        }
+    )
 
 
 def test_job_manager_persists_status_and_logs(tmp_path: Path) -> None:
@@ -664,6 +749,105 @@ def test_local_executor_runs_real_p100_architect_call_with_inferencer(tmp_path: 
     assert lineage[0]["status"] == "CANONICAL"
     assert project_service.read_artifact(project_id, "architect_p100").content.startswith("## Logline")
     assert project_service.repository.get_artifact_path(project_id, "architect_p100") == output_path
+
+
+def test_local_executor_supersedes_sequence_lineage_on_repeated_p200_runs(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "sequence-supercession"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+    inferencer = FakePipelineInferencer(
+        content_by_phase={
+            "P-200": [
+                "## Sequence v1\n",
+                "## Sequence v2\n",
+            ]
+        }
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        first_job = job_manager.create_job(JobCreateRequest(phase="P-200", payload={"project_id": project_id}))
+        assert _wait_for_job_terminal_status(job_manager, first_job.id) == "COMPLETED"
+        second_job = job_manager.create_job(JobCreateRequest(phase="P-200", payload={"project_id": project_id}))
+        assert _wait_for_job_terminal_status(job_manager, second_job.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    first_lineage = job_manager.list_artifact_lineage(first_job.id)
+    second_lineage = job_manager.list_artifact_lineage(second_job.id)
+    with connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT artifact_lineage_id, status, supersedes_artifact_lineage_id
+            FROM artifact_lineage
+            WHERE project_id = ? AND artifact_role = 'sequence'
+            ORDER BY artifact_lineage_id ASC
+            """,
+            (project_id,),
+        ).fetchall()
+
+    assert len(rows) == 2
+    assert rows[0]["status"] == "SUPERSEDED"
+    assert rows[1]["status"] == "CANONICAL"
+    assert rows[1]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert first_lineage[0]["status"] == "SUPERSEDED"
+    assert second_lineage[0]["status"] == "CANONICAL"
+    assert second_lineage[0]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert project_service.read_artifact(project_id, "sequence").content == "## Sequence v2\n"
+
+
+def test_local_executor_supersedes_chapter_lineage_on_repeated_p300_runs(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "chapter-supercession"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+    inferencer = FakePipelineInferencer(
+        content_by_phase={
+            "P-200": ["## Sequence foundation\n"],
+            "P-300": [
+                "## Chapter v1\n",
+                "## Chapter v2\n",
+            ],
+        }
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        sequence_job = job_manager.create_job(JobCreateRequest(phase="P-200", payload={"project_id": project_id}))
+        assert _wait_for_job_terminal_status(job_manager, sequence_job.id) == "COMPLETED"
+        first_chapter_job = job_manager.create_job(JobCreateRequest(phase="P-300", payload={"project_id": project_id}))
+        assert _wait_for_job_terminal_status(job_manager, first_chapter_job.id) == "COMPLETED"
+        second_chapter_job = job_manager.create_job(JobCreateRequest(phase="P-300", payload={"project_id": project_id}))
+        assert _wait_for_job_terminal_status(job_manager, second_chapter_job.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    first_lineage = job_manager.list_artifact_lineage(first_chapter_job.id)
+    second_lineage = job_manager.list_artifact_lineage(second_chapter_job.id)
+    with connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT artifact_lineage_id, status, supersedes_artifact_lineage_id
+            FROM artifact_lineage
+            WHERE project_id = ? AND artifact_role = 'chapter_1'
+            ORDER BY artifact_lineage_id ASC
+            """,
+            (project_id,),
+        ).fetchall()
+
+    assert len(rows) == 2
+    assert rows[0]["status"] == "SUPERSEDED"
+    assert rows[1]["status"] == "CANONICAL"
+    assert rows[1]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert first_lineage[0]["status"] == "SUPERSEDED"
+    assert second_lineage[0]["status"] == "CANONICAL"
+    assert second_lineage[0]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert project_service.read_artifact(project_id, "chapter-1").content == "## Chapter v2\n"
 
 
 def test_local_executor_persists_checker_step_records_and_report_lineage(tmp_path: Path) -> None:

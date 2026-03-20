@@ -30,6 +30,8 @@ Current validation covers:
 - the first real provider-backed `architect` execution path for phase `P-100`, including canonical markdown output, canonical artifact registration, and artifact lineage
 - the first real provider-backed `sequencer` execution path for phase `P-200`, including canonical `sequence` artifact registration and inspectable job projections
 - the first real provider-backed `drafter` execution path for phase `P-300`, including canonical `chapter-1` artifact registration and inspectable job projections
+- generated project artifact endpoints now reject empty bootstrap placeholders for failed runtime-backed `sequence` and `chapter-1` reads
+- repeated successful runtime artifact writes now supersede prior canonical lineage rows for `sequence` and `chapter_1`
 - structured runtime error mapping coverage for timeout, transport, HTTP-status, invalid-JSON, protocol-shape, and configuration failures
 - persisted `P-100` runtime telemetry coverage for backend version, hashes, finish reason, and token usage fields
 - runtime-backed checker coverage for `architect`, `sequencer`, `drafter`, and `critic`
@@ -54,7 +56,7 @@ Current validation does not yet cover:
 Current verified result:
 
 - `.\.venv\Scripts\python.exe -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
-- Result: `109 passed`
+- Result: `111 passed`
 
 Continuous testing:
 
