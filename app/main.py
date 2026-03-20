@@ -22,6 +22,7 @@ def build_app() -> FastAPI:
     frontend_root = root / 'frontend'
 
     project_service = ProjectService(root)
+    project_service.reconcile_projects()
     job_manager = JobManager(root / 'data' / 'state' / 'narrative_ops.db')
     model_registry = ModelRegistry(models_root)
     role_check_manager = RoleModelCheckManager(root / 'data' / 'state' / 'narrative_ops.db')

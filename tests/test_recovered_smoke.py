@@ -42,17 +42,28 @@ def test_role_model_checker_stub_runs() -> None:
             'save_report': True,
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 202
     payload = response.json()
-    assert payload['status'] == 'COMPLETED'
-    assert len(payload['results']) == 2
-    assert payload['report_path']
-    assert Path(payload['report_path']).exists()
+    assert payload['status'] == 'PENDING'
+    assert response.headers['Location'].endswith(f"/role-model-checker/{payload['run_id']}/status")
+
+    status_response = client.get(f"/role-model-checker/{payload['run_id']}/status")
+    assert status_response.status_code == 200
+    status_payload = status_response.json()
+    assert status_payload['status'] == 'COMPLETED'
+    assert len(status_payload['results']) == 2
+    assert status_payload['report_path']
+    assert Path(status_payload['report_path']).exists()
 
 
 def test_job_stub_runs() -> None:
     client = TestClient(build_app())
     response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': 'science-fantasy-test'}})
-    assert response.status_code == 200
+    assert response.status_code == 202
     payload = response.json()
-    assert payload['status'] == 'COMPLETED'
+    assert payload['status'] == 'PENDING'
+    assert response.headers['Location'].endswith(f"/jobs/{payload['id']}/status")
+
+    status_response = client.get(f"/jobs/{payload['id']}/status")
+    assert status_response.status_code == 200
+    assert status_response.json()['status'] == 'COMPLETED'

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
 from ..schemas.manifest import Manifest
-from ..services.validation import ManifestValidationService
 from .sqlite import connect, ensure_operations_db, ensure_project_db
 
 
@@ -13,17 +13,38 @@ def _utc_timestamp(path: Path) -> datetime:
     return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
 
 
+def _parse_timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value)
+
+
+@dataclass(frozen=True)
+class ProjectProjection:
+    project_id: str
+    project_name: str
+    manifest_path: Path
+    db_path: Path
+    created_at: datetime
+    updated_at: datetime
+    artifact_paths: dict[str, Path]
+    export_count: int
+
+
 class ProjectRepository:
     def __init__(self, db_path: Path) -> None:
         self.db_path = ensure_operations_db(db_path)
 
-    def sync_from_projects_dir(self, projects_dir: Path) -> None:
+    def reconcile_projects_dir(self, projects_dir: Path) -> int:
         projects_dir.mkdir(parents=True, exist_ok=True)
+        count = 0
         for manifest_path in sorted(projects_dir.glob("*/manifest.json")):
             if manifest_path.is_file() and manifest_path.stat().st_size > 0:
                 self.register_project_dir(manifest_path.parent)
+                count += 1
+        return count
 
     def register_project_dir(self, project_dir: Path) -> None:
+        from ..services.validation import ManifestValidationService
+
         manifest_path = project_dir / "manifest.json"
         if not manifest_path.exists() or manifest_path.stat().st_size == 0:
             return
@@ -31,7 +52,9 @@ class ProjectRepository:
         database_path = project_dir / "bible.db"
         ensure_project_db(database_path)
 
+        artifacts = self._discover_artifacts(project_dir)
         created_at = _utc_timestamp(manifest_path)
+        latest_timestamp = max((_utc_timestamp(path) for path in artifacts.values()), default=created_at)
         with connect(self.db_path) as connection:
             connection.execute(
                 """
@@ -50,10 +73,10 @@ class ProjectRepository:
                     str(manifest_path),
                     str(database_path),
                     created_at.isoformat(),
-                    created_at.isoformat(),
+                    latest_timestamp.isoformat(),
                 ),
             )
-            for artifact_type, artifact_path in self._discover_artifacts(project_dir).items():
+            for artifact_type, artifact_path in artifacts.items():
                 timestamp = _utc_timestamp(artifact_path).isoformat()
                 connection.execute(
                     """
@@ -79,16 +102,75 @@ class ProjectRepository:
             connection.commit()
         self._sync_project_db(database_path, manifest, project_dir)
 
-    def get_artifact_path(self, project_id: str, artifact_type: str) -> Path | None:
-        canonical = self._canonical_artifact_type(artifact_type)
+    def list_project_projections(self) -> list[ProjectProjection]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    project_id,
+                    project_name,
+                    manifest_path,
+                    db_path,
+                    created_at,
+                    updated_at
+                FROM projects
+                ORDER BY project_name COLLATE NOCASE, project_id
+                """
+            ).fetchall()
+        return [self._build_projection(row) for row in rows]
+
+    def get_project_projection(self, project_id: str) -> ProjectProjection | None:
         with connect(self.db_path) as connection:
             row = connection.execute(
-                "SELECT path FROM project_artifacts WHERE project_id = ? AND artifact_type = ?",
-                (project_id, canonical),
+                """
+                SELECT
+                    project_id,
+                    project_name,
+                    manifest_path,
+                    db_path,
+                    created_at,
+                    updated_at
+                FROM projects
+                WHERE project_id = ?
+                """,
+                (project_id,),
             ).fetchone()
         if row is None:
             return None
-        return Path(row["path"])
+        return self._build_projection(row)
+
+    def get_artifact_path(self, project_id: str, artifact_type: str) -> Path | None:
+        projection = self.get_project_projection(project_id)
+        if projection is None:
+            return None
+        return projection.artifact_paths.get(self._canonical_artifact_type(artifact_type))
+
+    def _build_projection(self, row) -> ProjectProjection:
+        project_id = row["project_id"]
+        with connect(self.db_path) as connection:
+            artifact_rows = connection.execute(
+                """
+                SELECT artifact_type, path
+                FROM project_artifacts
+                WHERE project_id = ?
+                """,
+                (project_id,),
+            ).fetchall()
+        artifact_paths = {
+            artifact_row["artifact_type"]: Path(artifact_row["path"])
+            for artifact_row in artifact_rows
+        }
+        export_count = sum(1 for artifact_type in artifact_paths if artifact_type.startswith("export:"))
+        return ProjectProjection(
+            project_id=project_id,
+            project_name=row["project_name"],
+            manifest_path=Path(row["manifest_path"]),
+            db_path=Path(row["db_path"]),
+            created_at=_parse_timestamp(row["created_at"]),
+            updated_at=_parse_timestamp(row["updated_at"]),
+            artifact_paths=artifact_paths,
+            export_count=export_count,
+        )
 
     def _sync_project_db(self, db_path: Path, manifest: Manifest, project_dir: Path) -> None:
         with connect(db_path) as connection:

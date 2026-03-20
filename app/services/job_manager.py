@@ -14,6 +14,14 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+_ALLOWED_JOB_TRANSITIONS: dict[str, set[str]] = {
+    JobStatus.PENDING.value: {JobStatus.PROCESSING.value, JobStatus.FAILED.value},
+    JobStatus.PROCESSING.value: {JobStatus.COMPLETED.value, JobStatus.FAILED.value},
+    JobStatus.COMPLETED.value: set(),
+    JobStatus.FAILED.value: set(),
+}
+
+
 class JobManager:
     def __init__(self, db_path: Path | None = None) -> None:
         operations_db_path = db_path or settings.operations_db_path
@@ -47,6 +55,13 @@ class JobManager:
         progress_total: int | None = None,
         error: str | None = None,
     ) -> JobStatusResponse:
+        current = self.get_status(job_id)
+        if status is not None:
+            allowed = _ALLOWED_JOB_TRANSITIONS.get(str(current.status), set())
+            if status != str(current.status) and status not in allowed:
+                raise ValueError(
+                    f"Illegal job state transition for {job_id}: {current.status} -> {status}"
+                )
         updated_at = _utcnow()
         self._jobs.update_job(
             job_id,
@@ -72,3 +87,6 @@ class JobManager:
 
     def get_logs(self, job_id: UUID) -> JobLogsResponse:
         return self._logs.list_for_job(job_id)
+
+    def list_events(self, job_id: UUID) -> list[dict[str, object]]:
+        return self._jobs.list_events(job_id)

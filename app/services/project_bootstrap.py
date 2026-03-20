@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import UUID
 
-from app.persistence import ensure_project_db
+from app.persistence.sqlite import ensure_project_db
 from app.schemas.manifest import Manifest
 from app.settings import settings
 

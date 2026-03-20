@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -20,20 +20,42 @@ class CheckerRunRepository:
         self.db_path = ensure_operations_db(db_path)
 
     def create_run(self, *, run_id: UUID, status: str, request_payload: dict, created_at: datetime, project_id: str | None = None) -> None:
+        request_json = json.dumps(request_payload, ensure_ascii=True, sort_keys=True)
+        logical_run_id = str(run_id)
+        attempt_number = 1
         with connect(self.db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO checker_runs (
-                    run_id, project_id, status, request_json, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    run_id, logical_run_id, attempt_number, project_id, status, request_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(run_id),
+                    logical_run_id,
+                    attempt_number,
                     project_id,
                     status,
-                    json.dumps(request_payload, ensure_ascii=True, sort_keys=True),
+                    request_json,
                     created_at.isoformat(),
                     created_at.isoformat(),
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO checker_run_events (
+                    run_id, logical_run_id, attempt_number, event_type, from_state, to_state, occurred_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(run_id),
+                    logical_run_id,
+                    attempt_number,
+                    "RUN_ACCEPTED",
+                    None,
+                    status,
+                    created_at.isoformat(),
+                    request_json,
                 ),
             )
             connection.commit()
@@ -49,6 +71,14 @@ class CheckerRunRepository:
         heartbeat_at: datetime | None = None,
         updated_at: datetime,
     ) -> None:
+        with connect(self.db_path) as connection:
+            existing = connection.execute(
+                "SELECT status, logical_run_id, attempt_number FROM checker_runs WHERE run_id = ?",
+                (str(run_id),),
+            ).fetchone()
+            if existing is None:
+                raise KeyError(str(run_id))
+
         assignments: list[str] = []
         values: list[object] = []
         for column, value in (
@@ -66,18 +96,63 @@ class CheckerRunRepository:
         assignments.append("updated_at = ?")
         values.append(updated_at.isoformat())
         values.append(str(run_id))
+        event_payload = {
+            "current_role": current_role,
+            "detail": detail,
+            "report_path": report_path,
+        }
         with connect(self.db_path) as connection:
             cursor = connection.execute(
                 f"UPDATE checker_runs SET {', '.join(assignments)} WHERE run_id = ?",
                 values,
             )
+            if status is not None:
+                connection.execute(
+                    """
+                    INSERT INTO checker_run_events (
+                        run_id, logical_run_id, attempt_number, event_type, from_state, to_state, occurred_at, payload_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(run_id),
+                        existing["logical_run_id"],
+                        existing["attempt_number"],
+                        "RUN_STATE_CHANGED",
+                        existing["status"],
+                        status,
+                        updated_at.isoformat(),
+                        json.dumps(event_payload, ensure_ascii=True, sort_keys=True),
+                    ),
+                )
+            elif any(value is not None for value in (current_role, detail, report_path, heartbeat_at)):
+                connection.execute(
+                    """
+                    INSERT INTO checker_run_events (
+                        run_id, logical_run_id, attempt_number, event_type, from_state, to_state, occurred_at, payload_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(run_id),
+                        existing["logical_run_id"],
+                        existing["attempt_number"],
+                        "RUN_PROGRESS_UPDATED",
+                        existing["status"],
+                        existing["status"],
+                        updated_at.isoformat(),
+                        json.dumps(event_payload, ensure_ascii=True, sort_keys=True),
+                    ),
+                )
             connection.commit()
         if cursor.rowcount == 0:
             raise KeyError(str(run_id))
 
     def add_result(self, run_id: UUID, result: RoleCheckResult) -> None:
         with connect(self.db_path) as connection:
-            if connection.execute("SELECT 1 FROM checker_runs WHERE run_id = ?", (str(run_id),)).fetchone() is None:
+            existing = connection.execute(
+                "SELECT logical_run_id, attempt_number FROM checker_runs WHERE run_id = ?",
+                (str(run_id),),
+            ).fetchone()
+            if existing is None:
                 raise KeyError(str(run_id))
             connection.execute(
                 """
@@ -94,6 +169,23 @@ class CheckerRunRepository:
                     json.dumps(result.warnings, ensure_ascii=True),
                     result.preview,
                     json.dumps(result.metadata, ensure_ascii=True, sort_keys=True),
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO checker_run_events (
+                    run_id, logical_run_id, attempt_number, event_type, from_state, to_state, occurred_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(run_id),
+                    existing["logical_run_id"],
+                    existing["attempt_number"],
+                    "STEP_RESULT_RECORDED",
+                    None,
+                    None,
+                    datetime.now(timezone.utc).isoformat(),
+                    json.dumps(result.model_dump(mode="json"), ensure_ascii=True, sort_keys=True),
                 ),
             )
             connection.commit()
@@ -134,3 +226,26 @@ class CheckerRunRepository:
                 for result_row in result_rows
             ],
         )
+
+    def list_events(self, run_id: UUID) -> list[dict[str, object]]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT event_type, from_state, to_state, occurred_at, attempt_number, payload_json
+                FROM checker_run_events
+                WHERE run_id = ?
+                ORDER BY event_id ASC
+                """,
+                (str(run_id),),
+            ).fetchall()
+        return [
+            {
+                "event_type": row["event_type"],
+                "from_state": row["from_state"],
+                "to_state": row["to_state"],
+                "occurred_at": row["occurred_at"],
+                "attempt_number": row["attempt_number"],
+                "payload": json.loads(row["payload_json"]),
+            }
+            for row in rows
+        ]
