@@ -41,7 +41,8 @@ Implemented and working now:
 - a real `P-100` `architect` execution path that builds an inference request, calls the configured inferencer, and persists canonical markdown output plus artifact lineage
 - persisted `P-100` runtime step telemetry for backend or model identity, prompt or input or output hashes, finish reason, and inspectable lineage linkage
 - structured runtime error mapping for real `P-100` failures, including persisted error category and retryability
-- a first runtime-backed `architect` checker slice with stub fallback preserved for the remaining checker roles
+- runtime-backed checker execution for `architect`, `sequencer`, `drafter`, and `critic`, with deterministic fallback preserved when runtime is unavailable or intentionally skipped
+- persisted checker-step runtime telemetry for inspectable backend identity, hashes, finish reasons, and token usage on runtime-backed checker rows
 - public inspect endpoints for persisted step records and artifact lineage on jobs and checker runs
 - frontend workflow scaffolding and documentation
 
@@ -49,7 +50,7 @@ Still being built:
 
 - runtime-backed generation for phases beyond the first `architect` slice
 - full orchestrator/compiler flow
-- deeper role-model checker execution against real models
+- runtime-backed job phases beyond `P-100`
 - richer runtime telemetry
 - broader production-grade tests
 

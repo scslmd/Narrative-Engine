@@ -30,6 +30,11 @@ def _provider_backend_version(raw_response: dict[str, Any]) -> str | None:
     return None
 
 
+def _checker_runtime_response(role_result: Any) -> dict[str, Any] | None:
+    runtime_response = role_result.metadata.get("runtime_response")
+    return runtime_response if isinstance(runtime_response, dict) else None
+
+
 class LocalExecutor:
     def __init__(
         self,
@@ -357,6 +362,43 @@ class LocalExecutor:
             attempt = self._role_check_manager.get_attempt(run_id)
             self._role_check_manager.update_run(run_id, status="RUNNING", detail="Checker run started.")
             for index, role_result in enumerate(self._role_check_service.run_checks(request), start=1):
+                runtime_response = _checker_runtime_response(role_result)
+                runtime_request = role_result.metadata.get("inference_request")
+                is_runtime_backed = role_result.metadata.get("execution_mode") == "runtime_backed" and runtime_response is not None
+                backend_name = "role-model-checker"
+                backend_version = "stub"
+                model_id = str(role_result.metadata.get("selected_model") or "")
+                prompt_payload: object = {
+                    "role": role_result.role,
+                    "critic_profile": request.critic_profile if role_result.role == "critic" else None,
+                }
+                input_payload: object = payload
+                output_payload: object = role_result.model_dump(mode="json")
+                finish_reason = "passed" if role_result.passed else "validation_failed"
+                prompt_tokens: int | None = None
+                completion_tokens: int | None = None
+                total_tokens: int | None = None
+
+                if is_runtime_backed:
+                    backend_name = str(
+                        role_result.metadata.get("inference_backend")
+                        or runtime_response.get("backend")
+                        or backend_name
+                    )
+                    backend_version = _provider_backend_version(runtime_response.get("raw_response")) or backend_version
+                    model_id = str(runtime_response.get("model") or role_result.metadata.get("selected_model") or "")
+                    prompt_payload = runtime_request if isinstance(runtime_request, dict) else prompt_payload
+                    input_payload = {
+                        "checker_request": payload,
+                        "runtime_request": prompt_payload,
+                    }
+                    finish_reason = str(runtime_response.get("finish_reason") or "runtime_completed")
+                    usage = runtime_response.get("usage")
+                    if isinstance(usage, dict):
+                        prompt_tokens = usage.get("prompt_tokens")
+                        completion_tokens = usage.get("completion_tokens")
+                        total_tokens = usage.get("total_tokens")
+
                 self._role_check_manager.update_run(
                     run_id,
                     current_role=role_result.role,
@@ -374,25 +416,25 @@ class LocalExecutor:
                     step_index=index,
                     state="COMPLETED" if role_result.passed else "FAILED",
                     project_id=None,
-                    model_id=str(role_result.metadata.get("selected_model") or ""),
+                    model_id=model_id or None,
                     critic_profile=request.critic_profile if role_result.role == "critic" else None,
-                    backend_name="role-model-checker",
-                    backend_version="stub",
-                    input_payload=payload,
-                    output_payload=role_result.model_dump(mode="json"),
-                    prompt_payload={
-                        "role": role_result.role,
-                        "critic_profile": request.critic_profile if role_result.role == "critic" else None,
-                    },
+                    backend_name=backend_name,
+                    backend_version=backend_version,
+                    input_payload=input_payload,
+                    output_payload=output_payload,
+                    prompt_payload=prompt_payload,
                     input_artifact_refs=[],
                     output_artifact_refs=[f"checker_result:{role_result.role}"],
                     started_at=started_at,
                     finished_at=finished_at,
-                    finish_reason="passed" if role_result.passed else "validation_failed",
+                    finish_reason=finish_reason,
                     error_code=None if role_result.passed else "CHECKER_FAILED",
                     error_category=None if role_result.passed else "deterministic_validation",
                     executor_id="checker-worker-local",
                     lease_owner=str(attempt.get("lease_owner") or "checker-worker-local"),
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
                 )
             final_status = self._role_check_manager.update_run(
                 run_id,

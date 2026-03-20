@@ -177,7 +177,7 @@ Implementation note:
 - The frontend polls these status endpoints rather than assuming immediate completion.
 - Job and checker status are durably stored in SQLite instead of process-local memory.
 - The current execution path uses a local lease-claim executor.
-- The local executor still uses stub logic for most phases and for checker role execution.
+- The local executor still uses stub logic for most phases after `P-100`, but checker role execution now supports runtime-backed roles with deterministic fallback.
 - `P-100` is the first real provider-backed pipeline phase and must be treated as a reconstruction-critical special case.
 - Step records and artifact lineage are durably persisted in SQLite for the local executor path and are exposed through dedicated public inspect endpoints for jobs and checker runs.
 
@@ -402,7 +402,6 @@ Required artifact rules for `P-100`:
 Intentionally not yet implemented:
 
 - equivalent real-runtime execution for phases after `P-100`
-- provider-backed checker role execution
 
 ## 12. Role-Model Checker
 
@@ -419,9 +418,9 @@ Implementation note:
 
 - The checker currently persists run metadata, results, and an optional saved report path.
 - The checker persists step records and artifact lineage for its local executor path.
-- The checker inspect endpoints are public even though checker execution itself is still mostly stub-backed.
-- The current checker path already emits inspectable `architect` step records in the local executor path.
-- The checker still uses stub execution rather than real model evaluation.
+- The checker inspect endpoints are public and return persisted checker step and lineage projections.
+- The current checker path emits inspectable runtime-backed step records for `architect`, `sequencer`, `drafter`, and `critic`.
+- Checker roles still fall back deterministically when runtime is unavailable, fails, or `critic_profile` is `deterministic_only`.
 
 ## 13. Persistence Contract
 

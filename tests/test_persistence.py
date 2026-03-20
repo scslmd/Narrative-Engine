@@ -14,7 +14,8 @@ from app.persistence.sqlite import (
     ensure_operations_db,
     ensure_project_db,
 )
-from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse
+from app.persistence.steps import stable_hash_payload
+from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
 from app.schemas.jobs import JobCreateRequest
 from app.schemas.role_model_checker import RoleCheckResult, RoleModelCheckStartRequest
 from app.services.job_manager import JobManager
@@ -52,7 +53,8 @@ class FakeArchitectInferencer(InferenceBackend):
             model=request.model or "architect-test-model",
             content="## Logline\nA test architect output.\n",
             finish_reason="stop",
-            raw_response={"provider": "fake"},
+            usage=InferenceUsage(prompt_tokens=11, completion_tokens=22, total_tokens=33),
+            raw_response={"provider": "fake", "backend_version": "2026.03"},
         )
 
 
@@ -669,25 +671,25 @@ def test_local_executor_persists_checker_step_records_and_report_lineage(tmp_pat
     models_root = tmp_path / "data" / "models"
     reports_root = tmp_path / "data" / "role_model_checker_runs"
     models_root.mkdir(parents=True, exist_ok=True)
+    runtime_inferencer = FakeArchitectInferencer()
     job_manager = JobManager(db_path)
     checker_manager = RoleModelCheckManager(db_path)
     step_records = StepRecordService(db_path)
     executor = LocalExecutor(
         job_manager=job_manager,
         role_check_manager=checker_manager,
-        role_check_service=RoleModelCheckerService(models_root, reports_root),
+        role_check_service=RoleModelCheckerService(models_root, reports_root, inferencer=runtime_inferencer),
         step_record_service=step_records,
         poll_interval_seconds=0.05,
     )
 
-    run = checker_manager.create_run(
-        RoleModelCheckStartRequest(
-            roles=["architect", "critic"],
-            model_selection={},
-            critic_profile="minimal_context",
-            save_report=True,
-        )
+    request = RoleModelCheckStartRequest(
+        roles=["architect", "critic"],
+        model_selection={},
+        critic_profile="minimal_context",
+        save_report=True,
     )
+    run = checker_manager.create_run(request)
     executor.start()
     try:
         for _ in range(40):
@@ -700,13 +702,43 @@ def test_local_executor_persists_checker_step_records_and_report_lineage(tmp_pat
 
     steps = checker_manager.list_step_records(run.run_id)
     lineage = checker_manager.list_artifact_lineage(run.run_id)
+    runtime_request = runtime_inferencer.requests[0]
+    final_status = checker_manager.get_status(run.run_id)
+    architect_result = final_status.results[0]
 
     assert len(steps) == 3
     assert [step["step_name"] for step in steps] == ["architect", "critic", "report_persist"]
     assert steps[0]["run_kind"] == "role_model_check"
+    assert steps[0]["backend_name"] == "openai_compatible"
+    assert steps[0]["backend_version"] == "2026.03"
+    assert steps[0]["model_id"] == "architect-test-model"
+    assert steps[0]["finish_reason"] == "stop"
+    assert steps[0]["prompt_hash"] == stable_hash_payload(runtime_request.model_dump(mode="json"))
+    assert steps[0]["input_hash"] == stable_hash_payload(
+        {
+            "checker_request": request.model_dump(mode="json"),
+            "runtime_request": runtime_request.model_dump(mode="json"),
+        }
+    )
+    assert steps[0]["output_hash"] == stable_hash_payload(architect_result.model_dump(mode="json"))
     assert steps[-1]["output_artifact_refs"] == ["checker_report"]
     assert len(lineage) == 1
     assert lineage[0]["artifact_role"] == "checker_report"
     assert lineage[0]["status"] == "CANONICAL"
     assert lineage[0]["validation_state"] == "PASSED"
     assert lineage[0]["output_of_step_record_id"] == steps[-1]["step_record_id"]
+
+    with connect(db_path) as connection:
+        telemetry_row = connection.execute(
+            """
+            SELECT prompt_tokens, completion_tokens, total_tokens
+            FROM step_records
+            WHERE run_id = ? AND run_kind = 'role_model_check' AND step_name = 'architect'
+            """,
+            (str(run.run_id),),
+        ).fetchone()
+
+    assert telemetry_row is not None
+    assert telemetry_row["prompt_tokens"] == 11
+    assert telemetry_row["completion_tokens"] == 22
+    assert telemetry_row["total_tokens"] == 33

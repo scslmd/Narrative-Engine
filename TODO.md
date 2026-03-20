@@ -11,11 +11,11 @@
 - [x] Map timeout, HTTP-status, and invalid-JSON failures in `app/inference/openai_compatible.py` to structured runtime error categories.
 - [x] Persist runtime telemetry for provider name, provider version when available, prompt hash, input hash, output hash, token usage, and finish reason on runtime-backed steps.
 - [ ] Rebuild `LocalExecutor` job processing so phases after `P-100` run through explicit runtime-backed step handlers instead of one-step stub completion.
-- [ ] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
-- [ ] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
-- [ ] Implement `GET /jobs/{job_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
-- [ ] Implement `GET /role-model-checker/{run_id}/steps` backed only by persisted step-record rows and the step projection contract.
-- [ ] Implement `GET /role-model-checker/{run_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
+- [x] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
+- [x] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
+- [x] Implement `GET /jobs/{job_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
+- [x] Implement `GET /role-model-checker/{run_id}/steps` backed only by persisted step-record rows and the step projection contract.
+- [x] Implement `GET /role-model-checker/{run_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
 - [x] Update `.github/workflows/tests.yml` so CI runs `tests/test_inference_runtime.py` in addition to the existing pytest baseline.
 
 ## Core Runtime
@@ -25,11 +25,11 @@
 - [x] Register `architect` runtime output through canonical artifact-lineage persistence.
 - [ ] Rebuild remaining job phases on top of explicit runtime-backed step handlers.
 - [ ] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
-- [ ] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
+- [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.
 - [x] Persist runtime telemetry and hashes for each runtime-backed step.
-- [ ] Replace stub checker role execution with runtime-backed per-role evaluation while preserving current run and attempt semantics.
+- [x] Replace stub checker role execution with runtime-backed per-role evaluation while preserving current run and attempt semantics.
 
 ## Protocol Hardening
 
