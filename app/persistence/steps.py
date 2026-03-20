@@ -27,6 +27,23 @@ def stable_hash_payload(payload: object) -> str:
 class StepRecordRepository:
     def __init__(self, db_path: Path) -> None:
         self.db_path = ensure_operations_db(db_path)
+        self._ensure_runtime_telemetry_columns()
+
+    def _ensure_runtime_telemetry_columns(self) -> None:
+        required_columns = {
+            "prompt_tokens": "ALTER TABLE step_records ADD COLUMN prompt_tokens INTEGER",
+            "completion_tokens": "ALTER TABLE step_records ADD COLUMN completion_tokens INTEGER",
+            "total_tokens": "ALTER TABLE step_records ADD COLUMN total_tokens INTEGER",
+        }
+        with connect(self.db_path) as connection:
+            existing_columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info('step_records')").fetchall()
+            }
+            for column_name, ddl in required_columns.items():
+                if column_name not in existing_columns:
+                    connection.execute(ddl)
+            connection.commit()
 
     def create_step_record(
         self,
@@ -52,6 +69,9 @@ class StepRecordRepository:
         finished_at: datetime | None,
         duration_seconds: float | None,
         finish_reason: str | None,
+        prompt_tokens: int | None,
+        completion_tokens: int | None,
+        total_tokens: int | None,
         error_code: str | None,
         error_category: str | None,
         executor_id: str | None,
@@ -66,8 +86,9 @@ class StepRecordRepository:
                     logical_run_id, run_id, run_kind, attempt_number, step_name, step_index, state, project_id,
                     model_id, critic_profile, backend_name, backend_version, input_hash, output_hash, prompt_hash,
                     input_artifact_refs_json, output_artifact_refs_json, started_at, finished_at, duration_seconds,
-                    finish_reason, error_code, error_category, executor_id, lease_owner, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    finish_reason, prompt_tokens, completion_tokens, total_tokens, error_code, error_category,
+                    executor_id, lease_owner, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     logical_run_id,
@@ -91,6 +112,9 @@ class StepRecordRepository:
                     finished_at.isoformat() if finished_at is not None else None,
                     duration_seconds,
                     finish_reason,
+                    prompt_tokens,
+                    completion_tokens,
+                    total_tokens,
                     error_code,
                     error_category,
                     executor_id,

@@ -14,6 +14,12 @@ It exists to make runtime-backed execution consistent across:
 
 The goal is not to preserve provider-specific exception text as the primary contract. The goal is to normalize failures into stable categories suitable for persistence, retry policy, inspect views, and later orchestration behavior.
 
+Current implementation status:
+
+- the blueprint is now part of the reconstruction-grade docs set
+- current successful runtime-backed `P-100` execution is implemented
+- normalized inferencer failure persistence is still only partially implemented; generic `InferenceBackendError` and executor fallback handling still exist in the active code path
+
 ## Contract Goals
 
 - map each runtime failure into one deterministic `error_category`

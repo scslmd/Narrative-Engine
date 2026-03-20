@@ -14,6 +14,11 @@ This blueprint covers:
 - provider defaults
 - runtime error taxonomy
 
+Related deterministic contracts:
+
+- [docs/Runtime Error Mapping Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
+- [docs/Runtime Telemetry Contract v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Telemetry%20Contract%20v0.1.md)
+
 ## Current Implementation Scope
 
 The current backend implements:
@@ -22,6 +27,7 @@ The current backend implements:
 - a reusable OpenAI-compatible HTTP transport
 - provider selection through environment variables
 - runtime descriptors for provider identity, capabilities, and defaults
+- one real provider-backed runtime path for pipeline phase `P-100` `architect`
 
 The current backend does not yet implement:
 
@@ -468,6 +474,7 @@ Current limitation:
 
 - these failures are not yet persisted as normalized structured runtime error categories on step records
 - timeout, HTTP-status, invalid-JSON, and protocol-shape failures still need explicit category mapping in the runtime-backed execution path
+- current successful `P-100` runtime calls do already flow into step-record persistence and public inspect endpoints, but normalized inferencer failure mapping is still a separate next slice
 
 ## Provider Default Summary
 

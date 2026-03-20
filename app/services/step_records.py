@@ -42,6 +42,9 @@ class StepRecordService:
         error_category: str | None,
         executor_id: str | None,
         lease_owner: str | None,
+        prompt_tokens: int | None = None,
+        completion_tokens: int | None = None,
+        total_tokens: int | None = None,
     ) -> int:
         now = finished_at or started_at or datetime.now(timezone.utc)
         duration_seconds = None
@@ -69,6 +72,9 @@ class StepRecordService:
             finished_at=finished_at,
             duration_seconds=duration_seconds,
             finish_reason=finish_reason,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
             error_code=error_code,
             error_category=error_category,
             executor_id=executor_id,

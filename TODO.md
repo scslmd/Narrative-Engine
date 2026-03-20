@@ -7,9 +7,9 @@
 - [x] Update `app/services/local_executor.py` so phase `P-100` calls `inferencer.generate_text()` instead of unconditional stub completion.
 - [x] Implement the first real `architect` call in `app/services/local_executor.py` for phase `P-100`, using `app/services/runtime_prompts.py`, the generalized inferencer, and persisted step or lineage output.
 - [x] Promote the first real `architect` runtime output from candidate lineage to canonical lineage using an explicit artifact registration policy.
-- [ ] Update `app/services/role_model_checker.py` so runtime-backed checking can be enabled per role while preserving stub fallback.
-- [ ] Map timeout, HTTP-status, and invalid-JSON failures in `app/inference/openai_compatible.py` to structured runtime error categories.
-- [ ] Persist runtime telemetry for provider name, provider version when available, prompt hash, input hash, output hash, token usage, and finish reason on runtime-backed steps.
+- [x] Update `app/services/role_model_checker.py` so runtime-backed checking can be enabled per role while preserving stub fallback.
+- [x] Map timeout, HTTP-status, and invalid-JSON failures in `app/inference/openai_compatible.py` to structured runtime error categories.
+- [x] Persist runtime telemetry for provider name, provider version when available, prompt hash, input hash, output hash, token usage, and finish reason on runtime-backed steps.
 - [ ] Rebuild `LocalExecutor` job processing so phases after `P-100` run through explicit runtime-backed step handlers instead of one-step stub completion.
 - [ ] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
 - [ ] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
@@ -28,7 +28,7 @@
 - [ ] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.
-- [ ] Persist runtime telemetry and hashes for each runtime-backed step.
+- [x] Persist runtime telemetry and hashes for each runtime-backed step.
 - [ ] Replace stub checker role execution with runtime-backed per-role evaluation while preserving current run and attempt semantics.
 
 ## Protocol Hardening
@@ -45,9 +45,9 @@
 - [x] Add explicit retry metadata and operator retry flow on top of attempt lineage.
 - [x] Add stale-lease reclaim semantics and reclaim events.
 - [x] Add attempt-level executor telemetry for queue delay, executor identity, and finish reasons.
-- [ ] Add structured runtime telemetry for backend identity, hashes, token usage, and finish reasons.
-- [ ] Add `GET /jobs/{job_id}/steps` and `GET /role-model-checker/{run_id}/steps`.
-- [ ] Add `GET /jobs/{job_id}/lineage` and `GET /role-model-checker/{run_id}/lineage`.
+- [x] Add structured runtime telemetry for backend identity, hashes, token usage, and finish reasons.
+- [x] Add `GET /jobs/{job_id}/steps` and `GET /role-model-checker/{run_id}/steps`.
+- [x] Add `GET /jobs/{job_id}/lineage` and `GET /role-model-checker/{run_id}/lineage`.
 - [ ] Add stable response schemas for attempt history, step history, and lineage history suitable for inspect views.
 
 ## Persistence
@@ -118,3 +118,9 @@
 - [x] `Cicero`: create `docs/Step and Lineage API Test Matrix v0.1.md` that enumerates required endpoint cases for happy path, empty state, 404, ordering, and future attempt filtering.
 - [x] `Newton`: draft inspect-mode component inventory in `docs/Frontend Design SRS v0.1.md` for step timeline, lineage list, and provenance badges using the current minimal endpoint envelopes.
 - [x] `Planck`: prepare the exact CI command expansion for projection-endpoint tests and report the final workflow command expected once the test file names are locked.
+- [x] `Maxwell`: implement structured runtime error mapping in `app/inference/openai_compatible.py` and the runtime-backed `P-100` executor path so failures persist stable `error_category`, `error_code`, `finish_reason`, and `retryable` behavior.
+- [x] `Beauvoir`: add deterministic tests for structured runtime error mapping and persisted failure behavior on the `P-100` architect path.
+- [x] `Cicero`: implement runtime telemetry persistence for the real `P-100` step, including prompt/input/output hashes and provider token usage when present.
+- [x] `Planck`: add deterministic tests for runtime telemetry fields persisted on `P-100` step records and artifact lineage.
+- [x] `Newton`: implement the first runtime-backed checker role slice in `app/services/role_model_checker.py` for `architect`, preserving stub fallback for the other roles.
+- [x] `Kuhn`: review and sync the backend docs after these runtime/error/telemetry changes land so the SRS and runtime blueprints remain reconstruction-grade.

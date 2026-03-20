@@ -113,6 +113,7 @@ class JobRepository:
         progress_total: int | None = None,
         heartbeat_at: datetime | None = None,
         error: str | None = None,
+        error_category: str | None = None,
         finish_reason: str | None = None,
         failure_stage: str | None = None,
         retryable: bool | None = None,
@@ -163,6 +164,9 @@ class JobRepository:
         if error is not None:
             attempt_assignments.append("error_code = ?")
             attempt_values.append(error)
+        if error_category is not None:
+            attempt_assignments.append("error_category = ?")
+            attempt_values.append(error_category)
         if finish_reason is not None:
             attempt_assignments.append("finish_reason = ?")
             attempt_values.append(finish_reason)
@@ -185,6 +189,7 @@ class JobRepository:
             "progress_current": progress_current,
             "progress_total": progress_total,
             "error": error,
+            "error_category": error_category,
             "finish_reason": finish_reason,
             "failure_stage": failure_stage,
             "retryable": retryable,

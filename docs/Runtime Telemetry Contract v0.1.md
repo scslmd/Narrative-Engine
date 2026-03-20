@@ -339,6 +339,7 @@ Currently implemented in the repo:
 - artifact-lineage content hashing
 - one real provider-backed path:
   - `P-100` `architect`
+- public inspect endpoints expose persisted step and lineage rows for both jobs and checker runs
 
 Current limitations:
 
@@ -346,6 +347,7 @@ Current limitations:
 - attempt rows do not yet persist runtime-grade provider identity and hash fields
 - backend version is often `null`
 - provider-native request IDs are not persisted
+- normalized runtime failure categories still lag behind the successful-step telemetry already visible in inspect endpoints
 
 ## What Is Required Next
 

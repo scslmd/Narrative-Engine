@@ -40,7 +40,9 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
 
     @staticmethod
     def _normalize_base_url(base_url: str) -> str:
-        normalized = base_url.rstrip("/")
+        normalized = base_url.strip().rstrip("/")
+        if not normalized:
+            raise ValueError("base_url must not be blank")
         if normalized.endswith("/v1"):
             return normalized
         return f"{normalized}/v1"
@@ -50,6 +52,44 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
         return headers
+
+    def _configuration_error(self, message: str) -> InferenceBackendError:
+        return InferenceBackendError(
+            message,
+            category="configuration_error",
+            code="RUNTIME_CONFIGURATION_ERROR",
+            finish_reason="configuration_error",
+            retryable=False,
+        )
+
+    def _protocol_shape_error(self, message: str) -> InferenceBackendError:
+        return InferenceBackendError(
+            message,
+            category="protocol_shape_failure",
+            code="INVALID_RESPONSE_SHAPE",
+            finish_reason="invalid_response",
+            retryable=False,
+        )
+
+    def _http_status_error(self, exc: httpx.HTTPStatusError) -> InferenceBackendError:
+        status_code = int(exc.response.status_code)
+        provider_message = str(exc)
+        category = "http_status_failure"
+        finish_reason = "provider_http_error"
+        retryable = status_code in {408, 409, 425, 429, 500, 502, 503, 504}
+        if status_code in {400, 401, 403, 404, 422}:
+            category = "provider_rejected_request"
+            finish_reason = "request_rejected"
+            retryable = False
+        return InferenceBackendError(
+            f"{self._descriptor.display_name} request failed: {provider_message}",
+            category=category,
+            code=f"HTTP_{status_code}",
+            finish_reason=finish_reason,
+            retryable=retryable,
+            http_status=status_code,
+            provider_message=provider_message,
+        )
 
     def _request(self, method: str, path: str, *, json_payload: dict[str, Any] | None = None) -> dict[str, Any]:
         try:
@@ -63,12 +103,46 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
             response.raise_for_status()
             payload = response.json()
             if not isinstance(payload, dict):
-                raise InferenceBackendError("Inference backend returned a non-object JSON payload.")
+                raise self._protocol_shape_error("Inference backend returned a non-object JSON payload.")
             return payload
+        except httpx.TimeoutException as exc:
+            raise InferenceBackendError(
+                f"{self._descriptor.display_name} request failed: {exc}",
+                category="timeout",
+                code="INFERENCE_TIMEOUT",
+                finish_reason="timeout",
+                retryable=True,
+                provider_message=str(exc),
+            ) from exc
+        except httpx.HTTPStatusError as exc:
+            raise self._http_status_error(exc) from exc
+        except httpx.TransportError as exc:
+            raise InferenceBackendError(
+                f"{self._descriptor.display_name} request failed: {exc}",
+                category="transport_failure",
+                code="INFERENCE_TRANSPORT_FAILURE",
+                finish_reason="transport_failed",
+                retryable=True,
+                provider_message=str(exc),
+            ) from exc
         except httpx.HTTPError as exc:
-            raise InferenceBackendError(f"{self._descriptor.display_name} request failed: {exc}") from exc
+            raise InferenceBackendError(
+                f"{self._descriptor.display_name} request failed: {exc}",
+                category="transport_failure",
+                code="INFERENCE_TRANSPORT_FAILURE",
+                finish_reason="transport_failed",
+                retryable=True,
+                provider_message=str(exc),
+            ) from exc
         except ValueError as exc:
-            raise InferenceBackendError(f"{self._descriptor.display_name} returned invalid JSON.") from exc
+            raise InferenceBackendError(
+                f"{self._descriptor.display_name} returned invalid JSON.",
+                category="invalid_json",
+                code="INVALID_JSON_RESPONSE",
+                finish_reason="invalid_response",
+                retryable=True,
+                provider_message=str(exc),
+            ) from exc
 
     def list_models(self) -> list[str]:
         payload = self._request("GET", "/models")
@@ -85,10 +159,14 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         return sorted(set(models))
 
     def generate_text(self, request: InferenceRequest) -> InferenceResponse:
+        if not self._base_url.strip():
+            raise self._configuration_error("Inference backend base URL is not configured.")
         payload = {
             "model": request.model or self._descriptor.default_model,
             "messages": [message.model_dump(mode="json") for message in request.messages],
         }
+        if not payload["model"]:
+            raise self._configuration_error("Inference request is missing a model and no default model is configured.")
         if request.temperature is not None:
             payload["temperature"] = request.temperature
         if request.max_tokens is not None:
@@ -99,7 +177,7 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         response_payload = self._request("POST", "/chat/completions", json_payload=payload)
         choices = response_payload.get("choices")
         if not isinstance(choices, list) or not choices:
-            raise InferenceBackendError(f"{self._descriptor.display_name} returned no choices.")
+            raise self._protocol_shape_error(f"{self._descriptor.display_name} returned no choices.")
         first_choice = choices[0] if isinstance(choices[0], dict) else {}
         message = first_choice.get("message") if isinstance(first_choice, dict) else {}
         content = ""

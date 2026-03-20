@@ -320,6 +320,20 @@ Required step-record contract fields:
 - `executor_id`
 - `lease_owner`
 
+Implemented now for inspect views:
+
+- public projection endpoints return persisted step rows and lineage rows in deterministic ascending order
+- runtime-backed `P-100` `architect` steps already expose:
+  - `backend_name`
+  - `backend_version`
+  - `model_id`
+  - `prompt_hash`
+  - `input_hash`
+  - `output_hash`
+  - `finish_reason`
+  - `error_code`
+  - `error_category`
+
 Required artifact-lineage contract fields:
 
 - `logical_run_id`
@@ -405,6 +419,8 @@ Implementation note:
 
 - The checker currently persists run metadata, results, and an optional saved report path.
 - The checker persists step records and artifact lineage for its local executor path.
+- The checker inspect endpoints are public even though checker execution itself is still mostly stub-backed.
+- The current checker path already emits inspectable `architect` step records in the local executor path.
 - The checker still uses stub execution rather than real model evaluation.
 
 ## 13. Persistence Contract
@@ -459,11 +475,11 @@ Implemented now:
 - GitHub Actions workflow on `push`, `pull_request`, and `workflow_dispatch`
 - matrix:
   - `ubuntu-latest` with Python `3.12`
-  - `windows-latest` with Python `3.12`
+- `windows-latest` with Python `3.12`
 
 Required pytest command:
 
-- `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
+- `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
 ## 16. Implemented Now vs Not Yet Implemented
 
@@ -476,6 +492,7 @@ Implemented now:
 - live step records and artifact lineage in SQLite
 - real provider-backed `P-100` architect execution path
 - canonical `architect_p100` artifact registration
+- public projection endpoints for step records and artifact lineage
 - GitHub Actions pytest baseline
 
 Required for deterministic recreation now:

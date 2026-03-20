@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from time import sleep
 
-from app.inference.base import InferenceBackend
+from app.inference.base import InferenceBackend, InferenceBackendError
+from app.persistence.sqlite import connect
+from app.persistence.steps import stable_hash_payload
 from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
 from app.schemas.jobs import JobCreateRequest
 from app.schemas.manifest import Manifest
@@ -45,7 +47,7 @@ class FakeArchitectInferenceBackend(InferenceBackend):
             content=self._content,
             finish_reason="stop",
             usage=InferenceUsage(prompt_tokens=101, completion_tokens=202, total_tokens=303),
-            raw_response={"backend": "fake"},
+            raw_response={"backend": "fake", "backend_version": "2026.03"},
         )
 
 
@@ -97,7 +99,8 @@ def _wait_for_terminal_status(job_manager: JobManager, job_id, *, attempts: int 
 
 def test_local_executor_runs_real_architect_path_for_p100_with_fake_inferencer(tmp_path: Path) -> None:
     project_id = "aurora-test"
-    initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
     executor_backend = FakeArchitectInferenceBackend(
         content=(
             "## Logline\n"
@@ -147,8 +150,53 @@ def test_local_executor_runs_real_architect_path_for_p100_with_fake_inferencer(t
     assert steps[0]["state"] == "COMPLETED"
     assert steps[0]["model_id"] == "architect-override-model"
     assert steps[0]["backend_name"] == "Fake Architect Runtime"
+    assert steps[0]["backend_version"] == "2026.03"
     assert steps[0]["input_artifact_refs"] == ["manifest"]
     assert steps[0]["output_artifact_refs"] == ["architect_output"]
+    assert steps[0]["finish_reason"] == "stop"
+    assert steps[0]["prompt_hash"] == stable_hash_payload(request.model_dump(mode="json"))
+    assert steps[0]["input_hash"] == stable_hash_payload(
+        {
+            "job_request": {
+                "phase": "P-100",
+                "payload": {
+                    "project_id": project_id,
+                    "premise_text": "Override: the city is sentient and testing its citizens.",
+                    "model_id": "architect-override-model",
+                },
+            },
+            "manifest": manifest.model_dump(mode="json"),
+        }
+    )
+    assert steps[0]["output_hash"] == stable_hash_payload(
+        {
+            "backend": "openai_compatible",
+            "model": "architect-override-model",
+            "content": output_path.read_text(encoding="utf-8"),
+            "finish_reason": "stop",
+            "usage": {
+                "prompt_tokens": 101,
+                "completion_tokens": 202,
+                "total_tokens": 303,
+            },
+            "artifact_path": str(output_path),
+        }
+    )
+
+    with connect(tmp_path / "data" / "state" / "narrative_ops.db") as connection:
+        telemetry_row = connection.execute(
+            """
+            SELECT prompt_tokens, completion_tokens, total_tokens
+            FROM step_records
+            WHERE run_id = ? AND step_name = 'architect'
+            """,
+            (str(job.id),),
+        ).fetchone()
+
+    assert telemetry_row is not None
+    assert telemetry_row["prompt_tokens"] == 101
+    assert telemetry_row["completion_tokens"] == 202
+    assert telemetry_row["total_tokens"] == 303
 
     assert len(lineage) == 1
     assert lineage[0]["artifact_role"] == "architect_output"
@@ -186,3 +234,59 @@ def test_local_executor_keeps_non_p100_phases_on_stub_path(tmp_path: Path) -> No
     assert steps[0]["step_name"] == "P-200"
     assert steps[0]["state"] == "COMPLETED"
     assert lineage == []
+
+
+def test_local_executor_persists_mapped_runtime_error_for_p100_failures(tmp_path: Path) -> None:
+    class FailingArchitectInferenceBackend(FakeArchitectInferenceBackend):
+        def generate_text(self, request: InferenceRequest) -> InferenceResponse:
+            self.requests.append(request)
+            raise InferenceBackendError(
+                "Fake Architect Runtime request failed: timed out",
+                category="timeout",
+                code="INFERENCE_TIMEOUT",
+                finish_reason="timeout",
+                retryable=True,
+            )
+
+    project_id = "architect-timeout"
+    initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
+    executor_backend = FailingArchitectInferenceBackend(content="unused")
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=executor_backend)
+    project_service.reconcile_projects()
+
+    job = job_manager.create_job(
+        JobCreateRequest(
+            phase="P-100",
+            payload={"project_id": project_id},
+        )
+    )
+    executor.start()
+    try:
+        final_status = _wait_for_terminal_status(job_manager, job.id)
+    finally:
+        executor.stop()
+
+    status = job_manager.get_status(job.id)
+    attempt = job_manager.get_attempt(job.id)
+    steps = job_manager.list_step_records(job.id)
+    lineage = job_manager.list_artifact_lineage(job.id)
+    output_path = tmp_path / "data" / "projects" / project_id / "exports" / "p100_architect_output.md"
+
+    assert final_status == "FAILED"
+    assert status.error == "INFERENCE_TIMEOUT"
+    assert attempt["finish_reason"] == "timeout"
+    assert attempt["failure_stage"] == "inference"
+    assert attempt["retryable"] == 1
+    assert attempt["error_code"] == "INFERENCE_TIMEOUT"
+    assert attempt["error_category"] == "timeout"
+    assert len(steps) == 1
+    assert steps[0]["step_name"] == "architect"
+    assert steps[0]["state"] == "FAILED"
+    assert steps[0]["finish_reason"] == "timeout"
+    assert steps[0]["error_code"] == "INFERENCE_TIMEOUT"
+    assert steps[0]["error_category"] == "timeout"
+    assert steps[0]["prompt_hash"] is not None
+    assert steps[0]["input_hash"] is not None
+    assert steps[0]["output_hash"] is None
+    assert lineage == []
+    assert not output_path.exists()

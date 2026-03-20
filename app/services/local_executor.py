@@ -7,7 +7,7 @@ from time import sleep
 from typing import Any
 from uuid import UUID
 
-from ..inference import InferenceBackend, StubInferenceBackend
+from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
 from ..persistence.steps import stable_hash_payload
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from .job_manager import JobManager
@@ -20,6 +20,14 @@ from .step_records import StepRecordService
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _provider_backend_version(raw_response: dict[str, Any]) -> str | None:
+    for key in ("backend_version", "provider_version", "version"):
+        value = raw_response.get(key)
+        if value is not None:
+            return str(value)
+    return None
 
 
 class LocalExecutor:
@@ -211,13 +219,71 @@ class LocalExecutor:
             current_step="architect",
             detail="Architect inference running.",
         )
-        inference_response = self._inferencer.generate_text(inference_request)
+        try:
+            inference_response = self._inferencer.generate_text(inference_request)
+        except InferenceBackendError as exc:
+            self._job_manager.update_job(
+                job_id,
+                status="FAILED",
+                current_phase=current_phase,
+                current_step="architect",
+                error=exc.code,
+                error_category=exc.category,
+                detail=str(exc),
+                finish_reason=exc.finish_reason,
+                failure_stage="inference",
+                retryable=exc.retryable,
+            )
+            self._step_records.create_step_record(
+                logical_run_id=str(attempt["logical_run_id"]),
+                run_id=job_id,
+                run_kind="pipeline_job",
+                attempt_number=int(attempt["attempt_number"]),
+                step_name="architect",
+                step_index=1,
+                state="FAILED",
+                project_id=project_id,
+                model_id=inference_request.model,
+                critic_profile=None,
+                backend_name=self._inferencer.descriptor.display_name,
+                backend_version=None,
+                input_payload={
+                    "job_request": request_payload,
+                    "manifest": project.manifest.model_dump(mode="json"),
+                },
+                output_payload=None,
+                prompt_payload=inference_request.model_dump(mode="json"),
+                input_artifact_refs=["manifest"],
+                output_artifact_refs=[],
+                started_at=started_at,
+                finished_at=_utcnow(),
+                finish_reason=exc.finish_reason,
+                error_code=exc.code,
+                error_category=exc.category,
+                executor_id="job-worker-local",
+                lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+            )
+            return
         output_path = architect_output_path(Path(project.project_dir))
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
         output_path.write_text(output_text, encoding="utf-8")
+        normalized_finish_reason = inference_response.finish_reason or "completed"
+        backend_version = _provider_backend_version(inference_response.raw_response)
+        step_input_payload = {
+            "job_request": request_payload,
+            "manifest": project.manifest.model_dump(mode="json"),
+        }
+        step_output_payload = {
+            "backend": inference_response.backend,
+            "model": inference_response.model or inference_request.model,
+            "content": output_text,
+            "finish_reason": normalized_finish_reason,
+            "usage": inference_response.usage.model_dump(mode="json"),
+            "artifact_path": str(output_path),
+        }
         self._job_manager.update_job(
             job_id,
             status="COMPLETED",
@@ -226,7 +292,7 @@ class LocalExecutor:
             detail="Architect phase finished.",
             progress_current=1,
             progress_total=1,
-            finish_reason=inference_response.finish_reason or "completed",
+            finish_reason=normalized_finish_reason,
         )
         finished_at = _utcnow()
         step_record_id = self._step_records.create_step_record(
@@ -241,25 +307,22 @@ class LocalExecutor:
             model_id=inference_response.model or inference_request.model,
             critic_profile=None,
             backend_name=self._inferencer.descriptor.display_name,
-            backend_version=None,
-            input_payload={
-                "job_request": request_payload,
-                "manifest": project.manifest.model_dump(mode="json"),
-            },
-            output_payload={
-                "inference_response": inference_response.model_dump(mode="json"),
-                "artifact_path": str(output_path),
-            },
+            backend_version=backend_version,
+            input_payload=step_input_payload,
+            output_payload=step_output_payload,
             prompt_payload=inference_request.model_dump(mode="json"),
             input_artifact_refs=["manifest"],
             output_artifact_refs=["architect_output"],
             started_at=started_at,
             finished_at=finished_at,
-            finish_reason=inference_response.finish_reason or "completed",
+            finish_reason=normalized_finish_reason,
             error_code=None,
             error_category=None,
             executor_id="job-worker-local",
             lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+            prompt_tokens=inference_response.usage.prompt_tokens,
+            completion_tokens=inference_response.usage.completion_tokens,
+            total_tokens=inference_response.usage.total_tokens,
         )
         self._step_records.create_lineage_record(
             logical_run_id=str(attempt["logical_run_id"]),
