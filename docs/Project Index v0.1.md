@@ -19,13 +19,15 @@ Implemented foundation:
 - attempt-level executor telemetry on jobs and checker runs, including executor-name and claim or reclaim payload metadata
 - explicit operator retry flow that requeues failed runs onto a new attempt number
 - persisted step records and artifact lineage for the local executor path, plus contract fixtures that lock the record shape
+- generalized inference provider selection plus one real `P-100` architect runtime execution path
+- canonical `architect_p100` project artifact registration backed by artifact lineage
+- public projection endpoints for step records and artifact lineage on jobs and checker runs
 - role-model checker scaffolding
 
 Major work still ahead:
 
-- real inference/runtime integration
+- real inference/runtime integration beyond `P-100`
 - orchestrator/compiler flow
 - production-grade checker execution
-- projection endpoints for step records and artifact lineage
 - richer runtime telemetry
 - broader integration and failure-mode testing

@@ -14,7 +14,9 @@ Current implementation status:
 
 - implemented now: `202 Accepted` enqueue semantics, status polling, local lease-claim execution, stale-lease reclaim events, immutable request snapshots, append-only event history, first-class attempt tables, explicit retry attempts, attempt-level executor telemetry, and `Idempotency-Key` replay or conflict handling
 - implemented now for step persistence: live SQLite step records, artifact lineage, local-executor writes, fixture coverage, and persistence tests
-- still next: dedicated API projections and runtime-grade model telemetry for step records and artifact lineage
+- implemented now for one real runtime path: `P-100` architect execution through the generalized inferencer with canonical artifact registration
+- implemented now for inspectability: dedicated public API projections for persisted step records and artifact lineage
+- still next: richer runtime-grade model telemetry for step records and artifact lineage
 
 ## Protocol Goals
 
@@ -297,8 +299,8 @@ Rules:
 
 Current limitation:
 
-- step records and artifact-lineage rows are persisted today, but they are not yet exposed through dedicated API endpoints or richer projection views
-- the current step-record slice is local-executor-backed and still needs real-runtime/orchestrator emission
+- the current real-runtime pipeline path is limited to `P-100` `architect`
+- checker execution and later pipeline phases still need real-runtime/orchestrator emission
 
 ## Failure-Mode Test Matrix
 

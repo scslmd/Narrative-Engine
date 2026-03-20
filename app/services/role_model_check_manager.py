@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from ..request_identity import checker_request_scope, request_hash
 from ..persistence import CheckerRunRepository
+from ..schemas.inspect import RoleModelCheckLineageResponse, RoleModelCheckStepsResponse
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..schemas.role_model_checker import RoleCheckResult, RoleModelCheckStatusResponse
 from ..settings import settings
@@ -163,3 +164,11 @@ class RoleModelCheckManager:
 
     def list_artifact_lineage(self, run_id: UUID) -> list[dict[str, object]]:
         return self._step_records.list_artifact_lineage(run_id=run_id, run_kind="role_model_check")
+
+    def get_steps_projection(self, run_id: UUID) -> RoleModelCheckStepsResponse:
+        self.get_status(run_id)
+        return RoleModelCheckStepsResponse(run_id=run_id, items=self.list_step_records(run_id))
+
+    def get_lineage_projection(self, run_id: UUID) -> RoleModelCheckLineageResponse:
+        self.get_status(run_id)
+        return RoleModelCheckLineageResponse(run_id=run_id, items=self.list_artifact_lineage(run_id))

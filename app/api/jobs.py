@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Response
 
+from ..schemas.inspect import JobLineageResponse, JobStepsResponse
 from ..schemas.jobs import JobCreateRequest, JobLogsResponse, JobRetryRequest, JobStatusResponse
 from ..services.job_manager import JobManager
 from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
@@ -39,6 +40,20 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
     def get_logs(job_id: UUID) -> JobLogsResponse:
         try:
             return job_manager.get_logs(job_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Job not found.') from exc
+
+    @router.get('/{job_id}/steps', response_model=JobStepsResponse)
+    def get_steps(job_id: UUID) -> JobStepsResponse:
+        try:
+            return job_manager.get_steps_projection(job_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Job not found.') from exc
+
+    @router.get('/{job_id}/lineage', response_model=JobLineageResponse)
+    def get_lineage(job_id: UUID) -> JobLineageResponse:
+        try:
+            return job_manager.get_lineage_projection(job_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
 

@@ -116,9 +116,47 @@ without feeling like they left the project workspace.
 Inspect mode expectations:
 
 - inspect mode should be a first-class center-pane surface rather than a hidden admin drawer
-- inspect mode should support planned step-record and artifact-lineage endpoints once those projections are exposed
+- inspect mode should support the current first-slice public step-record and artifact-lineage projection endpoints:
+  - `GET /jobs/{job_id}/steps`
+  - `GET /jobs/{job_id}/lineage`
+  - `GET /role-model-checker/{run_id}/steps`
+  - `GET /role-model-checker/{run_id}/lineage`
+- inspect responses should be treated as minimal envelopes containing exactly:
+  - `job_id` or `run_id`
+  - `items`
+  - `meta`
+- inspect items should be rendered in the deterministic ascending order returned by the backend
+- inspect mode must not assume a public attempt filter exists yet
 - inspect mode should make it obvious which attempt, step, runtime provider, model source, and artifact version produced the current output
 - inspect mode should keep protocol detail expandable so manuscript focus is not overwhelmed
+
+Inspect mode component inventory for the current endpoint slice:
+
+- step timeline list component:
+  - reads from `GET /jobs/{job_id}/steps` or `GET /role-model-checker/{run_id}/steps`
+  - uses the returned `items` array in backend order with no client-side attempt regrouping
+  - shows one row per returned step item in deterministic ascending order
+- artifact lineage list component:
+  - reads from `GET /jobs/{job_id}/lineage` or `GET /role-model-checker/{run_id}/lineage`
+  - uses the returned `items` array in backend order with no lineage filter controls beyond what the endpoint returns
+  - shows one row per returned lineage item in deterministic ascending order
+- provenance badges or chips:
+  - should surface runtime provider, model source, attempt identifier if present, state or status, and canonical versus temporary lineage status when those fields are present in the returned item
+  - should remain compact and scannable in list rows and expand into fuller detail on demand
+- empty-state treatment:
+  - when the inspect envelope exists but `items` is empty, the center pane should show a neutral empty state explaining that no public step or lineage records are available yet for that run
+  - the empty state should preserve the current project or manuscript context rather than navigating away
+- missing-run error treatment:
+  - if the endpoint returns a missing-run or missing-job error, inspect mode should show an inline error state in the center pane
+  - the error treatment should explain that the selected job or checker run could not be found and should offer a clear route back to the related manuscript, review, or artifact context
+- immediate versus expandable fields:
+  - visible immediately in list rows: step or lineage label, current state, runtime provider or model source if present, and the most important artifact or status indicator
+  - expandable detail only: raw identifiers, deeper metadata, hashes, timestamps, lineage ancestry, and other protocol-level detail that would otherwise crowd the manuscript workspace
+- coexistence with the three-pane workspace:
+  - inspect mode remains a center-pane mode, not a separate app section
+  - the left rail should continue to show storyboard or chapter navigation for context
+  - the right rail should continue to show manuscript aids, story context, or checker context relevant to the selected item
+  - switching into inspect mode must not discard the current chapter, packet, or review selection
 
 Storyboard expectations:
 
@@ -165,6 +203,8 @@ Planned inspect views should extend artifact review with:
 - artifact lineage chain showing temporary, candidate, canonical, and superseded outputs
 - visibility into which runtime provider and model source produced each inspectable output
 - clear distinction between canonical artifacts and personal workspace notes
+- deterministic routing from manuscript or review context into the relevant `steps` or `lineage` projection for the active job or checker run
+- no attempt-selector UI in the first slice; the frontend should present the returned ordered items as-is
 
 ## 9. Authoring And Review Requirements
 
@@ -200,6 +240,52 @@ Manuscript aids requirements:
 - each aid should return a proposed revision, annotation, or guided next step
 - aids should preserve author control by requiring accept, reject, or refine rather than auto-apply
 - generation-backed aids should expose which runtime provider and model source were used
+
+Manuscript aids interaction contract for the first implementation wave:
+
+- selection lifecycle:
+  - a selection-based aid begins only when the user has an active manuscript text selection
+  - the selected text should remain visibly anchored in the manuscript while the aid result is being prepared or reviewed
+  - if the selection is cleared before submission, the aid should return to an idle state rather than silently switching to scene context
+  - once an aid result is returned, the UI should preserve both the original selected text and the proposed output until the writer chooses an explicit action
+- request surface assumptions:
+  - this SRS does not assume dedicated manuscript-aids endpoints already exist in the backend
+  - the first implementation wave should treat manuscript aids as a frontend interaction contract that can later bind to backend generation surfaces
+  - the request surface should be described in UI terms only: selected text or active scene context, chosen aid type, optional author instructions, and current project context
+  - the frontend must not imply attempt filters, advanced provider selectors, or aid-specific backend query parameters unless those are later added publicly
+- proposed diff review flow:
+  - generation-backed aids should return into a review state, not directly mutate manuscript text
+  - the center pane should present the original passage and the proposed revision as a readable diff or side-by-side comparison
+  - the diff review should make insertions, removals, and rewritten spans obvious without forcing the writer into a raw protocol view
+  - the writer must be able to move back from diff review to the manuscript without losing the proposed result
+- accept or reject or refine states:
+  - `accept`: apply the proposed revision into the manuscript draft in the current editing session
+  - `reject`: discard the proposal and return to the manuscript with the original text intact
+  - `refine`: keep the proposal visible, preserve the original selection or scene context, and allow the writer to request a revised proposal with additional guidance
+  - the UI should not auto-apply results and should not collapse accepted and rejected outcomes into the same visual treatment
+- selection-based versus scene-based actions:
+  - selection-based by default in the first wave:
+    - sensory enrichment
+    - perspective shift
+    - voice match
+    - pacing adjust
+    - subtext pass
+    - dialogue polish
+    - specificity boost
+    - ending beat options when a paragraph or scene ending is selected
+  - scene-based by default in the first wave:
+    - continuity check
+    - pov integrity check
+    - scene goal check
+    - conflict boost
+    - theme or arc alignment
+    - foreshadowing pass
+  - scene-based aids may still highlight relevant passages in their output, but they should begin from the active scene or chapter context rather than requiring a text selection
+- provider and model provenance:
+  - when backend results expose runtime provider or model source, manuscript-aids review should surface that provenance near the proposed result rather than hiding it in a debug panel
+  - provenance should be compact by default, using badges, chips, or a short metadata row
+  - deeper provider or model detail may be expandable, but the first visible layer should make it clear whether the result came from a known backend source
+  - if provider or model provenance is unavailable, the UI should omit those labels rather than inventing placeholders that imply certainty
 
 Initial manuscript aids set:
 
@@ -242,6 +328,17 @@ Required patterns:
 Planned inspect-endpoint support:
 
 - the frontend should be prepared to consume dedicated read models for step records and artifact lineage without changing the three-pane workspace model
+- step-record inspect views should read from:
+  - `GET /jobs/{job_id}/steps`
+  - `GET /role-model-checker/{run_id}/steps`
+- artifact-lineage inspect views should read from:
+  - `GET /jobs/{job_id}/lineage`
+  - `GET /role-model-checker/{run_id}/lineage`
+- the current public envelope should be treated as:
+  - `job_id` or `run_id`
+  - `items`
+  - `meta`
+- the frontend should not describe or depend on unsupported query features such as public attempt filtering in this first slice
 - inspect projections should be reachable from chapter cards, manuscript tabs, checker findings, and artifact previews
 - runtime-provider and model-source visibility should come from these inspect projections when available, not from guessed UI labels
 

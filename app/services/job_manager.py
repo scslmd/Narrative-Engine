@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from ..request_identity import job_request_scope, request_hash
 from ..persistence import JobLogRepository, JobRepository
 from ..schemas.enums import JobStatus
+from ..schemas.inspect import JobLineageResponse, JobStepsResponse
 from ..schemas.jobs import JobCreateRequest, JobLogEntry, JobLogsResponse, JobStatusResponse
 from ..settings import settings
 from .protocol import IdempotencyConflictError, JobAcceptance, RetryNotAllowedError
@@ -156,3 +157,11 @@ class JobManager:
 
     def list_artifact_lineage(self, job_id: UUID) -> list[dict[str, object]]:
         return self._step_records.list_artifact_lineage(run_id=job_id, run_kind="pipeline_job")
+
+    def get_steps_projection(self, job_id: UUID) -> JobStepsResponse:
+        self.get_status(job_id)
+        return JobStepsResponse(job_id=job_id, items=self.list_step_records(job_id))
+
+    def get_lineage_projection(self, job_id: UUID) -> JobLineageResponse:
+        self.get_status(job_id)
+        return JobLineageResponse(job_id=job_id, items=self.list_artifact_lineage(job_id))

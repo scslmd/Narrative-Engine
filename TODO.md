@@ -12,6 +12,10 @@
 - [ ] Persist runtime telemetry for provider name, provider version when available, prompt hash, input hash, output hash, token usage, and finish reason on runtime-backed steps.
 - [ ] Rebuild `LocalExecutor` job processing so phases after `P-100` run through explicit runtime-backed step handlers instead of one-step stub completion.
 - [ ] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
+- [ ] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
+- [ ] Implement `GET /jobs/{job_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
+- [ ] Implement `GET /role-model-checker/{run_id}/steps` backed only by persisted step-record rows and the step projection contract.
+- [ ] Implement `GET /role-model-checker/{run_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
 - [x] Update `.github/workflows/tests.yml` so CI runs `tests/test_inference_runtime.py` in addition to the existing pytest baseline.
 
 ## Core Runtime
@@ -86,12 +90,14 @@
 - [x] Add failure-mode coverage for idempotent replay and idempotency conflicts.
 - [x] Add failure-mode tests for stale lease handling.
 - [x] Add retry-lineage coverage for explicit operator requeue of failed jobs and checker runs.
-- [ ] Add failure-mode tests for partial persistence failure and lock contention.
+- [x] Add failure-mode tests for partial persistence failure and lock contention.
 - [ ] Add broader integration coverage for orchestration and runtime behavior.
-- [ ] Add API tests for `GET /jobs/{job_id}/steps`, `GET /jobs/{job_id}/lineage`, `GET /role-model-checker/{run_id}/steps`, and `GET /role-model-checker/{run_id}/lineage`.
+- [x] Add API tests for `GET /jobs/{job_id}/steps`, `GET /jobs/{job_id}/lineage`, `GET /role-model-checker/{run_id}/steps`, and `GET /role-model-checker/{run_id}/lineage`.
+- [ ] Add pagination and future attempt-filter tests for `GET /jobs/{job_id}/steps` and `GET /jobs/{job_id}/lineage`.
+- [ ] Add pagination and future attempt-filter tests for `GET /role-model-checker/{run_id}/steps` and `GET /role-model-checker/{run_id}/lineage`.
 - [ ] Add runtime integration tests for one real provider-backed `architect` step through the executor path.
 - [ ] Add tests for manuscript-aid request contracts and diff-style response payloads once the backend surface is defined.
-- [ ] Update CI to run `tests/test_inference_runtime.py` and future projection-endpoint tests on push and pull request.
+- [x] Update CI to run `tests/test_inference_runtime.py` and current projection-endpoint tests on push and pull request.
 
 ## Subagent Queue
 
@@ -100,5 +106,15 @@
 - [x] `Newton`: update `docs/Frontend Design SRS v0.1.md` so the UI explicitly supports runtime-provider visibility, model-source visibility, and inspect views for step and lineage endpoints.
 - [x] `Planck`: update `.github/workflows/tests.yml` so CI includes `tests/test_inference_runtime.py` and document the exact CI command in `docs/Validation Notes v0.1.md`.
 - [x] `Cicero`: create `docs/Step and Lineage API Projection Blueprint v0.1.md` defining deterministic response shapes for the planned step and lineage inspect endpoints.
-- [ ] `Maxwell`: create `docs/Runtime Telemetry Contract v0.1.md` defining required persisted telemetry fields, hash inputs, finish reasons, and error categories for provider-backed runs.
+- [x] `Maxwell`: create `docs/Runtime Telemetry Contract v0.1.md` defining required persisted telemetry fields, hash inputs, finish reasons, and error categories for provider-backed runs.
 - [x] `Worker`: implement the first real `architect` call for job phase `P-100` in `app/services/local_executor.py`, including prompt building, inferencer call, persisted output, and tests.
+- [x] `Beauvoir`: add deterministic API tests for the four step/lineage projection endpoints, including empty-state and 404 behavior.
+- [x] `Cicero`: update `docs/Step and Lineage API Projection Blueprint v0.1.md` if needed so it exactly matches the endpoint response contract implemented in code.
+- [x] `Newton`: update `docs/Frontend Design SRS v0.1.md` with explicit inspect-view expectations for the four public step/lineage endpoints once their contract is locked.
+- [x] `Planck`: add CI coverage for the new projection-endpoint tests after they land.
+- [x] `Kuhn`: review the repo for encoding or BOM issues that could break parsing, packaging, or test execution, and fix only concrete safe issues.
+  Residual low-risk note: no UTF-8/BOM/control-character blockers were found in tracked source, docs, tests, or config files; a small set of files still mixes mostly-LF text with a single CRLF line ending, but nothing currently appears parser-breaking.
+- [x] `Maxwell`: create `docs/Runtime Error Mapping Blueprint v0.1.md` that turns current inferencer failures into deterministic runtime error categories suitable for persistence.
+- [x] `Cicero`: create `docs/Step and Lineage API Test Matrix v0.1.md` that enumerates required endpoint cases for happy path, empty state, 404, ordering, and future attempt filtering.
+- [x] `Newton`: draft inspect-mode component inventory in `docs/Frontend Design SRS v0.1.md` for step timeline, lineage list, and provenance badges using the current minimal endpoint envelopes.
+- [x] `Planck`: prepare the exact CI command expansion for projection-endpoint tests and report the final workflow command expected once the test file names are locked.

@@ -39,6 +39,7 @@ Implemented and working now:
 - live SQLite persistence for step records and artifact lineage in the local executor path
 - generalized inference provider configuration with a shared backend contract for `llama.cpp`, LM Studio, `vLLM`, and other OpenAI-compatible servers
 - a real `P-100` `architect` execution path that builds an inference request, calls the configured inferencer, and persists canonical markdown output plus artifact lineage
+- public inspect endpoints for persisted step records and artifact lineage on jobs and checker runs
 - frontend workflow scaffolding and documentation
 
 Still being built:
@@ -46,7 +47,6 @@ Still being built:
 - runtime-backed generation for phases beyond the first `architect` slice
 - full orchestrator/compiler flow
 - deeper role-model checker execution against real models
-- API projection for step records and artifact lineage
 - richer runtime telemetry
 - broader production-grade tests
 
@@ -56,7 +56,7 @@ Still being built:
 2. Install dependencies with `pip install -e .[dev]`.
 3. Start the app with `start_narrative_core.cmd` or `start_narrative_core.ps1`.
 4. Open [http://127.0.0.1:8000/role-model-checker-ui](http://127.0.0.1:8000/role-model-checker-ui).
-5. Validate the current baseline with `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q`.
+5. Validate the current baseline with `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`.
 
 Current verified baseline:
 
@@ -69,7 +69,7 @@ Current verified baseline:
   - `ubuntu-latest` with Python `3.12`
   - `windows-latest` with Python `3.12`
 - Workflow command:
-  - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
+  - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
 ## Core Docs
 
@@ -81,3 +81,6 @@ Current verified baseline:
 - [docs/Step and Lineage API Projection Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20and%20Lineage%20API%20Projection%20Blueprint%20v0.1.md)
 - [docs/Story Arc Paradigm Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md)
 - [docs/Failure Mode Test Matrix v0.1.md](F:/Dev/Narrative-Engine/docs/Failure%20Mode%20Test%20Matrix%20v0.1.md)
+- [docs/Runtime Error Mapping Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
+- [docs/Runtime Telemetry Contract v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Telemetry%20Contract%20v0.1.md)
+- [docs/Step and Lineage API Test Matrix v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)

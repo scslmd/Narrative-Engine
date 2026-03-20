@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines deterministic read-only API projections for persisted step records and artifact lineage.
+This document defines the first implemented public projection slice for persisted step records and artifact lineage.
 
 It covers:
 
@@ -11,138 +11,116 @@ It covers:
 - `GET /role-model-checker/{run_id}/steps`
 - `GET /role-model-checker/{run_id}/lineage`
 
-This blueprint is intentionally limited to projection behavior. It does not redefine queue semantics, worker behavior, or write-path persistence.
+This document is intentionally aligned to the current implementation only. It does not describe future pagination, attempt filtering, or expanded projection metadata that are not yet present in the API.
 
-## Goals
+## Current Slice Summary
 
-These endpoints should make it possible to:
+The first implementation slice exposes:
 
-- inspect step execution history for a single run
-- inspect artifact lineage for a single run
-- distinguish current-attempt views from full historical views
-- support deterministic UI rendering and operator debugging
-- keep response order and pagination behavior stable across runtimes
+- read-only projections only
+- exactly one top-level run identifier field
+- a flat `items` array
+- a minimal `meta` object with ordering information only
+- no query parameters
+- no pagination
+- no inline event history
 
-## Common Projection Rules
+The current endpoints return persisted step-record and artifact-lineage rows for the addressed run id across all attempts currently stored for that run.
 
-All four endpoints are read-only.
+## Shared Endpoint Behavior
 
-All four endpoints should:
+All four endpoints:
 
-- return persisted data only
-- avoid deriving synthetic records that do not exist in storage
-- use stable ascending sort order by default
-- support deterministic pagination
-- preserve attempt lineage rather than collapsing history
+- are `GET` routes
+- are read-only
+- return persisted projection data only
+- expose exactly three top-level keys:
+  - `job_id` or `run_id`
+  - `items`
+  - `meta`
+- return `404` if the addressed job or checker run does not exist
+- return `200` with `items: []` if the run exists but there are no step or lineage rows yet
+- do not support `attempt`, `cursor`, `limit`, or any other query parameters in this slice
 
-These endpoints should not:
+These endpoints do not:
 
 - mutate state
-- trigger reconciliation
 - trigger execution
-- hide prior attempts by default unless explicitly filtered
+- trigger reconciliation
+- synthesize missing rows
 
-## Common Query Parameters
+## Error Behavior
 
-The following query parameters should be supported uniformly across all four endpoints.
+Current error behavior is minimal and deterministic.
 
-- `attempt`
-  - optional integer
-  - if provided, return only records for that attempt number
-- `cursor`
-  - optional opaque cursor string
-  - if omitted, begin at the first record in the endpoint's default sort order
-- `limit`
-  - optional integer
-  - default `50`
-  - minimum `1`
-  - maximum `200`
+- `404 Not Found`
+  - `GET /jobs/{job_id}/steps`
+  - `GET /jobs/{job_id}/lineage`
+  - response detail: `Job not found.`
+- `404 Not Found`
+  - `GET /role-model-checker/{run_id}/steps`
+  - `GET /role-model-checker/{run_id}/lineage`
+  - response detail: `Role-model check run not found.`
 
-Optional future filters may be added later, but this blueprint locks only `attempt`, `cursor`, and `limit`.
+No projection-specific `409` or `422` behavior exists in this slice because the routes do not currently accept filter or pagination parameters.
 
-## Pagination Model
+Any supplied query string values are outside the documented first-slice contract and should not be treated as supported behavior.
 
-Pagination should be cursor-based, not offset-based.
+## Envelope Contract
 
-Reason:
+The implemented envelopes are intentionally small.
 
-- step and lineage tables are append-heavy
-- cursor pagination is deterministic under concurrent writes
-- offset pagination becomes unstable as new rows arrive
-
-Cursor assumptions:
-
-- the cursor should encode the last returned stable sort key
-- the cursor format is implementation-private
-- clients must treat the cursor as opaque
-
-Paging contract:
-
-- if more rows exist after the current page, return `next_cursor`
-- if no more rows exist, return `next_cursor: null`
-- response rows must always be returned in the documented sort order
-
-## Response Envelope
-
-Each endpoint should return a projection envelope with run metadata plus paged items.
-
-Common top-level shape:
+### Job Step Projection Envelope
 
 ```json
 {
-  "run_kind": "pipeline_job",
-  "run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "logical_run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "current_attempt_number": 1,
-  "returned_attempt_number": null,
+  "job_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
   "items": [],
-  "sort": {
-    "field_order": ["attempt_number", "step_index", "step_record_id"],
-    "direction": "asc"
-  },
-  "page": {
-    "limit": 50,
-    "next_cursor": null,
-    "has_more": false
+  "meta": {
+    "ordered_by": "step_index_asc"
   }
 }
 ```
 
-Field rules:
+### Job Lineage Projection Envelope
 
-- `run_kind`
-  - `pipeline_job` for `/jobs/...`
-  - `role_model_check` for `/role-model-checker/...`
-- `run_id`
-  - the concrete accepted run identifier from the route
-- `logical_run_id`
-  - the logical lineage identifier shared across attempts
-- `current_attempt_number`
-  - latest known attempt for the run
-- `returned_attempt_number`
-  - `null` when multiple attempts may be present
-  - set to the requested attempt when `attempt` is supplied
-- `items`
-  - endpoint-specific array described below
-- `sort`
-  - explicit declaration of response ordering
-- `page`
-  - deterministic pagination state
+```json
+{
+  "job_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
+  "items": [],
+  "meta": {
+    "ordered_by": "artifact_lineage_id_asc"
+  }
+}
+```
 
-## Error Contract
+### Checker Step Projection Envelope
 
-The four endpoints should share one error model.
+```json
+{
+  "run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
+  "items": [],
+  "meta": {
+    "ordered_by": "step_index_asc"
+  }
+}
+```
 
-- `404 Not Found`
-  - run id does not exist
-- `422 Unprocessable Entity`
-  - invalid `attempt`, `cursor`, or `limit`
+### Checker Lineage Projection Envelope
 
-These endpoints should not use `409` because they are projections, not mutation routes.
+```json
+{
+  "run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
+  "items": [],
+  "meta": {
+    "ordered_by": "artifact_lineage_id_asc"
+  }
+}
+```
 
-## Step Projection Item Shape
+## Step Item Shape
 
-The step endpoints should return the following item shape.
+The step endpoints return `items` shaped as persisted `StepRecordView` rows.
 
 ```json
 {
@@ -155,36 +133,36 @@ The step endpoints should return the following item shape.
   "step_index": 1,
   "state": "COMPLETED",
   "project_id": "science-fantasy-test",
-  "model_id": "qwen2.5-32b-instruct-q4_k_m",
+  "model_id": "architect-test-model",
   "critic_profile": null,
-  "backend_name": "local_executor_stub",
-  "backend_version": "v0",
-  "input_hash": "sha256:...",
-  "output_hash": "sha256:...",
-  "prompt_hash": "sha256:...",
-  "input_artifact_refs": [],
-  "output_artifact_refs": [],
+  "backend_name": "Fake Architect Runtime",
+  "backend_version": null,
+  "input_hash": "3d1b...",
+  "output_hash": "e02c...",
+  "prompt_hash": "f198...",
+  "input_artifact_refs": ["manifest"],
+  "output_artifact_refs": ["architect_output"],
   "started_at": "2026-03-20T18:15:52.000000+00:00",
   "finished_at": "2026-03-20T18:15:53.000000+00:00",
   "duration_seconds": 1.0,
   "finish_reason": "completed",
   "error_code": null,
   "error_category": null,
-  "executor_id": "local-job-worker",
-  "lease_owner": "job-worker-1"
+  "executor_id": "job-worker-local",
+  "lease_owner": "job-worker-local"
 }
 ```
 
-Field expectations:
+Field rules:
 
-- the item shape should map directly to persisted step-record fields
-- nullable fields should remain present with `null` values when unknown
-- `input_artifact_refs` and `output_artifact_refs` should remain arrays even when empty
-- no freeform projection-only fields should be added without updating this blueprint
+- all fields above are part of the public response shape in this slice
+- nullable fields remain present with `null` values when unknown
+- `started_at` and `finished_at` are string timestamps or `null`
+- `input_artifact_refs` and `output_artifact_refs` are always arrays
 
-## Lineage Projection Item Shape
+## Lineage Item Shape
 
-The lineage endpoints should return the following item shape.
+The lineage endpoints return `items` shaped as persisted `ArtifactLineageView` rows.
 
 ```json
 {
@@ -195,274 +173,239 @@ The lineage endpoints should return the following item shape.
   "attempt_number": 1,
   "step_name": "architect",
   "project_id": "science-fantasy-test",
-  "artifact_role": "outline",
-  "artifact_kind": "json",
-  "path": "data/projects/science-fantasy-test/sequences.json",
-  "content_hash": "sha256:...",
+  "artifact_role": "architect_output",
+  "artifact_kind": "markdown",
+  "path": "data/projects/science-fantasy-test/exports/p100_architect_output.md",
+  "content_hash": "4b22...",
   "status": "CANONICAL",
   "validation_state": "PASSED",
   "produced_at": "2026-03-20T18:15:53.000000+00:00",
   "registered_at": "2026-03-20T18:15:53.200000+00:00",
   "supersedes_artifact_lineage_id": null,
-  "source_artifact_refs": [],
+  "source_artifact_refs": ["manifest"],
   "source_content_hashes": [],
   "output_of_step_record_id": 12
 }
 ```
 
-Field expectations:
+Field rules:
 
-- the item shape should map directly to persisted artifact-lineage fields
-- `source_artifact_refs` and `source_content_hashes` should remain arrays even when empty
-- `supersedes_artifact_lineage_id` should be `null` when the artifact does not supersede a prior canonical artifact
+- all fields above are part of the public response shape in this slice
+- `produced_at` is required and returned as a string timestamp
+- `registered_at` may be `null`
+- `source_artifact_refs` and `source_content_hashes` are always arrays
 
 ## GET /jobs/{job_id}/steps
 
 ### Responsibility
 
-This endpoint returns persisted step-record projections for one pipeline job run.
+Returns persisted step-record rows for the addressed pipeline job.
 
-It should:
+### Implemented Response Model
 
-- expose step history across attempts for the addressed job
-- support filtering to one attempt via `attempt`
-- preserve step ordering within each attempt
-- return enough metadata for operator inspection and UI progress history
+`JobStepsResponse`
 
-It should not:
+Top-level fields:
 
-- infer missing steps from workflow preferences
-- collapse failed and retried attempts into one synthesized record
+- `job_id`
+- `items`
+- `meta`
 
-### Sort Order
+### Implemented Ordering
 
-Default sort order:
+Current repository ordering is:
 
-1. `attempt_number ASC`
-2. `step_index ASC`
-3. `step_record_id ASC`
+1. `step_index ASC`
+2. `step_record_id ASC`
 
-This order is the stable paging key for job step projections.
-
-### Response Shape
+This ordering is surfaced via:
 
 ```json
 {
-  "run_kind": "pipeline_job",
-  "run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "logical_run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "current_attempt_number": 2,
-  "returned_attempt_number": null,
-  "items": [],
-  "sort": {
-    "field_order": ["attempt_number", "step_index", "step_record_id"],
-    "direction": "asc"
-  },
-  "page": {
-    "limit": 50,
-    "next_cursor": null,
-    "has_more": false
+  "meta": {
+    "ordered_by": "step_index_asc"
   }
 }
 ```
 
-`items` must contain step projection items.
+Important limitation:
+
+- the `meta` value does not currently mention the `step_record_id` tie-breaker even though the repository uses it
+- the actual stable order is therefore `step_index ASC, step_record_id ASC`
+
+### Empty-State Behavior
+
+If the job exists but has no persisted step records:
+
+- return `200`
+- return the job id
+- return `items: []`
+- return `meta.ordered_by = "step_index_asc"`
 
 ## GET /jobs/{job_id}/lineage
 
 ### Responsibility
 
-This endpoint returns persisted artifact-lineage projections for one pipeline job run.
+Returns persisted artifact-lineage rows for the addressed pipeline job.
 
-It should:
+### Implemented Response Model
 
-- expose all lineage rows tied to the addressed job
-- preserve canonical and superseded history
-- make temporary, candidate, canonical, superseded, and rejected artifacts visible without rewriting history
+`JobLineageResponse`
 
-It should not:
+Top-level fields:
 
-- return only the latest canonical artifact unless a future explicit filter requests that
-- infer lineage links that were not persisted
+- `job_id`
+- `items`
+- `meta`
 
-### Sort Order
+### Implemented Ordering
 
-Default sort order:
+Current repository ordering is:
 
-1. `attempt_number ASC`
-2. `produced_at ASC`
-3. `artifact_lineage_id ASC`
+1. `artifact_lineage_id ASC`
 
-This order keeps lineage deterministic even when multiple artifacts are produced by the same step.
-
-### Response Shape
+This ordering is surfaced via:
 
 ```json
 {
-  "run_kind": "pipeline_job",
-  "run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "logical_run_id": "8bb4c0e0-b531-433c-8f9a-f8e7b458e7de",
-  "current_attempt_number": 2,
-  "returned_attempt_number": null,
-  "items": [],
-  "sort": {
-    "field_order": ["attempt_number", "produced_at", "artifact_lineage_id"],
-    "direction": "asc"
-  },
-  "page": {
-    "limit": 50,
-    "next_cursor": null,
-    "has_more": false
+  "meta": {
+    "ordered_by": "artifact_lineage_id_asc"
   }
 }
 ```
 
-`items` must contain lineage projection items.
+### Empty-State Behavior
+
+If the job exists but has no persisted lineage rows:
+
+- return `200`
+- return the job id
+- return `items: []`
+- return `meta.ordered_by = "artifact_lineage_id_asc"`
 
 ## GET /role-model-checker/{run_id}/steps
 
 ### Responsibility
 
-This endpoint returns persisted step-record projections for one role-model checker run.
+Returns persisted step-record rows for the addressed role-model checker run.
 
-It should:
+### Implemented Response Model
 
-- expose one row per checker step execution
-- preserve multi-attempt history for the checker run
-- support deterministic UI rendering of role-by-role execution history
+`RoleModelCheckStepsResponse`
 
-It should not:
+Top-level fields:
 
-- collapse repeated role checks across attempts
-- synthesize final role status from checker results when no step row exists
+- `run_id`
+- `items`
+- `meta`
 
-### Sort Order
+### Implemented Ordering
 
-Default sort order:
+Current repository ordering is:
 
-1. `attempt_number ASC`
-2. `step_index ASC`
-3. `step_record_id ASC`
+1. `step_index ASC`
+2. `step_record_id ASC`
 
-The sorting contract matches the job step endpoint so clients can reuse rendering logic.
-
-### Response Shape
+This ordering is surfaced via:
 
 ```json
 {
-  "run_kind": "role_model_check",
-  "run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
-  "logical_run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
-  "current_attempt_number": 1,
-  "returned_attempt_number": null,
-  "items": [],
-  "sort": {
-    "field_order": ["attempt_number", "step_index", "step_record_id"],
-    "direction": "asc"
-  },
-  "page": {
-    "limit": 50,
-    "next_cursor": null,
-    "has_more": false
+  "meta": {
+    "ordered_by": "step_index_asc"
   }
 }
 ```
 
-`items` must contain step projection items.
+Important limitation:
+
+- as with job steps, the `meta` value does not currently expose the `step_record_id` tie-breaker
+
+### Empty-State Behavior
+
+If the checker run exists but has no persisted step records:
+
+- return `200`
+- return the run id
+- return `items: []`
+- return `meta.ordered_by = "step_index_asc"`
 
 ## GET /role-model-checker/{run_id}/lineage
 
 ### Responsibility
 
-This endpoint returns persisted artifact-lineage projections for one role-model checker run.
+Returns persisted artifact-lineage rows for the addressed role-model checker run.
 
-It should:
+### Implemented Response Model
 
-- expose report artifacts and any future checker-produced artifacts
-- preserve attempt history and supersession relationships
-- allow the UI or operators to inspect canonical report registration without parsing filesystem state
+`RoleModelCheckLineageResponse`
 
-It should not:
+Top-level fields:
 
-- assume only one report artifact exists
-- hide rejected or superseded checker artifacts
+- `run_id`
+- `items`
+- `meta`
 
-### Sort Order
+### Implemented Ordering
 
-Default sort order:
+Current repository ordering is:
 
-1. `attempt_number ASC`
-2. `produced_at ASC`
-3. `artifact_lineage_id ASC`
+1. `artifact_lineage_id ASC`
 
-### Response Shape
+This ordering is surfaced via:
 
 ```json
 {
-  "run_kind": "role_model_check",
-  "run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
-  "logical_run_id": "9f7f1d43-65d2-4e18-8ec4-f6bbf91111b4",
-  "current_attempt_number": 1,
-  "returned_attempt_number": null,
-  "items": [],
-  "sort": {
-    "field_order": ["attempt_number", "produced_at", "artifact_lineage_id"],
-    "direction": "asc"
-  },
-  "page": {
-    "limit": 50,
-    "next_cursor": null,
-    "has_more": false
+  "meta": {
+    "ordered_by": "artifact_lineage_id_asc"
   }
 }
 ```
 
-`items` must contain lineage projection items.
+### Empty-State Behavior
 
-## Attempt Filtering Rules
-
-When `attempt` is omitted:
-
-- return records across all attempts in the endpoint's default sort order
-- keep `returned_attempt_number` as `null`
-
-When `attempt` is provided:
-
-- return only records for that attempt
-- set `returned_attempt_number` to the requested attempt number
-- return `404` only if the run does not exist
-- return an empty `items` array if the run exists but that attempt has no rows for the endpoint
-
-## Empty-State Rules
-
-If the run exists but no rows are present for the requested projection:
+If the checker run exists but has no persisted lineage rows:
 
 - return `200`
-- return a valid envelope
+- return the run id
 - return `items: []`
-- return `has_more: false`
-- return `next_cursor: null`
+- return `meta.ordered_by = "artifact_lineage_id_asc"`
 
-This allows clients to distinguish "run exists but no persisted step or lineage rows yet" from "run does not exist".
+## Query Parameter Contract
 
-## Projection Stability Requirements
+The first implementation slice supports no query parameters.
 
-The endpoint contract should remain stable under retries.
+Specifically, these endpoints do not currently implement:
 
-Specifically:
+- `attempt`
+- `cursor`
+- `limit`
+- filtering by step name
+- filtering by artifact status
 
-- prior-attempt rows must remain visible unless an explicit `attempt` filter narrows the response
-- canonical lineage rows must not erase superseded lineage history
-- sort order must not depend on transient status text
-- response fields must be sourced from persisted columns, not reconstructed from logs
+Any future addition of query parameters should be treated as a contract change and documented explicitly.
+
+## Attempt History Behavior
+
+The current projection endpoints do not provide attempt filtering.
+
+Because the underlying repositories query by `run_id` and `run_kind` only:
+
+- all stored attempts for the addressed run may appear in one `items` array
+- step ordering is still controlled only by `step_index` and `step_record_id`
+- lineage ordering is still controlled only by `artifact_lineage_id`
+
+This means the current slice preserves persisted history, but does not yet expose an attempt-aware browsing model at the API layer.
 
 ## Implementation Boundary
 
-This blueprint does not require:
+This blueprint does not claim support for:
 
-- nested child collections inside each item
-- inline event history in the same response
-- write endpoints for steps or lineage
-- real-runtime telemetry beyond the persisted fields already defined by the step and lineage contracts
+- cursor pagination
+- offset pagination
+- attempt scoping
+- public query parameter filtering of any kind
+- richer top-level run metadata
+- derived summaries
+- inline event history
 
-Those can be layered later, but these four projection endpoints should remain deterministic and minimal.
+Those remain future enhancements. The implemented contract today is the minimal envelope and ordering documented above.
