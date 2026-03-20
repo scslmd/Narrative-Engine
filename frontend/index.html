@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Narrative-Core Recovered</title>
+  <link rel="stylesheet" href="/static/styles.css?v=recovered-2" />
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Narrative-Core</p>
+      <h1>Recovered Control Console</h1>
+      <p class="subhead">Safe reconstruction on F:. Project console, pipeline monitor, and role-model checker in one place.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Projects</h2>
+      <div class="row gap">
+        <button id="refresh-projects" type="button">Refresh Projects</button>
+      </div>
+      <div id="projects-list" class="project-list"></div>
+      <div id="project-detail" class="detail-box muted">Select a project to inspect its recovered manifest and artifacts.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Pipeline Job</h2>
+      <label class="stacked">
+        <span>Premise Text for P-100 <span class="hint" tabindex="0">?<span class="tooltip">This is the starting story brief for the Architect. Describe the core concept, setup, stakes, and important narrative direction for the novel.</span></span></span>
+        <textarea id="premise-text" rows="5" placeholder="A recovering detective returns to her coastal hometown and uncovers a string of disappearances tied to a family secret."></textarea>
+      </label>
+      <div class="row gap">
+        <button id="start-job" type="button">Start Recovered P-100 Job</button>
+        <span id="job-status-label" class="status-pill">Idle</span>
+      </div>
+      <div id="job-monitor" class="detail-box muted">No recovered job run yet.</div>
+      <pre id="job-logs" class="log-box">Logs will appear here after a run.</pre>
+    </section>
+
+    <section class="panel workflow-panel">
+      <h2>Recommended Workflow</h2>
+      <ol id="workflow-guidance"></ol>
+    </section>
+
+    <section class="panel">
+      <h2>Role-Model Checker</h2>
+      <p>Test discovered local GGUF models against recovered role expectations before swapping runtime assignments.</p>
+      <div class="row gap">
+        <button id="use-recommended" type="button">Use Recommended</button>
+        <label class="checkbox-row"><input id="save-report" type="checkbox" checked /> Save report</label>
+      </div>
+      <div id="role-grid" class="role-grid"></div>
+      <div class="row gap">
+        <button id="run-role-check" type="button">Run Role Check</button>
+        <span id="checker-status" class="status-pill">Idle</span>
+      </div>
+      <div id="checker-progress" class="detail-box muted">Load models to begin.</div>
+      <div id="checker-summary" class="summary-grid"></div>
+      <pre id="checker-log" class="log-box">Warnings, findings, and reasons a role failed will appear here.</pre>
+    </section>
+  </main>
+  <script src="/static/app.js?v=recovered-2"></script>
+</body>
+</html>

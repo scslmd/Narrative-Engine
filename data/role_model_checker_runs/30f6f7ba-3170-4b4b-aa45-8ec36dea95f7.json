@@ -1,0 +1,78 @@
+{
+  "catalog": {
+    "critic_profiles": {
+      "baseline": "Baseline",
+      "deterministic_only": "Deterministic Only",
+      "low_max_tokens_128": "Low Max Tokens 128",
+      "low_max_tokens_256": "Low Max Tokens 256",
+      "minimal_context": "Minimal Context"
+    },
+    "default_critic_profile": "minimal_context",
+    "default_selection": {
+      "architect": null,
+      "critic": null,
+      "drafter": null,
+      "sequencer": null
+    },
+    "discovered_models": [],
+    "override_warning": "Using a non-recommended model or critic profile may produce unpredictable results because that exact path was not explicitly validated.",
+    "recommended_selection": {
+      "architect": null,
+      "critic": null,
+      "drafter": null,
+      "sequencer": null
+    },
+    "workflow_guidance": [
+      "Step 1: Architect first. Validate structured story-bible output before testing downstream roles.",
+      "Step 2: Sequencer second. Validate beat planning and structural discipline after the architect passes.",
+      "Step 3: Drafter third. Validate clean prose generation after the planning layers are stable.",
+      "Step 4: Critic last, usually one role at a time, because critic runs are verification-heavy."
+    ],
+    "workflow_order": [
+      "architect",
+      "sequencer",
+      "drafter",
+      "critic"
+    ]
+  },
+  "critic_profile": "minimal_context",
+  "model_selection": {},
+  "results": [
+    {
+      "duration_seconds": 0.0,
+      "findings": [],
+      "metadata": {
+        "critic_profile": null,
+        "recommended_model": null,
+        "selected_model": null
+      },
+      "passed": true,
+      "preview": "Recovered checker stub executed for architect.",
+      "role": "architect",
+      "warnings": [
+        "No discovered model matched this role."
+      ]
+    },
+    {
+      "duration_seconds": 0.0,
+      "findings": [],
+      "metadata": {
+        "critic_profile": "minimal_context",
+        "recommended_model": null,
+        "selected_model": null
+      },
+      "passed": true,
+      "preview": "Recovered checker stub executed for critic. Critic profile: Minimal Context.",
+      "role": "critic",
+      "warnings": [
+        "No discovered model matched this role."
+      ]
+    }
+  ],
+  "roles": [
+    "architect",
+    "critic"
+  ],
+  "run_id": "30f6f7ba-3170-4b4b-aa45-8ec36dea95f7",
+  "save_report": true
+}
