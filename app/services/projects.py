@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from app.persistence import ProjectRepository
 from app.schemas.projects import (
     ProjectArtifactResponse,
     ProjectCreateRequest,
@@ -23,10 +24,15 @@ class ProjectService:
     def __init__(self, root_dir: Path | None = None) -> None:
         self.root_dir = root_dir or settings.root_dir
         self.projects_dir = self.root_dir / "data" / "projects"
+        self.repository = ProjectRepository(
+            settings.operations_db_path if self.root_dir == settings.root_dir else self.root_dir / "data" / "state" / "narrative_ops.db"
+        )
+        self.repository.sync_from_projects_dir(self.projects_dir)
 
     def create_project(self, request: ProjectCreateRequest) -> ProjectDetailResponse:
         manifest = request.to_manifest()
         initialize_project_artifacts(request.project_id, manifest=manifest, root_dir=self.root_dir)
+        self.repository.register_project_dir(self.projects_dir / request.project_id)
         return self.get_project(request.project_id)
 
     def list_projects(self) -> list[ProjectSummaryResponse]:
@@ -56,13 +62,13 @@ class ProjectService:
             raise FileNotFoundError(f"Project manifest not found for project_id={project_id}")
 
         manifest = ManifestValidationService.validate_file(manifest_path)
-        sequence_path = project_dir / "sequences.json"
-        chapter_path = project_dir / "chapter.md"
+        sequence_path = self._artifact_path(project_id, "sequence")
+        chapter_path = self._artifact_path(project_id, "chapter-1")
         exports_dir = project_dir / "exports"
         created_at = _file_timestamp(manifest_path)
         updated_source = manifest_path
         for candidate in (sequence_path, chapter_path):
-            if candidate.exists() and candidate.stat().st_mtime > updated_source.stat().st_mtime:
+            if candidate is not None and candidate.exists() and candidate.stat().st_mtime > updated_source.stat().st_mtime:
                 updated_source = candidate
 
         return ProjectDetailResponse(
@@ -71,24 +77,16 @@ class ProjectService:
             manifest=manifest,
             project_dir=str(project_dir),
             database_exists=(project_dir / "bible.db").exists(),
-            sequence_exists=sequence_path.exists() and sequence_path.stat().st_size > 0,
-            chapter_exists=chapter_path.exists() and chapter_path.stat().st_size > 0,
+            sequence_exists=sequence_path is not None and sequence_path.exists() and sequence_path.stat().st_size > 0,
+            chapter_exists=chapter_path is not None and chapter_path.exists() and chapter_path.stat().st_size > 0,
             export_count=len(list(exports_dir.glob("*.md"))) if exports_dir.exists() else 0,
             created_at=created_at,
             updated_at=_file_timestamp(updated_source),
         )
 
     def read_artifact(self, project_id: str, artifact_name: str) -> ProjectArtifactResponse:
-        project_dir = self.projects_dir / str(project_id)
-        artifact_map = {
-            "manifest": project_dir / "manifest.json",
-            "sequence": project_dir / "sequences.json",
-            "chapter": project_dir / "chapter.md",
-        }
-        if artifact_name not in artifact_map:
-            raise ValueError(f"Unknown artifact: {artifact_name}")
-        artifact_path = artifact_map[artifact_name]
-        if not artifact_path.exists():
+        artifact_path = self._artifact_path(project_id, artifact_name)
+        if artifact_path is None or not artifact_path.exists():
             raise FileNotFoundError(f"Artifact not found: {artifact_name}")
 
         content = artifact_path.read_text(encoding="utf-8")
@@ -102,3 +100,9 @@ class ProjectService:
             content=content,
             updated_at=_file_timestamp(artifact_path),
         )
+
+    def _artifact_path(self, project_id: str, artifact_name: str) -> Path | None:
+        project_dir = self.projects_dir / str(project_id)
+        if artifact_name == "manifest":
+            return project_dir / "manifest.json"
+        return self.repository.get_artifact_path(project_id, artifact_name)

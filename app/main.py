@@ -22,10 +22,10 @@ def build_app() -> FastAPI:
     frontend_root = root / 'frontend'
 
     project_service = ProjectService(root)
-    job_manager = JobManager()
+    job_manager = JobManager(root / 'data' / 'state' / 'narrative_ops.db')
     model_registry = ModelRegistry(models_root)
-    role_check_manager = RoleModelCheckManager()
-    role_check_service = RoleModelCheckerService(models_root)
+    role_check_manager = RoleModelCheckManager(root / 'data' / 'state' / 'narrative_ops.db')
+    role_check_service = RoleModelCheckerService(models_root, root / 'data' / 'role_model_checker_runs')
 
     app = FastAPI(title='Narrative-Core Recovered', version='0.1.0-recovered')
     app.include_router(build_projects_router(project_service))

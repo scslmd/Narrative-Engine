@@ -17,5 +17,25 @@ class Settings:
     def frontend_dir(self) -> Path:
         return self.root_dir / "frontend"
 
+    @property
+    def data_dir(self) -> Path:
+        return self.root_dir / "data"
+
+    @property
+    def projects_dir(self) -> Path:
+        return self.data_dir / "projects"
+
+    @property
+    def state_dir(self) -> Path:
+        return self.data_dir / "state"
+
+    @property
+    def operations_db_path(self) -> Path:
+        return self.state_dir / "narrative_ops.db"
+
+    @property
+    def role_model_reports_dir(self) -> Path:
+        return self.data_dir / "role_model_checker_runs"
+
 
 settings = Settings()

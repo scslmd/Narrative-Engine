@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from uuid import UUID
 
+from app.persistence import ensure_project_db
 from app.schemas.manifest import Manifest
 from app.settings import settings
 
@@ -17,6 +18,7 @@ def ensure_project_structure(root_dir: Path | None = None) -> dict[str, Path]:
         "data": base_dir / "data",
         "projects": base_dir / "data" / "projects",
         "models": base_dir / "data" / "models",
+        "state": base_dir / "data" / "state",
         "docs": base_dir / "docs",
         "frontend": base_dir / "frontend",
     }
@@ -42,7 +44,7 @@ def initialize_project_artifacts(
         "manifest": project_dir / "manifest.json",
         "database": project_dir / "bible.db",
         "sequence": project_dir / "sequences.json",
-        "chapter_001": project_dir / "chapter_001.md",
+        "chapter_1": project_dir / "chapter.md",
         "telemetry": project_dir / settings.telemetry_filename,
         "structured_log": project_dir / settings.structured_log_filename,
         "exports": exports_dir,
@@ -53,8 +55,9 @@ def initialize_project_artifacts(
     elif not paths["manifest"].exists():
         paths["manifest"].touch()
 
-    for key in ("sequence", "chapter_001", "telemetry", "structured_log"):
+    for key in ("sequence", "chapter_1", "telemetry", "structured_log"):
         if not paths[key].exists():
             paths[key].touch()
+    ensure_project_db(paths["database"])
 
     return paths

@@ -21,6 +21,7 @@ const els = {
   runRoleCheck: document.getElementById('run-role-check'),
   checkerStatus: document.getElementById('checker-status'),
   checkerProgress: document.getElementById('checker-progress'),
+  checkerReportPath: document.getElementById('checker-report-path'),
   checkerSummary: document.getElementById('checker-summary'),
   checkerLog: document.getElementById('checker-log'),
 };
@@ -168,9 +169,10 @@ async function startRecoveredJob() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  els.jobStatusLabel.textContent = job.status;
-  els.jobMonitor.textContent = JSON.stringify(job, null, 2);
-  const logs = await getJson(`/jobs/${job.id}/logs`);
+  const finalJob = await pollJobStatus(job.id);
+  els.jobStatusLabel.textContent = finalJob.status;
+  els.jobMonitor.textContent = JSON.stringify(finalJob, null, 2);
+  const logs = await getJson(`/jobs/${finalJob.id}/logs`);
   els.jobLogs.textContent = JSON.stringify(logs.entries, null, 2);
 }
 
@@ -182,6 +184,7 @@ function setRoleTesting(role) {
 async function runRoleCheck() {
   els.checkerStatus.textContent = 'RUNNING';
   els.checkerProgress.textContent = 'Recovered checker running through the workflow. Critic is usually the slowest role.';
+  els.checkerReportPath.textContent = 'Saved report path will appear here when enabled.';
   els.checkerSummary.innerHTML = '';
   els.checkerLog.textContent = 'Starting recovered role-model check...';
   const roles = state.catalog.workflow_order;
@@ -194,16 +197,18 @@ async function runRoleCheck() {
     save_report: els.saveReport.checked,
   };
 
-  const result = await getJson('/role-model-checker/run', {
+  const started = await getJson('/role-model-checker/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
+  const result = await pollCheckerStatus(started.run_id);
 
   const resultsByRole = Object.fromEntries(result.results.map((entry) => [entry.role, entry]));
   renderRoleCards(resultsByRole);
   els.checkerStatus.textContent = result.status;
   els.checkerProgress.textContent = result.detail || 'Recovered checker finished.';
+  els.checkerReportPath.textContent = result.report_path ? `Saved report: ${result.report_path}` : 'Run completed without saving a report.';
   els.checkerSummary.innerHTML = '';
   result.results.forEach((entry) => {
     const card = document.createElement('article');
@@ -216,6 +221,25 @@ async function runRoleCheck() {
     const findings = entry.findings.length ? `Findings: ${entry.findings.join(' | ')}` : 'Findings: none';
     return `${entry.role.toUpperCase()}\n${warnings}\n${findings}\nPreview: ${entry.preview || '(none)'}`;
   }).join('\n\n');
+}
+
+async function pollJobStatus(jobId) {
+  let status = await getJson(`/jobs/${jobId}/status`);
+  while (status.status === 'PENDING' || status.status === 'PROCESSING') {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    status = await getJson(`/jobs/${jobId}/status`);
+  }
+  return status;
+}
+
+async function pollCheckerStatus(runId) {
+  let status = await getJson(`/role-model-checker/${runId}/status`);
+  while (status.status === 'PENDING' || status.status === 'RUNNING') {
+    els.checkerProgress.textContent = status.detail || 'Recovered checker still running...';
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    status = await getJson(`/role-model-checker/${runId}/status`);
+  }
+  return status;
 }
 
 els.refreshProjects.addEventListener('click', loadProjects);

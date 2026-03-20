@@ -6,6 +6,7 @@ from time import perf_counter
 from uuid import UUID
 
 from ..schemas.role_model_checker import RoleCheckResult, RoleModelCheckStartRequest
+from ..settings import settings
 from ..workflow_preferences import CRITIC_PROFILE_DEFINITIONS, WORKFLOW_ORDER, build_override_warning
 from .model_registry import ModelRegistry
 
@@ -13,7 +14,7 @@ from .model_registry import ModelRegistry
 class RoleModelCheckerService:
     def __init__(self, models_root: Path, reports_root: Path | None = None) -> None:
         self.registry = ModelRegistry(models_root)
-        self.reports_root = reports_root or models_root.parent / 'role_model_checker_runs'
+        self.reports_root = reports_root or settings.role_model_reports_dir
 
     def run_checks(self, request: RoleModelCheckStartRequest) -> list[RoleCheckResult]:
         catalog = self.registry.build_catalog()

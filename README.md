@@ -45,6 +45,10 @@ Still to be rebuilt in later passes:
 - full test suite
 - final frontend behavior and styling parity
 
+Current UI note
+- The current frontend is a recovered operator-console baseline, not full parity with the original writer workflow.
+- It now reflects backend status polling and saved checker report paths, but broader project authoring flows and final UX parity are still pending.
+
 Recovered quickstart
 - This project is a safe reconstruction baseline created on F: while D: remained under live recovery.
 - Start here with `start_narrative_core.cmd` or `start_narrative_core.ps1`.
