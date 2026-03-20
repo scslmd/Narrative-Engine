@@ -14,7 +14,12 @@ from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
 from .role_model_checker import RoleModelCheckerService
-from .runtime_prompts import architect_output_path, build_p100_architect_request
+from .runtime_prompts import (
+    architect_output_path,
+    build_p100_architect_request,
+    build_p200_sequencer_request,
+    sequence_output_path,
+)
 from .step_records import StepRecordService
 
 
@@ -33,6 +38,14 @@ def _provider_backend_version(raw_response: dict[str, Any]) -> str | None:
 def _checker_runtime_response(role_result: Any) -> dict[str, Any] | None:
     runtime_response = role_result.metadata.get("runtime_response")
     return runtime_response if isinstance(runtime_response, dict) else None
+
+
+def _phase_step_name(phase: str) -> str:
+    if phase == "P-100":
+        return "architect"
+    if phase == "P-200":
+        return "sequencer"
+    return phase
 
 
 class LocalExecutor:
@@ -99,16 +112,27 @@ class LocalExecutor:
             attempt = self._job_manager.get_attempt(job_id)
             request_payload = self._job_manager.get_request_payload(job_id)
             project_id = str(request_payload.get("payload", {}).get("project_id", "")).strip() or None
+            current_step = _phase_step_name(str(current.phase))
             self._job_manager.update_job(
                 job_id,
                 status="PROCESSING",
                 current_phase=str(current.phase),
-                current_step="architect" if str(current.phase) == "P-100" else str(current.phase),
+                current_step=current_step,
                 detail="Local worker started.",
             )
             self._job_manager.log(job_id, "INFO", f"Job claimed by local worker for phase {current.phase}.")
             if str(current.phase) == "P-100":
                 self._run_architect_phase(
+                    job_id=job_id,
+                    started_at=started_at,
+                    current_phase=str(current.phase),
+                    attempt=attempt,
+                    request_payload=request_payload,
+                    project_id=project_id,
+                )
+                return
+            if str(current.phase) == "P-200":
+                self._run_sequencer_phase(
                     job_id=job_id,
                     started_at=started_at,
                     current_phase=str(current.phase),
@@ -131,7 +155,7 @@ class LocalExecutor:
                 run_id=job_id,
                 run_kind="pipeline_job",
                 attempt_number=int(attempt["attempt_number"]),
-                step_name=str(current.phase),
+                step_name=current_step,
                 step_index=1,
                 state="COMPLETED",
                 project_id=project_id,
@@ -170,12 +194,13 @@ class LocalExecutor:
                 attempt = self._job_manager.get_attempt(job_id)
                 request_payload = self._job_manager.get_request_payload(job_id)
                 project_id = str(request_payload.get("payload", {}).get("project_id", "")).strip() or None
+                current_step = _phase_step_name(str(self._job_manager.get_status(job_id).phase))
                 self._step_records.create_step_record(
                     logical_run_id=str(attempt["logical_run_id"]),
                     run_id=job_id,
                     run_kind="pipeline_job",
                     attempt_number=int(attempt["attempt_number"]),
-                    step_name="architect" if str(self._job_manager.get_status(job_id).phase) == "P-100" else str(self._job_manager.get_status(job_id).phase),
+                    step_name=current_step,
                     step_index=1,
                     state="FAILED",
                     project_id=project_id,
@@ -354,6 +379,179 @@ class LocalExecutor:
             "architect_p100",
             output_path,
         )
+
+    def _run_sequencer_phase(
+        self,
+        *,
+        job_id: UUID,
+        started_at: datetime,
+        current_phase: str,
+        attempt: dict[str, Any],
+        request_payload: dict[str, object],
+        project_id: str | None,
+    ) -> None:
+        if not project_id:
+            raise ValueError("P-200 requires payload.project_id.")
+        project = self._project_service.get_project(project_id)
+        payload = dict(request_payload.get("payload", {}))
+        architect_output = self._read_optional_artifact(project_id, "architect_p100")
+        inference_request = build_p200_sequencer_request(
+            manifest=project.manifest,
+            payload=payload,
+            architect_output=architect_output,
+            default_model=self._inferencer.descriptor.default_model,
+        )
+        self._job_manager.update_job(
+            job_id,
+            current_phase=current_phase,
+            current_step="sequencer",
+            detail="Sequencer inference running.",
+        )
+        try:
+            inference_response = self._inferencer.generate_text(inference_request)
+        except InferenceBackendError as exc:
+            self._job_manager.update_job(
+                job_id,
+                status="FAILED",
+                current_phase=current_phase,
+                current_step="sequencer",
+                error=exc.code,
+                error_category=exc.category,
+                detail=str(exc),
+                finish_reason=exc.finish_reason,
+                failure_stage="inference",
+                retryable=exc.retryable,
+            )
+            step_input_payload = {
+                "job_request": request_payload,
+                "manifest": project.manifest.model_dump(mode="json"),
+            }
+            if architect_output is not None:
+                step_input_payload["architect_output"] = architect_output
+            self._step_records.create_step_record(
+                logical_run_id=str(attempt["logical_run_id"]),
+                run_id=job_id,
+                run_kind="pipeline_job",
+                attempt_number=int(attempt["attempt_number"]),
+                step_name="sequencer",
+                step_index=1,
+                state="FAILED",
+                project_id=project_id,
+                model_id=inference_request.model,
+                critic_profile=None,
+                backend_name=self._inferencer.descriptor.display_name,
+                backend_version=None,
+                input_payload=step_input_payload,
+                output_payload=None,
+                prompt_payload=inference_request.model_dump(mode="json"),
+                input_artifact_refs=["manifest"] + (["architect_output"] if architect_output is not None else []),
+                output_artifact_refs=[],
+                started_at=started_at,
+                finished_at=_utcnow(),
+                finish_reason=exc.finish_reason,
+                error_code=exc.code,
+                error_category=exc.category,
+                executor_id="job-worker-local",
+                lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+            )
+            return
+        output_path = sequence_output_path(Path(project.project_dir))
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_text = inference_response.content.strip()
+        if output_text:
+            output_text += "\n"
+        output_path.write_text(output_text, encoding="utf-8")
+        normalized_finish_reason = inference_response.finish_reason or "completed"
+        backend_version = _provider_backend_version(inference_response.raw_response)
+        input_artifact_refs = ["manifest"]
+        source_content_hashes = [stable_hash_payload(project.manifest.model_dump(mode="json"))]
+        step_input_payload = {
+            "job_request": request_payload,
+            "manifest": project.manifest.model_dump(mode="json"),
+        }
+        if architect_output is not None:
+            input_artifact_refs.append("architect_output")
+            source_content_hashes.append(stable_hash_payload(architect_output))
+            step_input_payload["architect_output"] = architect_output
+        step_output_payload = {
+            "backend": inference_response.backend,
+            "model": inference_response.model or inference_request.model,
+            "content": output_text,
+            "finish_reason": normalized_finish_reason,
+            "usage": inference_response.usage.model_dump(mode="json"),
+            "artifact_path": str(output_path),
+        }
+        self._job_manager.update_job(
+            job_id,
+            status="COMPLETED",
+            current_phase=current_phase,
+            current_step="sequencer",
+            detail="Sequencer phase finished.",
+            progress_current=1,
+            progress_total=1,
+            finish_reason=normalized_finish_reason,
+        )
+        finished_at = _utcnow()
+        step_record_id = self._step_records.create_step_record(
+            logical_run_id=str(attempt["logical_run_id"]),
+            run_id=job_id,
+            run_kind="pipeline_job",
+            attempt_number=int(attempt["attempt_number"]),
+            step_name="sequencer",
+            step_index=1,
+            state="COMPLETED",
+            project_id=project_id,
+            model_id=inference_response.model or inference_request.model,
+            critic_profile=None,
+            backend_name=self._inferencer.descriptor.display_name,
+            backend_version=backend_version,
+            input_payload=step_input_payload,
+            output_payload=step_output_payload,
+            prompt_payload=inference_request.model_dump(mode="json"),
+            input_artifact_refs=input_artifact_refs,
+            output_artifact_refs=["sequence"],
+            started_at=started_at,
+            finished_at=finished_at,
+            finish_reason=normalized_finish_reason,
+            error_code=None,
+            error_category=None,
+            executor_id="job-worker-local",
+            lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+            prompt_tokens=inference_response.usage.prompt_tokens,
+            completion_tokens=inference_response.usage.completion_tokens,
+            total_tokens=inference_response.usage.total_tokens,
+        )
+        self._step_records.create_lineage_record(
+            logical_run_id=str(attempt["logical_run_id"]),
+            run_id=job_id,
+            run_kind="pipeline_job",
+            attempt_number=int(attempt["attempt_number"]),
+            step_name="sequencer",
+            project_id=project_id,
+            artifact_role="sequence",
+            artifact_kind="json",
+            path=str(output_path),
+            content_hash_source=output_text,
+            status="CANONICAL",
+            validation_state="PASSED",
+            produced_at=finished_at,
+            registered_at=finished_at,
+            supersedes_artifact_lineage_id=None,
+            source_artifact_refs=input_artifact_refs,
+            source_content_hashes=source_content_hashes,
+            output_of_step_record_id=step_record_id,
+        )
+        self._project_service.register_generated_artifact(
+            project_id,
+            "sequence",
+            output_path,
+        )
+
+    def _read_optional_artifact(self, project_id: str, artifact_name: str) -> str | None:
+        try:
+            return self._project_service.read_artifact(project_id, artifact_name).content
+        except FileNotFoundError:
+            return None
 
     def _process_checker(self, run_id: UUID) -> None:
         try:

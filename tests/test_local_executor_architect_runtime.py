@@ -211,14 +211,14 @@ def test_local_executor_runs_real_architect_path_for_p100_with_fake_inferencer(t
     assert project_service.repository.get_artifact_path(project_id, "architect_p100") == output_path
 
 
-def test_local_executor_keeps_non_p100_phases_on_stub_path(tmp_path: Path) -> None:
+def test_local_executor_keeps_non_runtime_phases_on_stub_path(tmp_path: Path) -> None:
     project_id = "stub-phase-test"
     initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
     executor_backend = FakeArchitectInferenceBackend(content="unused")
     executor, job_manager, project_service = _build_executor(tmp_path, inferencer=executor_backend)
     project_service.reconcile_projects()
 
-    job = job_manager.create_job(JobCreateRequest(phase="P-200", payload={"project_id": project_id}))
+    job = job_manager.create_job(JobCreateRequest(phase="P-300", payload={"project_id": project_id}))
     executor.start()
     try:
         final_status = _wait_for_terminal_status(job_manager, job.id)
@@ -231,7 +231,7 @@ def test_local_executor_keeps_non_p100_phases_on_stub_path(tmp_path: Path) -> No
     assert final_status == "COMPLETED"
     assert executor_backend.requests == []
     assert len(steps) == 1
-    assert steps[0]["step_name"] == "P-200"
+    assert steps[0]["step_name"] == "P-300"
     assert steps[0]["state"] == "COMPLETED"
     assert lineage == []
 

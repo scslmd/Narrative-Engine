@@ -27,7 +27,7 @@ The current backend implements:
 - a reusable OpenAI-compatible HTTP transport
 - provider selection through environment variables
 - runtime descriptors for provider identity, capabilities, and defaults
-- one real provider-backed runtime path for pipeline phase `P-100` `architect`
+- real provider-backed runtime paths for pipeline phases `P-100` `architect` and `P-200` `sequencer`
 
 The current backend does not yet implement:
 
