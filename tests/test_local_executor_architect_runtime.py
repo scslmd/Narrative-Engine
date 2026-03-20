@@ -218,7 +218,7 @@ def test_local_executor_keeps_non_runtime_phases_on_stub_path(tmp_path: Path) ->
     executor, job_manager, project_service = _build_executor(tmp_path, inferencer=executor_backend)
     project_service.reconcile_projects()
 
-    job = job_manager.create_job(JobCreateRequest(phase="P-300", payload={"project_id": project_id}))
+    job = job_manager.create_job(JobCreateRequest(phase="P-400", payload={"project_id": project_id}))
     executor.start()
     try:
         final_status = _wait_for_terminal_status(job_manager, job.id)
@@ -231,7 +231,7 @@ def test_local_executor_keeps_non_runtime_phases_on_stub_path(tmp_path: Path) ->
     assert final_status == "COMPLETED"
     assert executor_backend.requests == []
     assert len(steps) == 1
-    assert steps[0]["step_name"] == "P-300"
+    assert steps[0]["step_name"] == "P-400"
     assert steps[0]["state"] == "COMPLETED"
     assert lineage == []
 

@@ -89,12 +89,60 @@ def build_p200_sequencer_request(
     )
 
 
+def build_p300_drafter_request(
+    *,
+    manifest: Manifest,
+    payload: dict[str, Any],
+    sequence_output: str | None = None,
+    architect_output: str | None = None,
+    default_model: str | None,
+) -> InferenceRequest:
+    prompt_context = _runtime_prompt_context(manifest=manifest, payload=payload)
+    if sequence_output is not None:
+        prompt_context["sequence_output"] = sequence_output
+    if architect_output is not None:
+        prompt_context["architect_output"] = architect_output
+    return InferenceRequest(
+        model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
+        temperature=_coerce_float(payload.get("temperature"), default=0.2),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=(
+                    "You are the Drafter role for Narrative-Engine. "
+                    "Produce the P-300 chapter-1 draft as deterministic markdown. "
+                    "Preserve chapter flow, continuity, and stable section ordering."
+                ),
+            ),
+            InferenceMessage(
+                role="user",
+                content=(
+                    "Build the P-300 drafter foundation from this project context.\n\n"
+                    f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
+                ),
+            ),
+        ],
+        metadata={
+            "mode": "pipeline_phase",
+            "phase": "P-300",
+            "role": "drafter",
+            "project_id": manifest.project_id,
+            "project_name": manifest.project_name,
+        },
+    )
+
+
 def architect_output_path(project_dir: Path) -> Path:
     return project_dir / "exports" / "p100_architect_output.md"
 
 
 def sequence_output_path(project_dir: Path) -> Path:
     return project_dir / "sequences.json"
+
+
+def chapter_output_path(project_dir: Path) -> Path:
+    return project_dir / "chapter.md"
 
 
 def _runtime_prompt_context(*, manifest: Manifest, payload: dict[str, Any]) -> dict[str, Any]:
