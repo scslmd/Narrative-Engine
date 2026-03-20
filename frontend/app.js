@@ -8,7 +8,7 @@ const state = {
   checkerResults: [],
 };
 
-const storagePrefix = 'narrative-recover-workspace:';
+const storagePrefix = 'narrative-engine-workspace:';
 
 const els = {
   refreshProjects: document.getElementById('refresh-projects'),
@@ -375,7 +375,7 @@ function renderProjects() {
   if (!state.projects.length) {
     const empty = document.createElement('div');
     empty.className = 'detail-box muted';
-    empty.textContent = 'No recovered projects yet. Create one from the setup form.';
+    empty.textContent = 'No projects yet. Create one from the setup form.';
     els.projectsList.appendChild(empty);
     return;
   }
@@ -468,11 +468,11 @@ function renderSelectedProject() {
   const detail = state.selectedProject;
   const manifest = detail?.manifest;
   if (!detail || !manifest) {
-    els.activeProjectName.textContent = 'Select a recovered project';
+    els.activeProjectName.textContent = 'Select a project';
     els.activeProjectMeta.textContent = 'Project detail, planning cues, and artifact review appear here.';
     els.activeProjectHealth.innerHTML = '';
     els.synopsisSeed.textContent = 'Choose a project to inspect its story spine.';
-    els.projectDetail.textContent = 'Select a project to inspect its recovered manifest and operational state.';
+    els.projectDetail.textContent = 'Select a project to inspect its manifest and operational state.';
     els.artifactViewer.textContent = 'Artifact preview will appear here.';
     els.constraintChips.innerHTML = '<span class="chip muted-chip">No project selected.</span>';
     renderWorkspaceStatus();
@@ -579,7 +579,7 @@ async function pollJobStatus(jobId) {
   return status;
 }
 
-async function startRecoveredJob() {
+async function startJob() {
   if (!state.selectedProjectId) {
     throw new Error('Select or create a project before starting a job.');
   }
@@ -641,9 +641,9 @@ async function runRoleCheck() {
   }
 
   els.checkerStatus.textContent = 'RUNNING';
-  els.checkerProgress.textContent = 'Recovered checker is walking the role workflow.';
+  els.checkerProgress.textContent = 'Checker is walking the role workflow.';
   els.checkerSummary.innerHTML = '';
-  els.checkerLog.textContent = 'Starting recovered role-model check...';
+  els.checkerLog.textContent = 'Starting role-model check...';
   els.checkerReportPath.textContent = 'Saved report path will appear here when enabled.';
 
   const roles = state.catalog.workflow_order;
@@ -668,7 +668,7 @@ async function runRoleCheck() {
   renderRoleCards(resultsByRole);
   renderStageStrip();
   els.checkerStatus.textContent = result.status;
-  els.checkerProgress.textContent = result.detail || 'Recovered checker finished.';
+  els.checkerProgress.textContent = result.detail || 'Checker finished.';
   els.checkerSummary.innerHTML = '';
   state.checkerResults.forEach((entry) => {
     const card = document.createElement('article');
@@ -711,7 +711,7 @@ els.buildPacket.addEventListener('click', () => {
   }
 });
 els.startJob.addEventListener('click', () => {
-  startRecoveredJob().catch((error) => {
+  startJob().catch((error) => {
     els.jobStatusLabel.textContent = 'ERROR';
     els.jobMonitor.textContent = error.message;
   });
@@ -745,6 +745,6 @@ Promise.all([loadCatalog(), loadProjects()])
     renderSelectedProject();
   })
   .catch((error) => {
-    els.checkerProgress.textContent = `Failed to initialize recovered console: ${error.message}`;
-    els.projectDetail.textContent = `Failed to load recovered project view: ${error.message}`;
+    els.checkerProgress.textContent = `Failed to initialize console: ${error.message}`;
+    els.projectDetail.textContent = `Failed to load project view: ${error.message}`;
   });

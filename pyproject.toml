@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "narrative-core-recovered"
+name = "narrative-engine"
 version = "0.1.0"
-description = "Recovered reconstruction of Narrative-Core"
+description = "Local-first narrative compilation system for long-form fiction development"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1.0",

@@ -1,1 +1,1 @@
-"""Recovered Narrative-Core application package."""
+"""Narrative-Engine application package."""

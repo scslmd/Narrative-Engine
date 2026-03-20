@@ -12,7 +12,7 @@ def test_health_endpoint() -> None:
     assert response.json()['status'] == 'ok'
 
 
-def test_projects_endpoint_lists_recovered_projects() -> None:
+def test_projects_endpoint_lists_projects() -> None:
     client = TestClient(build_app())
     response = client.get('/projects')
     assert response.status_code == 200

@@ -93,7 +93,7 @@ def test_project_service_registers_existing_artifacts_and_normalizes_chapter_nam
                 "genre": "Fantasy",
                 "tone": "Warm",
                 "story_structure": "THREE_ACT",
-                "premise_text": "Recovered premise.",
+                "premise_text": "Project premise.",
             }
         ),
         encoding="utf-8",

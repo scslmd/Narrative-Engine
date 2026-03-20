@@ -28,7 +28,7 @@ def build_app() -> FastAPI:
     role_check_manager = RoleModelCheckManager(root / 'data' / 'state' / 'narrative_ops.db')
     role_check_service = RoleModelCheckerService(models_root, root / 'data' / 'role_model_checker_runs')
 
-    app = FastAPI(title='Narrative-Core Recovered', version='0.1.0-recovered')
+    app = FastAPI(title='Narrative-Engine', version='0.1.0')
     app.include_router(build_projects_router(project_service))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_models_router(model_registry))
@@ -44,7 +44,7 @@ def build_app() -> FastAPI:
 
     @app.get('/health')
     def health() -> dict[str, str]:
-        return {'status': 'ok', 'mode': 'recovered'}
+        return {'status': 'ok', 'mode': 'local'}
 
     return app
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Settings:
-    app_name: str = "Narrative-Core Recovered"
+    app_name: str = "Narrative-Engine"
     app_env: str = "local"
     default_seed: int = 42
     telemetry_filename: str = "telemetry.log"

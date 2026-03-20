@@ -18,7 +18,7 @@ def _safe_cleanup_dead_symlinks(root) -> None:
     except PermissionError:
         # Some Windows environments deny directory iteration on pytest's own
         # base temp root during teardown. Ignore that cleanup-only failure so
-        # the recovered suite still reports the real test outcome.
+        # the suite still reports the real test outcome.
         return
 
 

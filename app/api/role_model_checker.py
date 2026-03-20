@@ -14,16 +14,16 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
 
     def _run_checker_stub(run_id: UUID, request: RoleModelCheckStartRequest) -> None:
         try:
-            manager.update_run(run_id, status='RUNNING', detail='Recovered checker run started.')
+            manager.update_run(run_id, status='RUNNING', detail='Checker run started.')
             for role_result in service.run_checks(request):
                 manager.update_run(run_id, current_role=role_result.role, detail=f'Testing {role_result.role}.')
                 manager.add_result(run_id, role_result)
-            final_status = manager.update_run(run_id, status='COMPLETED', detail='Recovered checker run finished.')
+            final_status = manager.update_run(run_id, status='COMPLETED', detail='Checker run finished.')
             if request.save_report:
                 report_path = service.save_report(run_id, request, final_status.results)
-                manager.update_run(run_id, report_path=str(report_path), detail='Recovered checker run finished and report saved.')
+                manager.update_run(run_id, report_path=str(report_path), detail='Checker run finished and report saved.')
         except Exception as exc:
-            manager.update_run(run_id, status='FAILED', detail='Recovered checker run failed.', report_path=None)
+            manager.update_run(run_id, status='FAILED', detail='Checker run failed.', report_path=None)
             raise exc
 
     def _accept_run(request: RoleModelCheckStartRequest, background_tasks: BackgroundTasks, response: Response) -> RoleModelCheckStatusResponse:

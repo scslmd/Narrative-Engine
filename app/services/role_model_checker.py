@@ -30,7 +30,7 @@ class RoleModelCheckerService:
             elif selected is None and recommended is None:
                 warnings.append('No discovered model matched this role.')
             profile = CRITIC_PROFILE_DEFINITIONS[request.critic_profile] if role == 'critic' else None
-            preview = f"Recovered checker stub executed for {role}."
+            preview = f"Checker stub executed for {role}."
             if profile is not None:
                 preview += f" Critic profile: {profile['label']}."
             results.append(

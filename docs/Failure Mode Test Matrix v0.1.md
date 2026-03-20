@@ -7,7 +7,7 @@ It is intentionally implementation-neutral so it can guide:
 - unit tests
 - persistence tests
 - integration tests
-- future queue/worker recovery tests
+- future queue/worker runtime tests
 
 ## Priority 0
 
@@ -20,7 +20,7 @@ It is intentionally implementation-neutral so it can guide:
 ## Priority 1
 
 - [ ] lease claim is atomic under concurrent claim attempts
-- [ ] stale lease recovery emits deterministic requeue events
+- [ ] stale lease handling emits deterministic requeue events
 - [ ] partial persistence failure cannot produce `COMPLETED`
 - [ ] canonical artifact pointers update only after validation succeeds
 - [ ] retryable failures create new attempts instead of mutating prior attempts
@@ -46,7 +46,7 @@ It is intentionally implementation-neutral so it can guide:
 - [ ] failure path from each active state is deterministic
 - [ ] cancellation path is deterministic
 
-### Recovery / Resume
+### Resume / Requeue
 
 - [ ] crash before lease claim
 - [ ] crash after lease claim

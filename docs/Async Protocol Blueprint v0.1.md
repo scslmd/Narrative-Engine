@@ -2,21 +2,21 @@
 
 ## Purpose
 
-This document defines the hardened async protocol for rebuild work that can be completed before the full queue/worker runtime is integrated.
+This document defines the hardened async protocol for work that can be completed before the full queue/worker runtime is integrated.
 
-It exists to remove ambiguity from the current recovered state and to establish one deterministic protocol for:
+It exists to remove ambiguity from the current implementation state and to establish one deterministic protocol for:
 
 - pipeline jobs
 - role-model checker runs
 - future per-role execution steps
 
-This is a design/specification document only. It does not imply that the current recovered implementation already satisfies the protocol.
+This is a design/specification document only. It does not imply that the current implementation already satisfies the protocol.
 
 ## Protocol Goals
 
 - separate request acceptance from execution
 - make status transitions explicit and finite
-- make restart/recovery behavior deterministic
+- make restart/resume behavior deterministic
 - make duplicate submission behavior deterministic
 - make telemetry and provenance durable enough for rebuild-time debugging
 - make future worker integration a matter of wiring, not redesign
@@ -152,7 +152,7 @@ Minimum event types:
 Projection rule:
 
 - status endpoints should read from a projection derived from events plus current run/step materialized views
-- recovery/rebuild tooling should be able to reconstruct the last known state from the event stream alone
+- tooling should be able to reconstruct the last known state from the event stream alone
 
 ## Idempotency Semantics
 
@@ -189,7 +189,7 @@ Required fields:
 
 Rules:
 
-- retryable failures include lease expiry, transient backend timeout, temporary DB lock, and recoverable model backend errors
+- retryable failures include lease expiry, transient backend timeout, temporary DB lock, and retryable model backend errors
 - non-retryable failures include invalid request schema, deterministic validation failure when policy says fail-fast, and operator cancellation
 - a retry must emit `RUN_REQUEUED` and start a new attempt record
 - attempts must not overwrite prior attempt telemetry or artifacts
@@ -282,7 +282,7 @@ The following matrix should drive implementation-time tests before serial runtim
 - run cannot skip required intermediate states
 - projection remains consistent with event history
 
-### Lease / Recovery
+### Lease / Reclaim
 
 - runner crash after `CLAIMED` but before `RUNNING` leaves reclaimable lease
 - runner crash during `RUNNING` leads to expired lease and requeue behavior
@@ -307,7 +307,7 @@ The following matrix should drive implementation-time tests before serial runtim
 - each attempt records model/backend identity
 - each attempt records prompt/input/output hashes
 - each terminal failure records error category and finish reason
-- projection can be reconstructed from events plus materialized state
+- projection can be rebuilt from events plus materialized state
 
 ### SQLite / Storage Failure Cases
 
@@ -325,4 +325,4 @@ Before serial worker/runtime integration starts, the repo should contain:
 - a lease semantics spec
 - a failure-mode test plan
 
-This document is intended to satisfy those design prerequisites for the recovered rebuild.
+This document is intended to satisfy those design prerequisites before worker/runtime integration.

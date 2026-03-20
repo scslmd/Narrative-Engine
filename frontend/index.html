@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Narrative-Core Recovered</title>
-  <link rel="stylesheet" href="/static/styles.css?v=recovered-4" />
+  <title>Narrative-Engine</title>
+  <link rel="stylesheet" href="/static/styles.css?v=engine-1" />
 </head>
 <body>
   <main class="page">
     <header class="hero">
       <div>
-        <p class="eyebrow">Narrative-Core Recovered</p>
+        <p class="eyebrow">Narrative-Engine</p>
         <h1>Writer Workflow Prototype</h1>
         <p class="subhead">
           Rebuilt around a stronger writer loop: project setup, story engine context, chapter drafting, and continuity-aware review.
@@ -103,7 +103,7 @@
         <section class="panel stage-banner">
           <div>
             <p class="eyebrow small">Active Project</p>
-            <h2 id="active-project-name">Select a recovered project</h2>
+            <h2 id="active-project-name">Select a project</h2>
             <p id="active-project-meta" class="subhead">Project detail, planning cues, and artifact review appear here.</p>
           </div>
           <div id="active-project-health" class="health-grid"></div>
@@ -166,11 +166,11 @@
               </label>
               <div class="row gap top-gap">
                 <button id="build-packet" type="button">Build Chapter Packet</button>
-                <button id="start-job" type="button">Run Recovered P-100</button>
+                <button id="start-job" type="button">Run P-100</button>
               </div>
             </article>
             <article class="focus-card">
-              <span class="focus-label">Recovered Artifacts</span>
+              <span class="focus-label">Artifacts</span>
               <h3>Manifest / Beats / Chapter</h3>
               <div class="row gap top-gap wrap">
                 <button id="artifact-manifest" type="button">Manifest</button>
@@ -193,7 +193,7 @@
               <div id="continuity-lens" class="continuity-list"></div>
             </article>
           </div>
-          <div id="job-monitor" class="detail-box top-gap muted">No recovered job run yet.</div>
+          <div id="job-monitor" class="detail-box top-gap muted">No job run yet.</div>
           <pre id="job-logs" class="log-box">Logs will appear here after a run.</pre>
         </section>
 
@@ -206,7 +206,7 @@
             <label class="checkbox-row"><input id="save-report" type="checkbox" checked /> Save report</label>
           </div>
           <p class="subhead">
-            Validate the current recovered role assignments before changing draft or review behavior. Critic remains the slowest lane.
+            Validate the current role assignments before changing draft or review behavior. Critic remains the slowest lane.
           </p>
           <div id="workflow-guidance" class="guidance-list"></div>
           <div id="role-grid" class="role-grid"></div>
@@ -217,21 +217,21 @@
           <div id="checker-progress" class="detail-box top-gap muted">Load models to begin.</div>
           <div id="checker-summary" class="summary-grid"></div>
           <div id="checker-report-path" class="detail-box top-gap muted">Saved report path will appear here when enabled.</div>
-          <pre id="checker-log" class="log-box">Warnings, findings, and recovered reasons will appear here.</pre>
+          <pre id="checker-log" class="log-box">Warnings and findings will appear here.</pre>
         </section>
 
         <section class="panel">
           <div class="section-heading">
             <div>
               <p class="eyebrow small">Reference</p>
-              <h2>Recovered Project Detail</h2>
+              <h2>Project Detail</h2>
             </div>
           </div>
-          <div id="project-detail" class="detail-box muted">Select a project to inspect its recovered manifest and operational state.</div>
+          <div id="project-detail" class="detail-box muted">Select a project to inspect its manifest and operational state.</div>
         </section>
       </section>
     </section>
   </main>
-  <script src="/static/app.js?v=recovered-4"></script>
+  <script src="/static/app.js?v=engine-1"></script>
 </body>
 </html>

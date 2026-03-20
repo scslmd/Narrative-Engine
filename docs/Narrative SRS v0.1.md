@@ -1,8 +1,8 @@
-# Narrative SRS Recovered v0.2
+# Narrative SRS v0.2
 
 ## 1. Purpose
 
-Narrative-Core is a deterministic local narrative compilation pipeline for novel development.
+Narrative-Engine is a deterministic local narrative compilation pipeline for novel development.
 
 The system is intended to help a writer:
 
@@ -11,23 +11,10 @@ The system is intended to help a writer:
 - generate a story bible
 - generate beats
 - draft prose with local models
-- verify outputs with a critic/linter loop
+- verify outputs with a critic or linter loop
 - monitor long-running jobs with exact backend progress
 
-## 2. Recovery Context
-
-This recovered SRS is derived from the conversation record after the original workspace contents were lost.
-
-It captures the latest known design direction, including:
-
-- project-name-first identity
-- async backend job progress
-- role-model checker workflow
-- unified workflow preferences
-- role-based model selection
-- SQLite-backed operational persistence in the recovered implementation
-
-## 3. Core Principles
+## 2. Core Principles
 
 - deterministic pipeline behavior where possible
 - local-first execution
@@ -35,7 +22,7 @@ It captures the latest known design direction, including:
 - human-readable project identity
 - backend-driven progress reporting
 
-## 4. Project Identity
+## 3. Project Identity
 
 Projects must be identified to the user by `project_name`, not by UUID alone.
 
@@ -44,12 +31,12 @@ Rules:
 - `project_id` remains the internal stable identifier and storage key
 - `project_name` is the primary user-facing label in the UI and API responses
 - all new project creation flows must require `project_name`
-- legacy manifests without `project_name` may be backfilled with a compatibility fallback
+- compatibility fallbacks may exist for legacy manifests that lack `project_name`
 
-## 5. Directory Structure
+## 4. Directory Structure
 
 ```text
-/Narrative-Recover
+/Narrative-Engine
 |-- /app
 |   |-- /api
 |   |-- /persistence
@@ -63,7 +50,7 @@ Rules:
 `-- /frontend
 ```
 
-## 6. Required Project APIs
+## 5. Required Project APIs
 
 - `POST /projects/create`
 - `GET /projects`
@@ -77,13 +64,13 @@ All project responses must expose:
 - `project_id`
 - `project_name`
 
-Recovered implementation note:
+Implementation note:
 
-- The current recovered backend implements `manifest`, `sequence`, and `chapter-1` artifact endpoints.
-- Artifact lookup is normalized through persistence so legacy recovered filenames can still map to canonical API names.
-- The current recovered frontend also exposes direct artifact preview for these endpoints.
+- The current backend implements `manifest`, `sequence`, and `chapter-1` artifact endpoints.
+- Artifact lookup is normalized through persistence so canonical API names remain stable even if source filenames vary.
+- The frontend exposes direct artifact preview for these endpoints.
 
-## 7. Manifest Schema
+## 6. Manifest Schema
 
 ```json
 {
@@ -103,7 +90,7 @@ Recovered implementation note:
 }
 ```
 
-## 8. Async Progress
+## 7. Async Progress
 
 Long-running jobs and model checks must report exact backend progress.
 
@@ -115,19 +102,19 @@ Required endpoints:
 - `POST /role-model-checker/start`
 - `GET /role-model-checker/{run_id}/status`
 
-Recovered implementation note:
+Implementation note:
 
-- The current frontend polls these status endpoints rather than assuming immediate completion.
-- Job and checker status are now durably stored in SQLite instead of process-local memory.
-- Current job and checker execution remain recovered stub behavior even though status is now persisted and polled.
+- The frontend polls these status endpoints rather than assuming immediate completion.
+- Job and checker status are durably stored in SQLite instead of process-local memory.
+- The current execution path still uses background stub behavior until the real worker/runtime layer is in place.
 
-## 8.1 Target Async Protocol
+## 7.1 Target Async Protocol
 
 The target protocol for long-running jobs and checker runs is:
 
 - enqueue request
 - durable acceptance record
-- worker claim/lease
+- worker claim or lease
 - execution
 - validation
 - persistence
@@ -147,9 +134,9 @@ Target rules:
 
 Reference:
 
-- see `docs/Async Protocol Blueprint v0.1.md` for the design-level contract
+- see `docs/Async Protocol Blueprint v0.1.md`
 
-## 9. Role-Model Checker
+## 8. Role-Model Checker
 
 The system must support a role-model checker that validates candidate local GGUF models against the roles:
 
@@ -158,9 +145,9 @@ The system must support a role-model checker that validates candidate local GGUF
 - drafter
 - critic
 
-The checker exists so future users can test model substitutions without repeating manual troubleshooting.
+The checker exists so users can test model substitutions without repeating manual troubleshooting.
 
-Recovered implementation note:
+Implementation note:
 
 - The checker currently persists run metadata, results, and an optional saved report path.
-- The checker still uses recovered stub execution rather than real model evaluation.
+- The checker still uses stub execution rather than real model evaluation.

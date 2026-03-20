@@ -17,19 +17,19 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
                 job_id,
                 status='PROCESSING',
                 current_phase=phase,
-                current_step='recovered_stub',
-                detail='Recovered background execution stub started.',
+                current_step='background_stub',
+                detail='Background execution stub started.',
             )
-            job_manager.log(job_id, 'INFO', f'Recovered job created for phase {phase}.')
+            job_manager.log(job_id, 'INFO', f'Job created for phase {phase}.')
             job_manager.update_job(
                 job_id,
                 status='COMPLETED',
-                detail='Recovered stub completed in background.',
+                detail='Stub completed in background.',
                 progress_current=1,
                 progress_total=1,
             )
         except Exception as exc:
-            job_manager.update_job(job_id, status='FAILED', error=str(exc), detail='Recovered background execution stub failed.')
+            job_manager.update_job(job_id, status='FAILED', error=str(exc), detail='Background execution stub failed.')
 
     @router.post('/create', response_model=JobStatusResponse, status_code=202)
     def create_job(request: JobCreateRequest, background_tasks: BackgroundTasks, response: Response) -> JobStatusResponse:

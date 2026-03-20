@@ -17,9 +17,9 @@ WORKFLOW_GUIDANCE: list[str] = [
 DEFAULT_CRITIC_PROFILE: CriticExperimentProfile = "minimal_context"
 
 CRITIC_PROFILE_DEFINITIONS = {
-    "baseline": {"id": "baseline", "label": "Baseline", "description": "Recovered default comparison profile using fuller critic context.", "context_mode": "compact", "max_tokens": 384, "deterministic_only": False, "experimental": False},
-    "minimal_context": {"id": "minimal_context", "label": "Minimal Context", "description": "Recovered recommended critic profile. Uses the smallest safe context that still passed earlier checks.", "context_mode": "minimal", "max_tokens": 384, "deterministic_only": False, "experimental": False},
-    "low_max_tokens_256": {"id": "low_max_tokens_256", "label": "Low Max Tokens 256", "description": "Recovered experiment profile to reduce critic latency with a smaller output budget.", "context_mode": "minimal", "max_tokens": 256, "deterministic_only": False, "experimental": True},
+    "baseline": {"id": "baseline", "label": "Baseline", "description": "Default comparison profile using fuller critic context.", "context_mode": "compact", "max_tokens": 384, "deterministic_only": False, "experimental": False},
+    "minimal_context": {"id": "minimal_context", "label": "Minimal Context", "description": "Recommended critic profile. Uses the smallest safe context that still preserves reliable checks.", "context_mode": "minimal", "max_tokens": 384, "deterministic_only": False, "experimental": False},
+    "low_max_tokens_256": {"id": "low_max_tokens_256", "label": "Low Max Tokens 256", "description": "Experiment profile to reduce critic latency with a smaller output budget.", "context_mode": "minimal", "max_tokens": 256, "deterministic_only": False, "experimental": True},
     "low_max_tokens_128": {"id": "low_max_tokens_128", "label": "Low Max Tokens 128", "description": "Aggressive critic speed profile. Earlier notes suggest this may be too restrictive.", "context_mode": "minimal", "max_tokens": 128, "deterministic_only": False, "experimental": True},
     "deterministic_only": {"id": "deterministic_only", "label": "Deterministic Only", "description": "Skip LLM critique and only run deterministic checks. Very fast, but incomplete.", "context_mode": "minimal", "max_tokens": 0, "deterministic_only": True, "experimental": True},
 }
