@@ -11,6 +11,7 @@ The system is intended to help a writer:
 - generate a story bible
 - generate beats
 - draft prose with local models
+- revise selected manuscript text with context-aware writing aids
 - verify outputs with a critic or linter loop
 - monitor long-running jobs with exact backend progress
 
@@ -106,7 +107,8 @@ Implementation note:
 
 - The frontend polls these status endpoints rather than assuming immediate completion.
 - Job and checker status are durably stored in SQLite instead of process-local memory.
-- The current execution path still uses background stub behavior until the real worker/runtime layer is in place.
+- The current execution path uses a local lease-claim executor stub until the real worker/runtime layer is in place.
+- Step records and artifact lineage are now durably persisted in SQLite for the local executor path, but they are not yet exposed through dedicated public APIs.
 
 ## 7.1 Target Async Protocol
 
@@ -135,6 +137,7 @@ Target rules:
 Reference:
 
 - see `docs/Async Protocol Blueprint v0.1.md`
+- see `docs/Step Record Blueprint v0.1.md` for the current step-record and artifact-lineage contract
 
 ## 8. Role-Model Checker
 

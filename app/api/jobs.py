@@ -2,41 +2,30 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Response
 
-from ..schemas.jobs import JobCreateRequest, JobLogsResponse, JobStatusResponse
+from ..schemas.jobs import JobCreateRequest, JobLogsResponse, JobRetryRequest, JobStatusResponse
 from ..services.job_manager import JobManager
+from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
 
 
 def build_jobs_router(job_manager: JobManager) -> APIRouter:
     router = APIRouter(prefix='/jobs', tags=['jobs'])
 
-    def _run_job_stub(job_id: UUID, phase: str) -> None:
-        try:
-            job_manager.update_job(
-                job_id,
-                status='PROCESSING',
-                current_phase=phase,
-                current_step='background_stub',
-                detail='Background execution stub started.',
-            )
-            job_manager.log(job_id, 'INFO', f'Job created for phase {phase}.')
-            job_manager.update_job(
-                job_id,
-                status='COMPLETED',
-                detail='Stub completed in background.',
-                progress_current=1,
-                progress_total=1,
-            )
-        except Exception as exc:
-            job_manager.update_job(job_id, status='FAILED', error=str(exc), detail='Background execution stub failed.')
-
     @router.post('/create', response_model=JobStatusResponse, status_code=202)
-    def create_job(request: JobCreateRequest, background_tasks: BackgroundTasks, response: Response) -> JobStatusResponse:
-        phase = str(request.phase)
-        job = job_manager.create_job(request)
-        background_tasks.add_task(_run_job_stub, job.id, phase)
+    def create_job(
+        request: JobCreateRequest,
+        response: Response,
+        idempotency_key: str | None = Header(default=None, alias='Idempotency-Key'),
+    ) -> JobStatusResponse:
+        try:
+            acceptance = job_manager.accept_job(request, idempotency_key=idempotency_key)
+        except IdempotencyConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        job = acceptance.status
         response.headers['Location'] = f'/jobs/{job.id}/status'
+        if not acceptance.created_new and str(job.status) in {'COMPLETED', 'FAILED'}:
+            response.status_code = 200
         return job
 
     @router.get('/{job_id}/status', response_model=JobStatusResponse)
@@ -52,5 +41,16 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
             return job_manager.get_logs(job_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
+
+    @router.post('/{job_id}/retry', response_model=JobStatusResponse, status_code=202)
+    def retry_job(job_id: UUID, request: JobRetryRequest, response: Response) -> JobStatusResponse:
+        try:
+            job = job_manager.retry_job(job_id, retry_reason=request.retry_reason)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Job not found.') from exc
+        except RetryNotAllowedError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        response.headers['Location'] = f'/jobs/{job.id}/status'
+        return job
 
     return router

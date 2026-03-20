@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from ..request_identity import job_request_scope, request_hash
 from ..persistence import JobLogRepository, JobRepository
 from ..schemas.enums import JobStatus
 from ..schemas.jobs import JobCreateRequest, JobLogEntry, JobLogsResponse, JobStatusResponse
 from ..settings import settings
+from .protocol import IdempotencyConflictError, JobAcceptance, RetryNotAllowedError
+from .step_records import StepRecordService
 
 
 def _utcnow() -> datetime:
@@ -27,20 +30,56 @@ class JobManager:
         operations_db_path = db_path or settings.operations_db_path
         self._jobs = JobRepository(operations_db_path)
         self._logs = JobLogRepository(operations_db_path)
+        self._step_records = StepRecordService(operations_db_path)
 
-    def create_job(self, request: JobCreateRequest) -> JobStatusResponse:
+    def accept_job(self, request: JobCreateRequest, *, idempotency_key: str | None = None) -> JobAcceptance:
         now = _utcnow()
-        job_id = uuid4()
+        request_payload = request.model_dump(mode="json")
         phase = str(request.phase)
         project_id = str(request.payload.get("project_id", "")).strip() or None
+        request_scope = job_request_scope(phase=phase, project_id=project_id)
+        request_payload_hash = request_hash(request_payload)
+        if idempotency_key:
+            existing = self._jobs.find_by_idempotency_key(
+                request_scope=request_scope,
+                idempotency_key=idempotency_key,
+            )
+            if existing is not None:
+                if existing["request_hash"] != request_payload_hash:
+                    raise IdempotencyConflictError(
+                        f"Idempotency key {idempotency_key!r} is already bound to a different job request."
+                    )
+                return JobAcceptance(
+                    status=self.get_status(UUID(str(existing["job_id"]))),
+                    created_new=False,
+                )
+
+        job_id = uuid4()
         self._jobs.create_job(
             job_id=job_id,
             phase=phase,
             status=JobStatus.PENDING.value,
             payload=dict(request.payload),
+            request_payload=request_payload,
+            request_hash=request_payload_hash,
+            request_scope=request_scope,
+            idempotency_key=idempotency_key,
             project_id=project_id,
             created_at=now,
         )
+        return JobAcceptance(status=self.get_status(job_id), created_new=True)
+
+    def create_job(self, request: JobCreateRequest, *, idempotency_key: str | None = None) -> JobStatusResponse:
+        return self.accept_job(request, idempotency_key=idempotency_key).status
+
+    def retry_job(self, job_id: UUID, *, retry_reason: str = "operator_retry") -> JobStatusResponse:
+        current = self.get_status(job_id)
+        if str(current.status) != JobStatus.FAILED.value:
+            raise RetryNotAllowedError(
+                f"Job {job_id} cannot be retried while status is {current.status}."
+            )
+        updated_at = _utcnow()
+        self._jobs.retry_job(job_id, retry_reason=retry_reason, updated_at=updated_at)
         return self.get_status(job_id)
 
     def update_job(
@@ -54,6 +93,9 @@ class JobManager:
         progress_current: int | None = None,
         progress_total: int | None = None,
         error: str | None = None,
+        finish_reason: str | None = None,
+        failure_stage: str | None = None,
+        retryable: bool | None = None,
     ) -> JobStatusResponse:
         current = self.get_status(job_id)
         if status is not None:
@@ -73,6 +115,9 @@ class JobManager:
             progress_total=progress_total,
             heartbeat_at=updated_at,
             error=error,
+            finish_reason=finish_reason,
+            failure_stage=failure_stage,
+            retryable=retryable,
             updated_at=updated_at,
         )
         return self.get_status(job_id)
@@ -90,3 +135,24 @@ class JobManager:
 
     def list_events(self, job_id: UUID) -> list[dict[str, object]]:
         return self._jobs.list_events(job_id)
+
+    def claim_next_pending(self, *, worker_id: str, lease_seconds: int = 30) -> UUID | None:
+        now = _utcnow()
+        lease_expires_at = now + timedelta(seconds=lease_seconds)
+        return self._jobs.claim_next_pending(
+            worker_id=worker_id,
+            now=now,
+            lease_expires_at=lease_expires_at,
+        )
+
+    def get_request_payload(self, job_id: UUID) -> dict[str, object]:
+        return self._jobs.get_request_payload(job_id)
+
+    def get_attempt(self, job_id: UUID) -> dict[str, object]:
+        return self._jobs.get_attempt(job_id)
+
+    def list_step_records(self, job_id: UUID) -> list[dict[str, object]]:
+        return self._step_records.list_step_records(run_id=job_id, run_kind="pipeline_job")
+
+    def list_artifact_lineage(self, job_id: UUID) -> list[dict[str, object]]:
+        return self._step_records.list_artifact_lineage(run_id=job_id, run_kind="pipeline_job")

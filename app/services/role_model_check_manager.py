@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from ..request_identity import checker_request_scope, request_hash
 from ..persistence import CheckerRunRepository
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..schemas.role_model_checker import RoleCheckResult, RoleModelCheckStatusResponse
 from ..settings import settings
+from .protocol import CheckerRunAcceptance, IdempotencyConflictError, RetryNotAllowedError
+from .step_records import StepRecordService
 
 
 def _utcnow() -> datetime:
@@ -24,16 +27,69 @@ _ALLOWED_CHECKER_TRANSITIONS: dict[str, set[str]] = {
 
 class RoleModelCheckManager:
     def __init__(self, db_path: Path | None = None) -> None:
-        self._runs = CheckerRunRepository(db_path or settings.operations_db_path)
+        operations_db_path = db_path or settings.operations_db_path
+        self._runs = CheckerRunRepository(operations_db_path)
+        self._step_records = StepRecordService(operations_db_path)
 
-    def create_run(self, request: RoleModelCheckStartRequest | dict | None = None) -> RoleModelCheckStatusResponse:
+    def accept_run(
+        self,
+        request: RoleModelCheckStartRequest | dict | None = None,
+        *,
+        idempotency_key: str | None = None,
+    ) -> CheckerRunAcceptance:
         now = _utcnow()
-        run_id = uuid4()
         if isinstance(request, RoleModelCheckStartRequest):
             request_payload = request.model_dump(mode="json")
         else:
             request_payload = request or {}
-        self._runs.create_run(run_id=run_id, status="PENDING", request_payload=request_payload, created_at=now)
+        request_scope = checker_request_scope(
+            roles=[str(role) for role in request_payload.get("roles", [])],
+            critic_profile=str(request_payload.get("critic_profile", "minimal_context")),
+        )
+        request_payload_hash = request_hash(request_payload)
+        if idempotency_key:
+            existing = self._runs.find_by_idempotency_key(
+                request_scope=request_scope,
+                idempotency_key=idempotency_key,
+            )
+            if existing is not None:
+                if existing["request_hash"] != request_payload_hash:
+                    raise IdempotencyConflictError(
+                        f"Idempotency key {idempotency_key!r} is already bound to a different checker request."
+                    )
+                return CheckerRunAcceptance(
+                    status=self.get_status(UUID(str(existing["run_id"]))),
+                    created_new=False,
+                )
+
+        run_id = uuid4()
+        self._runs.create_run(
+            run_id=run_id,
+            status="PENDING",
+            request_payload=request_payload,
+            request_hash=request_payload_hash,
+            request_scope=request_scope,
+            idempotency_key=idempotency_key,
+            created_at=now,
+        )
+        return CheckerRunAcceptance(status=self.get_status(run_id), created_new=True)
+
+    def create_run(
+        self,
+        request: RoleModelCheckStartRequest | dict | None = None,
+        *,
+        idempotency_key: str | None = None,
+    ) -> RoleModelCheckStatusResponse:
+        return self.accept_run(request, idempotency_key=idempotency_key).status
+
+    def retry_run(self, run_id: UUID, *, retry_reason: str = "operator_retry") -> RoleModelCheckStatusResponse:
+        current = self.get_status(run_id)
+        if str(current.status) != "FAILED":
+            raise RetryNotAllowedError(
+                f"Checker run {run_id} cannot be retried while status is {current.status}."
+            )
+        updated_at = _utcnow()
+        self._runs.retry_run(run_id, retry_reason=retry_reason, updated_at=updated_at)
         return self.get_status(run_id)
 
     def update_run(
@@ -44,6 +100,9 @@ class RoleModelCheckManager:
         current_role: str | None = None,
         detail: str | None = None,
         report_path: str | None = None,
+        finish_reason: str | None = None,
+        failure_stage: str | None = None,
+        retryable: bool | None = None,
     ) -> RoleModelCheckStatusResponse:
         current = self.get_status(run_id)
         if status is not None:
@@ -60,6 +119,9 @@ class RoleModelCheckManager:
             detail=detail,
             report_path=report_path,
             heartbeat_at=updated_at,
+            finish_reason=finish_reason,
+            failure_stage=failure_stage,
+            retryable=retryable,
             updated_at=updated_at,
         )
         return self.get_status(run_id)
@@ -80,3 +142,24 @@ class RoleModelCheckManager:
 
     def list_events(self, run_id: UUID) -> list[dict[str, object]]:
         return self._runs.list_events(run_id)
+
+    def claim_next_pending(self, *, worker_id: str, lease_seconds: int = 30) -> UUID | None:
+        now = _utcnow()
+        lease_expires_at = now + timedelta(seconds=lease_seconds)
+        return self._runs.claim_next_pending(
+            worker_id=worker_id,
+            now=now,
+            lease_expires_at=lease_expires_at,
+        )
+
+    def get_request_payload(self, run_id: UUID) -> dict[str, object]:
+        return self._runs.get_request_payload(run_id)
+
+    def get_attempt(self, run_id: UUID) -> dict[str, object]:
+        return self._runs.get_attempt(run_id)
+
+    def list_step_records(self, run_id: UUID) -> list[dict[str, object]]:
+        return self._step_records.list_step_records(run_id=run_id, run_kind="role_model_check")
+
+    def list_artifact_lineage(self, run_id: UUID) -> list[dict[str, object]]:
+        return self._step_records.list_artifact_lineage(run_id=run_id, run_kind="role_model_check")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,6 +37,51 @@ class Settings:
     @property
     def role_model_reports_dir(self) -> Path:
         return self.data_dir / "role_model_checker_runs"
+
+    @property
+    def inference_backend(self) -> str:
+        return os.getenv("NARRATIVE_INFERENCE_BACKEND", "stub").strip() or "stub"
+
+    @property
+    def inference_base_url(self) -> str:
+        configured = os.getenv("NARRATIVE_INFERENCE_BASE_URL", "").strip()
+        if configured:
+            return configured
+        default_urls = {
+            "llama.cpp": "http://127.0.0.1:8080",
+            "lmstudio": "http://127.0.0.1:1234",
+            "vllm": "http://127.0.0.1:8000",
+            "openai_compatible": "http://127.0.0.1:8000",
+        }
+        return default_urls.get(self.inference_backend, "")
+
+    @property
+    def inference_api_key(self) -> str | None:
+        value = os.getenv("NARRATIVE_INFERENCE_API_KEY", "").strip()
+        return value or None
+
+    @property
+    def inference_default_model(self) -> str | None:
+        value = os.getenv("NARRATIVE_INFERENCE_MODEL", "").strip()
+        return value or None
+
+    @property
+    def inference_timeout_seconds(self) -> float:
+        raw_value = os.getenv("NARRATIVE_INFERENCE_TIMEOUT_SECONDS", "120").strip()
+        try:
+            return float(raw_value)
+        except ValueError:
+            return 120.0
+
+    @property
+    def inference_aliases(self) -> list[str]:
+        aliases = {
+            "llama.cpp": ["llama-server", "openai-compatible"],
+            "lmstudio": ["lm-studio", "openai-compatible"],
+            "vllm": ["openai-compatible"],
+            "openai_compatible": ["openai-compatible"],
+        }
+        return aliases.get(self.inference_backend, [])
 
 
 settings = Settings()

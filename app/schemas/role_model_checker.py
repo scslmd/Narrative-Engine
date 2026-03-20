@@ -17,6 +17,10 @@ class RoleModelCheckStartRequest(StrictModel):
     save_report: bool = True
 
 
+class RoleModelCheckRetryRequest(StrictModel):
+    retry_reason: str = "operator_retry"
+
+
 class RoleCheckResult(StrictModel):
     role: RoleName
     passed: bool
@@ -30,6 +34,7 @@ class RoleCheckResult(StrictModel):
 class RoleModelCheckStatusResponse(StrictModel):
     run_id: UUID
     status: str
+    attempt_number: int = 1
     created_at: datetime
     updated_at: datetime
     current_role: RoleName | None = None

@@ -90,6 +90,9 @@ class ProjectService:
             updated_at=_file_timestamp(artifact_path),
         )
 
+    def register_generated_artifact(self, project_id: str, artifact_name: str, artifact_path: Path) -> None:
+        self.repository.register_artifact_path(project_id, artifact_name, artifact_path)
+
     def _require_projection(self, project_id: str) -> ProjectProjection:
         projection = self.repository.get_project_projection(project_id)
         if projection is None:

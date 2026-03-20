@@ -8,4 +8,5 @@ __pycache__/
 *.egg-info/
 data/state/
 data/projects/*/bible.db
+data/projects/*/exports/*
 data/role_model_checker_runs/

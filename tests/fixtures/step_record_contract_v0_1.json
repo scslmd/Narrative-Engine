@@ -1,0 +1,150 @@
+{
+  "step_record_required_fields": [
+    "step_record_id",
+    "logical_run_id",
+    "run_id",
+    "run_kind",
+    "attempt_number",
+    "step_name",
+    "step_index",
+    "state",
+    "project_id",
+    "model_id",
+    "critic_profile",
+    "backend_name",
+    "backend_version",
+    "input_hash",
+    "output_hash",
+    "prompt_hash",
+    "input_artifact_refs",
+    "output_artifact_refs",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "finish_reason",
+    "error_code",
+    "error_category",
+    "executor_id",
+    "lease_owner"
+  ],
+  "artifact_lineage_required_fields": [
+    "artifact_lineage_id",
+    "logical_run_id",
+    "run_id",
+    "run_kind",
+    "attempt_number",
+    "step_name",
+    "project_id",
+    "artifact_role",
+    "artifact_kind",
+    "path",
+    "content_hash",
+    "status",
+    "validation_state",
+    "produced_at",
+    "registered_at",
+    "supersedes_artifact_lineage_id",
+    "source_artifact_refs",
+    "source_content_hashes",
+    "output_of_step_record_id"
+  ],
+  "lineage_rules": [
+    "temporary_writes_are_not_canonical",
+    "validation_required_before_canonical_registration",
+    "failed_attempt_cannot_replace_canonical",
+    "canonical_replacement_must_supersede_explicitly",
+    "step_record_links_to_lineage_output"
+  ],
+  "examples": {
+    "pipeline_step_record": {
+      "step_record_id": "job-step-1",
+      "logical_run_id": "run-001",
+      "run_id": "run-001",
+      "run_kind": "pipeline_job",
+      "attempt_number": 1,
+      "step_name": "architect",
+      "step_index": 1,
+      "state": "COMPLETED",
+      "project_id": "science-fantasy-test",
+      "model_id": "qwen2.5-32b-instruct-q4_k_m",
+      "critic_profile": null,
+      "backend_name": "local-llm",
+      "backend_version": "planned",
+      "input_hash": "input-hash-001",
+      "output_hash": "output-hash-001",
+      "prompt_hash": "prompt-hash-001",
+      "input_artifact_refs": [
+        "manifest"
+      ],
+      "output_artifact_refs": [
+        "story_bible"
+      ],
+      "started_at": "2026-03-19T10:00:00+00:00",
+      "finished_at": "2026-03-19T10:00:05+00:00",
+      "duration_seconds": 5.0,
+      "finish_reason": "success",
+      "error_code": null,
+      "error_category": null,
+      "executor_id": "worker-local-1",
+      "lease_owner": "worker-local-1"
+    },
+    "checker_step_record": {
+      "step_record_id": "checker-step-1",
+      "logical_run_id": "run-002",
+      "run_id": "run-002",
+      "run_kind": "role_model_check",
+      "attempt_number": 1,
+      "step_name": "critic",
+      "step_index": 1,
+      "state": "FAILED",
+      "project_id": "science-fantasy-test",
+      "model_id": "qwen2.5-32b-instruct-q5_k_m",
+      "critic_profile": "minimal_context",
+      "backend_name": "local-llm",
+      "backend_version": "planned",
+      "input_hash": "input-hash-002",
+      "output_hash": "output-hash-002",
+      "prompt_hash": "prompt-hash-002",
+      "input_artifact_refs": [
+        "story_bible",
+        "chapter_1"
+      ],
+      "output_artifact_refs": [
+        "checker_report"
+      ],
+      "started_at": "2026-03-19T10:10:00+00:00",
+      "finished_at": "2026-03-19T10:10:09+00:00",
+      "duration_seconds": 9.0,
+      "finish_reason": "validation_failed",
+      "error_code": "CRITIC_REASONING_LEAK",
+      "error_category": "deterministic_validation",
+      "executor_id": "worker-local-1",
+      "lease_owner": "worker-local-1"
+    },
+    "artifact_lineage_record": {
+      "artifact_lineage_id": "lineage-001",
+      "logical_run_id": "run-001",
+      "run_id": "run-001",
+      "run_kind": "pipeline_job",
+      "attempt_number": 1,
+      "step_name": "architect",
+      "project_id": "science-fantasy-test",
+      "artifact_role": "story_bible",
+      "artifact_kind": "json",
+      "path": "data/projects/science-fantasy-test/story_bible.json",
+      "content_hash": "artifact-hash-001",
+      "status": "CANONICAL",
+      "validation_state": "PASSED",
+      "produced_at": "2026-03-19T10:00:04+00:00",
+      "registered_at": "2026-03-19T10:00:05+00:00",
+      "supersedes_artifact_lineage_id": null,
+      "source_artifact_refs": [
+        "manifest"
+      ],
+      "source_content_hashes": [
+        "manifest-hash-001"
+      ],
+      "output_of_step_record_id": "job-step-1"
+    }
+  }
+}

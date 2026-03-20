@@ -10,7 +10,11 @@ It exists to remove ambiguity from the current implementation state and to estab
 - role-model checker runs
 - future per-role execution steps
 
-This is a design/specification document only. It does not imply that the current implementation already satisfies the protocol.
+Current implementation status:
+
+- implemented now: `202 Accepted` enqueue semantics, status polling, local lease-claim execution, stale-lease reclaim events, immutable request snapshots, append-only event history, first-class attempt tables, explicit retry attempts, attempt-level executor telemetry, and `Idempotency-Key` replay or conflict handling
+- implemented now for step persistence: live SQLite step records, artifact lineage, local-executor writes, fixture coverage, and persistence tests
+- still next: dedicated API projections and runtime-grade model telemetry for step records and artifact lineage
 
 ## Protocol Goals
 
@@ -37,12 +41,12 @@ Each run has:
 
 ## Acceptance Contract
 
-Queue-facing endpoints should follow the same contract:
+Queue-facing endpoints now follow this baseline contract:
 
 - validate request
 - persist immutable request snapshot
 - assign `run_id`
-- assign initial state `ACCEPTED`
+- assign initial state `PENDING`
 - emit `RUN_ACCEPTED` event
 - return `202 Accepted`
 
@@ -57,13 +61,13 @@ Compatibility note:
 
 ## Strict State Machine
 
-All runs must use the same top-level state machine:
+Target state machine:
 
-`ACCEPTED -> CLAIMED -> RUNNING -> VALIDATING -> PERSISTING -> COMPLETED | FAILED | CANCELLED`
+`PENDING -> CLAIMED -> RUNNING -> VALIDATING -> PERSISTING -> COMPLETED | FAILED | CANCELLED`
 
 Rules:
 
-- `ACCEPTED`: request persisted, not yet leased by a worker
+- `PENDING`: request persisted, not yet leased by a worker
 - `CLAIMED`: a worker/runner has an active lease and intends to execute
 - `RUNNING`: role or phase work is actively executing
 - `VALIDATING`: outputs exist and are undergoing deterministic checks
@@ -75,17 +79,23 @@ Rules:
 Forbidden transitions:
 
 - terminal states must not transition back to active states
-- `ACCEPTED` must not jump directly to `COMPLETED`
+- `PENDING` must not jump directly to `COMPLETED`
 - `RUNNING` must not bypass `VALIDATING` or `PERSISTING` for artifact-producing work
 
 Allowed retry transition:
 
-- `FAILED -> ACCEPTED` is not allowed in-place
+- `FAILED -> PENDING` is not allowed in-place
 - retries must create a new attempt record under the same logical run identity
 
 ## Step Model
 
 Runs may contain step executions.
+
+For the current record-shape contract and artifact-lineage slice, see:
+
+- `docs/Step Record Blueprint v0.1.md`
+- `tests/fixtures/step_record_contract_v0_1.json`
+- `tests/test_step_record_spec.py`
 
 Pipeline job steps should eventually include:
 
@@ -156,24 +166,25 @@ Projection rule:
 
 ## Idempotency Semantics
 
-All enqueue endpoints must support idempotency keys.
+All enqueue endpoints now support idempotency keys.
 
-Recommended key shape:
+Implemented key shape:
 
 - client-supplied `Idempotency-Key` header preferred
-- if absent, derive a deterministic request hash from canonicalized request payload plus route identity
+- if absent, persist a deterministic request hash without deduping automatically
 
 Run creation semantics:
 
-- if a matching idempotency key exists for a non-terminal run, return the existing `run_id`
-- if a matching idempotency key exists for a terminal successful run, return the existing `run_id` unless the caller explicitly requests a rerun
+- if a matching idempotency key exists for a non-terminal run in the same scope, return the existing `run_id` with `202`
+- if a matching idempotency key exists for a terminal run in the same scope, return the existing `run_id` with `200`
+- if a matching idempotency key exists in the same scope but the request snapshot differs, reject with `409 Conflict`
 - reruns must create a new attempt lineage and must not overwrite the original request snapshot
 
 Idempotency scope:
 
-- keys should be scoped by `run_kind`
-- keys should include `project_id` when applicable
-- checker runs should include requested roles, selected models, and critic profile in the canonical payload
+- jobs are scoped by `phase` and `project_id`
+- checker runs are scoped by requested roles and critic profile
+- canonical request hashes are persisted for all accepted requests
 
 ## Retry Semantics
 
@@ -196,7 +207,7 @@ Rules:
 
 ## Lease / Claim Semantics
 
-This document does not implement the worker, but the protocol must reserve for it now.
+The current repo implements a local in-process worker with these lease fields, reclaim events, and baseline structured claim telemetry. The remaining work is richer attempt or step-level orchestration on top of the current claim model.
 
 Required lease fields:
 
@@ -210,12 +221,32 @@ Rules:
 - claim must be atomic
 - expired leases may be reclaimed by another worker
 - reclaiming must emit `LEASE_EXPIRED` and `RUN_REQUEUED` events before a new claim
+- `RUN_CLAIMED` persists executor-name, executor-instance, and queue-delay metadata for the active attempt
+- reclaim events preserve stale-lease context and a structured retry reason
 
 ## Telemetry Contract
 
 Plain text logs are insufficient for the rebuild path.
 
-Minimum telemetry fields per attempt/step:
+Implemented baseline telemetry fields per attempt:
+
+- `run_id`
+- `attempt_number`
+- `executor_name`
+- `executor_instance_id`
+- `queue_delay_ms`
+- `lease_owner`
+- `lease_expires_at`
+- `claimed_at`
+- `last_heartbeat_at`
+- `finish_reason`
+- `failure_stage`
+- `retryable`
+- `retry_reason`
+- `error_code`
+- `error_category`
+
+Still-planned runtime-grade telemetry fields per attempt/step:
 
 - `run_id`
 - `attempt_number`
@@ -264,6 +295,11 @@ Rules:
 
 `detail` should be treated as diagnostic text, not as a protocol field.
 
+Current limitation:
+
+- step records and artifact-lineage rows are persisted today, but they are not yet exposed through dedicated API endpoints or richer projection views
+- the current step-record slice is local-executor-backed and still needs real-runtime/orchestrator emission
+
 ## Failure-Mode Test Matrix
 
 The following matrix should drive implementation-time tests before serial runtime integration is considered complete.
@@ -304,6 +340,9 @@ The following matrix should drive implementation-time tests before serial runtim
 
 ### Telemetry Completeness
 
+- each attempt records executor claim telemetry
+- each reclaim emits structured stale-lease context
+- step-record and artifact-lineage field requirements are locked by fixture coverage and verified against live persistence
 - each attempt records model/backend identity
 - each attempt records prompt/input/output hashes
 - each terminal failure records error category and finish reason
@@ -317,7 +356,7 @@ The following matrix should drive implementation-time tests before serial runtim
 
 ## Recommended Pre-Integration Deliverables
 
-Before serial worker/runtime integration starts, the repo should contain:
+Before serial runtime integration continues, the repo should contain:
 
 - a protocol state machine spec
 - an event taxonomy

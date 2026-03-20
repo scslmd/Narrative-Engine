@@ -145,6 +145,59 @@ class ProjectRepository:
             return None
         return projection.artifact_paths.get(self._canonical_artifact_type(artifact_type))
 
+    def register_artifact_path(self, project_id: str, artifact_type: str, artifact_path: Path) -> None:
+        canonical_type = self._canonical_artifact_type(artifact_type)
+        if not artifact_path.exists() or not artifact_path.is_file():
+            raise FileNotFoundError(str(artifact_path))
+        projection = self.get_project_projection(project_id)
+        if projection is None:
+            raise FileNotFoundError(f"Project projection not found for project_id={project_id}")
+        timestamp = _utc_timestamp(artifact_path).isoformat()
+        content_hash = self._hash_if_file(artifact_path)
+        size_bytes = artifact_path.stat().st_size
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO project_artifacts (
+                    project_id, artifact_type, path, content_hash, size_bytes, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(project_id, artifact_type) DO UPDATE SET
+                    path = excluded.path,
+                    content_hash = excluded.content_hash,
+                    size_bytes = excluded.size_bytes,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    project_id,
+                    canonical_type,
+                    str(artifact_path),
+                    content_hash,
+                    size_bytes,
+                    timestamp,
+                    timestamp,
+                ),
+            )
+            connection.execute(
+                "UPDATE projects SET updated_at = ? WHERE project_id = ?",
+                (timestamp, project_id),
+            )
+            connection.commit()
+        with connect(projection.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO artifacts (artifact_type, path, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT(artifact_type) DO UPDATE SET
+                    path = excluded.path,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    canonical_type,
+                    str(artifact_path),
+                    timestamp,
+                ),
+            )
+            connection.commit()
+
     def _build_projection(self, row) -> ProjectProjection:
         project_id = row["project_id"]
         with connect(self.db_path) as connection:

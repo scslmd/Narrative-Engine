@@ -302,7 +302,7 @@ function renderRoleCards(resultsByRole = {}) {
     recommendation.className = 'muted';
     recommendation.textContent = state.catalog?.recommended_selection?.[role]
       ? `Recommended: ${state.catalog.recommended_selection[role]}`
-      : 'No recommended discovered model yet.';
+      : 'No recommended model yet.';
     card.appendChild(recommendation);
 
     const label = document.createElement('label');
@@ -386,7 +386,7 @@ function renderProjects() {
     item.className = `project-item${state.selectedProjectId === project.project_id ? ' active' : ''}`;
     item.innerHTML = `
       <strong>${project.project_name}</strong>
-      <div class="muted">${project.genre} · ${project.story_structure}</div>
+      <div class="muted">${project.genre} | ${project.story_structure}</div>
       <div class="micro-copy">${project.project_id}</div>
     `;
     item.addEventListener('click', () => selectProject(project.project_id));
@@ -406,7 +406,7 @@ function renderHealthCards(projectDetail) {
         projectDetail?.sequence_exists ? 'Sequence' : null,
         projectDetail?.chapter_exists ? 'Chapter' : null,
         projectDetail?.database_exists ? 'DB' : null,
-      ].filter(Boolean).join(' · ') || 'Manifest only',
+      ].filter(Boolean).join(' | ') || 'Manifest only',
     },
   ];
 
@@ -483,7 +483,7 @@ function renderSelectedProject() {
     return;
   }
 
-  const summary = `${manifest.config.genre} · ${manifest.config.tone_profile} · ${titleCase(manifest.config.story_structure)} · POV ${manifest.config.pov}`;
+  const summary = `${manifest.config.genre} | ${manifest.config.tone_profile} | ${titleCase(manifest.config.story_structure)} | POV ${manifest.config.pov}`;
   els.activeProjectName.textContent = manifest.project_name;
   els.activeProjectMeta.textContent = summary;
   els.synopsisSeed.textContent = manifest.premise_text || 'No synopsis seed saved yet.';
@@ -641,7 +641,7 @@ async function runRoleCheck() {
   }
 
   els.checkerStatus.textContent = 'RUNNING';
-  els.checkerProgress.textContent = 'Checker is walking the role workflow.';
+  els.checkerProgress.textContent = 'Checker is evaluating the selected roles.';
   els.checkerSummary.innerHTML = '';
   els.checkerLog.textContent = 'Starting role-model check...';
   els.checkerReportPath.textContent = 'Saved report path will appear here when enabled.';
@@ -745,6 +745,6 @@ Promise.all([loadCatalog(), loadProjects()])
     renderSelectedProject();
   })
   .catch((error) => {
-    els.checkerProgress.textContent = `Failed to initialize console: ${error.message}`;
+    els.checkerProgress.textContent = `Failed to initialize workspace: ${error.message}`;
     els.projectDetail.textContent = `Failed to load project view: ${error.message}`;
   });

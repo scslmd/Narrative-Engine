@@ -15,10 +15,15 @@ class JobCreateRequest(StrictModel):
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
+class JobRetryRequest(StrictModel):
+    retry_reason: str = "operator_retry"
+
+
 class JobStatusResponse(StrictModel):
     id: UUID
     phase: JobPhase
     status: JobStatus
+    attempt_number: int = 1
     created_at: datetime
     updated_at: datetime
     current_phase: str | None = None

@@ -1,8 +1,21 @@
 from pathlib import Path
+from time import sleep
 
 from fastapi.testclient import TestClient
 
 from app.main import build_app
+
+
+def _poll_json(client: TestClient, path: str, *, terminal_statuses: set[str], attempts: int = 12, delay_seconds: float = 0.2) -> dict:
+    payload = {}
+    for _ in range(attempts):
+        response = client.get(path)
+        assert response.status_code == 200
+        payload = response.json()
+        if payload['status'] in terminal_statuses:
+            return payload
+        sleep(delay_seconds)
+    return payload
 
 
 def test_health_endpoint() -> None:
@@ -32,38 +45,43 @@ def test_models_endpoint_returns_workflow_preferences() -> None:
 
 
 def test_role_model_checker_stub_runs() -> None:
-    client = TestClient(build_app())
-    response = client.post(
-        '/role-model-checker/run',
-        json={
-            'roles': ['architect', 'critic'],
-            'model_selection': {},
-            'critic_profile': 'minimal_context',
-            'save_report': True,
-        },
-    )
-    assert response.status_code == 202
-    payload = response.json()
-    assert payload['status'] == 'PENDING'
-    assert response.headers['Location'].endswith(f"/role-model-checker/{payload['run_id']}/status")
+    with TestClient(build_app()) as client:
+        response = client.post(
+            '/role-model-checker/run',
+            json={
+                'roles': ['architect', 'critic'],
+                'model_selection': {},
+                'critic_profile': 'minimal_context',
+                'save_report': True,
+            },
+        )
+        assert response.status_code == 202
+        payload = response.json()
+        assert payload['status'] == 'PENDING'
+        assert response.headers['Location'].endswith(f"/role-model-checker/{payload['run_id']}/status")
 
-    status_response = client.get(f"/role-model-checker/{payload['run_id']}/status")
-    assert status_response.status_code == 200
-    status_payload = status_response.json()
-    assert status_payload['status'] == 'COMPLETED'
-    assert len(status_payload['results']) == 2
-    assert status_payload['report_path']
-    assert Path(status_payload['report_path']).exists()
+        status_payload = _poll_json(
+            client,
+            f"/role-model-checker/{payload['run_id']}/status",
+            terminal_statuses={'COMPLETED', 'FAILED'},
+        )
+        assert status_payload['status'] == 'COMPLETED'
+        assert len(status_payload['results']) == 2
+        assert status_payload['report_path']
+        assert Path(status_payload['report_path']).exists()
 
 
 def test_job_stub_runs() -> None:
-    client = TestClient(build_app())
-    response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': 'science-fantasy-test'}})
-    assert response.status_code == 202
-    payload = response.json()
-    assert payload['status'] == 'PENDING'
-    assert response.headers['Location'].endswith(f"/jobs/{payload['id']}/status")
+    with TestClient(build_app()) as client:
+        response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': 'science-fantasy-test'}})
+        assert response.status_code == 202
+        payload = response.json()
+        assert payload['status'] == 'PENDING'
+        assert response.headers['Location'].endswith(f"/jobs/{payload['id']}/status")
 
-    status_response = client.get(f"/jobs/{payload['id']}/status")
-    assert status_response.status_code == 200
-    assert status_response.json()['status'] == 'COMPLETED'
+        status_payload = _poll_json(
+            client,
+            f"/jobs/{payload['id']}/status",
+            terminal_statuses={'COMPLETED', 'FAILED'},
+        )
+        assert status_payload['status'] == 'COMPLETED'
