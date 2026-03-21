@@ -42,6 +42,11 @@
 - [x] Register `chapter_1` runtime output through canonical artifact-lineage persistence.
 - [x] Rebuild the current job-phase set on top of explicit runtime-backed step handlers.
 - [ ] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
+  Current completed sub-slices:
+  - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
+  - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
+  Remaining next sub-slice:
+  - [ ] `ORCH-02C` Add durable upstream artifact selection and stronger `story_bible` provenance for `P-200` through `P-400`.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.

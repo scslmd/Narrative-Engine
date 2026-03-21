@@ -26,11 +26,13 @@ Current validation covers:
 - live step-record and artifact-lineage persistence in SQLite, including executor-written rows and lineage FK behavior
 - projection-endpoint coverage currently spans `tests/test_projection_endpoints.py` and `tests/test_projection_endpoints_impl.py`
 - projection and runtime failure-mode coverage spans `tests/test_projection_runtime_failure_modes.py`
+- inspect projection coverage now includes optional `attempt`, `limit`, and `offset` query behavior plus validation failures for invalid values
 - generalized inference-provider wiring for `llama.cpp`, LM Studio, `vLLM`, and other OpenAI-compatible runtimes
 - the first real provider-backed `architect` execution path for phase `P-100`, including canonical markdown output, canonical artifact registration, and artifact lineage
 - the first real provider-backed `sequencer` execution path for phase `P-200`, including canonical `sequence` artifact registration and inspectable job projections
 - the first real provider-backed `drafter` execution path for phase `P-300`, including canonical `chapter-1` artifact registration and inspectable job projections
 - the first real provider-backed `compiler` execution path for phase `P-400`, including canonical `story_bible` artifact registration and inspectable job projections
+- runtime success paths for `P-100` through `P-400` now fail instead of completing early when lineage persistence or project artifact registration fails
 - generated project artifact endpoints now reject empty bootstrap placeholders for failed runtime-backed `sequence` and `chapter-1` reads
 - repeated successful runtime artifact writes now supersede prior canonical lineage rows for `sequence` and `chapter_1`
 - structured runtime error mapping coverage for timeout, transport, HTTP-status, invalid-JSON, protocol-shape, and configuration failures
