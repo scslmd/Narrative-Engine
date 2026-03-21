@@ -2,7 +2,9 @@
 
 Current project layers:
 
+- `STRUCTURE.md`: repository map for folders and key files
 - `docs/`: product, frontend, protocol, and validation documents
+- `docs/archive/`: superseded notes and historical decisions retained for reference
 - `app/`: FastAPI app, persistence layer, schemas, and services
 - `frontend/`: writer workflow prototype
 - `data/`: sample projects, generated artifacts, and local runtime data roots
