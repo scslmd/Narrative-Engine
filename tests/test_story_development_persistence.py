@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.schemas import StoryFlowStageConfigurationState, StoryFlowStageProgressState
+from app.schemas import (
+    StoryArtifactLifecycleState,
+    StoryFlowStageConfigurationState,
+    StoryFlowStageProgressState,
+    StorySuggestionLifecycleState,
+)
 from app.persistence.sqlite import OPERATIONS_DB_VERSION, connect, ensure_operations_db
 from app.persistence.story_development import ArcComparisonCandidateRecord, StoryDevelopmentRepository
 
@@ -67,6 +72,9 @@ def test_story_development_schema_creation_includes_canonical_tables(tmp_path: P
         "chapter_packets",
         "planning_dependencies",
         "story_decision_nodes",
+        "draft_artifacts",
+        "manuscript_documents",
+        "revision_suggestions",
     }.issubset(tables)
 
 
@@ -539,6 +547,102 @@ def test_story_development_repository_round_trips_planning_hierarchy_and_packet_
     assert dependencies[0].downstream_id == beat_late.beat_id
     assert dependency.reason is not None
     assert packet.packet_id == "packet-one"
+
+
+def test_story_development_repository_round_trips_drafting_objects_independently(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "drafting-roundtrip"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    draft = repo.upsert_draft_artifact(
+        artifact_id="draft-1",
+        project_id=project_id,
+        title="Chapter 1 Draft",
+        content="The city shifted at dusk.",
+        source_plan_ids=["chapter-1", "scene-1"],
+        source_context=["foundation", "planning"],
+        provenance_note="Generated from the chapter packet.",
+        status=StoryArtifactLifecycleState.DRAFT,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    chapter = repo.upsert_chapter_plan(
+        chapter_id="chapter-1",
+        project_id=project_id,
+        title="Chapter 1",
+        summary="The opening chapter.",
+        objective="Open the city shift.",
+        conflict="The city changes before the lead arrives.",
+        stakes="The witness may be lost.",
+        sequence_id=None,
+        active_character_ids=["lead"],
+        continuity_requirements=["The city must shift at dusk."],
+        unresolved_questions=["Where is the witness?"],
+        status="draft",
+        position=1,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    scene = repo.upsert_scene_plan(
+        scene_id="scene-1",
+        project_id=project_id,
+        title="Opening Scene",
+        summary="The first scene of the chapter.",
+        objective="Introduce the shift.",
+        conflict="The streets do not stay still.",
+        stakes="The clue may vanish.",
+        chapter_id=chapter.chapter_id,
+        active_character_ids=["lead", "witness"],
+        continuity_requirements=["The market layout must match the clue."],
+        unresolved_questions=["Who is following them?"],
+        status="draft",
+        position=1,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    manuscript = repo.upsert_manuscript_document(
+        document_id="manuscript-1",
+        project_id=project_id,
+        title="Chapter 1 Manuscript",
+        content="The city shifted at dusk, and Mara watched.",
+        chapter_id="chapter-1",
+        scene_id="scene-1",
+        current_draft_artifact_id=draft.artifact_id,
+        version=2,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    suggestion = repo.upsert_revision_suggestion(
+        suggestion_id="suggestion-1",
+        project_id=project_id,
+        target_document_id=manuscript.document_id,
+        source_text="The city shifted at dusk, and Mara watched.",
+        proposed_text="At dusk, the city shifted again while Mara watched.",
+        rationale="Tighten the opening rhythm.",
+        source_context=["chapter-1", "scene-1"],
+        status=StorySuggestionLifecycleState.REQUESTED,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    assert draft.status == StoryArtifactLifecycleState.DRAFT
+    assert draft.source_plan_ids == ["chapter-1", "scene-1"]
+    assert repo.get_draft_artifact(draft.artifact_id) == draft
+    assert repo.list_draft_artifacts(project_id) == [draft]
+
+    assert chapter.chapter_id == "chapter-1"
+    assert scene.chapter_id == chapter.chapter_id
+    assert manuscript.current_draft_artifact_id == draft.artifact_id
+    assert manuscript.version == 2
+    assert repo.get_manuscript_document(manuscript.document_id) == manuscript
+    assert repo.list_manuscript_documents(project_id) == [manuscript]
+
+    assert suggestion.status == StorySuggestionLifecycleState.REQUESTED
+    assert suggestion.target_document_id == manuscript.document_id
+    assert repo.get_revision_suggestion(suggestion.suggestion_id) == suggestion
+    assert repo.list_revision_suggestions(project_id) == [suggestion]
+    assert repo.list_revision_suggestions_for_document(project_id, target_document_id=manuscript.document_id) == [suggestion]
 
 
 def test_story_decision_nodes_round_trip_links_state_and_ordering(tmp_path: Path) -> None:

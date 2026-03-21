@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 14
+OPERATIONS_DB_VERSION = 15
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -462,6 +462,52 @@ CREATE TABLE IF NOT EXISTS story_decision_nodes (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS draft_artifacts (
+    artifact_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_plan_ids_json TEXT NOT NULL DEFAULT '[]',
+    source_context_json TEXT NOT NULL DEFAULT '[]',
+    provenance_note TEXT,
+    status TEXT NOT NULL DEFAULT 'DRAFT',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS manuscript_documents (
+    document_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    chapter_id TEXT,
+    scene_id TEXT,
+    current_draft_artifact_id TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(chapter_id) REFERENCES chapter_plans(chapter_id) ON DELETE SET NULL,
+    FOREIGN KEY(scene_id) REFERENCES scene_plans(scene_id) ON DELETE SET NULL,
+    FOREIGN KEY(current_draft_artifact_id) REFERENCES draft_artifacts(artifact_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS revision_suggestions (
+    suggestion_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    target_document_id TEXT NOT NULL,
+    source_text TEXT NOT NULL,
+    proposed_text TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    source_context_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'REQUESTED',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(target_document_id) REFERENCES manuscript_documents(document_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS beat_plans (
     beat_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
@@ -608,6 +654,10 @@ CREATE INDEX IF NOT EXISTS idx_arc_comparisons_project_created ON arc_comparison
 CREATE INDEX IF NOT EXISTS idx_arc_selection_comparisons_selection_order ON arc_selection_comparisons(selection_id, link_order, comparison_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_made_at ON story_decision_nodes(project_id, decision_made_at, node_id, node_record_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_subject ON story_decision_nodes(project_id, subject_type, subject_id, decision_made_at, node_id);
+CREATE INDEX IF NOT EXISTS idx_draft_artifacts_project_title ON draft_artifacts(project_id, title, artifact_id);
+CREATE INDEX IF NOT EXISTS idx_manuscript_documents_project_title ON manuscript_documents(project_id, title, document_id);
+CREATE INDEX IF NOT EXISTS idx_manuscript_documents_project_chapter_scene ON manuscript_documents(project_id, chapter_id, scene_id, document_id);
+CREATE INDEX IF NOT EXISTS idx_revision_suggestions_project_target ON revision_suggestions(project_id, target_document_id, suggestion_id);
 CREATE INDEX IF NOT EXISTS idx_beat_plans_project_position ON beat_plans(project_id, position, beat_id);
 CREATE INDEX IF NOT EXISTS idx_sequence_plans_project_position ON sequence_plans(project_id, position, sequence_id);
 CREATE INDEX IF NOT EXISTS idx_chapter_plans_project_sequence_position ON chapter_plans(project_id, sequence_id, position, chapter_id);
@@ -716,6 +766,9 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "arc_selections", "arc_selections__legacy")
         _rename_table_if_exists(connection, "story_decision_nodes", "story_decision_nodes__legacy")
         _rename_table_if_exists(connection, "story_decision_records", "story_decision_records__legacy")
+        _rename_table_if_exists(connection, "draft_artifacts", "draft_artifacts__legacy")
+        _rename_table_if_exists(connection, "manuscript_documents", "manuscript_documents__legacy")
+        _rename_table_if_exists(connection, "revision_suggestions", "revision_suggestions__legacy")
 
         connection.executescript(OPERATIONS_SCHEMA)
 
@@ -779,6 +832,9 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_arc_candidates_legacy(connection)
         _copy_arc_selections_legacy(connection)
         _copy_story_decision_nodes_legacy(connection)
+        _copy_draft_artifacts_legacy(connection)
+        _copy_manuscript_documents_legacy(connection)
+        _copy_revision_suggestions_legacy(connection)
 
         _apply_operations_indexes(connection)
         _drop_legacy_tables(connection)
@@ -811,6 +867,9 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("arc_selections", "arc_selections__legacy"),
         ("story_decision_nodes", "story_decision_nodes__legacy"),
         ("story_decision_nodes", "story_decision_records__legacy"),
+        ("draft_artifacts", "draft_artifacts__legacy"),
+        ("manuscript_documents", "manuscript_documents__legacy"),
+        ("revision_suggestions", "revision_suggestions__legacy"),
     ):
         if _table_exists(connection, legacy_name) and _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")
@@ -1328,6 +1387,57 @@ def _copy_story_decision_nodes_legacy(connection: sqlite3.Connection) -> None:
             new_state_summary, reason_or_note, decision_made_at, made_by, subject_links_json,
             informing_object_refs_json, created_at, updated_at
         FROM story_decision_records__legacy
+        """
+    )
+
+
+def _copy_draft_artifacts_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "draft_artifacts__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO draft_artifacts (
+            artifact_id, project_id, title, content, source_plan_ids_json, source_context_json,
+            provenance_note, status, created_at, updated_at
+        )
+        SELECT
+            artifact_id, project_id, title, content, source_plan_ids_json, source_context_json,
+            provenance_note, status, created_at, updated_at
+        FROM draft_artifacts__legacy
+        """
+    )
+
+
+def _copy_manuscript_documents_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "manuscript_documents__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO manuscript_documents (
+            document_id, project_id, title, content, chapter_id, scene_id, current_draft_artifact_id,
+            version, created_at, updated_at
+        )
+        SELECT
+            document_id, project_id, title, content, chapter_id, scene_id, current_draft_artifact_id,
+            version, created_at, updated_at
+        FROM manuscript_documents__legacy
+        """
+    )
+
+
+def _copy_revision_suggestions_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "revision_suggestions__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO revision_suggestions (
+            suggestion_id, project_id, target_document_id, source_text, proposed_text, rationale,
+            source_context_json, status, created_at, updated_at
+        )
+        SELECT
+            suggestion_id, project_id, target_document_id, source_text, proposed_text, rationale,
+            source_context_json, status, created_at, updated_at
+        FROM revision_suggestions__legacy
         """
     )
 
