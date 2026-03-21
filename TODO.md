@@ -101,13 +101,15 @@
   rework the current editable-flow prototype to import canonical story-development schemas, prevent stage-id reuse after deletion, and validate dependency references before saving.
   Expected result: the editable-flow service is safe to build on for persistence and API wiring.
   Verification: focused service tests cover non-reused ids, invalid dependency rejection, and shared schema-type usage.
-- [ ] BE-04 Brainstorm and promotion service slice:
+- [x] BE-04 Brainstorm and promotion service slice:
   implement bounded backend operations for `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item`.
   Expected result: brainstorm items can be stored, grouped, and promoted into downstream story-development objects with provenance links.
+  Expected endpoints: none in this slice; service-only foundation for later `/story-development/brainstorm/*` routes.
   Verification: service and persistence tests cover keep/discard/park states and promotion recording.
 - [ ] BE-05 Foundation profile and downstream-impact slice:
   implement `FoundationProfile` and `FoundationRevision` services plus downstream review-cue generation for foundation changes.
   Expected result: foundation updates remain editable after downstream work exists and create explicit review cues instead of silent overwrites.
+  Expected endpoints: none in this slice; service-only foundation for later `/story-development/foundation/*` routes.
   Verification: service tests cover revision history, active-profile reads, and downstream impact records.
 - [ ] BE-06 Character, world bible, and arc-selection slice:
   implement bounded services for `CharacterProfile`, `RelationshipEdge`, `WorldBibleEntry`, `ArcCandidate`, `ArcSelection`, and `ArcStageMap`.
@@ -188,8 +190,8 @@
 - [x] `Curie`: implement BE-01 by owning `app/schemas/story_development.py`, `app/schemas/enums.py`, `app/schemas/__init__.py`, and a new targeted schema test file. Do not edit persistence or service files. You are not alone in the codebase; accommodate others' changes and do not revert them.
 - [x] `Kepler`: implement BE-02 by owning `app/persistence/sqlite.py`, a new `app/persistence/story_development.py`, `app/persistence/__init__.py`, and a new targeted persistence test file. Do not edit schema or service files unless a minimal import/export adjustment is required. You are not alone in the codebase; accommodate others' changes and do not revert them.
 - [x] `Pasteur`: implement BE-03 by owning a new editable-flow service module plus focused service tests, using the canonical docs contract and existing persistence/service patterns. Do not edit schema files and do not replace others' work; adjust to their changes instead.
-- [ ] `Ada`: implement BE-04 by owning the brainstorm and promotion service slice with bounded `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item` operations. Keep the write scope limited to the new service module and a focused test file.
-- [ ] `Lovelace`: implement BE-05 by owning the foundation profile and downstream-impact service slice with bounded revision history behavior and review-cue generation. Keep the write scope limited to the new service module and a focused test file.
+- [x] `Lagrange`: implement BE-04 by owning the brainstorm and promotion service slice with bounded `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item` operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/brainstorm/*` routes. Expected outcome: brainstorm items can be persisted, clustered, and promoted with source links and no API wiring yet. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Descartes`: implement BE-05 by owning the foundation profile and downstream-impact service slice with bounded revision history behavior and review-cue generation. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/foundation/*` routes. Expected outcome: active foundation reads, revision history, and downstream review cues work without API wiring yet. Keep the write scope limited to the new service module and a focused test file.
 - [ ] `Euler`: implement BE-06 by owning the character, world bible, and arc-selection service slice with bounded compare, upsert, select, and stage-map operations. Keep the write scope limited to the new service module and a focused test file.
 - [ ] `Noether-2`: implement BE-07 by owning the planning objects and chapter-packet service slice with bounded plan creation, reorder, and dependency-preservation operations. Keep the write scope limited to the new service module and a focused test file.
 - [ ] `Curie-2`: implement BE-08 by owning the draft artifact versus manuscript document separation slice with bounded generate, revise, and promote operations. Keep the write scope limited to the new service module and a focused test file.
