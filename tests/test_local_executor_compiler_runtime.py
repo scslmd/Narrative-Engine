@@ -569,6 +569,12 @@ def test_local_executor_removes_story_bible_file_when_p400_finalization_fails(tm
     assert attempt["failure_stage"] == "persistence"
     assert attempt["error_category"] == "persistence"
     assert lineage == []
+    steps = job_manager.list_step_records(p400.id)
+    assert len(steps) == 1
+    assert steps[0]["step_name"] == "compiler"
+    assert steps[0]["state"] == "FAILED"
+    assert steps[0]["finish_reason"] == "persistence_error"
+    assert steps[0]["error_category"] == "persistence"
     assert not output_path.exists()
     with pytest.raises(FileNotFoundError):
         project_service.read_artifact(project_id, "story_bible")

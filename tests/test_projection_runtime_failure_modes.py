@@ -382,7 +382,9 @@ def test_runtime_backed_p100_lineage_failure_does_not_emit_canonical_lineage_suc
     assert lineage == []
     assert len(steps) == 1
     assert steps[0]["step_name"] == "architect"
-    assert steps[0]["state"] == "COMPLETED"
+    assert steps[0]["state"] == "FAILED"
+    assert steps[0]["finish_reason"] == "persistence_error"
+    assert steps[0]["error_category"] == "persistence"
     assert project_service.repository.get_artifact_path(project_id, "architect_p100") is None
     with pytest.raises(FileNotFoundError):
         project_service.read_artifact(project_id, "architect_p100")

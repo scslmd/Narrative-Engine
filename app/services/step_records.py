@@ -149,6 +149,25 @@ class StepRecordService:
             offset=offset,
         )
 
+    def mark_step_record_failed(
+        self,
+        *,
+        step_record_id: int,
+        finish_reason: str | None,
+        error_code: str | None,
+        error_category: str | None,
+        finished_at: datetime | None = None,
+    ) -> None:
+        timestamp = finished_at or datetime.now(timezone.utc)
+        self._steps.update_step_record_failure(
+            step_record_id=step_record_id,
+            finish_reason=finish_reason,
+            error_code=error_code,
+            error_category=error_category,
+            finished_at=finished_at,
+            updated_at=timestamp,
+        )
+
     def list_artifact_lineage(
         self,
         *,

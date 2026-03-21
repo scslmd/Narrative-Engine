@@ -186,6 +186,39 @@ class StepRecordRepository:
             for row in rows
         ]
 
+    def update_step_record_failure(
+        self,
+        *,
+        step_record_id: int,
+        finish_reason: str | None,
+        error_code: str | None,
+        error_category: str | None,
+        finished_at: datetime | None,
+        updated_at: datetime,
+    ) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE step_records
+                SET state = 'FAILED',
+                    finish_reason = ?,
+                    error_code = ?,
+                    error_category = ?,
+                    finished_at = ?,
+                    updated_at = ?
+                WHERE step_record_id = ?
+                """,
+                (
+                    finish_reason,
+                    error_code,
+                    error_category,
+                    finished_at.isoformat() if finished_at is not None else None,
+                    updated_at.isoformat(),
+                    step_record_id,
+                ),
+            )
+            connection.commit()
+
 
 class ArtifactLineageRepository:
     def __init__(self, db_path: Path) -> None:

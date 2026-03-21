@@ -317,11 +317,23 @@ class LocalExecutor:
                 output_path,
             )
         except Exception as exc:
+            failure_finished_at = _utcnow()
             try:
                 if output_path.exists():
                     output_path.unlink()
             except Exception:
                 pass
+            if step_record_id is not None:
+                try:
+                    self._step_records.mark_step_record_failed(
+                        step_record_id=step_record_id,
+                        finish_reason="persistence_error",
+                        error_code=str(exc),
+                        error_category="persistence",
+                        finished_at=failure_finished_at,
+                    )
+                except Exception:
+                    pass
             self._job_manager.update_job(
                 job_id,
                 status="FAILED",
@@ -355,7 +367,7 @@ class LocalExecutor:
                         input_artifact_refs=input_artifact_refs,
                         output_artifact_refs=[],
                         started_at=started_at,
-                        finished_at=_utcnow(),
+                        finished_at=failure_finished_at,
                         finish_reason="persistence_error",
                         error_code=str(exc),
                         error_category="persistence",

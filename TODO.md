@@ -49,7 +49,8 @@
   - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
   Remaining next sub-slice:
   - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
-  - [ ] `ORCH-02D.2` Add broader orchestrator/compiler finalization and failure-mode regression coverage beyond the current executor slice.
+  - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
+  - [ ] `ORCH-02D.3` Add broader orchestrator/compiler finalization and failure-mode regression coverage beyond the current executor slice.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.
