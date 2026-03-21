@@ -1827,6 +1827,21 @@ class StoryDevelopmentRepository:
         if branch_point.project_id != project_id:
             raise ValueError("branch_point_id must belong to the same project as the branch")
         with connect(self.db_path) as connection:
+            if normalized_state == StoryBranchState.ACTIVE:
+                connection.execute(
+                    """
+                    UPDATE story_branches
+                    SET branch_state = ?, updated_at = ?
+                    WHERE project_id = ? AND branch_state = ? AND branch_id <> ?
+                    """,
+                    (
+                        StoryBranchState.ARCHIVED.value,
+                        updated.isoformat(),
+                        project_id,
+                        StoryBranchState.ACTIVE.value,
+                        branch_id,
+                    ),
+                )
             connection.execute(
                 """
                 INSERT INTO story_branches (

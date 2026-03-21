@@ -857,9 +857,12 @@ def test_story_branch_repository_round_trips_branch_identity_and_branch_point_li
     assert repo.get_branch_point(branch_point.branch_point_id) == branch_point
     assert repo.get_branch_point_for_source_node(project_id, source_node_id=branch_source.node_id) == branch_point
     assert repo.list_branch_points(project_id) == [branch_point]
-    assert repo.list_story_branches(project_id) == [active_branch, archived_branch]
-    assert active_branch.branch_state == StoryBranchState.ACTIVE
-    assert archived_branch.branch_state == StoryBranchState.ARCHIVED
+    assert [branch.branch_id for branch in repo.list_story_branches(project_id)] == [
+        active_branch.branch_id,
+        archived_branch.branch_id,
+    ]
+    assert repo.get_story_branch(active_branch.branch_id).branch_state == StoryBranchState.ACTIVE
+    assert repo.get_story_branch(archived_branch.branch_id).branch_state == StoryBranchState.ARCHIVED
     assert active_branch.branch_point_id == branch_point.branch_point_id
     assert repo.get_story_branch(active_branch.branch_id) == active_branch
     assert repo.list_story_branches(other_project_id) == [other_branch]
@@ -929,6 +932,88 @@ def test_story_branch_repository_round_trips_branch_identity_and_branch_point_li
         pass
     else:
         raise AssertionError("expected cross-project branch state ref rejection")
+
+
+def test_story_branch_upsert_keeps_only_one_active_branch_per_project(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-branches-single-active"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    first_source = repo.record_story_decision_node(
+        node_id="single-active-node-1",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-1",
+        branch_id="branch-one",
+        summary="Create first branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-1", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:base",
+        new_state_ref="arc:selected:branch-one",
+        reason_or_note="Test first branch.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_source = repo.record_story_decision_node(
+        node_id="single-active-node-2",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-2",
+        branch_id="branch-two",
+        summary="Create second branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-2", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:branch-one",
+        new_state_ref="arc:selected:branch-two",
+        reason_or_note="Test second branch.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    first_point = repo.upsert_branch_point(
+        branch_point_id="single-active-point-1",
+        project_id=project_id,
+        source_node_id=first_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_point = repo.upsert_branch_point(
+        branch_point_id="single-active-point-2",
+        project_id=project_id,
+        source_node_id=second_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    repo.upsert_story_branch(
+        branch_id="branch-one",
+        project_id=project_id,
+        branch_point_id=first_point.branch_point_id,
+        branch_name="Branch One",
+        branch_state="ACTIVE",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    active_branch = repo.upsert_story_branch(
+        branch_id="branch-two",
+        project_id=project_id,
+        branch_point_id=second_point.branch_point_id,
+        branch_name="Branch Two",
+        branch_state="ACTIVE",
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+
+    assert repo.get_active_story_branch(project_id).branch_id == "branch-two"
+    assert repo.get_story_branch("branch-one").branch_state == StoryBranchState.ARCHIVED
+    assert repo.get_story_branch("branch-two").branch_state == StoryBranchState.ACTIVE
+    assert active_branch.branch_state == StoryBranchState.ACTIVE
 
 
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:
