@@ -1810,6 +1810,9 @@ class StoryDevelopmentRepository:
         now = _now(created_at)
         updated = _now(updated_at or created_at)
         normalized_state = self._normalize_branch_state(branch_state)
+        branch_point = self.get_branch_point(branch_point_id)
+        if branch_point.project_id != project_id:
+            raise ValueError("branch_point_id must belong to the same project as the branch")
         with connect(self.db_path) as connection:
             connection.execute(
                 """

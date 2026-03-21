@@ -863,6 +863,21 @@ def test_story_branch_repository_round_trips_branch_identity_and_branch_point_li
     assert repo.list_story_branches(other_project_id) == [other_branch]
     assert repo.get_branch_point_for_source_node(other_project_id, source_node_id=other_branch_source.node_id) == other_branch_point
 
+    try:
+        repo.upsert_story_branch(
+            branch_id="branch-cross-project",
+            project_id=project_id,
+            branch_point_id=other_branch_point.branch_point_id,
+            branch_name="Invalid Cross Project Branch",
+            branch_state="ACTIVE",
+            created_at=STAMP,
+            updated_at=STAMP,
+        )
+    except ValueError as exc:
+        assert "same project" in str(exc)
+    else:
+        raise AssertionError("expected cross-project branch point rejection")
+
 
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 17
+OPERATIONS_DB_VERSION = 18
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -469,6 +469,7 @@ CREATE TABLE IF NOT EXISTS branch_points (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     UNIQUE(project_id, source_node_id),
+    UNIQUE(project_id, branch_point_id),
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY(project_id, source_node_id) REFERENCES story_decision_nodes(project_id, node_id) ON DELETE CASCADE
 );
@@ -482,7 +483,7 @@ CREATE TABLE IF NOT EXISTS story_branches (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
-    FOREIGN KEY(branch_point_id) REFERENCES branch_points(branch_point_id) ON DELETE CASCADE
+    FOREIGN KEY(project_id, branch_point_id) REFERENCES branch_points(project_id, branch_point_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS checker_findings (

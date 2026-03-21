@@ -866,6 +866,12 @@ Backend responsibilities:
 - support later comparison and selective merge behavior between branches
 - keep branching semantics in structured backend storage rather than relying on Git commits or filesystem branching as the canonical product backend
 
+Implemented now:
+
+- canonical schema and persistence exist for `StoryBranch`, `BranchPoint`, and branch state at the branch-identity layer
+- project scoping is enforced between branch records and their originating branch points
+- branch state refs, branch comparisons, merge decisions, and branch services are still separate upcoming slices
+
 Explicit non-goal:
 
 - Git should not be used as the canonical backend for story branching
@@ -1077,7 +1083,8 @@ Implemented now:
 
 - canonical persistence exists for `CheckerFinding`, `ReviewDecision`, and `InspectRunLink`
 - decision-review services exist for `StoryDecisionNode` history
-- review-routing services over findings, review decisions, and inspect links are the next backend slice and are not yet exposed through public story-development routes
+- review-routing services over findings, review decisions, and inspect links now exist in backend code
+- public story-development review routes are still intentionally not implemented
 
 Required backend objects:
 
