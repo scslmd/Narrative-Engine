@@ -171,10 +171,10 @@
   Expected result: the user can return later and review why a story direction changed without inferring history from current state alone.
   Expected endpoints: none in this slice; backend foundation for later `/story-development/decisions/*` routes and related object detail screens.
   Verification: service tests cover deterministic ordering, affected-object links, retrieval of prior superseded decisions, and timeline-ready output fields for what changed from what to what and why.
-- [ ] BE-11 Story branching canonical contract and persistence scaffold:
+- [x] BE-11 Story branching canonical contract and persistence scaffold:
   add canonical backend schemas and persistence support for `StoryBranch`, `BranchPoint`, `BranchStateRef`, `BranchComparisonRecord`, and `BranchMergeDecision`, explicitly modeled as structured application objects rather than Git commits or branches.
   Expected result: storyline forking becomes a first-class backend capability with durable branch identity, branch origin, branch comparisons, and merge decisions.
-  Expected endpoints: none in this slice; foundation for later `/story-development/branches/*`, `/story-development/branch-comparisons/*`, and `/story-development/branch-merges/*` routes.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branches/*` and related branching routes.
   Verification: targeted schema and persistence tests cover branch creation metadata, branch-point links, active-branch selection, branch comparison history, and explicit merge-decision storage.
 - [x] BE-11A Story branch identity and branch-point persistence:
   add canonical schema and persistence support for `StoryBranch` and `BranchPoint`, including branch origin, branch name, source node, and active or archived branch state.
@@ -189,12 +189,12 @@
 - [x] BE-11C Branch comparison persistence:
   add canonical schema and persistence support for `BranchComparisonRecord` so two branches can be compared without mutating branch state.
   Expected result: branch-to-branch comparisons become reviewable first-class backend objects.
-  Expected endpoints: none in this slice; foundation for later `/story-development/branch-comparisons/*` routes.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branches/comparisons*` routes.
   Verification: targeted schema and persistence tests cover comparison record storage, branch pair linkage, deterministic ordering, and review-note retrieval.
 - [x] BE-11D Branch merge decision persistence:
   add canonical schema and persistence support for `BranchMergeDecision`, including source branch, target branch, merge rationale, and resulting node links.
   Expected result: merge intent and accepted merge outcomes become durable backend records instead of implicit state changes.
-  Expected endpoints: none in this slice; foundation for later `/story-development/branch-merges/*` routes.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branch-merges*` routes.
   Verification: targeted schema and persistence tests cover merge-decision storage, source-target linkage, rationale fields, and resulting decision-node references.
 - [x] BE-11E Story branching service slice:
   implement bounded services for `create_story_branch`, `list_story_branches`, `compare_story_branches`, `select_active_branch`, and `record_branch_merge_decision`.
@@ -207,10 +207,11 @@
   Formalization rule: do not use frontend implementation pressure as the trigger for these routes. Formalize the backend API only after the underlying slice is stable, and treat the API layer as a backend contract milestone in its own right.
   Out of scope for this slice: branch routes, frontend wiring, frontend state management, or UI-driven route shape changes before the backend contract is accepted.
   Verification: route tests cover happy path, validation errors, 404 behavior, and projection-only behavior for the first shipped slices.
-- [ ] BE-10B Story-development branching API surface:
-  expose bounded API routes for branch identity, branch comparisons, active-branch selection, and merge decisions only after `BE-11E` is complete.
+- [x] BE-10B Story-development branching API surface:
+  expose bounded API routes for branch identity, branch comparisons, branch-local state refs, active-branch selection, and merge decisions only after `BE-11E` is complete.
   Expected result: branch routes remain thin projections over accepted branching contracts instead of inventing new branch semantics in the route layer.
-  Verification: route tests cover branch creation, listing, active-branch changes, comparison retrieval, merge-decision projection, validation errors, and 404 behavior.
+  Implemented route families: `/story-development/branches`, `/story-development/branches/active`, `/story-development/branches/comparisons`, `/story-development/branches/{branch_id}/state-refs`, and `/story-development/branch-merges`.
+  Verification: route tests cover branch creation, listing, active-branch changes, comparison retrieval, branch-state-ref reads, merge-decision projection, validation errors, and 404 behavior.
 
 ## Frontend
 
@@ -289,11 +290,11 @@
 - [x] `Bernoulli`: implement BE-09A in a bounded decision-review service module and focused test file only. Expected endpoints for this slice: none yet; backend foundation for later `/story-development/decisions/*` routes and related object detail screens. Expected outcome: a user can review decision-node history, affected-object links, and parent-path context without inferring direction changes from current state alone.
 - [x] `Faraday-2`: implement BE-11A by owning story branch identity and branch-point schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branches/*` routes. Expected outcome: branch identity and branch-point linkage become first-class structured backend objects without using Git as the canonical backend.
 - [x] `Spinoza`: implement BE-11B only after BE-11A lands, by owning branch state references and active-branch persistence. Expected endpoints for this slice: none yet; foundation for later `/story-development/branches/*` routes. Expected outcome: the backend can persist branch-local state refs and the current active branch without branch comparison or merge behavior yet.
-- [x] `Anaximander`: implement BE-11C only after BE-11A and BE-11B land, by owning `BranchComparisonRecord` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branch-comparisons/*` routes. Expected outcome: branch comparisons become reviewable first-class backend records.
-- [x] `Democritus`: implement BE-11D only after BE-11A and BE-11B land, by owning `BranchMergeDecision` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branch-merges/*` routes. Expected outcome: merge decisions become durable backend records instead of implicit state changes.
+- [x] `Anaximander`: implement BE-11C only after BE-11A and BE-11B land, by owning `BranchComparisonRecord` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branches/comparisons*` routes. Expected outcome: branch comparisons become reviewable first-class backend records.
+- [x] `Democritus`: implement BE-11D only after BE-11A and BE-11B land, by owning `BranchMergeDecision` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branch-merges*` routes. Expected outcome: merge decisions become durable backend records instead of implicit state changes.
 - [x] `Goodall`: implement BE-11E only after BE-11A through BE-11D land, by owning the story-branching service slice with bounded create, list, compare, select-active, and merge-decision operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/branches/*` routes. Expected outcome: users can fork the storyline from a decision point and later review or merge branches without overwriting the active path.
 - [x] `Dewey`: implement BE-10A by owning the first story-development API surface slice for stable non-branching contracts only. Keep the write scope limited to thin route wiring and focused route tests.
-- [ ] `Hopper-2`: implement BE-10B only after `BE-11E` lands, by owning the branching API surface slice with thin route wiring and focused route tests only.
+- [x] `Hopper-2`: implement BE-10B only after `BE-11E` lands, by owning the branching API surface slice with thin route wiring and focused route tests only.
 - [x] `Volta`: update `docs/Narrative SRS v0.3.md` so the story-development sections describe an aspirational writing product, remove reconstruction-specific framing for those features, resolve implemented-versus-target-state contradictions, and align workflow-state terminology with the canonical enum set once defined.
 - [x] `Kant`: update `docs/Frontend Design SRS v0.4.md` so object names, workflow states, and deterministic frontend task cards match the canonical contract and no longer bundle multiple screen families into one agent task.
 - [x] `Archimedes`: update `docs/Orchestrator Deterministic Task Spec v0.1.md` so each story-development feature area includes callable operation shapes with expected inputs, outputs, side effects, and verification, and so the safe-assignment guidance matches the new narrower task cards.

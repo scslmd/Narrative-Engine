@@ -40,7 +40,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/api/jobs.py`](app/api/jobs.py): job lifecycle endpoints, status, and retry flows
 - [`app/api/models.py`](app/api/models.py): model and provider availability endpoints
 - [`app/api/role_model_checker.py`](app/api/role_model_checker.py): checker execution and inspect endpoints
-- [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, and drafting reads
+- [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, drafting reads, and branching reads or mutations
 
 ### Service Layer
 

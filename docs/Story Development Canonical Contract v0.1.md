@@ -198,7 +198,7 @@ Rules:
 - `StoryBranch`, `BranchPoint`, `BranchStateRef`, `BranchComparisonRecord`, and `BranchMergeDecision` are now part of the implemented canonical backend baseline
 - only one active branch should exist per project in persisted branch state
 - branch comparisons must remain reviewable records and must not mutate branch state implicitly
-- branching services are now part of the implemented backend baseline; branching API routes remain a later slice
+- branching services and branching API routes are now part of the implemented backend baseline
 
 ### 5.4 Drafting, Review, And Inspect
 
