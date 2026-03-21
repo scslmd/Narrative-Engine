@@ -1,0 +1,865 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from pydantic import Field, model_validator
+
+from .base import StrictSchemaModel
+from .enums import (
+    StoryArtifactLifecycleState,
+    StoryFlowStageConfigurationState,
+    StoryFlowStageProgressState,
+    StorySuggestionLifecycleState,
+)
+
+
+def _normalize_text(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} must not be blank")
+    return normalized
+
+
+def _normalize_optional_text(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _normalize_text(value, field_name=field_name)
+
+
+def _normalize_text_list(value: object, *, field_name: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise TypeError(f"{field_name} must be a list")
+    return [_normalize_text(item, field_name=field_name) for item in value]
+
+
+class StoryFlowStage(StrictSchemaModel):
+    stage_id: str = Field(min_length=1)
+    stage_kind: str = Field(min_length=1)
+    display_name: str = Field(min_length=1)
+    description: str | None = None
+    position: int = Field(ge=0)
+    depends_on: list[str] = Field(default_factory=list)
+    stage_configuration_state: StoryFlowStageConfigurationState = StoryFlowStageConfigurationState.ENABLED
+    stage_progress_state: StoryFlowStageProgressState = StoryFlowStageProgressState.NOT_STARTED
+    writer_notes: str | None = None
+    custom_prompt_guidance: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("stage_id", "stage_kind", "display_name"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("description", "writer_notes", "custom_prompt_guidance"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        payload["depends_on"] = _normalize_text_list(payload.get("depends_on", []), field_name="depends_on")
+        return payload
+
+
+class StoryFlowDefinition(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    project_name: str = Field(min_length=1)
+    stages: list[StoryFlowStage] = Field(default_factory=list)
+    version: int = Field(default=1, ge=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("project_id", "project_name"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload.setdefault("stages", [])
+        return payload
+
+
+class StoryFlowEdge(StrictSchemaModel):
+    edge_id: str = Field(min_length=1)
+    source_stage_id: str = Field(min_length=1)
+    target_stage_id: str = Field(min_length=1)
+    relationship_kind: str = Field(default="dependency", min_length=1)
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("edge_id", "source_stage_id", "target_stage_id", "relationship_kind"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        return payload
+
+
+class StoryFlowRule(StrictSchemaModel):
+    rule_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    stage_id: str | None = None
+    enabled: bool = True
+    condition: str | None = None
+    effect: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("rule_id", "name", "description"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("stage_id", "condition", "effect"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class BrainstormItem(StrictSchemaModel):
+    item_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    status: str = Field(default="keep", min_length=1)
+    tags: list[str] = Field(default_factory=list)
+    source_notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("item_id", "project_id", "content", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["tags"] = _normalize_text_list(payload.get("tags", []), field_name="tags")
+        if "source_notes" in payload:
+            payload["source_notes"] = _normalize_optional_text(payload["source_notes"], field_name="source_notes")
+        return payload
+
+
+class BrainstormPromotion(StrictSchemaModel):
+    promotion_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    source_item_ids: list[str] = Field(default_factory=list)
+    target_object_kind: str = Field(min_length=1)
+    target_object_id: str = Field(min_length=1)
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("promotion_id", "project_id", "target_object_kind", "target_object_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["source_item_ids"] = _normalize_text_list(payload.get("source_item_ids", []), field_name="source_item_ids")
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        return payload
+
+
+class FoundationProfile(StrictSchemaModel):
+    foundation_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    premise: str = Field(min_length=1)
+    logline: str = Field(min_length=1)
+    thematic_spine: str = Field(min_length=1)
+    emotional_promise: str = Field(min_length=1)
+    tone_and_voice_direction: str = Field(min_length=1)
+    target_audience: str = Field(min_length=1)
+    narrative_constraints: list[str] = Field(default_factory=list)
+    complexity_level: str = Field(min_length=1)
+    success_definition: str = Field(min_length=1)
+    version: int = Field(default=1, ge=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in (
+            "foundation_id",
+            "project_id",
+            "premise",
+            "logline",
+            "thematic_spine",
+            "emotional_promise",
+            "tone_and_voice_direction",
+            "target_audience",
+            "complexity_level",
+            "success_definition",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["narrative_constraints"] = _normalize_text_list(
+            payload.get("narrative_constraints", []),
+            field_name="narrative_constraints",
+        )
+        return payload
+
+
+class FoundationRevision(StrictSchemaModel):
+    revision_id: str = Field(min_length=1)
+    foundation_id: str = Field(min_length=1)
+    snapshot: FoundationProfile
+    change_summary: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("revision_id", "foundation_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "change_summary" in payload:
+            payload["change_summary"] = _normalize_optional_text(payload["change_summary"], field_name="change_summary")
+        return payload
+
+
+class RelationshipEdge(StrictSchemaModel):
+    edge_id: str = Field(min_length=1)
+    source_character_id: str = Field(min_length=1)
+    target_character_id: str = Field(min_length=1)
+    relation_kind: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    tension: str | None = None
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in (
+            "edge_id",
+            "source_character_id",
+            "target_character_id",
+            "relation_kind",
+            "summary",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("tension", "notes"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class CharacterProfile(StrictSchemaModel):
+    character_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    display_name: str = Field(min_length=1)
+    role_in_story: str = Field(min_length=1)
+    archetype: str = Field(min_length=1)
+    external_goal: str = Field(min_length=1)
+    internal_need: str = Field(min_length=1)
+    misbelief_or_wound: str = Field(min_length=1)
+    core_fear: str = Field(min_length=1)
+    primary_strength: str = Field(min_length=1)
+    fatal_flaw_or_limitation: str = Field(min_length=1)
+    contradictions: list[str] = Field(default_factory=list)
+    backstory_summary: str = Field(min_length=1)
+    voice_notes: str = Field(min_length=1)
+    relationship_edges: list[RelationshipEdge] = Field(default_factory=list)
+    secrets: list[str] = Field(default_factory=list)
+    values: list[str] = Field(default_factory=list)
+    taboos: list[str] = Field(default_factory=list)
+    change_axis: str = Field(min_length=1)
+    arc_stage_notes: list[str] = Field(default_factory=list)
+    continuity_facts: list[str] = Field(default_factory=list)
+    writer_notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in (
+            "character_id",
+            "project_id",
+            "display_name",
+            "role_in_story",
+            "archetype",
+            "external_goal",
+            "internal_need",
+            "misbelief_or_wound",
+            "core_fear",
+            "primary_strength",
+            "fatal_flaw_or_limitation",
+            "backstory_summary",
+            "voice_notes",
+            "change_axis",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("contradictions", "secrets", "values", "taboos", "arc_stage_notes", "continuity_facts"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        if "writer_notes" in payload:
+            payload["writer_notes"] = _normalize_optional_text(payload["writer_notes"], field_name="writer_notes")
+        return payload
+
+
+class WorldBibleEntry(StrictSchemaModel):
+    entry_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    entry_type: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    canonical_facts: list[str] = Field(default_factory=list)
+    related_character_ids: list[str] = Field(default_factory=list)
+    source_artifacts: list[str] = Field(default_factory=list)
+    visibility_scope: str = Field(default="project", min_length=1)
+    continuity_warnings: list[str] = Field(default_factory=list)
+    writer_notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("entry_id", "project_id", "entry_type", "title", "summary", "visibility_scope"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("canonical_facts", "related_character_ids", "source_artifacts", "continuity_warnings"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        if "writer_notes" in payload:
+            payload["writer_notes"] = _normalize_optional_text(payload["writer_notes"], field_name="writer_notes")
+        return payload
+
+
+class ArcCandidate(StrictSchemaModel):
+    arc_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    stage_map_notes: list[str] = Field(default_factory=list)
+    fit_notes: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("arc_id", "project_id", "name", "summary"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("stage_map_notes", "fit_notes", "tags"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+
+class ArcStageMap(StrictSchemaModel):
+    arc_stage_map_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    arc_id: str = Field(min_length=1)
+    stage_kinds: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("arc_stage_map_id", "project_id", "arc_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["stage_kinds"] = _normalize_text_list(payload.get("stage_kinds", []), field_name="stage_kinds")
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        return payload
+
+
+class ArcSelection(StrictSchemaModel):
+    selection_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    selected_arc: ArcCandidate
+    rejected_arc_ids: list[str] = Field(default_factory=list)
+    comparison_notes: list[str] = Field(default_factory=list)
+    stage_map: ArcStageMap | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("selection_id", "project_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["rejected_arc_ids"] = _normalize_text_list(payload.get("rejected_arc_ids", []), field_name="rejected_arc_ids")
+        payload["comparison_notes"] = _normalize_text_list(payload.get("comparison_notes", []), field_name="comparison_notes")
+        return payload
+
+
+class BeatPlan(StrictSchemaModel):
+    beat_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    objective: str = Field(min_length=1)
+    conflict: str = Field(min_length=1)
+    stakes: str = Field(min_length=1)
+    dependency_ids: list[str] = Field(default_factory=list)
+    arc_stage: str = Field(min_length=1)
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("beat_id", "project_id", "objective", "conflict", "stakes", "arc_stage", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("dependency_ids", "active_character_ids", "continuity_requirements", "unresolved_questions"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+
+class SequencePlan(StrictSchemaModel):
+    sequence_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    beat_ids: list[str] = Field(default_factory=list)
+    chapter_ids: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("sequence_id", "project_id", "title", "summary", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["beat_ids"] = _normalize_text_list(payload.get("beat_ids", []), field_name="beat_ids")
+        payload["chapter_ids"] = _normalize_text_list(payload.get("chapter_ids", []), field_name="chapter_ids")
+        return payload
+
+
+class ChapterPlan(StrictSchemaModel):
+    chapter_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    sequence_id: str | None = None
+    objective: str = Field(min_length=1)
+    conflict: str = Field(min_length=1)
+    stakes: str = Field(min_length=1)
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("chapter_id", "project_id", "title", "summary", "objective", "conflict", "stakes", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "sequence_id" in payload:
+            payload["sequence_id"] = _normalize_optional_text(payload["sequence_id"], field_name="sequence_id")
+        for field_name in ("active_character_ids", "continuity_requirements", "unresolved_questions"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+
+class ScenePlan(StrictSchemaModel):
+    scene_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    chapter_id: str | None = None
+    objective: str = Field(min_length=1)
+    conflict: str = Field(min_length=1)
+    stakes: str = Field(min_length=1)
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("scene_id", "project_id", "title", "summary", "objective", "conflict", "stakes", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "chapter_id" in payload:
+            payload["chapter_id"] = _normalize_optional_text(payload["chapter_id"], field_name="chapter_id")
+        for field_name in ("active_character_ids", "continuity_requirements", "unresolved_questions"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+
+class ChapterPacket(StrictSchemaModel):
+    packet_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    chapter_id: str = Field(min_length=1)
+    included_reference_ids: list[str] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+    scene_goals: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("packet_id", "project_id", "chapter_id", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("included_reference_ids", "constraints", "scene_goals"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+
+class PlanningDependency(StrictSchemaModel):
+    dependency_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    upstream_id: str = Field(min_length=1)
+    downstream_id: str = Field(min_length=1)
+    dependency_kind: str = Field(min_length=1)
+    reason: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("dependency_id", "project_id", "upstream_id", "downstream_id", "dependency_kind"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "reason" in payload:
+            payload["reason"] = _normalize_optional_text(payload["reason"], field_name="reason")
+        return payload
+
+
+class DraftArtifact(StrictSchemaModel):
+    artifact_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    source_plan_ids: list[str] = Field(default_factory=list)
+    source_context: list[str] = Field(default_factory=list)
+    provenance_note: str | None = None
+    status: StoryArtifactLifecycleState = StoryArtifactLifecycleState.DRAFT
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("artifact_id", "project_id", "title", "content"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("source_plan_ids", "source_context"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        if "provenance_note" in payload:
+            payload["provenance_note"] = _normalize_optional_text(payload["provenance_note"], field_name="provenance_note")
+        return payload
+
+
+class ManuscriptDocument(StrictSchemaModel):
+    document_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    chapter_id: str | None = None
+    scene_id: str | None = None
+    current_draft_artifact_id: str | None = None
+    version: int = Field(default=1, ge=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("document_id", "project_id", "title", "content"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("chapter_id", "scene_id", "current_draft_artifact_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class RevisionSuggestion(StrictSchemaModel):
+    suggestion_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    target_document_id: str = Field(min_length=1)
+    source_text: str = Field(min_length=1)
+    proposed_text: str = Field(min_length=1)
+    rationale: str = Field(min_length=1)
+    source_context: list[str] = Field(default_factory=list)
+    status: StorySuggestionLifecycleState = StorySuggestionLifecycleState.REQUESTED
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("suggestion_id", "project_id", "target_document_id", "source_text", "proposed_text", "rationale"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["source_context"] = _normalize_text_list(payload.get("source_context", []), field_name="source_context")
+        return payload
+
+
+class ReviewDecision(StrictSchemaModel):
+    decision_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    target_id: str = Field(min_length=1)
+    target_kind: str = Field(min_length=1)
+    decision: str = Field(min_length=1)
+    notes: str | None = None
+    source_context: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("decision_id", "project_id", "target_id", "target_kind", "decision"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        payload["source_context"] = _normalize_text_list(payload.get("source_context", []), field_name="source_context")
+        return payload
+
+
+class CheckerFinding(StrictSchemaModel):
+    finding_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    source_object_id: str = Field(min_length=1)
+    source_object_kind: str = Field(min_length=1)
+    severity: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    details: str | None = None
+    source_context: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("finding_id", "project_id", "source_object_id", "source_object_kind", "severity", "summary"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "details" in payload:
+            payload["details"] = _normalize_optional_text(payload["details"], field_name="details")
+        payload["source_context"] = _normalize_text_list(payload.get("source_context", []), field_name="source_context")
+        return payload
+
+
+class StepRecord(StrictSchemaModel):
+    step_record_id: int | None = None
+    logical_run_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    run_kind: str = Field(min_length=1)
+    attempt_number: int = Field(ge=1)
+    step_name: str = Field(min_length=1)
+    step_index: int = Field(ge=0)
+    state: str = Field(min_length=1)
+    project_id: str | None = None
+    model_id: str | None = None
+    critic_profile: str | None = None
+    backend_name: str | None = None
+    backend_version: str | None = None
+    input_hash: str | None = None
+    output_hash: str | None = None
+    prompt_hash: str | None = None
+    input_artifact_refs: list[str] = Field(default_factory=list)
+    output_artifact_refs: list[str] = Field(default_factory=list)
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    duration_seconds: float | None = None
+    finish_reason: str | None = None
+    error_code: str | None = None
+    error_category: str | None = None
+    executor_id: str | None = None
+    lease_owner: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("logical_run_id", "run_id", "run_kind", "step_name", "state"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in (
+            "project_id",
+            "model_id",
+            "critic_profile",
+            "backend_name",
+            "backend_version",
+            "input_hash",
+            "output_hash",
+            "prompt_hash",
+            "finish_reason",
+            "error_code",
+            "error_category",
+            "executor_id",
+            "lease_owner",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        payload["input_artifact_refs"] = _normalize_text_list(payload.get("input_artifact_refs", []), field_name="input_artifact_refs")
+        payload["output_artifact_refs"] = _normalize_text_list(payload.get("output_artifact_refs", []), field_name="output_artifact_refs")
+        return payload
+
+
+class ArtifactLineage(StrictSchemaModel):
+    artifact_lineage_id: int | None = None
+    logical_run_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    run_kind: str = Field(min_length=1)
+    attempt_number: int = Field(ge=1)
+    step_name: str = Field(min_length=1)
+    project_id: str | None = None
+    artifact_role: str = Field(min_length=1)
+    artifact_kind: str = Field(min_length=1)
+    path: str = Field(min_length=1)
+    content_hash: str | None = None
+    status: StoryArtifactLifecycleState = StoryArtifactLifecycleState.DRAFT
+    validation_state: str = Field(min_length=1)
+    produced_at: datetime
+    registered_at: datetime | None = None
+    supersedes_artifact_lineage_id: int | None = None
+    source_artifact_refs: list[str] = Field(default_factory=list)
+    source_content_hashes: list[str] = Field(default_factory=list)
+    output_of_step_record_id: int
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("logical_run_id", "run_id", "run_kind", "step_name", "artifact_role", "artifact_kind", "path", "validation_state"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("project_id", "content_hash"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        payload["source_artifact_refs"] = _normalize_text_list(payload.get("source_artifact_refs", []), field_name="source_artifact_refs")
+        payload["source_content_hashes"] = _normalize_text_list(payload.get("source_content_hashes", []), field_name="source_content_hashes")
+        return payload
+
+
+class InspectRunLink(StrictSchemaModel):
+    link_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    object_kind: str = Field(min_length=1)
+    object_id: str = Field(min_length=1)
+    logical_run_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    run_kind: str = Field(min_length=1)
+    attempt_number: int | None = None
+    label: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("link_id", "project_id", "object_kind", "object_id", "logical_run_id", "run_id", "run_kind"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "label" in payload:
+            payload["label"] = _normalize_optional_text(payload["label"], field_name="label")
+        return payload
+
+
+class WorkspaceNote(StrictSchemaModel):
+    note_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    pinned_object_ids: list[str] = Field(default_factory=list)
+    updated_at: datetime | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("note_id", "project_id", "content"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["pinned_object_ids"] = _normalize_text_list(payload.get("pinned_object_ids", []), field_name="pinned_object_ids")
+        return payload

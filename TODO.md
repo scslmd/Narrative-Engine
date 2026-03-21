@@ -78,6 +78,58 @@
 - [ ] Persist chapter-packet, sequence, and future story-bible artifacts through lineage-aware registration instead of flat file assumptions.
 - [ ] Add persistence helpers for scene or chapter storyboard cards once frontend-backed planning state becomes canonical.
 
+## Backend Engine Completion
+
+- [x] BE-01 Canonical story-development enums and schema models:
+  define the canonical backend enums and schema models for story-development state, flow, foundation, character, world bible, arc, planning, drafting, review, and inspect links in `app/schemas/`.
+  Expected result: one importable schema contract aligned with `docs/Story Development Canonical Contract v0.1.md`.
+  Verification: targeted schema tests cover enum values, object shape validation, and canonical aliases that should not be accepted as primary field names.
+- [x] BE-02 Story-development SQLite persistence scaffolding:
+  add operational SQLite tables and repository helpers for editable flow, brainstorm items, foundation revisions, character profiles, world bible entries, arc selection, planning objects, manuscript documents, revision suggestions, and review decisions.
+  Expected result: durable persistence exists for canonical story-development objects without breaking existing jobs/checker/inspect tables.
+  Note: this is the first backend stage for story-development persistence; we will need to return at the required later stages to finish the remaining service-layer build-out and the still-pending object families.
+  Verification: targeted persistence tests cover table creation, round-trip CRUD for representative objects, and foreign-key behavior.
+- [x] BE-02A Story-development persistence contract alignment:
+  align the current persistence scaffold with the canonical schema layer by using canonical enum values, separating custom-stage identity from stage kind, and tightening record shapes around the accepted story-development contract.
+  Expected result: persistence is safe for service-layer integration and no longer bakes in conflicting state or stage semantics.
+  Verification: focused persistence tests cover canonical enum round-trips, custom-stage deletion eligibility metadata, and schema-aligned record boundaries.
+- [x] BE-03 Editable flow service and repository slice:
+  implement the first backend service slice for `StoryFlowDefinition`, `StoryFlowStage`, `StoryFlowEdge`, and editable-flow transitions using the canonical disable/archive/delete-custom semantics.
+  Expected result: a backend service can create a default flow, add custom stages, rename/redefine stages, reorder stages, disable/archive stages, and reject invalid custom-stage deletion.
+  Verification: focused service tests cover add, rename, redefine, reorder, disable, archive, delete-eligible-custom, and blocked deletion cases.
+- [x] BE-03A Editable flow integration cleanup:
+  rework the current editable-flow prototype to import canonical story-development schemas, prevent stage-id reuse after deletion, and validate dependency references before saving.
+  Expected result: the editable-flow service is safe to build on for persistence and API wiring.
+  Verification: focused service tests cover non-reused ids, invalid dependency rejection, and shared schema-type usage.
+- [ ] BE-04 Brainstorm and promotion service slice:
+  implement bounded backend operations for `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item`.
+  Expected result: brainstorm items can be stored, grouped, and promoted into downstream story-development objects with provenance links.
+  Verification: service and persistence tests cover keep/discard/park states and promotion recording.
+- [ ] BE-05 Foundation profile and downstream-impact slice:
+  implement `FoundationProfile` and `FoundationRevision` services plus downstream review-cue generation for foundation changes.
+  Expected result: foundation updates remain editable after downstream work exists and create explicit review cues instead of silent overwrites.
+  Verification: service tests cover revision history, active-profile reads, and downstream impact records.
+- [ ] BE-06 Character, world bible, and arc-selection slice:
+  implement bounded services for `CharacterProfile`, `RelationshipEdge`, `WorldBibleEntry`, `ArcCandidate`, `ArcSelection`, and `ArcStageMap`.
+  Expected result: canonical story knowledge can be stored and compared independently of manuscript generation.
+  Verification: persistence and service tests cover source-linked world facts, relationship updates, and advisory arc selection.
+- [ ] BE-07 Planning objects and chapter-packet slice:
+  implement `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, and `ChapterPacket` services.
+  Expected result: planning objects persist as canonical records and can be rendered later as UI card views without introducing a competing persisted card contract.
+  Verification: service tests cover parent-child relationships, reorder behavior, and dependency preservation.
+- [ ] BE-08 Draft artifact versus manuscript document separation:
+  implement the backend state split between generated `DraftArtifact`, author-owned `ManuscriptDocument`, and non-destructive `RevisionSuggestion`.
+  Expected result: generated prose, editable manuscript state, and proposed revisions remain distinct in persistence and service behavior.
+  Verification: tests cover promotion into manuscript state without erasing source artifacts and suggestion acceptance via explicit decisions.
+- [ ] BE-09 Review decisions and inspect links:
+  implement `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` support so findings and suggestions can route back into planning, drafting, and inspect surfaces.
+  Expected result: review outcomes become first-class backend records tied to source artifacts and runs.
+  Verification: service tests cover accept/reject/defer/escalate decisions and inspect-link creation.
+- [ ] BE-10 Story-development API surface:
+  expose bounded API routes for the completed story-development slices only after their schema, persistence, and service contracts are stable.
+  Expected result: API routes are thin projections over accepted backend contracts rather than speculative endpoints.
+  Verification: route tests cover happy path, validation errors, and 404 behavior for the first shipped slices.
+
 ## Frontend
 
 - [x] Build the current writer workflow prototype.
@@ -133,6 +185,16 @@
 
 ## Subagent Queue
 
+- [x] `Curie`: implement BE-01 by owning `app/schemas/story_development.py`, `app/schemas/enums.py`, `app/schemas/__init__.py`, and a new targeted schema test file. Do not edit persistence or service files. You are not alone in the codebase; accommodate others' changes and do not revert them.
+- [x] `Kepler`: implement BE-02 by owning `app/persistence/sqlite.py`, a new `app/persistence/story_development.py`, `app/persistence/__init__.py`, and a new targeted persistence test file. Do not edit schema or service files unless a minimal import/export adjustment is required. You are not alone in the codebase; accommodate others' changes and do not revert them.
+- [x] `Pasteur`: implement BE-03 by owning a new editable-flow service module plus focused service tests, using the canonical docs contract and existing persistence/service patterns. Do not edit schema files and do not replace others' work; adjust to their changes instead.
+- [ ] `Ada`: implement BE-04 by owning the brainstorm and promotion service slice with bounded `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item` operations. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Lovelace`: implement BE-05 by owning the foundation profile and downstream-impact service slice with bounded revision history behavior and review-cue generation. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Euler`: implement BE-06 by owning the character, world bible, and arc-selection service slice with bounded compare, upsert, select, and stage-map operations. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Noether-2`: implement BE-07 by owning the planning objects and chapter-packet service slice with bounded plan creation, reorder, and dependency-preservation operations. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Curie-2`: implement BE-08 by owning the draft artifact versus manuscript document separation slice with bounded generate, revise, and promote operations. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Feynman`: implement BE-09 by owning the review decision and inspect-link slice with bounded finding routing, decision recording, and inspect linkage operations. Keep the write scope limited to the new service module and a focused test file.
+- [ ] `Hopper`: implement BE-10 by owning the first story-development API surface slice once the preceding schemas, persistence, and service contracts are stable. Keep the write scope limited to thin route wiring and focused route tests.
 - [ ] `Volta`: update `docs/Narrative SRS v0.1.md` so the story-development sections describe an aspirational writing product, remove reconstruction-specific framing for those features, resolve implemented-versus-target-state contradictions, and align workflow-state terminology with the canonical enum set once defined.
 - [ ] `Kant`: update `docs/Frontend Design SRS v0.1.md` so object names, workflow states, and deterministic frontend task cards match the canonical contract and no longer bundle multiple screen families into one agent task.
 - [ ] `Archimedes`: update `docs/Orchestrator Deterministic Task Spec v0.1.md` so each story-development feature area includes callable operation shapes with expected inputs, outputs, side effects, and verification, and so the safe-assignment guidance matches the new narrower task cards.

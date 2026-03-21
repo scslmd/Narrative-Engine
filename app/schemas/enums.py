@@ -26,3 +26,37 @@ class JobStatus(str, Enum):
     PROCESSING = "PROCESSING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+
+
+class StoryFlowStageConfigurationState(str, Enum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    OPTIONAL = "OPTIONAL"
+    ARCHIVED = "ARCHIVED"
+
+
+class StoryFlowStageProgressState(str, Enum):
+    NOT_STARTED = "NOT_STARTED"
+    IN_PROGRESS = "IN_PROGRESS"
+    BLOCKED = "BLOCKED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+    COMPLETE = "COMPLETE"
+    SUPERSEDED = "SUPERSEDED"
+
+
+class StoryArtifactLifecycleState(str, Enum):
+    DRAFT = "DRAFT"
+    PROPOSED = "PROPOSED"
+    CANONICAL = "CANONICAL"
+    SUPERSEDED = "SUPERSEDED"
+    REJECTED = "REJECTED"
+    ARCHIVED = "ARCHIVED"
+
+
+class StorySuggestionLifecycleState(str, Enum):
+    REQUESTED = "REQUESTED"
+    READY = "READY"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    REFINE_REQUESTED = "REFINE_REQUESTED"
+    EXPIRED = "EXPIRED"

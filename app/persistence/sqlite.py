@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 9
+OPERATIONS_DB_VERSION = 10
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -239,6 +239,144 @@ CREATE TABLE IF NOT EXISTS artifact_lineage (
     FOREIGN KEY(supersedes_artifact_lineage_id) REFERENCES artifact_lineage(artifact_lineage_id) ON DELETE SET NULL,
     FOREIGN KEY(output_of_step_record_id) REFERENCES step_records(step_record_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS story_flow_definitions (
+    project_id TEXT PRIMARY KEY,
+    flow_name TEXT NOT NULL,
+    flow_notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS story_flow_stages (
+    stage_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    stage_key TEXT NOT NULL,
+    stage_kind TEXT NOT NULL,
+    is_custom INTEGER NOT NULL DEFAULT 0,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    position INTEGER NOT NULL,
+    depends_on_json TEXT NOT NULL DEFAULT '[]',
+    stage_configuration_state TEXT NOT NULL,
+    stage_progress_state TEXT NOT NULL,
+    writer_notes TEXT,
+    custom_prompt_guidance TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, stage_key),
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS brainstorm_items (
+    item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    cluster_key TEXT,
+    content TEXT NOT NULL,
+    item_state TEXT NOT NULL,
+    tags_json TEXT NOT NULL DEFAULT '[]',
+    source_artifact_refs_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS foundation_profiles (
+    project_id TEXT PRIMARY KEY,
+    current_revision_id INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS foundation_revisions (
+    revision_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    revision_number INTEGER NOT NULL,
+    premise TEXT NOT NULL,
+    logline TEXT NOT NULL,
+    thematic_spine TEXT,
+    emotional_promise TEXT,
+    tone_direction TEXT,
+    target_audience TEXT,
+    narrative_constraints_json TEXT NOT NULL DEFAULT '[]',
+    complexity_level TEXT,
+    success_definition TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, revision_number),
+    FOREIGN KEY(project_id) REFERENCES foundation_profiles(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS character_profiles (
+    character_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    role_in_story TEXT,
+    archetype TEXT,
+    external_goal TEXT,
+    internal_need TEXT,
+    misbelief_or_wound TEXT,
+    core_fear TEXT,
+    primary_strength TEXT,
+    fatal_flaw_or_limitation TEXT,
+    contradictions_json TEXT NOT NULL DEFAULT '[]',
+    backstory_summary TEXT,
+    voice_notes TEXT,
+    relationship_map_json TEXT NOT NULL DEFAULT '[]',
+    secrets_json TEXT NOT NULL DEFAULT '[]',
+    values_json TEXT NOT NULL DEFAULT '[]',
+    taboos_json TEXT NOT NULL DEFAULT '[]',
+    change_axis TEXT,
+    arc_stage_notes TEXT,
+    continuity_facts_json TEXT NOT NULL DEFAULT '[]',
+    writer_notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS world_bible_entries (
+    entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    entry_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT,
+    canonical_facts_json TEXT NOT NULL DEFAULT '[]',
+    visibility_scope TEXT NOT NULL DEFAULT 'project',
+    source_artifacts_json TEXT NOT NULL DEFAULT '[]',
+    continuity_warnings_json TEXT NOT NULL DEFAULT '[]',
+    writer_notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, entry_type, title),
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS arc_candidates (
+    candidate_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    summary TEXT,
+    fit_notes TEXT,
+    stage_map_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS arc_selections (
+    selection_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    selected_arc_candidate_id INTEGER,
+    rejected_candidate_ids_json TEXT NOT NULL DEFAULT '[]',
+    comparison_history_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(selected_arc_candidate_id) REFERENCES arc_candidates(candidate_id) ON DELETE SET NULL
+);
 """
 
 
@@ -273,6 +411,15 @@ CREATE INDEX IF NOT EXISTS idx_step_records_run ON step_records(run_kind, run_id
 CREATE INDEX IF NOT EXISTS idx_step_records_logical_attempt ON step_records(logical_run_id, attempt_number, step_index);
 CREATE INDEX IF NOT EXISTS idx_artifact_lineage_run ON artifact_lineage(run_kind, run_id, artifact_lineage_id);
 CREATE INDEX IF NOT EXISTS idx_artifact_lineage_step_record ON artifact_lineage(output_of_step_record_id, artifact_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_story_flow_definitions_updated_at ON story_flow_definitions(updated_at);
+CREATE INDEX IF NOT EXISTS idx_story_flow_stages_project_position ON story_flow_stages(project_id, position, stage_id);
+CREATE INDEX IF NOT EXISTS idx_story_flow_stages_project_key ON story_flow_stages(project_id, stage_key);
+CREATE INDEX IF NOT EXISTS idx_brainstorm_items_project_state ON brainstorm_items(project_id, item_state, item_id);
+CREATE INDEX IF NOT EXISTS idx_foundation_revisions_project_revision ON foundation_revisions(project_id, revision_number);
+CREATE INDEX IF NOT EXISTS idx_character_profiles_project_name ON character_profiles(project_id, display_name);
+CREATE INDEX IF NOT EXISTS idx_world_bible_entries_project_type_title ON world_bible_entries(project_id, entry_type, title);
+CREATE INDEX IF NOT EXISTS idx_arc_candidates_project_label ON arc_candidates(project_id, label);
+CREATE INDEX IF NOT EXISTS idx_arc_selections_project_created ON arc_selections(project_id, created_at);
 """
 
 
