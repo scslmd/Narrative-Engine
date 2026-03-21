@@ -11,7 +11,7 @@ It covers:
 - `GET /role-model-checker/{run_id}/steps`
 - `GET /role-model-checker/{run_id}/lineage`
 
-This document is intentionally aligned to the current implementation only. It does not describe future pagination, attempt filtering, or expanded projection metadata that are not yet present in the API.
+This document is intentionally aligned to the current implementation only. It describes the current attempt-filter support, but not future pagination or expanded projection metadata that are not yet present in the API.
 
 ## Current Slice Summary
 
@@ -21,7 +21,7 @@ The first implementation slice exposes:
 - exactly one top-level run identifier field
 - a flat `items` array
 - a minimal `meta` object with ordering information only
-- no query parameters
+- optional attempt filtering only
 - no pagination
 - no inline event history
 
@@ -40,7 +40,8 @@ All four endpoints:
   - `meta`
 - return `404` if the addressed job or checker run does not exist
 - return `200` with `items: []` if the run exists but there are no step or lineage rows yet
-- do not support `attempt`, `cursor`, `limit`, or any other query parameters in this slice
+- support optional `attempt=<positive integer>` filtering
+- do not support `cursor`, `limit`, or any other query parameters in this slice
 
 These endpoints do not:
 
@@ -62,7 +63,7 @@ Current error behavior is minimal and deterministic.
   - `GET /role-model-checker/{run_id}/lineage`
   - response detail: `Role-model check run not found.`
 
-No projection-specific `409` or `422` behavior exists in this slice because the routes do not currently accept filter or pagination parameters.
+Projection-specific validation in this slice is limited to `422` for invalid non-positive `attempt` values.
 
 Any supplied query string values are outside the documented first-slice contract and should not be treated as supported behavior.
 
@@ -372,29 +373,53 @@ If the checker run exists but has no persisted lineage rows:
 
 ## Query Parameter Contract
 
-The first implementation slice supports no query parameters.
-
-Specifically, these endpoints do not currently implement:
+The current implementation slice supports one query parameter:
 
 - `attempt`
+
+Rules:
+
+- `attempt` is optional
+- when omitted, the endpoint returns persisted rows across all stored attempts for the addressed run
+- when provided, the endpoint returns only rows whose `attempt_number` matches the supplied value
+- `attempt` must be a positive integer
+- invalid `attempt` values return `422`
+
+These endpoints do not currently implement:
+
 - `cursor`
 - `limit`
 - filtering by step name
 - filtering by artifact status
 
-Any future addition of query parameters should be treated as a contract change and documented explicitly.
-
 ## Attempt History Behavior
 
-The current projection endpoints do not provide attempt filtering.
+The current projection endpoints now provide optional attempt filtering.
 
-Because the underlying repositories query by `run_id` and `run_kind` only:
+Because the underlying repositories query by `run_id`, `run_kind`, and optionally `attempt_number`:
 
-- all stored attempts for the addressed run may appear in one `items` array
-- step ordering is still controlled only by `step_index` and `step_record_id`
-- lineage ordering is still controlled only by `artifact_lineage_id`
+- all stored attempts for the addressed run may appear in one `items` array when `attempt` is omitted
+- only rows for that attempt appear when `attempt` is supplied
+- step ordering is still controlled by `step_index`, then `step_record_id`
+- lineage ordering is still controlled by `artifact_lineage_id`
 
-This means the current slice preserves persisted history, but does not yet expose an attempt-aware browsing model at the API layer.
+When `attempt` is supplied, the response `meta` object includes:
+
+```json
+{
+  "attempt_number": 2,
+  "ordered_by": "step_index_asc"
+}
+```
+
+or:
+
+```json
+{
+  "attempt_number": 2,
+  "ordered_by": "artifact_lineage_id_asc"
+}
+```
 
 ## Implementation Boundary
 

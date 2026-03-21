@@ -260,8 +260,8 @@
 - [x] Add regression coverage proving failed runtime jobs do not expose placeholder-generated project artifacts through `GET /projects/{project_id}/sequence` or `GET /projects/{project_id}/chapter-1`.
 - [x] Add regression coverage proving rerun canonical job artifacts supersede prior lineage rows instead of accumulating multiple active `CANONICAL` entries.
 - [x] Add API tests for `GET /jobs/{job_id}/steps`, `GET /jobs/{job_id}/lineage`, `GET /role-model-checker/{run_id}/steps`, and `GET /role-model-checker/{run_id}/lineage`.
-- [ ] Add pagination and future attempt-filter tests for `GET /jobs/{job_id}/steps` and `GET /jobs/{job_id}/lineage`.
-- [ ] Add pagination and future attempt-filter tests for `GET /role-model-checker/{run_id}/steps` and `GET /role-model-checker/{run_id}/lineage`.
+- [ ] Add pagination tests for `GET /jobs/{job_id}/steps` and `GET /jobs/{job_id}/lineage` now that attempt-filter support is covered.
+- [ ] Add pagination tests for `GET /role-model-checker/{run_id}/steps` and `GET /role-model-checker/{run_id}/lineage` now that attempt-filter support is covered.
 - [ ] Add runtime integration tests for one real provider-backed `architect` step through the executor path.
 - [ ] Add tests for manuscript-aid request contracts and diff-style response payloads once the backend surface is defined.
 - [x] Update CI to run `tests/test_inference_runtime.py` and current projection-endpoint tests on push and pull request.

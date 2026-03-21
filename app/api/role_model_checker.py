@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, Response
+from fastapi import APIRouter, Header, HTTPException, Query, Response
 
 from ..schemas.inspect import RoleModelCheckLineageResponse, RoleModelCheckStepsResponse
 from ..schemas.role_model_checker import (
@@ -60,16 +60,16 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
     @router.get('/{run_id}/steps', response_model=RoleModelCheckStepsResponse)
-    def get_steps(run_id: UUID) -> RoleModelCheckStepsResponse:
+    def get_steps(run_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> RoleModelCheckStepsResponse:
         try:
-            return manager.get_steps_projection(run_id)
+            return manager.get_steps_projection(run_id, attempt_number=attempt)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
     @router.get('/{run_id}/lineage', response_model=RoleModelCheckLineageResponse)
-    def get_lineage(run_id: UUID) -> RoleModelCheckLineageResponse:
+    def get_lineage(run_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> RoleModelCheckLineageResponse:
         try:
-            return manager.get_lineage_projection(run_id)
+            return manager.get_lineage_projection(run_id, attempt_number=attempt)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 

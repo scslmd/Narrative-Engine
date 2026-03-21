@@ -159,16 +159,22 @@ class RoleModelCheckManager:
     def get_attempt(self, run_id: UUID) -> dict[str, object]:
         return self._runs.get_attempt(run_id)
 
-    def list_step_records(self, run_id: UUID) -> list[dict[str, object]]:
-        return self._step_records.list_step_records(run_id=run_id, run_kind="role_model_check")
+    def list_step_records(self, run_id: UUID, *, attempt_number: int | None = None) -> list[dict[str, object]]:
+        return self._step_records.list_step_records(run_id=run_id, run_kind="role_model_check", attempt_number=attempt_number)
 
-    def list_artifact_lineage(self, run_id: UUID) -> list[dict[str, object]]:
-        return self._step_records.list_artifact_lineage(run_id=run_id, run_kind="role_model_check")
+    def list_artifact_lineage(self, run_id: UUID, *, attempt_number: int | None = None) -> list[dict[str, object]]:
+        return self._step_records.list_artifact_lineage(run_id=run_id, run_kind="role_model_check", attempt_number=attempt_number)
 
-    def get_steps_projection(self, run_id: UUID) -> RoleModelCheckStepsResponse:
+    def get_steps_projection(self, run_id: UUID, *, attempt_number: int | None = None) -> RoleModelCheckStepsResponse:
         self.get_status(run_id)
-        return RoleModelCheckStepsResponse(run_id=run_id, items=self.list_step_records(run_id))
+        meta = {"ordered_by": "step_index_asc"}
+        if attempt_number is not None:
+            meta["attempt_number"] = attempt_number
+        return RoleModelCheckStepsResponse(run_id=run_id, items=self.list_step_records(run_id, attempt_number=attempt_number), meta=meta)
 
-    def get_lineage_projection(self, run_id: UUID) -> RoleModelCheckLineageResponse:
+    def get_lineage_projection(self, run_id: UUID, *, attempt_number: int | None = None) -> RoleModelCheckLineageResponse:
         self.get_status(run_id)
-        return RoleModelCheckLineageResponse(run_id=run_id, items=self.list_artifact_lineage(run_id))
+        meta = {"ordered_by": "artifact_lineage_id_asc"}
+        if attempt_number is not None:
+            meta["attempt_number"] = attempt_number
+        return RoleModelCheckLineageResponse(run_id=run_id, items=self.list_artifact_lineage(run_id, attempt_number=attempt_number), meta=meta)

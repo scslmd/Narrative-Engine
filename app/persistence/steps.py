@@ -126,16 +126,21 @@ class StepRecordRepository:
             connection.commit()
         return int(cursor.lastrowid)
 
-    def list_for_run(self, *, run_id: str, run_kind: str) -> list[dict[str, object]]:
+    def list_for_run(self, *, run_id: str, run_kind: str, attempt_number: int | None = None) -> list[dict[str, object]]:
+        where_clause = "WHERE run_id = ? AND run_kind = ?"
+        params: list[object] = [run_id, run_kind]
+        if attempt_number is not None:
+            where_clause += " AND attempt_number = ?"
+            params.append(attempt_number)
         with connect(self.db_path) as connection:
             rows = connection.execute(
                 """
                 SELECT *
                 FROM step_records
-                WHERE run_id = ? AND run_kind = ?
+                """ + where_clause + """
                 ORDER BY step_index ASC, step_record_id ASC
                 """,
-                (run_id, run_kind),
+                tuple(params),
             ).fetchall()
         return [
             {
@@ -264,16 +269,21 @@ class ArtifactLineageRepository:
             connection.commit()
         return int(cursor.lastrowid)
 
-    def list_for_run(self, *, run_id: str, run_kind: str) -> list[dict[str, object]]:
+    def list_for_run(self, *, run_id: str, run_kind: str, attempt_number: int | None = None) -> list[dict[str, object]]:
+        where_clause = "WHERE run_id = ? AND run_kind = ?"
+        params: list[object] = [run_id, run_kind]
+        if attempt_number is not None:
+            where_clause += " AND attempt_number = ?"
+            params.append(attempt_number)
         with connect(self.db_path) as connection:
             rows = connection.execute(
                 """
                 SELECT *
                 FROM artifact_lineage
-                WHERE run_id = ? AND run_kind = ?
+                """ + where_clause + """
                 ORDER BY artifact_lineage_id ASC
                 """,
-                (run_id, run_kind),
+                tuple(params),
             ).fetchall()
         return [
             {

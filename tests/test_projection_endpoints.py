@@ -38,14 +38,14 @@ def _assert_job_envelope(payload: dict, *, job_id: UUID, ordered_by: str) -> Non
     assert set(payload.keys()) == {"job_id", "items", "meta"}
     assert payload["job_id"] == str(job_id)
     assert isinstance(payload["items"], list)
-    assert payload["meta"] == {"ordered_by": ordered_by}
+    assert payload["meta"]["ordered_by"] == ordered_by
 
 
 def _assert_run_envelope(payload: dict, *, run_id: UUID, ordered_by: str) -> None:
     assert set(payload.keys()) == {"run_id", "items", "meta"}
     assert payload["run_id"] == str(run_id)
     assert isinstance(payload["items"], list)
-    assert payload["meta"] == {"ordered_by": ordered_by}
+    assert payload["meta"]["ordered_by"] == ordered_by
 
 
 def _insert_job_step_records(step_records: StepRecordService, *, job_id: UUID, attempt_number: int = 1) -> tuple[int, int]:
@@ -422,3 +422,112 @@ def test_projection_endpoints_return_404_for_missing_run_ids(tmp_path, path) -> 
     response = client.get(path.format(id=uuid4()))
 
     assert response.status_code == 404
+
+
+def test_job_steps_endpoint_supports_attempt_filter(tmp_path) -> None:
+    client, job_manager, _, step_records = _build_test_client(tmp_path)
+    job = job_manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "science-fantasy-test"}))
+    _insert_job_step_records(step_records, job_id=job.id, attempt_number=1)
+    _insert_job_step_records(step_records, job_id=job.id, attempt_number=2)
+
+    response = client.get(f"/jobs/{job.id}/steps?attempt=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_job_envelope(payload, job_id=job.id, ordered_by="step_index_asc")
+    assert payload["meta"]["attempt_number"] == 2
+    assert [item["attempt_number"] for item in payload["items"]] == [2, 2]
+    assert [item["step_name"] for item in payload["items"]] == ["architect", "critic"]
+
+
+def test_job_lineage_endpoint_supports_attempt_filter(tmp_path) -> None:
+    client, job_manager, _, step_records = _build_test_client(tmp_path)
+    job = job_manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "science-fantasy-test"}))
+    _, second_step_attempt_one = _insert_job_step_records(step_records, job_id=job.id, attempt_number=1)
+    _, second_step_attempt_two = _insert_job_step_records(step_records, job_id=job.id, attempt_number=2)
+    _insert_job_lineage(step_records, job_id=job.id, step_record_id=second_step_attempt_one, attempt_number=1)
+    _insert_job_lineage(step_records, job_id=job.id, step_record_id=second_step_attempt_two, attempt_number=2)
+
+    response = client.get(f"/jobs/{job.id}/lineage?attempt=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_job_envelope(payload, job_id=job.id, ordered_by="artifact_lineage_id_asc")
+    assert payload["meta"]["attempt_number"] == 2
+    assert [item["attempt_number"] for item in payload["items"]] == [2]
+    assert [item["artifact_role"] for item in payload["items"]] == ["story_bible"]
+
+
+def test_checker_steps_endpoint_supports_attempt_filter(tmp_path) -> None:
+    client, _, checker_manager, step_records = _build_test_client(tmp_path)
+    run = checker_manager.create_run(
+        RoleModelCheckStartRequest(
+            roles=["architect", "critic"],
+            model_selection={},
+            critic_profile="minimal_context",
+            save_report=False,
+        )
+    )
+    _insert_checker_step_records(step_records, run_id=run.run_id, attempt_number=1)
+    _insert_checker_step_records(step_records, run_id=run.run_id, attempt_number=2)
+
+    response = client.get(f"/role-model-checker/{run.run_id}/steps?attempt=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_run_envelope(payload, run_id=run.run_id, ordered_by="step_index_asc")
+    assert payload["meta"]["attempt_number"] == 2
+    assert [item["attempt_number"] for item in payload["items"]] == [2, 2]
+    assert [item["step_name"] for item in payload["items"]] == ["architect", "critic"]
+
+
+def test_checker_lineage_endpoint_supports_attempt_filter(tmp_path) -> None:
+    client, _, checker_manager, step_records = _build_test_client(tmp_path)
+    run = checker_manager.create_run(
+        RoleModelCheckStartRequest(
+            roles=["architect"],
+            model_selection={},
+            critic_profile="minimal_context",
+            save_report=False,
+        )
+    )
+    first_step_attempt_one, _ = _insert_checker_step_records(step_records, run_id=run.run_id, attempt_number=1)
+    first_step_attempt_two, _ = _insert_checker_step_records(step_records, run_id=run.run_id, attempt_number=2)
+    _insert_checker_lineage(step_records, run_id=run.run_id, step_record_id=first_step_attempt_one, attempt_number=1)
+    _insert_checker_lineage(step_records, run_id=run.run_id, step_record_id=first_step_attempt_two, attempt_number=2)
+
+    response = client.get(f"/role-model-checker/{run.run_id}/lineage?attempt=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_run_envelope(payload, run_id=run.run_id, ordered_by="artifact_lineage_id_asc")
+    assert payload["meta"]["attempt_number"] == 2
+    assert [item["attempt_number"] for item in payload["items"]] == [2]
+    assert [item["artifact_role"] for item in payload["items"]] == ["checker_report"]
+
+
+@pytest.mark.parametrize(
+    "path_template",
+    [
+        "/jobs/{id}/steps?attempt=0",
+        "/jobs/{id}/lineage?attempt=0",
+        "/role-model-checker/{id}/steps?attempt=0",
+        "/role-model-checker/{id}/lineage?attempt=0",
+    ],
+)
+def test_projection_endpoints_reject_non_positive_attempt_filter(tmp_path, path_template) -> None:
+    client, job_manager, checker_manager, _step_records = _build_test_client(tmp_path)
+    job = job_manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "science-fantasy-test"}))
+    run = checker_manager.create_run(
+        RoleModelCheckStartRequest(
+            roles=["architect"],
+            model_selection={},
+            critic_profile="minimal_context",
+            save_report=False,
+        )
+    )
+    identifier = job.id if path_template.startswith("/jobs/") else run.run_id
+
+    response = client.get(path_template.format(id=identifier))
+
+    assert response.status_code == 422

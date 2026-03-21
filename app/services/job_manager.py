@@ -154,16 +154,22 @@ class JobManager:
     def get_attempt(self, job_id: UUID) -> dict[str, object]:
         return self._jobs.get_attempt(job_id)
 
-    def list_step_records(self, job_id: UUID) -> list[dict[str, object]]:
-        return self._step_records.list_step_records(run_id=job_id, run_kind="pipeline_job")
+    def list_step_records(self, job_id: UUID, *, attempt_number: int | None = None) -> list[dict[str, object]]:
+        return self._step_records.list_step_records(run_id=job_id, run_kind="pipeline_job", attempt_number=attempt_number)
 
-    def list_artifact_lineage(self, job_id: UUID) -> list[dict[str, object]]:
-        return self._step_records.list_artifact_lineage(run_id=job_id, run_kind="pipeline_job")
+    def list_artifact_lineage(self, job_id: UUID, *, attempt_number: int | None = None) -> list[dict[str, object]]:
+        return self._step_records.list_artifact_lineage(run_id=job_id, run_kind="pipeline_job", attempt_number=attempt_number)
 
-    def get_steps_projection(self, job_id: UUID) -> JobStepsResponse:
+    def get_steps_projection(self, job_id: UUID, *, attempt_number: int | None = None) -> JobStepsResponse:
         self.get_status(job_id)
-        return JobStepsResponse(job_id=job_id, items=self.list_step_records(job_id))
+        meta = {"ordered_by": "step_index_asc"}
+        if attempt_number is not None:
+            meta["attempt_number"] = attempt_number
+        return JobStepsResponse(job_id=job_id, items=self.list_step_records(job_id, attempt_number=attempt_number), meta=meta)
 
-    def get_lineage_projection(self, job_id: UUID) -> JobLineageResponse:
+    def get_lineage_projection(self, job_id: UUID, *, attempt_number: int | None = None) -> JobLineageResponse:
         self.get_status(job_id)
-        return JobLineageResponse(job_id=job_id, items=self.list_artifact_lineage(job_id))
+        meta = {"ordered_by": "artifact_lineage_id_asc"}
+        if attempt_number is not None:
+            meta["attempt_number"] = attempt_number
+        return JobLineageResponse(job_id=job_id, items=self.list_artifact_lineage(job_id, attempt_number=attempt_number), meta=meta)
