@@ -12,6 +12,7 @@ from app.schemas import (
     ArcStageMap,
     RelationshipEdge,
     StoryBranchState,
+    StoryObjectType,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
     StoryArtifactLifecycleState,
@@ -285,6 +286,18 @@ class StoryBranchRecord:
     branch_point_id: str
     branch_name: str
     branch_state: StoryBranchState
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class BranchStateRefRecord:
+    branch_state_ref_id: str
+    project_id: str
+    branch_id: str
+    state_object_type: StoryObjectType
+    state_object_id: str
+    decision_node_id: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -1866,6 +1879,213 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_story_branch_row_to_record(row) for row in rows]
 
+    def get_active_story_branch(self, project_id: str) -> StoryBranchRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM story_branches
+                WHERE project_id = ? AND branch_state = ?
+                ORDER BY created_at ASC, branch_id ASC
+                LIMIT 1
+                """,
+                (project_id, StoryBranchState.ACTIVE.value),
+            ).fetchone()
+        if row is None:
+            raise KeyError(project_id)
+        return _story_branch_row_to_record(row)
+
+    def set_active_story_branch(self, project_id: str, *, branch_id: str) -> StoryBranchRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_branch_id = self._normalize_text(branch_id, field_name="branch_id")
+        branch = self.get_story_branch(normalized_branch_id)
+        if branch.project_id != normalized_project_id:
+            raise KeyError(normalized_branch_id)
+        updated_at = _now()
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE story_branches
+                SET branch_state = ?, updated_at = ?
+                WHERE project_id = ? AND branch_state = ? AND branch_id <> ?
+                """,
+                (
+                    StoryBranchState.ARCHIVED.value,
+                    updated_at.isoformat(),
+                    normalized_project_id,
+                    StoryBranchState.ACTIVE.value,
+                    normalized_branch_id,
+                ),
+            )
+            connection.execute(
+                """
+                UPDATE story_branches
+                SET branch_state = ?, updated_at = ?
+                WHERE project_id = ? AND branch_id = ?
+                """,
+                (
+                    StoryBranchState.ACTIVE.value,
+                    updated_at.isoformat(),
+                    normalized_project_id,
+                    normalized_branch_id,
+                ),
+            )
+            connection.commit()
+        return self.get_story_branch(normalized_branch_id)
+
+    def upsert_branch_state_ref(
+        self,
+        *,
+        branch_state_ref_id: str,
+        project_id: str,
+        branch_id: str,
+        state_object_type: StoryObjectType | str,
+        state_object_id: str,
+        decision_node_id: str | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> BranchStateRefRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_branch_id = self._normalize_text(branch_id, field_name="branch_id")
+        normalized_state_object_type = self._normalize_story_object_type(
+            state_object_type,
+            field_name="state_object_type",
+        )
+        normalized_state_object_id = self._normalize_text(state_object_id, field_name="state_object_id")
+        normalized_decision_node_id = self._normalize_optional_text(decision_node_id, field_name="decision_node_id")
+        branch = self.get_story_branch(normalized_branch_id)
+        if branch.project_id != normalized_project_id:
+            raise KeyError(normalized_branch_id)
+        if normalized_decision_node_id is not None:
+            try:
+                decision_node = self.get_story_decision_node(normalized_project_id, node_id=normalized_decision_node_id)
+            except KeyError as exc:
+                raise KeyError(normalized_decision_node_id) from exc
+            if decision_node.project_id != normalized_project_id:
+                raise KeyError(normalized_decision_node_id)
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO branch_state_refs (
+                    branch_state_ref_id, project_id, branch_id, state_object_type, state_object_id, decision_node_id,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(branch_state_ref_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    branch_id = excluded.branch_id,
+                    state_object_type = excluded.state_object_type,
+                    state_object_id = excluded.state_object_id,
+                    decision_node_id = excluded.decision_node_id,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    branch_state_ref_id,
+                    normalized_project_id,
+                    normalized_branch_id,
+                    normalized_state_object_type.value,
+                    normalized_state_object_id,
+                    normalized_decision_node_id,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_branch_state_ref(branch_state_ref_id)
+
+    def get_branch_state_ref(self, branch_state_ref_id: str) -> BranchStateRefRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_state_refs
+                WHERE branch_state_ref_id = ?
+                """,
+                (branch_state_ref_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(branch_state_ref_id)
+        return _branch_state_ref_row_to_record(row)
+
+    def list_branch_state_refs(self, project_id: str, *, branch_id: str | None = None) -> list[BranchStateRefRecord]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        if branch_id is None:
+            query = """
+                SELECT *
+                FROM branch_state_refs
+                WHERE project_id = ?
+                ORDER BY created_at ASC, branch_id ASC, branch_state_ref_id ASC
+            """
+            params = (normalized_project_id,)
+        else:
+            normalized_branch_id = self._normalize_text(branch_id, field_name="branch_id")
+            query = """
+                SELECT *
+                FROM branch_state_refs
+                WHERE project_id = ? AND branch_id = ?
+                ORDER BY created_at ASC, state_object_type ASC, state_object_id ASC, branch_state_ref_id ASC
+            """
+            params = (normalized_project_id, normalized_branch_id)
+        with connect(self.db_path) as connection:
+            rows = connection.execute(query, params).fetchall()
+        return [_branch_state_ref_row_to_record(row) for row in rows]
+
+    def get_branch_state_ref_for_object(
+        self,
+        project_id: str,
+        *,
+        branch_id: str,
+        state_object_type: StoryObjectType | str,
+        state_object_id: str,
+    ) -> BranchStateRefRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_branch_id = self._normalize_text(branch_id, field_name="branch_id")
+        normalized_state_object_type = self._normalize_story_object_type(
+            state_object_type,
+            field_name="state_object_type",
+        )
+        normalized_state_object_id = self._normalize_text(state_object_id, field_name="state_object_id")
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_state_refs
+                WHERE project_id = ? AND branch_id = ? AND state_object_type = ? AND state_object_id = ?
+                """,
+                (
+                    normalized_project_id,
+                    normalized_branch_id,
+                    normalized_state_object_type.value,
+                    normalized_state_object_id,
+                ),
+            ).fetchone()
+        if row is None:
+            raise KeyError((normalized_project_id, normalized_branch_id, normalized_state_object_type.value, normalized_state_object_id))
+        return _branch_state_ref_row_to_record(row)
+
+    def list_branch_state_refs_for_decision_node(
+        self,
+        project_id: str,
+        *,
+        branch_id: str,
+        decision_node_id: str,
+    ) -> list[BranchStateRefRecord]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_branch_id = self._normalize_text(branch_id, field_name="branch_id")
+        normalized_decision_node_id = self._normalize_text(decision_node_id, field_name="decision_node_id")
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM branch_state_refs
+                WHERE project_id = ? AND branch_id = ? AND decision_node_id = ?
+                ORDER BY created_at ASC, state_object_type ASC, state_object_id ASC, branch_state_ref_id ASC
+                """,
+                (normalized_project_id, normalized_branch_id, normalized_decision_node_id),
+            ).fetchall()
+        return [_branch_state_ref_row_to_record(row) for row in rows]
+
     def upsert_checker_finding(
         self,
         *,
@@ -2946,6 +3166,29 @@ class StoryDevelopmentRepository:
             allowed = ", ".join(state.value for state in StoryBranchState)
             raise ValueError(f"branch_state must be one of: {allowed}") from exc
 
+    def _normalize_text(self, value: object, *, field_name: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError(f"{field_name} must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{field_name} must not be blank")
+        return normalized
+
+    def _normalize_optional_text(self, value: object | None, *, field_name: str) -> str | None:
+        if value is None:
+            return None
+        return self._normalize_text(value, field_name=field_name)
+
+    def _normalize_story_object_type(self, state_object_type: StoryObjectType | str, *, field_name: str) -> StoryObjectType:
+        if isinstance(state_object_type, StoryObjectType):
+            return state_object_type
+        normalized = self._normalize_text(state_object_type, field_name=field_name).upper()
+        try:
+            return StoryObjectType[normalized]
+        except KeyError as exc:
+            allowed = ", ".join(item.value for item in StoryObjectType)
+            raise ValueError(f"{field_name} must be one of: {allowed}") from exc
+
     def _next_foundation_revision_number(self, project_id: str) -> int:
         with connect(self.db_path) as connection:
             row = connection.execute(
@@ -3124,6 +3367,19 @@ def _story_branch_row_to_record(row) -> StoryBranchRecord:
         branch_point_id=row["branch_point_id"],
         branch_name=row["branch_name"],
         branch_state=StoryBranchState[row["branch_state"]],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _branch_state_ref_row_to_record(row) -> BranchStateRefRecord:
+    return BranchStateRefRecord(
+        branch_state_ref_id=row["branch_state_ref_id"],
+        project_id=row["project_id"],
+        branch_id=row["branch_id"],
+        state_object_type=StoryObjectType[row["state_object_type"]],
+        state_object_id=row["state_object_id"],
+        decision_node_id=row["decision_node_id"],
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

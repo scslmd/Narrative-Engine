@@ -886,6 +886,31 @@ class StoryBranch(StrictSchemaModel):
         return payload
 
 
+class BranchStateRef(StrictSchemaModel):
+    branch_state_ref_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    branch_id: str = Field(min_length=1)
+    state_object_type: StoryObjectType
+    state_object_id: str = Field(min_length=1)
+    decision_node_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        if "state_object_type" in payload:
+            payload["state_object_type"] = _normalize_text(payload["state_object_type"], field_name="state_object_type").upper()
+        for field_name in ("branch_state_ref_id", "project_id", "branch_id", "state_object_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "decision_node_id" in payload:
+            payload["decision_node_id"] = _normalize_optional_text(payload["decision_node_id"], field_name="decision_node_id")
+        return payload
+
+
 class CheckerFinding(StrictSchemaModel):
     finding_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)

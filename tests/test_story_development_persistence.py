@@ -5,6 +5,7 @@ from pathlib import Path
 
 from app.schemas import (
     StoryArtifactLifecycleState,
+    StoryObjectType,
     StoryBranchState,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
@@ -76,6 +77,7 @@ def test_story_development_schema_creation_includes_canonical_tables(tmp_path: P
         "checker_findings",
         "review_decisions",
         "inspect_run_links",
+        "branch_state_refs",
         "draft_artifacts",
         "manuscript_documents",
         "revision_suggestions",
@@ -862,6 +864,40 @@ def test_story_branch_repository_round_trips_branch_identity_and_branch_point_li
     assert repo.get_story_branch(active_branch.branch_id) == active_branch
     assert repo.list_story_branches(other_project_id) == [other_branch]
     assert repo.get_branch_point_for_source_node(other_project_id, source_node_id=other_branch_source.node_id) == other_branch_point
+    assert repo.get_active_story_branch(project_id) == active_branch
+
+    state_ref = repo.upsert_branch_state_ref(
+        branch_state_ref_id="branch-state-ref-1",
+        project_id=project_id,
+        branch_id=active_branch.branch_id,
+        state_object_type=StoryObjectType.ARC_SELECTION,
+        state_object_id="selection-branch-1",
+        decision_node_id=branch_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    assert state_ref.branch_id == active_branch.branch_id
+    assert state_ref.state_object_type == StoryObjectType.ARC_SELECTION
+    assert repo.get_branch_state_ref(state_ref.branch_state_ref_id) == state_ref
+    assert repo.get_branch_state_ref_for_object(
+        project_id,
+        branch_id=active_branch.branch_id,
+        state_object_type=StoryObjectType.ARC_SELECTION,
+        state_object_id="selection-branch-1",
+    ) == state_ref
+    assert repo.list_branch_state_refs(project_id, branch_id=active_branch.branch_id) == [state_ref]
+    assert repo.list_branch_state_refs_for_decision_node(
+        project_id,
+        branch_id=active_branch.branch_id,
+        decision_node_id=branch_source.node_id,
+    ) == [state_ref]
+
+    active_after_switch = repo.set_active_story_branch(project_id, branch_id=archived_branch.branch_id)
+    assert active_after_switch.branch_id == archived_branch.branch_id
+    assert active_after_switch.branch_state == StoryBranchState.ACTIVE
+    assert repo.get_active_story_branch(project_id).branch_id == archived_branch.branch_id
+    assert repo.get_story_branch(active_branch.branch_id).branch_state == StoryBranchState.ARCHIVED
+    assert repo.get_story_branch(archived_branch.branch_id).branch_state == StoryBranchState.ACTIVE
 
     try:
         repo.upsert_story_branch(
@@ -877,6 +913,22 @@ def test_story_branch_repository_round_trips_branch_identity_and_branch_point_li
         assert "same project" in str(exc)
     else:
         raise AssertionError("expected cross-project branch point rejection")
+
+    try:
+        repo.upsert_branch_state_ref(
+            branch_state_ref_id="branch-state-ref-2",
+            project_id=project_id,
+            branch_id=other_branch.branch_id,
+            state_object_type=StoryObjectType.CHAPTER_PLAN,
+            state_object_id="chapter-2",
+            decision_node_id=other_branch_source.node_id,
+            created_at=STAMP,
+            updated_at=STAMP,
+        )
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("expected cross-project branch state ref rejection")
 
 
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:

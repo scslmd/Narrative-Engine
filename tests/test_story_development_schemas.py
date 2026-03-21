@@ -9,6 +9,7 @@ from app.schemas import (
     ArcComparisonRecord,
     ArcSelection,
     BranchPoint,
+    BranchStateRef,
     DraftArtifact,
     RevisionSuggestion,
     StoryArtifactLifecycleState,
@@ -256,6 +257,24 @@ def test_branch_models_validate_canonical_fork_identity() -> None:
     assert branch.branch_point_id == "branch-point-1"
     assert branch.branch_name == "Main Timeline"
     assert branch.branch_state == StoryBranchState.ACTIVE.value
+
+    branch_state_ref = BranchStateRef.model_validate(
+        {
+            "branch_state_ref_id": "  branch-state-ref-1  ",
+            "project_id": "  project-123  ",
+            "branch_id": "  branch-main  ",
+            "state_object_type": "  arc_selection  ",
+            "state_object_id": "  selection-1  ",
+            "decision_node_id": "  node-branch-1  ",
+        }
+    )
+
+    assert branch_state_ref.branch_state_ref_id == "branch-state-ref-1"
+    assert branch_state_ref.project_id == "project-123"
+    assert branch_state_ref.branch_id == "branch-main"
+    assert branch_state_ref.state_object_type == StoryObjectType.ARC_SELECTION.value
+    assert branch_state_ref.state_object_id == "selection-1"
+    assert branch_state_ref.decision_node_id == "node-branch-1"
 
 
 def test_story_development_models_reject_extra_fields() -> None:
