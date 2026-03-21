@@ -24,6 +24,13 @@ Implemented foundation:
 - public projection endpoints for step records and artifact lineage on jobs and checker runs
 - role-model checker scaffolding
 
+Current planning reference docs:
+
+- `docs/Narrative SRS v0.1.md`
+- `docs/Frontend Design SRS v0.1.md`
+- `docs/Story Development Product Spec v0.1.md`
+- `docs/Story Arc Paradigm Blueprint v0.1.md`
+
 Major work still ahead:
 
 - real inference/runtime integration beyond `P-100`

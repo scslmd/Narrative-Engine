@@ -15,6 +15,12 @@ The system is intended to help a writer:
 - verify outputs with a critic or linter loop
 - monitor long-running jobs with exact backend progress
 
+Product-planning reference:
+
+- the detailed story-development feature contract now lives in `docs/Story Development Product Spec v0.1.md`
+- that document defines the editable story-development flow, screen expectations, backend objects, and workflow states for brainstorming, character background, world bible, arc-aware planning, drafting, and revision guidance
+- this SRS now carries the backend-facing reconstruction contract for those features so implementation remains tied to explicit services, step records, lineage, and retry behavior
+
 ## 2. Core Principles
 
 - deterministic pipeline behavior where possible
@@ -510,3 +516,600 @@ Intentionally not yet implemented:
 - public step and lineage inspect endpoints
 - public project endpoint for `architect_p100`
 - richer runtime telemetry persistence beyond the current contracts
+
+## 17. Story-Development Feature Contract
+
+This section defines the product features that sit on top of the narrative backend. The intent is to make the story-development flow explicit enough that each feature can be implemented, inspected, retried, and reconstructed independently.
+
+The core rule is unchanged:
+
+- the story-development flow is editable, not fixed
+- the user may add, remove, reorder, redefine, or skip stages at any time
+- downstream outputs must preserve provenance when upstream inputs change
+
+### 17.1 Editable Core Flow
+
+The editable core flow is the project-local workflow graph that replaces a rigid wizard.
+
+What it solves:
+
+- it lets exploratory writers move freely without losing structure
+- it lets process-driven writers keep a repeatable planning path
+- it lets the system adapt to genre-specific or project-specific stages without code changes
+
+Backend responsibilities:
+
+- persist a project-specific flow definition
+- store stage metadata, display order, dependency edges, and stage enablement
+- allow user-defined stage names and descriptions
+- keep stage definitions distinct from generated artifacts
+- recompute downstream guidance when a stage is inserted, removed, or renamed
+
+Required backend objects:
+
+- `StoryFlowDefinition`
+- `StoryFlowStage`
+- `StoryFlowEdge`
+- `StoryFlowRule`
+
+Required service responsibilities:
+
+- create the default flow scaffold for a new project
+- update the flow graph without destroying existing generated artifacts
+- expose the current flow state to the workspace and inspect views
+- mark downstream work as potentially stale when the flow changes
+
+### 17.2 Brainstorming
+
+Brainstorming is the freeform idea-capture layer that turns fragments into candidate story material.
+
+What it solves:
+
+- it gives the user a low-friction place to start
+- it preserves raw ideas before they are prematurely collapsed into structure
+- it supports concept discovery when the writer does not yet know the story shape
+
+Expected behaviors:
+
+- capture premise sparks, themes, images, questions, constraints, and scene fragments
+- cluster related ideas into concept groups
+- promote ideas into structured foundation fields, character seeds, or world seeds
+- keep discarded or parked ideas available for later reuse
+
+Backend responsibilities:
+
+- persist brainstorm entries as first-class project data
+- record which brainstorm items were promoted into which structured artifacts
+- keep raw brainstorming text available for provenance and review
+- support grouping or tagging without mutating the original source note
+
+Required backend objects:
+
+- `BrainstormItem`
+- `BrainstormCluster`
+- `BrainstormPromotion`
+
+Required task functions:
+
+- capture idea
+- cluster related notes
+- generate alternate concept branches
+- promote brainstorm output into foundation or character material
+- reopen a parked idea without losing its history
+
+### 17.3 Story Foundation
+
+The story foundation is the stable project intent that downstream planning and drafting should obey unless the user intentionally changes it.
+
+What it solves:
+
+- it defines what story the project is trying to tell
+- it prevents planning and drafting from drifting away from the core promise
+- it gives the orchestrator a reference point for suggestions and validation
+
+Required foundation fields:
+
+- premise
+- logline
+- thematic spine
+- emotional promise
+- tone and voice direction
+- target audience
+- narrative constraints
+- complexity or pacing preference
+- success definition for the draft
+
+Backend responsibilities:
+
+- store foundation data as project-level structured state
+- track changes to foundation fields over time
+- identify downstream artifacts that may need review after a foundation change
+- preserve the previous foundation state for provenance
+
+Required backend objects:
+
+- `FoundationProfile`
+- `FoundationRevision`
+- `FoundationChangeEvent`
+
+Required task functions:
+
+- summarize brainstorm material into a foundation draft
+- refine or rewrite foundation fields
+- compare the current foundation to a prior revision
+- flag downstream artifacts that should be rechecked after a change
+
+### 17.4 Character Background
+
+Character background is the engine that turns people in the story into structured narrative agents rather than static bios.
+
+What it solves:
+
+- it supports consistent character motivation across planning and drafting
+- it helps the system generate dialogue, conflict, and growth that fit the character
+- it keeps relationship dynamics and secrets visible to the backend
+
+Required character data:
+
+- role in story
+- archetype or function
+- external goal
+- internal need
+- wound, misbelief, or core contradiction
+- fear
+- strength
+- flaw or limitation
+- relationship map
+- secrets
+- continuity facts
+- change axis
+- arc-stage notes
+
+Backend responsibilities:
+
+- store character profiles as structured project objects
+- store relationships as explicit graph edges
+- keep character continuity facts distinct from speculative notes
+- surface which characters are affected when a story foundation or arc changes
+
+Required backend objects:
+
+- `CharacterProfile`
+- `RelationshipEdge`
+- `CharacterArcNote`
+- `CharacterContinuityFact`
+
+Required task functions:
+
+- create a character profile
+- refine backstory or voice
+- update a relationship edge
+- compare two character arcs
+- extract a character fact from a draft or scene
+
+### 17.5 World Bible
+
+The world bible is the canonical repository for setting facts, rules, and continuity anchors.
+
+What it solves:
+
+- it keeps the story world coherent across long-form drafting
+- it gives the orchestrator and critic concrete facts to validate against
+- it prevents repeated invention of the same setting details
+
+World bible content should include:
+
+- locations
+- factions
+- institutions
+- history
+- timeline anchors
+- rules of magic, technology, or power systems
+- cultural norms
+- terminology
+- unresolved promises
+- continuity constraints
+
+Backend responsibilities:
+
+- persist world entries as addressable records
+- link each entry to the source artifact that established it
+- mark entries as canonical, provisional, or disputed
+- raise continuity warnings when a draft conflicts with established world facts
+
+Required backend objects:
+
+- `WorldBibleEntry`
+- `WorldBibleCategory`
+- `WorldBibleRevision`
+- `ContinuityWarning`
+
+Required task functions:
+
+- upsert a world entry
+- extract a world fact from planning or draft text
+- detect a setting contradiction
+- promote a repeated detail into canon
+
+### 17.6 Story Arc Selection
+
+Story arc selection is the planning layer that lets the user choose a story shape, compare alternatives, and change course without losing prior work.
+
+What it solves:
+
+- it gives the project a structural lens for suggestions and pacing
+- it supports multiple story families without hardcoding one narrative template
+- it helps the system flag missing beats, drift, or mismatch between intent and execution
+
+Required arc behavior:
+
+- recommend arcs from premise, genre, and tone
+- compare multiple arc candidates
+- show stage maps or beat maps
+- provide arc drift warnings
+- provide arc recovery suggestions
+- keep arc choice advisory rather than blocking
+
+Arc families should be treated as planning lenses, not rigid schemas. Examples include:
+
+- romance
+- mystery or thriller
+- tragedy
+- heroic or quest arc
+- corruption or fall arc
+- ensemble or braided arc
+
+Backend responsibilities:
+
+- store the selected arc and any rejected alternatives
+- store the stage map that the arc implies for this project
+- keep arc selection revision history
+- link arc guidance to planning and review output
+
+Required backend objects:
+
+- `ArcSelection`
+- `ArcCandidate`
+- `ArcStageMap`
+- `ArcDriftWarning`
+
+Required task functions:
+
+- recommend an arc
+- compare arc options
+- assign a stage map to the current project
+- detect drift from the selected arc
+- recover from an arc mismatch by suggesting a revised path
+
+### 17.7 Planning Objects
+
+Planning objects are the structured intermediates that turn abstract intent into executable writing work.
+
+What they solve:
+
+- they bridge the gap between high-level story design and draftable units
+- they let the system reason about dependencies, escalation, and continuity before prose is generated
+- they provide a stable target for inspect and revision workflows
+
+Planning layers:
+
+- beats
+- sequences
+- chapters
+- scenes
+- optional chapter packets
+
+Required planning fields:
+
+- objective
+- conflict
+- stakes
+- dependency
+- arc stage
+- active characters
+- continuity requirements
+- unresolved questions
+- status
+- writer notes
+
+Backend responsibilities:
+
+- store planning objects as first-class records
+- preserve parent-child relationships between beats, chapters, and scenes
+- allow planning artifacts to be regenerated without erasing prior versions
+- keep planning objects linkable to their source foundation, arc, and character data
+
+Required backend objects:
+
+- `BeatPlan`
+- `SequencePlan`
+- `ChapterPlan`
+- `SceneCard`
+- `ChapterPacket`
+- `PlanningDependency`
+
+Required task functions:
+
+- create a sequence plan from project context
+- split a sequence into chapters
+- derive scenes from a chapter packet
+- reorder planning objects while preserving lineage
+- attach unresolved questions to the next planning step
+
+### 17.8 Drafting
+
+Drafting is the prose-generation and prose-revision layer that consumes planning state and produces manuscript text.
+
+What it solves:
+
+- it turns planning into readable prose
+- it lets the user iterate without losing the planning context that produced the draft
+- it supports continuation drafting and controlled rewrites instead of one-shot overwrite behavior
+
+Drafting behaviors:
+
+- chapter drafting from planning context
+- scene drafting from chapter context
+- continuation drafting from prior prose
+- alternate version generation
+- redraft support
+- visible provenance for generated text
+
+Backend responsibilities:
+
+- build draft prompts from manifest, foundation, arc, character, world, and planning context
+- persist draft outputs as artifacts with step records and lineage
+- keep the generated draft separate from the user-edited manuscript buffer
+- preserve the original prompt and model metadata for later inspection
+
+Required backend objects:
+
+- `DraftArtifact`
+- `DraftRequest`
+- `DraftRevision`
+- `DraftContinuation`
+
+Required task functions:
+
+- generate a chapter draft
+- continue a draft from the prior scene
+- rewrite a chapter with constrained instructions
+- create alternate prose variants
+- register the resulting draft artifact and its lineage
+
+### 17.9 Suggestions And Revision
+
+Suggestions are the guided-assistance layer that improves the manuscript without silently replacing author text.
+
+What it solves:
+
+- it provides context-aware writing help
+- it keeps the user in control of final editorial choices
+- it makes review actionable by translating critique into concrete options
+
+Suggestion families should include:
+
+- conflict boost
+- emotional clarity
+- continuity correction
+- arc alignment
+- pacing adjustment
+- sensory enrichment
+- point-of-view correction
+- dialogue polish
+- ending beat options
+- alternate next-scene options
+
+Backend responsibilities:
+
+- generate suggestions from the current manuscript and project context
+- store suggestions separately from canonical prose
+- explain which context sources informed each suggestion
+- allow the user to accept, reject, or park a suggestion
+
+Required backend objects:
+
+- `SuggestionRequest`
+- `SuggestionResult`
+- `SuggestionOption`
+- `SuggestionDecision`
+
+Required task functions:
+
+- generate revision suggestions
+- rank suggestions by relevance
+- explain the context used for a suggestion
+- convert a suggestion into a user-applied edit without mutating history
+
+### 17.10 Continuity And Review
+
+Continuity and review are the validation layers that keep generated prose aligned with canon, arc intent, and user-defined constraints.
+
+What it solves:
+
+- it catches contradictions before they spread through the manuscript
+- it gives the user a structured critic loop rather than vague feedback
+- it creates explicit repair work when a story departs from canon or from the selected arc
+
+Review outputs should include:
+
+- continuity issues
+- arc drift warnings
+- character consistency issues
+- missing beats
+- unresolved dependencies
+- critic notes
+
+Backend responsibilities:
+
+- support runtime-backed checker roles where available
+- preserve deterministic fallback when runtime is unavailable or rejected
+- persist review findings as first-class records with source step references
+- keep review output distinct from draft output
+
+Required backend objects:
+
+- `ReviewTask`
+- `ContinuityIssue`
+- `CriticFinding`
+- `CheckerRunLink`
+
+Required task functions:
+
+- run a continuity check
+- compare a draft against canon
+- produce a review summary
+- route a finding back into planning or drafting
+
+### 17.11 Inspect And Provenance
+
+Inspect and provenance are core product features, not developer conveniences.
+
+What they solve:
+
+- they let the user see how a result was produced
+- they make retries and failures understandable
+- they make it possible to trust generated material because the source chain is visible
+
+Required inspect behavior:
+
+- show step timelines
+- show lineage chains
+- show artifact ancestry
+- show runtime metadata where available
+- distinguish successful canonical artifacts from failed or superseded attempts
+
+Backend responsibilities:
+
+- expose job and checker step projections
+- expose lineage projections in deterministic order
+- keep prompt, input, output, and model metadata available for persisted steps
+- avoid overwriting history when a later attempt supersedes an earlier one
+
+Required backend objects:
+
+- `InspectRunLink`
+- `StepRecord`
+- `ArtifactLineage`
+
+Required task functions:
+
+- list the steps for a job or checker run
+- list lineage for a generated artifact
+- link a generated artifact back to the step that produced it
+- show which artifact version is canonical
+
+### 17.12 Orchestrator Expectations
+
+The orchestrator is the coordination layer that turns user actions into durable backend work.
+
+It must treat every long-running action as an accepted-and-polled workflow.
+
+Required orchestrator behavior:
+
+- create a durable request snapshot before execution starts
+- claim work through a lease rather than relying on process-local state
+- support retries by creating new attempts
+- keep events append-only
+- surface job status through read-only projections
+- avoid assuming that execution will complete in the same process or the same runtime
+
+Backend responsibilities:
+
+- route the selected feature task to the correct service
+- choose runtime-backed execution when available and appropriate
+- preserve exact payloads for reconstruction
+- keep stage transitions and terminal outcomes explicit
+
+Task routing expectations:
+
+- brainstorm requests should map to capture and promotion tasks
+- foundation changes should map to revision and downstream invalidation tasks
+- character and world updates should map to upsert and extraction tasks
+- arc selection should map to recommendation and comparison tasks
+- planning changes should map to dependency-aware plan updates
+- drafting should map to generation and continuation tasks
+- suggestions and review should map to scoring, critique, and continuity tasks
+
+### 17.13 Failure And Retry Expectations
+
+Failure handling must preserve both user trust and reconstruction integrity.
+
+Required failure rules:
+
+- runtime errors must be mapped into durable failure categories
+- failed attempts must persist step records and event history
+- retries must create explicit new attempts instead of mutating the old attempt in place
+- canonical artifacts must not be replaced by failed outputs
+- placeholder bootstrap artifacts must not be exposed as successful generated content
+- downstream provenance must not treat empty or missing upstream content as a real source artifact
+
+Required retry rules:
+
+- a retry should preserve the original run identity and create a new attempt number
+- retryable failures should remain visible in inspect views
+- non-retryable failures should remain terminal but still inspectable
+- lineage must continue to point to the actual producing attempt
+
+The current backend lessons that must remain true are:
+
+- step records are durable
+- artifact lineage is append-only
+- inspect views are public and deterministic
+- runtime-backed checker execution may fall back deterministically when runtime execution is not possible
+- canonical output should survive retries, while failed attempts remain visible for diagnosis
+
+### 17.14 Workflow States
+
+The feature set should model both user-facing workflow and backend execution state.
+
+User-facing workflow states may include:
+
+- brainstorm
+- foundation
+- character
+- world bible
+- arc selection
+- planning
+- drafting
+- review
+- inspect
+
+Backend execution states should remain separate and may include:
+
+- accepted
+- pending
+- claimed
+- running
+- validating
+- persisting
+- completed
+- failed
+- cancelled
+
+Artifact states should remain explicit:
+
+- provisional
+- canonical
+- superseded
+- failed
+- parked
+
+### 17.15 Implementation Order
+
+The recommended build order for the story-development layer is:
+
+1. editable core flow
+2. brainstorming capture and promotion
+3. foundation profile
+4. character background and relationship graph
+5. world bible
+6. arc recommendation and stage mapping
+7. planning objects
+8. drafting generation and continuation
+9. suggestions and revision
+10. continuity and review
+11. inspect and provenance polish
+12. orchestrator hardening and retry coverage
+
+This order is advisory. The project may interleave implementation as long as step records, lineage, and retry behavior stay correct.
