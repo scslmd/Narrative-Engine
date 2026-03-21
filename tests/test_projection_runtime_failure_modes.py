@@ -369,15 +369,15 @@ def test_runtime_backed_p100_lineage_failure_does_not_emit_canonical_lineage_suc
 
     monkeypatch.setattr(executor._step_records, "create_lineage_record", fail_lineage_registration)
 
-    with pytest.raises(ValueError, match="Illegal job state transition"):
-        executor._process_job(job.id)
+    executor._process_job(job.id)
 
     status = job_manager.get_status(job.id)
     steps = job_manager.list_step_records(job.id)
     lineage = job_manager.list_artifact_lineage(job.id)
     output_path = tmp_path / "data" / "projects" / project_id / "exports" / "p100_architect_output.md"
 
-    assert str(status.status) == "COMPLETED"
+    assert str(status.status) == "FAILED"
+    assert status.error == "simulated lineage registration failure"
     assert output_path.exists()
     assert lineage == []
     assert len(steps) == 1
