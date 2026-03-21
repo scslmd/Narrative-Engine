@@ -46,8 +46,9 @@
   - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
   - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
   - [x] `ORCH-02C.1` Persist selected upstream artifact snapshots for `P-200`, `P-300`, and `P-400` attempts so downstream runtime steps stop depending only on live project-file reads.
+  - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
   Remaining next sub-slice:
-  - [ ] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
+  - [ ] `ORCH-02D` Add broader orchestrator/compiler finalization and failure-mode regression coverage beyond the current executor slice.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.

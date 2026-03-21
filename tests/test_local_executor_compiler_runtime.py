@@ -31,13 +31,14 @@ class FakePipelineInferenceBackend(InferenceBackend):
     def __init__(
         self,
         *,
-        content_by_phase: dict[str, str],
+        content_by_phase: dict[str, str | list[str]],
         model: str = "pipeline-fake-model",
         failing_phases: set[str] | None = None,
     ) -> None:
         self.requests: list[InferenceRequest] = []
         self._content_by_phase = content_by_phase
         self._failing_phases = failing_phases or set()
+        self._phase_call_counts: dict[str, int] = {}
         self._descriptor = InferenceProviderDescriptor(
             backend="openai_compatible",
             display_name="Fake Pipeline Runtime",
@@ -65,10 +66,17 @@ class FakePipelineInferenceBackend(InferenceBackend):
                 finish_reason="timeout",
                 retryable=True,
             )
+        phase_index = self._phase_call_counts.get(phase, 0)
+        self._phase_call_counts[phase] = phase_index + 1
+        phase_content = self._content_by_phase.get(phase, f"{phase} runtime content.")
+        if isinstance(phase_content, list):
+            content = phase_content[min(phase_index, len(phase_content) - 1)]
+        else:
+            content = phase_content
         return InferenceResponse(
             backend="openai_compatible",
             model=request.model,
-            content=self._content_by_phase.get(phase, f"{phase} runtime content."),
+            content=content,
             finish_reason="stop",
             usage=InferenceUsage(prompt_tokens=377, completion_tokens=455, total_tokens=832),
             raw_response={"backend": "fake", "backend_version": "2026.06"},
@@ -280,6 +288,158 @@ def test_local_executor_runs_real_compiler_path_for_p400_with_fake_inferencer(tm
     assert lineage_response.status_code == 200
     assert [item["artifact_role"] for item in lineage_response.json()["items"]] == ["story_bible"]
     assert lineage_response.json()["meta"]["ordered_by"] == "artifact_lineage_id_asc"
+
+
+def test_local_executor_supersedes_story_bible_lineage_on_repeated_p400_runs(tmp_path: Path) -> None:
+    project_id = "story-bible-supersession"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+    story_bible_v1 = json.dumps(
+        {
+            "project": {"project_id": project_id, "project_name": "Project Aurora"},
+            "premise": "v1",
+            "world_anchors": [],
+            "character_threads": [],
+            "continuity_notes": [],
+            "open_questions": [],
+        },
+        ensure_ascii=True,
+        indent=2,
+        sort_keys=True,
+    )
+    story_bible_v2 = json.dumps(
+        {
+            "project": {"project_id": project_id, "project_name": "Project Aurora"},
+            "premise": "v2",
+            "world_anchors": [],
+            "character_threads": [],
+            "continuity_notes": [],
+            "open_questions": [],
+        },
+        ensure_ascii=True,
+        indent=2,
+        sort_keys=True,
+    )
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening"}]}, ensure_ascii=True, indent=2, sort_keys=True),
+            "P-300": "# Chapter 1\nThe city changes shape just before dawn.\n",
+            "P-400": [story_bible_v1, story_bible_v2],
+        },
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p300.id) == "COMPLETED"
+        first_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, first_p400.id) == "COMPLETED"
+        second_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, second_p400.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    first_lineage = job_manager.list_artifact_lineage(first_p400.id)
+    second_lineage = job_manager.list_artifact_lineage(second_p400.id)
+    with connect(db_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT artifact_lineage_id, status, supersedes_artifact_lineage_id
+            FROM artifact_lineage
+            WHERE project_id = ? AND artifact_role = 'story_bible'
+            ORDER BY artifact_lineage_id ASC
+            """,
+            (project_id,),
+        ).fetchall()
+
+    assert len(rows) == 2
+    assert rows[0]["status"] == "SUPERSEDED"
+    assert rows[1]["status"] == "CANONICAL"
+    assert rows[1]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert first_lineage[0]["status"] == "SUPERSEDED"
+    assert second_lineage[0]["status"] == "CANONICAL"
+    assert second_lineage[0]["supersedes_artifact_lineage_id"] == rows[0]["artifact_lineage_id"]
+    assert project_service.read_artifact(project_id, "story_bible").content == story_bible_v2 + "\n"
+    assert project_service.repository.get_artifact_path(project_id, "story_bible") == story_bible_output_path(
+        Path(tmp_path) / "data" / "projects" / project_id
+    )
+
+
+def test_local_executor_p400_uses_latest_registered_upstream_artifacts(tmp_path: Path) -> None:
+    project_id = "compiler-latest-upstream"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+    sequence_v1 = json.dumps({"beats": [{"id": "beat-1", "title": "Sequence v1"}]}, ensure_ascii=True, indent=2, sort_keys=True)
+    sequence_v2 = json.dumps({"beats": [{"id": "beat-2", "title": "Sequence v2"}]}, ensure_ascii=True, indent=2, sort_keys=True)
+    chapter_v1 = "# Chapter 1\nChapter v1 follows the first impossible street.\n"
+    chapter_v2 = "# Chapter 1\nChapter v2 maps the city's second impossible turn.\n"
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": [sequence_v1, sequence_v2],
+            "P-300": [chapter_v1, chapter_v2],
+            "P-400": [
+                json.dumps({"project": {"project_id": project_id}, "premise": "first compiler run", "world_anchors": [], "character_threads": [], "continuity_notes": [], "open_questions": []}, ensure_ascii=True, indent=2, sort_keys=True),
+                json.dumps({"project": {"project_id": project_id}, "premise": "second compiler run", "world_anchors": [], "character_threads": [], "continuity_notes": [], "open_questions": []}, ensure_ascii=True, indent=2, sort_keys=True),
+            ],
+        },
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        first_p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, first_p200.id) == "COMPLETED"
+        first_p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, first_p300.id) == "COMPLETED"
+        first_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, first_p400.id) == "COMPLETED"
+        second_p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, second_p200.id) == "COMPLETED"
+        second_p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, second_p300.id) == "COMPLETED"
+        second_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, second_p400.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    second_compiler_request = inferencer.requests[-1]
+    second_lineage = job_manager.list_artifact_lineage(second_p400.id)
+    with connect(tmp_path / "data" / "state" / "narrative_ops.db") as connection:
+        selection_rows = connection.execute(
+            """
+            SELECT artifact_role, selected_content
+            FROM runtime_artifact_selections
+            WHERE run_id = ? AND run_kind = 'pipeline_job' AND step_name = 'compiler'
+            ORDER BY selection_id ASC
+            """,
+            (str(second_p400.id),),
+        ).fetchall()
+
+    assert "Sequence v2" in second_compiler_request.messages[1].content
+    assert "Chapter v2 maps the city's second impossible turn." in second_compiler_request.messages[1].content
+    assert "Sequence v1" not in second_compiler_request.messages[1].content
+    assert "Chapter v1 follows the first impossible street." not in second_compiler_request.messages[1].content
+    assert [row["artifact_role"] for row in selection_rows] == ["architect_output", "sequence", "chapter_1"]
+    assert selection_rows[1]["selected_content"] == project_service.read_artifact(project_id, "sequence").content
+    assert selection_rows[2]["selected_content"] == project_service.read_artifact(project_id, "chapter_1").content
+    assert second_lineage[0]["source_content_hashes"] == [
+        stable_hash_payload(manifest.model_dump(mode="json")),
+        stable_hash_payload(project_service.read_artifact(project_id, "architect_p100").content),
+        stable_hash_payload(project_service.read_artifact(project_id, "sequence").content),
+        stable_hash_payload(project_service.read_artifact(project_id, "chapter_1").content),
+    ]
 
 
 def test_local_executor_persists_mapped_runtime_error_for_p400_failures(tmp_path: Path) -> None:
