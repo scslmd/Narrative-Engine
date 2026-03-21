@@ -303,6 +303,17 @@ class BranchStateRefRecord:
 
 
 @dataclass(frozen=True)
+class BranchComparisonRecord:
+    comparison_id: str
+    project_id: str
+    source_branch_id: str
+    target_branch_id: str
+    review_notes: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
 class CheckerFindingRecord:
     finding_id: str
     project_id: str
@@ -2101,6 +2112,85 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_branch_state_ref_row_to_record(row) for row in rows]
 
+    def upsert_branch_comparison(
+        self,
+        *,
+        comparison_id: str,
+        project_id: str,
+        source_branch_id: str,
+        target_branch_id: str,
+        review_notes: Sequence[str] | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> BranchComparisonRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_source_branch_id = self._normalize_text(source_branch_id, field_name="source_branch_id")
+        normalized_target_branch_id = self._normalize_text(target_branch_id, field_name="target_branch_id")
+        if normalized_source_branch_id == normalized_target_branch_id:
+            raise ValueError("source_branch_id and target_branch_id must differ")
+        source_branch = self.get_story_branch(normalized_source_branch_id)
+        target_branch = self.get_story_branch(normalized_target_branch_id)
+        if source_branch.project_id != normalized_project_id or target_branch.project_id != normalized_project_id:
+            raise KeyError((normalized_project_id, normalized_source_branch_id, normalized_target_branch_id))
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO branch_comparisons (
+                    comparison_id, project_id, source_branch_id, target_branch_id, review_notes_json,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(comparison_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    source_branch_id = excluded.source_branch_id,
+                    target_branch_id = excluded.target_branch_id,
+                    review_notes_json = excluded.review_notes_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    comparison_id,
+                    normalized_project_id,
+                    normalized_source_branch_id,
+                    normalized_target_branch_id,
+                    _json_list(_normalize_text_list(review_notes, field_name="review_notes")),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_branch_comparison(normalized_project_id, comparison_id=comparison_id)
+
+    def get_branch_comparison(self, project_id: str, *, comparison_id: str) -> BranchComparisonRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_comparison_id = self._normalize_text(comparison_id, field_name="comparison_id")
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_comparisons
+                WHERE project_id = ? AND comparison_id = ?
+                """,
+                (normalized_project_id, normalized_comparison_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError((normalized_project_id, normalized_comparison_id))
+        return _branch_comparison_row_to_record(row)
+
+    def list_branch_comparisons(self, project_id: str) -> list[BranchComparisonRecord]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM branch_comparisons
+                WHERE project_id = ?
+                ORDER BY created_at ASC, comparison_id ASC
+                """,
+                (normalized_project_id,),
+            ).fetchall()
+        return [_branch_comparison_row_to_record(row) for row in rows]
+
     def upsert_checker_finding(
         self,
         *,
@@ -3395,6 +3485,18 @@ def _branch_state_ref_row_to_record(row) -> BranchStateRefRecord:
         state_object_type=StoryObjectType[row["state_object_type"]],
         state_object_id=row["state_object_id"],
         decision_node_id=row["decision_node_id"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _branch_comparison_row_to_record(row) -> BranchComparisonRecord:
+    return BranchComparisonRecord(
+        comparison_id=row["comparison_id"],
+        project_id=row["project_id"],
+        source_branch_id=row["source_branch_id"],
+        target_branch_id=row["target_branch_id"],
+        review_notes=_parse_json_list(row["review_notes_json"]),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

@@ -9,6 +9,7 @@ from app.schemas import (
     ArcComparisonRecord,
     ArcSelection,
     BranchPoint,
+    BranchComparisonRecord,
     BranchStateRef,
     DraftArtifact,
     RevisionSuggestion,
@@ -257,6 +258,34 @@ def test_branch_models_validate_canonical_fork_identity() -> None:
     assert branch.branch_point_id == "branch-point-1"
     assert branch.branch_name == "Main Timeline"
     assert branch.branch_state == StoryBranchState.ACTIVE.value
+
+
+def test_branch_comparison_model_validate_canonical_pair_linkage() -> None:
+    comparison = BranchComparisonRecord.model_validate(
+        {
+            "comparison_id": "  comparison-1  ",
+            "project_id": "  project-123  ",
+            "source_branch_id": "  branch-main  ",
+            "target_branch_id": "  branch-alt  ",
+            "review_notes": ["  stronger midpoint  ", "  better pacing  "],
+        }
+    )
+
+    assert comparison.comparison_id == "comparison-1"
+    assert comparison.project_id == "project-123"
+    assert comparison.source_branch_id == "branch-main"
+    assert comparison.target_branch_id == "branch-alt"
+    assert comparison.review_notes == ["stronger midpoint", "better pacing"]
+
+    with pytest.raises(ValidationError):
+        BranchComparisonRecord.model_validate(
+            {
+                "comparison_id": "comparison-same",
+                "project_id": "project-123",
+                "source_branch_id": "branch-main",
+                "target_branch_id": "branch-main",
+            }
+        )
 
     branch_state_ref = BranchStateRef.model_validate(
         {

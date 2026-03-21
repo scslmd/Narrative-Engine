@@ -1016,6 +1016,162 @@ def test_story_branch_upsert_keeps_only_one_active_branch_per_project(tmp_path: 
     assert active_branch.branch_state == StoryBranchState.ACTIVE
 
 
+def test_branch_comparison_repository_round_trips_pair_linkage_and_ordering(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-branch-comparisons"
+    other_project_id = "story-dev-branch-comparisons-other"
+    _seed_project(db_path, project_id)
+    _seed_project(db_path, other_project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    first_source = repo.record_story_decision_node(
+        node_id="comparison-node-1",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-compare-1",
+        branch_id="branch-main",
+        summary="Create comparison branch source.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-compare-1", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:base",
+        new_state_ref="arc:selected:main",
+        reason_or_note="Prepare comparison data.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_source = repo.record_story_decision_node(
+        node_id="comparison-node-2",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-compare-2",
+        branch_id="branch-alt",
+        summary="Create alternate comparison branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-compare-2", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:main",
+        new_state_ref="arc:selected:alt",
+        reason_or_note="Prepare alternate comparison data.",
+        made_by="writer:test",
+        decision_made_at=STAMP.replace(hour=13),
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    first_point = repo.upsert_branch_point(
+        branch_point_id="comparison-point-1",
+        project_id=project_id,
+        source_node_id=first_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_point = repo.upsert_branch_point(
+        branch_point_id="comparison-point-2",
+        project_id=project_id,
+        source_node_id=second_source.node_id,
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    repo.upsert_story_branch(
+        branch_id="branch-main",
+        project_id=project_id,
+        branch_point_id=first_point.branch_point_id,
+        branch_name="Main Timeline",
+        branch_state="ARCHIVED",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    repo.upsert_story_branch(
+        branch_id="branch-alt",
+        project_id=project_id,
+        branch_point_id=second_point.branch_point_id,
+        branch_name="Alternate Timeline",
+        branch_state="ARCHIVED",
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    other_source = repo.record_story_decision_node(
+        node_id="comparison-node-3",
+        project_id=other_project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-compare-3",
+        branch_id="branch-other",
+        summary="Create other project branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-compare-3", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:other",
+        new_state_ref="arc:selected:other-branch",
+        reason_or_note="Prepare other project comparison data.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    other_point = repo.upsert_branch_point(
+        branch_point_id="comparison-point-3",
+        project_id=other_project_id,
+        source_node_id=other_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    repo.upsert_story_branch(
+        branch_id="branch-other",
+        project_id=other_project_id,
+        branch_point_id=other_point.branch_point_id,
+        branch_name="Other Timeline",
+        branch_state="ARCHIVED",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    first_comparison = repo.upsert_branch_comparison(
+        comparison_id="comparison-1",
+        project_id=project_id,
+        source_branch_id="branch-main",
+        target_branch_id="branch-alt",
+        review_notes=["Main branch has cleaner escalation."],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_comparison = repo.upsert_branch_comparison(
+        comparison_id="comparison-2",
+        project_id=project_id,
+        source_branch_id="branch-alt",
+        target_branch_id="branch-main",
+        review_notes=["Alternate branch feels more experimental."],
+        created_at=STAMP.replace(hour=14),
+        updated_at=STAMP.replace(hour=14),
+    )
+
+    assert first_comparison.source_branch_id == "branch-main"
+    assert first_comparison.target_branch_id == "branch-alt"
+    assert first_comparison.review_notes == ["Main branch has cleaner escalation."]
+    assert repo.get_branch_comparison(project_id, comparison_id="comparison-1") == first_comparison
+    assert [record.comparison_id for record in repo.list_branch_comparisons(project_id)] == [
+        "comparison-1",
+        "comparison-2",
+    ]
+    assert repo.list_branch_comparisons(other_project_id) == []
+
+    try:
+        repo.upsert_branch_comparison(
+            comparison_id="comparison-cross-project",
+            project_id=project_id,
+            source_branch_id="branch-main",
+            target_branch_id="branch-other",
+            review_notes=["Cross-project should fail."],
+            created_at=STAMP,
+            updated_at=STAMP,
+        )
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("expected cross-project branch comparison rejection")
+
+
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     project_id = "story-dev-review"

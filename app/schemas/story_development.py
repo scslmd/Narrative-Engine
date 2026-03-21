@@ -911,6 +911,33 @@ class BranchStateRef(StrictSchemaModel):
         return payload
 
 
+class BranchComparisonRecord(StrictSchemaModel):
+    comparison_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    source_branch_id: str = Field(min_length=1)
+    target_branch_id: str = Field(min_length=1)
+    review_notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("comparison_id", "project_id", "source_branch_id", "target_branch_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["review_notes"] = _normalize_text_list(payload.get("review_notes", []), field_name="review_notes")
+        return payload
+
+    @model_validator(mode="after")
+    def validate_pair(self) -> "BranchComparisonRecord":
+        if self.source_branch_id == self.target_branch_id:
+            raise ValueError("source_branch_id and target_branch_id must differ")
+        return self
+
+
 class CheckerFinding(StrictSchemaModel):
     finding_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)

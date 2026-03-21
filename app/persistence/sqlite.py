@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 19
+OPERATIONS_DB_VERSION = 20
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -502,6 +502,19 @@ CREATE TABLE IF NOT EXISTS branch_state_refs (
     FOREIGN KEY(project_id, decision_node_id) REFERENCES story_decision_nodes(project_id, node_id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS branch_comparisons (
+    comparison_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    source_branch_id TEXT NOT NULL,
+    target_branch_id TEXT NOT NULL,
+    review_notes_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(source_branch_id) REFERENCES story_branches(branch_id) ON DELETE CASCADE,
+    FOREIGN KEY(target_branch_id) REFERENCES story_branches(branch_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS checker_findings (
     finding_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
@@ -741,6 +754,8 @@ CREATE INDEX IF NOT EXISTS idx_story_branches_project_created ON story_branches(
 CREATE INDEX IF NOT EXISTS idx_branch_state_refs_project_branch_created ON branch_state_refs(project_id, branch_id, created_at, branch_state_ref_id);
 CREATE INDEX IF NOT EXISTS idx_branch_state_refs_project_object ON branch_state_refs(project_id, state_object_type, state_object_id, branch_state_ref_id);
 CREATE INDEX IF NOT EXISTS idx_branch_state_refs_project_decision ON branch_state_refs(project_id, branch_id, decision_node_id, created_at, branch_state_ref_id);
+CREATE INDEX IF NOT EXISTS idx_branch_comparisons_project_created ON branch_comparisons(project_id, created_at, comparison_id);
+CREATE INDEX IF NOT EXISTS idx_branch_comparisons_project_pair ON branch_comparisons(project_id, source_branch_id, target_branch_id, comparison_id);
 CREATE INDEX IF NOT EXISTS idx_checker_findings_project_source ON checker_findings(project_id, source_object_kind, source_object_id, finding_id);
 CREATE INDEX IF NOT EXISTS idx_checker_findings_project_severity ON checker_findings(project_id, severity, created_at, finding_id);
 CREATE INDEX IF NOT EXISTS idx_review_decisions_project_target ON review_decisions(project_id, target_kind, target_id, created_at, decision_id);
@@ -861,6 +876,7 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "branch_points", "branch_points__legacy")
         _rename_table_if_exists(connection, "story_branches", "story_branches__legacy")
         _rename_table_if_exists(connection, "branch_state_refs", "branch_state_refs__legacy")
+        _rename_table_if_exists(connection, "branch_comparisons", "branch_comparisons__legacy")
         _rename_table_if_exists(connection, "checker_findings", "checker_findings__legacy")
         _rename_table_if_exists(connection, "review_decisions", "review_decisions__legacy")
         _rename_table_if_exists(connection, "inspect_run_links", "inspect_run_links__legacy")
@@ -933,6 +949,7 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_branch_points_legacy(connection)
         _copy_story_branches_legacy(connection)
         _copy_branch_state_refs_legacy(connection)
+        _copy_branch_comparisons_legacy(connection)
         _copy_checker_findings_legacy(connection)
         _copy_review_decisions_legacy(connection)
         _copy_inspect_run_links_legacy(connection)
@@ -974,6 +991,7 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("branch_points", "branch_points__legacy"),
         ("story_branches", "story_branches__legacy"),
         ("branch_state_refs", "branch_state_refs__legacy"),
+        ("branch_comparisons", "branch_comparisons__legacy"),
         ("checker_findings", "checker_findings__legacy"),
         ("review_decisions", "review_decisions__legacy"),
         ("inspect_run_links", "inspect_run_links__legacy"),
@@ -1544,6 +1562,21 @@ def _copy_branch_state_refs_legacy(connection: sqlite3.Connection) -> None:
             branch_state_ref_id, project_id, branch_id, state_object_type, state_object_id, decision_node_id,
             created_at, updated_at
         FROM branch_state_refs__legacy
+        """
+    )
+
+
+def _copy_branch_comparisons_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "branch_comparisons__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO branch_comparisons (
+            comparison_id, project_id, source_branch_id, target_branch_id, review_notes_json, created_at, updated_at
+        )
+        SELECT
+            comparison_id, project_id, source_branch_id, target_branch_id, review_notes_json, created_at, updated_at
+        FROM branch_comparisons__legacy
         """
     )
 
