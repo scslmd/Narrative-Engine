@@ -509,6 +509,71 @@ def test_local_executor_persists_mapped_runtime_error_for_p400_failures(tmp_path
     assert lineage_response.json()["items"] == []
 
 
+def test_local_executor_removes_story_bible_file_when_p400_finalization_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    project_id = "compiler-persistence-failure"
+    initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening"}]}, ensure_ascii=True, indent=2, sort_keys=True),
+            "P-300": "# Chapter 1\nThe city changes shape just before dawn.\n",
+            "P-400": json.dumps(
+                {
+                    "project": {"project_id": project_id, "project_name": "Project Aurora"},
+                    "premise": "persistence failure path",
+                    "world_anchors": [],
+                    "character_threads": [],
+                    "continuity_notes": [],
+                    "open_questions": [],
+                },
+                ensure_ascii=True,
+                indent=2,
+                sort_keys=True,
+            ),
+        },
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+    output_path = story_bible_output_path(Path(tmp_path) / "data" / "projects" / project_id)
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p300.id) == "COMPLETED"
+
+        original_create_lineage_record = executor._step_records.create_lineage_record
+
+        def failing_create_lineage_record(**kwargs):
+            if kwargs.get("artifact_role") == "story_bible":
+                raise RuntimeError("simulated lineage persistence failure")
+            return original_create_lineage_record(**kwargs)
+
+        monkeypatch.setattr(executor._step_records, "create_lineage_record", failing_create_lineage_record)
+
+        p400 = _run_phase(job_manager, phase="P-400", project_id=project_id, payload={"model_id": "compiler-override-model"})
+        final_status = _wait_for_terminal_status(job_manager, p400.id)
+    finally:
+        executor.stop()
+
+    status = job_manager.get_status(p400.id)
+    attempt = job_manager.get_attempt(p400.id)
+    lineage = job_manager.list_artifact_lineage(p400.id)
+
+    assert final_status == "FAILED"
+    assert status.current_step == "compiler"
+    assert status.error == "simulated lineage persistence failure"
+    assert attempt["failure_stage"] == "persistence"
+    assert attempt["error_category"] == "persistence"
+    assert lineage == []
+    assert not output_path.exists()
+    with pytest.raises(FileNotFoundError):
+        project_service.read_artifact(project_id, "story_bible")
+
+
 def test_local_executor_fails_unsupported_job_phases_instead_of_stub_completing() -> None:
     job_id = uuid4()
 

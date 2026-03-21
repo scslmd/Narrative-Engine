@@ -378,12 +378,14 @@ def test_runtime_backed_p100_lineage_failure_does_not_emit_canonical_lineage_suc
 
     assert str(status.status) == "FAILED"
     assert status.error == "simulated lineage registration failure"
-    assert output_path.exists()
+    assert not output_path.exists()
     assert lineage == []
     assert len(steps) == 1
     assert steps[0]["step_name"] == "architect"
     assert steps[0]["state"] == "COMPLETED"
     assert project_service.repository.get_artifact_path(project_id, "architect_p100") is None
+    with pytest.raises(FileNotFoundError):
+        project_service.read_artifact(project_id, "architect_p100")
 
 
 def test_job_lineage_persistence_under_lock_leaves_job_state_non_corrupt(tmp_path, monkeypatch) -> None:

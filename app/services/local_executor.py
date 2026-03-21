@@ -317,6 +317,11 @@ class LocalExecutor:
                 output_path,
             )
         except Exception as exc:
+            try:
+                if output_path.exists():
+                    output_path.unlink()
+            except Exception:
+                pass
             self._job_manager.update_job(
                 job_id,
                 status="FAILED",
