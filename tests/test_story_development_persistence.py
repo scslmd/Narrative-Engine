@@ -72,6 +72,9 @@ def test_story_development_schema_creation_includes_canonical_tables(tmp_path: P
         "chapter_packets",
         "planning_dependencies",
         "story_decision_nodes",
+        "checker_findings",
+        "review_decisions",
+        "inspect_run_links",
         "draft_artifacts",
         "manuscript_documents",
         "revision_suggestions",
@@ -755,3 +758,146 @@ def test_story_decision_nodes_round_trip_links_state_and_ordering(tmp_path: Path
     assert [link.object_id for link in pivot.informing_object_links] == ["comparison-001", "finding-009"]
     assert stage_change.related_object_links[0].object_id == "brainstorm"
     assert stage_change.decision_made_at > pivot.decision_made_at
+
+
+def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-review"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    draft = repo.upsert_draft_artifact(
+        artifact_id="draft-review-1",
+        project_id=project_id,
+        title="Draft for review",
+        content="The city shifted at dusk.",
+        source_plan_ids=["chapter-1"],
+        source_context=["planning", "foundation"],
+        provenance_note="Generated before review.",
+        status=StoryArtifactLifecycleState.DRAFT,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    manuscript = repo.upsert_manuscript_document(
+        document_id="manuscript-review-1",
+        project_id=project_id,
+        title="Manuscript for review",
+        content="The city shifted at dusk, and Mara watched.",
+        chapter_id=None,
+        scene_id=None,
+        current_draft_artifact_id=draft.artifact_id,
+        version=1,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    finding_primary = repo.upsert_checker_finding(
+        finding_id="finding-1",
+        project_id=project_id,
+        source_object_id="selection-001",
+        source_object_kind="ARC_SELECTION",
+        severity="warning",
+        summary="Arc choice needs a clearer midpoint turn.",
+        details="The selected arc does not yet show a strong reversal.",
+        source_context=["comparison-001", "checker-run-001"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    finding_secondary = repo.upsert_checker_finding(
+        finding_id="finding-2",
+        project_id=project_id,
+        source_object_id=manuscript.document_id,
+        source_object_kind="MANUSCRIPT_DOCUMENT",
+        severity="info",
+        summary="Opening line could be tightened.",
+        details=None,
+        source_context=["checker-run-002"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    decision_primary = repo.upsert_review_decision(
+        decision_id="decision-1",
+        project_id=project_id,
+        target_id="selection-001",
+        target_kind="ARC_SELECTION",
+        decision="accept",
+        notes="Keep the current arc but revisit the midpoint.",
+        source_context=["finding-1", "comparison-001"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    decision_secondary = repo.upsert_review_decision(
+        decision_id="decision-2",
+        project_id=project_id,
+        target_id=manuscript.document_id,
+        target_kind="MANUSCRIPT_DOCUMENT",
+        decision="revise",
+        notes=None,
+        source_context=["finding-2"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    link_primary = repo.upsert_inspect_run_link(
+        link_id="inspect-link-1",
+        project_id=project_id,
+        object_kind="ARC_SELECTION",
+        object_id="selection-001",
+        logical_run_id="checker-run-001",
+        run_id="checker-run-001-attempt-1",
+        run_kind="checker",
+        attempt_number=1,
+        label="Arc selection inspection",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    link_secondary = repo.upsert_inspect_run_link(
+        link_id="inspect-link-2",
+        project_id=project_id,
+        object_kind="MANUSCRIPT_DOCUMENT",
+        object_id=manuscript.document_id,
+        logical_run_id="checker-run-002",
+        run_id="checker-run-002-attempt-1",
+        run_kind="checker",
+        attempt_number=None,
+        label=None,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    assert repo.list_draft_artifacts(project_id) == [draft]
+    assert manuscript.current_draft_artifact_id == draft.artifact_id
+    assert repo.list_manuscript_documents(project_id) == [manuscript]
+
+    assert repo.get_checker_finding(finding_primary.finding_id) == finding_primary
+    assert repo.list_checker_findings(project_id) == [finding_primary, finding_secondary]
+    assert repo.list_checker_findings_for_source(
+        project_id,
+        source_object_kind="ARC_SELECTION",
+        source_object_id="selection-001",
+    ) == [finding_primary]
+
+    assert repo.get_review_decision(decision_primary.decision_id) == decision_primary
+    assert repo.list_review_decisions(project_id) == [decision_primary, decision_secondary]
+    assert repo.list_review_decisions_for_target(
+        project_id,
+        target_kind="ARC_SELECTION",
+        target_id="selection-001",
+    ) == [decision_primary]
+
+    assert repo.get_inspect_run_link(link_primary.link_id) == link_primary
+    assert repo.list_inspect_run_links(project_id) == [link_primary, link_secondary]
+    assert repo.list_inspect_run_links_for_object(
+        project_id,
+        object_kind="ARC_SELECTION",
+        object_id="selection-001",
+    ) == [link_primary]
+    assert repo.list_inspect_run_links_for_run(
+        project_id,
+        run_id="checker-run-001-attempt-1",
+    ) == [link_primary]
+    assert repo.list_inspect_run_links_for_logical_run(
+        project_id,
+        logical_run_id="checker-run-002",
+    ) == [link_secondary]

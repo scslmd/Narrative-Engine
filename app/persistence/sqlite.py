@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 15
+OPERATIONS_DB_VERSION = 16
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -462,6 +462,48 @@ CREATE TABLE IF NOT EXISTS story_decision_nodes (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS checker_findings (
+    finding_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    source_object_id TEXT NOT NULL,
+    source_object_kind TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    details TEXT,
+    source_context_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS review_decisions (
+    decision_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    target_kind TEXT NOT NULL,
+    decision TEXT NOT NULL,
+    notes TEXT,
+    source_context_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS inspect_run_links (
+    link_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    object_kind TEXT NOT NULL,
+    object_id TEXT NOT NULL,
+    logical_run_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    run_kind TEXT NOT NULL,
+    attempt_number INTEGER,
+    label TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS draft_artifacts (
     artifact_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
@@ -654,6 +696,11 @@ CREATE INDEX IF NOT EXISTS idx_arc_comparisons_project_created ON arc_comparison
 CREATE INDEX IF NOT EXISTS idx_arc_selection_comparisons_selection_order ON arc_selection_comparisons(selection_id, link_order, comparison_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_made_at ON story_decision_nodes(project_id, decision_made_at, node_id, node_record_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_subject ON story_decision_nodes(project_id, subject_type, subject_id, decision_made_at, node_id);
+CREATE INDEX IF NOT EXISTS idx_checker_findings_project_source ON checker_findings(project_id, source_object_kind, source_object_id, finding_id);
+CREATE INDEX IF NOT EXISTS idx_checker_findings_project_severity ON checker_findings(project_id, severity, created_at, finding_id);
+CREATE INDEX IF NOT EXISTS idx_review_decisions_project_target ON review_decisions(project_id, target_kind, target_id, created_at, decision_id);
+CREATE INDEX IF NOT EXISTS idx_inspect_run_links_project_object ON inspect_run_links(project_id, object_kind, object_id, created_at, link_id);
+CREATE INDEX IF NOT EXISTS idx_inspect_run_links_project_run ON inspect_run_links(project_id, logical_run_id, run_id, created_at, link_id);
 CREATE INDEX IF NOT EXISTS idx_draft_artifacts_project_title ON draft_artifacts(project_id, title, artifact_id);
 CREATE INDEX IF NOT EXISTS idx_manuscript_documents_project_title ON manuscript_documents(project_id, title, document_id);
 CREATE INDEX IF NOT EXISTS idx_manuscript_documents_project_chapter_scene ON manuscript_documents(project_id, chapter_id, scene_id, document_id);
@@ -766,6 +813,9 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "arc_selections", "arc_selections__legacy")
         _rename_table_if_exists(connection, "story_decision_nodes", "story_decision_nodes__legacy")
         _rename_table_if_exists(connection, "story_decision_records", "story_decision_records__legacy")
+        _rename_table_if_exists(connection, "checker_findings", "checker_findings__legacy")
+        _rename_table_if_exists(connection, "review_decisions", "review_decisions__legacy")
+        _rename_table_if_exists(connection, "inspect_run_links", "inspect_run_links__legacy")
         _rename_table_if_exists(connection, "draft_artifacts", "draft_artifacts__legacy")
         _rename_table_if_exists(connection, "manuscript_documents", "manuscript_documents__legacy")
         _rename_table_if_exists(connection, "revision_suggestions", "revision_suggestions__legacy")
@@ -832,6 +882,9 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_arc_candidates_legacy(connection)
         _copy_arc_selections_legacy(connection)
         _copy_story_decision_nodes_legacy(connection)
+        _copy_checker_findings_legacy(connection)
+        _copy_review_decisions_legacy(connection)
+        _copy_inspect_run_links_legacy(connection)
         _copy_draft_artifacts_legacy(connection)
         _copy_manuscript_documents_legacy(connection)
         _copy_revision_suggestions_legacy(connection)
@@ -867,6 +920,9 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("arc_selections", "arc_selections__legacy"),
         ("story_decision_nodes", "story_decision_nodes__legacy"),
         ("story_decision_nodes", "story_decision_records__legacy"),
+        ("checker_findings", "checker_findings__legacy"),
+        ("review_decisions", "review_decisions__legacy"),
+        ("inspect_run_links", "inspect_run_links__legacy"),
         ("draft_artifacts", "draft_artifacts__legacy"),
         ("manuscript_documents", "manuscript_documents__legacy"),
         ("revision_suggestions", "revision_suggestions__legacy"),
@@ -1391,6 +1447,55 @@ def _copy_story_decision_nodes_legacy(connection: sqlite3.Connection) -> None:
     )
 
 
+def _copy_checker_findings_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "checker_findings__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO checker_findings (
+            finding_id, project_id, source_object_id, source_object_kind, severity, summary, details,
+            source_context_json, created_at, updated_at
+        )
+        SELECT
+            finding_id, project_id, source_object_id, source_object_kind, severity, summary, details,
+            source_context_json, created_at, updated_at
+        FROM checker_findings__legacy
+        """
+    )
+
+
+def _copy_review_decisions_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "review_decisions__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO review_decisions (
+            decision_id, project_id, target_id, target_kind, decision, notes, source_context_json, created_at, updated_at
+        )
+        SELECT
+            decision_id, project_id, target_id, target_kind, decision, notes, source_context_json, created_at, updated_at
+        FROM review_decisions__legacy
+        """
+    )
+
+
+def _copy_inspect_run_links_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "inspect_run_links__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO inspect_run_links (
+            link_id, project_id, object_kind, object_id, logical_run_id, run_id, run_kind, attempt_number,
+            label, created_at, updated_at
+        )
+        SELECT
+            link_id, project_id, object_kind, object_id, logical_run_id, run_id, run_kind, attempt_number,
+            label, created_at, updated_at
+        FROM inspect_run_links__legacy
+        """
+    )
+
+
 def _copy_draft_artifacts_legacy(connection: sqlite3.Connection) -> None:
     if not _table_exists(connection, "draft_artifacts__legacy"):
         return
@@ -1516,6 +1621,13 @@ def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
         "world_bible_entries__legacy",
         "arc_candidates__legacy",
         "arc_selections__legacy",
+        "story_decision_nodes__legacy",
+        "checker_findings__legacy",
+        "review_decisions__legacy",
+        "inspect_run_links__legacy",
+        "draft_artifacts__legacy",
+        "manuscript_documents__legacy",
+        "revision_suggestions__legacy",
     ):
         if _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")

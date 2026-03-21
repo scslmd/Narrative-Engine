@@ -151,12 +151,12 @@
   Expected result: generated prose, author-owned manuscript state, and non-destructive revision suggestions all have durable backend storage with no service-local placeholders.
   Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/drafting/*`, `/story-development/manuscript/*`, and `/story-development/revisions/*` routes.
   Verification: targeted persistence tests cover draft-artifact round trips, manuscript-document version storage, and revision-suggestion persistence without overwriting source text.
-- [ ] BE-08 Draft artifact versus manuscript document separation:
-  implement the backend state split between generated `DraftArtifact`, author-owned `ManuscriptDocument`, and non-destructive `RevisionSuggestion`.
-  Expected result: generated prose, editable manuscript state, and proposed revisions remain distinct in persistence and service behavior.
+- [x] BE-08 Draft artifact versus manuscript document separation:
+  implement the backend state split between generated `DraftArtifact`, author-owned `ManuscriptDocument`, and non-destructive `RevisionSuggestion`, including continuation, constrained rewrite, alternate-variant, and provenance-preserving promotion behavior.
+  Expected result: generated prose, editable manuscript state, and proposed revisions remain distinct in persistence and service behavior, and accepted manuscript changes do not erase originating draft artifacts or their lineage.
   Note: this slice depends on `BE-08A`; do not implement it against process-local or browser-local placeholder state.
-  Verification: tests cover promotion into manuscript state without erasing source artifacts and suggestion acceptance via explicit decisions.
-- [ ] BE-09B Review and inspect persistence scaffold:
+  Verification: tests cover promotion into manuscript state without erasing source artifacts, continuation and rewrite flows that preserve provenance, alternate-variant storage, and suggestion acceptance via explicit decisions.
+- [x] BE-09B Review and inspect persistence scaffold:
   add canonical persistence tables and repository helpers for `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` before implementing review-routing services.
   Expected result: review findings, review decisions, and inspect links become durable backend records tied to source objects and runs.
   Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/review/*` and inspect-linked workflow routes.
@@ -164,8 +164,8 @@
 - [ ] BE-09 Review decisions and inspect links:
   implement `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` support so findings and suggestions can route back into planning, drafting, and inspect surfaces.
   Expected result: review outcomes become first-class backend records tied to source artifacts and runs.
-  Note: this slice depends on `BE-09B`; do not implement it against process-local review state.
-  Verification: service tests cover accept/reject/defer/escalate decisions and inspect-link creation.
+  Note: this slice depends on `BE-09B` and `BE-08`; do not implement it against process-local review state or against placeholder manuscript or suggestion targets.
+  Verification: service tests cover accept/reject/defer/escalate/refine decisions, inspect-link creation, and routing findings back into planning or drafting using canonical service boundaries rather than direct state mutation.
 - [x] BE-09A Story decision review surface:
   implement bounded backend support so `StoryDecisionNode` objects can be listed and linked from the related story-development objects they affected.
   Expected result: the user can return later and review why a story direction changed without inferring history from current state alone.
@@ -275,8 +275,8 @@
 - [x] `Noether-2`: BE-07 remains blocked pending `BE-07A` and should not be implemented as a service-local workaround.
 - [x] `Rawls`: retry BE-07 only after `BE-07A` lands, by owning the planning objects and chapter-packet service slice with bounded plan creation, reorder, and dependency-preservation operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/planning/*` routes. Expected outcome: plan objects persist as canonical records and can later be projected into UI cards without introducing a competing card persistence model. Prior blocked attempt correctly refused an in-memory workaround; retry now that canonical planning persistence exists. Keep the write scope limited to a new service module and a focused test file.
 - [x] `Curie-2`: implement BE-08A by owning the drafting persistence scaffold for `DraftArtifact`, `ManuscriptDocument`, and `RevisionSuggestion` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/drafting/*`, `/story-development/manuscript/*`, and `/story-development/revisions/*` routes. Expected outcome: drafting and manuscript state gain durable storage before service logic lands.
-- [ ] `Feynman`: implement BE-09B by owning the review and inspect persistence scaffold for `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/review/*` routes. Expected outcome: review and inspect linkage gain durable storage before service logic lands.
-- [ ] `Curie-3`: implement BE-08 only after `BE-08A` lands, by owning the draft artifact versus manuscript document separation service slice with bounded generate, revise, and promote operations. Keep the write scope limited to the new service module and a focused test file.
+- [x] `Feynman`: implement BE-09B by owning the review and inspect persistence scaffold for `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/review/*` routes. Expected outcome: review and inspect linkage gain durable storage before service logic lands.
+- [x] `Curie-3`: implement BE-08 only after `BE-08A` lands, by owning the draft artifact versus manuscript document separation service slice with bounded generate, revise, and promote operations. Keep the write scope limited to the new service module and a focused test file.
 - [ ] `Feynman-2`: implement BE-09 only after `BE-09B` lands, by owning the review decision and inspect-link service slice with bounded finding routing, decision recording, and inspect linkage operations. Keep the write scope limited to the new service module and a focused test file.
 - [x] `Leibniz`: implement BE-09A by owning the story decision review surface slice with bounded listing, ordering, parent-path reconstruction, and affected-object linkage for `StoryDecisionNode`. Keep the write scope limited to a new service module and a focused test file.
 - [x] `Gibbs`: implement BE-06 in `app/services/story_knowledge.py` and `tests/test_story_knowledge_service.py` only. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/characters/*`, `/story-development/world-bible/*`, `/story-development/arcs/*`, and `/story-development/decisions/*` routes. Expected outcome: arc comparison history and user decision history are both reviewable through persisted objects, with story-knowledge services using repository-backed state only.

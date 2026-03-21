@@ -1057,16 +1057,17 @@ Backend responsibilities:
 
 Required backend objects:
 
-- `ReviewTask`
-- `ContinuityIssue`
-- `CriticFinding`
-- `CheckerRunLink`
+- `CheckerFinding`
+- `ReviewDecision`
+- `InspectRunLink`
 
 Required task functions:
 
 - run a continuity check
 - compare a draft against canon
 - produce a review summary
+- persist the resulting finding and any related inspect link
+- record the resulting accept, reject, defer, escalate, or refine decision
 - route a finding back into planning or drafting
 
 ### 17.11 Inspect And Provenance
