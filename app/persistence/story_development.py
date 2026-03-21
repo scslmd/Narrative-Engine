@@ -11,6 +11,7 @@ from app.schemas import (
     ArcSelection,
     ArcStageMap,
     RelationshipEdge,
+    StoryBranchState,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
     StoryArtifactLifecycleState,
@@ -264,6 +265,26 @@ class StoryDecisionNodeRecord:
     made_by: str
     related_object_links: list[StoryDecisionNodeLinkRecord]
     informing_object_links: list[StoryDecisionNodeLinkRecord]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class BranchPointRecord:
+    branch_point_id: str
+    project_id: str
+    source_node_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class StoryBranchRecord:
+    branch_id: str
+    project_id: str
+    branch_point_id: str
+    branch_name: str
+    branch_state: StoryBranchState
     created_at: datetime
     updated_at: datetime
 
@@ -1701,6 +1722,147 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_story_decision_node_row_to_record(row) for row in rows]
 
+    def upsert_branch_point(
+        self,
+        *,
+        branch_point_id: str,
+        project_id: str,
+        source_node_id: str,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> BranchPointRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO branch_points (
+                    branch_point_id, project_id, source_node_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(branch_point_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    source_node_id = excluded.source_node_id,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    branch_point_id,
+                    project_id,
+                    source_node_id,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_branch_point(branch_point_id)
+
+    def get_branch_point(self, branch_point_id: str) -> BranchPointRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_points
+                WHERE branch_point_id = ?
+                """,
+                (branch_point_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(branch_point_id)
+        return _branch_point_row_to_record(row)
+
+    def get_branch_point_for_source_node(self, project_id: str, *, source_node_id: str) -> BranchPointRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_points
+                WHERE project_id = ? AND source_node_id = ?
+                """,
+                (project_id, source_node_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError((project_id, source_node_id))
+        return _branch_point_row_to_record(row)
+
+    def list_branch_points(self, project_id: str) -> list[BranchPointRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM branch_points
+                WHERE project_id = ?
+                ORDER BY created_at ASC, branch_point_id ASC
+                """,
+                (project_id,),
+            ).fetchall()
+        return [_branch_point_row_to_record(row) for row in rows]
+
+    def upsert_story_branch(
+        self,
+        *,
+        branch_id: str,
+        project_id: str,
+        branch_point_id: str,
+        branch_name: str,
+        branch_state: StoryBranchState | str = StoryBranchState.ACTIVE,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> StoryBranchRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        normalized_state = self._normalize_branch_state(branch_state)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO story_branches (
+                    branch_id, project_id, branch_point_id, branch_name, branch_state, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(branch_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    branch_point_id = excluded.branch_point_id,
+                    branch_name = excluded.branch_name,
+                    branch_state = excluded.branch_state,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    branch_id,
+                    project_id,
+                    branch_point_id,
+                    branch_name,
+                    normalized_state.value,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_story_branch(branch_id)
+
+    def get_story_branch(self, branch_id: str) -> StoryBranchRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM story_branches
+                WHERE branch_id = ?
+                """,
+                (branch_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(branch_id)
+        return _story_branch_row_to_record(row)
+
+    def list_story_branches(self, project_id: str) -> list[StoryBranchRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM story_branches
+                WHERE project_id = ?
+                ORDER BY created_at ASC, branch_id ASC
+                """,
+                (project_id,),
+            ).fetchall()
+        return [_story_branch_row_to_record(row) for row in rows]
+
     def upsert_checker_finding(
         self,
         *,
@@ -2769,6 +2931,18 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_revision_suggestion_row_to_record(row) for row in rows]
 
+    def _normalize_branch_state(self, branch_state: StoryBranchState | str) -> StoryBranchState:
+        if isinstance(branch_state, StoryBranchState):
+            return branch_state
+        normalized = str(branch_state).strip().upper()
+        if not normalized:
+            raise ValueError("branch_state must not be blank")
+        try:
+            return StoryBranchState[normalized]
+        except KeyError as exc:
+            allowed = ", ".join(state.value for state in StoryBranchState)
+            raise ValueError(f"branch_state must be one of: {allowed}") from exc
+
     def _next_foundation_revision_number(self, project_id: str) -> int:
         with connect(self.db_path) as connection:
             row = connection.execute(
@@ -2928,6 +3102,28 @@ def _story_decision_node_link_records(value: str | None) -> list[StoryDecisionNo
         )
         for item in _parse_json_objects(value)
     ]
+
+
+def _branch_point_row_to_record(row) -> BranchPointRecord:
+    return BranchPointRecord(
+        branch_point_id=row["branch_point_id"],
+        project_id=row["project_id"],
+        source_node_id=row["source_node_id"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _story_branch_row_to_record(row) -> StoryBranchRecord:
+    return StoryBranchRecord(
+        branch_id=row["branch_id"],
+        project_id=row["project_id"],
+        branch_point_id=row["branch_point_id"],
+        branch_name=row["branch_name"],
+        branch_state=StoryBranchState[row["branch_state"]],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
 
 
 def _story_decision_node_row_to_record(row) -> StoryDecisionNodeRecord:

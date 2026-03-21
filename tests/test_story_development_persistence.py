@@ -5,6 +5,7 @@ from pathlib import Path
 
 from app.schemas import (
     StoryArtifactLifecycleState,
+    StoryBranchState,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
     StorySuggestionLifecycleState,
@@ -758,6 +759,109 @@ def test_story_decision_nodes_round_trip_links_state_and_ordering(tmp_path: Path
     assert [link.object_id for link in pivot.informing_object_links] == ["comparison-001", "finding-009"]
     assert stage_change.related_object_links[0].object_id == "brainstorm"
     assert stage_change.decision_made_at > pivot.decision_made_at
+
+
+def test_story_branch_repository_round_trips_branch_identity_and_branch_point_links(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-branches"
+    other_project_id = "story-dev-branches-other"
+    _seed_project(db_path, project_id)
+    _seed_project(db_path, other_project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    branch_source = repo.record_story_decision_node(
+        node_id="branch-node-1",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-branch-1",
+        branch_id="branch-main",
+        summary="Fork the main path into an alternate branch.",
+        related_object_links=[
+            {"object_type": "ARC_SELECTION", "object_id": "selection-branch-1", "relation_kind": "primary"},
+        ],
+        prior_state_ref="arc:selected:main",
+        new_state_ref="arc:selected:branch",
+        reason_or_note="Preserve the alternate route for review.",
+        made_by="writer:alex",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    branch_point = repo.upsert_branch_point(
+        branch_point_id="branch-point-1",
+        project_id=project_id,
+        source_node_id=branch_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    archived_branch = repo.upsert_story_branch(
+        branch_id="branch-archive",
+        project_id=project_id,
+        branch_point_id=branch_point.branch_point_id,
+        branch_name="Archive Path",
+        branch_state="ARCHIVED",
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    active_branch = repo.upsert_story_branch(
+        branch_id="branch-main",
+        project_id=project_id,
+        branch_point_id=branch_point.branch_point_id,
+        branch_name="Main Timeline",
+        branch_state=StoryBranchState.ACTIVE,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    other_branch_source = repo.record_story_decision_node(
+        node_id="branch-node-2",
+        project_id=other_project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-branch-2",
+        branch_id="branch-other",
+        summary="Fork the other project path.",
+        related_object_links=[
+            {"object_type": "ARC_SELECTION", "object_id": "selection-branch-2", "relation_kind": "primary"},
+        ],
+        prior_state_ref="arc:selected:other",
+        new_state_ref="arc:selected:other-branch",
+        reason_or_note="Keep the alternate route isolated.",
+        made_by="writer:alex",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    other_branch_point = repo.upsert_branch_point(
+        branch_point_id="branch-point-2",
+        project_id=other_project_id,
+        source_node_id=other_branch_source.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    other_branch = repo.upsert_story_branch(
+        branch_id="branch-other",
+        project_id=other_project_id,
+        branch_point_id=other_branch_point.branch_point_id,
+        branch_name="Other Timeline",
+        branch_state="ACTIVE",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    assert repo.get_branch_point(branch_point.branch_point_id) == branch_point
+    assert repo.get_branch_point_for_source_node(project_id, source_node_id=branch_source.node_id) == branch_point
+    assert repo.list_branch_points(project_id) == [branch_point]
+    assert repo.list_story_branches(project_id) == [active_branch, archived_branch]
+    assert active_branch.branch_state == StoryBranchState.ACTIVE
+    assert archived_branch.branch_state == StoryBranchState.ARCHIVED
+    assert active_branch.branch_point_id == branch_point.branch_point_id
+    assert repo.get_story_branch(active_branch.branch_id) == active_branch
+    assert repo.list_story_branches(other_project_id) == [other_branch]
+    assert repo.get_branch_point_for_source_node(other_project_id, source_node_id=other_branch_source.node_id) == other_branch_point
 
 
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:

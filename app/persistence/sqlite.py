@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 16
+OPERATIONS_DB_VERSION = 17
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -462,6 +462,29 @@ CREATE TABLE IF NOT EXISTS story_decision_nodes (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS branch_points (
+    branch_point_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    source_node_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, source_node_id),
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(project_id, source_node_id) REFERENCES story_decision_nodes(project_id, node_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS story_branches (
+    branch_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    branch_point_id TEXT NOT NULL,
+    branch_name TEXT NOT NULL,
+    branch_state TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(branch_point_id) REFERENCES branch_points(branch_point_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS checker_findings (
     finding_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
@@ -696,6 +719,8 @@ CREATE INDEX IF NOT EXISTS idx_arc_comparisons_project_created ON arc_comparison
 CREATE INDEX IF NOT EXISTS idx_arc_selection_comparisons_selection_order ON arc_selection_comparisons(selection_id, link_order, comparison_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_made_at ON story_decision_nodes(project_id, decision_made_at, node_id, node_record_id);
 CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_subject ON story_decision_nodes(project_id, subject_type, subject_id, decision_made_at, node_id);
+CREATE INDEX IF NOT EXISTS idx_branch_points_project_source ON branch_points(project_id, source_node_id, branch_point_id);
+CREATE INDEX IF NOT EXISTS idx_story_branches_project_created ON story_branches(project_id, created_at, branch_id);
 CREATE INDEX IF NOT EXISTS idx_checker_findings_project_source ON checker_findings(project_id, source_object_kind, source_object_id, finding_id);
 CREATE INDEX IF NOT EXISTS idx_checker_findings_project_severity ON checker_findings(project_id, severity, created_at, finding_id);
 CREATE INDEX IF NOT EXISTS idx_review_decisions_project_target ON review_decisions(project_id, target_kind, target_id, created_at, decision_id);
@@ -813,6 +838,8 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "arc_selections", "arc_selections__legacy")
         _rename_table_if_exists(connection, "story_decision_nodes", "story_decision_nodes__legacy")
         _rename_table_if_exists(connection, "story_decision_records", "story_decision_records__legacy")
+        _rename_table_if_exists(connection, "branch_points", "branch_points__legacy")
+        _rename_table_if_exists(connection, "story_branches", "story_branches__legacy")
         _rename_table_if_exists(connection, "checker_findings", "checker_findings__legacy")
         _rename_table_if_exists(connection, "review_decisions", "review_decisions__legacy")
         _rename_table_if_exists(connection, "inspect_run_links", "inspect_run_links__legacy")
@@ -882,6 +909,8 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_arc_candidates_legacy(connection)
         _copy_arc_selections_legacy(connection)
         _copy_story_decision_nodes_legacy(connection)
+        _copy_branch_points_legacy(connection)
+        _copy_story_branches_legacy(connection)
         _copy_checker_findings_legacy(connection)
         _copy_review_decisions_legacy(connection)
         _copy_inspect_run_links_legacy(connection)
@@ -920,6 +949,8 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("arc_selections", "arc_selections__legacy"),
         ("story_decision_nodes", "story_decision_nodes__legacy"),
         ("story_decision_nodes", "story_decision_records__legacy"),
+        ("branch_points", "branch_points__legacy"),
+        ("story_branches", "story_branches__legacy"),
         ("checker_findings", "checker_findings__legacy"),
         ("review_decisions", "review_decisions__legacy"),
         ("inspect_run_links", "inspect_run_links__legacy"),
@@ -1447,6 +1478,36 @@ def _copy_story_decision_nodes_legacy(connection: sqlite3.Connection) -> None:
     )
 
 
+def _copy_branch_points_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "branch_points__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO branch_points (
+            branch_point_id, project_id, source_node_id, created_at, updated_at
+        )
+        SELECT
+            branch_point_id, project_id, source_node_id, created_at, updated_at
+        FROM branch_points__legacy
+        """
+    )
+
+
+def _copy_story_branches_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "story_branches__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO story_branches (
+            branch_id, project_id, branch_point_id, branch_name, branch_state, created_at, updated_at
+        )
+        SELECT
+            branch_id, project_id, branch_point_id, branch_name, branch_state, created_at, updated_at
+        FROM story_branches__legacy
+        """
+    )
+
+
 def _copy_checker_findings_legacy(connection: sqlite3.Connection) -> None:
     if not _table_exists(connection, "checker_findings__legacy"):
         return
@@ -1622,6 +1683,8 @@ def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
         "arc_candidates__legacy",
         "arc_selections__legacy",
         "story_decision_nodes__legacy",
+        "branch_points__legacy",
+        "story_branches__legacy",
         "checker_findings__legacy",
         "review_decisions__legacy",
         "inspect_run_links__legacy",

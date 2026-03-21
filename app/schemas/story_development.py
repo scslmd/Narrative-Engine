@@ -10,6 +10,7 @@ from .enums import (
     StoryDecisionNodeType,
     StoryObjectType,
     StoryArtifactLifecycleState,
+    StoryBranchState,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
     StorySuggestionLifecycleState,
@@ -843,6 +844,46 @@ class StoryDecisionNode(StrictSchemaModel):
         if not (has_prior_ref or has_prior_summary or has_new_ref or has_new_summary):
             raise ValueError("at least one prior or new state reference or summary is required")
         return self
+
+
+class BranchPoint(StrictSchemaModel):
+    branch_point_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    source_node_id: str = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("branch_point_id", "project_id", "source_node_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class StoryBranch(StrictSchemaModel):
+    branch_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    branch_point_id: str = Field(min_length=1)
+    branch_name: str = Field(min_length=1)
+    branch_state: StoryBranchState = StoryBranchState.ACTIVE
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("branch_id", "project_id", "branch_point_id", "branch_name"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "branch_state" in payload:
+            payload["branch_state"] = _normalize_text(payload["branch_state"], field_name="branch_state").upper()
+        return payload
 
 
 class CheckerFinding(StrictSchemaModel):

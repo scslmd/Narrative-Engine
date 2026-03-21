@@ -62,6 +62,11 @@ class StorySuggestionLifecycleState(str, Enum):
     EXPIRED = "EXPIRED"
 
 
+class StoryBranchState(str, Enum):
+    ACTIVE = "ACTIVE"
+    ARCHIVED = "ARCHIVED"
+
+
 class StoryDecisionNodeType(str, Enum):
     DECISION = "DECISION"
     BRANCH_POINT = "BRANCH_POINT"

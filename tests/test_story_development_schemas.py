@@ -8,12 +8,15 @@ from app.schemas import (
     ArcCandidate,
     ArcComparisonRecord,
     ArcSelection,
+    BranchPoint,
     DraftArtifact,
     RevisionSuggestion,
     StoryArtifactLifecycleState,
     StoryDecisionChangeType,
     StoryDecisionNode,
     StoryDecisionNodeType,
+    StoryBranch,
+    StoryBranchState,
     StoryFlowDefinition,
     StoryFlowStage,
     StoryFlowStageConfigurationState,
@@ -225,6 +228,34 @@ def test_arc_comparison_selection_and_decision_models_validate_reviewable_histor
                 "made_by": "writer-1",
             }
         )
+
+
+def test_branch_models_validate_canonical_fork_identity() -> None:
+    branch_point = BranchPoint.model_validate(
+        {
+            "branch_point_id": "  branch-point-1  ",
+            "project_id": "  project-123  ",
+            "source_node_id": "  node-branch-1  ",
+        }
+    )
+    branch = StoryBranch.model_validate(
+        {
+            "branch_id": "  branch-main  ",
+            "project_id": "  project-123  ",
+            "branch_point_id": "  branch-point-1  ",
+            "branch_name": "  Main Timeline  ",
+            "branch_state": "  ACTIVE  ",
+        }
+    )
+
+    assert branch_point.branch_point_id == "branch-point-1"
+    assert branch_point.project_id == "project-123"
+    assert branch_point.source_node_id == "node-branch-1"
+    assert branch.branch_id == "branch-main"
+    assert branch.project_id == "project-123"
+    assert branch.branch_point_id == "branch-point-1"
+    assert branch.branch_name == "Main Timeline"
+    assert branch.branch_state == StoryBranchState.ACTIVE.value
 
 
 def test_story_development_models_reject_extra_fields() -> None:
