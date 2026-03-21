@@ -211,7 +211,7 @@ def test_local_executor_runs_real_architect_path_for_p100_with_fake_inferencer(t
     assert project_service.repository.get_artifact_path(project_id, "architect_p100") == output_path
 
 
-def test_local_executor_keeps_non_runtime_phases_on_stub_path(tmp_path: Path) -> None:
+def test_local_executor_runs_real_compiler_path_for_p400_instead_of_stub_completion(tmp_path: Path) -> None:
     project_id = "stub-phase-test"
     initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
     executor_backend = FakeArchitectInferenceBackend(content="unused")
@@ -229,11 +229,12 @@ def test_local_executor_keeps_non_runtime_phases_on_stub_path(tmp_path: Path) ->
     lineage = job_manager.list_artifact_lineage(job.id)
 
     assert final_status == "COMPLETED"
-    assert executor_backend.requests == []
+    assert len(executor_backend.requests) == 1
     assert len(steps) == 1
-    assert steps[0]["step_name"] == "P-400"
+    assert steps[0]["step_name"] == "compiler"
     assert steps[0]["state"] == "COMPLETED"
-    assert lineage == []
+    assert len(lineage) == 1
+    assert lineage[0]["artifact_role"] == "story_bible"
 
 
 def test_local_executor_persists_mapped_runtime_error_for_p100_failures(tmp_path: Path) -> None:

@@ -7,14 +7,14 @@ This document defines the current backend contract for per-step execution record
 Current implementation status:
 
 - implemented now: field requirements, example records, lineage rules, fixture-backed spec coverage, live SQLite tables, repository methods, and local-executor writes for step records and artifact lineage
-- not yet implemented: dedicated API projections or real-runtime/orchestrator step emission
+- not yet implemented: full orchestrator step emission beyond the current executor-backed phase set
 - no queue or worker redesign is implied by this contract layer
 
 ## Scope
 
 This blueprint applies to:
 
-- pipeline job steps such as `architect`, `sequencer`, `drafter`, and `critic`
+- pipeline job steps such as `architect`, `sequencer`, `drafter`, `compiler`, and future validation stages
 - checker steps for role or model evaluations
 - future artifact registration produced by a specific step attempt
 

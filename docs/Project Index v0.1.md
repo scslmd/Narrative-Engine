@@ -21,8 +21,9 @@ Implemented foundation:
 - attempt-level executor telemetry on jobs and checker runs, including executor-name and claim or reclaim payload metadata
 - explicit operator retry flow that requeues failed runs onto a new attempt number
 - persisted step records and artifact lineage for the local executor path, plus contract fixtures that lock the record shape
-- generalized inference provider selection plus one real `P-100` architect runtime execution path
+- generalized inference provider selection plus real runtime execution paths for `P-100` `architect`, `P-200` `sequencer`, `P-300` `drafter`, and `P-400` `compiler`
 - canonical `architect_p100` project artifact registration backed by artifact lineage
+- canonical `sequence`, `chapter_1`, and `story_bible` artifact registration backed by artifact lineage
 - public projection endpoints for step records and artifact lineage on jobs and checker runs
 - role-model checker scaffolding
 - story-development backend foundations for editable flow, brainstorm, foundation, story knowledge, planning, drafting, story-decision review, review routing, review/inspect persistence, the first non-branching story-development API routes, and branching API routes
@@ -38,7 +39,7 @@ Current planning reference docs:
 
 Major work still ahead:
 
-- real inference/runtime integration beyond `P-100`
+- runtime phase expansion beyond the current `P-100` through `P-400` set
 - orchestrator/compiler flow
 - production-grade checker execution
 - richer runtime telemetry

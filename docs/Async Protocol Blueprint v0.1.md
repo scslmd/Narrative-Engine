@@ -14,7 +14,7 @@ Current implementation status:
 
 - implemented now: `202 Accepted` enqueue semantics, status polling, local lease-claim execution, stale-lease reclaim events, immutable request snapshots, append-only event history, first-class attempt tables, explicit retry attempts, attempt-level executor telemetry, and `Idempotency-Key` replay or conflict handling
 - implemented now for step persistence: live SQLite step records, artifact lineage, local-executor writes, fixture coverage, and persistence tests
-- implemented now for real runtime paths: `P-100` architect execution, `P-200` sequencer execution, and `P-300` drafter execution through the generalized inferencer with canonical artifact registration
+- implemented now for real runtime paths: `P-100` architect execution, `P-200` sequencer execution, `P-300` drafter execution, and `P-400` compiler execution through the generalized inferencer with canonical artifact registration
 - implemented now for inspectability: dedicated public API projections for persisted step records and artifact lineage
 - still next: richer runtime-grade model telemetry for step records and artifact lineage
 
@@ -104,6 +104,7 @@ Pipeline job steps should eventually include:
 - `architect`
 - `sequencer`
 - `drafter`
+- `compiler`
 - `critic`
 
 Role-model checker steps should include one step per tested role/model combination.
@@ -299,8 +300,8 @@ Rules:
 
 Current limitation:
 
-- the current real-runtime pipeline path is limited to `P-100` `architect`
-- checker execution and later pipeline phases still need real-runtime/orchestrator emission
+- the current real-runtime pipeline path is limited to the current `P-100` through `P-400` phase set
+- checker execution and any future pipeline phases beyond `P-400` still need additional runtime/orchestrator emission
 
 ## Failure-Mode Test Matrix
 

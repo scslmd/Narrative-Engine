@@ -27,13 +27,13 @@ The current backend implements:
 - a reusable OpenAI-compatible HTTP transport
 - provider selection through environment variables
 - runtime descriptors for provider identity, capabilities, and defaults
-- real provider-backed runtime paths for pipeline phases `P-100` `architect`, `P-200` `sequencer`, and `P-300` `drafter`
+- real provider-backed runtime paths for pipeline phases `P-100` `architect`, `P-200` `sequencer`, `P-300` `drafter`, and `P-400` `compiler`
 
 The current backend does not yet implement:
 
 - provider-specific transports beyond the generalized OpenAI-compatible path
 - normalized structured runtime error objects beyond `InferenceBackendError`
-- runtime-backed orchestration across all phases
+- runtime-backed orchestration beyond the current `P-100` through `P-400` phase set
 
 ## Supported Providers
 

@@ -23,7 +23,7 @@
 - [x] Make project artifact endpoints for generated runtime outputs lineage-aware so failed `P-200`/`P-300` runs do not return placeholder `sequence` or `chapter-1` files as if they were successful canonical artifacts.
 - [x] Ignore bootstrapped empty upstream artifacts in downstream runtime phases so `P-300` does not record empty `sequence` context as a real dependency.
 - [x] Add explicit supersession behavior for rerun canonical job artifacts so repeated `P-200`/`P-300` successes do not leave multiple unsuperseded `CANONICAL` lineage rows.
-- [ ] Rebuild `LocalExecutor` job processing so phases after the current `P-100`, `P-200`, and `P-300` slices run through explicit runtime-backed step handlers instead of one-step stub completion.
+- [x] Rebuild `LocalExecutor` job processing so the current phase set `P-100`, `P-200`, `P-300`, and `P-400` runs through explicit runtime-backed step handlers instead of one-step stub completion.
 - [x] Add read-only API endpoints for step records and artifact lineage on both jobs and checker runs.
 - [x] Implement `GET /jobs/{job_id}/steps` backed only by persisted step-record rows and the step projection contract.
 - [x] Implement `GET /jobs/{job_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
@@ -40,7 +40,7 @@
 - [x] Register `architect` runtime output through canonical artifact-lineage persistence.
 - [x] Register `sequence` runtime output through canonical artifact-lineage persistence.
 - [x] Register `chapter_1` runtime output through canonical artifact-lineage persistence.
-- [ ] Rebuild remaining job phases on top of explicit runtime-backed step handlers.
+- [x] Rebuild the current job-phase set on top of explicit runtime-backed step handlers.
 - [ ] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.

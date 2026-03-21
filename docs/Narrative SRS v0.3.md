@@ -185,8 +185,8 @@ Implementation note:
 - The frontend polls these status endpoints rather than assuming immediate completion.
 - Job and checker status are durably stored in SQLite instead of process-local memory.
 - The current execution path uses a local lease-claim executor.
-- The local executor still uses stub logic for most phases after `P-100`, but checker role execution now supports runtime-backed roles with deterministic fallback.
-- `P-100` is the first real provider-backed pipeline phase and remains a critical reference slice for future runtime-backed phases.
+- The local executor now has explicit runtime-backed handlers for `P-100`, `P-200`, `P-300`, and `P-400`, while checker role execution supports runtime-backed roles with deterministic fallback.
+- `P-100` through `P-400` are the current real provider-backed pipeline phases and remain the reference slices for any future runtime-backed phase expansion.
 - Step records and artifact lineage are durably persisted in SQLite for the local executor path and are exposed through dedicated public inspect endpoints for jobs and checker runs.
 
 ## 8.1 Async Protocol Contract
@@ -374,9 +374,9 @@ Reference:
 
 - see `docs/Step Record Blueprint v0.1.md`
 
-## 11. P-100 Architect Runtime Path
+## 11. Runtime-Backed Pipeline Paths
 
-The current runtime-backed baseline includes one real provider-backed pipeline phase: `P-100`.
+The current runtime-backed baseline includes four real provider-backed pipeline phases: `P-100`, `P-200`, `P-300`, and `P-400`.
 
 Implemented now:
 
@@ -386,6 +386,9 @@ Implemented now:
 - `P-100` persists a completed step record with role-like step name `architect`
 - `P-100` persists a canonical artifact-lineage row for the generated output
 - `P-100` registers the generated artifact as canonical project artifact `architect_p100`
+- `P-200` builds a sequencer inference request from manifest plus upstream architect context and registers canonical `sequence`
+- `P-300` builds a drafter inference request from manifest plus upstream architect and sequence context and registers canonical `chapter_1`
+- `P-400` builds a compiler inference request from manifest plus architect, sequence, and chapter context and registers canonical `story_bible`
 
 Required prompt-construction rules:
 
@@ -407,9 +410,24 @@ Required artifact rules for `P-100`:
 - lineage validation state: `PASSED`
 - canonical project artifact registration name: `architect_p100`
 
+Current artifact rules for later implemented phases:
+
+- `P-200`
+  - artifact role: `sequence`
+  - artifact kind: `json`
+  - canonical project artifact registration name: `sequence`
+- `P-300`
+  - artifact role: `chapter_1`
+  - artifact kind: `markdown`
+  - canonical project artifact registration name: `chapter_1`
+- `P-400`
+  - artifact role: `story_bible`
+  - artifact kind: `json`
+  - canonical project artifact registration name: `story_bible`
+
 Intentionally not yet implemented:
 
-- equivalent real-runtime execution for phases after `P-100`
+- equivalent real-runtime execution for phases beyond `P-400`
 
 ## 12. Role-Model Checker
 
@@ -486,7 +504,7 @@ Implemented now:
 
 Required pytest command:
 
-- `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
+- `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_local_executor_compiler_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
 ## 16. Implemented Now vs Not Yet Implemented
 
@@ -497,7 +515,7 @@ Implemented now:
 - idempotency and retry semantics
 - first-class attempt lineage
 - live step records and artifact lineage in SQLite
-- real provider-backed `P-100` architect execution path
+- real provider-backed `P-100` through `P-400` execution paths
 - canonical `architect_p100` artifact registration
 - public projection endpoints for step records and artifact lineage
 - GitHub Actions pytest baseline
@@ -507,13 +525,13 @@ Required for the current baseline:
 - exact public endpoint surface in this document
 - SQLite-backed operational persistence including steps and lineage
 - generalized inferencer and environment-variable configuration
-- local executor with special-case runtime-backed `P-100`
-- canonical `architect_p100` registration rules
+- local executor with explicit runtime-backed handlers for `P-100`, `P-200`, `P-300`, and `P-400`
+- canonical runtime artifact registration rules for `architect_p100`, `sequence`, `chapter_1`, and `story_bible`
 - current pytest and CI command baseline
 
 Intentionally not yet implemented:
 
-- real-runtime execution for non-`P-100` job phases
+- real-runtime execution for job phases beyond `P-400`
 - public project endpoint for `architect_p100`
 - richer runtime telemetry persistence beyond the current contracts
 

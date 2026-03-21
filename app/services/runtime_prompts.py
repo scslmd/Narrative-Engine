@@ -133,6 +133,54 @@ def build_p300_drafter_request(
     )
 
 
+def build_p400_compiler_request(
+    *,
+    manifest: Manifest,
+    payload: dict[str, Any],
+    architect_output: str | None = None,
+    sequence_output: str | None = None,
+    chapter_output: str | None = None,
+    default_model: str | None,
+) -> InferenceRequest:
+    prompt_context = _runtime_prompt_context(manifest=manifest, payload=payload)
+    if architect_output is not None:
+        prompt_context["architect_output"] = architect_output
+    if sequence_output is not None:
+        prompt_context["sequence_output"] = sequence_output
+    if chapter_output is not None:
+        prompt_context["chapter_output"] = chapter_output
+    return InferenceRequest(
+        model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
+        temperature=_coerce_float(payload.get("temperature"), default=0.1),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=1400),
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=(
+                    "You are the Compiler role for Narrative-Engine. "
+                    "Produce the P-400 story bible snapshot as deterministic JSON. "
+                    "Return one JSON object with these top-level keys in stable order: "
+                    "project, premise, world_anchors, character_threads, continuity_notes, open_questions."
+                ),
+            ),
+            InferenceMessage(
+                role="user",
+                content=(
+                    "Build the P-400 compiler story bible snapshot from this project context.\n\n"
+                    f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
+                ),
+            ),
+        ],
+        metadata={
+            "mode": "pipeline_phase",
+            "phase": "P-400",
+            "role": "compiler",
+            "project_id": manifest.project_id,
+            "project_name": manifest.project_name,
+        },
+    )
+
+
 def architect_output_path(project_dir: Path) -> Path:
     return project_dir / "exports" / "p100_architect_output.md"
 
@@ -143,6 +191,10 @@ def sequence_output_path(project_dir: Path) -> Path:
 
 def chapter_output_path(project_dir: Path) -> Path:
     return project_dir / "chapter.md"
+
+
+def story_bible_output_path(project_dir: Path) -> Path:
+    return project_dir / "story_bible.json"
 
 
 def _runtime_prompt_context(*, manifest: Manifest, payload: dict[str, Any]) -> dict[str, Any]:
