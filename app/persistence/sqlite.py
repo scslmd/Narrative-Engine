@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 10
+OPERATIONS_DB_VERSION = 14
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -337,6 +337,22 @@ CREATE TABLE IF NOT EXISTS character_profiles (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS relationship_edges (
+    edge_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    source_character_id TEXT NOT NULL,
+    target_character_id TEXT NOT NULL,
+    relation_kind TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    tension TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(source_character_id) REFERENCES character_profiles(character_id) ON DELETE CASCADE,
+    FOREIGN KEY(target_character_id) REFERENCES character_profiles(character_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS world_bible_entries (
     entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
@@ -344,6 +360,7 @@ CREATE TABLE IF NOT EXISTS world_bible_entries (
     title TEXT NOT NULL,
     summary TEXT,
     canonical_facts_json TEXT NOT NULL DEFAULT '[]',
+    related_character_ids_json TEXT NOT NULL DEFAULT '[]',
     visibility_scope TEXT NOT NULL DEFAULT 'project',
     source_artifacts_json TEXT NOT NULL DEFAULT '[]',
     continuity_warnings_json TEXT NOT NULL DEFAULT '[]',
@@ -355,27 +372,192 @@ CREATE TABLE IF NOT EXISTS world_bible_entries (
 );
 
 CREATE TABLE IF NOT EXISTS arc_candidates (
-    candidate_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    arc_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
-    label TEXT NOT NULL,
-    summary TEXT,
-    fit_notes TEXT,
-    stage_map_json TEXT NOT NULL DEFAULT '[]',
+    name TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    stage_map_notes_json TEXT NOT NULL DEFAULT '[]',
+    fit_notes_json TEXT NOT NULL DEFAULT '[]',
+    tags_json TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS arc_selections (
-    selection_id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS arc_stage_maps (
+    arc_stage_map_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
-    selected_arc_candidate_id INTEGER,
+    arc_id TEXT NOT NULL,
+    stage_kinds_json TEXT NOT NULL DEFAULT '[]',
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, arc_id),
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(arc_id) REFERENCES arc_candidates(arc_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS arc_selections (
+    selection_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    selected_arc_id TEXT,
+    selected_arc_json TEXT NOT NULL,
     rejected_candidate_ids_json TEXT NOT NULL DEFAULT '[]',
-    comparison_history_json TEXT NOT NULL DEFAULT '[]',
+    comparison_notes_json TEXT NOT NULL DEFAULT '[]',
+    stage_map_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
-    FOREIGN KEY(selected_arc_candidate_id) REFERENCES arc_candidates(candidate_id) ON DELETE SET NULL
+    FOREIGN KEY(selected_arc_id) REFERENCES arc_candidates(arc_id) ON DELETE SET NULL,
+    FOREIGN KEY(stage_map_id) REFERENCES arc_stage_maps(arc_stage_map_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS arc_comparisons (
+    comparison_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    candidate_ids_json TEXT NOT NULL DEFAULT '[]',
+    candidate_set_json TEXT NOT NULL DEFAULT '[]',
+    ranked_candidates_json TEXT NOT NULL DEFAULT '[]',
+    review_notes_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS arc_selection_comparisons (
+    selection_id TEXT NOT NULL,
+    comparison_id TEXT NOT NULL,
+    link_order INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(selection_id, comparison_id),
+    UNIQUE(selection_id, link_order),
+    FOREIGN KEY(selection_id) REFERENCES arc_selections(selection_id) ON DELETE CASCADE,
+    FOREIGN KEY(comparison_id) REFERENCES arc_comparisons(comparison_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS story_decision_nodes (
+    node_record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    node_type TEXT NOT NULL,
+    change_type TEXT NOT NULL,
+    subject_type TEXT NOT NULL,
+    subject_id TEXT NOT NULL,
+    parent_node_id TEXT,
+    branch_id TEXT,
+    summary TEXT NOT NULL,
+    prior_state_ref TEXT,
+    prior_state_summary TEXT,
+    new_state_ref TEXT,
+    new_state_summary TEXT,
+    reason_or_note TEXT,
+    decision_made_at TEXT NOT NULL,
+    made_by TEXT NOT NULL,
+    related_object_links_json TEXT NOT NULL DEFAULT '[]',
+    informing_object_links_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(project_id, node_id),
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS beat_plans (
+    beat_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    conflict TEXT NOT NULL,
+    stakes TEXT NOT NULL,
+    dependency_ids_json TEXT NOT NULL DEFAULT '[]',
+    arc_stage TEXT NOT NULL,
+    active_character_ids_json TEXT NOT NULL DEFAULT '[]',
+    continuity_requirements_json TEXT NOT NULL DEFAULT '[]',
+    unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS sequence_plans (
+    sequence_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    beat_ids_json TEXT NOT NULL DEFAULT '[]',
+    chapter_ids_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS chapter_plans (
+    chapter_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    sequence_id TEXT,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    conflict TEXT NOT NULL,
+    stakes TEXT NOT NULL,
+    active_character_ids_json TEXT NOT NULL DEFAULT '[]',
+    continuity_requirements_json TEXT NOT NULL DEFAULT '[]',
+    unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(sequence_id) REFERENCES sequence_plans(sequence_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS scene_plans (
+    scene_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    chapter_id TEXT,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    conflict TEXT NOT NULL,
+    stakes TEXT NOT NULL,
+    active_character_ids_json TEXT NOT NULL DEFAULT '[]',
+    continuity_requirements_json TEXT NOT NULL DEFAULT '[]',
+    unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(chapter_id) REFERENCES chapter_plans(chapter_id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS chapter_packets (
+    packet_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    included_reference_ids_json TEXT NOT NULL DEFAULT '[]',
+    constraints_json TEXT NOT NULL DEFAULT '[]',
+    scene_goals_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(chapter_id) REFERENCES chapter_plans(chapter_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS planning_dependencies (
+    dependency_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    upstream_id TEXT NOT NULL,
+    downstream_id TEXT NOT NULL,
+    dependency_kind TEXT NOT NULL,
+    reason TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 """
 
@@ -417,9 +599,21 @@ CREATE INDEX IF NOT EXISTS idx_story_flow_stages_project_key ON story_flow_stage
 CREATE INDEX IF NOT EXISTS idx_brainstorm_items_project_state ON brainstorm_items(project_id, item_state, item_id);
 CREATE INDEX IF NOT EXISTS idx_foundation_revisions_project_revision ON foundation_revisions(project_id, revision_number);
 CREATE INDEX IF NOT EXISTS idx_character_profiles_project_name ON character_profiles(project_id, display_name);
+CREATE INDEX IF NOT EXISTS idx_relationship_edges_project_characters ON relationship_edges(project_id, source_character_id, target_character_id, edge_id);
 CREATE INDEX IF NOT EXISTS idx_world_bible_entries_project_type_title ON world_bible_entries(project_id, entry_type, title);
-CREATE INDEX IF NOT EXISTS idx_arc_candidates_project_label ON arc_candidates(project_id, label);
+CREATE INDEX IF NOT EXISTS idx_arc_candidates_project_name ON arc_candidates(project_id, name, arc_id);
+CREATE INDEX IF NOT EXISTS idx_arc_stage_maps_project_arc ON arc_stage_maps(project_id, arc_id, arc_stage_map_id);
 CREATE INDEX IF NOT EXISTS idx_arc_selections_project_created ON arc_selections(project_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_arc_comparisons_project_created ON arc_comparisons(project_id, created_at, comparison_id);
+CREATE INDEX IF NOT EXISTS idx_arc_selection_comparisons_selection_order ON arc_selection_comparisons(selection_id, link_order, comparison_id);
+CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_made_at ON story_decision_nodes(project_id, decision_made_at, node_id, node_record_id);
+CREATE INDEX IF NOT EXISTS idx_story_decision_nodes_project_subject ON story_decision_nodes(project_id, subject_type, subject_id, decision_made_at, node_id);
+CREATE INDEX IF NOT EXISTS idx_beat_plans_project_position ON beat_plans(project_id, position, beat_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_plans_project_position ON sequence_plans(project_id, position, sequence_id);
+CREATE INDEX IF NOT EXISTS idx_chapter_plans_project_sequence_position ON chapter_plans(project_id, sequence_id, position, chapter_id);
+CREATE INDEX IF NOT EXISTS idx_scene_plans_project_chapter_position ON scene_plans(project_id, chapter_id, position, scene_id);
+CREATE INDEX IF NOT EXISTS idx_chapter_packets_project_chapter ON chapter_packets(project_id, chapter_id, packet_id);
+CREATE INDEX IF NOT EXISTS idx_planning_dependencies_project_upstream ON planning_dependencies(project_id, upstream_id, downstream_id, dependency_id);
 """
 
 
@@ -517,6 +711,11 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "checker_run_events", "checker_run_events__legacy")
         _rename_table_if_exists(connection, "step_records", "step_records__legacy")
         _rename_table_if_exists(connection, "artifact_lineage", "artifact_lineage__legacy")
+        _rename_table_if_exists(connection, "world_bible_entries", "world_bible_entries__legacy")
+        _rename_table_if_exists(connection, "arc_candidates", "arc_candidates__legacy")
+        _rename_table_if_exists(connection, "arc_selections", "arc_selections__legacy")
+        _rename_table_if_exists(connection, "story_decision_nodes", "story_decision_nodes__legacy")
+        _rename_table_if_exists(connection, "story_decision_records", "story_decision_records__legacy")
 
         connection.executescript(OPERATIONS_SCHEMA)
 
@@ -576,6 +775,10 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_checker_run_events_legacy(connection)
         _copy_step_records_legacy(connection)
         _copy_artifact_lineage_legacy(connection)
+        _copy_world_bible_entries_legacy(connection)
+        _copy_arc_candidates_legacy(connection)
+        _copy_arc_selections_legacy(connection)
+        _copy_story_decision_nodes_legacy(connection)
 
         _apply_operations_indexes(connection)
         _drop_legacy_tables(connection)
@@ -603,6 +806,11 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("checker_run_attempts", "checker_runs__legacy"),
         ("step_records", "step_records__legacy"),
         ("artifact_lineage", "artifact_lineage__legacy"),
+        ("world_bible_entries", "world_bible_entries__legacy"),
+        ("arc_candidates", "arc_candidates__legacy"),
+        ("arc_selections", "arc_selections__legacy"),
+        ("story_decision_nodes", "story_decision_nodes__legacy"),
+        ("story_decision_nodes", "story_decision_records__legacy"),
     ):
         if _table_exists(connection, legacy_name) and _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")
@@ -904,6 +1112,283 @@ def _copy_artifact_lineage_legacy(connection: sqlite3.Connection) -> None:
     )
 
 
+def _copy_world_bible_entries_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "world_bible_entries__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO world_bible_entries (
+            entry_id, project_id, entry_type, title, summary, canonical_facts_json, related_character_ids_json,
+            visibility_scope, source_artifacts_json, continuity_warnings_json, writer_notes, created_at, updated_at
+        )
+        SELECT
+            entry_id, project_id, entry_type, title, summary, canonical_facts_json, '[]',
+            visibility_scope, source_artifacts_json, continuity_warnings_json, writer_notes, created_at, updated_at
+        FROM world_bible_entries__legacy
+        """
+    )
+
+
+def _copy_arc_candidates_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "arc_candidates__legacy"):
+        return
+    rows = connection.execute(
+        """
+        SELECT candidate_id, project_id, label, summary, fit_notes, stage_map_json, created_at, updated_at
+        FROM arc_candidates__legacy
+        ORDER BY candidate_id ASC
+        """
+    ).fetchall()
+    for row in rows:
+        arc_id = f"legacy-arc-{int(row['candidate_id'])}"
+        connection.execute(
+            """
+            INSERT INTO arc_candidates (
+                arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                arc_id,
+                row["project_id"],
+                row["label"],
+                row["summary"] or "",
+                _legacy_json_list(row["stage_map_json"]),
+                _legacy_json_list(row["fit_notes"]),
+                "[]",
+                row["created_at"],
+                row["updated_at"],
+            ),
+        )
+
+
+def _copy_arc_selections_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "arc_selections__legacy"):
+        return
+    legacy_columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(arc_selections__legacy)").fetchall()
+    }
+    if {"selected_arc_json", "comparison_inputs_json"}.issubset(legacy_columns):
+        rows = connection.execute(
+            """
+            SELECT selection_id, project_id, selected_arc_id, selected_arc_json, rejected_candidate_ids_json,
+                   comparison_notes_json, comparison_inputs_json, stage_map_id, created_at, updated_at
+            FROM arc_selections__legacy
+            ORDER BY selection_id ASC
+            """
+        ).fetchall()
+        for row in rows:
+            comparison_inputs = _parse_json_objects(row["comparison_inputs_json"])
+            connection.execute(
+                """
+                INSERT INTO arc_selections (
+                    selection_id, project_id, selected_arc_id, selected_arc_json, rejected_candidate_ids_json,
+                    comparison_notes_json, stage_map_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row["selection_id"],
+                    row["project_id"],
+                    row["selected_arc_id"],
+                    row["selected_arc_json"],
+                    row["rejected_candidate_ids_json"],
+                    row["comparison_notes_json"],
+                    row["stage_map_id"],
+                    row["created_at"],
+                    row["updated_at"],
+                ),
+            )
+            if len(comparison_inputs) >= 2:
+                comparison_id = f"{row['selection_id']}:comparison:001"
+                ranked_candidates = _rank_arc_comparison_payloads(comparison_inputs)
+                connection.execute(
+                    """
+                    INSERT INTO arc_comparisons (
+                        comparison_id, project_id, candidate_ids_json, candidate_set_json, ranked_candidates_json,
+                        review_notes_json, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        comparison_id,
+                        row["project_id"],
+                        json.dumps([str(item.get("arc_id", "")) for item in comparison_inputs], ensure_ascii=True, sort_keys=True),
+                        json.dumps(comparison_inputs, ensure_ascii=True, sort_keys=True),
+                        json.dumps(ranked_candidates, ensure_ascii=True, sort_keys=True),
+                        row["comparison_notes_json"],
+                        row["created_at"],
+                        row["updated_at"],
+                    ),
+                )
+                connection.execute(
+                    """
+                    INSERT INTO arc_selection_comparisons (
+                        selection_id, comparison_id, link_order, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        row["selection_id"],
+                        comparison_id,
+                        0,
+                        row["created_at"],
+                        row["updated_at"],
+                    ),
+                )
+        return
+
+    rows = connection.execute(
+        """
+        SELECT selection_id, project_id, selected_arc_candidate_id, rejected_candidate_ids_json,
+               comparison_history_json, created_at, updated_at
+        FROM arc_selections__legacy
+        ORDER BY selection_id ASC
+        """
+    ).fetchall()
+    for row in rows:
+        selected_candidate_id = row["selected_arc_candidate_id"]
+        selected_arc_id = f"legacy-arc-{int(selected_candidate_id)}" if selected_candidate_id is not None else None
+        selected_arc_row = None
+        if selected_candidate_id is not None:
+            selected_arc_row = connection.execute(
+                """
+                SELECT arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
+                FROM arc_candidates
+                WHERE arc_id = ?
+                """,
+                (selected_arc_id,),
+            ).fetchone()
+        if selected_arc_row is None:
+            continue
+        connection.execute(
+            """
+            INSERT INTO arc_selections (
+                selection_id, project_id, selected_arc_id, selected_arc_json, rejected_candidate_ids_json,
+                comparison_notes_json, stage_map_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                f"legacy-selection-{int(row['selection_id'])}",
+                row["project_id"],
+                selected_arc_id,
+                json.dumps(
+                    {
+                        "arc_id": selected_arc_row["arc_id"],
+                        "project_id": selected_arc_row["project_id"],
+                        "name": selected_arc_row["name"],
+                        "summary": selected_arc_row["summary"],
+                        "stage_map_notes": _parse_json_list(selected_arc_row["stage_map_notes_json"]),
+                        "fit_notes": _parse_json_list(selected_arc_row["fit_notes_json"]),
+                        "tags": _parse_json_list(selected_arc_row["tags_json"]),
+                        "created_at": selected_arc_row["created_at"],
+                        "updated_at": selected_arc_row["updated_at"],
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                ),
+                row["rejected_candidate_ids_json"],
+                json.dumps(_legacy_json_list(row["comparison_history_json"]), ensure_ascii=True, sort_keys=True),
+                None,
+                row["created_at"],
+                row["updated_at"],
+                ),
+            )
+
+
+def _copy_story_decision_nodes_legacy(connection: sqlite3.Connection) -> None:
+    if _table_exists(connection, "story_decision_nodes__legacy"):
+        connection.execute(
+            """
+            INSERT INTO story_decision_nodes (
+                node_record_id, node_id, project_id, node_type, change_type, subject_type, subject_id,
+                parent_node_id, branch_id, summary, prior_state_ref, prior_state_summary, new_state_ref,
+                new_state_summary, reason_or_note, decision_made_at, made_by, related_object_links_json,
+                informing_object_links_json, created_at, updated_at
+            )
+            SELECT
+                node_record_id, node_id, project_id, node_type, change_type, subject_type, subject_id,
+                parent_node_id, branch_id, summary, prior_state_ref, prior_state_summary, new_state_ref,
+                new_state_summary, reason_or_note, decision_made_at, made_by, related_object_links_json,
+                informing_object_links_json, created_at, updated_at
+            FROM story_decision_nodes__legacy
+            """
+        )
+        return
+    if not _table_exists(connection, "story_decision_records__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO story_decision_nodes (
+            node_record_id, node_id, project_id, node_type, change_type, subject_type, subject_id,
+            parent_node_id, branch_id, summary, prior_state_ref, prior_state_summary, new_state_ref,
+            new_state_summary, reason_or_note, decision_made_at, made_by, related_object_links_json,
+            informing_object_links_json, created_at, updated_at
+        )
+        SELECT
+            decision_record_id, decision_id, project_id, 'DECISION', UPPER(decision_type), UPPER(subject_type), subject_id,
+            NULL, NULL, COALESCE(reason_or_note, decision_type), prior_state_ref, prior_state_summary, new_state_ref,
+            new_state_summary, reason_or_note, decision_made_at, made_by, subject_links_json,
+            informing_object_refs_json, created_at, updated_at
+        FROM story_decision_records__legacy
+        """
+    )
+
+
+def _legacy_json_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return [value]
+    if not isinstance(parsed, list):
+        return [str(parsed)]
+    result: list[str] = []
+    for item in parsed:
+        if isinstance(item, str):
+            result.append(item)
+        elif item is not None:
+            result.append(json.dumps(item, ensure_ascii=True, sort_keys=True))
+    return result
+
+
+def _rank_arc_comparison_payloads(payloads: list[dict[str, object]]) -> list[dict[str, object]]:
+    ranked: list[tuple[tuple[int, int, int, int], dict[str, object], list[str]]] = []
+    for payload in payloads:
+        stage_map_notes = payload.get("stage_map_notes")
+        fit_notes = payload.get("fit_notes")
+        tags = payload.get("tags")
+        name = str(payload.get("name", ""))
+        summary = str(payload.get("summary", ""))
+        notes = [
+            f"{name}: {len(fit_notes) if isinstance(fit_notes, list) else 0} fit note(s), {len(stage_map_notes) if isinstance(stage_map_notes, list) else 0} stage-map note(s), {len(tags) if isinstance(tags, list) else 0} tag(s)."
+        ]
+        score = (
+            len(stage_map_notes) if isinstance(stage_map_notes, list) else 0,
+            len(fit_notes) if isinstance(fit_notes, list) else 0,
+            len(tags) if isinstance(tags, list) else 0,
+            -len(summary.split()),
+        )
+        ranked.append((score, dict(payload), notes))
+    ranked.sort(
+        key=lambda item: (
+            -item[0][0],
+            -item[0][1],
+            -item[0][2],
+            item[0][3],
+            str(item[1].get("arc_id", "")),
+        )
+    )
+    return [
+        {
+            "arc_id": payload.get("arc_id"),
+            "rank": index,
+            "score": list(score),
+            "notes": notes,
+            "candidate": payload,
+        }
+        for index, (score, payload, notes) in enumerate(ranked, start=1)
+    ]
+
+
 def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
     for table_name in (
         "project_artifacts__legacy",
@@ -918,6 +1403,9 @@ def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
         "checker_run_attempts__legacy",
         "step_records__legacy",
         "artifact_lineage__legacy",
+        "world_bible_entries__legacy",
+        "arc_candidates__legacy",
+        "arc_selections__legacy",
     ):
         if _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")

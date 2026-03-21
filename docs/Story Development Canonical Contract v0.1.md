@@ -66,8 +66,105 @@ Rules:
 | `RelationshipEdge` | Explicit relationship record between characters | backend, frontend, docs | none |
 | `WorldBibleEntry` | Canonical setting or continuity record | backend, frontend, docs | "codex entry" as UI label only |
 | `ArcCandidate` | Candidate story arc option under comparison | backend, frontend, docs | none |
-| `ArcSelection` | Chosen arc plus comparison history | backend, frontend, docs | none |
+| `ArcComparisonRecord` | Persisted comparison result over two or more arc candidates, including ranked outcomes and reviewable reasoning | backend, frontend, docs | "arc comparison" in prose only |
+| `ArcSelection` | Chosen arc plus explicit links to the comparison records that informed the choice | backend, frontend, docs | none |
 | `ArcStageMap` | Stage-map projection implied by the chosen arc | backend, docs | "arc-stage preview" in UI only |
+| `StoryDecisionNode` | Persisted typed decision-tree node for story-shaping choices such as arc selection, pivots, stage changes, deviations, branch points, and merges | backend, frontend, docs | "decision history node" in prose only |
+
+Rules:
+
+- `ArcComparisonRecord` is a canonical persisted object, not transient service memory
+- `ArcSelection` should reference the comparison records that informed the choice rather than absorbing comparison history into one opaque field
+- if the user revisits arc choice later, prior comparison records must remain inspectable
+- user-made story-shaping changes should be persisted as `StoryDecisionNode` objects so they can be reviewed later
+- if a user changes direction, the prior node must remain inspectable rather than being overwritten by the newer node
+- `StoryDecisionNode` must be specific enough to reconstruct a timeline and tree of arc decisions, pivots, deviations from prior direction, stage changes, branch points, and merges
+- a decision node should identify at minimum: `node_type`, `change_type`, `subject_type`, `subject_id`, `parent_node_id`, `branch_id`, `summary`, `prior_state_ref` or prior state summary, `new_state_ref` or new state summary, `decision_made_at`, `made_by`, and typed links to any related or informing object
+- typed node fields must use canonical enums rather than free-form labels to prevent spelling drift and query ambiguity
+- child nodes are reconstructed by querying `parent_node_id`; they should not be stored as a mutable embedded child list
+
+Implemented canonical schema shape:
+
+`StoryDecisionNode`
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `node_id` | `str` | yes | non-blank stable node identifier |
+| `project_id` | `str` | yes | non-blank project identifier |
+| `node_type` | `StoryDecisionNodeType` | yes | enum-backed node category |
+| `change_type` | `StoryDecisionChangeType` | yes | enum-backed story change classification |
+| `subject_type` | `StoryObjectType` | yes | enum-backed canonical object type |
+| `subject_id` | `str` | yes | non-blank subject object identifier |
+| `parent_node_id` | `str \| None` | no | nullable parent link for timeline or tree reconstruction |
+| `branch_id` | `str \| None` | no | nullable branch membership identifier |
+| `summary` | `str` | yes | short human-readable summary for timeline and tree views |
+| `prior_state_ref` | `str \| None` | no | nullable machine-readable prior-state reference |
+| `prior_state_summary` | `str \| None` | no | nullable human-readable prior-state summary |
+| `new_state_ref` | `str \| None` | no | nullable machine-readable new-state reference |
+| `new_state_summary` | `str \| None` | no | nullable human-readable new-state summary |
+| `reason_or_note` | `str \| None` | no | nullable rationale or note |
+| `decision_made_at` | `datetime` | yes | decision timestamp |
+| `made_by` | `str` | yes | non-blank actor identifier |
+| `related_object_links` | `list[StoryDecisionNodeLink]` | yes | defaults to empty list |
+| `informing_object_links` | `list[StoryDecisionNodeLink]` | yes | defaults to empty list |
+
+`StoryDecisionNodeLink`
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `object_type` | `StoryObjectType` | yes | enum-backed canonical linked-object type |
+| `object_id` | `str` | yes | non-blank linked object identifier |
+| `relation_kind` | `str` | yes | non-blank relationship label such as `primary`, `selected_arc`, or `informed_by` |
+
+Validation rule:
+
+- at least one of `prior_state_ref`, `prior_state_summary`, `new_state_ref`, or `new_state_summary` must be present
+
+Required node enum families:
+
+- `StoryDecisionNodeType`
+  - `DECISION`
+  - `BRANCH_POINT`
+  - `MERGE`
+- `StoryDecisionChangeType`
+  - `ARC_SELECTION`
+  - `ARC_PIVOT`
+  - `STORY_DEVIATION`
+  - `STAGE_RENAME`
+  - `STAGE_REDEFINE`
+  - `STAGE_REORDER`
+  - `STAGE_CONFIGURATION`
+  - `FOUNDATION_REVISION`
+  - `CHARACTER_REVISION`
+  - `WORLD_BIBLE_REVISION`
+  - `PLANNING_PIVOT`
+  - `BRANCH_CREATED`
+  - `BRANCH_ACTIVATED`
+  - `BRANCH_MERGED`
+- `StoryObjectType`
+  - `STORY_FLOW_DEFINITION`
+  - `STORY_FLOW_STAGE`
+  - `FOUNDATION_PROFILE`
+  - `FOUNDATION_REVISION`
+  - `CHARACTER_PROFILE`
+  - `RELATIONSHIP_EDGE`
+  - `WORLD_BIBLE_ENTRY`
+  - `ARC_CANDIDATE`
+  - `ARC_COMPARISON_RECORD`
+  - `ARC_SELECTION`
+  - `ARC_STAGE_MAP`
+  - `BEAT_PLAN`
+  - `SEQUENCE_PLAN`
+  - `CHAPTER_PLAN`
+  - `SCENE_PLAN`
+  - `CHAPTER_PACKET`
+  - `STORY_BRANCH`
+  - `BRANCH_POINT`
+  - `DRAFT_ARTIFACT`
+  - `MANUSCRIPT_DOCUMENT`
+  - `REVISION_SUGGESTION`
+  - `REVIEW_DECISION`
+  - `CHECKER_FINDING`
 
 ### 5.3 Planning
 
@@ -94,6 +191,7 @@ Rules:
 | `ManuscriptDocument` | Author-maintained editable manuscript state for a chapter or scene | frontend, backend, docs | replaces ambiguous "draft version" as the primary authoring object |
 | `RevisionSuggestion` | Non-destructive proposed diff, rewrite, or guidance result | backend, frontend, docs | replaces ambiguous `SuggestionResult` where the output is specifically a proposed change |
 | `ReviewDecision` | Accept, reject, defer, escalate, or refine decision tied to a suggestion or finding | backend, frontend, docs | none |
+| `StoryDecisionNode` | Persisted typed decision-tree node for story-shaping choices outside suggestion review | backend, frontend, docs | distinct from `ReviewDecision` |
 | `CheckerFinding` | Review or checker issue linked to source text or artifacts | backend, frontend, docs | `CriticFinding` may still exist as an internal checker subtype |
 | `StepRecord` | Persisted execution step row | backend, frontend, docs | none |
 | `ArtifactLineage` | Persisted artifact provenance row | backend, frontend, docs | replaces `ArtifactLineageRecord` as the canonical name |
@@ -107,6 +205,8 @@ Drafting rules:
 - proposed changes belong in `RevisionSuggestion`
 - a review or author action is captured in `ReviewDecision`
 - accepting a suggestion updates manuscript state through an explicit decision and must not erase the originating `DraftArtifact`
+- broader story-shaping user choices are captured in `StoryDecisionNode`
+- those nodes must support timeline views, branch reconstruction, and "why did this change?" review flows without inference from current state alone
 
 ## 6. Canonical State Families
 
@@ -174,6 +274,7 @@ Drafting rules:
 | `rewrite_*` | source text plus explicit rewrite instruction | revision suggestion id plus diff | create non-destructive suggestion only |
 | `route_*` | source finding or artifact id plus destination area | handoff link or task id | create a review or planning handoff record |
 | `decide_*` | suggestion or finding id plus decision | review decision id plus resulting state | apply explicit decision without silent mutation |
+| `record_decision_*` | decision subject ids plus chosen action and rationale | story decision node id plus affected object links | persist a reviewable user decision without erasing prior decisions |
 
 ## 8. Deterministic Naming Guidance
 
@@ -183,3 +284,4 @@ Drafting rules:
 - use `document` for author-maintained manuscript state
 - use `suggestion` for non-destructive proposed changes
 - use `finding` for review or validation output
+- use `decision node` for durable user-made story-shaping choices that must remain reviewable

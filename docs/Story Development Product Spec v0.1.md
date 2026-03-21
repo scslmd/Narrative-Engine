@@ -327,6 +327,23 @@ The selected arc should behave as:
 
 not as a hard schema that blocks user choices.
 
+### 10.5 Forked Storyline Requirement
+
+At any meaningful decision point, the user should be able to fork the storyline and explore an alternate branch.
+
+The fork should:
+
+- preserve the branch point and the state it forked from
+- keep arc comparisons, selections, and decision history reviewable per branch
+- allow the user to compare branches later
+- allow the user to keep one branch active while preserving alternates
+- support later selective merge behavior through explicit decisions rather than silent overwrite
+
+Backend note:
+
+- do not use Git as the canonical backend for this feature
+- branching should be modeled in structured backend objects so branch state, decision history, planning objects, and lineage remain queryable and inspectable
+
 ## 11. Sequence and Chapter Planning
 
 ### 11.1 User Outcome
@@ -523,6 +540,7 @@ Required canonical objects for this feature family:
 - `RelationshipEdge`
 - `WorldBibleEntry`
 - `ArcCandidate`
+- `ArcComparisonRecord`
 - `ArcSelection`
 - `ArcStageMap`
 - `BeatPlan`
@@ -565,9 +583,20 @@ Required canonical objects for this feature family:
 
 - persistent codex or continuity object
 
+`ArcComparisonRecord`
+
+- persisted ranked comparison between two or more arc candidates
+- includes the candidate set, ranking, comparison notes, and durable review context for later revisit
+
 `ArcSelection`
 
-- active arc plus comparison history
+- active arc plus explicit links to the comparison records that informed the decision
+
+`StoryDecisionNode`
+
+- persisted typed decision-tree object for story-shaping choices such as arc pivots, stage changes, deviations, branch points, and future comparable planning decisions
+- must remain reviewable when the user returns later to understand why a story direction changed and from which parent path it diverged
+- must be detailed enough to generate a decision timeline or tree showing what changed, what it changed from, what it changed to, why the user changed it, and what comparison or review context informed the choice
 
 `SequencePlan`, `ChapterPlan`, `ScenePlan`
 

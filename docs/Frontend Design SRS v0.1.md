@@ -484,6 +484,10 @@ This section makes the frontend feature set actionable for implementation.
   - responsibility: turn checker findings and revision suggestions into decisions
   - consumes: checker outputs, draft context, inspect provenance, chapter status
   - produces: accept, reject, refine, defer, or escalate decisions; review notes; planning handoffs
+- story-direction surfaces:
+  - responsibility: let the user revisit prior story-shaping decisions such as arc choices or future pivots without losing the decision trail
+  - consumes: arc comparisons, arc selections, stage changes, and other persisted story decision nodes
+  - produces: reviewable decision history, rationale views, explicit stay or pivot actions, and timeline or tree views showing what changed from what to what
 - inspect workspace:
   - responsibility: surface step records, artifact lineage, and runtime provenance in a readable form
   - consumes: public inspect projections and current project or chapter context
@@ -539,6 +543,13 @@ Each screen should be concrete about what it takes in and what it gives back.
 - produces: selected arc, comparison notes, arc fit rationale, and stage-map preview
 - implementation cue: the screen should show how the story would feel if the writer stays in one arc versus pivots to another
 
+### 14.6A Story Branching
+
+- user can fork the storyline from a decision point, name the branch, review branch history, compare alternate branches, and later choose whether to keep or merge outcomes
+- consumes: branch point, current arc or planning state, decision history, and related canonical objects
+- produces: story branches, branch comparisons, branch activation changes, and merge decisions
+- implementation cue: the branch experience may borrow the mental model of source-control branching, but it should remain a writing workflow rather than a Git UI
+
 ### 14.7 Planning Board
 
 - user can arrange beats, sequences, chapters, and scenes; drag to reorder; mark status; and attach references
@@ -589,7 +600,9 @@ The frontend should use these user-facing data concepts, even where some are sti
 - `RelationshipEdge`
 - `WorldBibleEntry`
 - `ArcCandidate`
+- `ArcComparisonRecord`
 - `ArcSelection`
+- `StoryDecisionNode`
 - `BeatPlan`
 - `SequencePlan`
 - `ChapterPlan`
@@ -613,6 +626,8 @@ Object notes:
 - where the backend does not yet exist, the frontend should still define the visible state and expected outputs
 - `PlanningCardView` is a UI projection over `BeatPlan`, `SequencePlan`, `ChapterPlan`, or `ScenePlan`; "card" should not be used as the canonical persisted backend object name
 - `ManuscriptDocument` is the author-maintained editing surface; `DraftArtifact` remains the generated artifact with inspectable provenance
+- user-made story-shaping decisions should be visible through first-class `StoryDecisionNode` history rather than inferred only from the latest active state
+- the UI should be able to render a chronological decision timeline or decision tree using node type, change type, subject, parent link, branch id, prior state, new state, rationale, actor, and timestamp fields without reverse-engineering those details from other objects
 
 ## 16. Workflow States
 

@@ -6,6 +6,9 @@ from pydantic import Field, model_validator
 
 from .base import StrictSchemaModel
 from .enums import (
+    StoryDecisionChangeType,
+    StoryDecisionNodeType,
+    StoryObjectType,
     StoryArtifactLifecycleState,
     StoryFlowStageConfigurationState,
     StoryFlowStageProgressState,
@@ -384,6 +387,75 @@ class ArcCandidate(StrictSchemaModel):
         return payload
 
 
+class ArcComparisonCandidateRecord(StrictSchemaModel):
+    candidate: ArcCandidate
+    rank: int = Field(ge=1)
+    score: tuple[int, int, int, int]
+    notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        payload["notes"] = _normalize_text_list(payload.get("notes", []), field_name="notes")
+        return payload
+
+
+class ArcComparisonRecord(StrictSchemaModel):
+    comparison_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    candidate_ids: list[str]
+    candidate_set: list[ArcCandidate]
+    ranked_candidates: list[ArcComparisonCandidateRecord]
+    review_notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("comparison_id", "project_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("candidate_ids", "review_notes"):
+            payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
+        return payload
+
+    @model_validator(mode="after")
+    def validate_candidate_comparison(self) -> "ArcComparisonRecord":
+        if len(self.candidate_ids) < 2:
+            raise ValueError("candidate_ids must include at least two arc candidates")
+        if len(self.candidate_set) < 2:
+            raise ValueError("candidate_set must include at least two arc candidates")
+        if len(self.ranked_candidates) < 2:
+            raise ValueError("ranked_candidates must include at least two ranked candidates")
+
+        candidate_id_list = [candidate.arc_id for candidate in self.candidate_set]
+        if len(set(self.candidate_ids)) != len(self.candidate_ids):
+            raise ValueError("candidate_ids must not contain duplicates")
+        if len(set(candidate_id_list)) != len(candidate_id_list):
+            raise ValueError("candidate_set must not contain duplicate arc ids")
+
+        candidate_ids = set(candidate_id_list)
+        if set(self.candidate_ids) != candidate_ids:
+            raise ValueError("candidate_ids must match candidate_set arc ids")
+        ranked_id_list = [ranked.candidate.arc_id for ranked in self.ranked_candidates]
+        ranked_ids = set(ranked_id_list)
+        if ranked_ids != candidate_ids:
+            raise ValueError("ranked_candidates must include each candidate exactly once")
+        if len(ranked_ids) != len(ranked_id_list):
+            raise ValueError("ranked_candidates must not repeat candidates")
+        ranks = [ranked.rank for ranked in self.ranked_candidates]
+        if sorted(ranks) != list(range(1, len(self.ranked_candidates) + 1)):
+            raise ValueError("ranked_candidates must use contiguous unique ranks starting at 1")
+        return self
+
+
 class ArcStageMap(StrictSchemaModel):
     arc_stage_map_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)
@@ -413,6 +485,7 @@ class ArcSelection(StrictSchemaModel):
     selected_arc: ArcCandidate
     rejected_arc_ids: list[str] = Field(default_factory=list)
     comparison_notes: list[str] = Field(default_factory=list)
+    comparison_record_ids: list[str] = Field(default_factory=list)
     stage_map: ArcStageMap | None = None
 
     @model_validator(mode="before")
@@ -427,6 +500,10 @@ class ArcSelection(StrictSchemaModel):
                 payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
         payload["rejected_arc_ids"] = _normalize_text_list(payload.get("rejected_arc_ids", []), field_name="rejected_arc_ids")
         payload["comparison_notes"] = _normalize_text_list(payload.get("comparison_notes", []), field_name="comparison_notes")
+        payload["comparison_record_ids"] = _normalize_text_list(
+            payload.get("comparison_record_ids", []),
+            field_name="comparison_record_ids",
+        )
         return payload
 
 
@@ -691,6 +768,81 @@ class ReviewDecision(StrictSchemaModel):
             payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
         payload["source_context"] = _normalize_text_list(payload.get("source_context", []), field_name="source_context")
         return payload
+
+
+class StoryDecisionNodeLink(StrictSchemaModel):
+    object_type: StoryObjectType
+    object_id: str = Field(min_length=1)
+    relation_kind: str = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        if "object_type" in payload:
+            payload["object_type"] = _normalize_text(payload["object_type"], field_name="object_type")
+        for field_name in ("object_id", "relation_kind"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class StoryDecisionNode(StrictSchemaModel):
+    node_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    node_type: StoryDecisionNodeType
+    change_type: StoryDecisionChangeType
+    subject_type: StoryObjectType
+    subject_id: str = Field(min_length=1)
+    parent_node_id: str | None = Field(default=None, min_length=1)
+    branch_id: str | None = Field(default=None, min_length=1)
+    summary: str = Field(min_length=1)
+    prior_state_ref: str | None = Field(default=None, min_length=1)
+    prior_state_summary: str | None = Field(default=None, min_length=1)
+    new_state_ref: str | None = Field(default=None, min_length=1)
+    new_state_summary: str | None = Field(default=None, min_length=1)
+    reason_or_note: str | None = Field(default=None, min_length=1)
+    decision_made_at: datetime
+    made_by: str = Field(min_length=1)
+    related_object_links: list[StoryDecisionNodeLink] = Field(default_factory=list)
+    informing_object_links: list[StoryDecisionNodeLink] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("node_type", "change_type", "subject_type"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in (
+            "node_id",
+            "project_id",
+            "subject_id",
+            "summary",
+            "made_by",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("parent_node_id", "branch_id", "prior_state_ref", "prior_state_summary", "new_state_ref", "new_state_summary", "reason_or_note"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+    @model_validator(mode="after")
+    def validate_timeline_fields(self) -> "StoryDecisionNode":
+        has_prior_ref = self.prior_state_ref is not None
+        has_prior_summary = self.prior_state_summary is not None
+        has_new_ref = self.new_state_ref is not None
+        has_new_summary = self.new_state_summary is not None
+        if not (has_prior_ref or has_prior_summary or has_new_ref or has_new_summary):
+            raise ValueError("at least one prior or new state reference or summary is required")
+        return self
 
 
 class CheckerFinding(StrictSchemaModel):

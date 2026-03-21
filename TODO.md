@@ -106,18 +106,45 @@
   Expected result: brainstorm items can be stored, grouped, and promoted into downstream story-development objects with provenance links.
   Expected endpoints: none in this slice; service-only foundation for later `/story-development/brainstorm/*` routes.
   Verification: service and persistence tests cover keep/discard/park states and promotion recording.
-- [ ] BE-05 Foundation profile and downstream-impact slice:
+- [x] BE-05 Foundation profile and downstream-impact slice:
   implement `FoundationProfile` and `FoundationRevision` services plus downstream review-cue generation for foundation changes.
   Expected result: foundation updates remain editable after downstream work exists and create explicit review cues instead of silent overwrites.
   Expected endpoints: none in this slice; service-only foundation for later `/story-development/foundation/*` routes.
   Verification: service tests cover revision history, active-profile reads, and downstream impact records.
-- [ ] BE-06 Character, world bible, and arc-selection slice:
-  implement bounded services for `CharacterProfile`, `RelationshipEdge`, `WorldBibleEntry`, `ArcCandidate`, `ArcSelection`, and `ArcStageMap`.
+- [x] BE-06A Story-knowledge persistence completion:
+  add canonical persistence tables and repository helpers for `RelationshipEdge`, `ArcCandidate`, `ArcSelection`, and `ArcStageMap`, and confirm `CharacterProfile` and `WorldBibleEntry` persistence remain aligned to the same contract.
+  Expected result: all BE-06 canonical objects have durable backend storage and repository operations instead of mixed persistence-plus-service-local state.
+  Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/characters/*`, `/story-development/world-bible/*`, and `/story-development/arcs/*` routes.
+  Verification: targeted persistence tests cover relationship-edge round trips, active arc selection storage, arc-stage-map persistence, and repository-backed candidate comparison inputs.
+- [ ] BE-06B Arc comparison persistence and review contract:
+  add canonical persistence tables and repository helpers for `ArcComparisonRecord`, and update arc-selection storage so selections can link to the comparison records that informed the decision.
+  Expected result: arc comparison history becomes a first-class persisted object the user can review later instead of advisory service-local memory.
+  Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/arcs/comparisons/*` and `/story-development/arcs/*` routes.
+  Verification: targeted persistence tests cover ranked comparison record round trips, candidate-set storage, selection-to-comparison links, and multi-comparison history retrieval in deterministic order.
+- [x] BE-06C Story decision node persistence contract:
+  add canonical persistence tables and repository helpers for `StoryDecisionNode` so user-made story-shaping decisions such as arc pivots, flow changes, and future comparable direction changes remain reviewable over time as a typed timeline and tree.
+  Expected result: story-shaping user decisions become first-class persisted nodes rather than only implicit changes to current state.
+  Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/decisions/*`, `/story-development/arcs/*`, and future flow-history routes.
+  Verification: targeted persistence tests cover decision-subject links, decision type storage, prior-state and new-state summaries or refs, rationale or notes storage, actor identity, chronological retrieval, and links to affected canonical objects.
+- [x] BE-06D Arc comparison and decision-node schema alignment:
+  add canonical schema support for `ArcComparisonRecord`, selection-to-comparison links, and `StoryDecisionNode` enum-driven timeline and tree fields in `app/schemas/story_development.py`.
+  Expected result: the schema layer matches the updated docs contract so persistence and services can exchange typed reviewable decision objects without ad hoc dict payloads.
+  Expected endpoints: none in this slice; schema-only foundation for later `/story-development/arcs/comparisons/*`, `/story-development/decisions/*`, and related routes.
+  Verification: targeted schema tests cover object validation, required timeline fields, selection link fields, and canonical naming.
+- [x] BE-06 Character, world bible, and arc-selection slice:
+  implement bounded services for `CharacterProfile`, `RelationshipEdge`, `WorldBibleEntry`, `ArcCandidate`, `ArcComparisonRecord`, `ArcSelection`, `ArcStageMap`, and related `StoryDecisionNode` creation for user choices.
   Expected result: canonical story knowledge can be stored and compared independently of manuscript generation.
-  Verification: persistence and service tests cover source-linked world facts, relationship updates, and advisory arc selection.
+  Note: accept this slice only after `BE-06A`, `BE-06B`, `BE-06C`, and `BE-06D` land, because the docs require these objects to be canonical persisted records rather than service-local state.
+  Verification: persistence and service tests cover source-linked world facts, relationship updates, persisted arc comparison review, advisory arc selection, and reviewable user decision history.
+- [x] BE-07A Planning persistence scaffold:
+  add canonical persistence tables and repository helpers for `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, and `ChapterPacket`.
+  Expected result: planning objects exist as durable backend records before the planning service slice is implemented.
+  Expected endpoints: none in this slice; persistence-only foundation for later `/story-development/planning/*` routes.
+  Verification: targeted persistence tests cover parent-child relationships, ordering fields, dependency rows, and chapter-packet round trips.
 - [ ] BE-07 Planning objects and chapter-packet slice:
   implement `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, and `ChapterPacket` services.
   Expected result: planning objects persist as canonical records and can be rendered later as UI card views without introducing a competing persisted card contract.
+  Note: this slice depends on `BE-07A`; do not implement it as an in-memory or service-local workaround.
   Verification: service tests cover parent-child relationships, reorder behavior, and dependency preservation.
 - [ ] BE-08 Draft artifact versus manuscript document separation:
   implement the backend state split between generated `DraftArtifact`, author-owned `ManuscriptDocument`, and non-destructive `RevisionSuggestion`.
@@ -127,6 +154,41 @@
   implement `CheckerFinding`, `ReviewDecision`, and `InspectRunLink` support so findings and suggestions can route back into planning, drafting, and inspect surfaces.
   Expected result: review outcomes become first-class backend records tied to source artifacts and runs.
   Verification: service tests cover accept/reject/defer/escalate decisions and inspect-link creation.
+- [x] BE-09A Story decision review surface:
+  implement bounded backend support so `StoryDecisionNode` objects can be listed and linked from the related story-development objects they affected.
+  Expected result: the user can return later and review why a story direction changed without inferring history from current state alone.
+  Expected endpoints: none in this slice; backend foundation for later `/story-development/decisions/*` routes and related object detail screens.
+  Verification: service tests cover deterministic ordering, affected-object links, retrieval of prior superseded decisions, and timeline-ready output fields for what changed from what to what and why.
+- [ ] BE-11 Story branching canonical contract and persistence scaffold:
+  add canonical backend schemas and persistence support for `StoryBranch`, `BranchPoint`, `BranchStateRef`, `BranchComparisonRecord`, and `BranchMergeDecision`, explicitly modeled as structured application objects rather than Git commits or branches.
+  Expected result: storyline forking becomes a first-class backend capability with durable branch identity, branch origin, branch comparisons, and merge decisions.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branches/*`, `/story-development/branch-comparisons/*`, and `/story-development/branch-merges/*` routes.
+  Verification: targeted schema and persistence tests cover branch creation metadata, branch-point links, active-branch selection, branch comparison history, and explicit merge-decision storage.
+- [ ] BE-11A Story branch identity and branch-point persistence:
+  add canonical schema and persistence support for `StoryBranch` and `BranchPoint`, including branch origin, branch name, source node, and active or archived branch state.
+  Expected result: branch identity and the decision-node fork point become durable backend objects without compare or merge logic yet.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branches/*` routes.
+  Verification: targeted schema and persistence tests cover branch creation metadata, branch-point links to `StoryDecisionNode`, and deterministic branch listing order.
+- [ ] BE-11B Branch state reference and active-branch persistence:
+  add canonical schema and persistence support for `BranchStateRef` and active-branch selection per project.
+  Expected result: the backend can persist which canonical objects and decision-node path a branch points at, and which branch is currently active.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branches/*` routes.
+  Verification: targeted schema and persistence tests cover active-branch changes, stable state references, and branch-local decision-node lineage lookup.
+- [ ] BE-11C Branch comparison persistence:
+  add canonical schema and persistence support for `BranchComparisonRecord` so two branches can be compared without mutating branch state.
+  Expected result: branch-to-branch comparisons become reviewable first-class backend objects.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branch-comparisons/*` routes.
+  Verification: targeted schema and persistence tests cover comparison record storage, branch pair linkage, deterministic ordering, and review-note retrieval.
+- [ ] BE-11D Branch merge decision persistence:
+  add canonical schema and persistence support for `BranchMergeDecision`, including source branch, target branch, merge rationale, and resulting node links.
+  Expected result: merge intent and accepted merge outcomes become durable backend records instead of implicit state changes.
+  Expected endpoints: none in this slice; foundation for later `/story-development/branch-merges/*` routes.
+  Verification: targeted schema and persistence tests cover merge-decision storage, source-target linkage, rationale fields, and resulting decision-node references.
+- [ ] BE-11E Story branching service slice:
+  implement bounded services for `create_story_branch`, `list_story_branches`, `compare_story_branches`, `select_active_branch`, and `record_branch_merge_decision`.
+  Expected result: the user can fork the storyline from a decision point and later review or merge branches without overwriting the active path.
+  Expected endpoints: none in this slice; service-only foundation for later `/story-development/branches/*` routes.
+  Verification: service tests cover branching from a decision point, deterministic branch listing, branch comparison, active-branch changes, and explicit merge decisions.
 - [ ] BE-10 Story-development API surface:
   expose bounded API routes for the completed story-development slices only after their schema, persistence, and service contracts are stable.
   Expected result: API routes are thin projections over accepted backend contracts rather than speculative endpoints.
@@ -191,11 +253,25 @@
 - [x] `Kepler`: implement BE-02 by owning `app/persistence/sqlite.py`, a new `app/persistence/story_development.py`, `app/persistence/__init__.py`, and a new targeted persistence test file. Do not edit schema or service files unless a minimal import/export adjustment is required. You are not alone in the codebase; accommodate others' changes and do not revert them.
 - [x] `Pasteur`: implement BE-03 by owning a new editable-flow service module plus focused service tests, using the canonical docs contract and existing persistence/service patterns. Do not edit schema files and do not replace others' work; adjust to their changes instead.
 - [x] `Lagrange`: implement BE-04 by owning the brainstorm and promotion service slice with bounded `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item` operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/brainstorm/*` routes. Expected outcome: brainstorm items can be persisted, clustered, and promoted with source links and no API wiring yet. Keep the write scope limited to the new service module and a focused test file.
-- [ ] `Descartes`: implement BE-05 by owning the foundation profile and downstream-impact service slice with bounded revision history behavior and review-cue generation. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/foundation/*` routes. Expected outcome: active foundation reads, revision history, and downstream review cues work without API wiring yet. Keep the write scope limited to the new service module and a focused test file.
-- [ ] `Euler`: implement BE-06 by owning the character, world bible, and arc-selection service slice with bounded compare, upsert, select, and stage-map operations. Keep the write scope limited to the new service module and a focused test file.
-- [ ] `Noether-2`: implement BE-07 by owning the planning objects and chapter-packet service slice with bounded plan creation, reorder, and dependency-preservation operations. Keep the write scope limited to the new service module and a focused test file.
+- [x] `Descartes`: implement BE-05 by owning the foundation profile and downstream-impact service slice with bounded revision history behavior and review-cue generation. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/foundation/*` routes. Expected outcome: active foundation reads, revision history, and downstream review cues work without API wiring yet. Keep the write scope limited to the new service module and a focused test file.
+- [x] `Gauss`: implement BE-06A by owning canonical persistence for `RelationshipEdge`, `ArcCandidate`, `ArcSelection`, and `ArcStageMap` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/characters/*`, `/story-development/world-bible/*`, and `/story-development/arcs/*` routes. Expected outcome: BE-06 services can rely on durable repository-backed state for all canonical story-knowledge objects.
+- [ ] `Laplace`: implement BE-06B by owning canonical persistence for `ArcComparisonRecord` and selection-to-comparison links in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/arcs/comparisons/*` and `/story-development/arcs/*` routes. Expected outcome: arc comparison history becomes a first-class persisted reviewable object rather than advisory service-local memory.
+- [x] `Nozick`: implement BE-06C by owning canonical persistence for `StoryDecisionNode` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/decisions/*`, `/story-development/arcs/*`, and future flow-history routes. Expected outcome: user-made story-shaping decisions become first-class persisted reviewable nodes rather than being inferred from current state alone.
+- [x] `Bohr`: implement BE-06D by owning schema support for `ArcComparisonRecord`, selection-to-comparison links, and `StoryDecisionNode` enum-driven timeline and tree fields in `app/schemas/story_development.py`, `app/schemas/__init__.py`, and a focused schema test file. Expected endpoints for this slice: none yet; schema-only foundation for later `/story-development/arcs/comparisons/*` and `/story-development/decisions/*` routes. Expected outcome: typed schema contracts match the persisted reviewable decision objects now required by the docs.
+- [x] `Euler`: retry BE-06 only after `BE-06A`, `BE-06B`, `BE-06C`, and `BE-06D` land, by owning the character, world bible, and arc-selection service slice with bounded compare, upsert, select, stage-map, and decision-node recording operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/characters/*`, `/story-development/world-bible/*`, `/story-development/arcs/*`, and `/story-development/decisions/*` routes. Expected outcome: canonical story knowledge can be stored, related, and selected without manuscript generation or API wiring, using durable repository-backed state only. Arc comparison history and user decision history must both be reviewable through persisted objects. Keep the write scope limited to a new service module and a focused test file.
+- [x] `Turing`: implement BE-07A by owning canonical persistence for `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, and `ChapterPacket` in `app/persistence/story_development.py`, `app/persistence/sqlite.py`, and a focused persistence test file. Expected endpoints for this slice: none yet; persistence-only foundation for later `/story-development/planning/*` routes. Expected outcome: planning services can be built on durable canonical records instead of service-local state.
+- [ ] `Noether-2`: BE-07 remains blocked pending `BE-07A` and should not be implemented as a service-local workaround.
+- [ ] `Rawls`: retry BE-07 only after `BE-07A` lands, by owning the planning objects and chapter-packet service slice with bounded plan creation, reorder, and dependency-preservation operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/planning/*` routes. Expected outcome: plan objects persist as canonical records and can later be projected into UI cards without introducing a competing card persistence model. Prior blocked attempt correctly refused an in-memory workaround; retry now that canonical planning persistence exists. Keep the write scope limited to a new service module and a focused test file.
 - [ ] `Curie-2`: implement BE-08 by owning the draft artifact versus manuscript document separation slice with bounded generate, revise, and promote operations. Keep the write scope limited to the new service module and a focused test file.
 - [ ] `Feynman`: implement BE-09 by owning the review decision and inspect-link slice with bounded finding routing, decision recording, and inspect linkage operations. Keep the write scope limited to the new service module and a focused test file.
+- [x] `Leibniz`: implement BE-09A by owning the story decision review surface slice with bounded listing, ordering, parent-path reconstruction, and affected-object linkage for `StoryDecisionNode`. Keep the write scope limited to a new service module and a focused test file.
+- [x] `Gibbs`: implement BE-06 in `app/services/story_knowledge.py` and `tests/test_story_knowledge_service.py` only. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/characters/*`, `/story-development/world-bible/*`, `/story-development/arcs/*`, and `/story-development/decisions/*` routes. Expected outcome: arc comparison history and user decision history are both reviewable through persisted objects, with story-knowledge services using repository-backed state only.
+- [x] `Bernoulli`: implement BE-09A in a bounded decision-review service module and focused test file only. Expected endpoints for this slice: none yet; backend foundation for later `/story-development/decisions/*` routes and related object detail screens. Expected outcome: a user can review decision-node history, affected-object links, and parent-path context without inferring direction changes from current state alone.
+- [ ] `Pascal`: implement BE-11A by owning story branch identity and branch-point schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branches/*` routes. Expected outcome: branch identity and branch-point linkage become first-class structured backend objects without using Git as the canonical backend.
+- [ ] `Spinoza`: implement BE-11B only after BE-11A lands, by owning branch state references and active-branch persistence. Expected endpoints for this slice: none yet; foundation for later `/story-development/branches/*` routes. Expected outcome: the backend can persist branch-local state refs and the current active branch without branch comparison or merge behavior yet.
+- [ ] `Anaximander`: implement BE-11C only after BE-11A and BE-11B land, by owning `BranchComparisonRecord` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branch-comparisons/*` routes. Expected outcome: branch comparisons become reviewable first-class backend records.
+- [ ] `Democritus`: implement BE-11D only after BE-11A and BE-11B land, by owning `BranchMergeDecision` schema or persistence support. Expected endpoints for this slice: none yet; foundation for later `/story-development/branch-merges/*` routes. Expected outcome: merge decisions become durable backend records instead of implicit state changes.
+- [ ] `Herder`: implement BE-11E only after BE-11A through BE-11D land, by owning the story-branching service slice with bounded create, list, compare, select-active, and merge-decision operations. Expected endpoints for this slice: none yet; service-only foundation for later `/story-development/branches/*` routes. Expected outcome: users can fork the storyline from a decision point and later review or merge branches without overwriting the active path.
 - [ ] `Hopper`: implement BE-10 by owning the first story-development API surface slice once the preceding schemas, persistence, and service contracts are stable. Keep the write scope limited to thin route wiring and focused route tests.
 - [ ] `Volta`: update `docs/Narrative SRS v0.1.md` so the story-development sections describe an aspirational writing product, remove reconstruction-specific framing for those features, resolve implemented-versus-target-state contradictions, and align workflow-state terminology with the canonical enum set once defined.
 - [ ] `Kant`: update `docs/Frontend Design SRS v0.1.md` so object names, workflow states, and deterministic frontend task cards match the canonical contract and no longer bundle multiple screen families into one agent task.

@@ -761,23 +761,125 @@ Backend responsibilities:
 
 - store the selected arc and any rejected alternatives
 - store the stage map that the arc implies for this project
+- persist arc comparisons as reviewable first-class records
 - keep arc selection revision history
 - link arc guidance to planning and review output
+- persist user story-direction nodes with enough structured detail to generate a timeline and tree of choices, pivots, and deviations later
 
 Required backend objects:
 
 - `ArcSelection`
 - `ArcCandidate`
+- `ArcComparisonRecord`
 - `ArcStageMap`
+- `StoryDecisionNode`
 - `ArcDriftWarning`
 
 Required task functions:
 
 - recommend an arc
 - compare arc options
+- persist the comparison result for later review
 - assign a stage map to the current project
+- persist the resulting user decision node so later pivots remain reviewable
 - detect drift from the selected arc
 - recover from an arc mismatch by suggesting a revised path
+
+Required decision-node fields:
+
+- node type enum
+- change type enum
+- affected object type enum and object id
+- parent node id when this node extends an earlier decision path
+- branch id when the node belongs to a forked storyline path
+- human-readable summary for timeline and tree rendering
+- prior state reference or prior state summary when applicable
+- new state reference or new state summary when applicable
+- reason, note, or explicit user rationale when present
+- decision timestamp
+- actor identity
+- typed links to related objects and informing objects when present
+
+Decision-node permutations must be enum-driven rather than free-form text so the backend can query deterministic subsets such as:
+
+- all `ARC_SELECTION` nodes
+- all `STAGE_REDEFINE` nodes
+- all nodes whose `subject_type` is `ARC_SELECTION`
+- all children of a given `parent_node_id`
+- all nodes on a given `branch_id`
+
+Implemented node-schema contract:
+
+| Field | Expected type | Required | Notes |
+| --- | --- | --- | --- |
+| `node_id` | `str` | yes | non-blank stable identifier |
+| `project_id` | `str` | yes | non-blank project identifier |
+| `node_type` | `StoryDecisionNodeType` | yes | enum-backed node category |
+| `change_type` | `StoryDecisionChangeType` | yes | enum-backed change classification |
+| `subject_type` | `StoryObjectType` | yes | enum-backed canonical object type |
+| `subject_id` | `str` | yes | non-blank subject identifier |
+| `parent_node_id` | `str \| None` | no | nullable parent node link |
+| `branch_id` | `str \| None` | no | nullable branch membership |
+| `summary` | `str` | yes | timeline and tree label |
+| `prior_state_ref` | `str \| None` | no | nullable machine-readable prior-state ref |
+| `prior_state_summary` | `str \| None` | no | nullable human-readable prior-state summary |
+| `new_state_ref` | `str \| None` | no | nullable machine-readable new-state ref |
+| `new_state_summary` | `str \| None` | no | nullable human-readable new-state summary |
+| `reason_or_note` | `str \| None` | no | nullable rationale |
+| `decision_made_at` | `datetime` | yes | event timestamp |
+| `made_by` | `str` | yes | non-blank actor identifier |
+| `related_object_links` | `list[StoryDecisionNodeLink]` | yes | defaults to empty list |
+| `informing_object_links` | `list[StoryDecisionNodeLink]` | yes | defaults to empty list |
+
+`StoryDecisionNodeLink` fields:
+
+- `object_type`: `StoryObjectType`
+- `object_id`: `str`
+- `relation_kind`: `str`
+
+Validation rule:
+
+- at least one of `prior_state_ref`, `prior_state_summary`, `new_state_ref`, or `new_state_summary` must be present
+
+### 17.6A Story Branching And Forks
+
+Story branching is the feature that lets the user fork the storyline at a meaningful decision point and explore alternate directions without overwriting the active path.
+
+What it solves:
+
+- it lets the user try multiple arc or planning directions from the same decision point
+- it preserves alternate story paths as reviewable branches instead of disposable scratch state
+- it makes pivots, merges, and abandoned directions inspectable later
+
+Backend responsibilities:
+
+- persist branch identity, branch origin, and branch-point references as first-class records
+- allow a branch to reference canonical foundation, arc, planning, manuscript, and decision-history state without copying unrelated data blindly
+- preserve timeline-grade and tree-grade decision history per branch
+- support later comparison and selective merge behavior between branches
+- keep branching semantics in structured backend storage rather than relying on Git commits or filesystem branching as the canonical product backend
+
+Explicit non-goal:
+
+- Git should not be used as the canonical backend for story branching
+- Git-like concepts such as fork, branch, compare, and merge are useful product metaphors, but the source of truth must remain structured application objects and persistence
+
+Required backend objects:
+
+- `StoryBranch`
+- `BranchPoint`
+- `BranchStateRef`
+- `BranchComparisonRecord`
+- `BranchMergeDecision`
+- `StoryDecisionNode`
+
+Required task functions:
+
+- create a branch from a decision point
+- list branches for a project
+- compare one branch to another
+- select the active branch
+- merge selected branch outcomes back into another branch through explicit decisions
 
 ### 17.7 Planning Objects
 
@@ -816,6 +918,12 @@ Backend responsibilities:
 - preserve parent-child relationships between beats, chapters, and scenes
 - allow planning artifacts to be regenerated without erasing prior versions
 - keep planning objects linkable to their source foundation, arc, and character data
+
+Implementation lesson:
+
+- do not implement planning services against process-local or in-memory plan state when the canonical planning records do not exist yet
+- if a feature family introduces new canonical backend objects, the persistence tables and repository helpers for those objects must land before or with the service layer
+- UI card or board views must stay projections over persisted plan records rather than becoming a second competing storage model
 
 Required backend objects:
 
@@ -1031,6 +1139,12 @@ Task routing expectations:
 - drafting should map to generation and continuation tasks
 - suggestions and review should map to scoring, critique, and continuity tasks
 
+Persistence-first routing rule:
+
+- if a task depends on a canonical object family that is not yet durably stored, the orchestrator should assign a persistence task before assigning the dependent service task
+- do not route a service implementation task that would require process-local placeholder state for canonical objects such as `RelationshipEdge`, `ArcSelection`, `ArcStageMap`, `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, or `ChapterPacket`
+- when persistence is the blocker, the next deterministic task should name the missing tables, repository methods, verification path, and later endpoint family that the persistence slice unlocks
+
 ### 17.13 Failure And Retry Expectations
 
 Failure handling must preserve both user trust and data integrity.
@@ -1058,6 +1172,8 @@ The current backend lessons that must remain true are:
 - inspect views are public and deterministic
 - runtime-backed checker execution may fall back deterministically when runtime execution is not possible
 - canonical output should survive retries, while failed attempts remain visible for diagnosis
+- canonical story-development objects must not live only in service-local memory once the docs define them as persisted records
+- the correct fix for a missing object family is to add persistence and repository support first, then retry the blocked service slice on top of that storage
 
 ### 17.14 Workflow States
 
@@ -1101,3 +1217,7 @@ The recommended build order for the story-development layer is:
 12. orchestrator hardening and retry coverage
 
 This order is advisory. The project may interleave implementation as long as step records, lineage, and retry behavior stay correct.
+
+Additional ordering rule:
+
+- for character, world, arc, planning, drafting, review, and inspect slices, introduce missing canonical persistence before accepting a service implementation that would otherwise invent temporary state

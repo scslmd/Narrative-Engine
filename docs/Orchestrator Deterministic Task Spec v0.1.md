@@ -326,6 +326,7 @@ Expected outputs:
 
 - selected arc
 - comparison options
+- persisted comparison records
 - stage-map guidance
 - drift warnings
 
@@ -341,7 +342,9 @@ Owning area:
 Safe decomposition strategy:
 
 - separate arc taxonomy documentation from UI selection and suggestion behavior
-- prefer separate callable operations such as `recommend_arc_candidates`, `compare_arc_candidates`, and `select_arc_candidate`
+- persist comparison history as a first-class reviewable object before or with selection workflows
+- prefer separate callable operations such as `recommend_arc_candidates`, `compare_arc_candidates`, `record_arc_comparison`, and `select_arc_candidate`
+- when user direction changes, persist a typed `StoryDecisionNode` with enough detail to support later timeline and tree review instead of relying on the latest selected state alone
 
 ### 5.7 Planning Board
 
@@ -383,6 +386,48 @@ Safe decomposition strategy:
 
 - implement beat, sequence, chapter, and scene as separate objects even if they share a UI board
 - prefer separate callable operations such as `create_sequence_plan`, `split_sequence_into_chapters`, `derive_scene_plan`, and `reorder_plan_objects`
+
+### 5.7A Story Branching
+
+Purpose:
+
+- let the user fork the storyline from a decision point and compare alternate directions without overwriting the active path
+
+Dependencies:
+
+- story-decision history
+- arc selection and comparison
+- planning objects
+
+Expected inputs:
+
+- branch point object id
+- current branch or active path id
+- user decision rationale
+- selected canonical objects to carry forward
+
+Expected outputs:
+
+- story branch
+- branch-point record
+- branch comparison record
+- merge decision or active-branch decision
+
+Acceptance criteria:
+
+- alternate story paths remain inspectable after the user pivots
+- branch creation does not require Git as the canonical backend
+- branch compare and merge actions remain explicit and reviewable
+
+Owning area:
+
+- docs, backend, frontend, tests
+
+Safe decomposition strategy:
+
+- define canonical branch objects before implementation
+- split persistence, service, and UI work into separate tasks because branching touches many existing object families
+- do not assign one large branch feature task across schemas, persistence, services, UI, and tests at once
 
 ### 5.8 Drafting And Revision
 

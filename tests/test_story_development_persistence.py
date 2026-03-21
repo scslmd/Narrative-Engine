@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app.schemas import StoryFlowStageConfigurationState, StoryFlowStageProgressState
 from app.persistence.sqlite import OPERATIONS_DB_VERSION, connect, ensure_operations_db
-from app.persistence.story_development import StoryDevelopmentRepository
+from app.persistence.story_development import ArcComparisonCandidateRecord, StoryDevelopmentRepository
 
 
 STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
@@ -53,9 +53,20 @@ def test_story_development_schema_creation_includes_canonical_tables(tmp_path: P
         "foundation_profiles",
         "foundation_revisions",
         "character_profiles",
+        "relationship_edges",
         "world_bible_entries",
         "arc_candidates",
+        "arc_comparisons",
+        "arc_stage_maps",
         "arc_selections",
+        "arc_selection_comparisons",
+        "beat_plans",
+        "sequence_plans",
+        "chapter_plans",
+        "scene_plans",
+        "chapter_packets",
+        "planning_dependencies",
+        "story_decision_nodes",
     }.issubset(tables)
 
 
@@ -200,12 +211,40 @@ def test_story_development_repository_round_trips_representative_objects(tmp_pat
         created_at=STAMP,
         updated_at=STAMP,
     )
+    companion = repo.upsert_character_profile(
+        project_id=project_id,
+        character_id="ally",
+        display_name="Orin Vale",
+        role_in_story="ally",
+        archetype="scholar",
+        external_goal="Preserve the city archive.",
+        internal_need="Trust change.",
+        contradictions=["Careful", "Curious"],
+        backstory_summary="A chronicler of the shifting city.",
+        voice_notes="Measured and precise.",
+        change_axis="From caution to courage",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    edge = repo.upsert_relationship_edge(
+        project_id=project_id,
+        source_character_id=character.character_id,
+        target_character_id=companion.character_id,
+        relation_kind="ally",
+        summary="They rely on each other to preserve the city record.",
+        tension="He doubts her improvisation.",
+        notes="Keep the partnership cautious but warm.",
+        edge_id="mara-orin-ally",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
     world_entry = repo.upsert_world_bible_entry(
         project_id=project_id,
         entry_type="location",
         title="Shifting City",
         summary="A city that rearranges itself every dusk.",
         canonical_facts=["The gates move at sunset."],
+        related_character_ids=["cartographer", "ally"],
         source_artifacts=["manifest", "foundation"],
         continuity_warnings=["Do not treat street layout as stable."],
         created_at=STAMP,
@@ -214,5 +253,401 @@ def test_story_development_repository_round_trips_representative_objects(tmp_pat
 
     assert repo.get_character_profile("cartographer").display_name == "Mara Vale"
     assert repo.list_character_profiles(project_id)[0].character_id == "cartographer"
+    assert repo.get_character_profile("cartographer").relationship_map == [edge.edge_id]
+    assert repo.get_character_profile("ally").relationship_map == [edge.edge_id]
+    assert repo.get_relationship_edge(edge.edge_id).summary == edge.summary
+    assert [record.edge_id for record in repo.list_relationship_edges(project_id)] == [edge.edge_id]
     assert repo.get_world_bible_entry(project_id, entry_type="location", title="Shifting City").entry_id == world_entry.entry_id
+    assert repo.get_world_bible_entry(project_id, entry_type="location", title="Shifting City").related_character_ids == ["cartographer", "ally"]
     assert repo.list_world_bible_entries(project_id)[0].title == "Shifting City"
+
+
+def test_story_development_repository_round_trips_arc_selection_and_stage_map_state(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-arcs"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    candidate_primary = repo.upsert_arc_candidate(
+        project_id=project_id,
+        arc_id="arc-primary",
+        name="Primary Quest",
+        summary="A clear route through escalating trials.",
+        stage_map_notes=["Opening", "Midpoint", "Endgame"],
+        fit_notes=["Clean escalation", "Strong central goal"],
+        tags=["quest", "ensemble"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    candidate_secondary = repo.upsert_arc_candidate(
+        project_id=project_id,
+        arc_id="arc-secondary",
+        name="Secondary Mystery",
+        summary="A discovery path that leans into suspense.",
+        stage_map_notes=["Reveal", "Reframe"],
+        fit_notes=["Fits a slow-burn tone"],
+        tags=["mystery"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    stage_map = repo.upsert_arc_stage_map(
+        project_id=project_id,
+        arc_id=candidate_primary.arc_id,
+        stage_kinds=["brainstorm", "character", "world_bible", "arc_selection", "planning"],
+        notes="Use the selected arc as the backbone.",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    selection = repo.upsert_arc_selection(
+        project_id=project_id,
+        selection_id=f"{project_id}:selection:001",
+        selected_arc=candidate_primary,
+        rejected_arc_ids=[candidate_secondary.arc_id],
+        comparison_notes=["Primary Quest is easier to stage."],
+        comparison_inputs=[candidate_primary, candidate_secondary],
+        stage_map=stage_map,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    assert [candidate.arc_id for candidate in repo.list_arc_candidates(project_id)] == ["arc-primary", "arc-secondary"]
+    assert repo.get_arc_candidate(project_id, arc_id="arc-primary") == candidate_primary
+    assert repo.get_arc_stage_map(project_id, arc_id="arc-primary") == stage_map
+    assert repo.list_arc_stage_maps(project_id) == [stage_map]
+    assert selection.selected_arc == candidate_primary
+    assert selection.comparison_record_ids == [f"{project_id}:selection:001:comparison:001"]
+    comparison = repo.get_arc_comparison(project_id, comparison_id=selection.comparison_record_ids[0])
+    assert comparison.candidate_ids == ["arc-primary", "arc-secondary"]
+    assert [item.candidate.arc_id for item in comparison.ranked_candidates] == ["arc-primary", "arc-secondary"]
+    assert comparison.ranked_candidates[0].rank == 1
+    assert comparison.ranked_candidates[0].notes[0].startswith("Primary Quest:")
+    assert selection.stage_map == stage_map
+    assert repo.get_arc_selection(project_id, selection_id=f"{project_id}:selection:001") == selection
+    assert repo.list_arc_selections(project_id) == [selection]
+
+
+def test_story_development_repository_round_trips_arc_comparison_record_and_history_order(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-comparisons"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    candidate_a = repo.upsert_arc_candidate(
+        project_id=project_id,
+        arc_id="arc-a",
+        name="Anchor",
+        summary="A steady route through the opening.",
+        stage_map_notes=["Open", "Turn"],
+        fit_notes=["Clean structure"],
+        tags=["adventure"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    candidate_b = repo.upsert_arc_candidate(
+        project_id=project_id,
+        arc_id="arc-b",
+        name="Braided",
+        summary="Multiple threads move at once.",
+        stage_map_notes=["Thread one", "Thread two", "Thread three"],
+        fit_notes=["Ensemble energy", "Flexible pacing"],
+        tags=["ensemble", "multi-thread"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    candidate_c = repo.upsert_arc_candidate(
+        project_id=project_id,
+        arc_id="arc-c",
+        name="Mystery",
+        summary="A slower reveal path.",
+        stage_map_notes=["Reveal"],
+        fit_notes=["Fits suspense"],
+        tags=["mystery"],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    comparison_one = repo.upsert_arc_comparison(
+        project_id=project_id,
+        comparison_id="comparison-one",
+        ranked_candidates=[
+            ArcComparisonCandidateRecord(candidate=candidate_b, rank=1, score=(3, 2, 2, -5), notes=["Best structural fit."]),
+            ArcComparisonCandidateRecord(candidate=candidate_a, rank=2, score=(2, 1, 1, -6), notes=["Simpler but less flexible."]),
+        ],
+        review_notes=["Prefer the braided shape for this stage."],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    comparison_two = repo.upsert_arc_comparison(
+        project_id=project_id,
+        comparison_id="comparison-two",
+        candidates=[candidate_c, candidate_a],
+        review_notes=["Smaller candidate set for a later revisit."],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    selection = repo.upsert_arc_selection(
+        project_id=project_id,
+        selection_id=f"{project_id}:selection:002",
+        selected_arc=candidate_b,
+        rejected_arc_ids=[candidate_a.arc_id, candidate_c.arc_id],
+        comparison_notes=["Braided arc has the best fit for the current plan."],
+        comparison_inputs=[candidate_b, candidate_a, candidate_c],
+        comparison_record_ids=[comparison_one.comparison_id, comparison_two.comparison_id],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    assert comparison_one.candidate_ids == ["arc-b", "arc-a"]
+    assert [item.candidate.arc_id for item in comparison_one.ranked_candidates] == ["arc-b", "arc-a"]
+    assert comparison_one.review_notes == ["Prefer the braided shape for this stage."]
+    assert repo.get_arc_comparison(project_id, comparison_id="comparison-one") == comparison_one
+    assert [record.comparison_id for record in repo.list_arc_comparisons(project_id)] == ["comparison-one", "comparison-two"]
+    assert selection.comparison_record_ids == ["comparison-one", "comparison-two"]
+    assert repo.get_arc_selection(project_id, selection_id=f"{project_id}:selection:002").comparison_record_ids == [
+        "comparison-one",
+        "comparison-two",
+    ]
+
+
+def test_story_development_repository_round_trips_planning_hierarchy_and_packet_context(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "planning-roundtrip"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    beat_late = repo.upsert_beat_plan(
+        beat_id="beat-late",
+        project_id=project_id,
+        objective="Escalate the pursuit.",
+        conflict="The lead loses the trail.",
+        stakes="The map may be destroyed.",
+        dependency_ids=["beat-early"],
+        arc_stage="midpoint",
+        active_character_ids=["lead", "pursuer"],
+        continuity_requirements=["Trail remains visible only at dusk."],
+        unresolved_questions=["Who set the decoy?"],
+        status="draft",
+        position=2,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    beat_early = repo.upsert_beat_plan(
+        beat_id="beat-early",
+        project_id=project_id,
+        objective="Open the mystery.",
+        conflict="The city shifts before the witness arrives.",
+        stakes="The witness may vanish.",
+        dependency_ids=[],
+        arc_stage="setup",
+        active_character_ids=["lead"],
+        continuity_requirements=["City must shift at dusk."],
+        unresolved_questions=["Where is the witness?"],
+        status="draft",
+        position=1,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    sequence = repo.upsert_sequence_plan(
+        sequence_id="sequence-one",
+        project_id=project_id,
+        title="Opening Sequence",
+        summary="The first movement of the story.",
+        beat_ids=[beat_early.beat_id, beat_late.beat_id],
+        chapter_ids=["chapter-one"],
+        status="draft",
+        position=1,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    chapter = repo.upsert_chapter_plan(
+        chapter_id="chapter-one",
+        project_id=project_id,
+        title="Chapter One",
+        summary="The lead enters the shifting city.",
+        sequence_id=sequence.sequence_id,
+        objective="Find the witness.",
+        conflict="The streets do not stay fixed.",
+        stakes="The only lead may be lost.",
+        active_character_ids=["lead"],
+        continuity_requirements=["Use the dusk map."],
+        unresolved_questions=["Which district shifts first?"],
+        status="draft",
+        position=3,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    scene = repo.upsert_scene_plan(
+        scene_id="scene-one",
+        project_id=project_id,
+        title="Market Crossing",
+        summary="A tense crossing through the moving market.",
+        chapter_id=chapter.chapter_id,
+        objective="Reach the archive.",
+        conflict="Crowds and architecture both change course.",
+        stakes="The witness connection could be missed.",
+        active_character_ids=["lead", "guide"],
+        continuity_requirements=["Market layout must match prior clue."],
+        unresolved_questions=["Who follows them?"],
+        status="draft",
+        position=2,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    packet = repo.upsert_chapter_packet(
+        packet_id="packet-one",
+        project_id=project_id,
+        chapter_id=chapter.chapter_id,
+        included_reference_ids=["manifest", "foundation", chapter.chapter_id, scene.scene_id],
+        constraints=["Third-person limited", "No time travel"],
+        scene_goals=["Enter the archive", "Reveal the shifting rule"],
+        status="draft",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    dependency = repo.upsert_planning_dependency(
+        dependency_id="dependency-one",
+        project_id=project_id,
+        upstream_id=beat_early.beat_id,
+        downstream_id=beat_late.beat_id,
+        dependency_kind="precedes",
+        reason="The opening beat must happen before the escalation beat.",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    reloaded = StoryDevelopmentRepository(db_path)
+    beats = reloaded.list_beat_plans(project_id)
+    sequences = reloaded.list_sequence_plans(project_id)
+    chapters = reloaded.list_chapter_plans(project_id)
+    scenes = reloaded.list_scene_plans(project_id)
+    packets = reloaded.list_chapter_packets(project_id)
+    dependencies = reloaded.list_planning_dependencies(project_id)
+
+    assert [beat.beat_id for beat in beats] == ["beat-early", "beat-late"]
+    assert beats[0].position == 1
+    assert beats[1].dependency_ids == ["beat-early"]
+    assert sequences[0].beat_ids == ["beat-early", "beat-late"]
+    assert sequences[0].chapter_ids == ["chapter-one"]
+    assert chapters[0].sequence_id == sequence.sequence_id
+    assert chapters[0].position == 3
+    assert scenes[0].chapter_id == chapter.chapter_id
+    assert scenes[0].position == 2
+    assert packets[0].chapter_id == chapter.chapter_id
+    assert packets[0].included_reference_ids == ["manifest", "foundation", chapter.chapter_id, scene.scene_id]
+    assert packets[0].scene_goals == ["Enter the archive", "Reveal the shifting rule"]
+    assert dependencies[0].upstream_id == beat_early.beat_id
+    assert dependencies[0].downstream_id == beat_late.beat_id
+    assert dependency.reason is not None
+    assert packet.packet_id == "packet-one"
+
+
+def test_story_decision_nodes_round_trip_links_state_and_ordering(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-decisions"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    pivot = repo.record_story_decision_node(
+        node_id="node-b",
+        project_id=project_id,
+        node_type="DECISION",
+        change_type="ARC_SELECTION",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-001",
+        parent_node_id="node-a",
+        branch_id="branch-main",
+        summary="Choose the primary quest arc.",
+        related_object_links=[
+            {"object_type": "ARC_SELECTION", "object_id": "selection-001", "relation_kind": "primary"},
+            {"object_type": "ARC_CANDIDATE", "object_id": "arc-primary", "relation_kind": "selected_arc"},
+        ],
+        prior_state_ref="arc-candidate:arc-secondary",
+        prior_state_summary="Braided mystery was still the active choice.",
+        new_state_ref="arc-candidate:arc-primary",
+        new_state_summary="Primary Quest becomes the active arc.",
+        reason_or_note="Primary Quest has a cleaner escalation path.",
+        made_by="writer:alex",
+        decision_made_at=STAMP,
+        informing_object_links=[
+            {"object_type": "ARC_COMPARISON_RECORD", "object_id": "comparison-001", "relation_kind": "informed_by"},
+            {"object_type": "CHECKER_FINDING", "object_id": "finding-009", "relation_kind": "considered"},
+        ],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    stage_change = repo.record_story_decision_node(
+        node_id="node-c",
+        project_id=project_id,
+        node_type="DECISION",
+        change_type="STAGE_CONFIGURATION",
+        subject_type="STORY_FLOW_STAGE",
+        subject_id="brainstorm",
+        parent_node_id="node-b",
+        branch_id="branch-main",
+        summary="Advance the brainstorm stage.",
+        related_object_links=[
+            {"object_type": "STORY_FLOW_STAGE", "object_id": "brainstorm", "relation_kind": "primary"},
+            {"object_type": "STORY_FLOW_DEFINITION", "object_id": project_id, "relation_kind": "project_flow"},
+        ],
+        prior_state_ref="stage_progress:NOT_STARTED",
+        prior_state_summary="Brainstorm stage has not started.",
+        new_state_ref="stage_progress:IN_PROGRESS",
+        new_state_summary="Brainstorm stage is now underway.",
+        reason_or_note="The outline needs one more pass.",
+        made_by="writer:alex",
+        decision_made_at=STAMP.replace(hour=14),
+        informing_object_links=[
+            {"object_type": "WORLD_BIBLE_ENTRY", "object_id": "world-bible:city-rule", "relation_kind": "context"},
+        ],
+        created_at=STAMP.replace(hour=14),
+        updated_at=STAMP.replace(hour=14),
+    )
+    initial = repo.record_story_decision_node(
+        node_id="node-a",
+        project_id=project_id,
+        node_type="DECISION",
+        change_type="ARC_SELECTION",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-001",
+        branch_id="branch-main",
+        summary="Initial selection favored the mystery arc.",
+        related_object_links=[
+            {"object_type": "ARC_SELECTION", "object_id": "selection-001", "relation_kind": "primary"},
+            {"object_type": "ARC_CANDIDATE", "object_id": "arc-secondary", "relation_kind": "previous_choice"},
+        ],
+        prior_state_ref="arc-candidate:arc-unknown",
+        prior_state_summary="No arc had been selected yet.",
+        new_state_ref="arc-candidate:arc-secondary",
+        new_state_summary="Braided mystery is selected first.",
+        reason_or_note="The mystery arc better fits the opening mood.",
+        made_by="writer:alex",
+        decision_made_at=STAMP,
+        informing_object_links=[
+            {"object_type": "ARC_COMPARISON_RECORD", "object_id": "comparison-000", "relation_kind": "informed_by"},
+            {"object_type": "DRAFT_ARTIFACT", "object_id": "manifest", "relation_kind": "source_context"},
+        ],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    reloaded = StoryDevelopmentRepository(db_path)
+    ordered = reloaded.list_story_decision_nodes(project_id)
+    subject_timeline = reloaded.list_story_decision_nodes_for_subject(
+        project_id,
+        subject_type="ARC_SELECTION",
+        subject_id="selection-001",
+    )
+
+    assert [record.node_id for record in ordered] == ["node-a", "node-b", "node-c"]
+    assert [record.node_id for record in subject_timeline] == ["node-a", "node-b"]
+    assert initial == reloaded.get_story_decision_node(project_id, node_id="node-a")
+    assert [link.object_id for link in pivot.related_object_links] == ["selection-001", "arc-primary"]
+    assert pivot.parent_node_id == "node-a"
+    assert pivot.branch_id == "branch-main"
+    assert pivot.prior_state_ref == "arc-candidate:arc-secondary"
+    assert pivot.new_state_summary == "Primary Quest becomes the active arc."
+    assert pivot.reason_or_note == "Primary Quest has a cleaner escalation path."
+    assert pivot.made_by == "writer:alex"
+    assert [link.object_id for link in pivot.informing_object_links] == ["comparison-001", "finding-009"]
+    assert stage_change.related_object_links[0].object_id == "brainstorm"
+    assert stage_change.decision_made_at > pivot.decision_made_at
