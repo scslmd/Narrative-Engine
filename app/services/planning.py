@@ -26,6 +26,57 @@ class PlanningService:
     def __init__(self, repository: StoryDevelopmentRepository) -> None:
         self.repository = repository
 
+    def list_sequence_plans(self, project_id: str) -> tuple[SequencePlan, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        return tuple(self._sequence_from_record(record) for record in self.repository.list_sequence_plans(normalized_project_id))
+
+    def get_sequence_plan(self, project_id: str, *, sequence_id: str) -> SequencePlan:
+        return self._sequence_from_record(self._require_sequence_plan(self._normalize_text(project_id, field_name="project_id"), sequence_id))
+
+    def list_chapter_plans(self, project_id: str) -> tuple[ChapterPlan, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        return tuple(self._chapter_from_record(record) for record in self.repository.list_chapter_plans(normalized_project_id))
+
+    def get_chapter_plan(self, project_id: str, *, chapter_id: str) -> ChapterPlan:
+        return self._chapter_from_record(self._require_chapter_plan(self._normalize_text(project_id, field_name="project_id"), chapter_id))
+
+    def list_scene_plans(self, project_id: str) -> tuple[ScenePlan, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        return tuple(self._scene_from_record(record) for record in self.repository.list_scene_plans(normalized_project_id))
+
+    def get_scene_plan(self, project_id: str, *, scene_id: str) -> ScenePlan:
+        return self._scene_from_record(self._require_scene_plan(self._normalize_text(project_id, field_name="project_id"), scene_id))
+
+    def list_planning_dependencies(self, project_id: str) -> tuple[PlanningDependency, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        return tuple(self._dependency_from_record(record) for record in self.repository.list_planning_dependencies(normalized_project_id))
+
+    def get_planning_dependency(self, project_id: str, *, dependency_id: str) -> PlanningDependency:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_dependency_id = self._normalize_text(dependency_id, field_name="dependency_id")
+        try:
+            record = self.repository.get_planning_dependency(normalized_dependency_id)
+        except KeyError as exc:
+            raise PlanningNotFoundError(normalized_dependency_id) from exc
+        if record.project_id != normalized_project_id:
+            raise PlanningNotFoundError(normalized_dependency_id)
+        return self._dependency_from_record(record)
+
+    def list_chapter_packets(self, project_id: str) -> tuple[ChapterPacket, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        return tuple(self._packet_from_record(record) for record in self.repository.list_chapter_packets(normalized_project_id))
+
+    def get_chapter_packet(self, project_id: str, *, packet_id: str) -> ChapterPacket:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_packet_id = self._normalize_text(packet_id, field_name="packet_id")
+        try:
+            record = self.repository.get_chapter_packet(normalized_packet_id)
+        except KeyError as exc:
+            raise PlanningNotFoundError(normalized_packet_id) from exc
+        if record.project_id != normalized_project_id:
+            raise PlanningNotFoundError(normalized_packet_id)
+        return self._packet_from_record(record)
+
     def create_sequence_plan(
         self,
         project_id: str,

@@ -12,9 +12,11 @@ from .api import (
     build_jobs_router,
     build_models_router,
     build_projects_router,
+    build_story_development_router,
     build_role_model_checker_router,
 )
 from .settings import settings
+from .persistence.story_development import StoryDevelopmentRepository
 from .services import JobManager, ModelRegistry, ProjectService, RoleModelCheckManager, RoleModelCheckerService
 from .services import LocalExecutor
 
@@ -28,6 +30,7 @@ def build_app() -> FastAPI:
     project_service = ProjectService(root)
     project_service.reconcile_projects()
     job_manager = JobManager(root / 'data' / 'state' / 'narrative_ops.db')
+    story_development_repository = StoryDevelopmentRepository(root / 'data' / 'state' / 'narrative_ops.db')
     inferencer = build_inference_backend(settings)
     model_registry = ModelRegistry(models_root, inferencer=inferencer)
     role_check_manager = RoleModelCheckManager(root / 'data' / 'state' / 'narrative_ops.db')
@@ -57,6 +60,7 @@ def build_app() -> FastAPI:
     app.include_router(build_projects_router(project_service))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_models_router(model_registry))
+    app.include_router(build_story_development_router(story_development_repository))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service))
 
     if frontend_root.exists():

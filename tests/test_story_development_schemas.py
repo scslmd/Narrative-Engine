@@ -10,6 +10,7 @@ from app.schemas import (
     ArcSelection,
     BranchPoint,
     BranchComparisonRecord,
+    BranchMergeDecision,
     BranchStateRef,
     DraftArtifact,
     RevisionSuggestion,
@@ -304,6 +305,49 @@ def test_branch_comparison_model_validate_canonical_pair_linkage() -> None:
     assert branch_state_ref.state_object_type == StoryObjectType.ARC_SELECTION.value
     assert branch_state_ref.state_object_id == "selection-1"
     assert branch_state_ref.decision_node_id == "node-branch-1"
+
+
+def test_branch_merge_decision_model_validate_canonical_outcome_linkage() -> None:
+    merge_decision = BranchMergeDecision.model_validate(
+        {
+            "merge_decision_id": "  merge-1  ",
+            "project_id": "  project-123  ",
+            "source_branch_id": "  branch-main  ",
+            "target_branch_id": "  branch-alt  ",
+            "merge_rationale": "  Keep the stronger opening and the alternate midpoint.  ",
+            "resulting_decision_node_ids": ["  node-merge-1  ", "node-merge-2"],
+        }
+    )
+
+    assert merge_decision.merge_decision_id == "merge-1"
+    assert merge_decision.project_id == "project-123"
+    assert merge_decision.source_branch_id == "branch-main"
+    assert merge_decision.target_branch_id == "branch-alt"
+    assert merge_decision.merge_rationale == "Keep the stronger opening and the alternate midpoint."
+    assert merge_decision.resulting_decision_node_ids == ["node-merge-1", "node-merge-2"]
+
+    with pytest.raises(ValidationError):
+        BranchMergeDecision.model_validate(
+            {
+                "merge_decision_id": "merge-same",
+                "project_id": "project-123",
+                "source_branch_id": "branch-main",
+                "target_branch_id": "branch-main",
+                "merge_rationale": "Same branch merges are invalid.",
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        BranchMergeDecision.model_validate(
+            {
+                "merge_decision_id": "merge-dup",
+                "project_id": "project-123",
+                "source_branch_id": "branch-main",
+                "target_branch_id": "branch-alt",
+                "merge_rationale": "Duplicate node refs are invalid.",
+                "resulting_decision_node_ids": ["node-merge-1", "node-merge-1"],
+            }
+        )
 
 
 def test_story_development_models_reject_extra_fields() -> None:

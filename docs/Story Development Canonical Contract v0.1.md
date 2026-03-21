@@ -183,6 +183,23 @@ Rules:
 - `BeatPlan`, `SequencePlan`, `ChapterPlan`, and `ScenePlan` are canonical persisted planning objects
 - cards are presentation views over those plan objects unless a future spec explicitly promotes a card to a persisted object
 
+### 5.3A Branching
+
+| Canonical name | Definition | Owning layer | Allowed alias notes |
+| --- | --- | --- | --- |
+| `StoryBranch` | Durable branch identity for a forked storyline path | backend, frontend, docs | "branch" in prose only |
+| `BranchPoint` | The persisted decision-node fork point that a branch originates from | backend, docs | none |
+| `BranchStateRef` | Project-scoped record that links a branch to a canonical object state or decision-node path | backend, docs | none |
+| `BranchComparisonRecord` | Persisted comparison between two branches with reviewable notes | backend, frontend, docs | "branch comparison" in prose only |
+| `BranchMergeDecision` | Persisted merge-intent or merge-outcome record between two branches | backend, docs | none |
+
+Rules:
+
+- `StoryBranch`, `BranchPoint`, `BranchStateRef`, `BranchComparisonRecord`, and `BranchMergeDecision` are now part of the implemented canonical backend baseline
+- only one active branch should exist per project in persisted branch state
+- branch comparisons must remain reviewable records and must not mutate branch state implicitly
+- branching services are now part of the implemented backend baseline; branching API routes remain a later slice
+
 ### 5.4 Drafting, Review, And Inspect
 
 | Canonical name | Definition | Owning layer | Allowed alias notes |

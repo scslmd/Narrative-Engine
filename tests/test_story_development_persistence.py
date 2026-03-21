@@ -1172,6 +1172,184 @@ def test_branch_comparison_repository_round_trips_pair_linkage_and_ordering(tmp_
         raise AssertionError("expected cross-project branch comparison rejection")
 
 
+def test_branch_merge_decision_repository_round_trips_project_scoping_and_ordering(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    project_id = "story-dev-branch-merges"
+    other_project_id = "story-dev-branch-merges-other"
+    _seed_project(db_path, project_id)
+    _seed_project(db_path, other_project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    source_node = repo.record_story_decision_node(
+        node_id="merge-node-1",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-merge-1",
+        branch_id="branch-source",
+        summary="Create merge source branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-merge-1", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:base",
+        new_state_ref="arc:selected:source",
+        reason_or_note="Establish the source branch path.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    target_node = repo.record_story_decision_node(
+        node_id="merge-node-2",
+        project_id=project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-merge-2",
+        branch_id="branch-target",
+        summary="Create merge target branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-merge-2", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:source",
+        new_state_ref="arc:selected:target",
+        reason_or_note="Establish the target branch path.",
+        made_by="writer:test",
+        decision_made_at=STAMP.replace(hour=13),
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    other_node = repo.record_story_decision_node(
+        node_id="merge-node-3",
+        project_id=other_project_id,
+        node_type="BRANCH_POINT",
+        change_type="BRANCH_CREATED",
+        subject_type="ARC_SELECTION",
+        subject_id="selection-merge-3",
+        branch_id="branch-other",
+        summary="Create other project branch.",
+        related_object_links=[{"object_type": "ARC_SELECTION", "object_id": "selection-merge-3", "relation_kind": "primary"}],
+        prior_state_ref="arc:selected:other",
+        new_state_ref="arc:selected:other-branch",
+        reason_or_note="Keep the other project isolated.",
+        made_by="writer:test",
+        decision_made_at=STAMP,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    source_point = repo.upsert_branch_point(
+        branch_point_id="merge-point-1",
+        project_id=project_id,
+        source_node_id=source_node.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    target_point = repo.upsert_branch_point(
+        branch_point_id="merge-point-2",
+        project_id=project_id,
+        source_node_id=target_node.node_id,
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    other_point = repo.upsert_branch_point(
+        branch_point_id="merge-point-3",
+        project_id=other_project_id,
+        source_node_id=other_node.node_id,
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    repo.upsert_story_branch(
+        branch_id="branch-source",
+        project_id=project_id,
+        branch_point_id=source_point.branch_point_id,
+        branch_name="Source Branch",
+        branch_state="ARCHIVED",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    repo.upsert_story_branch(
+        branch_id="branch-target",
+        project_id=project_id,
+        branch_point_id=target_point.branch_point_id,
+        branch_name="Target Branch",
+        branch_state="ARCHIVED",
+        created_at=STAMP.replace(hour=13),
+        updated_at=STAMP.replace(hour=13),
+    )
+    repo.upsert_story_branch(
+        branch_id="branch-other",
+        project_id=other_project_id,
+        branch_point_id=other_point.branch_point_id,
+        branch_name="Other Branch",
+        branch_state="ARCHIVED",
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+
+    first_merge = repo.upsert_branch_merge_decision(
+        merge_decision_id="merge-1",
+        project_id=project_id,
+        source_branch_id="branch-source",
+        target_branch_id="branch-target",
+        merge_rationale="Keep the source opening and the target resolution.",
+        resulting_decision_node_ids=[source_node.node_id, target_node.node_id],
+        created_at=STAMP,
+        updated_at=STAMP,
+    )
+    second_merge = repo.upsert_branch_merge_decision(
+        merge_decision_id="merge-2",
+        project_id=project_id,
+        source_branch_id="branch-target",
+        target_branch_id="branch-source",
+        merge_rationale="Keep the alternate pacing adjustments for review.",
+        resulting_decision_node_ids=[target_node.node_id],
+        created_at=STAMP.replace(hour=14),
+        updated_at=STAMP.replace(hour=14),
+    )
+
+    assert first_merge.source_branch_id == "branch-source"
+    assert first_merge.target_branch_id == "branch-target"
+    assert first_merge.merge_rationale == "Keep the source opening and the target resolution."
+    assert first_merge.resulting_decision_node_ids == [source_node.node_id, target_node.node_id]
+    assert repo.get_branch_merge_decision(project_id, merge_decision_id="merge-1") == first_merge
+    assert [record.merge_decision_id for record in repo.list_branch_merge_decisions(project_id)] == [
+        "merge-1",
+        "merge-2",
+    ]
+    assert repo.list_branch_merge_decisions(other_project_id) == []
+
+    try:
+        repo.upsert_branch_merge_decision(
+            merge_decision_id="merge-cross-project",
+            project_id=project_id,
+            source_branch_id="branch-source",
+            target_branch_id="branch-other",
+            merge_rationale="Cross-project should fail.",
+            resulting_decision_node_ids=[source_node.node_id],
+            created_at=STAMP,
+            updated_at=STAMP,
+        )
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("expected cross-project branch merge rejection")
+
+    try:
+        repo.upsert_branch_merge_decision(
+            merge_decision_id="merge-cross-node",
+            project_id=project_id,
+            source_branch_id="branch-source",
+            target_branch_id="branch-target",
+            merge_rationale="Cross-project node should fail.",
+            resulting_decision_node_ids=[other_node.node_id],
+            created_at=STAMP,
+            updated_at=STAMP,
+        )
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("expected cross-project merge node rejection")
+
+
 def test_story_development_repository_round_trips_review_and_inspect_records_independently(tmp_path: Path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     project_id = "story-dev-review"

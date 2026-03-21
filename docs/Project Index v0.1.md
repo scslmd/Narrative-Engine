@@ -25,12 +25,13 @@ Implemented foundation:
 - canonical `architect_p100` project artifact registration backed by artifact lineage
 - public projection endpoints for step records and artifact lineage on jobs and checker runs
 - role-model checker scaffolding
-- story-development backend foundations for editable flow, brainstorm, foundation, story knowledge, planning, drafting, story-decision review, and review/inspect persistence
+- story-development backend foundations for editable flow, brainstorm, foundation, story knowledge, planning, drafting, story-decision review, review routing, review/inspect persistence, and the first non-branching story-development API routes
+- story-branching persistence and service foundations for branch identity, branch-point linkage, branch state references, active-branch selection, branch comparison records, branch merge decisions, and branching service behavior
 
 Current planning reference docs:
 
-- `docs/Narrative SRS v0.1.md`
-- `docs/Frontend Design SRS v0.1.md`
+- `docs/Narrative SRS v0.3.md`
+- `docs/Frontend Design SRS v0.4.md`
 - `docs/Story Development Product Spec v0.1.md`
 - `docs/Story Development Canonical Contract v0.1.md`
 - `docs/Story Arc Paradigm Blueprint v0.1.md`
@@ -41,5 +42,5 @@ Major work still ahead:
 - orchestrator/compiler flow
 - production-grade checker execution
 - richer runtime telemetry
-- story-development review-routing services, branch identity/state/compare/merge slices, and story-development API routes
+- story-development branching API routes
 - broader integration and failure-mode testing

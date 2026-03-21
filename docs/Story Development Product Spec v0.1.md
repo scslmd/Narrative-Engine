@@ -543,6 +543,12 @@ Required canonical objects for this feature family:
 - `ArcComparisonRecord`
 - `ArcSelection`
 - `ArcStageMap`
+- `StoryDecisionNode`
+- `StoryBranch`
+- `BranchPoint`
+- `BranchStateRef`
+- `BranchComparisonRecord`
+- `BranchMergeDecision`
 - `BeatPlan`
 - `SequencePlan`
 - `ChapterPlan`
@@ -553,10 +559,8 @@ Required canonical objects for this feature family:
 - `ManuscriptDocument`
 - `RevisionSuggestion`
 - `SuggestionRequest`
-- `ContinuityIssue`
 - `CheckerFinding`
 - `ReviewDecision`
-- `ReviewTask`
 - `StepRecord`
 - `ArtifactLineage`
 - `InspectRunLink`
@@ -597,6 +601,17 @@ Required canonical objects for this feature family:
 - persisted typed decision-tree object for story-shaping choices such as arc pivots, stage changes, deviations, branch points, and future comparable planning decisions
 - must remain reviewable when the user returns later to understand why a story direction changed and from which parent path it diverged
 - must be detailed enough to generate a decision timeline or tree showing what changed, what it changed from, what it changed to, why the user changed it, and what comparison or review context informed the choice
+
+`StoryBranch`, `BranchPoint`, `BranchStateRef`, `BranchComparisonRecord`
+
+- these are the current canonical branching objects for forked storyline identity, fork origin, branch-local state references, and branch-to-branch comparison history
+- they should be treated as structured backend records, not Git branches or file-level snapshots
+- only one active branch should exist per project at a time in persisted branch state
+
+`BranchMergeDecision`
+
+- records intended or accepted merge outcomes between branches
+- remains distinct from branch comparison and from branch state selection
 
 `SequencePlan`, `ChapterPlan`, `ScenePlan`
 

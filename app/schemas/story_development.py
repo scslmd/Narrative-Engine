@@ -938,6 +938,39 @@ class BranchComparisonRecord(StrictSchemaModel):
         return self
 
 
+class BranchMergeDecision(StrictSchemaModel):
+    merge_decision_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    source_branch_id: str = Field(min_length=1)
+    target_branch_id: str = Field(min_length=1)
+    merge_rationale: str = Field(min_length=1)
+    resulting_decision_node_ids: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("merge_decision_id", "project_id", "source_branch_id", "target_branch_id", "merge_rationale"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["resulting_decision_node_ids"] = _normalize_text_list(
+            payload.get("resulting_decision_node_ids", []),
+            field_name="resulting_decision_node_ids",
+        )
+        return payload
+
+    @model_validator(mode="after")
+    def validate_branch_pair(self) -> "BranchMergeDecision":
+        if self.source_branch_id == self.target_branch_id:
+            raise ValueError("source_branch_id and target_branch_id must differ")
+        if len(set(self.resulting_decision_node_ids)) != len(self.resulting_decision_node_ids):
+            raise ValueError("resulting_decision_node_ids must not contain duplicates")
+        return self
+
+
 class CheckerFinding(StrictSchemaModel):
     finding_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)

@@ -1,5 +1,7 @@
 # Narrative SRS v0.3
 
+Document version: `v0.3`
+
 ## 1. Purpose
 
 Narrative-Engine is a local-first narrative development system for novel and story creation.

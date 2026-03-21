@@ -138,6 +138,9 @@ class ReviewRoutingService:
         )
         return tuple(self._finding_from_record(record) for record in records)
 
+    def get_checker_finding(self, project_id: str, *, finding_id: str) -> CheckerFinding:
+        return self._require_checker_finding(self._normalize_text(project_id, field_name="project_id"), finding_id)
+
     def list_review_decisions(
         self,
         project_id: str,
@@ -152,6 +155,17 @@ class ReviewRoutingService:
             target_id=target_id,
         )
         return tuple(self._decision_from_record(record) for record in records)
+
+    def get_review_decision(self, project_id: str, *, decision_id: str) -> ReviewDecision:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_decision_id = self._normalize_text(decision_id, field_name="decision_id")
+        try:
+            record = self.repository.get_review_decision(normalized_decision_id)
+        except KeyError as exc:
+            raise ReviewRoutingNotFoundError(normalized_decision_id) from exc
+        if record.project_id != normalized_project_id:
+            raise ReviewRoutingNotFoundError(normalized_decision_id)
+        return self._decision_from_record(record)
 
     def list_inspect_run_links(
         self,
@@ -171,6 +185,17 @@ class ReviewRoutingService:
             logical_run_id=logical_run_id,
         )
         return tuple(self._inspect_link_from_record(record) for record in records)
+
+    def get_inspect_run_link(self, project_id: str, *, link_id: str) -> InspectRunLink:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_link_id = self._normalize_text(link_id, field_name="link_id")
+        try:
+            record = self.repository.get_inspect_run_link(normalized_link_id)
+        except KeyError as exc:
+            raise ReviewRoutingNotFoundError(normalized_link_id) from exc
+        if record.project_id != normalized_project_id:
+            raise ReviewRoutingNotFoundError(normalized_link_id)
+        return self._inspect_link_from_record(record)
 
     def route_finding_to_drafting(
         self,

@@ -79,8 +79,8 @@ Current verified baseline:
 
 ## Core Docs
 
-- [docs/Narrative SRS v0.1.md](F:/Dev/Narrative-Engine/docs/Narrative%20SRS%20v0.1.md)
-- [docs/Frontend Design SRS v0.1.md](F:/Dev/Narrative-Engine/docs/Frontend%20Design%20SRS%20v0.1.md)
+- [docs/Narrative SRS v0.3.md](F:/Dev/Narrative-Engine/docs/Narrative%20SRS%20v0.3.md)
+- [docs/Frontend Design SRS v0.4.md](F:/Dev/Narrative-Engine/docs/Frontend%20Design%20SRS%20v0.4.md)
 - [docs/Async Protocol Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Async%20Protocol%20Blueprint%20v0.1.md)
 - [docs/Inference Runtime Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Inference%20Runtime%20Blueprint%20v0.1.md)
 - [docs/Step Record Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20Record%20Blueprint%20v0.1.md)

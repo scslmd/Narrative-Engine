@@ -40,6 +40,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/api/jobs.py`](app/api/jobs.py): job lifecycle endpoints, status, and retry flows
 - [`app/api/models.py`](app/api/models.py): model and provider availability endpoints
 - [`app/api/role_model_checker.py`](app/api/role_model_checker.py): checker execution and inspect endpoints
+- [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, and drafting reads
 
 ### Service Layer
 
@@ -57,6 +58,12 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/editable_flow.py`](app/services/editable_flow.py): story-development editable stage flow operations
 - [`app/services/brainstorm.py`](app/services/brainstorm.py): brainstorming service slice and promotion behavior
 - [`app/services/foundation.py`](app/services/foundation.py): foundation profile revision/history service and downstream review-cue generation
+- [`app/services/story_knowledge.py`](app/services/story_knowledge.py): character, world-bible, arc-selection, and story-decision-aware knowledge services
+- [`app/services/planning.py`](app/services/planning.py): canonical planning-object and chapter-packet service layer
+- [`app/services/drafting.py`](app/services/drafting.py): draft-artifact, manuscript, continuation, variant, and revision-suggestion service layer
+- [`app/services/story_decision_review.py`](app/services/story_decision_review.py): decision-node timeline and parent-path review helpers
+- [`app/services/review_routing.py`](app/services/review_routing.py): review finding routing, review-decision recording, and inspect-link service layer
+- [`app/services/story_branching.py`](app/services/story_branching.py): story-branch creation, branch comparison, active-branch selection, and merge-decision service layer
 
 ### Persistence Layer
 
@@ -65,7 +72,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/persistence/jobs.py`](app/persistence/jobs.py): job persistence, attempts, events, and retry state
 - [`app/persistence/checker_runs.py`](app/persistence/checker_runs.py): checker-run persistence and state transitions
 - [`app/persistence/steps.py`](app/persistence/steps.py): step-record and lineage persistence
-- [`app/persistence/story_development.py`](app/persistence/story_development.py): story-development repository operations, including editable-flow and foundation storage
+- [`app/persistence/story_development.py`](app/persistence/story_development.py): story-development repository operations, including editable flow, planning, drafting, review, inspect, and branching persistence
 
 ### Schema Layer
 
@@ -123,6 +130,13 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
   - [`tests/test_editable_flow_service.py`](tests/test_editable_flow_service.py)
   - [`tests/test_brainstorm_service.py`](tests/test_brainstorm_service.py)
   - [`tests/test_foundation_service.py`](tests/test_foundation_service.py)
+  - [`tests/test_story_knowledge_service.py`](tests/test_story_knowledge_service.py)
+  - [`tests/test_planning_service.py`](tests/test_planning_service.py)
+  - [`tests/test_drafting_service.py`](tests/test_drafting_service.py)
+  - [`tests/test_story_decision_review_service.py`](tests/test_story_decision_review_service.py)
+  - [`tests/test_review_routing_service.py`](tests/test_review_routing_service.py)
+  - [`tests/test_story_branching_service.py`](tests/test_story_branching_service.py)
+  - [`tests/test_story_development_api.py`](tests/test_story_development_api.py)
 - Smoke and failure coverage:
   - [`tests/test_smoke.py`](tests/test_smoke.py)
   - [`tests/test_failure_modes.py`](tests/test_failure_modes.py)
@@ -136,8 +150,8 @@ The specification and planning docs live under [`docs/`](docs/).
   - [`docs/Documentation Guide v0.1.md`](docs/Documentation%20Guide%20v0.1.md)
   - [`docs/Project Index v0.1.md`](docs/Project%20Index%20v0.1.md)
 - Product and system contracts:
-  - [`docs/Narrative SRS v0.1.md`](docs/Narrative%20SRS%20v0.1.md)
-  - [`docs/Frontend Design SRS v0.1.md`](docs/Frontend%20Design%20SRS%20v0.1.md)
+  - [`docs/Narrative SRS v0.3.md`](docs/Narrative%20SRS%20v0.3.md)
+  - [`docs/Frontend Design SRS v0.4.md`](docs/Frontend%20Design%20SRS%20v0.4.md)
   - [`docs/Story Development Product Spec v0.1.md`](docs/Story%20Development%20Product%20Spec%20v0.1.md)
   - [`docs/Story Development Canonical Contract v0.1.md`](docs/Story%20Development%20Canonical%20Contract%20v0.1.md)
   - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md)

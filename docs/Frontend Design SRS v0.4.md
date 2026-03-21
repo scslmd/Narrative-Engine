@@ -1,5 +1,7 @@
 # Frontend Design SRS v0.4
 
+Document version: `v0.4`
+
 ## 1. Purpose
 
 The frontend should feel like a writer workspace, not a generic admin panel.

@@ -314,6 +314,18 @@ class BranchComparisonRecord:
 
 
 @dataclass(frozen=True)
+class BranchMergeDecisionRecord:
+    merge_decision_id: str
+    project_id: str
+    source_branch_id: str
+    target_branch_id: str
+    merge_rationale: str
+    resulting_decision_node_ids: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
 class CheckerFindingRecord:
     finding_id: str
     project_id: str
@@ -2191,6 +2203,99 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_branch_comparison_row_to_record(row) for row in rows]
 
+    def upsert_branch_merge_decision(
+        self,
+        *,
+        merge_decision_id: str,
+        project_id: str,
+        source_branch_id: str,
+        target_branch_id: str,
+        merge_rationale: str,
+        resulting_decision_node_ids: Sequence[str] | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> BranchMergeDecisionRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_source_branch_id = self._normalize_text(source_branch_id, field_name="source_branch_id")
+        normalized_target_branch_id = self._normalize_text(target_branch_id, field_name="target_branch_id")
+        normalized_merge_rationale = self._normalize_text(merge_rationale, field_name="merge_rationale")
+        normalized_resulting_decision_node_ids = _normalize_text_list(
+            list(resulting_decision_node_ids or []),
+            field_name="resulting_decision_node_ids",
+        )
+        if normalized_source_branch_id == normalized_target_branch_id:
+            raise ValueError("source_branch_id and target_branch_id must differ")
+        if len(set(normalized_resulting_decision_node_ids)) != len(normalized_resulting_decision_node_ids):
+            raise ValueError("resulting_decision_node_ids must not contain duplicates")
+        source_branch = self.get_story_branch(normalized_source_branch_id)
+        target_branch = self.get_story_branch(normalized_target_branch_id)
+        if source_branch.project_id != normalized_project_id or target_branch.project_id != normalized_project_id:
+            raise KeyError((normalized_project_id, normalized_source_branch_id, normalized_target_branch_id))
+        for decision_node_id in normalized_resulting_decision_node_ids:
+            decision_node = self.get_story_decision_node(normalized_project_id, node_id=decision_node_id)
+            if decision_node.project_id != normalized_project_id:
+                raise KeyError(decision_node_id)
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO branch_merge_decisions (
+                    merge_decision_id, project_id, source_branch_id, target_branch_id, merge_rationale,
+                    resulting_decision_node_ids_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(merge_decision_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    source_branch_id = excluded.source_branch_id,
+                    target_branch_id = excluded.target_branch_id,
+                    merge_rationale = excluded.merge_rationale,
+                    resulting_decision_node_ids_json = excluded.resulting_decision_node_ids_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    merge_decision_id,
+                    normalized_project_id,
+                    normalized_source_branch_id,
+                    normalized_target_branch_id,
+                    normalized_merge_rationale,
+                    _json_list(normalized_resulting_decision_node_ids),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_branch_merge_decision(normalized_project_id, merge_decision_id=merge_decision_id)
+
+    def get_branch_merge_decision(self, project_id: str, *, merge_decision_id: str) -> BranchMergeDecisionRecord:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_merge_decision_id = self._normalize_text(merge_decision_id, field_name="merge_decision_id")
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM branch_merge_decisions
+                WHERE project_id = ? AND merge_decision_id = ?
+                """,
+                (normalized_project_id, normalized_merge_decision_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError((normalized_project_id, normalized_merge_decision_id))
+        return _branch_merge_decision_row_to_record(row)
+
+    def list_branch_merge_decisions(self, project_id: str) -> list[BranchMergeDecisionRecord]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM branch_merge_decisions
+                WHERE project_id = ?
+                ORDER BY created_at ASC, merge_decision_id ASC
+                """,
+                (normalized_project_id,),
+            ).fetchall()
+        return [_branch_merge_decision_row_to_record(row) for row in rows]
+
     def upsert_checker_finding(
         self,
         *,
@@ -3497,6 +3602,19 @@ def _branch_comparison_row_to_record(row) -> BranchComparisonRecord:
         source_branch_id=row["source_branch_id"],
         target_branch_id=row["target_branch_id"],
         review_notes=_parse_json_list(row["review_notes_json"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _branch_merge_decision_row_to_record(row) -> BranchMergeDecisionRecord:
+    return BranchMergeDecisionRecord(
+        merge_decision_id=row["merge_decision_id"],
+        project_id=row["project_id"],
+        source_branch_id=row["source_branch_id"],
+        target_branch_id=row["target_branch_id"],
+        merge_rationale=row["merge_rationale"],
+        resulting_decision_node_ids=_parse_json_list(row["resulting_decision_node_ids_json"]),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
