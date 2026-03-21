@@ -525,6 +525,13 @@ The core rule is unchanged:
 - the user may add, remove, reorder, redefine, or skip stages at any time
 - downstream outputs must preserve provenance when upstream inputs change
 
+Current backend milestone now implemented:
+
+- editable flow, brainstorm, foundation, story knowledge, planning, drafting, and decision-review service foundations exist in backend code
+- canonical persistence now exists for planning objects, drafting objects, story decision nodes, checker findings, review decisions, and inspect run links
+- public API wiring for story-development routes is still intentionally not implemented
+- branch identity, branch state, branch comparison, merge behavior, and story-development route surfaces remain separate upcoming slices
+
 ### 17.1 Editable Core Flow
 
 The editable core flow is the project-local workflow graph that replaces a rigid wizard.
@@ -925,6 +932,11 @@ Implementation lesson:
 - if a feature family introduces new canonical backend objects, the persistence tables and repository helpers for those objects must land before or with the service layer
 - UI card or board views must stay projections over persisted plan records rather than becoming a second competing storage model
 
+Implemented now:
+
+- canonical persistence exists for `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, and `ChapterPacket`
+- backend planning services can create, reorder, and packetize canonical planning records without introducing a competing persisted card model
+
 Required backend objects:
 
 - `BeatPlan`
@@ -967,6 +979,12 @@ Backend responsibilities:
 - persist draft outputs as artifacts with step records and lineage
 - keep the generated draft separate from the user-edited manuscript buffer
 - preserve the original prompt and model metadata for later inspection
+
+Implemented now:
+
+- canonical persistence exists for `DraftArtifact`, `ManuscriptDocument`, and `RevisionSuggestion`
+- backend drafting services support continuation drafting, alternate variants, manuscript promotion, and non-destructive revision suggestions
+- accepted manuscript state does not erase the originating draft artifact or its provenance links
 
 Required backend objects:
 
@@ -1054,6 +1072,12 @@ Backend responsibilities:
 - preserve deterministic fallback when runtime is unavailable or rejected
 - persist review findings as first-class records with source step references
 - keep review output distinct from draft output
+
+Implemented now:
+
+- canonical persistence exists for `CheckerFinding`, `ReviewDecision`, and `InspectRunLink`
+- decision-review services exist for `StoryDecisionNode` history
+- review-routing services over findings, review decisions, and inspect links are the next backend slice and are not yet exposed through public story-development routes
 
 Required backend objects:
 

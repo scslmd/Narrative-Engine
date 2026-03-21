@@ -25,6 +25,7 @@ Implemented foundation:
 - canonical `architect_p100` project artifact registration backed by artifact lineage
 - public projection endpoints for step records and artifact lineage on jobs and checker runs
 - role-model checker scaffolding
+- story-development backend foundations for editable flow, brainstorm, foundation, story knowledge, planning, drafting, story-decision review, and review/inspect persistence
 
 Current planning reference docs:
 
@@ -40,4 +41,5 @@ Major work still ahead:
 - orchestrator/compiler flow
 - production-grade checker execution
 - richer runtime telemetry
+- story-development review-routing services, branch identity/state/compare/merge slices, and story-development API routes
 - broader integration and failure-mode testing
