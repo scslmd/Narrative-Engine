@@ -12,12 +12,12 @@ This document defines the required endpoint test coverage for the first public p
 It is aligned to the current implementation slice:
 
 - minimal envelopes
-- no query parameters
+- optional `attempt`, `limit`, and `offset` query parameters
 - deterministic ascending ordering
 - `404` for missing run ids
 - `200` with empty `items` for existing runs without persisted rows
 
-Future attempt-filter tests are included separately and explicitly labeled as not yet implemented.
+Attempt-filter and offset-pagination tests are part of the implemented contract in this version of the matrix.
 
 ## Scope
 
@@ -28,7 +28,7 @@ This matrix covers six test categories:
 - `404` missing-run state
 - deterministic ordering expectations
 - envelope stability checks
-- future attempt-filter cases
+- query-parameter filter and pagination checks
 
 ## Shared Assertions
 
@@ -41,7 +41,7 @@ The following assertions should be applied consistently where relevant:
 - response body includes `items`
 - response body includes `meta`
 - `meta` remains a stable object with the implemented `ordered_by` value
-- no unexpected top-level pagination or filter fields are present in the first slice
+- top-level response fields stay limited to the run identifier, `items`, and `meta`
 
 ## Current Slice Test Matrix
 
@@ -173,7 +173,7 @@ Important note:
 - `items` is always a list
 - `meta` is always an object
 - `meta.ordered_by` equals `step_index_asc`
-- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present
+- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present outside `meta`
 
 #### 5.2 Job Lineage Envelope
 
@@ -185,7 +185,7 @@ Important note:
 - `items` is always a list
 - `meta` is always an object
 - `meta.ordered_by` equals `artifact_lineage_id_asc`
-- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present
+- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present outside `meta`
 
 #### 5.3 Checker Step Envelope
 
@@ -197,7 +197,7 @@ Important note:
 - `items` is always a list
 - `meta` is always an object
 - `meta.ordered_by` equals `step_index_asc`
-- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present
+- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present outside `meta`
 
 #### 5.4 Checker Lineage Envelope
 
@@ -209,7 +209,7 @@ Important note:
 - `items` is always a list
 - `meta` is always an object
 - `meta.ordered_by` equals `artifact_lineage_id_asc`
-- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present
+- no top-level `page`, `cursor`, `limit`, `attempt`, or summary fields are present outside `meta`
 
 ### 6. Item Shape Stability Checks
 
@@ -272,11 +272,9 @@ Important note:
 - `source_content_hashes` is always a list
 - nullable fields remain present even when `null`
 
-## Future Cases: Attempt Filter
+## Query Parameter Cases
 
-The following cases are intentionally future-facing and should not be treated as required for the current implementation slice because the public endpoints do not yet implement attempt filtering.
-
-### Future Attempt Filter Cases
+### Attempt Filter Cases
 
 - `GET /jobs/{job_id}/steps?attempt=1`
   - returns only step rows for attempt `1`
@@ -288,9 +286,23 @@ The following cases are intentionally future-facing and should not be treated as
   - returns only checker lineage rows for attempt `1`
 - invalid attempt filter value returns `422`
 - valid attempt filter against an existing run with no matching rows returns `200` with empty `items`
-- response envelope remains otherwise unchanged when attempt filtering is added
+- response envelope remains otherwise unchanged when attempt filtering is applied
 
-### Future Attempt-Aware Ordering Checks
+### Pagination Cases
+
+- `GET /jobs/{job_id}/steps?limit=1&offset=1`
+  - returns the second ordered step row only
+- `GET /jobs/{job_id}/lineage?limit=1&offset=1`
+  - returns the second ordered lineage row only
+- `GET /role-model-checker/{run_id}/steps?limit=1&offset=1`
+  - returns the second ordered checker step row only
+- `GET /role-model-checker/{run_id}/lineage?limit=1&offset=1`
+  - returns the second ordered checker lineage row only
+- paginated responses include `meta.limit`, `meta.offset`, and `meta.returned_count`
+- invalid `limit` values return `422`
+- invalid negative `offset` values return `422`
+
+### Attempt-Aware Ordering Checks
 
 - filtered step responses preserve ascending `step_index`, then `step_record_id`
 - filtered lineage responses preserve ascending `artifact_lineage_id`
@@ -306,9 +318,7 @@ The current endpoint tests should be grouped into:
 - `deterministic ordering`
 - `envelope stability`
 - `item shape stability`
-
-Future tests should be grouped separately under:
-
 - `attempt filter`
+- `pagination`
 
-This separation keeps the implemented first slice explicit and prevents future contract assumptions from leaking into current coverage.
+This grouping keeps the implemented slice explicit without treating pagination or attempt filtering as future-only behavior.

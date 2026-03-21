@@ -52,7 +52,7 @@ Current validation does not yet cover:
 - broader browser workflow coverage
 - storage contention classification as retryable runtime failure
 - concurrent claim races under real parallel workers
-- projection endpoint pagination or attempt filtering
+- projection endpoint pagination edge cases beyond the current `attempt`, `limit`, and `offset` contract
 
 Current verified result:
 

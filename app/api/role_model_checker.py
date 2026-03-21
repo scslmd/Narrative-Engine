@@ -60,16 +60,26 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
     @router.get('/{run_id}/steps', response_model=RoleModelCheckStepsResponse)
-    def get_steps(run_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> RoleModelCheckStepsResponse:
+    def get_steps(
+        run_id: UUID,
+        attempt: int | None = Query(default=None, ge=1),
+        limit: int | None = Query(default=None, ge=1),
+        offset: int = Query(default=0, ge=0),
+    ) -> RoleModelCheckStepsResponse:
         try:
-            return manager.get_steps_projection(run_id, attempt_number=attempt)
+            return manager.get_steps_projection(run_id, attempt_number=attempt, limit=limit, offset=offset)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
     @router.get('/{run_id}/lineage', response_model=RoleModelCheckLineageResponse)
-    def get_lineage(run_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> RoleModelCheckLineageResponse:
+    def get_lineage(
+        run_id: UUID,
+        attempt: int | None = Query(default=None, ge=1),
+        limit: int | None = Query(default=None, ge=1),
+        offset: int = Query(default=0, ge=0),
+    ) -> RoleModelCheckLineageResponse:
         try:
-            return manager.get_lineage_projection(run_id, attempt_number=attempt)
+            return manager.get_lineage_projection(run_id, attempt_number=attempt, limit=limit, offset=offset)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 

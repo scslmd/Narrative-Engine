@@ -458,6 +458,59 @@ def test_job_lineage_endpoint_supports_attempt_filter(tmp_path) -> None:
     assert [item["artifact_role"] for item in payload["items"]] == ["story_bible"]
 
 
+def test_job_steps_endpoint_supports_limit_and_offset_pagination(tmp_path) -> None:
+    client, job_manager, _, step_records = _build_test_client(tmp_path)
+    job = job_manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "science-fantasy-test"}))
+    _insert_job_step_records(step_records, job_id=job.id)
+
+    response = client.get(f"/jobs/{job.id}/steps?limit=1&offset=1")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_job_envelope(payload, job_id=job.id, ordered_by="step_index_asc")
+    assert payload["meta"]["limit"] == 1
+    assert payload["meta"]["offset"] == 1
+    assert payload["meta"]["returned_count"] == 1
+    assert [item["step_name"] for item in payload["items"]] == ["critic"]
+
+
+def test_job_lineage_endpoint_supports_limit_and_offset_pagination(tmp_path) -> None:
+    client, job_manager, _, step_records = _build_test_client(tmp_path)
+    job = job_manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "science-fantasy-test"}))
+    first_step_id, second_step_id = _insert_job_step_records(step_records, job_id=job.id)
+    second_lineage_id = _insert_job_lineage(step_records, job_id=job.id, step_record_id=second_step_id)
+    step_records.create_lineage_record(
+        logical_run_id=str(job.id),
+        run_id=job.id,
+        run_kind="pipeline_job",
+        attempt_number=1,
+        step_name="critic",
+        project_id="science-fantasy-test",
+        artifact_role="chapter_1",
+        artifact_kind="markdown",
+        path="data/projects/science-fantasy-test/chapter_001.md",
+        content_hash_source="chapter-v1",
+        status="CANDIDATE",
+        validation_state="PENDING",
+        produced_at=_utc("2026-03-20T10:00:07+00:00"),
+        registered_at=None,
+        supersedes_artifact_lineage_id=second_lineage_id,
+        source_artifact_refs=["sequence"],
+        source_content_hashes=["sequence-hash"],
+        output_of_step_record_id=first_step_id,
+    )
+
+    response = client.get(f"/jobs/{job.id}/lineage?limit=1&offset=1")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_job_envelope(payload, job_id=job.id, ordered_by="artifact_lineage_id_asc")
+    assert payload["meta"]["limit"] == 1
+    assert payload["meta"]["offset"] == 1
+    assert payload["meta"]["returned_count"] == 1
+    assert [item["artifact_role"] for item in payload["items"]] == ["chapter_1"]
+
+
 def test_checker_steps_endpoint_supports_attempt_filter(tmp_path) -> None:
     client, _, checker_manager, step_records = _build_test_client(tmp_path)
     run = checker_manager.create_run(
@@ -506,6 +559,73 @@ def test_checker_lineage_endpoint_supports_attempt_filter(tmp_path) -> None:
     assert [item["artifact_role"] for item in payload["items"]] == ["checker_report"]
 
 
+def test_checker_steps_endpoint_supports_limit_and_offset_pagination(tmp_path) -> None:
+    client, _, checker_manager, step_records = _build_test_client(tmp_path)
+    run = checker_manager.create_run(
+        RoleModelCheckStartRequest(
+            roles=["architect", "critic"],
+            model_selection={},
+            critic_profile="minimal_context",
+            save_report=False,
+        )
+    )
+    _insert_checker_step_records(step_records, run_id=run.run_id)
+
+    response = client.get(f"/role-model-checker/{run.run_id}/steps?limit=1&offset=1")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_run_envelope(payload, run_id=run.run_id, ordered_by="step_index_asc")
+    assert payload["meta"]["limit"] == 1
+    assert payload["meta"]["offset"] == 1
+    assert payload["meta"]["returned_count"] == 1
+    assert [item["step_name"] for item in payload["items"]] == ["critic"]
+
+
+def test_checker_lineage_endpoint_supports_limit_and_offset_pagination(tmp_path) -> None:
+    client, _, checker_manager, step_records = _build_test_client(tmp_path)
+    run = checker_manager.create_run(
+        RoleModelCheckStartRequest(
+            roles=["architect"],
+            model_selection={},
+            critic_profile="minimal_context",
+            save_report=False,
+        )
+    )
+    first_step_id, second_step_id = _insert_checker_step_records(step_records, run_id=run.run_id)
+    first_lineage_id = _insert_checker_lineage(step_records, run_id=run.run_id, step_record_id=first_step_id)
+    step_records.create_lineage_record(
+        logical_run_id=str(run.run_id),
+        run_id=run.run_id,
+        run_kind="role_model_check",
+        attempt_number=1,
+        step_name="architect",
+        project_id="science-fantasy-test",
+        artifact_role="checker_report",
+        artifact_kind="json",
+        path="data/role_model_checker_runs/report_v2.json",
+        content_hash_source="checker-report-v2",
+        status="SUPERSEDED",
+        validation_state="PASSED",
+        produced_at=_utc("2026-03-20T11:00:10+00:00"),
+        registered_at=_utc("2026-03-20T11:00:11+00:00"),
+        supersedes_artifact_lineage_id=first_lineage_id,
+        source_artifact_refs=["story_bible"],
+        source_content_hashes=["story-bible-hash"],
+        output_of_step_record_id=second_step_id,
+    )
+
+    response = client.get(f"/role-model-checker/{run.run_id}/lineage?limit=1&offset=1")
+
+    assert response.status_code == 200
+    payload = response.json()
+    _assert_run_envelope(payload, run_id=run.run_id, ordered_by="artifact_lineage_id_asc")
+    assert payload["meta"]["limit"] == 1
+    assert payload["meta"]["offset"] == 1
+    assert payload["meta"]["returned_count"] == 1
+    assert [item["path"] for item in payload["items"]] == ["data/role_model_checker_runs/report_v2.json"]
+
+
 @pytest.mark.parametrize(
     "path_template",
     [
@@ -513,6 +633,14 @@ def test_checker_lineage_endpoint_supports_attempt_filter(tmp_path) -> None:
         "/jobs/{id}/lineage?attempt=0",
         "/role-model-checker/{id}/steps?attempt=0",
         "/role-model-checker/{id}/lineage?attempt=0",
+        "/jobs/{id}/steps?limit=0",
+        "/jobs/{id}/lineage?limit=0",
+        "/role-model-checker/{id}/steps?limit=0",
+        "/role-model-checker/{id}/lineage?limit=0",
+        "/jobs/{id}/steps?offset=-1",
+        "/jobs/{id}/lineage?offset=-1",
+        "/role-model-checker/{id}/steps?offset=-1",
+        "/role-model-checker/{id}/lineage?offset=-1",
     ],
 )
 def test_projection_endpoints_reject_non_positive_attempt_filter(tmp_path, path_template) -> None:

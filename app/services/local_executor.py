@@ -55,6 +55,13 @@ def _phase_step_name(phase: str) -> str:
         return "compiler"
     return phase
 
+
+def _require_supported_job_phase(phase: str) -> str:
+    if phase in {"P-100", "P-200", "P-300", "P-400"}:
+        return phase
+    raise ValueError(f"Unsupported job phase: {phase}")
+
+
 class LocalExecutor:
     def __init__(
         self,
@@ -119,94 +126,56 @@ class LocalExecutor:
             attempt = self._job_manager.get_attempt(job_id)
             request_payload = self._job_manager.get_request_payload(job_id)
             project_id = str(request_payload.get("payload", {}).get("project_id", "")).strip() or None
-            current_step = _phase_step_name(str(current.phase))
+            phase = _require_supported_job_phase(str(current.phase))
+            current_step = _phase_step_name(phase)
             self._job_manager.update_job(
                 job_id,
                 status="PROCESSING",
-                current_phase=str(current.phase),
+                current_phase=phase,
                 current_step=current_step,
                 detail="Local worker started.",
             )
-            self._job_manager.log(job_id, "INFO", f"Job claimed by local worker for phase {current.phase}.")
-            if str(current.phase) == "P-100":
+            self._job_manager.log(job_id, "INFO", f"Job claimed by local worker for phase {phase}.")
+            if phase == "P-100":
                 self._run_architect_phase(
                     job_id=job_id,
                     started_at=started_at,
-                    current_phase=str(current.phase),
+                    current_phase=phase,
                     attempt=attempt,
                     request_payload=request_payload,
                     project_id=project_id,
                 )
                 return
-            if str(current.phase) == "P-200":
+            if phase == "P-200":
                 self._run_sequencer_phase(
                     job_id=job_id,
                     started_at=started_at,
-                    current_phase=str(current.phase),
+                    current_phase=phase,
                     attempt=attempt,
                     request_payload=request_payload,
                     project_id=project_id,
                 )
                 return
-            if str(current.phase) == "P-300":
+            if phase == "P-300":
                 self._run_drafter_phase(
                     job_id=job_id,
                     started_at=started_at,
-                    current_phase=str(current.phase),
+                    current_phase=phase,
                     attempt=attempt,
                     request_payload=request_payload,
                     project_id=project_id,
                 )
                 return
-            if str(current.phase) == "P-400":
+            if phase == "P-400":
                 self._run_compiler_phase(
                     job_id=job_id,
                     started_at=started_at,
-                    current_phase=str(current.phase),
+                    current_phase=phase,
                     attempt=attempt,
                     request_payload=request_payload,
                     project_id=project_id,
                 )
                 return
-            self._job_manager.update_job(
-                job_id,
-                status="COMPLETED",
-                detail="Local worker finished.",
-                progress_current=1,
-                progress_total=1,
-                finish_reason="stub_completed",
-            )
-            finished_at = _utcnow()
-            self._step_records.create_step_record(
-                logical_run_id=str(attempt["logical_run_id"]),
-                run_id=job_id,
-                run_kind="pipeline_job",
-                attempt_number=int(attempt["attempt_number"]),
-                step_name=current_step,
-                step_index=1,
-                state="COMPLETED",
-                project_id=project_id,
-                model_id=None,
-                critic_profile=None,
-                backend_name="local-job-worker",
-                backend_version="stub",
-                input_payload=request_payload,
-                output_payload={
-                    "status": "COMPLETED",
-                    "phase": str(current.phase),
-                    "detail": "Local worker finished.",
-                },
-                prompt_payload={"phase": str(current.phase), "step_name": str(current.phase)},
-                input_artifact_refs=["manifest"] if project_id else [],
-                output_artifact_refs=[],
-                started_at=started_at,
-                finished_at=finished_at,
-                finish_reason="stub_completed",
-                error_code=None,
-                error_category=None,
-                executor_id="job-worker-local",
-                lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
-            )
         except Exception as exc:
             self._job_manager.update_job(
                 job_id,

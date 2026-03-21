@@ -44,16 +44,26 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
 
     @router.get('/{job_id}/steps', response_model=JobStepsResponse)
-    def get_steps(job_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> JobStepsResponse:
+    def get_steps(
+        job_id: UUID,
+        attempt: int | None = Query(default=None, ge=1),
+        limit: int | None = Query(default=None, ge=1),
+        offset: int = Query(default=0, ge=0),
+    ) -> JobStepsResponse:
         try:
-            return job_manager.get_steps_projection(job_id, attempt_number=attempt)
+            return job_manager.get_steps_projection(job_id, attempt_number=attempt, limit=limit, offset=offset)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
 
     @router.get('/{job_id}/lineage', response_model=JobLineageResponse)
-    def get_lineage(job_id: UUID, attempt: int | None = Query(default=None, ge=1)) -> JobLineageResponse:
+    def get_lineage(
+        job_id: UUID,
+        attempt: int | None = Query(default=None, ge=1),
+        limit: int | None = Query(default=None, ge=1),
+        offset: int = Query(default=0, ge=0),
+    ) -> JobLineageResponse:
         try:
-            return job_manager.get_lineage_projection(job_id, attempt_number=attempt)
+            return job_manager.get_lineage_projection(job_id, attempt_number=attempt, limit=limit, offset=offset)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
 

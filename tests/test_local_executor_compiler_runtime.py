@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from time import sleep
+from types import SimpleNamespace
+from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -328,3 +330,61 @@ def test_local_executor_persists_mapped_runtime_error_for_p400_failures(tmp_path
     assert steps_response.json()["items"][0]["state"] == "FAILED"
     assert lineage_response.status_code == 200
     assert lineage_response.json()["items"] == []
+
+
+def test_local_executor_fails_unsupported_job_phases_instead_of_stub_completing() -> None:
+    job_id = uuid4()
+
+    class FakeJobManager:
+        def __init__(self) -> None:
+            self.updates: list[dict[str, object]] = []
+
+        def get_status(self, _job_id):
+            return SimpleNamespace(phase="P-900", status="PENDING")
+
+        def get_attempt(self, _job_id):
+            return {
+                "logical_run_id": str(job_id),
+                "attempt_number": 1,
+                "lease_owner": "job-worker-local",
+            }
+
+        def get_request_payload(self, _job_id):
+            return {"payload": {"project_id": "science-fantasy-test"}}
+
+        def update_job(self, _job_id, **kwargs):
+            self.updates.append(kwargs)
+            return SimpleNamespace(phase="P-900", status=kwargs.get("status", "PENDING"))
+
+        def log(self, _job_id, _level, _message) -> None:
+            return None
+
+    class FakeStepRecords:
+        def __init__(self) -> None:
+            self.rows: list[dict[str, object]] = []
+
+        def create_step_record(self, **kwargs):
+            self.rows.append(kwargs)
+            return 1
+
+    fake_job_manager = FakeJobManager()
+    fake_step_records = FakeStepRecords()
+    executor = LocalExecutor(
+        job_manager=fake_job_manager,  # type: ignore[arg-type]
+        role_check_manager=SimpleNamespace(),  # type: ignore[arg-type]
+        role_check_service=SimpleNamespace(),  # type: ignore[arg-type]
+        step_record_service=fake_step_records,  # type: ignore[arg-type]
+    )
+
+    executor._process_job(job_id)
+
+    assert len(fake_job_manager.updates) == 1
+    assert fake_job_manager.updates[-1]["status"] == "FAILED"
+    assert fake_job_manager.updates[-1]["finish_reason"] == "executor_error"
+    assert fake_job_manager.updates[-1]["failure_stage"] == "run"
+    assert "Unsupported job phase: P-900" in str(fake_job_manager.updates[-1]["error"])
+    assert len(fake_step_records.rows) == 1
+    assert fake_step_records.rows[0]["state"] == "FAILED"
+    assert fake_step_records.rows[0]["step_name"] == "P-900"
+    assert fake_step_records.rows[0]["finish_reason"] == "executor_error"
+    assert "Unsupported job phase: P-900" in str(fake_step_records.rows[0]["output_payload"])

@@ -131,8 +131,36 @@ class StepRecordService:
             output_of_step_record_id=output_of_step_record_id,
         )
 
-    def list_step_records(self, *, run_id: UUID, run_kind: str, attempt_number: int | None = None) -> list[dict[str, object]]:
-        return self._steps.list_for_run(run_id=str(run_id), run_kind=run_kind, attempt_number=attempt_number)
+    def list_step_records(
+        self,
+        *,
+        run_id: UUID,
+        run_kind: str,
+        attempt_number: int | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        return self._steps.list_for_run(
+            run_id=str(run_id),
+            run_kind=run_kind,
+            attempt_number=attempt_number,
+            limit=limit,
+            offset=offset,
+        )
 
-    def list_artifact_lineage(self, *, run_id: UUID, run_kind: str, attempt_number: int | None = None) -> list[dict[str, object]]:
-        return self._lineage.list_for_run(run_id=str(run_id), run_kind=run_kind, attempt_number=attempt_number)
+    def list_artifact_lineage(
+        self,
+        *,
+        run_id: UUID,
+        run_kind: str,
+        attempt_number: int | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        return self._lineage.list_for_run(
+            run_id=str(run_id),
+            run_kind=run_kind,
+            attempt_number=attempt_number,
+            limit=limit,
+            offset=offset,
+        )

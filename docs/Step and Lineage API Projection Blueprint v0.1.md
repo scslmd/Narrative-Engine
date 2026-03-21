@@ -11,7 +11,7 @@ It covers:
 - `GET /role-model-checker/{run_id}/steps`
 - `GET /role-model-checker/{run_id}/lineage`
 
-This document is intentionally aligned to the current implementation only. It describes the current attempt-filter support, but not future pagination or expanded projection metadata that are not yet present in the API.
+This document is intentionally aligned to the current implementation only. It describes the current attempt-filter and offset-pagination support, but not future cursor pagination or expanded projection metadata that are not yet present in the API.
 
 ## Current Slice Summary
 
@@ -20,9 +20,9 @@ The first implementation slice exposes:
 - read-only projections only
 - exactly one top-level run identifier field
 - a flat `items` array
-- a minimal `meta` object with ordering information only
-- optional attempt filtering only
-- no pagination
+- a minimal `meta` object with ordering information plus optional filter and page metadata
+- optional attempt filtering
+- optional offset pagination through `limit` and `offset`
 - no inline event history
 
 The current endpoints return persisted step-record and artifact-lineage rows for the addressed run id across all attempts currently stored for that run.
@@ -41,7 +41,8 @@ All four endpoints:
 - return `404` if the addressed job or checker run does not exist
 - return `200` with `items: []` if the run exists but there are no step or lineage rows yet
 - support optional `attempt=<positive integer>` filtering
-- do not support `cursor`, `limit`, or any other query parameters in this slice
+- support optional `limit=<positive integer>` and `offset=<non-negative integer>` pagination
+- do not support cursor pagination or any other query parameters in this slice
 
 These endpoints do not:
 
@@ -63,9 +64,9 @@ Current error behavior is minimal and deterministic.
   - `GET /role-model-checker/{run_id}/lineage`
   - response detail: `Role-model check run not found.`
 
-Projection-specific validation in this slice is limited to `422` for invalid non-positive `attempt` values.
+Projection-specific validation in this slice is limited to `422` for invalid non-positive `attempt`, invalid non-positive `limit`, or invalid negative `offset` values.
 
-Any supplied query string values are outside the documented first-slice contract and should not be treated as supported behavior.
+Any supplied query string values outside `attempt`, `limit`, and `offset` are outside the documented current contract and should not be treated as supported behavior.
 
 ## Envelope Contract
 
@@ -373,9 +374,11 @@ If the checker run exists but has no persisted lineage rows:
 
 ## Query Parameter Contract
 
-The current implementation slice supports one query parameter:
+The current implementation slice supports these query parameters:
 
 - `attempt`
+- `limit`
+- `offset`
 
 Rules:
 
@@ -384,11 +387,19 @@ Rules:
 - when provided, the endpoint returns only rows whose `attempt_number` matches the supplied value
 - `attempt` must be a positive integer
 - invalid `attempt` values return `422`
+- `limit` is optional
+- when omitted, the endpoint returns all persisted rows matching the current filter
+- when provided, the endpoint returns at most that many rows after ordering is applied
+- `limit` must be a positive integer
+- invalid `limit` values return `422`
+- `offset` is optional and defaults to `0`
+- `offset` skips that many ordered rows before the response page is built
+- `offset` must be a non-negative integer
+- invalid `offset` values return `422`
 
 These endpoints do not currently implement:
 
 - `cursor`
-- `limit`
 - filtering by step name
 - filtering by artifact status
 
@@ -421,14 +432,28 @@ or:
 }
 ```
 
+When pagination is supplied, the response `meta` object also includes:
+
+```json
+{
+  "ordered_by": "step_index_asc",
+  "limit": 1,
+  "offset": 1,
+  "returned_count": 1
+}
+```
+
+The same `limit`, `offset`, and `returned_count` fields appear on lineage responses when pagination is used there.
+
 ## Implementation Boundary
 
 This blueprint does not claim support for:
 
 - cursor pagination
-- offset pagination
-- attempt scoping
-- public query parameter filtering of any kind
+- total-count metadata
+- page cursors
+- filtering by step name
+- filtering by artifact status
 - richer top-level run metadata
 - derived summaries
 - inline event history
