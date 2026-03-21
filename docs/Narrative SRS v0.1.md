@@ -870,9 +870,10 @@ Implemented now:
 
 - canonical schema and persistence exist for `StoryBranch`, `BranchPoint`, and branch state at the branch-identity layer
 - canonical schema and persistence now exist for `BranchStateRef` and active-branch selection per project
+- canonical schema and persistence now exist for `BranchComparisonRecord` so alternate paths can be compared without mutating branch state
 - project scoping is enforced between branch records and their originating branch points
 - only one active branch is allowed per project in persisted branch state
-- branch comparisons, merge decisions, and branch services are still separate upcoming slices
+- merge decisions and branch services are still separate upcoming slices
 
 Explicit non-goal:
 
