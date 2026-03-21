@@ -2,6 +2,16 @@
 
 ## CRITICAL
 
+- [x] Remove reconstruction or recreation framing from the story-development docs package and rewrite it as an aspirational writing-product specification, especially anywhere the docs describe story-development features as "reconstruction" requirements instead of target product contracts.
+- [x] Add one canonical docs contract table for story-development objects, with one approved name per object, a short definition, owning layer, and explicit aliases or replacements for terms that should no longer be used across the SRS, product spec, frontend SRS, and orchestrator spec.
+- [x] Add one canonical docs contract table for stage states, artifact lifecycle states, suggestion lifecycle states, and execution states, then update all story-development docs to use the same enum names and explain any UI-only display mapping separately.
+- [x] Resolve the current docs contradiction about what is already implemented versus still aspirational in the checker and inspect surfaces so agents can tell whether future tasks are extension work or net-new work.
+- [x] Define the editable-flow removal contract precisely so "remove", "disable", "archive", "optional", and "delete custom stage" are no longer interchangeable in the docs.
+- [x] Split the drafting contract into distinct canonical concepts for generated draft artifacts, user-authored manuscript state, proposed revisions, and promoted canonical outputs so provenance rules stay deterministic.
+- [x] Replace broad frontend implementation waves with real deterministic task cards that each have one bounded screen family, one write scope, explicit dependencies, expected outputs, acceptance criteria, and verification.
+- [x] Convert abstract feature verbs in the story-development docs into concrete orchestrator-callable operations with defined inputs, outputs, side effects, and done conditions.
+- [x] Define the difference between stage type, project stage instance, and stage status so rename, redefine, reorder, and revisit behavior can be persisted without ambiguity.
+- [x] Canonicalize planning terminology so the docs explicitly state whether cards are persisted planning objects, UI views over plan objects, or both, and remove conflicting plan versus card naming.
 - [x] Implement `app/services/runtime_prompts.py` with a deterministic `architect` prompt builder that uses the accepted job payload plus project manifest context.
 - [x] Generalize the inference adapter so `llama.cpp`, LM Studio, `vLLM`, and other OpenAI-compatible backends can be selected without orchestration changes.
 - [x] Update `app/services/local_executor.py` so phase `P-100` calls `inferencer.generate_text()` instead of unconditional stub completion.
@@ -87,6 +97,19 @@
 - [ ] Add a story bible or codex side rail with pinned characters, locations, rules, promises, and continuity warnings.
 - [ ] Add chapter packet builder UI that shows included references, constraints, and targeted scene goals before job launch.
 
+## Docs Contract Hardening
+
+- [x] Write a single "Story Development Canonical Contract" doc section or appendix that all other story-development docs reference for object names, lifecycle enums, and term mappings.
+- [x] Update `docs/Story Development Product Spec v0.1.md` so editable-flow rules explicitly distinguish stage deletion from disabling, optionality, and archival behavior.
+- [x] Update `docs/Narrative SRS v0.1.md` so story-development sections describe an aspirational writing product and stop using reconstruction-grade language for these features.
+- [x] Update `docs/Narrative SRS v0.1.md` so story-development workflow states describe actual states rather than mixing stage categories with state enums.
+- [x] Update `docs/Narrative SRS v0.1.md` and `docs/Frontend Design SRS v0.1.md` so implemented-now versus target-state language is internally consistent for checker runtime behavior and inspect surfaces.
+- [x] Update `docs/Frontend Design SRS v0.1.md` so backend-object names match the canonical product and backend contract instead of introducing competing object labels without mappings.
+- [x] Update `docs/Frontend Design SRS v0.1.md` section 19 so each frontend TODO becomes an agent-sized deterministic task card instead of a multi-surface implementation wave.
+- [x] Update `docs/Orchestrator Deterministic Task Spec v0.1.md` with concrete callable operation templates for capture, promote, compare, detect, rewrite, review, and route task families.
+- [x] Add a canonical drafting/provenance contract section that explains how generated artifacts, author-edited manuscript buffers, suggestion diffs, and promoted canonical outputs relate to each other.
+- [x] Add a canonical planning contract section that states whether beat, sequence, chapter, and scene "cards" are persistence objects, presentation objects, or projections over plan records.
+
 ## Testing
 
 - [x] Add smoke coverage for the current API surface.
@@ -110,6 +133,11 @@
 
 ## Subagent Queue
 
+- [ ] `Volta`: update `docs/Narrative SRS v0.1.md` so the story-development sections describe an aspirational writing product, remove reconstruction-specific framing for those features, resolve implemented-versus-target-state contradictions, and align workflow-state terminology with the canonical enum set once defined.
+- [ ] `Kant`: update `docs/Frontend Design SRS v0.1.md` so object names, workflow states, and deterministic frontend task cards match the canonical contract and no longer bundle multiple screen families into one agent task.
+- [ ] `Archimedes`: update `docs/Orchestrator Deterministic Task Spec v0.1.md` so each story-development feature area includes callable operation shapes with expected inputs, outputs, side effects, and verification, and so the safe-assignment guidance matches the new narrower task cards.
+- [ ] `Hypatia`: update `docs/Story Development Product Spec v0.1.md` with the canonical editable-flow semantics, stage type versus stage instance versus stage status split, and explicit planning versus card terminology.
+- [ ] `Maxwell`: author a canonical docs appendix or companion contract section that lists approved object names, lifecycle enums, forbidden aliases, and cross-doc mappings for all story-development features.
 - [x] `Kuhn`: create `docs/Inference Runtime Blueprint v0.1.md` that documents provider selection, environment variables, request/response contract, and runtime error taxonomy for `llama.cpp`, LM Studio, and `vLLM`.
 - [x] `Beauvoir`: add deterministic inference-backend failure tests in `tests/test_inference_backend_failures.py` covering timeout, HTTP error, and invalid-JSON cases for the OpenAI-compatible adapter.
 - [x] `Newton`: update `docs/Frontend Design SRS v0.1.md` so the UI explicitly supports runtime-provider visibility, model-source visibility, and inspect views for step and lineage endpoints.

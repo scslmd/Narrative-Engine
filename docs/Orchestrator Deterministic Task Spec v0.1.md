@@ -7,6 +7,7 @@ This document tells a future orchestrator how to break the story-development pro
 It is meant to be practical, not abstract:
 
 - use the product spec as the feature source of truth
+- use `docs/Story Development Canonical Contract v0.1.md` as the authoritative source for object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology
 - use the narrative SRS and frontend SRS as system and UX constraints
 - use the async blueprint and failure matrix as implementation guardrails
 - use the documented runtime slices, inspect endpoints, failure handling, and review fixes as lessons about what can go wrong during integration
@@ -58,6 +59,25 @@ notes_from_prior_lessons:
 
 Task cards should be narrow enough that a reviewer can answer yes or no without reading the whole repo.
 
+## 3.1 Callable Operation Template
+
+When a task depends on a feature operation, describe that operation with this shape:
+
+```text
+operation_name:
+operation_family:
+purpose:
+required_inputs:
+created_or_updated_objects:
+side_effects:
+non_destructive_guarantees:
+success_result:
+failure_result:
+verification:
+```
+
+Use the canonical operation families from `docs/Story Development Canonical Contract v0.1.md`.
+
 ## 4. Bounded Task Rules
 
 - one task, one primary file family, one main result
@@ -88,7 +108,7 @@ Bad split example:
 
 Purpose:
 
-- let the user add, remove, define, rename, reorder, or redefine any stage in the story-development workflow
+- let the user add, define, rename, reorder, redefine, disable, archive, or delete eligible custom stages in the story-development workflow
 
 Dependencies:
 
@@ -111,7 +131,7 @@ Expected outputs:
 Acceptance criteria:
 
 - the default flow exists as a scaffold, not a lock
-- a custom stage can be inserted and removed without breaking the project
+- a custom stage can be inserted, disabled, archived, or deleted under the canonical editable-flow rules without breaking the project
 - downstream artifacts remain inspectable after stage edits
 
 Owning area:
@@ -123,7 +143,8 @@ Safe decomposition strategy:
 - one doc task for the editable-flow contract
 - one backend task for flow persistence and state transitions
 - one frontend task for stage editor UI
-- one tests task for reorder, add, remove, and redefine cases
+- one tests task for reorder, add, disable, archive, delete-eligible-custom, and redefine cases
+- one docs task must also lock the difference between disable, archive, optional, and delete-custom-stage behavior
 
 ### 5.2 Brainstorming
 
@@ -163,6 +184,7 @@ Safe decomposition strategy:
 
 - keep brainstorm capture separate from promotion into canonical planning data
 - if suggestion logic is added, keep it advisory and non-destructive
+- prefer separate callable operations such as `capture_brainstorm_item`, `cluster_brainstorm_items`, and `promote_brainstorm_item`
 
 ### 5.3 Story Foundation
 
@@ -200,6 +222,7 @@ Owning area:
 Safe decomposition strategy:
 
 - keep foundation edits and downstream invalidation warnings separate from draft generation
+- prefer separate callable operations such as `update_foundation_profile` and `detect_foundation_downstream_impact`
 
 ### 5.4 Character Background
 
@@ -238,6 +261,7 @@ Safe decomposition strategy:
 
 - separate character model shape from character rendering
 - keep relationship editing independent of manuscript generation
+- prefer separate callable operations such as `capture_character_profile`, `update_relationship_edge`, and `compare_character_arcs`
 
 ### 5.5 World Bible
 
@@ -276,6 +300,7 @@ Safe decomposition strategy:
 
 - keep canonical facts, extracted facts, and writer notes distinct
 - do not allow a later draft to erase earlier bible provenance
+- prefer separate callable operations such as `upsert_world_bible_entry`, `promote_world_fact`, and `detect_world_continuity_conflict`
 
 ### 5.6 Arc Selection And Comparison
 
@@ -316,6 +341,7 @@ Owning area:
 Safe decomposition strategy:
 
 - separate arc taxonomy documentation from UI selection and suggestion behavior
+- prefer separate callable operations such as `recommend_arc_candidates`, `compare_arc_candidates`, and `select_arc_candidate`
 
 ### 5.7 Planning Board
 
@@ -356,6 +382,7 @@ Owning area:
 Safe decomposition strategy:
 
 - implement beat, sequence, chapter, and scene as separate objects even if they share a UI board
+- prefer separate callable operations such as `create_sequence_plan`, `split_sequence_into_chapters`, `derive_scene_plan`, and `reorder_plan_objects`
 
 ### 5.8 Drafting And Revision
 
@@ -395,6 +422,7 @@ Safe decomposition strategy:
 
 - keep generated prose, proposed revisions, and canonical manuscript state separate
 - introduce one aid or one draft mode at a time
+- prefer separate callable operations such as `generate_chapter_draft`, `continue_scene_draft`, and `rewrite_passage_as_revision_suggestion`
 
 ### 5.9 Suggestions And Review
 
@@ -433,6 +461,7 @@ Owning area:
 Safe decomposition strategy:
 
 - split suggestion generation from result review and application
+- prefer separate callable operations such as `generate_revision_suggestions`, `detect_continuity_issues`, `decide_revision_suggestion`, and `route_finding_to_planning`
 
 ### 5.10 Inspect And Provenance
 
@@ -473,6 +502,7 @@ Safe decomposition strategy:
 
 - keep inspect envelope shape stable
 - do not add client-side attempt guessing or filters before the backend supports them
+- prefer separate callable operations such as `list_run_steps`, `list_artifact_lineage`, and `link_object_to_inspect_run`
 
 ### 5.11 Async Runtime, Retries, And Failure Handling
 
@@ -513,6 +543,7 @@ Owning area:
 Safe decomposition strategy:
 
 - treat state machine changes, persistence changes, and retry behavior as separate but coordinated tasks
+- prefer separate callable operations such as `start_async_run`, `retry_async_run`, `reclaim_stale_lease`, and `classify_run_failure`
 
 ### 5.12 Frontend Workspace And Screens
 
@@ -557,6 +588,44 @@ Safe decomposition strategy:
 
 - assign one screen family at a time
 - keep layout work separate from data-binding work unless the task is intentionally vertical
+
+## 5.13 Canonical Contract Alignment
+
+Purpose:
+
+- keep every story-development spec and implementation task aligned to the same object names, state enums, and editable-flow semantics
+
+Dependencies:
+
+- story-development product spec
+- narrative SRS
+- frontend design SRS
+
+Expected inputs:
+
+- cross-doc terminology drift
+- conflicting workflow-state names
+- conflicting object names
+
+Expected outputs:
+
+- canonical object list
+- canonical enum list
+- explicit alias mappings
+
+Acceptance criteria:
+
+- one approved name exists for each story-development object
+- one approved enum family exists for each state family
+- planning objects versus card views are explicitly separated
+
+Owning area:
+
+- docs
+
+Safe decomposition strategy:
+
+- land the canonical contract before assigning downstream backend or frontend tasks
 
 ## 6. Lessons From Prior Work
 
@@ -617,7 +686,7 @@ Suggested deterministic orchestration pattern:
 - doc task: define editable stage graph, lifecycle states, and user controls
 - backend task: persist stage definitions and transitions
 - frontend task: render stage editor and reorder controls
-- tests task: verify add, remove, rename, reorder, and redefine behavior
+- tests task: verify add, rename, reorder, disable, archive, delete-eligible-custom, and redefine behavior
 
 ### 9.2 Inspect Slice
 
@@ -632,6 +701,12 @@ Suggested deterministic orchestration pattern:
 - backend task: preserve durable attempt and event history
 - tests task: exercise stale lease, retry, and storage failure cases
 - review task: confirm canonical artifacts are not replaced by failed runs
+
+### 9.4 Canonical Contract Slice
+
+- docs task: define approved object names, state families, alias mappings, and editable-flow semantics
+- docs task: update product spec, backend SRS, and frontend SRS to reference the canonical contract
+- review task: verify that task cards no longer use conflicting plan versus card terminology
 
 ## 10. What Good Looks Like
 

@@ -17,7 +17,11 @@ It exists to turn the current high-level product direction into a concrete, buil
 
 This spec assumes one critical product rule:
 
-- the user must be able to add, remove, define, or redefine any part of the story-development flow at any time
+- the user must be able to add, redefine, reorder, disable, archive, or delete eligible custom parts of the story-development flow at any time
+
+Canonical contract reference:
+
+- `docs/Story Development Canonical Contract v0.1.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for this feature family
 
 The system should guide strongly without behaving like a rigid template engine.
 
@@ -68,7 +72,7 @@ This flow should be project-configurable.
 
 ### 4.1 Editable Flow Requirements
 
-Each stage should support:
+Each `StoryFlowStage` should support:
 
 - `enabled`
 - `display_name`
@@ -76,17 +80,31 @@ Each stage should support:
 - `position`
 - `depends_on`
 - `writer_notes`
-- `status`
+- `stage_configuration_state`
+- `stage_progress_state`
 - `custom_prompt_guidance`
+- `stage_kind`
 
 The UI should support:
 
 - adding a custom stage
-- deleting a non-required custom stage
+- deleting a custom stage only when deletion rules allow it
 - reordering stages
 - marking a stage optional
 - attaching artifacts to a stage
 - changing the working definition of a stage inside the project
+
+The product should distinguish:
+
+- stage kind: brainstorm, foundation, character, world bible, arc selection, planning, drafting, review, inspect, or custom
+- stage instance: the project-local configured `StoryFlowStage`
+- stage progress state: where that stage currently stands in the active project
+
+Removal semantics:
+
+- default stages should be disabled or archived rather than deleted
+- custom stages may be deleted only when they are not required to preserve active dependencies or retained history
+- redefining a stage updates future guidance and labels but does not rewrite historical artifacts
 
 ## 5. Feature Scope
 
@@ -488,27 +506,41 @@ The main workspace should stay aligned with the current three-pane direction.
 
 ## 15. Backend Objects Needed
 
-The eventual backend model should include at least:
+The eventual backend model should use the canonical names in `docs/Story Development Canonical Contract v0.1.md`.
+
+Required canonical objects for this feature family:
 
 - `Project`
 - `StoryFlowDefinition`
 - `StoryFlowStage`
+- `StoryFlowEdge`
+- `StoryFlowRule`
 - `BrainstormItem`
+- `BrainstormPromotion`
 - `FoundationProfile`
+- `FoundationRevision`
 - `CharacterProfile`
 - `RelationshipEdge`
 - `WorldBibleEntry`
+- `ArcCandidate`
 - `ArcSelection`
-- `ArcStageAssignment`
+- `ArcStageMap`
+- `BeatPlan`
 - `SequencePlan`
 - `ChapterPlan`
-- `SceneCard`
+- `ScenePlan`
 - `ChapterPacket`
+- `PlanningDependency`
 - `DraftArtifact`
+- `ManuscriptDocument`
+- `RevisionSuggestion`
 - `SuggestionRequest`
-- `SuggestionResult`
 - `ContinuityIssue`
+- `CheckerFinding`
+- `ReviewDecision`
 - `ReviewTask`
+- `StepRecord`
+- `ArtifactLineage`
 - `InspectRunLink`
 
 ### 15.1 Object Notes
@@ -537,55 +569,68 @@ The eventual backend model should include at least:
 
 - active arc plus comparison history
 
-`SequencePlan`, `ChapterPlan`, `SceneCard`
+`SequencePlan`, `ChapterPlan`, `ScenePlan`
 
 - planning hierarchy with explicit dependencies
 
 `DraftArtifact`
 
-- generated or author-maintained draft material with provenance
+- generated prose artifact with provenance
 
-`SuggestionResult`
+`ManuscriptDocument`
+
+- author-maintained editable manuscript state
+
+`RevisionSuggestion`
 
 - non-destructive proposed revision or guidance output
 
+Planning note:
+
+- plan objects are canonical persisted records
+- cards are UI renderings of those plan objects rather than separate canonical backend objects unless a future spec promotes them explicitly
+
 ## 16. Workflow States
 
-### 16.1 Story-Development State Model
+The canonical state families for story-development features live in `docs/Story Development Canonical Contract v0.1.md`.
 
-Each configurable flow stage should support:
+### 16.1 Stage Configuration State
+
+- `ENABLED`
+- `DISABLED`
+- `OPTIONAL`
+- `ARCHIVED`
+
+### 16.2 Stage Progress State
 
 - `NOT_STARTED`
 - `IN_PROGRESS`
 - `BLOCKED`
-- `READY_FOR_REVIEW`
-- `APPROVED`
+- `NEEDS_REVIEW`
+- `COMPLETE`
 - `SUPERSEDED`
-- `ARCHIVED`
 
-### 16.2 Artifact-Lifecycle Expectations
-
-Planning and draft artifacts should support:
+### 16.3 Artifact-Lifecycle Expectations
 
 - `DRAFT`
-- `CANDIDATE`
+- `PROPOSED`
 - `CANONICAL`
 - `SUPERSEDED`
 - `REJECTED`
+- `ARCHIVED`
 
-### 16.3 Suggestion-Lifecycle Expectations
+### 16.4 Suggestion-Lifecycle Expectations
 
-Suggestion results should support:
-
-- `PROPOSED`
+- `REQUESTED`
+- `READY`
 - `ACCEPTED`
 - `REJECTED`
 - `REFINE_REQUESTED`
 - `EXPIRED`
 
-### 16.4 Flow Rules
+### 16.5 Flow Rules
 
-- changing a foundation artifact may push downstream stages back to `IN_PROGRESS` or `SUPERSEDED`
+- changing a foundation artifact may push downstream stage progress back to `IN_PROGRESS` or `NEEDS_REVIEW`
 - accepted generated artifacts must remain inspectable after replacement
 - writer-authored notes should not be silently invalidated by backend generation
 

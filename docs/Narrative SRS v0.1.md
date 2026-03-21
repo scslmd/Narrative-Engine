@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Narrative-Engine is a deterministic local narrative compilation pipeline for novel development.
+Narrative-Engine is a local-first narrative development system for novel and story creation.
 
 The system is intended to help a writer:
 
@@ -18,8 +18,8 @@ The system is intended to help a writer:
 Product-planning reference:
 
 - the detailed story-development feature contract now lives in `docs/Story Development Product Spec v0.1.md`
-- that document defines the editable story-development flow, screen expectations, backend objects, and workflow states for brainstorming, character background, world bible, arc-aware planning, drafting, and revision guidance
-- this SRS now carries the backend-facing reconstruction contract for those features so implementation remains tied to explicit services, step records, lineage, and retry behavior
+- `docs/Story Development Canonical Contract v0.1.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for those features
+- this SRS carries the backend-facing contract for story-development services, inspect state, lineage, and retry behavior
 
 ## 2. Core Principles
 
@@ -29,7 +29,7 @@ Product-planning reference:
 - human-readable project identity
 - backend-driven progress reporting
 - provider-agnostic inference integration
-- durable reconstruction from documentation plus persisted state
+- durable persistence and inspectability across runs and generated artifacts
 
 ## 3. Project Identity
 
@@ -59,7 +59,7 @@ Rules:
 `-- /frontend
 ```
 
-Required runtime directories for deterministic recreation:
+Required runtime directories for current backend operation:
 
 - `data/projects`
 - `data/state`
@@ -117,14 +117,14 @@ Implementation note:
 }
 ```
 
-Current reconstruction note:
+Current implementation note:
 
 - manifests are validated and re-read from disk when listing or opening projects
 - project creation writes project artifacts on disk first and then registers the project directory into SQLite-backed projections
 
 ## 7. Public Backend Surface
 
-The current public backend surface that must be recreated is:
+The current public backend surface is:
 
 - `GET /health`
 - `GET /models`
@@ -184,7 +184,7 @@ Implementation note:
 - Job and checker status are durably stored in SQLite instead of process-local memory.
 - The current execution path uses a local lease-claim executor.
 - The local executor still uses stub logic for most phases after `P-100`, but checker role execution now supports runtime-backed roles with deterministic fallback.
-- `P-100` is the first real provider-backed pipeline phase and must be treated as a reconstruction-critical special case.
+- `P-100` is the first real provider-backed pipeline phase and remains a critical reference slice for future runtime-backed phases.
 - Step records and artifact lineage are durably persisted in SQLite for the local executor path and are exposed through dedicated public inspect endpoints for jobs and checker runs.
 
 ## 8.1 Async Protocol Contract
@@ -203,7 +203,7 @@ Lifecycle:
 
 `PENDING -> CLAIMED -> RUNNING -> VALIDATING -> PERSISTING -> COMPLETED | FAILED | CANCELLED`
 
-Required reconstruction rules:
+Required protocol rules:
 
 - acceptance and execution must be separated
 - status endpoints are read-only projections over durable state
@@ -221,7 +221,7 @@ Reference:
 
 ## 8.2 Attempt Lineage Requirements
 
-Deterministic recreation now requires first-class attempt lineage for both jobs and checker runs.
+The current async model depends on first-class attempt lineage for both jobs and checker runs.
 
 Required projection behavior:
 
@@ -252,7 +252,7 @@ Required attempt metadata:
 
 ## 9. Inference Runtime Contract
 
-The current backend must be reconstructed with a provider-agnostic inference layer.
+The current backend uses a provider-agnostic inference layer.
 
 Implemented now:
 
@@ -279,7 +279,7 @@ Required environment variables:
 - `NARRATIVE_INFERENCE_MODEL`
 - `NARRATIVE_INFERENCE_TIMEOUT_SECONDS`
 
-Required deterministic recreation rule:
+Required runtime-integration rule:
 
 - all provider-backed orchestration code must call the generalized inferencer and must not construct provider-specific HTTP payloads outside the inference package
 
@@ -289,7 +289,7 @@ Reference:
 
 ## 10. Step Records And Artifact Lineage
 
-The current backend must be reconstructed with durable SQLite persistence for per-step execution records and artifact lineage.
+The current backend uses durable SQLite persistence for per-step execution records and artifact lineage.
 
 Implemented now:
 
@@ -374,7 +374,7 @@ Reference:
 
 ## 11. P-100 Architect Runtime Path
 
-Deterministic recreation now requires one real provider-backed pipeline phase: `P-100`.
+The current runtime-backed baseline includes one real provider-backed pipeline phase: `P-100`.
 
 Implemented now:
 
@@ -430,9 +430,9 @@ Implementation note:
 
 ## 13. Persistence Contract
 
-The operational SQLite database is a required reconstruction component.
+The operational SQLite database is a required system component.
 
-At contract level, deterministic recreation must include:
+At contract level, the current backend depends on:
 
 - project projection tables
 - job projection, attempt, log, and event tables
@@ -473,7 +473,7 @@ Required response categories:
 
 ## 15. Continuous Testing Baseline
 
-Deterministic recreation now requires the GitHub Actions pytest baseline.
+The current backend baseline includes the GitHub Actions pytest suite.
 
 Implemented now:
 
@@ -500,7 +500,7 @@ Implemented now:
 - public projection endpoints for step records and artifact lineage
 - GitHub Actions pytest baseline
 
-Required for deterministic recreation now:
+Required for the current baseline:
 
 - exact public endpoint surface in this document
 - SQLite-backed operational persistence including steps and lineage
@@ -512,14 +512,12 @@ Required for deterministic recreation now:
 Intentionally not yet implemented:
 
 - real-runtime execution for non-`P-100` job phases
-- provider-backed checker execution
-- public step and lineage inspect endpoints
 - public project endpoint for `architect_p100`
 - richer runtime telemetry persistence beyond the current contracts
 
 ## 17. Story-Development Feature Contract
 
-This section defines the product features that sit on top of the narrative backend. The intent is to make the story-development flow explicit enough that each feature can be implemented, inspected, retried, and reconstructed independently.
+This section defines the product features that sit on top of the narrative backend. The intent is to make the story-development flow explicit enough that each feature can be implemented, inspected, retried, and evolved independently.
 
 The core rule is unchanged:
 
@@ -824,7 +822,7 @@ Required backend objects:
 - `BeatPlan`
 - `SequencePlan`
 - `ChapterPlan`
-- `SceneCard`
+- `ScenePlan`
 - `ChapterPacket`
 - `PlanningDependency`
 
@@ -868,6 +866,7 @@ Required backend objects:
 - `DraftRequest`
 - `DraftRevision`
 - `DraftContinuation`
+- `ManuscriptDocument`
 
 Required task functions:
 
@@ -876,6 +875,7 @@ Required task functions:
 - rewrite a chapter with constrained instructions
 - create alternate prose variants
 - register the resulting draft artifact and its lineage
+- promote accepted draft content into explicit manuscript state without erasing the originating draft artifact
 
 ### 17.9 Suggestions And Revision
 
@@ -910,7 +910,7 @@ Backend responsibilities:
 Required backend objects:
 
 - `SuggestionRequest`
-- `SuggestionResult`
+- `RevisionSuggestion`
 - `SuggestionOption`
 - `SuggestionDecision`
 
@@ -1018,7 +1018,7 @@ Backend responsibilities:
 
 - route the selected feature task to the correct service
 - choose runtime-backed execution when available and appropriate
-- preserve exact payloads for reconstruction
+- preserve exact payloads for inspection, retry, and auditability
 - keep stage transitions and terminal outcomes explicit
 
 Task routing expectations:
@@ -1033,7 +1033,7 @@ Task routing expectations:
 
 ### 17.13 Failure And Retry Expectations
 
-Failure handling must preserve both user trust and reconstruction integrity.
+Failure handling must preserve both user trust and data integrity.
 
 Required failure rules:
 
@@ -1061,9 +1061,9 @@ The current backend lessons that must remain true are:
 
 ### 17.14 Workflow States
 
-The feature set should model both user-facing workflow and backend execution state.
+The story-development feature set should use the canonical state families in `docs/Story Development Canonical Contract v0.1.md`.
 
-User-facing workflow states may include:
+Core stage kinds may include:
 
 - brainstorm
 - foundation
@@ -1075,25 +1075,13 @@ User-facing workflow states may include:
 - review
 - inspect
 
-Backend execution states should remain separate and may include:
+Required state-family split:
 
-- accepted
-- pending
-- claimed
-- running
-- validating
-- persisting
-- completed
-- failed
-- cancelled
-
-Artifact states should remain explicit:
-
-- provisional
-- canonical
-- superseded
-- failed
-- parked
+- stage configuration state: `ENABLED`, `DISABLED`, `OPTIONAL`, `ARCHIVED`
+- stage progress state: `NOT_STARTED`, `IN_PROGRESS`, `BLOCKED`, `NEEDS_REVIEW`, `COMPLETE`, `SUPERSEDED`
+- artifact lifecycle state: `DRAFT`, `PROPOSED`, `CANONICAL`, `SUPERSEDED`, `REJECTED`, `ARCHIVED`
+- suggestion lifecycle state: `REQUESTED`, `READY`, `ACCEPTED`, `REJECTED`, `REFINE_REQUESTED`, `EXPIRED`
+- backend execution state: `ACCEPTED`, `PENDING`, `CLAIMED`, `RUNNING`, `VALIDATING`, `PERSISTING`, `COMPLETED`, `FAILED`, `CANCELLED`
 
 ### 17.15 Implementation Order
 

@@ -29,6 +29,7 @@ Current planning reference docs:
 - `docs/Narrative SRS v0.1.md`
 - `docs/Frontend Design SRS v0.1.md`
 - `docs/Story Development Product Spec v0.1.md`
+- `docs/Story Development Canonical Contract v0.1.md`
 - `docs/Story Arc Paradigm Blueprint v0.1.md`
 
 Major work still ahead:

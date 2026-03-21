@@ -81,11 +81,12 @@ The intended user journey is:
 Story-development refinement:
 
 - the default journey above is a recommended scaffold, not a locked workflow
-- the writer must be able to add, remove, rename, reorder, or redefine stages in the active project flow
+- the writer must be able to add, rename, reorder, redefine, disable, archive, or delete eligible custom stages in the active project flow
 - brainstorm, foundation, character, world-bible, arc, planning, drafting, and review surfaces should all support re-entry after downstream artifacts already exist
 - the flow editor should make stage definitions visible and editable as first-class project data, including stage name, purpose, dependencies, ordering, enabled state, and stage-specific notes
 - adding a custom stage should create a new flow stage that can be inserted before, between, or after existing stages without breaking the rest of the workspace
-- removing a non-required stage should only disable that stage for future guidance; it should not delete prior artifacts or erase provenance
+- disabling or archiving a stage should only remove it from active future guidance; it should not delete prior artifacts or erase provenance
+- deleting a custom stage should be allowed only when the canonical editable-flow deletion rules are satisfied
 - redefining a stage should update future suggestions and screen labels while preserving the old meaning in historical artifacts and inspect views
 - when a stage changes, the UI should identify the downstream artifacts, planning cards, or draft segments that may need review
 - the user should be able to pause a stage, mark it optional, or re-enable it at any point in the project
@@ -448,7 +449,7 @@ This section makes the frontend feature set actionable for implementation.
   - consumes: project list, project detail, manifest, current workspace notes
   - produces: selected project context, active shell state, and entry into the current mode
 - flow editor:
-  - responsibility: let the writer add, remove, rename, reorder, enable, disable, and redefine story-development stages
+  - responsibility: let the writer add, rename, reorder, redefine, disable, archive, and delete eligible custom story-development stages
   - consumes: project flow definition, foundation notes, downstream artifact status, current stage ordering
   - produces: updated stage definitions, dependency warnings, and review cues for downstream artifacts
 - brainstorm workspace:
@@ -575,7 +576,9 @@ Each screen should be concrete about what it takes in and what it gives back.
 
 ## 15. Backend Objects Needed
 
-The frontend should be designed around these user-facing data concepts, even where some are still target-state only:
+The frontend should be designed around the canonical story-development contract in `docs/Story Development Canonical Contract v0.1.md`.
+
+The frontend should use these user-facing data concepts, even where some are still target-state only:
 
 - `Project`
 - `StoryFlowDefinition`
@@ -587,19 +590,19 @@ The frontend should be designed around these user-facing data concepts, even whe
 - `WorldBibleEntry`
 - `ArcCandidate`
 - `ArcSelection`
-- `PlanningCard`
-- `SequenceCard`
-- `ChapterCard`
-- `SceneCard`
+- `BeatPlan`
+- `SequencePlan`
+- `ChapterPlan`
+- `ScenePlan`
 - `ChapterPacket`
-- `DraftSession`
-- `DraftVersion`
+- `DraftArtifact`
+- `ManuscriptDocument`
 - `RevisionSuggestion`
 - `CheckerFinding`
 - `ReviewDecision`
 - `StepRecord`
-- `ArtifactLineageRecord`
-- `InspectEnvelope`
+- `ArtifactLineage`
+- `InspectRunLink`
 - `WorkspaceNote`
 - `ProvenanceBadge`
 
@@ -608,44 +611,50 @@ Object notes:
 - these objects should be rendered as UI contracts first, not assumed backend implementations
 - where the backend already exists, the frontend should use the canonical server shape
 - where the backend does not yet exist, the frontend should still define the visible state and expected outputs
+- `PlanningCardView` is a UI projection over `BeatPlan`, `SequencePlan`, `ChapterPlan`, or `ScenePlan`; "card" should not be used as the canonical persisted backend object name
+- `ManuscriptDocument` is the author-maintained editing surface; `DraftArtifact` remains the generated artifact with inspectable provenance
 
 ## 16. Workflow States
 
-The UI should support workflow states at three levels: project flow, artifact lifecycle, and suggestion lifecycle.
+The UI should display the canonical state families from `docs/Story Development Canonical Contract v0.1.md`.
 
-### 16.1 Project Flow States
+Friendly labels are allowed, but they must map back to the canonical enum names.
 
-- `disabled`
-- `available`
-- `active`
-- `optional`
-- `blocked`
-- `complete`
-- `needs_review`
-- `custom`
+### 16.1 Stage Configuration States
 
-### 16.2 Artifact Lifecycle States
+- `ENABLED`
+- `DISABLED`
+- `OPTIONAL`
+- `ARCHIVED`
 
-- `draft`
-- `proposed`
-- `reviewing`
-- `promoted`
-- `canonical`
-- `superseded`
-- `rejected`
-- `archived`
+### 16.2 Stage Progress States
 
-### 16.3 Suggestion Lifecycle States
+- `NOT_STARTED`
+- `IN_PROGRESS`
+- `BLOCKED`
+- `NEEDS_REVIEW`
+- `COMPLETE`
+- `SUPERSEDED`
 
-- `idle`
-- `requested`
-- `ready`
-- `viewed`
-- `accepted`
-- `rejected`
-- `refine_requested`
+### 16.3 Artifact Lifecycle States
 
-### 16.4 Flow Rules
+- `DRAFT`
+- `PROPOSED`
+- `CANONICAL`
+- `SUPERSEDED`
+- `REJECTED`
+- `ARCHIVED`
+
+### 16.4 Suggestion Lifecycle States
+
+- `REQUESTED`
+- `READY`
+- `ACCEPTED`
+- `REJECTED`
+- `REFINE_REQUESTED`
+- `EXPIRED`
+
+### 16.5 Flow Rules
 
 - changing a stage definition should not erase historical artifacts
 - accepted revisions should be clearly separated from canonical source text until the user commits them
@@ -683,27 +692,55 @@ Each step should ship with its own acceptance criteria and should not depend on 
 The orchestrator should be able to assign the frontend work as deterministic, bounded tasks.
 
 - task FE-01, Flow Editor:
-  - build the project flow editor and stage definition UI
-  - expected outcome: the user can add, remove, rename, reorder, enable, disable, and redefine stages
-  - acceptance cue: stage changes are visible in the workspace and are treated as project configuration
-- task FE-02, Story Development Screens:
-  - expand brainstorm, foundation, character, world bible, and arc comparison screens
-  - expected outcome: each screen has clear inputs, outputs, and reuse paths from downstream work
-  - acceptance cue: the user can return to earlier stages after planning or drafting has already started
-- task FE-03, Planning and Drafting:
-  - make the planning board, drafting workspace, and manuscript aids feel like one connected authoring loop
-  - expected outcome: chapter cards, draft text, and revision suggestions share the same project context
-  - acceptance cue: selection-based aids and scene-based aids behave differently but consistently
-- task FE-04, Review and Inspect:
-  - complete review workspace behavior and first-class inspect mode
-  - expected outcome: checker findings, step records, lineage, and provenance are visible from the manuscript context
-  - acceptance cue: the user can move from a finding or artifact into inspect mode and back without losing context
-- task FE-05, Provenance and Status:
-  - ensure runtime-provider, model-source, status, and history cues are visible wherever generated output appears
-  - expected outcome: the user can tell what produced a draft, suggestion, or inspectable artifact
-  - acceptance cue: provenance is compact, readable, and only shown when it is actually known
+  - write scope: flow editor shell, stage list, and stage detail panel only
+  - expected outcome: the user can add, rename, reorder, disable, archive, mark optional, and redefine stages using the canonical editable-flow semantics
+  - acceptance cue: stage edits update project configuration without mutating historical artifacts
+- task FE-02, Brainstorm Workspace:
+  - write scope: brainstorm capture board, keep or discard or park actions, and promote affordances
+  - expected outcome: brainstorm items can be captured, clustered, and routed into structured story-development work
+  - acceptance cue: brainstorm output stays distinct from promoted canonical objects
+- task FE-03, Foundation Screen:
+  - write scope: foundation fields, downstream-impact cues, and revision warning presentation
+  - expected outcome: the writer can edit foundation data after downstream work exists and see review cues
+  - acceptance cue: foundation changes never imply silent overwrite of planning or manuscript state
+- task FE-04, Character Builder:
+  - write scope: character editor, relationship map, contradiction cues, and arc-note surfaces
+  - expected outcome: character data behaves as a structured story object rather than a flat profile card
+  - acceptance cue: major character goals, flaws, relationships, and continuity facts remain visible together
+- task FE-05, World Bible Workspace:
+  - write scope: bible entry list, detail editor, pinned canon, and continuity warning panel
+  - expected outcome: canon entries are searchable, referenceable, and visibly separate from personal notes
+  - acceptance cue: extracted facts remain source-linked and continuity warnings remain readable in context
+- task FE-06, Arc Comparison:
+  - write scope: arc recommendation list, comparison table, and stage-map preview only
+  - expected outcome: the writer can compare arcs and choose one without treating the choice as blocking
+  - acceptance cue: "stay" versus "pivot" guidance is visible and advisory
+- task FE-07, Planning Board:
+  - write scope: board views over `BeatPlan`, `SequencePlan`, `ChapterPlan`, and `ScenePlan`
+  - expected outcome: planning objects can be reordered and inspected without inventing a separate persisted card contract
+  - acceptance cue: card rendering clearly maps back to canonical plan objects
+- task FE-08, Drafting Workspace:
+  - write scope: manuscript center pane, pinned context, chapter tabs, and draft-to-review handoff controls
+  - expected outcome: `ManuscriptDocument` editing remains distinct from generated `DraftArtifact` output
+  - acceptance cue: the writer can tell whether they are viewing generated output, editable manuscript state, or a proposed revision
+- task FE-09, Manuscript Aids:
+  - write scope: selection actions, scene actions, suggestion history, and diff review
+  - expected outcome: each aid returns a `RevisionSuggestion` instead of silently mutating manuscript text
+  - acceptance cue: accept, reject, and refine decisions are explicit and stateful
+- task FE-10, Review Workspace:
+  - write scope: checker finding list, source-text comparison, review decisions, and planning or drafting handoff actions
+  - expected outcome: findings and revision suggestions become explicit decisions tied to source context
+  - acceptance cue: findings can be resolved, deferred, or escalated without losing provenance
+- task FE-11, Inspect Workspace:
+  - write scope: step timeline, lineage chain, provenance badges, and return links to related workspace context
+  - expected outcome: inspect mode renders backend-ordered items directly and stays first-class in the workspace
+  - acceptance cue: the user can move from manuscript or review into inspect and back without losing selection
+- task FE-12, Provenance And Status:
+  - write scope: compact status, runtime-provider, model-source, and attempt-history cues across generated-output surfaces
+  - expected outcome: users can tell what produced a draft, suggestion, or checker output wherever it appears
+  - acceptance cue: provenance appears only when known and never invents unsupported details
 
-These tasks are intended to be handed to agents as discrete implementation waves with no ambiguity about the expected result.
+These tasks are intended to be handed to agents as bounded screen-family assignments rather than broad implementation waves.
 
 ## 20. Non-Goals For The First Product Wave
 

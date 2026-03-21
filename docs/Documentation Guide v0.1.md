@@ -2,9 +2,10 @@
 
 Use these documents by purpose:
 
-- `docs/Narrative SRS v0.1.md`: reconstruction-grade backend and product specification baseline; use this first when recreating the current app from docs alone
+- `docs/Narrative SRS v0.1.md`: backend and product specification baseline for the current system
 - `docs/Frontend Design SRS v0.1.md`: frontend workflow and interaction baseline
 - `docs/Story Development Product Spec v0.1.md`: comprehensive product spec for brainstorming, editable core flow, characters, world bible, arc-aware planning, drafting, screens, backend objects, and workflow states
+- `docs/Story Development Canonical Contract v0.1.md`: canonical object names, lifecycle enums, editable-flow semantics, drafting/provenance rules, and planning terminology for story-development features
 - `docs/Orchestrator Deterministic Task Spec v0.1.md`: deterministic task-assignment reference for future agent orchestration
 - `docs/Role Model Checker Decision v0.1.md`: why the checker exists and how it should be used
 - `docs/Live Runtime Findings v0.1.md`: runtime lessons that inform model and workflow choices
