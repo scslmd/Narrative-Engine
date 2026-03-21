@@ -257,6 +257,23 @@ def test_local_executor_runs_real_compiler_path_for_p400_with_fake_inferencer(tm
     assert project_service.read_artifact(project_id, "story_bible").content == story_bible_content + "\n"
     assert project_service.repository.get_artifact_path(project_id, "story_bible") == output_path
 
+    with connect(tmp_path / "data" / "state" / "narrative_ops.db") as connection:
+        selection_rows = connection.execute(
+            """
+            SELECT artifact_role, selected_artifact_lineage_id, selected_content
+            FROM runtime_artifact_selections
+            WHERE run_id = ? AND run_kind = 'pipeline_job' AND step_name = 'compiler'
+            ORDER BY selection_id ASC
+            """,
+            (str(p400.id),),
+        ).fetchall()
+
+    assert [row["artifact_role"] for row in selection_rows] == ["architect_output", "sequence", "chapter_1"]
+    assert all(row["selected_artifact_lineage_id"] is not None for row in selection_rows)
+    assert selection_rows[0]["selected_content"] == project_service.read_artifact(project_id, "architect_p100").content
+    assert selection_rows[1]["selected_content"] == project_service.read_artifact(project_id, "sequence").content
+    assert selection_rows[2]["selected_content"] == project_service.read_artifact(project_id, "chapter_1").content
+
     assert steps_response.status_code == 200
     assert [item["step_name"] for item in steps_response.json()["items"]] == ["compiler"]
     assert steps_response.json()["meta"]["ordered_by"] == "step_index_asc"

@@ -240,6 +240,24 @@ CREATE TABLE IF NOT EXISTS artifact_lineage (
     FOREIGN KEY(output_of_step_record_id) REFERENCES step_records(step_record_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS runtime_artifact_selections (
+    selection_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    logical_run_id TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    run_kind TEXT NOT NULL,
+    attempt_number INTEGER NOT NULL,
+    step_name TEXT NOT NULL,
+    project_id TEXT,
+    artifact_role TEXT NOT NULL,
+    selected_artifact_lineage_id INTEGER,
+    selected_path TEXT,
+    selected_content_hash TEXT NOT NULL,
+    selected_content TEXT NOT NULL,
+    selected_at TEXT NOT NULL,
+    UNIQUE(run_id, run_kind, attempt_number, step_name, artifact_role),
+    FOREIGN KEY(selected_artifact_lineage_id) REFERENCES artifact_lineage(artifact_lineage_id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS story_flow_definitions (
     project_id TEXT PRIMARY KEY,
     flow_name TEXT NOT NULL,
@@ -748,6 +766,7 @@ CREATE INDEX IF NOT EXISTS idx_step_records_run ON step_records(run_kind, run_id
 CREATE INDEX IF NOT EXISTS idx_step_records_logical_attempt ON step_records(logical_run_id, attempt_number, step_index);
 CREATE INDEX IF NOT EXISTS idx_artifact_lineage_run ON artifact_lineage(run_kind, run_id, artifact_lineage_id);
 CREATE INDEX IF NOT EXISTS idx_artifact_lineage_step_record ON artifact_lineage(output_of_step_record_id, artifact_lineage_id);
+CREATE INDEX IF NOT EXISTS idx_runtime_artifact_selections_run_step ON runtime_artifact_selections(run_kind, run_id, attempt_number, step_name, selection_id);
 CREATE INDEX IF NOT EXISTS idx_story_flow_definitions_updated_at ON story_flow_definitions(updated_at);
 CREATE INDEX IF NOT EXISTS idx_story_flow_stages_project_position ON story_flow_stages(project_id, position, stage_id);
 CREATE INDEX IF NOT EXISTS idx_story_flow_stages_project_key ON story_flow_stages(project_id, stage_key);

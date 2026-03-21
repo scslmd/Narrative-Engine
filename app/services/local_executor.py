@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
-from ..persistence.steps import stable_hash_payload
+from ..persistence.steps import stable_hash_payload, stable_hash_text
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from .job_manager import JobManager
 from .projects import ProjectService
@@ -60,6 +60,16 @@ def _require_supported_job_phase(phase: str) -> str:
     if phase in {"P-100", "P-200", "P-300", "P-400"}:
         return phase
     raise ValueError(f"Unsupported job phase: {phase}")
+
+
+def _upstream_artifact_sources(step_name: str) -> list[tuple[str, str]]:
+    if step_name == "sequencer":
+        return [("architect_output", "architect_p100")]
+    if step_name == "drafter":
+        return [("sequence", "sequence"), ("architect_output", "architect_p100")]
+    if step_name == "compiler":
+        return [("architect_output", "architect_p100"), ("sequence", "sequence"), ("chapter_1", "chapter_1")]
+    return []
 
 
 class LocalExecutor:
@@ -499,7 +509,13 @@ class LocalExecutor:
             raise ValueError("P-200 requires payload.project_id.")
         project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
-        architect_output = self._read_optional_artifact(project_id, "architect_p100")
+        selected_inputs = self._resolve_runtime_artifact_inputs(
+            job_id=job_id,
+            attempt=attempt,
+            project_id=project_id,
+            step_name="sequencer",
+        )
+        architect_output = selected_inputs.get("architect_output")
         inference_request = build_p200_sequencer_request(
             manifest=project.manifest,
             payload=payload,
@@ -574,6 +590,10 @@ class LocalExecutor:
             "job_request": request_payload,
             "manifest": project.manifest.model_dump(mode="json"),
         }
+        if selected_inputs:
+            step_input_payload["selected_input_artifacts"] = {
+                key: stable_hash_text(value) for key, value in selected_inputs.items()
+            }
         if architect_output is not None:
             input_artifact_refs.append("architect_output")
             source_content_hashes.append(stable_hash_payload(architect_output))
@@ -630,8 +650,14 @@ class LocalExecutor:
             raise ValueError("P-300 requires payload.project_id.")
         project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
-        sequence_output = self._read_optional_artifact(project_id, "sequence")
-        architect_output = self._read_optional_artifact(project_id, "architect_p100")
+        selected_inputs = self._resolve_runtime_artifact_inputs(
+            job_id=job_id,
+            attempt=attempt,
+            project_id=project_id,
+            step_name="drafter",
+        )
+        sequence_output = selected_inputs.get("sequence")
+        architect_output = selected_inputs.get("architect_output")
         inference_request = build_p300_drafter_request(
             manifest=project.manifest,
             payload=payload,
@@ -712,6 +738,10 @@ class LocalExecutor:
             "job_request": request_payload,
             "manifest": project.manifest.model_dump(mode="json"),
         }
+        if selected_inputs:
+            step_input_payload["selected_input_artifacts"] = {
+                key: stable_hash_text(value) for key, value in selected_inputs.items()
+            }
         if sequence_output is not None:
             input_artifact_refs.append("sequence")
             source_content_hashes.append(stable_hash_payload(sequence_output))
@@ -767,6 +797,52 @@ class LocalExecutor:
             return None
         return content
 
+    def _resolve_runtime_artifact_inputs(
+        self,
+        *,
+        job_id: UUID,
+        attempt: dict[str, Any],
+        project_id: str,
+        step_name: str,
+    ) -> dict[str, str]:
+        attempt_number = int(attempt["attempt_number"])
+        existing = self._step_records.list_runtime_artifact_selections(
+            run_id=job_id,
+            run_kind="pipeline_job",
+            attempt_number=attempt_number,
+            step_name=step_name,
+        )
+        if existing:
+            return {str(row["artifact_role"]): str(row["selected_content"]) for row in existing}
+
+        resolved: dict[str, str] = {}
+        for artifact_role, project_artifact_name in _upstream_artifact_sources(step_name):
+            content = self._read_optional_artifact(project_id, project_artifact_name)
+            if content is None:
+                continue
+            lineage = self._step_records.get_latest_canonical_artifact(
+                project_id=project_id,
+                artifact_role=artifact_role,
+            )
+            self._step_records.create_runtime_artifact_selection(
+                logical_run_id=str(attempt["logical_run_id"]),
+                run_id=job_id,
+                run_kind="pipeline_job",
+                attempt_number=attempt_number,
+                step_name=step_name,
+                project_id=project_id,
+                artifact_role=artifact_role,
+                selected_artifact_lineage_id=(
+                    int(lineage["artifact_lineage_id"])
+                    if lineage is not None and lineage.get("artifact_lineage_id") is not None
+                    else None
+                ),
+                selected_path=str(lineage["path"]) if lineage is not None and lineage.get("path") is not None else None,
+                selected_content=content,
+            )
+            resolved[artifact_role] = content
+        return resolved
+
     def _run_compiler_phase(
         self,
         *,
@@ -781,9 +857,15 @@ class LocalExecutor:
             raise ValueError("P-400 requires payload.project_id.")
         project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
-        architect_output = self._read_optional_artifact(project_id, "architect_p100")
-        sequence_output = self._read_optional_artifact(project_id, "sequence")
-        chapter_output = self._read_optional_artifact(project_id, "chapter_1")
+        selected_inputs = self._resolve_runtime_artifact_inputs(
+            job_id=job_id,
+            attempt=attempt,
+            project_id=project_id,
+            step_name="compiler",
+        )
+        architect_output = selected_inputs.get("architect_output")
+        sequence_output = selected_inputs.get("sequence")
+        chapter_output = selected_inputs.get("chapter_1")
         inference_request = build_p400_compiler_request(
             manifest=project.manifest,
             payload=payload,
@@ -868,6 +950,10 @@ class LocalExecutor:
             "job_request": request_payload,
             "manifest": project.manifest.model_dump(mode="json"),
         }
+        if selected_inputs:
+            step_input_payload["selected_input_artifacts"] = {
+                key: stable_hash_text(value) for key, value in selected_inputs.items()
+            }
         if architect_output is not None:
             input_artifact_refs.append("architect_output")
             source_content_hashes.append(stable_hash_payload(architect_output))

@@ -11,7 +11,7 @@ from .story_development import (
     WorldBibleEntryRecord,
 )
 from .projects import ProjectProjection, ProjectRepository
-from .steps import ArtifactLineageRepository, StepRecordRepository
+from .steps import ArtifactLineageRepository, RuntimeArtifactSelectionRepository, StepRecordRepository
 from .sqlite import ensure_operations_db, ensure_project_db
 
 __all__ = [
@@ -25,6 +25,7 @@ __all__ = [
     "FoundationRevisionRecord",
     "ProjectProjection",
     "ProjectRepository",
+    "RuntimeArtifactSelectionRepository",
     "StoryDevelopmentRepository",
     "StoryFlowDefinitionRecord",
     "StoryFlowStageRecord",

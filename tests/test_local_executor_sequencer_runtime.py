@@ -259,9 +259,50 @@ def test_local_executor_runs_real_sequencer_path_for_p200_with_fake_inferencer(t
     assert sequence_response.json()["artifact_name"] == "sequence"
     assert sequence_response.json()["content"] == sequence_content + "\n"
 
+
+def test_local_executor_persists_selected_upstream_artifacts_for_p200(tmp_path: Path) -> None:
+    project_id = "sequencer-selection-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+    inferencer = FakeSequencerInferenceBackend(
+        content=json.dumps({"beats": [{"id": "beat-1", "title": "Opening"}]}, ensure_ascii=True, indent=2, sort_keys=True)
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = job_manager.create_job(
+            JobCreateRequest(phase="P-100", payload={"project_id": project_id, "model_id": "architect-override-model"})
+        )
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = job_manager.create_job(
+            JobCreateRequest(phase="P-200", payload={"project_id": project_id, "model_id": "sequencer-override-model"})
+        )
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    with connect(tmp_path / "data" / "state" / "narrative_ops.db") as connection:
+        selection_rows = connection.execute(
+            """
+            SELECT artifact_role, selected_artifact_lineage_id, selected_content
+            FROM runtime_artifact_selections
+            WHERE run_id = ? AND run_kind = 'pipeline_job' AND step_name = 'sequencer'
+            ORDER BY selection_id ASC
+            """,
+            (str(p200.id),),
+        ).fetchall()
+
+    assert len(selection_rows) == 1
+    assert selection_rows[0]["artifact_role"] == "architect_output"
+    assert selection_rows[0]["selected_artifact_lineage_id"] is not None
+    assert selection_rows[0]["selected_content"] == project_service.read_artifact(project_id, "architect_p100").content
     sequence_artifact = project_service.read_artifact(project_id, "sequence")
-    assert sequence_artifact.content == sequence_content + "\n"
-    assert project_service.repository.get_artifact_path(project_id, "sequence") == output_path
+    assert json.loads(sequence_artifact.content) == {"beats": [{"id": "beat-1", "title": "Opening"}]}
+    assert project_service.repository.get_artifact_path(project_id, "sequence") == (
+        tmp_path / "data" / "projects" / project_id / "sequences.json"
+    )
 
 
 def test_local_executor_persists_mapped_runtime_error_for_p200_failures(tmp_path: Path) -> None:

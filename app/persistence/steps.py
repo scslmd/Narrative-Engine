@@ -219,6 +219,42 @@ class ArtifactLineageRepository:
         )
         return int(rows[-1]["artifact_lineage_id"])
 
+    def latest_canonical_for_project_artifact(self, *, project_id: str, artifact_role: str) -> dict[str, object] | None:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM artifact_lineage
+                WHERE project_id = ? AND artifact_role = ? AND status = 'CANONICAL'
+                ORDER BY artifact_lineage_id DESC
+                LIMIT 1
+                """,
+                (project_id, artifact_role),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "artifact_lineage_id": row["artifact_lineage_id"],
+            "logical_run_id": row["logical_run_id"],
+            "run_id": row["run_id"],
+            "run_kind": row["run_kind"],
+            "attempt_number": row["attempt_number"],
+            "step_name": row["step_name"],
+            "project_id": row["project_id"],
+            "artifact_role": row["artifact_role"],
+            "artifact_kind": row["artifact_kind"],
+            "path": row["path"],
+            "content_hash": row["content_hash"],
+            "status": row["status"],
+            "validation_state": row["validation_state"],
+            "produced_at": row["produced_at"],
+            "registered_at": row["registered_at"],
+            "supersedes_artifact_lineage_id": row["supersedes_artifact_lineage_id"],
+            "source_artifact_refs": _parse_json_list(row["source_artifact_refs_json"]),
+            "source_content_hashes": _parse_json_list(row["source_content_hashes_json"]),
+            "output_of_step_record_id": row["output_of_step_record_id"],
+        }
+
     def create_lineage_record(
         self,
         *,
@@ -330,6 +366,106 @@ class ArtifactLineageRepository:
                 "source_artifact_refs": _parse_json_list(row["source_artifact_refs_json"]),
                 "source_content_hashes": _parse_json_list(row["source_content_hashes_json"]),
                 "output_of_step_record_id": row["output_of_step_record_id"],
+            }
+            for row in rows
+        ]
+
+
+class RuntimeArtifactSelectionRepository:
+    def __init__(self, db_path: Path) -> None:
+        self.db_path = ensure_operations_db(db_path)
+
+    def create_or_replace_selection(
+        self,
+        *,
+        logical_run_id: str,
+        run_id: str,
+        run_kind: str,
+        attempt_number: int,
+        step_name: str,
+        project_id: str | None,
+        artifact_role: str,
+        selected_artifact_lineage_id: int | None,
+        selected_path: str | None,
+        selected_content_hash: str,
+        selected_content: str,
+        selected_at: datetime,
+    ) -> int:
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO runtime_artifact_selections (
+                    logical_run_id, run_id, run_kind, attempt_number, step_name, project_id,
+                    artifact_role, selected_artifact_lineage_id, selected_path, selected_content_hash,
+                    selected_content, selected_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(run_id, run_kind, attempt_number, step_name, artifact_role) DO UPDATE SET
+                    selected_artifact_lineage_id = excluded.selected_artifact_lineage_id,
+                    selected_path = excluded.selected_path,
+                    selected_content_hash = excluded.selected_content_hash,
+                    selected_content = excluded.selected_content,
+                    selected_at = excluded.selected_at
+                """,
+                (
+                    logical_run_id,
+                    run_id,
+                    run_kind,
+                    attempt_number,
+                    step_name,
+                    project_id,
+                    artifact_role,
+                    selected_artifact_lineage_id,
+                    selected_path,
+                    selected_content_hash,
+                    selected_content,
+                    selected_at.isoformat(),
+                ),
+            )
+            row = connection.execute(
+                """
+                SELECT selection_id
+                FROM runtime_artifact_selections
+                WHERE run_id = ? AND run_kind = ? AND attempt_number = ? AND step_name = ? AND artifact_role = ?
+                """,
+                (run_id, run_kind, attempt_number, step_name, artifact_role),
+            ).fetchone()
+            connection.commit()
+        assert row is not None
+        return int(row["selection_id"])
+
+    def list_for_run(
+        self,
+        *,
+        run_id: str,
+        run_kind: str,
+        attempt_number: int,
+        step_name: str,
+    ) -> list[dict[str, object]]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM runtime_artifact_selections
+                WHERE run_id = ? AND run_kind = ? AND attempt_number = ? AND step_name = ?
+                ORDER BY selection_id ASC
+                """,
+                (run_id, run_kind, attempt_number, step_name),
+            ).fetchall()
+        return [
+            {
+                "selection_id": row["selection_id"],
+                "logical_run_id": row["logical_run_id"],
+                "run_id": row["run_id"],
+                "run_kind": row["run_kind"],
+                "attempt_number": row["attempt_number"],
+                "step_name": row["step_name"],
+                "project_id": row["project_id"],
+                "artifact_role": row["artifact_role"],
+                "selected_artifact_lineage_id": row["selected_artifact_lineage_id"],
+                "selected_path": row["selected_path"],
+                "selected_content_hash": row["selected_content_hash"],
+                "selected_content": row["selected_content"],
+                "selected_at": row["selected_at"],
             }
             for row in rows
         ]

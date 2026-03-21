@@ -24,7 +24,7 @@ def _table_exists(connection, table_name: str) -> bool:
 def _require_slice_tables(connection) -> None:
     missing = [
         table_name
-        for table_name in ("step_records", "artifact_lineage")
+        for table_name in ("step_records", "artifact_lineage", "runtime_artifact_selections")
         if not _table_exists(connection, table_name)
     ]
     if missing:
@@ -126,6 +126,17 @@ def test_artifact_lineage_links_outputs_back_to_step_records(tmp_path: Path) -> 
         lineage_foreign_keys = _foreign_key_edges(connection, "artifact_lineage")
 
     assert ("output_of_step_record_id", "step_records", "step_record_id") in lineage_foreign_keys
+
+
+def test_runtime_artifact_selection_links_back_to_artifact_lineage(tmp_path: Path) -> None:
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    ensure_operations_db(db_path)
+
+    with connect(db_path) as connection:
+        _require_slice_tables(connection)
+        selection_foreign_keys = _foreign_key_edges(connection, "runtime_artifact_selections")
+
+    assert ("selected_artifact_lineage_id", "artifact_lineage", "artifact_lineage_id") in selection_foreign_keys
 
 
 def test_artifact_lineage_supports_explicit_supersession_history(tmp_path: Path) -> None:

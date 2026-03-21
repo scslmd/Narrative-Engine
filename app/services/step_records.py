@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from ..persistence import ArtifactLineageRepository, StepRecordRepository
+from ..persistence import ArtifactLineageRepository, RuntimeArtifactSelectionRepository, StepRecordRepository
 from ..persistence.steps import stable_hash_payload, stable_hash_text
 from ..settings import settings
 
@@ -14,6 +14,7 @@ class StepRecordService:
         operations_db_path = db_path or settings.operations_db_path
         self._steps = StepRecordRepository(operations_db_path)
         self._lineage = ArtifactLineageRepository(operations_db_path)
+        self._selections = RuntimeArtifactSelectionRepository(operations_db_path)
 
     def create_step_record(
         self,
@@ -163,4 +164,53 @@ class StepRecordService:
             attempt_number=attempt_number,
             limit=limit,
             offset=offset,
+        )
+
+    def get_latest_canonical_artifact(self, *, project_id: str, artifact_role: str) -> dict[str, object] | None:
+        return self._lineage.latest_canonical_for_project_artifact(project_id=project_id, artifact_role=artifact_role)
+
+    def create_runtime_artifact_selection(
+        self,
+        *,
+        logical_run_id: str,
+        run_id: UUID,
+        run_kind: str,
+        attempt_number: int,
+        step_name: str,
+        project_id: str | None,
+        artifact_role: str,
+        selected_artifact_lineage_id: int | None,
+        selected_path: str | None,
+        selected_content: str,
+        selected_at: datetime | None = None,
+    ) -> int:
+        timestamp = selected_at or datetime.now(timezone.utc)
+        return self._selections.create_or_replace_selection(
+            logical_run_id=logical_run_id,
+            run_id=str(run_id),
+            run_kind=run_kind,
+            attempt_number=attempt_number,
+            step_name=step_name,
+            project_id=project_id,
+            artifact_role=artifact_role,
+            selected_artifact_lineage_id=selected_artifact_lineage_id,
+            selected_path=selected_path,
+            selected_content_hash=stable_hash_text(selected_content),
+            selected_content=selected_content,
+            selected_at=timestamp,
+        )
+
+    def list_runtime_artifact_selections(
+        self,
+        *,
+        run_id: UUID,
+        run_kind: str,
+        attempt_number: int,
+        step_name: str,
+    ) -> list[dict[str, object]]:
+        return self._selections.list_for_run(
+            run_id=str(run_id),
+            run_kind=run_kind,
+            attempt_number=attempt_number,
+            step_name=step_name,
         )
