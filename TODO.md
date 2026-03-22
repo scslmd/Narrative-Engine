@@ -51,7 +51,7 @@
   - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
   - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
   - [x] `ORCH-02D.3` Compensate project-artifact projection writes when project-db registration fails, with focused compiler regression coverage and lineage rollback.
-  - [ ] `ORCH-02D.4` Add staged output-write or equivalent preservation semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
+  - [x] `ORCH-02D.4` Add staged output-write and restoration semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.

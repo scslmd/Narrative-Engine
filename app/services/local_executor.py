@@ -256,13 +256,19 @@ class LocalExecutor:
         artifact_role: str,
         artifact_kind: str,
         output_path: Path,
+        staged_output_path: Path,
         content_hash_source: str,
         source_content_hashes: list[str],
         project_artifact_name: str,
     ) -> None:
         step_record_id: int | None = None
         lineage_record_id: int | None = None
+        backup_output_path: Path | None = None
         try:
+            backup_output_path = self._publish_staged_output(
+                staged_output_path=staged_output_path,
+                output_path=output_path,
+            )
             step_record_id = self._step_records.create_step_record(
                 logical_run_id=str(attempt["logical_run_id"]),
                 run_id=job_id,
@@ -324,11 +330,11 @@ class LocalExecutor:
                     self._step_records.delete_lineage_record(artifact_lineage_id=lineage_record_id)
                 except Exception:
                     pass
-            try:
-                if output_path.exists():
-                    output_path.unlink()
-            except Exception:
-                pass
+            self._restore_published_output(
+                output_path=output_path,
+                staged_output_path=staged_output_path,
+                backup_output_path=backup_output_path,
+            )
             if step_record_id is not None:
                 try:
                     self._step_records.mark_step_record_failed(
@@ -387,6 +393,11 @@ class LocalExecutor:
                     pass
             return
 
+        self._finalize_published_output(
+            staged_output_path=staged_output_path,
+            backup_output_path=backup_output_path,
+        )
+
         self._job_manager.update_job(
             job_id,
             status="COMPLETED",
@@ -397,6 +408,56 @@ class LocalExecutor:
             progress_total=1,
             finish_reason=finish_reason,
         )
+
+    def _write_staged_output(self, *, output_path: Path, output_text: str) -> Path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        staged_output_path = output_path.with_name(f"{output_path.name}.staged")
+        staged_output_path.write_text(output_text, encoding="utf-8")
+        return staged_output_path
+
+    def _publish_staged_output(self, *, staged_output_path: Path, output_path: Path) -> Path | None:
+        backup_output_path: Path | None = None
+        if output_path.exists():
+            backup_output_path = output_path.with_name(f"{output_path.name}.bak")
+            if backup_output_path.exists():
+                backup_output_path.unlink()
+            output_path.replace(backup_output_path)
+        staged_output_path.replace(output_path)
+        return backup_output_path
+
+    def _restore_published_output(
+        self,
+        *,
+        output_path: Path,
+        staged_output_path: Path,
+        backup_output_path: Path | None,
+    ) -> None:
+        try:
+            if output_path.exists():
+                output_path.unlink()
+        except Exception:
+            pass
+        try:
+            if backup_output_path is not None and backup_output_path.exists():
+                backup_output_path.replace(output_path)
+        except Exception:
+            pass
+        try:
+            if staged_output_path.exists():
+                staged_output_path.unlink()
+        except Exception:
+            pass
+
+    def _finalize_published_output(
+        self,
+        *,
+        staged_output_path: Path,
+        backup_output_path: Path | None,
+    ) -> None:
+        if staged_output_path.exists():
+            staged_output_path.unlink()
+        if backup_output_path is not None and backup_output_path.exists():
+            backup_output_path.unlink()
 
     def _run_architect_phase(
         self,
@@ -469,11 +530,10 @@ class LocalExecutor:
             )
             return
         output_path = architect_output_path(Path(project.project_dir))
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
-        output_path.write_text(output_text, encoding="utf-8")
+        staged_output_path = self._write_staged_output(output_path=output_path, output_text=output_text)
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
         step_input_payload = {
@@ -513,6 +573,7 @@ class LocalExecutor:
             artifact_role="architect_output",
             artifact_kind="markdown",
             output_path=output_path,
+            staged_output_path=staged_output_path,
             content_hash_source=output_text,
             source_content_hashes=[stable_hash_payload(project.manifest.model_dump(mode="json"))],
             project_artifact_name="architect_p100",
@@ -600,11 +661,10 @@ class LocalExecutor:
             )
             return
         output_path = sequence_output_path(Path(project.project_dir))
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
-        output_path.write_text(output_text, encoding="utf-8")
+        staged_output_path = self._write_staged_output(output_path=output_path, output_text=output_text)
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
         input_artifact_refs = ["manifest"]
@@ -654,6 +714,7 @@ class LocalExecutor:
             artifact_role="sequence",
             artifact_kind="json",
             output_path=output_path,
+            staged_output_path=staged_output_path,
             content_hash_source=output_text,
             source_content_hashes=source_content_hashes,
             project_artifact_name="sequence",
@@ -748,11 +809,10 @@ class LocalExecutor:
             )
             return
         output_path = chapter_output_path(Path(project.project_dir))
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
-        output_path.write_text(output_text, encoding="utf-8")
+        staged_output_path = self._write_staged_output(output_path=output_path, output_text=output_text)
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
         input_artifact_refs = ["manifest"]
@@ -806,6 +866,7 @@ class LocalExecutor:
             artifact_role="chapter_1",
             artifact_kind="markdown",
             output_path=output_path,
+            staged_output_path=staged_output_path,
             content_hash_source=output_text,
             source_content_hashes=source_content_hashes,
             project_artifact_name="chapter_1",
@@ -960,11 +1021,10 @@ class LocalExecutor:
             )
             return
         output_path = story_bible_output_path(Path(project.project_dir))
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
-        output_path.write_text(output_text, encoding="utf-8")
+        staged_output_path = self._write_staged_output(output_path=output_path, output_text=output_text)
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
         input_artifact_refs = ["manifest"]
@@ -1022,6 +1082,7 @@ class LocalExecutor:
             artifact_role="story_bible",
             artifact_kind="json",
             output_path=output_path,
+            staged_output_path=staged_output_path,
             content_hash_source=output_text,
             source_content_hashes=source_content_hashes,
             project_artifact_name="story_bible",

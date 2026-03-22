@@ -652,6 +652,95 @@ def test_local_executor_rolls_back_story_bible_projection_when_project_db_regist
         project_service.read_artifact(project_id, "story_bible")
 
 
+def test_local_executor_preserves_prior_story_bible_file_when_rerun_finalization_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project_id = "compiler-rerun-preserves-prior-story-bible"
+    initialize_project_artifacts(project_id, manifest=_make_manifest(project_id), root_dir=tmp_path)
+    story_bible_v1 = json.dumps(
+        {
+            "project": {"project_id": project_id, "project_name": "Project Aurora"},
+            "premise": "first canonical story bible",
+            "world_anchors": [],
+            "character_threads": [],
+            "continuity_notes": [],
+            "open_questions": [],
+        },
+        ensure_ascii=True,
+        indent=2,
+        sort_keys=True,
+    )
+    story_bible_v2 = json.dumps(
+        {
+            "project": {"project_id": project_id, "project_name": "Project Aurora"},
+            "premise": "second story bible should not replace first on failure",
+            "world_anchors": [],
+            "character_threads": [],
+            "continuity_notes": [],
+            "open_questions": [],
+        },
+        ensure_ascii=True,
+        indent=2,
+        sort_keys=True,
+    )
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening"}]}, ensure_ascii=True, indent=2, sort_keys=True),
+            "P-300": "# Chapter 1\nThe city changes shape just before dawn.\n",
+            "P-400": [story_bible_v1, story_bible_v2],
+        },
+    )
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+    output_path = story_bible_output_path(Path(tmp_path) / "data" / "projects" / project_id)
+    staged_path = output_path.with_name(f"{output_path.name}.staged")
+    backup_path = output_path.with_name(f"{output_path.name}.bak")
+    original_register_generated_artifact = project_service.register_generated_artifact
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p300.id) == "COMPLETED"
+        first_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, first_p400.id) == "COMPLETED"
+
+        def fail_second_story_bible_registration(*args, **kwargs):
+            if args[1] == "story_bible":
+                raise RuntimeError("simulated second story_bible registration failure")
+            return original_register_generated_artifact(*args, **kwargs)
+
+        monkeypatch.setattr(project_service, "register_generated_artifact", fail_second_story_bible_registration)
+
+        second_p400 = _run_phase(job_manager, phase="P-400", project_id=project_id)
+        second_status = _wait_for_terminal_status(job_manager, second_p400.id)
+    finally:
+        executor.stop()
+
+    status = job_manager.get_status(second_p400.id)
+    attempt = job_manager.get_attempt(second_p400.id)
+    second_lineage = job_manager.list_artifact_lineage(second_p400.id)
+    first_lineage = job_manager.list_artifact_lineage(first_p400.id)
+
+    assert second_status == "FAILED"
+    assert status.error == "simulated second story_bible registration failure"
+    assert attempt["failure_stage"] == "persistence"
+    assert output_path.exists()
+    assert output_path.read_text(encoding="utf-8") == story_bible_v1 + "\n"
+    assert not staged_path.exists()
+    assert not backup_path.exists()
+    assert second_lineage == []
+    assert len(first_lineage) == 1
+    assert first_lineage[0]["artifact_role"] == "story_bible"
+    assert first_lineage[0]["status"] == "CANONICAL"
+    assert project_service.read_artifact(project_id, "story_bible").content == story_bible_v1 + "\n"
+
+
 def test_local_executor_fails_unsupported_job_phases_instead_of_stub_completing() -> None:
     job_id = uuid4()
 
