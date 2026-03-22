@@ -132,6 +132,9 @@ class StepRecordService:
             output_of_step_record_id=output_of_step_record_id,
         )
 
+    def delete_lineage_record(self, *, artifact_lineage_id: int) -> None:
+        self._lineage.delete_lineage_record(artifact_lineage_id=artifact_lineage_id)
+
     def list_step_records(
         self,
         *,

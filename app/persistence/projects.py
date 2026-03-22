@@ -155,6 +155,74 @@ class ProjectRepository:
         timestamp = _utc_timestamp(artifact_path).isoformat()
         content_hash = self._hash_if_file(artifact_path)
         size_bytes = artifact_path.stat().st_size
+        previous_artifact_row, previous_project_updated_at = self._snapshot_artifact_registration(
+            project_id=project_id,
+            artifact_type=canonical_type,
+        )
+        self._upsert_operations_artifact(
+            project_id=project_id,
+            artifact_type=canonical_type,
+            artifact_path=artifact_path,
+            content_hash=content_hash,
+            size_bytes=size_bytes,
+            timestamp=timestamp,
+        )
+        try:
+            self._upsert_project_db_artifact(
+                db_path=projection.db_path,
+                artifact_type=canonical_type,
+                artifact_path=artifact_path,
+                timestamp=timestamp,
+            )
+        except Exception:
+            self._restore_operations_artifact(
+                project_id=project_id,
+                artifact_type=canonical_type,
+                previous_artifact_row=previous_artifact_row,
+                previous_project_updated_at=previous_project_updated_at,
+            )
+            raise
+
+    def _snapshot_artifact_registration(
+        self,
+        *,
+        project_id: str,
+        artifact_type: str,
+    ) -> tuple[dict[str, object] | None, str | None]:
+        with connect(self.db_path) as connection:
+            artifact_row = connection.execute(
+                """
+                SELECT path, content_hash, size_bytes, created_at, updated_at
+                FROM project_artifacts
+                WHERE project_id = ? AND artifact_type = ?
+                """,
+                (project_id, artifact_type),
+            ).fetchone()
+            project_row = connection.execute(
+                "SELECT updated_at FROM projects WHERE project_id = ?",
+                (project_id,),
+            ).fetchone()
+        snapshot = None
+        if artifact_row is not None:
+            snapshot = {
+                "path": artifact_row["path"],
+                "content_hash": artifact_row["content_hash"],
+                "size_bytes": artifact_row["size_bytes"],
+                "created_at": artifact_row["created_at"],
+                "updated_at": artifact_row["updated_at"],
+            }
+        return snapshot, (project_row["updated_at"] if project_row is not None else None)
+
+    def _upsert_operations_artifact(
+        self,
+        *,
+        project_id: str,
+        artifact_type: str,
+        artifact_path: Path,
+        content_hash: str | None,
+        size_bytes: int | None,
+        timestamp: str,
+    ) -> None:
         with connect(self.db_path) as connection:
             connection.execute(
                 """
@@ -169,7 +237,7 @@ class ProjectRepository:
                 """,
                 (
                     project_id,
-                    canonical_type,
+                    artifact_type,
                     str(artifact_path),
                     content_hash,
                     size_bytes,
@@ -182,7 +250,16 @@ class ProjectRepository:
                 (timestamp, project_id),
             )
             connection.commit()
-        with connect(projection.db_path) as connection:
+
+    def _upsert_project_db_artifact(
+        self,
+        *,
+        db_path: Path,
+        artifact_type: str,
+        artifact_path: Path,
+        timestamp: str,
+    ) -> None:
+        with connect(db_path) as connection:
             connection.execute(
                 """
                 INSERT INTO artifacts (artifact_type, path, updated_at) VALUES (?, ?, ?)
@@ -191,11 +268,58 @@ class ProjectRepository:
                     updated_at = excluded.updated_at
                 """,
                 (
-                    canonical_type,
+                    artifact_type,
                     str(artifact_path),
                     timestamp,
                 ),
             )
+            connection.commit()
+
+    def _restore_operations_artifact(
+        self,
+        *,
+        project_id: str,
+        artifact_type: str,
+        previous_artifact_row: dict[str, object] | None,
+        previous_project_updated_at: str | None,
+    ) -> None:
+        with connect(self.db_path) as connection:
+            if previous_artifact_row is None:
+                connection.execute(
+                    """
+                    DELETE FROM project_artifacts
+                    WHERE project_id = ? AND artifact_type = ?
+                    """,
+                    (project_id, artifact_type),
+                )
+            else:
+                connection.execute(
+                    """
+                    INSERT INTO project_artifacts (
+                        project_id, artifact_type, path, content_hash, size_bytes, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(project_id, artifact_type) DO UPDATE SET
+                        path = excluded.path,
+                        content_hash = excluded.content_hash,
+                        size_bytes = excluded.size_bytes,
+                        created_at = excluded.created_at,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        project_id,
+                        artifact_type,
+                        previous_artifact_row["path"],
+                        previous_artifact_row["content_hash"],
+                        previous_artifact_row["size_bytes"],
+                        previous_artifact_row["created_at"],
+                        previous_artifact_row["updated_at"],
+                    ),
+                )
+            if previous_project_updated_at is not None:
+                connection.execute(
+                    "UPDATE projects SET updated_at = ? WHERE project_id = ?",
+                    (previous_project_updated_at, project_id),
+                )
             connection.commit()
 
     def _build_projection(self, row) -> ProjectProjection:

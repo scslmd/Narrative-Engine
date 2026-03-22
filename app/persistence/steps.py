@@ -350,6 +350,34 @@ class ArtifactLineageRepository:
             connection.commit()
         return int(cursor.lastrowid)
 
+    def delete_lineage_record(self, *, artifact_lineage_id: int) -> None:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT supersedes_artifact_lineage_id
+                FROM artifact_lineage
+                WHERE artifact_lineage_id = ?
+                """,
+                (artifact_lineage_id,),
+            ).fetchone()
+            if row is None:
+                return
+            supersedes_id = row["supersedes_artifact_lineage_id"]
+            if supersedes_id is not None:
+                connection.execute(
+                    """
+                    UPDATE artifact_lineage
+                    SET status = 'CANONICAL'
+                    WHERE artifact_lineage_id = ?
+                    """,
+                    (supersedes_id,),
+                )
+            connection.execute(
+                "DELETE FROM artifact_lineage WHERE artifact_lineage_id = ?",
+                (artifact_lineage_id,),
+            )
+            connection.commit()
+
     def list_for_run(
         self,
         *,

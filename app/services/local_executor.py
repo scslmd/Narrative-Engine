@@ -261,6 +261,7 @@ class LocalExecutor:
         project_artifact_name: str,
     ) -> None:
         step_record_id: int | None = None
+        lineage_record_id: int | None = None
         try:
             step_record_id = self._step_records.create_step_record(
                 logical_run_id=str(attempt["logical_run_id"]),
@@ -291,7 +292,7 @@ class LocalExecutor:
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
             )
-            self._step_records.create_lineage_record(
+            lineage_record_id = self._step_records.create_lineage_record(
                 logical_run_id=str(attempt["logical_run_id"]),
                 run_id=job_id,
                 run_kind="pipeline_job",
@@ -318,6 +319,11 @@ class LocalExecutor:
             )
         except Exception as exc:
             failure_finished_at = _utcnow()
+            if lineage_record_id is not None:
+                try:
+                    self._step_records.delete_lineage_record(artifact_lineage_id=lineage_record_id)
+                except Exception:
+                    pass
             try:
                 if output_path.exists():
                     output_path.unlink()
