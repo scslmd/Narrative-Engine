@@ -6,9 +6,12 @@ from uuid import UUID, uuid4
 
 from ..request_identity import checker_request_scope, request_hash
 from ..persistence import CheckerRunRepository
-from ..schemas.inspect import RoleModelCheckLineageResponse, RoleModelCheckStepsResponse
-from ..schemas.role_model_checker import RoleModelCheckStartRequest
-from ..schemas.role_model_checker import RoleCheckResult, RoleModelCheckStatusResponse
+from ..schemas.inspect import (
+    RoleModelCheckAttemptHistoryResponse,
+    RoleModelCheckLineageResponse,
+    RoleModelCheckStepsResponse,
+)
+from ..schemas.role_model_checker import RoleCheckResult, RoleModelCheckStartRequest
 from ..settings import settings
 from .protocol import CheckerRunAcceptance, IdempotencyConflictError, RetryNotAllowedError
 from .step_records import StepRecordService
@@ -230,3 +233,30 @@ class RoleModelCheckManager:
         if limit is not None:
             meta["returned_count"] = len(items)
         return RoleModelCheckLineageResponse(run_id=run_id, items=items, meta=meta)
+
+    def get_attempt_history_projection(self, run_id: UUID) -> RoleModelCheckAttemptHistoryResponse:
+        self.get_status(run_id)
+        meta = {"ordered_by": "attempt_number_asc"}
+        items = self._runs.list_attempts(run_id)
+        formatted_items = []
+        for item in items:
+            formatted_items.append({
+                "attempt_number": item.get("attempt_number", 0),
+                "status": item.get("status", ""),
+                "executor_name": item.get("executor_name"),
+                "executor_instance_id": item.get("executor_instance_id"),
+                "queue_delay_ms": item.get("queue_delay_ms"),
+                "lease_owner": item.get("lease_owner"),
+                "lease_expires_at": item.get("lease_expires_at"),
+                "claimed_at": item.get("claimed_at"),
+                "started_at": item.get("started_at"),
+                "finished_at": item.get("finished_at"),
+                "last_heartbeat_at": item.get("last_heartbeat_at"),
+                "finish_reason": item.get("finish_reason"),
+                "failure_stage": item.get("failure_stage"),
+                "retryable": bool(item.get("retryable", 0)) if item.get("retryable") is not None else None,
+                "retry_reason": item.get("retry_reason"),
+                "error_code": item.get("error_code"),
+                "error_category": item.get("error_category"),
+            })
+        return RoleModelCheckAttemptHistoryResponse(run_id=run_id, items=formatted_items, meta=meta)

@@ -4,7 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Query, Response
 
-from ..schemas.inspect import RoleModelCheckLineageResponse, RoleModelCheckStepsResponse
+from ..schemas.inspect import (
+    RoleModelCheckAttemptHistoryResponse,
+    RoleModelCheckLineageResponse,
+    RoleModelCheckStepsResponse,
+)
 from ..schemas.role_model_checker import (
     RoleModelCheckRetryRequest,
     RoleModelCheckStartRequest,
@@ -80,6 +84,13 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
     ) -> RoleModelCheckLineageResponse:
         try:
             return manager.get_lineage_projection(run_id, attempt_number=attempt, limit=limit, offset=offset)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
+
+    @router.get('/{run_id}/attempts', response_model=RoleModelCheckAttemptHistoryResponse)
+    def get_attempts(run_id: UUID) -> RoleModelCheckAttemptHistoryResponse:
+        try:
+            return manager.get_attempt_history_projection(run_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
