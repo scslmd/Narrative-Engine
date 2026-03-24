@@ -1,5 +1,61 @@
 # TODO
 
+## Security & Reliability (P0 - Immediate)
+
+- [ ] SEC-01 Add authentication middleware with API key validation
+  Create `app/middleware/auth.py`, require `X-API-Key` header on all routes except `/health`, store key in `.env`.
+  Expected: All API requests require valid API key, unauthorized requests return 401.
+- [ ] SEC-02 Add CORS middleware restricting origins to localhost
+  Configure `CORSMiddleware` with `["http://localhost:8000", "http://127.0.0.1:8000"]`, enable credentials.
+  Expected: Cross-origin requests from non-localhost blocked, CSRF prevented.
+- [ ] SEC-03 Add request size limits (10 MB max body, 5 MB payload validation)
+  Set `max_body_size` on FastAPI app, validate `JobCreateRequest.payload` size.
+  Expected: Requests > 10 MB rejected with 413, memory exhaustion prevented.
+- [ ] SEC-04 Validate file paths against traversal attacks
+  Create `app/utils/path_validation.py`, validate all file operations stay within project directories.
+  Expected: Path traversal attempts (e.g., `../../../etc/passwd`) blocked with 400.
+- [ ] SEC-05 Add rate limiting (10 jobs/min, 5 checker runs/min, 60 status checks/min)
+  Install `slowapi` or implement token bucket, add rate limit headers.
+  Expected: Burst attacks throttled, 429 on limit exceeded.
+
+## Security & Reliability (P1 - Short-Term)
+
+- [ ] REL-01 Add circuit breaker for inference backend (5 failures, 60s recovery)
+  Create `app/services/circuit_breaker.py`, wrap all inference calls.
+  Expected: Failed backends bypassed, automatic recovery, jobs fail fast with clear error.
+- [ ] REL-02 Add idempotency keys to project creation and story-development writes
+  Add `idempotency_key` parameter, store in `project_operations` table, 24h TTL.
+  Expected: Retry-safe operations, duplicate prevention.
+- [ ] REL-03 Fix thread safety race condition in `LocalExecutor.start()`
+  Add `threading.Lock()`, atomic flag check inside lock.
+  Expected: No duplicate threads, thread-safe lifecycle.
+- [ ] REL-04 Add backup strategy for SQLite database (daily, 7-day retention)
+  Create `app/services/backup.py`, WAL checkpoint before backup, `/backup/create` and `/backup/restore` endpoints.
+  Expected: Point-in-time recovery, data loss limited to 24h.
+
+## Security & Reliability (P2 - Medium-Term)
+
+- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  Structured logging with correlation IDs, Prometheus export.
+  Expected: Visibility into system health, proactive alerting.
+- [ ] REL-06 Add deep health checks (`/health/ready` with database, inference, disk, memory checks)
+  Return 503 if critical component unhealthy.
+  Expected: Accurate health reporting, load balancer readiness.
+- [ ] REL-07 Add configuration validation at startup (inference URL reachable, directories writable, API key set)
+  Create `app/services/config_validator.py`, fail fast with clear errors.
+  Expected: Configuration errors detected at startup.
+- [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
+  Validate required fields, reject malformed payloads with 400.
+  Expected: Executor crashes from bad payloads prevented.
+- [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+  Create `app/utils/file_permissions.py`, log permission warnings.
+  Expected: Accidental overwrites prevented.
+- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+  Create `audit_log` table, `/audit/query` endpoint, 90-day retention.
+  Expected: Complete audit trail, incident investigation capability.
+
+---
+
 ## CRITICAL
 
 - [x] Remove reconstruction or recreation framing from the story-development docs package and rewrite it as an aspirational writing-product specification, especially anywhere the docs describe story-development features as "reconstruction" requirements instead of target product contracts.
@@ -41,17 +97,16 @@
 - [x] Register `sequence` runtime output through canonical artifact-lineage persistence.
 - [x] Register `chapter_1` runtime output through canonical artifact-lineage persistence.
 - [x] Rebuild the current job-phase set on top of explicit runtime-backed step handlers.
-- [ ] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
-  Current completed sub-slices:
-  - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
-  - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
-  - [x] `ORCH-02C.1` Persist selected upstream artifact snapshots for `P-200`, `P-300`, and `P-400` attempts so downstream runtime steps stop depending only on live project-file reads.
-  - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
-  Remaining next sub-slice:
-  - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
-  - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
-  - [x] `ORCH-02D.3` Compensate project-artifact projection writes when project-db registration fails, with focused compiler regression coverage and lineage rollback.
-  - [x] `ORCH-02D.4` Add staged output-write and restoration semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
+- [x] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
+   Completed sub-slices:
+   - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
+   - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
+   - [x] `ORCH-02C.1` Persist selected upstream artifact snapshots for `P-200`, `P-300`, and `P-400` attempts so downstream runtime steps stop depending only on live project-file reads.
+   - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
+   - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
+   - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
+   - [x] `ORCH-02D.3` Compensate project-artifact projection writes when project-db registration fails, with focused compiler regression coverage and lineage rollback.
+   - [x] `ORCH-02D.4` Add staged output-write and restoration semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.
@@ -225,22 +280,171 @@
 
 ## Frontend
 
-- [x] Build the current writer workflow prototype.
-- [x] Add status polling and role-model checker result display.
-- [x] Replace placeholder runtime messaging with production workflow copy.
-- [ ] Add storyboard-driven three-column write layout with left storyboard rail, center manuscript, and right manuscript-aids rail.
-- [ ] Add manuscript aids feature family with proposed-revision diff review, including sensory enrichment and perspective shift.
-- [ ] Expand authoring, review, and artifact workflows to match the target product experience.
-- [ ] Implement a left-rail storyboard that supports manual cards plus AI-generated scene summaries from current draft context.
-- [ ] Implement manuscript aids right-rail sections for selection actions, scene actions, continuity actions, and revision actions.
-- [ ] Add selection-based diff review UX with accept, reject, and refine controls for manuscript aids.
-- [ ] Add storyboard jump-to-manuscript linking so each storyboard card opens the related draft location.
-- [ ] Add chapter and scene status chips plus arc-stage labels to the storyboard and planning views.
-- [ ] Add manuscript version-history UI with clear separation between local editing revisions and backend-generated artifacts.
-- [ ] Add integrated checker-review workspace that can open findings beside the active manuscript selection.
-- [ ] Add story arc selection and arc-stage display in the planning UI using `docs/Story Arc Paradigm Blueprint v0.1.md`.
-- [ ] Add a story bible or codex side rail with pinned characters, locations, rules, promises, and continuity warnings.
-- [ ] Add chapter packet builder UI that shows included references, constraints, and targeted scene goals before job launch.
+See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with 32 deterministic task cards (FE-001 through FE-032).
+
+**Technology Stack**: React 18 + Vite + TypeScript, Zustand, TanStack Query, Tailwind CSS, TipTap
+
+### Phase 1: Foundation (Week 1-2)
+
+- [ ] FE-001: Vite + React + TypeScript setup with Tailwind CSS
+  - Configure Vite, TypeScript, ESLint, Prettier, proxy to backend port 8000
+  - Expected: `npm run dev` starts dev server, `npm run build` produces bundle
+
+- [ ] FE-002: Zustand + TanStack Query configuration
+  - Create base stores, configure QueryClient with retry logic, Axios API client
+  - Expected: State management infrastructure with devtools and polling support
+
+- [ ] FE-003: Project list and creation (real API)
+  - Project CRUD, selection, detail view, health cards
+  - Expected: Full project management using `/projects/*` endpoints
+
+- [ ] FE-004: Workspace notes persistence (Zustand + localStorage)
+  - Auto-save with debounce, per-project isolation, non-canonical marking
+  - Expected: Notes persist across reloads, clearly marked as personal
+
+### Phase 2: Three-Pane Layout + Storyboard (Week 3)
+
+- [ ] FE-005: Three-pane layout shell
+  - WorkspaceShell, LeftRail, CenterPane, RightRail, BottomUtility components
+  - Expected: Responsive layout with mode-based center pane switching
+
+- [ ] FE-005A: Storyboard rail with scene cards
+  - Scene cards showing purpose, characters, conflict; jump-to-manuscript linking
+  - Expected: Storyboard represents story progression, not just file navigation
+
+- [ ] FE-005B: Story bible rail section
+  - Pinned characters, locations, rules, promises, continuity warnings
+  - Expected: Pinned items persist and visible while writing
+
+### Phase 3: Flow Editor (Week 4)
+
+- [ ] FE-006: Editable flow editor (mock service)
+  - Stage list, add/rename/reorder/disable/archive/redefine actions
+  - Expected: Stage edits update config without mutating historical artifacts
+
+### Phase 4: Planning Board (Week 5)
+
+- [ ] FE-007: Planning board view (real API)
+  - Chapter and scene cards from `/story-development/planning/*` endpoints
+  - Expected: Planning objects viewable and reorderable
+
+- [ ] FE-008: Chapter/scene card components
+  - Status chips, arc stage labels, expandable detail, drag-and-drop
+  - Expected: Cards show title, objective, status, dependencies
+
+- [ ] FE-009: Chapter packet builder
+  - Display packet contents, references, constraints, goals before job launch
+  - Expected: Packet preview integrates with job launch
+
+### Phase 5: Manuscript Editor (Week 6-7)
+
+- [ ] FE-010: TipTap editor integration
+  - Rich text editing, auto-save, markdown import/export, word count
+  - Expected: Legible, low-noise writing surface
+
+- [ ] FE-011: Chapter tab management
+  - Multiple tabs, unsaved change warnings, tab persistence
+  - Expected: Multi-chapter revision workflow
+
+- [ ] FE-012: Manuscript context rail
+  - Chapter plan, scene goals, pinned references visible while writing
+  - Expected: Context stays visible without obscuring manuscript
+
+- [ ] FE-013: Draft artifact promotion
+  - Load DraftArtifact from backend, promote to ManuscriptDocument
+  - Expected: Provenance preserved during promotion
+
+### Phase 6: Job Execution (Week 8)
+
+- [ ] FE-014: Job launch interface (real API)
+  - Phase selection, model selection, payload builder, submit job
+  - Expected: Jobs return 202, polling begins automatically
+
+- [ ] FE-015: Job status polling with TanStack Query
+  - 600ms polling interval, progress indicator, terminal state handling
+  - Expected: Real-time status updates, retry for failures
+
+- [ ] FE-016: Job logs viewer
+  - Timestamp, level, message, auto-scroll, export
+  - Expected: Logs readable and exportable
+
+- [ ] FE-017: Bottom utility layer
+  - Persistent job progress, logs, retry controls across all modes
+  - Expected: Job monitoring visible during mode switches
+
+### Phase 7: Inspect & Provenance (Week 9)
+
+- [ ] FE-018: Inspect mode integration
+  - First-class center-pane mode, steps/lineage tabs
+  - Expected: Mode switch preserves context, can return to manuscript
+
+- [ ] FE-019: Step timeline component (real API)
+  - Read from `/jobs/{id}/steps` and `/role-model-checker/{id}/steps`
+  - Expected: Steps render in backend order with provenance badges
+
+- [ ] FE-020: Artifact lineage component (real API)
+  - Read from `/jobs/{id}/lineage` and `/role-model-checker/{id}/lineage`
+  - Expected: Lineage shows history with CANONICAL/SUPERSEDED states
+
+- [ ] FE-021: Provenance badges
+  - Compact chips for provider, model, attemptId
+  - Expected: Provenance visible wherever generated output appears
+
+### Phase 8: Review Workspace (Week 10)
+
+- [ ] FE-022: Checker findings list (real API)
+  - Read from `/story-development/review/findings`, severity indicators
+  - Expected: Findings filterable, jump to source text
+
+- [ ] FE-023: Review decision interface (real API)
+  - Accept/reject/defer/escalate/refine actions, decision history
+  - Expected: Decisions route to planning/drafting
+
+- [ ] FE-024: Role-model checker UI migration
+  - Model selection per role, run checker, display results
+  - Expected: Pass/fail states clear, results integrate with review
+
+### Phase 9: Manuscript Aids (Week 11-12)
+
+- [ ] FE-025: Manuscript aids panel (mock service)
+  - Selection-based and scene-based actions in right rail
+  - Expected: Aids disabled when no selection, scene actions always available
+
+- [ ] FE-026: Selection lifecycle handling
+  - Track selection, anchor selected text, preserve during review
+  - Expected: Selection stable through aid request/response
+
+- [ ] FE-027: Diff review interface
+  - Side-by-side or unified diff, accept/reject/refine controls
+  - Expected: Proposed revisions reviewable without auto-apply
+
+- [ ] FE-028: Suggestion history (mock service)
+  - List prior suggestions, compare proposals, restore rejected
+  - Expected: History scrollable, comparisons clear
+
+### Phase 10: Story Development Features (Week 13+)
+
+- [ ] FE-029: Brainstorm workspace (mock service)
+  - Idea capture, clustering, keep/discard/park, promote actions
+  - Expected: Items distinct from canonical objects
+
+- [ ] FE-030: Foundation screen (mock service)
+  - Premise, logline, themes, constraints, downstream impact warnings
+  - Expected: Foundation editable with impact visibility
+
+- [ ] FE-031: Character builder (mock service)
+  - Character profiles, relationship map, contradiction warnings
+  - Expected: Goals, flaws, relationships visible together
+
+- [ ] FE-032: World bible workspace (mock service)
+  - Bible entries, search, pinning, continuity warnings
+  - Expected: Entries source-linked, warnings readable in context
+
+### Migration Tasks
+
+- [ ] Migrate vanilla JS prototype to React (parallel development, week 1-2)
+- [ ] Test React frontend thoroughly before cutover (week 3-4)
+- [ ] Switch default route to React app, decommission vanilla JS (week 5+)
 
 ## Docs Contract Hardening
 
