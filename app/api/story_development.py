@@ -8,6 +8,7 @@ from pydantic import Field
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import (
     BranchComparisonRecord,
+    BranchMergeDecision,
     BranchStateRef,
     ChapterPacket,
     ChapterPlan,
@@ -157,6 +158,21 @@ class BranchComparisonCreateRequest(StrictModel):
     review_notes: list[str] = Field(default_factory=list)
 
 
+class BranchMergeDecisionCreateRequest(StrictModel):
+    project_id: str
+    merge_decision_id: str
+    source_branch_id: str
+    target_branch_id: str
+    merge_rationale: str
+    resulting_decision_node_ids: list[str] = Field(default_factory=list)
+
+
+class BranchMergeDecisionListResponse(StrictModel):
+    project_id: str
+    items: list[BranchMergeDecision] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
 def build_story_development_router(repository: StoryDevelopmentRepository) -> APIRouter:
     router = APIRouter(prefix="/story-development", tags=["story-development"])
     decision_service = StoryDecisionReviewService(repository)
@@ -231,6 +247,37 @@ def build_story_development_router(repository: StoryDevelopmentRepository) -> AP
             return branching_service.get_branch_comparison(project_id, comparison_id=comparison_id)
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Branch comparison not found.") from exc
+
+    @router.post("/branches/merge-decisions", response_model=BranchMergeDecision)
+    def record_branch_merge_decision(payload: BranchMergeDecisionCreateRequest) -> BranchMergeDecision:
+        try:
+            return branching_service.record_branch_merge_decision(
+                payload.project_id,
+                merge_decision_id=payload.merge_decision_id,
+                source_branch_id=payload.source_branch_id,
+                target_branch_id=payload.target_branch_id,
+                merge_rationale=payload.merge_rationale,
+                resulting_decision_node_ids=payload.resulting_decision_node_ids,
+            )
+        except StoryBranchingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="One or more story branches were not found.") from exc
+        except StoryBranchingValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/branches/merge-decisions", response_model=BranchMergeDecisionListResponse)
+    def list_branch_merge_decisions(project_id: str) -> BranchMergeDecisionListResponse:
+        try:
+            items = list(branching_service.list_branch_merge_decisions(project_id))
+        except StoryBranchingValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return BranchMergeDecisionListResponse(project_id=project_id, items=items, meta={"ordered_by": "created_at_asc"})
+
+    @router.get("/branches/merge-decisions/{merge_decision_id}", response_model=BranchMergeDecision)
+    def get_branch_merge_decision(merge_decision_id: str, project_id: str) -> BranchMergeDecision:
+        try:
+            return branching_service.get_branch_merge_decision(project_id, merge_decision_id=merge_decision_id)
+        except StoryBranchingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Branch merge decision not found.") from exc
 
     @router.get("/branches/{branch_id}/state-refs", response_model=BranchStateRefListResponse)
     def list_branch_state_refs(
