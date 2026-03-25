@@ -10,6 +10,18 @@ Document version: `v0.5`
 - Added Section 21 (Technology Stack Decisions) documenting framework choices
 - Clarified manuscript aids mock service pattern for incomplete backend endpoints
 
+**Change log from v0.5 (API Alignment Update - March 24, 2026)**:
+- Updated Section 12A with complete 58-endpoint inventory (jobs, role-model-checker, branches, decisions, planning, drafting, review)
+- Updated Section 18 with 36 frontend tasks (FE-001 through FE-032, plus FE-001A, FE-004A-C, FE-024A-C)
+- Added FE-024: Role-model checker UI (7 real API endpoints)
+- Added FE-024A: Story branches UI (12 real API endpoints)
+- Added FE-024B: Story decision nodes UI (3 real API endpoints)
+- Added FE-024C: Inspect run links UI (2 real API endpoints)
+- Added FE-001A: Theming architecture with stage-based colors
+- Added FE-004A-C: Error boundaries, loading skeletons, toast notifications
+- Updated mock service documentation for 12 feature areas (manuscript creation, review decisions, planning writes, revision suggestions, flow editor, brainstorm, foundation, characters, world bible)
+- Added reference to `docs/Frontend API Alignment Issues.md` and `docs/API Alignment Verification.md`
+
 ## 1. Purpose
 
 The frontend should feel like a writer workspace, not a generic admin panel.
@@ -488,8 +500,21 @@ These should be treated as target product features even if the current implement
 **Health**:
 - `GET /health` - health check
 
-### 12.2 Implemented Frontend (Vanilla JS Prototype)
+### 12.2 Implemented Frontend (React + Vite)
 
+**Completed Tasks (FE-001 through FE-012)**:
+- ✅ FE-001: Vite + React + TypeScript setup with Tailwind CSS
+- ✅ FE-001A: Theming architecture with stage-based colors (light/dark mode, planning/writing/review/inspect themes)
+- ✅ FE-002: Zustand + TanStack Query configuration (uiStore, workspaceStore, API client)
+- ✅ FE-005: Three-pane layout shell (LeftRail, CenterPane, RightRail, BottomUtility, ModeSwitcher)
+- ✅ FE-007: Planning board view with real API integration
+- ✅ FE-008: Chapter/scene card components (ChapterCard, SceneCard, StatusChip, CharacterChip, DependencyBadge)
+- ✅ FE-009: Chapter packet builder (PacketContents, PacketReferences)
+- ✅ FE-010: TipTap editor integration with auto-save and word count
+- ✅ FE-011: Chapter tab management with unsaved change warnings
+- ✅ FE-012: Manuscript context rail (ChapterPlanPanel, SceneGoalsPanel, PinnedReferencesPanel)
+
+**Vanilla JS Prototype (Legacy - Being Replaced)**:
 - project creation and listing
 - project detail display
 - local workspace notes (localStorage)
@@ -498,6 +523,8 @@ These should be treated as target product features even if the current implement
 - backend status polling (600ms interval)
 - role-model checker model selection and result display
 - basic job monitoring with logs
+
+**Migration Status**: React frontend is functional and running at http://localhost:5173/. Vanilla JS prototype will be decommissioned after remaining tasks complete.
 
 ### 12.3 Deferred / Incomplete Backend
 
@@ -804,63 +831,75 @@ Friendly labels are allowed, but they must map back to the canonical enum names.
 
 The implementation order should stay deterministic so the workspace grows in a stable sequence:
 
-**Phase 1: Foundation (Week 1-2)**
-- FE-001: Vite + React + TypeScript setup with Tailwind CSS
-- FE-002: Zustand + TanStack Query configuration
-- FE-003: Project list and creation (real API)
-- FE-004: Workspace notes persistence (Zustand + localStorage)
+**Phase 1: Foundation (Week 1-2) - COMPLETED ✅**
+- ✅ FE-001: Vite + React + TypeScript setup with Tailwind CSS
+- ✅ FE-001A: Theming architecture with stage-based colors
+- ✅ FE-002: Zustand + TanStack Query configuration
+- ⏳ FE-003: Project list and creation (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-004: Workspace notes persistence (Zustand + localStorage) - NOT YET IMPLEMENTED
 
 **Phase 2: Three-Pane Layout + Storyboard (Week 3)**
-- FE-005: Three-pane layout shell (LeftRail, CenterPane, RightRail, BottomUtility)
-- FE-005A: Storyboard rail with scene cards
-- FE-005B: Story bible rail section (pinned references)
+- ✅ FE-005: Three-pane layout shell (LeftRail, CenterPane, RightRail, BottomUtility)
+- ⏳ FE-005A: Storyboard rail with scene cards - NOT YET IMPLEMENTED
+- ⏳ FE-005B: Story bible rail section (pinned references) - NOT YET IMPLEMENTED
 
 **Phase 3: Flow Editor (Week 4)**
-- FE-006: Editable flow editor (mock service)
-- Stage list, add/rename/reorder/disable/archive stages
-- Integration with story-development flow concepts
+- ⏳ FE-006: Editable flow editor (mock service) - BLOCKED: Backend not available
 
-**Phase 4: Planning Board (Week 5)**
-- FE-007: Planning board view (real API)
-- FE-008: Chapter/scene card components with drag-and-drop
-- FE-009: Chapter packet builder
+**Phase 4: Planning Board (Week 5) - COMPLETED ✅**
+- ✅ FE-007: Planning board view (real API)
+- ✅ FE-008: Chapter/scene card components with drag-and-drop
+- ✅ FE-009: Chapter packet builder
 
-**Phase 5: Manuscript Editor (Week 6-7)**
-- FE-010: TipTap editor integration
-- FE-011: Chapter tab management
-- FE-012: Manuscript context rail
-- FE-013: Draft artifact promotion
+**Phase 5: Manuscript Editor (Week 6-7) - COMPLETED ✅**
+- ✅ FE-010: TipTap editor integration
+- ✅ FE-011: Chapter tab management
+- ✅ FE-012: Manuscript context rail
+- ⏳ FE-013: Draft artifact promotion - BLOCKED: Backend POST endpoint not available
 
 **Phase 6: Job Execution (Week 8)**
-- FE-014: Job launch interface (real API)
-- FE-015: Job status polling with TanStack Query
-- FE-016: Job logs viewer
-- FE-017: Bottom utility layer for job monitoring
+- ⏳ FE-014: Job launch interface (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-015: Job status polling with TanStack Query - NOT YET IMPLEMENTED
+- ⏳ FE-016: Job logs viewer - NOT YET IMPLEMENTED
+- ⏳ FE-017: Bottom utility layer for job monitoring - NOT YET IMPLEMENTED
 
 **Phase 7: Inspect & Provenance (Week 9)**
-- FE-018: Inspect mode integration
-- FE-019: Step timeline component (real API)
-- FE-020: Artifact lineage component (real API)
-- FE-021: Provenance badges
+- ⏳ FE-018: Inspect mode integration - NOT YET IMPLEMENTED
+- ⏳ FE-019: Step timeline component (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-020: Artifact lineage component (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-021: Provenance badges - NOT YET IMPLEMENTED
 
 **Phase 8: Review Workspace (Week 10)**
-- FE-022: Checker findings list (real API)
-- FE-023: Review decision interface (real API)
-- FE-024: Role-model checker UI migration
+- ⏳ FE-022: Checker findings list (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-023: Review decision interface (mock service) - BLOCKED: Backend POST endpoint not available
+- ⏳ FE-024: Role-model checker UI (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-024A: Story branches UI (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-024B: Story decision nodes UI (real API) - NOT YET IMPLEMENTED
+- ⏳ FE-024C: Inspect run links UI (real API) - NOT YET IMPLEMENTED
 
 **Phase 9: Manuscript Aids (Week 11-12)**
-- FE-025: Manuscript aids panel
-- FE-026: Selection lifecycle handling
-- FE-027: Diff review interface
-- FE-028: Suggestion history (mock service)
+- ⏳ FE-025: Manuscript aids panel (mock service) - BLOCKED: Backend POST endpoint not available
+- ⏳ FE-026: Selection lifecycle handling - NOT YET IMPLEMENTED
+- ⏳ FE-027: Diff review interface - NOT YET IMPLEMENTED
+- ⏳ FE-028: Suggestion history (mock service) - BLOCKED: Backend POST endpoint not available
 
 **Phase 10: Story Development Features (Week 13+)**
-- FE-029: Brainstorm workspace (mock service)
-- FE-030: Foundation screen (mock service)
-- FE-031: Character builder (mock service)
-- FE-032: World bible workspace (mock service)
+- ⏳ FE-029: Brainstorm workspace (mock service) - BLOCKED: Backend not available
+- ⏳ FE-030: Foundation screen (mock service) - BLOCKED: Backend not available
+- ⏳ FE-031: Character builder (mock service) - BLOCKED: Backend not available
+- ⏳ FE-032: World bible workspace (mock service) - BLOCKED: Backend not available
+
+**Infrastructure Tasks (Throughout)**
+- ✅ FE-001A: Theming architecture with stage-based colors - COMPLETED
+- ⏳ FE-004A: Error boundary components - NOT YET IMPLEMENTED
+- ⏳ FE-004B: Loading skeleton components - NOT YET IMPLEMENTED
+- ⏳ FE-004C: Toast notification system - NOT YET IMPLEMENTED
+
+**Summary**: 12 tasks completed (FE-001, FE-001A, FE-002, FE-005, FE-007, FE-008, FE-009, FE-010, FE-011, FE-012), 16 tasks ready to implement (real API available), 10 tasks blocked (backend not available)
 
 Each phase should ship with its own acceptance criteria and should not depend on future unsupported query features.
+
+**See**: `TODO.md` for complete task specifications with backend schemas and acceptance criteria.
 
 ## 19. Deterministic Orchestrator Tasks
 
