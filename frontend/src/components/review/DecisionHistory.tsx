@@ -1,0 +1,92 @@
+import { useState, useEffect, useCallback } from 'react';
+import type { ReviewDecision } from '../../types/review';
+import { getDecisionsForFinding } from '../../services/review';
+
+interface DecisionHistoryProps {
+  findingId: string;
+}
+
+export function DecisionHistory({ findingId }: DecisionHistoryProps) {
+  const [decisions, setDecisions] = useState<ReviewDecision[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDecisions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getDecisionsForFinding(findingId);
+      setDecisions(data.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load decisions');
+      setDecisions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [findingId]);
+
+  useEffect(() => {
+    loadDecisions();
+  }, [loadDecisions]);
+
+  const getActionColor = (action: string): string => {
+    switch (action) {
+      case 'accept':
+        return 'bg-green-100 text-green-800';
+      case 'reject':
+        return 'bg-red-100 text-red-800';
+      case 'defer':
+        return 'bg-gray-100 text-gray-800';
+      case 'escalate':
+        return 'bg-purple-100 text-purple-800';
+      case 'refine':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return <div className="text-sm text-gray-500">Loading decisions...</div>;
+  }
+
+  if (error) {
+    return <div className="text-sm text-red-600">{error}</div>;
+  }
+
+  if (decisions.length === 0) {
+    return <div className="text-sm text-gray-500">No decisions recorded yet</div>;
+  }
+
+  return (
+    <div className="border-t border-gray-200 p-4 bg-white">
+      <h3 className="font-medium text-gray-900 mb-3">Decision History ({decisions.length})</h3>
+      
+      <div className="space-y-3 max-h-64 overflow-y-auto">
+        {decisions.map((decision) => (
+          <div key={decision.decision_id} className="border rounded p-3 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(decision.decision_action)}`}>
+                {decision.decision_action.toUpperCase()}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(decision.created_at).toLocaleString()}
+              </span>
+            </div>
+            
+            <p className="text-sm text-gray-700">{decision.rationale}</p>
+            
+            {decision.routed_to_stage && (
+              <p className="text-xs text-blue-600 mt-1">
+                Routed to: {decision.routed_to_stage}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

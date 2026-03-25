@@ -22,6 +22,9 @@ Document version: `v0.5`
 - Updated mock service documentation for 12 feature areas (manuscript creation, review decisions, planning writes, revision suggestions, flow editor, brainstorm, foundation, characters, world bible)
 - Added reference to `docs/Frontend API Alignment Issues.md` and `docs/API Alignment Verification.md`
 
+**Change log from v0.5 (Directory Structure Update - March 24, 2026)**:
+- Added Section 21 subsection on Directory Structure & Import Conventions documenting flat structure requirement, import path patterns, Tailwind config, Vite entry point, build verification strategy, and git hygiene practices
+
 ## 1. Purpose
 
 The frontend should feel like a writer workspace, not a generic admin panel.
@@ -1150,6 +1153,14 @@ These tasks are intended to be handed to agents as bounded screen-family assignm
 - Rationale: Allows UI development without blocking on backend completion
 - Implementation: `VITE_USE_MOCKS=true` toggles between mock and real APIs
 - Mock services follow same TypeScript interfaces as real API clients
+
+**Directory Structure & Import Conventions**:
+- **Flat structure required**: All source code lives directly under `frontend/src/` with NO nested `src/` folders (e.g., use `frontend/src/components/*`, NOT `frontend/src/src/components/*`)
+- **Import path pattern**: Components at `src/components/` import from `../hooks/`, `../lib/`, `../stores/`; Views at `src/views/` import from `../hooks/`, `../components/`, `../lib/`
+- **Tailwind content config**: Use `"./**/*.{js,ts,jsx,tsx}"` not `"./src/**/*.{js,ts,jsx,tsx}"` when app root is already at `frontend/src/`
+- **Vite entry point**: `index.html` references `/main.tsx`, NOT `/src/main.tsx`
+- **Build verification**: Run `npm run build` after each feature to catch TypeScript errors and import issues early; do not wait until all features complete
+- **Git hygiene**: Create `.gitignore` BEFORE running `npm install` (node_modules/, dist/, .env.local, *.log)
 
 ## 22. Migration Strategy
 

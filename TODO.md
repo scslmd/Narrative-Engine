@@ -326,7 +326,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Error interceptor logs to console and returns error object
     - `npm run dev` loads without console errors
 
-- [ ] FE-003: Project list and creation (real API)
+- [x] FE-003: Project list and creation (real API)
   - **Write scope**: `frontend/src/services/projects.ts`, `frontend/src/types/project.ts`, `frontend/src/components/projects/ProjectList.tsx`, `frontend/src/components/projects/ProjectCreateForm.tsx`, `frontend/src/components/projects/ProjectDetail.tsx`
   - **Dependencies**: FE-001, FE-002
   - **Expected outcome**: Users can create, list, select, and view projects
@@ -340,7 +340,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Detail view shows: manifest, project_dir, database_exists, sequence_exists, chapter_exists flags
     - Error states show user-friendly messages (404 "Project not found", 500 "Server error", network errors)
 
-- [ ] FE-004: Workspace notes persistence (Zustand + localStorage)
+- [x] FE-004: Workspace notes persistence (Zustand + localStorage)
   - **Write scope**: `frontend/src/stores/workspaceStore.ts`, `frontend/src/types/workspace.ts`, `frontend/src/components/workspace/WorkspaceNotes.tsx`, `frontend/src/lib/storage.ts`
   - **Dependencies**: FE-001, FE-002
   - **Expected outcome**: Local workspace notes persist per project without affecting canonical state
@@ -352,7 +352,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - UI displays "Personal notes (not saved to project)" banner
     - Notes cleared when project deleted (via cleanup hook)
 
-- [ ] FE-004A: Error boundary components
+- [x] FE-004A: Error boundary components
   - **Write scope**: `frontend/src/components/ErrorBoundary.tsx`, `frontend/src/components/Fallback.tsx`, `frontend/src/lib/errorHandling.ts`
   - **Dependencies**: FE-001, FE-002
   - **Expected outcome**: Graceful error handling without full page crashes
@@ -365,7 +365,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - API errors show status code (404, 500) and backend message
     - Retry button resets error state and re-renders child components
 
-- [ ] FE-004B: Loading skeleton components
+- [x] FE-004B: Loading skeleton components
   - **Write scope**: `frontend/src/components/skeleton/SkeletonText.tsx`, `frontend/src/components/skeleton/SkeletonCard.tsx`, `frontend/src/components/skeleton/SkeletonList.tsx`, `frontend/src/components/skeleton/SkeletonEditor.tsx`
   - **Dependencies**: FE-001, FE-001A
   - **Expected outcome**: Consistent loading states across all components
@@ -378,7 +378,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Used in all list/detail views during API fetch (isFetching state)
     - Fallback to skeleton on error retry
 
-- [ ] FE-004C: Toast notification system
+- [x] FE-004C: Toast notification system
   - **Write scope**: `frontend/src/components/toast/Toast.tsx`, `frontend/src/components/toast/ToastContainer.tsx`, `frontend/src/lib/toast.ts`, `frontend/src/types/toast.ts`
   - **Dependencies**: FE-001, FE-001A
   - **Expected outcome**: Consistent user feedback for actions
@@ -406,7 +406,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Layout responsive: below 1024px, rails stack vertically
     - Tailwind classes used for all styling (no inline styles)
 
-- [ ] FE-005A: Storyboard rail with scene cards
+- [x] FE-005A: Storyboard rail with scene cards
   - **Write scope**: `frontend/src/components/storyboard/Storyboard.tsx`, `frontend/src/components/storyboard/SceneCard.tsx`, `frontend/src/components/storyboard/SceneCardList.tsx`, `frontend/src/types/scene.ts`, `frontend/src/hooks/useStoryboard.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Storyboard shows story progression with scene-level detail
@@ -419,7 +419,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Card height: min 80px, max 150px, overflow-hidden with ellipsis
     - Jump-to-manuscript logs navigation event to console (for testing)
 
-- [ ] FE-005B: Story bible rail section
+- [x] FE-005B: Story bible rail section
   - **Write scope**: `frontend/src/components/bible/StoryBibleRail.tsx`, `frontend/src/components/bible/PinnedEntry.tsx`, `frontend/src/components/bible/BibleEntryList.tsx`, `frontend/src/types/bible.ts`, `frontend/src/stores/bibleStore.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Users can pin characters, locations, rules for quick reference
@@ -435,7 +435,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 3: Flow Editor (Week 4)
 
-- [ ] FE-006: Editable flow editor (mock service)
+- [x] FE-006: Editable flow editor (mock service)
   - **Write scope**: `frontend/src/services/mocks/flowMock.ts`, `frontend/src/services/flow.ts`, `frontend/src/components/flow/FlowEditor.tsx`, `frontend/src/components/flow/StageList.tsx`, `frontend/src/components/flow/StageCard.tsx`, `frontend/src/components/flow/StageActions.tsx`, `frontend/src/types/flow.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Users can add, rename, reorder, disable, archive, and redefine stages
@@ -491,7 +491,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading states show skeleton loaders during API fetch
     - Context updates when active chapter changes (via useEffect)
 
-- [ ] FE-013: Draft artifact promotion (mock service - backend endpoint not yet available)
+- [x] FE-013: Draft artifact promotion (mock service - backend endpoint not yet available)
   - **Write scope**: `frontend/src/services/drafting.ts`, `frontend/src/services/mocks/draftingMock.ts`, `frontend/src/components/drafting/DraftPromotion.tsx`, `frontend/src/components/drafting/DraftPreview.tsx`, `frontend/src/types/drafting.ts`
   - **Dependencies**: FE-010, FE-011
   - **Expected outcome**: Generated drafts can be promoted to editable manuscript state with provenance preserved
@@ -510,7 +510,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 6: Job Execution (Week 8)
 
-- [ ] FE-014: Job launch interface (real API)
+- [x] FE-014: Job launch interface (real API)
   - **Write scope**: `frontend/src/services/jobs.ts`, `frontend/src/components/jobs/JobLaunchForm.tsx`, `frontend/src/components/jobs/PhaseSelector.tsx`, `frontend/src/components/jobs/PayloadBuilder.tsx`, `frontend/src/types/job.ts`
   - **Dependencies**: FE-009, FE-002
   - **Expected outcome**: Users can launch backend jobs with proper context
@@ -526,7 +526,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Form resets after successful submission
     - Note: Model selection is NOT part of job creation - models are configured in backend, not frontend
 
-- [ ] FE-015: Job status polling with TanStack Query
+- [x] FE-015: Job status polling with TanStack Query
   - **Write scope**: `frontend/src/hooks/useJobStatus.ts`, `frontend/src/components/jobs/JobStatusIndicator.tsx`, `frontend/src/components/jobs/JobProgress.tsx`, `frontend/src/lib/queryClient.ts` (update config)
   - **Dependencies**: FE-014, FE-002
   - **Expected outcome**: Real-time status updates with 600ms polling interval
@@ -543,7 +543,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Polling visible in browser devtools Network tab (requests every 600ms)
     - Error handling: network errors retry 3 times before showing failed state
 
-- [ ] FE-016: Job logs viewer
+- [x] FE-016: Job logs viewer
   - **Write scope**: `frontend/src/components/jobs/JobLogsViewer.tsx`, `frontend/src/components/jobs/LogEntry.tsx`, `frontend/src/hooks/useJobLogs.ts`, `frontend/src/lib/download.ts`
   - **Dependencies**: FE-015
   - **Expected outcome**: Logs readable and exportable
@@ -560,7 +560,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Empty state: "No logs available yet"
     - Loading state: skeleton log entries during fetch
 
-- [ ] FE-017: Bottom utility layer
+- [x] FE-017: Bottom utility layer
   - **Write scope**: `frontend/src/components/layout/BottomUtility.tsx`, `frontend/src/components/jobs/JobMonitor.tsx`, `frontend/src/stores/jobStore.ts`, `frontend/src/hooks/useJobMonitor.ts`
   - **Dependencies**: FE-005, FE-015, FE-016
   - **Expected outcome**: Job monitoring visible across all workspace modes
@@ -578,7 +578,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 7: Inspect & Provenance (Week 9)
 
-- [ ] FE-018: Inspect mode integration
+- [x] FE-018: Inspect mode integration
   - **Write scope**: `frontend/src/components/inspect/InspectMode.tsx`, `frontend/src/components/inspect/InspectTabs.tsx`, `frontend/src/types/inspect.ts`
   - **Dependencies**: FE-005, FE-019, FE-020
   - **Expected outcome**: First-class center-pane mode for inspecting job execution
@@ -590,7 +590,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - URL includes ?mode=inspect&job_id={id} for shareability
     - Empty state: "Select a job to inspect" when no context
 
-- [ ] FE-019: Step timeline component (real API)
+- [x] FE-019: Step timeline component (real API)
   - **Write scope**: `frontend/src/components/inspect/StepTimeline.tsx`, `frontend/src/components/inspect/StepCard.tsx`, `frontend/src/hooks/useJobSteps.ts`, `frontend/src/types/inspect.ts`
   - **Dependencies**: FE-018
   - **Expected outcome**: Steps render in backend order with provenance badges
@@ -605,7 +605,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading state shows SkeletonList during fetch
     - Empty state: "No steps recorded yet"
 
-- [ ] FE-020: Artifact lineage component (real API)
+- [x] FE-020: Artifact lineage component (real API)
   - **Write scope**: `frontend/src/components/inspect/ArtifactLineage.tsx`, `frontend/src/components/inspect/LineageGraph.tsx`, `frontend/src/components/inspect/ArtifactCard.tsx`, `frontend/src/hooks/useJobLineage.ts`
   - **Dependencies**: FE-018
   - **Expected outcome**: Lineage shows history with CANONICAL/SUPERSEDED states
@@ -619,7 +619,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading state shows SkeletonList during fetch
     - Empty state: "No artifacts generated yet"
 
-- [ ] FE-021: Provenance badges
+- [x] FE-021: Provenance badges
   - **Write scope**: `frontend/src/components/common/ProvenanceBadge.tsx`, `frontend/src/components/common/ProviderBadge.tsx`, `frontend/src/components/common/ModelBadge.tsx`, `frontend/src/lib/provenance.ts`
   - **Dependencies**: FE-001A
   - **Expected outcome**: Provenance visible wherever generated output appears
@@ -634,7 +634,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 8: Review Workspace (Week 10)
 
-- [ ] FE-022: Checker findings list (real API)
+- [x] FE-022: Checker findings list (real API)
   - **Write scope**: `frontend/src/services/review.ts`, `frontend/src/components/review/FindingsList.tsx`, `frontend/src/components/review/FindingCard.tsx`, `frontend/src/components/review/SeverityBadge.tsx`, `frontend/src/types/review.ts`
   - **Dependencies**: FE-005, FE-004B
   - **Expected outcome**: Findings filterable, jump to source text
@@ -650,7 +650,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading state shows SkeletonList during fetch
     - Empty state: "No findings for this project"
 
-- [ ] FE-023: Review decision interface (mock service - backend endpoint not yet available)
+- [x] FE-023: Review decision interface (mock service - backend endpoint not yet available)
   - **Write scope**: `frontend/src/services/review.ts`, `frontend/src/services/mocks/reviewMock.ts`, `frontend/src/components/review/DecisionForm.tsx`, `frontend/src/components/review/DecisionHistory.tsx`, `frontend/src/types/review.ts`
   - **Dependencies**: FE-022
   - **Expected outcome**: Users can record review decisions that route to planning/drafting
@@ -666,7 +666,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Banner at top: "Decision recording in mock mode - backend endpoint not yet available"
     - Feature flag VITE_USE_MOCKS=true enables mock, false shows "Coming soon" disabled state
 
-- [ ] FE-024: Role-model checker UI (real API)
+- [x] FE-024: Role-model checker UI (real API)
   - **Write scope**: `frontend/src/services/checker.ts`, `frontend/src/components/checker/CheckerForm.tsx`, `frontend/src/components/checker/CheckerResults.tsx`, `frontend/src/components/checker/RoleModelSelector.tsx`, `frontend/src/components/checker/CheckerStatus.tsx`, `frontend/src/types/checker.ts`
   - **Dependencies**: FE-005, FE-022, FE-015
   - **Expected outcome**: Model selection per role, run checker, display results with status polling
