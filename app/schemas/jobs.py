@@ -18,6 +18,7 @@ MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
 class JobCreateRequest(StrictModel):
     phase: JobPhase
     payload: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)  # REL-02
 
     @field_validator('payload')
     @classmethod

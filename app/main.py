@@ -19,6 +19,9 @@ from .api import (
     build_story_development_router,
     build_role_model_checker_router,
 )
+from .api.auth import router as auth_router
+from .api.backup import router as backup_router
+from .api.health import router as health_router
 from .settings import settings
 from .persistence.story_development import StoryDevelopmentRepository
 from .services import JobManager, ModelRegistry, ProjectService, RoleModelCheckManager, RoleModelCheckerService
@@ -95,6 +98,9 @@ def build_app() -> FastAPI:
     # Add rate limiting middleware (SEC-05) - after auth so limits apply per authenticated client
     app.add_middleware(RateLimitMiddleware)
 
+    app.include_router(auth_router)  # Authentication endpoints (SEC-02)
+    app.include_router(backup_router)  # Backup endpoints (REL-04)
+    app.include_router(health_router)  # Health endpoints (REL-05, REL-06)
     app.include_router(build_projects_router(project_service))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_models_router(model_registry))
@@ -108,9 +114,5 @@ def build_app() -> FastAPI:
         @app.get('/role-model-checker-ui', include_in_schema=False)
         def serve_frontend() -> FileResponse:
             return FileResponse(frontend_root / 'index.html')
-
-    @app.get('/health')
-    def health() -> dict[str, str]:
-        return {'status': 'ok', 'mode': 'local'}
 
     return app

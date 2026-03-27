@@ -14,6 +14,7 @@ RuntimeErrorCategory = Literal[
     "protocol_shape_failure",
     "provider_rejected_request",
     "configuration_error",
+    "circuit_open",  # REL-01: Circuit breaker is open
 ]
 
 

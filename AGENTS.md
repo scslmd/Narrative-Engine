@@ -19,6 +19,35 @@ pytest tests/test_smoke.py        # Run specific test file
 pytest -k test_name              # Run tests matching pattern
 pytest tests/test_story_branching_service.py::test_create_branch  # Single test
 python -m app.main                # Start FastAPI server (via uvicorn)
+
+# Security & Reliability Tests
+pytest tests/test_input_validation.py   # SEC-01: Input validation (39 tests)
+pytest tests/test_authentication.py     # SEC-02: API key auth (13 tests)
+pytest tests/test_authorization.py      # SEC-03: Authorization (13 tests)
+pytest tests/test_circuit_breaker.py    # REL-01: Circuit breaker (17 tests)
+pytest tests/test_idempotency.py        # REL-02: Idempotency keys (14 tests)
+pytest tests/test_backup.py             # REL-04: Backup/restore (12 tests)
+
+# API Key Management
+curl -X POST http://localhost:8000/v1/auth/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "test-key", "permissions": ["read", "write"]}'
+# Response includes full_key (save this! only shown once)
+
+curl -X GET http://localhost:8000/v1/auth/keys \
+  -H "Authorization: Bearer {prefix}.{secret}"
+
+curl -X DELETE http://localhost:8000/v1/auth/keys/{prefix} \
+  -H "Authorization: Bearer {admin_key}"
+
+# Backup Operations
+curl -X POST http://localhost:8000/v1/backup/create \
+  -H "Content-Type: application/json" \
+  -d '{"description": "pre-deployment backup"}'
+
+curl -X GET http://localhost:8000/v1/backup/list
+
+curl -X POST http://localhost:8000/v1/backup/{backup_id}/restore
 ```
 
 ## Project Structure
@@ -175,8 +204,14 @@ def test_create_branch(tmp_path):
 **Always run after changes:**
 1. Frontend: `npm run build` (catches TS errors, unused vars)
 2. Backend: `pytest -x` (stop on first failure)
+3. Security & Reliability: `pytest tests/test_input_validation.py tests/test_authentication.py tests/test_authorization.py tests/test_circuit_breaker.py tests/test_idempotency.py tests/test_backup.py -v`
 
 **Before committing:** Ensure both frontend and backend pass their respective checks.
+
+**Full test suite status (as of March 26, 2026):**
+- Security features: 65 tests passing (SEC-01: 39, SEC-02: 13, SEC-03: 13)
+- Reliability features: 46 tests passing (REL-01: 17, REL-02: 14, REL-03: 2, REL-04: 12, REL-06: 8)
+- Total new tests: 111 passing in 5.32s
 
 ## Common Pitfalls
 
@@ -187,6 +222,11 @@ def test_create_branch(tmp_path):
 | Pydantic validation errors | Use `StrictModel` for request schemas, regular `BaseModel` for responses |
 | Test temp directory conflicts | Use `tmp_path` fixture, never hardcode paths |
 | node_modules in git | Add to `.gitignore`, run `git reset HEAD node_modules/` |
+| API key not working | Check format: `{prefix}.{secret}` with dot separator, no spaces |
+| Authorization denied error | Verify user_owner_id matches resource owner OR has admin permission |
+| Circuit breaker open | Wait for recovery timeout (60s) or fix underlying backend issue |
+| Idempotency key conflict | Ensure payload is identical; different payloads require new keys |
+| Backup restore fails | Check disk space (>10% free required), verify backup file exists |
 
 ## API Patterns
 
@@ -202,7 +242,141 @@ All APIs use `/v1` prefix for version management:
 - GET `/v1/story-development/drafting/draft-artifacts?project_id={id}` - List drafts
 - PATCH `/v1/story-development/branches/{branch_id}` - Update branch
 
+**Authentication:**
+- Header: `Authorization: Bearer {prefix}.{secret}`
+- Create key: POST `/v1/auth/keys` with `{name, permissions[], expires_in_days?}`
+- Full key only returned once at creation - store securely!
+- List keys: GET `/v1/auth/keys` (requires auth)
+- Revoke key: DELETE `/v1/auth/keys/{prefix}` (requires admin permission)
+
+**Authorization:**
+- Permission hierarchy: `admin` > `write` > `read`
+- Write includes read access automatically
+- Admin bypasses all ownership checks
+- Non-admin users can only access resources they own (owner_id match required)
+
+**Idempotency:**
+- Header: `Idempotency-Key: {unique-key}`
+- TTL: 24 hours
+- Same key + same payload = cached response returned
+- Same key + different payload = 409 Conflict error
+
 **Response format:** Always return structured JSON with consistent field names matching TypeScript interfaces.
+
+## Security & Reliability Features
+
+### SEC-01: Input Validation (`app/utils/input_validation.py`)
+```python
+from app.utils.input_validation import sanitize_string, validate_filename, limit_size
+
+# Sanitize user input (XSS prevention)
+safe_text = sanitize_string(user_input)  # Escapes HTML entities
+
+# Validate filenames (path traversal protection)
+validate_filename(filename, max_length=255)  # Raises ValidationError if invalid
+
+# Limit payload size (DoS protection)
+limit_size(payload_dict, max_bytes=5_242_880)  # 5 MB limit
+```
+
+### SEC-02: Authentication (`app/services/authentication.py`)
+```python
+from app.services.authentication import get_auth_service
+
+auth = get_auth_service()
+
+# Create API key
+api_key, full_key = auth.create_key(
+    name="My App",
+    permissions=["read", "write"],
+    expires_in_days=365,
+)
+# IMPORTANT: Save full_key immediately - it's only returned once!
+
+# Validate key from request header
+validated_key = auth.validate_key("abcd.xYz123...")  # Returns APIKey or None
+
+# Revoke key
+auth.revoke_key("abcd")  # True if revoked, False if not found
+```
+
+### SEC-03: Authorization (`app/services/authorization.py`)
+```python
+from app.services.authorization import get_authorization_service, PERMISSION_READ
+
+authz = get_authorization_service()
+
+# Check permission level
+if authz.check_permission(["read"], PERMISSION_READ):
+    print("Access granted")
+
+# Require permission (raises AuthorizationError if denied)
+authz.require_permission(user_permissions, "write")
+
+# Resource-level authorization
+if authz.check_resource_access(
+    user_permissions=["read"],
+    user_owner_id="user123",
+    resource_owner_id="user123",  # Same owner = access granted
+    required_permission="read",
+):
+    print("Can access this project")
+```
+
+### REL-01: Circuit Breaker (`app/services/circuit_breaker.py`)
+```python
+from app.services.circuit_breaker import get_circuit_breaker
+
+circuit = get_circuit_breaker("llama.cpp")
+
+try:
+    with circuit:
+        result = call_inference_backend()
+except CircuitOpenError as e:
+    print(f"Backend unavailable, retry in {e.recovery_time_seconds}s")
+```
+
+### REL-02: Idempotency (`app/services/idempotency.py`)
+```python
+from app.services.idempotency import check_idempotency, store_response
+
+# At start of operation
+should_proceed, cached_response = check_idempotency(
+    idempotency_key="client-generated-uuid",
+    payload_hash=hash_payload(request_data),
+)
+
+if not should_proceed:
+    if cached_response is not None:
+        return cached_response  # Return cached result
+    else:
+        raise IdempotencyError("Payload mismatch for idempotency key")
+
+# Execute operation...
+result = do_expensive_operation()
+
+# Store response for future retries
+store_response(idempotency_key, result)
+```
+
+### REL-04: Backup (`app/services/backup.py`)
+```python
+from app.services.backup import get_backup_service
+
+backup = get_backup_service()
+
+# Create backup (auto checkpoints WAL first)
+backup_path = backup.create_backup(description="pre-migration")
+
+# List backups
+backups = backup.list_backups()  # Most recent first
+
+# Restore backup (creates pre-restore backup automatically)
+backup.restore_backup(backup_id)
+
+# Delete old backup
+backup.delete_backup(backup_id)
+```
 
 ---
 
