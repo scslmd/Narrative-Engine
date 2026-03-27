@@ -4,14 +4,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Query, Response
 
-from ..schemas.inspect import JobLineageResponse, JobStepsResponse
+from ..schemas.inspect import (
+    JobAttemptHistoryResponse,
+    JobLineageResponse,
+    JobStepsResponse,
+)
 from ..schemas.jobs import JobCreateRequest, JobLogsResponse, JobRetryRequest, JobStatusResponse
 from ..services.job_manager import JobManager
 from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
 
 
-def build_jobs_router(job_manager: JobManager) -> APIRouter:
-    router = APIRouter(prefix='/jobs', tags=['jobs'])
+def build_jobs_router(job_manager: JobManager, prefix: str = '/jobs') -> APIRouter:
+    route_prefix = prefix.rstrip('/') if prefix else ''
+    router = APIRouter(prefix=route_prefix, tags=['jobs'])
 
     @router.post('/create', response_model=JobStatusResponse, status_code=202)
     def create_job(
@@ -24,7 +29,7 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
         except IdempotencyConflictError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         job = acceptance.status
-        response.headers['Location'] = f'/jobs/{job.id}/status'
+        response.headers['Location'] = f'{route_prefix}/{job.id}/status'
         if not acceptance.created_new and str(job.status) in {'COMPLETED', 'FAILED'}:
             response.status_code = 200
         return job
@@ -67,6 +72,13 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
 
+    @router.get('/{job_id}/attempts', response_model=JobAttemptHistoryResponse)
+    def get_attempts(job_id: UUID) -> JobAttemptHistoryResponse:
+        try:
+            return job_manager.get_attempt_history_projection(job_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Job not found.') from exc
+
     @router.post('/{job_id}/retry', response_model=JobStatusResponse, status_code=202)
     def retry_job(job_id: UUID, request: JobRetryRequest, response: Response) -> JobStatusResponse:
         try:
@@ -75,7 +87,7 @@ def build_jobs_router(job_manager: JobManager) -> APIRouter:
             raise HTTPException(status_code=404, detail='Job not found.') from exc
         except RetryNotAllowedError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        response.headers['Location'] = f'/jobs/{job.id}/status'
+        response.headers['Location'] = f'{route_prefix}/{job.id}/status'
         return job
 
     return router

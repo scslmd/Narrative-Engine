@@ -1,0 +1,51 @@
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #3b82f6;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1f2937;
+  --bg-secondary: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+}
+
+[data-stage="planning"] {
+  --color-primary: #2563eb;
+  --color-secondary: #3b82f6;
+}
+
+[data-stage="writing"] {
+  --color-primary: #16a34a;
+  --color-secondary: #22c55e;
+}
+
+[data-stage="review"] {
+  --color-primary: #ea580c;
+  --color-secondary: #f97316;
+}
+
+[data-stage="inspect"] {
+  --color-primary: #7c3aed;
+  --color-secondary: #8b5cf6;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

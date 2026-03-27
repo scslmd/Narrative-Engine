@@ -96,11 +96,32 @@ The backend code lives under [`app/`](app/). The structure is layered:
 
 ## Frontend
 
-The current frontend prototype lives under [`frontend/`](frontend/).
+The React + Vite frontend is rooted at [`frontend/`](frontend/) and the application source lives under [`frontend/src/`](frontend/src/).
 
-- [`frontend/index.html`](frontend/index.html): app shell HTML
-- [`frontend/app.js`](frontend/app.js): client-side workflow UI logic
-- [`frontend/styles.css`](frontend/styles.css): styling for the writer workflow prototype
+**Directory structure (flat, no nested src folders)**:
+- [`frontend/index.html`](frontend/index.html): HTML entry point
+- [`frontend/src/main.tsx`](frontend/src/main.tsx): React application entry
+- [`frontend/src/App.tsx`](frontend/src/App.tsx): Root component with routing
+- [`frontend/src/components/`](frontend/src/components): Reusable UI components (layout, planning, editor, etc.)
+- [`frontend/src/views/`](frontend/src/views): Page-level view components
+- [`frontend/src/hooks/`](frontend/src/hooks): Custom React hooks for data fetching and business logic
+- [`frontend/src/lib/`](frontend/src/lib): API clients, utilities, and configuration (Axios, TanStack Query)
+- [`frontend/src/stores/`](frontend/src/stores): Zustand stores for client state management
+- [`frontend/src/theme/`](frontend/src/theme): Theme configuration and CSS variables
+
+**Configuration files**:
+- `frontend/package.json`: Dependencies and scripts
+- `frontend/vite.config.ts`: Vite bundler with React plugin and API proxy to backend port 8000
+- `frontend/tsconfig.json`: TypeScript compiler options
+- `frontend/tailwind.config.js`: Tailwind CSS configuration with stage-based theme colors
+
+**Build commands**:
+```bash
+cd frontend
+npm run dev      # Start development server at http://localhost:5173
+npm run build    # Production build to dist/
+npm run lint     # ESLint check
+```
 
 ## Tests
 

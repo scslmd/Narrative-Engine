@@ -1,0 +1,503 @@
+[
+  {
+    "task_id": "6c0f0d33-29a0-4f7c-b83c-0dfde84092f6",
+    "purpose": "Update the shared Axios client so frontend callers target the backend API namespace actually registered by FastAPI. The change must replace the hard-coded '/api' base path with the existing versioned API root used by the backend routers.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/lib/api.ts",
+    "knowledge_base": [
+      "axios.create({ baseURL, timeout, headers })",
+      "backend router prefixes in app/api/projects.py, app/api/jobs.py, app/api/models.py, app/api/story_development.py, app/api/role_model_checker.py",
+      "existing interceptor in api.interceptors.response.use"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Frontend HTTP calls currently use relative paths like '/projects', '/jobs', '/jobs/:id/logs' via Axios instance methods.",
+      "output_data_schema": "Axios instance baseURL resolves to '/v1' so api.get('/projects') maps to '/v1/projects' and api.post('/jobs/create') maps to '/v1/jobs/create'.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/app/api/projects.py",
+        "F:/Dev/Narrative-Engine/app/api/jobs.py",
+        "F:/Dev/Narrative-Engine/app/api/models.py",
+        "F:/Dev/Narrative-Engine/app/api/story_development.py",
+        "F:/Dev/Narrative-Engine/app/api/role_model_checker.py"
+      ]
+    },
+    "utilized_features": [
+      "axios",
+      "existing api interceptor",
+      "FastAPI /v1 route prefixes already implemented in backend"
+    ],
+    "expected_outcomes": [
+      "Axios requests issued through the shared client prepend '/v1' instead of '/api'.",
+      "No consumer of the shared client needs to manually add '/v1' after this change."
+    ]
+  },
+  {
+    "task_id": "31790568-b9fc-4b16-96cc-dba74576176b",
+    "purpose": "Align the jobs frontend client with the actual backend job routes and response shapes. The implementation must stop calling non-existent endpoints and use the existing create/status/logs endpoints under '/v1/jobs'.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/lib/jobsApi.ts",
+    "knowledge_base": [
+      "jobsApi.list/create/get/getLogs",
+      "JobCreateRequest, JobSummary, JobDetail interfaces in this file",
+      "backend endpoints in build_jobs_router()",
+      "JobStatusResponse and JobLogsResponse in app/schemas/jobs.py"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current frontend create payload: { project_id: string, phase: 'P-100'|'P-200'|'P-300'|'P-400' }.",
+      "output_data_schema": "Backend create endpoint expects JobCreateRequest with shape { phase: JobPhase, payload: Record<string, unknown> } and returns JobStatusResponse from /v1/jobs/create; logs come from /v1/jobs/{job_id}/logs; status comes from /v1/jobs/{job_id}/status.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/app/api/jobs.py",
+        "F:/Dev/Narrative-Engine/app/schemas/jobs.py",
+        "F:/Dev/Narrative-Engine/frontend/src/hooks/useJobs.ts"
+      ]
+    },
+    "utilized_features": [
+      "existing Axios api client",
+      "existing backend endpoints /v1/jobs/create, /v1/jobs/{job_id}/status, /v1/jobs/{job_id}/logs"
+    ],
+    "expected_outcomes": [
+      "jobsApi.create() posts to '/jobs/create' and wraps project_id inside payload.project_id.",
+      "jobsApi.get() reads from '/jobs/{jobId}/status'.",
+      "jobsApi.getLogs() reads from '/jobs/{jobId}/logs'.",
+      "jobsApi.list() no longer calls a backend route that does not exist."
+    ]
+  },
+  {
+    "task_id": "e93dce77-fbf8-40d8-b66d-94aaafc7eb8c",
+    "purpose": "Correct job query and mutation flow so React Query uses the real backend response fields instead of the obsolete local JobSummary shape. This task should normalize polling and invalidation logic to the backend job status contract already in use.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/hooks/useJobs.ts",
+    "knowledge_base": [
+      "useQuery/useMutation/useQueryClient usage",
+      "jobsApi.create/get/getLogs",
+      "current status checks for 'PROCESSING'|'PENDING'",
+      "query invalidation keyed by ['jobs', projectId]"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current mutation input: JobCreateRequest from frontend/src/lib/jobsApi.ts.",
+      "output_data_schema": "Backend status values are 'QUEUED'|'RUNNING'|'COMPLETED'|'FAILED' from app/schemas/jobs.py JobStatusResponse.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/lib/jobsApi.ts",
+        "F:/Dev/Narrative-Engine/app/schemas/jobs.py",
+        "F:/Dev/Narrative-Engine/frontend/src/components/JobLaunchPanel.tsx",
+        "F:/Dev/Narrative-Engine/frontend/src/components/BottomUtilityLayer.tsx"
+      ]
+    },
+    "utilized_features": [
+      "@tanstack/react-query",
+      "existing toast store",
+      "existing jobsApi client"
+    ],
+    "expected_outcomes": [
+      "Polling conditions use backend statuses 'QUEUED' and 'RUNNING'.",
+      "onSuccess invalidation does not reference a missing data.project_id field.",
+      "useJob() and useJobLogs() continue to refresh deterministically while a job is active."
+    ]
+  },
+  {
+    "task_id": "d96f1c51-d20e-452d-aa4d-90339c4ca579",
+    "purpose": "Make the mode selector mutate workspace state instead of only changing the theme stage. The dropdown must update useUIStore.mode, and the theme stage should remain synchronized with that mode.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/Layout.tsx",
+    "knowledge_base": [
+      "useThemeStore: mode, toggleMode, setStage",
+      "useUIStore: mode",
+      "stageMap mapping plan/write/review/inspect to planning/writing/review/inspect",
+      "current select onChange handler"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Dropdown option values: 'plan' | 'write' | 'review' | 'inspect'.",
+      "output_data_schema": "useUIStore.mode must reflect the selected workspace mode; useThemeStore.stage must reflect the mapped stage theme.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/stores/uiStore.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/stores/themeStore.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/routes.ts"
+      ]
+    },
+    "utilized_features": [
+      "zustand useUIStore",
+      "zustand useThemeStore",
+      "existing stageMap"
+    ],
+    "expected_outcomes": [
+      "Selecting 'Writing' sets useUIStore.mode to 'write'.",
+      "Selecting any mode also updates the theme stage using the existing stageMap.",
+      "The select no longer leaves Workspace() stuck in the previous mode."
+    ]
+  },
+  {
+    "task_id": "89efb5e6-2af2-478a-92ec-fd37bfa16c59",
+    "purpose": "Expand the router so workspace deep links match the already-defined route helpers for plan/write/review/inspect. The route table must explicitly mount the workspace view for those paths instead of only '/workspace/:projectId'.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/App.tsx",
+    "knowledge_base": [
+      "BrowserRouter, Routes, Route, Navigate",
+      "Workspace component mounting",
+      "route helper signatures in routes.ts"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Existing helper paths: /workspace/:projectId/plan, /workspace/:projectId/write/:chapterId?, /workspace/:projectId/review, /workspace/:projectId/inspect/:jobId?.",
+      "output_data_schema": "Routes resolve to <Workspace /> for each supported workspace path.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/routes.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/views/Workspace.tsx"
+      ]
+    },
+    "utilized_features": [
+      "react-router-dom Route",
+      "existing Workspace component",
+      "existing route helper definitions"
+    ],
+    "expected_outcomes": [
+      "Navigating to '/workspace/<id>/review' renders Workspace instead of redirecting to '/'.",
+      "Navigating to '/workspace/<id>/inspect/<jobId>' renders Workspace instead of redirecting to '/'."
+    ]
+  },
+  {
+    "task_id": "5a1f7a7f-b31d-44fe-a46e-e4d24ce47531",
+    "purpose": "Derive workspace mode from route params so deep links and store state stay synchronized. The component must stop relying exclusively on stale in-memory store state when a URL already encodes the intended mode.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/views/Workspace.tsx",
+    "knowledge_base": [
+      "useParams",
+      "useUIStore.mode",
+      "renderView() switch over plan/write/review/inspect",
+      "route definitions in routes.ts"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Route params may include projectId, mode segment, chapterId, and jobId depending on path.",
+      "output_data_schema": "Rendered child view matches the URL-derived mode when present; fallback remains plan when mode is absent.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/App.tsx",
+        "F:/Dev/Narrative-Engine/frontend/src/routes.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/stores/uiStore.ts"
+      ]
+    },
+    "utilized_features": [
+      "react-router-dom useParams",
+      "existing PlanningView/WritingView/ReviewView/InspectView components",
+      "existing useUIStore"
+    ],
+    "expected_outcomes": [
+      "Opening '/workspace/<id>/inspect' renders InspectView without requiring prior store mutation.",
+      "Opening '/workspace/<id>/write' renders WritingView without manual dropdown interaction."
+    ]
+  },
+  {
+    "task_id": "9ef833eb-7242-49d9-b31b-a9811d2b1190",
+    "purpose": "Serve the built Vite artifact instead of the source directory. The backend app bootstrap must point static serving and index file delivery at the dist output generated by 'npm run build'.",
+    "responsible_file": "F:/Dev/Narrative-Engine/app/main.py",
+    "knowledge_base": [
+      "frontend_root path construction",
+      "StaticFiles mount",
+      "serve_frontend() returning FileResponse",
+      "Vite output location in frontend/dist"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current server serves frontend/index.html and mounts frontend/ as static assets.",
+      "output_data_schema": "Server serves frontend/dist/index.html and mounts frontend/dist/assets or dist root consistently with Vite build output.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/package.json",
+        "F:/Dev/Narrative-Engine/frontend/index.html"
+      ]
+    },
+    "utilized_features": [
+      "fastapi.staticfiles.StaticFiles",
+      "fastapi.responses.FileResponse",
+      "existing Vite build output"
+    ],
+    "expected_outcomes": [
+      "GET '/' returns the built dist index, not the source index that imports './src/main.tsx'.",
+      "Frontend assets referenced by the built HTML resolve under the mounted static path."
+    ]
+  },
+  {
+    "task_id": "1d9ca3a8-74ec-4a8d-a2ef-687cadb5e74c",
+    "purpose": "Restore health endpoint behavior and readiness error semantics so existing callers and tests receive the intended payloads and status codes. The readiness branch must raise, not return, an HTTPException.",
+    "responsible_file": "F:/Dev/Narrative-Engine/app/api/health.py",
+    "knowledge_base": [
+      "health_check()",
+      "readiness_check()",
+      "HTTPException construction",
+      "current payload keys status/components/issues"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "GET /health/ returns a liveness object; GET /health/ready returns readiness object or 503 error payload.",
+      "output_data_schema": "Liveness payload matches legacy test expectation status='ok'; readiness failure path raises HTTPException(status_code=503, detail={status:'unhealthy', issues:[...]}) instead of returning an exception object.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/tests/test_auth_middleware.py",
+        "F:/Dev/Narrative-Engine/tests/test_smoke.py",
+        "F:/Dev/Narrative-Engine/tests/test_path_traversal.py"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI APIRouter",
+      "HTTPException",
+      "existing circuit breaker and disk/project checks"
+    ],
+    "expected_outcomes": [
+      "GET /health/ returns HTTP 200 with {'status':'ok'}.",
+      "When readiness checks detect issues, FastAPI responds with HTTP 503 instead of serializing an HTTPException object."
+    ]
+  },
+  {
+    "task_id": "f77cb517-5fd0-4327-bfd7-7b09b6c80dcf",
+    "purpose": "Fix API key revocation so a revoked key cannot validate on the same timestamp boundary. The revoke flow must deterministically make validate_key() return None after revoke_key() succeeds.",
+    "responsible_file": "F:/Dev/Narrative-Engine/app/services/authentication.py",
+    "knowledge_base": [
+      "APIKey.is_expired",
+      "APIKeyStore.validate_key() expiration check",
+      "APIKeyStore.revoke_key() current expires_at assignment",
+      "datetime.now(timezone.utc)"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "revoke_key(prefix: str) -> bool and validate_key(api_key: str) -> APIKey | None.",
+      "output_data_schema": "After revoke_key(prefix) returns true for an existing key, validate_key(full_key) returns null deterministically.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/tests/test_authentication.py"
+      ]
+    },
+    "utilized_features": [
+      "sqlite3 update/query flow already implemented",
+      "existing APIKey expiration logic"
+    ],
+    "expected_outcomes": [
+      "Revoked keys are rejected immediately by validate_key().",
+      "test_revoke_key semantics are satisfied without changing the public method signatures."
+    ]
+  },
+  {
+    "task_id": "87e0d1f1-c585-4c98-a13b-3d4b779a5203",
+    "purpose": "Make authentication opt-in for runtime environments that explicitly enable it, instead of activating whenever any ambient API_KEY is present. This avoids unintended 401 regressions in local tests and dev runs.",
+    "responsible_file": "F:/Dev/Narrative-Engine/app/settings.py",
+    "knowledge_base": [
+      "Settings.api_key property",
+      "environment variable loading via load_dotenv()",
+      "main.py conditional if settings.api_key"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current auth gate is based on API_KEY env var presence only.",
+      "output_data_schema": "Settings exposes an explicit boolean or equivalent opt-in condition that main.py can use to decide whether auth middleware should run.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/app/main.py",
+        "F:/Dev/Narrative-Engine/tests/test_failure_modes.py",
+        "F:/Dev/Narrative-Engine/tests/test_smoke.py"
+      ]
+    },
+    "utilized_features": [
+      "dataclass Settings",
+      "existing os.getenv access patterns"
+    ],
+    "expected_outcomes": [
+      "Ambient API_KEY alone no longer forces auth on every endpoint in local/test contexts.",
+      "Auth can still be enabled using an explicit existing environment-based configuration path."
+    ]
+  },
+  {
+    "task_id": "8db150fe-a53b-486d-9d20-84ed8d5edf7e",
+    "purpose": "Replace the checker panel's mock-only execution path with the existing real service client so the UI uses the backend model catalog and run/status/retry endpoints already implemented.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/checker/RoleModelChecker.tsx",
+    "knowledge_base": [
+      "current getMockModelCatalog/runMockChecker/getMockCheckerStatus/retryMockChecker imports",
+      "component state: catalog, loading, error, selectedModels, checkStatus, polling",
+      "real service functions in frontend/src/services/checker.ts"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "RoleModelCheckRequest shape from frontend/src/types/checker.ts and backend RoleModelCheckStartRequest.",
+      "output_data_schema": "Component loads ModelCatalog from GET /v1/models and submits runs to POST /v1/role-model-checker/run; polling reads GET /v1/role-model-checker/{runId}/status.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/services/checker.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/types/checker.ts",
+        "F:/Dev/Narrative-Engine/app/api/role_model_checker.py"
+      ]
+    },
+    "utilized_features": [
+      "existing checker service client",
+      "existing backend role-model-checker endpoints",
+      "existing component state and polling loop"
+    ],
+    "expected_outcomes": [
+      "The checker panel no longer displays 'Mock Mode - Backend endpoint not yet available'.",
+      "Run, poll, and retry operations call the real backend service functions.",
+      "Completion and failure states are rendered from backend responses."
+    ]
+  },
+  {
+    "task_id": "2462a6aa-c2ce-45e0-b955-8f0d7cdd5ad0",
+    "purpose": "Swap the flow service off the mock implementation and onto the existing real story-development endpoints only where those endpoints actually exist. This task must implement the supported read/write operations without inventing missing backend APIs.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/services/flow.ts",
+    "knowledge_base": [
+      "current flowMockService delegation",
+      "existing story-development backend routes",
+      "StoryFlowStage type"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current service methods: getStages, addStage, updateStage, reorderStages, deleteStage, disableStage, archiveStage, renameStage.",
+      "output_data_schema": "Only methods backed by existing endpoints remain active against real APIs; methods without backend support must not pretend to persist production data.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/app/api/story_development.py",
+        "F:/Dev/Narrative-Engine/frontend/src/types/flow.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/components/flow/FlowEditor.tsx"
+      ]
+    },
+    "utilized_features": [
+      "fetch or shared HTTP client",
+      "existing story-development endpoints in backend"
+    ],
+    "expected_outcomes": [
+      "flowService.getStages() no longer unconditionally returns mock data.",
+      "Any unsupported mutation method is either removed from production path or made to fail explicitly rather than simulating persistence."
+    ]
+  },
+  {
+    "task_id": "35d908e0-f7b6-4a71-8d79-7db9ef183350",
+    "purpose": "Eliminate the fabricated branch comparison result and use the real branch comparison endpoints already defined by the backend. The UI must present server-provided differences for a created comparison record.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/branches/BranchComparison.tsx",
+    "knowledge_base": [
+      "selectedA/selectedB/comparison local state",
+      "mockComparison object construction",
+      "BranchComparisonRecord type",
+      "existing branch service methods createComparison/getComparison/getComparisons"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Selected branch IDs: branch_a_id and branch_b_id for a single project.",
+      "output_data_schema": "Rendered comparison uses BranchComparisonRecord returned by POST /v1/story-development/branches/comparisons or GET /v1/story-development/branches/comparisons/{comparison_id}.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/services/branches.ts",
+        "F:/Dev/Narrative-Engine/app/api/story_development.py",
+        "F:/Dev/Narrative-Engine/frontend/src/types/branches.ts"
+      ]
+    },
+    "utilized_features": [
+      "existing branches service client",
+      "existing backend comparison endpoints"
+    ],
+    "expected_outcomes": [
+      "Clicking 'Compare Branches' sends selected branch IDs to the backend.",
+      "comparison.differences comes from the API response, not a locally fabricated array."
+    ]
+  },
+  {
+    "task_id": "b6878ca1-c2d4-4d89-96de-8ecb8f8b120c",
+    "purpose": "Remove the non-functional empty-state action in the stage list. The 'Add Stage' button in the zero-state must call the actual add-stage workflow already available through the parent editor instead of only logging to the console.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/flow/StageList.tsx",
+    "knowledge_base": [
+      "empty-state render branch",
+      "current onClick console.log('Add stage')",
+      "StageList props onEdit/onDisable/onArchive/onDelete",
+      "parent FlowEditor add-stage logic"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "When stages.length === 0, the component renders the empty state.",
+      "output_data_schema": "The empty-state CTA invokes a real callback path supplied by the parent, not console output.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/components/flow/FlowEditor.tsx"
+      ]
+    },
+    "utilized_features": [
+      "existing React props/callback pattern",
+      "existing add stage logic in FlowEditor"
+    ],
+    "expected_outcomes": [
+      "In an empty flow state, clicking 'Add Stage' triggers a deterministic UI action tied to the real editor workflow.",
+      "No console-only placeholder remains in the empty-state button."
+    ]
+  },
+  {
+    "task_id": "3e98fe6d-1250-4ed6-81db-859efc77334f",
+    "purpose": "Make review findings actions production-realistic by removing console-only placeholders and binding the 'Jump to Source' action to existing inspect/workspace state when a source object is available.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/review/FindingCard.tsx",
+    "knowledge_base": [
+      "FindingCard expanded state and action handlers",
+      "CheckerFinding fields: source_object_id, source_object_kind, finding_id",
+      "DecisionForm and DecisionHistory composition",
+      "existing useUIStore inspectContext/mode patterns"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "CheckerFinding includes identifiers for the reviewed source object and finding metadata.",
+      "output_data_schema": "Clicking 'Jump to Source' performs a deterministic state/navigation action using existing inspect or workspace mechanisms; no console.log side effect remains.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/stores/uiStore.ts",
+        "F:/Dev/Narrative-Engine/frontend/src/components/inspect/InspectMode.tsx",
+        "F:/Dev/Narrative-Engine/frontend/src/types/review.ts"
+      ]
+    },
+    "utilized_features": [
+      "existing DecisionForm",
+      "existing DecisionHistory",
+      "existing UI store mode/inspectContext state"
+    ],
+    "expected_outcomes": [
+      "The 'Jump to Source' button no longer logs to the console.",
+      "The action only renders or executes when a valid source object identifier is present."
+    ]
+  },
+  {
+    "task_id": "89f51241-c85d-4e18-b423-7efa80dc54be",
+    "purpose": "Complete the project creation form so every field referenced in the submitted ManifestConfig is actually collected from the user or deterministically defaulted in the form layer.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/views/ProjectList.tsx",
+    "knowledge_base": [
+      "handleSubmit FormData extraction",
+      "ManifestConfig fields genre, tone_profile, pov, primary_language, secondary_language, story_structure",
+      "current form inputs and missing secondary_language input"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "ProjectCreateRequest requires project_name and config: ManifestConfig.",
+      "output_data_schema": "Submitted config object contains a deterministic string value for secondary_language instead of a null cast.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/src/lib/projectsApi.ts",
+        "F:/Dev/Narrative-Engine/app/schemas/projects.py"
+      ]
+    },
+    "utilized_features": [
+      "existing HTML form + FormData pattern",
+      "existing useCreateProject mutation"
+    ],
+    "expected_outcomes": [
+      "Form submission never sends secondary_language as null cast to string.",
+      "The UI either renders a secondary_language field or supplies an explicit deterministic default."
+    ]
+  },
+  {
+    "task_id": "6b3b54d7-82cd-4e71-8182-6b30c480fa0d",
+    "purpose": "Fix the committed frontend lint violations in the flow editor without changing scope. The task must resolve unused variables and dependency-rule issues in this file so lint can pass deterministically.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/flow/FlowEditor.tsx",
+    "knowledge_base": [
+      "current lint errors on unused catch variables",
+      "current warning on unnecessary dependency array item",
+      "useCallback handlers handleAddStage/handleDisable/handleArchive/handleDelete/handleRename"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "ESLint errors currently reported for FlowEditor.tsx: unused 'error' variables and unnecessary 'projectId' dependency.",
+      "output_data_schema": "File passes eslint rules @typescript-eslint/no-unused-vars and react-hooks/exhaustive-deps as configured in frontend/eslint.config.js.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/eslint.config.js"
+      ]
+    },
+    "utilized_features": [
+      "existing ESLint configuration",
+      "existing React hooks implementation"
+    ],
+    "expected_outcomes": [
+      "npm run lint reports no errors originating from FlowEditor.tsx."
+    ]
+  },
+  {
+    "task_id": "e99d4e6d-9c8f-4e61-a787-e767d46cbb2d",
+    "purpose": "Fix the committed frontend lint violations in the draft promotion component while keeping behavior unchanged. The implementation must resolve the missing dependency warning and remove dead import patterns if they are no longer needed.",
+    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/drafting/DraftPromotion.tsx",
+    "knowledge_base": [
+      "useEffect dependency warning for loadArtifacts",
+      "dead import alias _promoteDraftToManuscript",
+      "loadArtifacts() and handlePromoteSuccess()"
+    ],
+    "references_and_schema": {
+      "input_data_schema": "Current component props: { projectId: string } and internal loadArtifacts async function.",
+      "output_data_schema": "File passes react-hooks/exhaustive-deps and no-unused-vars rules without changing the draft promotion UI contract.",
+      "external_refs": [
+        "F:/Dev/Narrative-Engine/frontend/eslint.config.js",
+        "F:/Dev/Narrative-Engine/frontend/src/components/drafting/PromotionModal.tsx"
+      ]
+    },
+    "utilized_features": [
+      "existing React hooks",
+      "existing drafting service functions"
+    ],
+    "expected_outcomes": [
+      "npm run lint reports no warnings or errors originating from DraftPromotion.tsx."
+    ]
+  }
+]

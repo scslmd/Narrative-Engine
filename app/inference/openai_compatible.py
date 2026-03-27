@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from ..schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
+from ..services.circuit_breaker import get_circuit_breaker, CircuitBreakerError
 from .base import InferenceBackend, InferenceBackendError
 
 
@@ -33,6 +34,9 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
             supports_chat_completions=True,
             aliases=aliases or [],
         )
+        
+        # Circuit breaker for this backend (REL-01)
+        self._circuit_breaker = get_circuit_breaker(backend)
 
     @property
     def descriptor(self) -> InferenceProviderDescriptor:
@@ -159,8 +163,10 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         return sorted(set(models))
 
     def generate_text(self, request: InferenceRequest) -> InferenceResponse:
+        """Generate text using inference backend with circuit breaker protection (REL-01)."""
         if not self._base_url.strip():
             raise self._configuration_error("Inference backend base URL is not configured.")
+        
         payload = {
             "model": request.model or self._descriptor.default_model,
             "messages": [message.model_dump(mode="json") for message in request.messages],
@@ -174,7 +180,21 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         if request.metadata:
             payload["metadata"] = request.metadata
 
-        response_payload = self._request("POST", "/chat/completions", json_payload=payload)
+        # Wrap inference call with circuit breaker (REL-01)
+        try:
+            response_payload = self._circuit_breaker.call(
+                lambda: self._request("POST", "/chat/completions", json_payload=payload)
+            )
+        except CircuitBreakerError as e:
+            # Circuit is open - fail fast with clear error
+            raise InferenceBackendError(
+                f"Inference backend {self._descriptor.display_name} circuit breaker open: {e.message}",
+                category="circuit_open",
+                code="INFERENCE_CIRCUIT_OPEN",
+                finish_reason="circuit_breaker_open",
+                retryable=False,
+            ) from e
+        
         choices = response_payload.get("choices")
         if not isinstance(choices, list) or not choices:
             raise self._protocol_shape_error(f"{self._descriptor.display_name} returned no choices.")
@@ -198,9 +218,9 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
             content=content,
             finish_reason=str(first_choice.get("finish_reason")) if isinstance(first_choice, dict) and first_choice.get("finish_reason") is not None else None,
             usage=InferenceUsage(
-                prompt_tokens=usage_payload.get("prompt_tokens"),
-                completion_tokens=usage_payload.get("completion_tokens"),
-                total_tokens=usage_payload.get("total_tokens"),
+                prompt_tokens=int(usage_payload.get("prompt_tokens", 0)) if usage_payload.get("prompt_tokens") else 0,
+                completion_tokens=int(usage_payload.get("completion_tokens", 0)) if usage_payload.get("completion_tokens") else 0,
+                total_tokens=int(usage_payload.get("total_tokens", 0)) if usage_payload.get("total_tokens") else 0,
             ),
             raw_response=response_payload,
         )

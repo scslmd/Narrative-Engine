@@ -21,9 +21,10 @@ The current codebase includes:
 
 - a FastAPI backend for projects, jobs, models, and role-model checking
 - SQLite-backed persistence for operational state and project artifact indexing
-- a frontend writer workflow prototype for setup, story workspace, drafting, and review
+- a React + TypeScript frontend rooted at `frontend/` with application code in `frontend/src/`
 - accepted-and-polled job and checker APIs backed by a local lease-claim executor
-- role-model checker scaffolding for model and workflow validation
+- runtime-backed role-model checker execution with inspectable step and lineage projections
+- CORS middleware configured for localhost:5173 and localhost:3000
 
 ## Current Status
 
@@ -58,6 +59,8 @@ Still being built:
 
 ## Quickstart
 
+### Backend
+
 1. Create or use a local Python 3.12 environment in this folder.
 2. Install dependencies with `pip install -e .[dev]`.
 3. Start the app with `start_narrative_core.cmd` or `start_narrative_core.ps1`.
@@ -68,6 +71,22 @@ Current verified baseline:
 
 - see [docs/Validation Notes v0.1.md](F:/Dev/Narrative-Engine/docs/Validation%20Notes%20v0.1.md) for the latest checked command and scope
 
+### Frontend
+
+1. Navigate to `frontend/`
+2. Install dependencies: `npm install`
+3. Copy environment: `cp .env.example .env.local`
+4. Start dev server: `npm run dev`
+5. Open [http://localhost:5173](http://localhost:5173)
+
+Current verified frontend baseline:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
+See [docs/Frontend Development Readiness.md](docs/Frontend Development Readiness.md) for complete setup instructions.
+
 ## Continuous Testing
 
 - GitHub Actions runs the pytest baseline on `push`, `pull_request`, and manual dispatch.
@@ -77,16 +96,31 @@ Current verified baseline:
 - Workflow command:
   - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
+Latest local full-suite verification:
+
+- `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+- `npm run lint` -> passed
+- `npm run typecheck` -> passed
+- `npm run build` -> passed
+
 ## Core Docs
 
-- [docs/Narrative SRS v0.3.md](F:/Dev/Narrative-Engine/docs/Narrative%20SRS%20v0.3.md)
-- [docs/Frontend Design SRS v0.4.md](F:/Dev/Narrative-Engine/docs/Frontend%20Design%20SRS%20v0.4.md)
-- [docs/Async Protocol Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Async%20Protocol%20Blueprint%20v0.1.md)
-- [docs/Inference Runtime Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Inference%20Runtime%20Blueprint%20v0.1.md)
-- [docs/Step Record Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20Record%20Blueprint%20v0.1.md)
-- [docs/Step and Lineage API Projection Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20and%20Lineage%20API%20Projection%20Blueprint%20v0.1.md)
-- [docs/Story Arc Paradigm Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md)
-- [docs/Failure Mode Test Matrix v0.1.md](F:/Dev/Narrative-Engine/docs/Failure%20Mode%20Test%20Matrix%20v0.1.md)
-- [docs/Runtime Error Mapping Blueprint v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
-- [docs/Runtime Telemetry Contract v0.1.md](F:/Dev/Narrative-Engine/docs/Runtime%20Telemetry%20Contract%20v0.1.md)
-- [docs/Step and Lineage API Test Matrix v0.1.md](F:/Dev/Narrative-Engine/docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)
+- [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md)
+- [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md)
+- [docs/Async Protocol Blueprint v0.1.md](docs/Async%20Protocol%20Blueprint%20v0.1.md)
+- [docs/Inference Runtime Blueprint v0.1.md](docs/Inference%20Runtime%20Blueprint%20v0.1.md)
+- [docs/Step Record Blueprint v0.1.md](docs/Step%20Record%20Blueprint%20v0.1.md)
+- [docs/Step and Lineage API Projection Blueprint v0.1.md](docs/Step%20and%20Lineage%20API%20Projection%20Blueprint%20v0.1.md)
+- [docs/Story Arc Paradigm Blueprint v0.1.md](docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md)
+- [docs/Failure Mode Test Matrix v0.1.md](docs/Failure%20Mode%20Test%20Matrix%20v0.1.md)
+- [docs/Runtime Error Mapping Blueprint v0.1.md](docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
+- [docs/Runtime Telemetry Contract v0.1.md](docs/Runtime%20Telemetry%20Contract%20v0.1.md)
+- [docs/Step and Lineage API Test Matrix v0.1.md](docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)
+
+## Frontend Docs
+
+- [TODO.md](TODO.md) - 36 frontend tasks with backend schemas
+- [docs/Frontend API Alignment Issues.md](docs/Frontend%20API%20Alignment%20Issues.md) - Comprehensive API analysis
+- [docs/Frontend API Alignment Summary.md](docs/Frontend%20API%20Alignment%20Summary.md) - Quick reference
+- [docs/API Alignment Verification.md](docs/API%20Alignment%20Verification.md) - Endpoint verification
+- [docs/Frontend Development Readiness.md](docs/Frontend%20Development%20Readiness.md) - Setup checklist

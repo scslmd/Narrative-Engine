@@ -19,7 +19,8 @@ class ProjectCreateRequest(StrictSchemaModel):
     config: ManifestConfig
     constraints: list[str] = Field(default_factory=list)
     premise_text: str | None = None
-
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)  # REL-02
+    
     def to_manifest(self) -> Manifest:
         return Manifest(
             project_id=self.project_id,

@@ -201,6 +201,20 @@ class StoryBranchingService:
             raise StoryBranchingValidationError(str(exc)) from exc
         return self._merge_decision_from_record(record)
 
+    def get_branch_merge_decision(self, project_id: str, *, merge_decision_id: str) -> BranchMergeDecision:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_merge_decision_id = self._normalize_text(merge_decision_id, field_name="merge_decision_id")
+        try:
+            record = self.repository.get_branch_merge_decision(normalized_project_id, merge_decision_id=normalized_merge_decision_id)
+        except KeyError as exc:
+            raise StoryBranchingNotFoundError(normalized_merge_decision_id) from exc
+        return self._merge_decision_from_record(record)
+
+    def list_branch_merge_decisions(self, project_id: str) -> tuple[BranchMergeDecision, ...]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        records = self.repository.list_branch_merge_decisions(normalized_project_id)
+        return tuple(self._merge_decision_from_record(record) for record in records)
+
     def _branch_from_record(self, record) -> StoryBranch:
         return StoryBranch.model_validate(
             {

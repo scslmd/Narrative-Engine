@@ -4,7 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Query, Response
 
-from ..schemas.inspect import RoleModelCheckLineageResponse, RoleModelCheckStepsResponse
+from ..schemas.inspect import (
+    RoleModelCheckAttemptHistoryResponse,
+    RoleModelCheckLineageResponse,
+    RoleModelCheckStepsResponse,
+)
 from ..schemas.role_model_checker import (
     RoleModelCheckRetryRequest,
     RoleModelCheckStartRequest,
@@ -15,8 +19,13 @@ from ..services.role_model_checker import RoleModelCheckerService
 from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
 
 
-def build_role_model_checker_router(manager: RoleModelCheckManager, service: RoleModelCheckerService) -> APIRouter:
-    router = APIRouter(prefix='/role-model-checker', tags=['role-model-checker'])
+def build_role_model_checker_router(
+    manager: RoleModelCheckManager,
+    service: RoleModelCheckerService,
+    prefix: str = '/role-model-checker',
+) -> APIRouter:
+    route_prefix = prefix.rstrip('/') if prefix else ''
+    router = APIRouter(prefix=route_prefix, tags=['role-model-checker'])
 
     def _accept_run(
         request: RoleModelCheckStartRequest,
@@ -25,7 +34,7 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
     ) -> RoleModelCheckStatusResponse:
         acceptance = manager.accept_run(request, idempotency_key=idempotency_key)
         run = acceptance.status
-        response.headers['Location'] = f'/role-model-checker/{run.run_id}/status'
+        response.headers['Location'] = f'{route_prefix}/{run.run_id}/status'
         if not acceptance.created_new and str(run.status) in {'COMPLETED', 'FAILED'}:
             response.status_code = 200
         return run
@@ -83,6 +92,13 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
 
+    @router.get('/{run_id}/attempts', response_model=RoleModelCheckAttemptHistoryResponse)
+    def get_attempts(run_id: UUID) -> RoleModelCheckAttemptHistoryResponse:
+        try:
+            return manager.get_attempt_history_projection(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
+
     @router.post('/{run_id}/retry', response_model=RoleModelCheckStatusResponse, status_code=202)
     def retry_run(run_id: UUID, request: RoleModelCheckRetryRequest, response: Response) -> RoleModelCheckStatusResponse:
         try:
@@ -91,7 +107,7 @@ def build_role_model_checker_router(manager: RoleModelCheckManager, service: Rol
             raise HTTPException(status_code=404, detail='Role-model check run not found.') from exc
         except RetryNotAllowedError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        response.headers['Location'] = f'/role-model-checker/{run.run_id}/status'
+        response.headers['Location'] = f'{route_prefix}/{run.run_id}/status'
         return run
 
     return router

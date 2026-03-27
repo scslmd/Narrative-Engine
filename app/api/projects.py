@@ -36,21 +36,21 @@ def build_projects_router(project_service: ProjectService) -> APIRouter:
     def get_manifest(project_id: str) -> ProjectArtifactResponse:
         try:
             return project_service.read_artifact(project_id, "manifest")
-        except Exception as exc:
+        except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @router.get("/{project_id}/sequence", response_model=ProjectArtifactResponse)
     def get_sequence(project_id: str) -> ProjectArtifactResponse:
         try:
             return project_service.read_artifact(project_id, "sequence")
-        except Exception as exc:
+        except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @router.get("/{project_id}/chapter-1", response_model=ProjectArtifactResponse)
     def get_chapter(project_id: str) -> ProjectArtifactResponse:
         try:
             return project_service.read_artifact(project_id, "chapter-1")
-        except Exception as exc:
+        except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return router

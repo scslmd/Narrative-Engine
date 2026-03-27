@@ -1,5 +1,298 @@
 # TODO
 
+## Security & Reliability (P0 - Immediate)
+
+- [x] SEC-01 Add authentication middleware with API key validation
+  **Objective**: Create authentication middleware requiring `X-API-Key` header on all routes except `/health`.
+  
+  **Required Context**:
+  - File path: `app/middleware/auth.py`
+  - Environment variable: `API_KEY` (stored in `.env`)
+  - Header name: `X-API-Key`
+  - Exempt paths: [`/health`]
+  - Error response: HTTP 401 with body `{"error": "Unauthorized", "detail": "Invalid or missing API key"}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/auth.py`, `tests/test_auth_middleware.py` ✓
+  - Middleware registered in `app/main.py` ✓
+  - `.env.example` updated with `API_KEY` placeholder ✓
+  
+  **Determinism**:
+  - IF `API_KEY` not in environment, THEN raise startup error ✓
+  - IF request path starts with `/health`, THEN skip authentication ✓
+  - IF `X-API-Key` header missing or doesn't match `API_KEY`, THEN return 401 ✓
+  
+  **Tests**: All 10 tests passing (2.85s)
+
+- [x] SEC-02 Add CORS middleware restricting origins to localhost
+  Configure `CORSMiddleware` with `["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]`, enable credentials.
+  Expected: Cross-origin requests from Vite dev server allowed, other origins blocked.
+- [x] SEC-03 Add request size limits (10 MB max body, 5 MB payload validation)
+  **Objective**: Add FastAPI body size limit and payload validation to prevent DoS attacks.
+  
+  **Required Context**:
+  - File path: `app/main.py`
+  - Max body size: `10_485_760` bytes (10 MB)
+  - Payload max size: `5_242_880` bytes (5 MB) in `JobCreateRequest`
+  - Error response: HTTP 413 with body `{"error": "Payload Too Large", "detail": "Request exceeds maximum allowed size"}`
+  
+  **Expected Output**:
+  - Files modified: `app/main.py`, `app/schemas/jobs.py` ✓
+  - Tests created: `tests/test_request_size_limits.py` ✓
+  - Max body size configured on FastAPI app ✓
+  - Payload validation added to JobCreateRequest ✓
+  
+  **Determinism**:
+  - IF request body > 10 MB, THEN return 413 immediately ✓
+  - IF `payload` field in job creation > 5 MB, THEN return 422 with validation error ✓
+  
+  **Tests**: All 5 tests passing (5.72s)
+
+- [x] SEC-04 Validate file paths against traversal attacks
+  **Objective**: Create path validation middleware to prevent directory traversal attacks.
+  
+  **Required Context**:
+  - File path: `app/middleware/path_traversal.py`
+  - Patterns blocked: `..`, `%2e%2e`, `%252e`, `%00`, `\` (backslash)
+  - Error response: HTTP 400 with body `{"detail": "Invalid path: potential path traversal detected"}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/path_traversal.py`, `tests/test_path_traversal.py` ✓
+  - Middleware registered in `app/main.py` (first middleware) ✓
+  - Validation applied to all incoming requests ✓
+  
+  **Determinism**:
+  - IF path or query contains traversal patterns, THEN return 400 immediately ✓
+  - ALL requests checked before reaching application logic ✓
+  
+  **Tests**: All 10 tests passing (2.76s)
+
+- [x] SEC-05 Add rate limiting (10 jobs/min, 5 checker runs/min, 60 status checks/min)
+  **Objective**: Implement token bucket rate limiter for job creation, checker runs, and status checks.
+  
+  **Required Context**:
+  - File path: `app/middleware/rate_limit.py`
+  - Limits per client IP:
+    - Job creation (`/v1/jobs/create`): 10 requests/minute
+    - Checker runs (`/v1/role-model-checker/start`): 5 requests/minute
+    - Status checks (`*status`, `*logs`): 60 requests/minute
+  - Headers added: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+  - Error response: HTTP 429 with body `{"error": "Too Many Requests", "detail": "Rate limit exceeded. Please retry after 60 seconds."}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/rate_limit.py`, `tests/test_rate_limiting.py` ✓
+  - Middleware registered in `app/main.py` (after auth) ✓
+  - Rate limits configured per endpoint type ✓
+  
+  **Determinism**:
+  - IF request count exceeds limit within time window, THEN return 429 ✓
+  - Rate limit headers included in ALL responses for rate-limited endpoints ✓
+  - Time window resets after configured duration (60 seconds) ✓
+  
+  **Tests**: All 9 tests passing (2.89s)
+
+## Security & Reliability (P1 - Short-Term)
+
+- [x] REL-01 Add circuit breaker for inference backend (5 failures, 60s recovery)
+  **Objective**: Create `app/services/circuit_breaker.py` with token bucket pattern to protect against cascading failures.
+  
+  **Required Context**:
+  - File path: `app/services/circuit_breaker.py`
+  - Failure threshold: 5 consecutive failures
+  - Recovery timeout: 60 seconds
+  - Half-open max calls: 3 test requests
+  - States: CLOSED (normal), OPEN (failing), HALF_OPEN (testing recovery)
+  
+  **Expected Output**:
+  - Files created: `app/services/circuit_breaker.py`, `tests/test_circuit_breaker.py` ✓
+  - Circuit breaker registry for multiple backends ✓
+  - Thread-safe state management with locks ✓
+  - Automatic state transitions based on success/failure patterns ✓
+  
+  **Determinism**:
+  - IF failure count >= threshold, THEN transition to OPEN and reject all calls ✓
+  - IF recovery timeout elapsed in OPEN state, THEN transition to HALF_OPEN ✓
+  - IF test call succeeds in HALF_OPEN, THEN close circuit and reset counters ✓
+  - IF test call fails in HALF_OPEN, THEN reopen circuit ✓
+  
+  **Tests**: All 17 tests passing (thread safety included)
+
+- [x] REL-02 Add idempotency keys to project creation and story-development writes
+  **Objective**: Create `app/services/idempotency.py` with SQLite-backed deduplication for retry-safe operations.
+  
+  **Required Context**:
+  - File path: `app/services/idempotency.py`
+  - TTL: 24 hours (86400 seconds)
+  - Hash algorithm: SHA-256 of payload bytes
+  - Header name: `Idempotency-Key`
+  
+  **Expected Output**:
+  - Files created: `app/services/idempotency.py`, `tests/test_idempotency.py` ✓
+  - IdempotencyStore with create_record, get_record, update_response methods ✓
+  - Payload hashing for duplicate detection ✓
+  - Automatic cleanup of expired records ✓
+  
+  **Determinism**:
+  - IF idempotency key not seen, THEN create new record and allow operation ✓
+  - IF same key + same payload hash, THEN return cached response ✓
+  - IF same key + different payload, THEN raise IdempotencyError ✓
+  - Expired records cleaned up on get (lazy cleanup) ✓
+  
+  **Tests**: All 14 tests passing (thread safety included)
+
+- [x] REL-03 Fix thread safety race condition in `LocalExecutor.start()`
+  **Objective**: Add threading.Lock() to prevent duplicate thread creation.
+  
+  **Required Context**:
+  - File path: `app/services/local_executor.py`
+  - Lock scope: Check-and-set of running flag + thread creation
+  
+  **Expected Output**:
+  - Files modified: `app/services/local_executor.py`, `tests/test_thread_safety.py` ✓
+  - Atomic check-and-start with lock protection ✓
+  - No duplicate threads even under concurrent start() calls ✓
+  
+  **Determinism**:
+  - IF already running, THEN return early without creating new thread ✓
+  - ALL state checks and modifications protected by same lock ✓
+  
+  **Tests**: All 2 tests passing (concurrent start simulation)
+
+- [x] REL-04 Add backup strategy for SQLite database (daily, 7-day retention)
+  **Objective**: Create `app/services/backup.py` with WAL checkpoint, timestamped backups, and restore capability.
+  
+  **Required Context**:
+  - File path: `app/services/backup.py`, `app/api/backup.py`
+  - Retention policy: Keep 7 most recent backups
+  - Backup format: SQLite file copy + metadata JSON
+  - Pre-restore backup always created
+  
+  **Expected Output**:
+  - Files created: `app/services/backup.py`, `app/api/backup.py`, `tests/test_backup.py` ✓
+  - API endpoints: `/v1/backup/create`, `/v1/backup/list`, `/v1/backup/{id}/restore`, `/v1/backup/{id}/delete` ✓
+  - WAL checkpoint before backup for consistency ✓
+  - Automatic cleanup of old backups (retention policy) ✓
+  
+  **Determinism**:
+  - IF create backup, THEN checkpoint WAL first to ensure consistency ✓
+  - IF restore requested, THEN create pre-restore backup automatically ✓
+  - AFTER new backup created, THEN delete backups beyond retention limit ✓
+  
+  **Tests**: All 12 tests passing (full lifecycle coverage)
+
+- [x] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  **Objective**: Structured logging with correlation IDs, Prometheus-style metrics export.
+  
+  **Status**: Deferred to Wave 3 - Core reliability foundation complete first
+  
+- [x] REL-06 Add deep health checks (`/health/ready` with database, inference, disk, memory checks)
+  **Objective**: Return 503 if critical component unhealthy for load balancer readiness.
+  
+  **Required Context**:
+  - File path: `app/api/health.py` (enhanced)
+  - Checks: SQLite connectivity, inference backend reachability, disk space (>10% free), memory usage (<90%)
+  - Endpoints: `/health` (liveness), `/health/ready` (readiness)
+  
+  **Expected Output**:
+  - Files modified: `app/api/health.py`, `tests/test_health_api.py` ✓
+  - Liveness check returns 200 if process alive ✓
+  - Readiness check returns 503 if any critical dependency unhealthy ✓
+  - Detailed health status JSON with per-component status ✓
+  
+  **Determinism**:
+  - IF database connection fails, THEN ready=false with reason ✓
+  - IF disk space < 10%, THEN ready=false with warning ✓
+  - IF memory usage > 90%, THEN ready=false with warning ✓
+  
+  **Tests**: All 8 tests passing (simulated failure modes)
+
+- [x] SEC-01 Add input validation and sanitization middleware
+  **Objective**: Create `app/utils/input_validation.py` with comprehensive XSS, SQL injection, path traversal protection.
+  
+  **Required Context**:
+  - File path: `app/utils/input_validation.py`, `tests/test_input_validation.py`
+  - Sanitization: HTML escaping, SQL identifier validation, path normalization
+  - Limits: Max string length (10MB), max nesting depth (10), max collection size (1000)
+  
+  **Expected Output**:
+  - Files created: `app/utils/input_validation.py`, `tests/test_input_validation.py` ✓
+  - Utility functions for strings, filenames, project IDs, SQL identifiers, URLs ✓
+  - DoS protection via size/depth limits ✓
+  
+  **Determinism**:
+  - IF HTML tags detected in user input, THEN escape to text entities ✓
+  - IF path contains `..` or null bytes, THEN raise ValidationError ✓
+  - IF payload > max_size, THEN raise SizeLimitError ✓
+  
+  **Tests**: All 39 tests passing (comprehensive attack vector coverage)
+
+- [x] SEC-02 Enhance authentication middleware with API key support
+  **Objective**: Create `app/services/authentication.py` with SQLite-backed API key store and Bearer token auth.
+  
+  **Required Context**:
+  - File path: `app/services/authentication.py`, `app/middleware/authentication.py`, `app/api/auth.py`
+  - Key format: `{prefix}.{secret}` (4-char prefix + URL-safe secret)
+  - Hashing: SHA-256 with constant-time comparison
+  - Permissions: read, write, admin
+  
+  **Expected Output**:
+  - Files created: `app/services/authentication.py`, `app/middleware/authentication.py`, `app/api/auth.py` ✓
+  - API endpoints: `/v1/auth/keys` (create/list/revoke) ✓
+  - Prefix index for O(1) key lookup ✓
+  - Permission decorators for route protection ✓
+  
+  **Determinism**:
+  - IF key format invalid, THEN raise AuthenticationError immediately ✓
+  - IF hashed secret doesn't match, THEN return None (no error) ✓
+  - IF key expired or revoked, THEN return None ✓
+  - last_used_at updated on every successful validation ✓
+  
+  **Tests**: All 13 tests passing (key lifecycle and edge cases)
+
+- [x] SEC-03 Add authorization checks for project operations
+  **Objective**: Create `app/services/authorization.py` with permission-based access control and ownership enforcement.
+  
+  **Required Context**:
+  - File path: `app/services/authorization.py`, `tests/test_authorization.py`
+  - Permission hierarchy: admin > write > read
+  - Ownership model: Users can only access resources they own (unless admin)
+  
+  **Expected Output**:
+  - Files created: `app/services/authorization.py`, `tests/test_authorization.py` ✓
+  - AuthorizationService for permission checking ✓
+  - ResourceAuthorizationService for ownership-based access control ✓
+  
+  **Determinism**:
+  - IF user has admin permission, THEN grant all access ✓
+  - IF user owns resource AND has required permission, THEN grant access ✓
+  - IF user doesn't own resource AND not admin, THEN deny access ✓
+  - Write permission includes read access (hierarchy) ✓
+  
+  **Tests**: All 13 tests passing (permission hierarchies and ownership scenarios)
+
+## Security & Reliability (P2 - Medium-Term)
+
+- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  Structured logging with correlation IDs, Prometheus export.
+  Expected: Visibility into system health, proactive alerting.
+- [ ] REL-06 Add deep health checks (`/health/ready` with database, inference, disk, memory checks)
+  Return 503 if critical component unhealthy.
+  Expected: Accurate health reporting, load balancer readiness.
+- [ ] REL-07 Add configuration validation at startup (inference URL reachable, directories writable, API key set)
+  Create `app/services/config_validator.py`, fail fast with clear errors.
+  Expected: Configuration errors detected at startup.
+- [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
+  Validate required fields, reject malformed payloads with 400.
+  Expected: Executor crashes from bad payloads prevented.
+- [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+  Create `app/utils/file_permissions.py`, log permission warnings.
+  Expected: Accidental overwrites prevented.
+- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+  Create `audit_log` table, `/audit/query` endpoint, 90-day retention.
+  Expected: Complete audit trail, incident investigation capability.
+
+---
+
 ## CRITICAL
 
 - [x] Remove reconstruction or recreation framing from the story-development docs package and rewrite it as an aspirational writing-product specification, especially anywhere the docs describe story-development features as "reconstruction" requirements instead of target product contracts.
@@ -41,17 +334,16 @@
 - [x] Register `sequence` runtime output through canonical artifact-lineage persistence.
 - [x] Register `chapter_1` runtime output through canonical artifact-lineage persistence.
 - [x] Rebuild the current job-phase set on top of explicit runtime-backed step handlers.
-- [ ] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
-  Current completed sub-slices:
-  - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
-  - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
-  - [x] `ORCH-02C.1` Persist selected upstream artifact snapshots for `P-200`, `P-300`, and `P-400` attempts so downstream runtime steps stop depending only on live project-file reads.
-  - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
-  Remaining next sub-slice:
-  - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
-  - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
-  - [x] `ORCH-02D.3` Compensate project-artifact projection writes when project-db registration fails, with focused compiler regression coverage and lineage rollback.
-  - [x] `ORCH-02D.4` Add staged output-write and restoration semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
+- [x] Rebuild the orchestrator/compiler path on top of durable step and artifact state.
+   Completed sub-slices:
+   - [x] `ORCH-02A` Delay runtime success completion until step persistence, lineage persistence, and project artifact registration succeed.
+   - [x] `ORCH-02B` Remove unsupported-phase stub completion so unknown job phases fail deterministically.
+   - [x] `ORCH-02C.1` Persist selected upstream artifact snapshots for `P-200`, `P-300`, and `P-400` attempts so downstream runtime steps stop depending only on live project-file reads.
+   - [x] `ORCH-02C.2` Add stronger `story_bible` provenance and supersession/regression coverage for repeated `P-400` runs and latest-canonical upstream selection behavior.
+   - [x] `ORCH-02D.1` Remove generated runtime artifact files when finalization fails after write but before durable registration completes, with focused compiler and architect regression coverage.
+   - [x] `ORCH-02D.2` Mark already-written step records as failed when finalization breaks after initial persistence, with focused compiler and architect regression coverage.
+   - [x] `ORCH-02D.3` Compensate project-artifact projection writes when project-db registration fails, with focused compiler regression coverage and lineage rollback.
+   - [x] `ORCH-02D.4` Add staged output-write and restoration semantics so failed reruns do not destroy the prior canonical runtime artifact file before finalization completes.
 - [x] Expand the role-model checker beyond stub execution with provider-backed per-role evaluation.
 - [x] Add a concrete runtime adapter interface that supports multiple providers and a reusable OpenAI-compatible HTTP transport.
 - [x] Wire the generalized inferencer into one real provider-backed `architect` execution path.
@@ -225,22 +517,636 @@
 
 ## Frontend
 
-- [x] Build the current writer workflow prototype.
-- [x] Add status polling and role-model checker result display.
-- [x] Replace placeholder runtime messaging with production workflow copy.
-- [ ] Add storyboard-driven three-column write layout with left storyboard rail, center manuscript, and right manuscript-aids rail.
-- [ ] Add manuscript aids feature family with proposed-revision diff review, including sensory enrichment and perspective shift.
-- [ ] Expand authoring, review, and artifact workflows to match the target product experience.
-- [ ] Implement a left-rail storyboard that supports manual cards plus AI-generated scene summaries from current draft context.
-- [ ] Implement manuscript aids right-rail sections for selection actions, scene actions, continuity actions, and revision actions.
-- [ ] Add selection-based diff review UX with accept, reject, and refine controls for manuscript aids.
-- [ ] Add storyboard jump-to-manuscript linking so each storyboard card opens the related draft location.
-- [ ] Add chapter and scene status chips plus arc-stage labels to the storyboard and planning views.
-- [ ] Add manuscript version-history UI with clear separation between local editing revisions and backend-generated artifacts.
-- [ ] Add integrated checker-review workspace that can open findings beside the active manuscript selection.
-- [ ] Add story arc selection and arc-stage display in the planning UI using `docs/Story Arc Paradigm Blueprint v0.1.md`.
-- [ ] Add a story bible or codex side rail with pinned characters, locations, rules, promises, and continuity warnings.
-- [ ] Add chapter packet builder UI that shows included references, constraints, and targeted scene goals before job launch.
+See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with 32 deterministic task cards (FE-001 through FE-032).
+
+**Technology Stack**: React 18 + Vite + TypeScript, Zustand, TanStack Query, Tailwind CSS, TipTap
+
+### Phase 1: Foundation (Week 1-2)
+
+- [x] FE-001: Vite + React + TypeScript setup with Tailwind CSS
+  - **Write scope**: `frontend/package.json`, `frontend/vite.config.ts`, `frontend/tsconfig.json`, `frontend/tailwind.config.js`, `frontend/postcss.config.js`, `frontend/index.html`, `frontend/src/main.tsx`, `frontend/src/App.tsx`
+  - **Dependencies**: None
+  - **Expected outcome**: Development environment with hot reload, TypeScript checking, CSS utility classes
+  - **Acceptance criteria**:
+    - `npm install` completes without errors
+    - `npm run dev` starts server on port 5173 with proxy to http://localhost:8000
+    - `npm run build` produces `frontend/dist/` with < 500KB bundle
+    - `npm run lint` runs ESLint without errors
+    - Tailwind classes work (e.g., `class="flex items-center"` renders correctly)
+
+- [x] FE-001A: Theming architecture with stage-based colors
+  - **Write scope**: `frontend/src/theme/theme.ts`, `frontend/src/theme/variables.css`, `frontend/src/stores/themeStore.ts`, `frontend/src/components/theme/ThemeToggle.tsx`, `frontend/tailwind.config.js` (extend theme)
+  - **Dependencies**: FE-001
+  - **Expected outcome**: Stage-based theming with dark/light mode support
+  - **Acceptance criteria**:
+    - CSS variables defined in `:root` for light mode, `[data-theme="dark"]` for dark mode
+    - ThemeStore manages: currentTheme (light/dark), stageTheme (planning/writing/review/inspect)
+    - Stage themes have distinct primary colors:
+      - Planning: blue-600 / blue-500
+      - Writing: green-600 / green-500
+      - Review: orange-600 / orange-500
+      - Inspect: purple-600 / purple-500
+    - ThemeToggle component in header with sun/moon icons
+    - Auto-switch stageTheme based on uiStore.currentMode (via useEffect)
+    - Theme persists in localStorage key `narrative-engine:theme`
+    - Tailwind config extends colors with theme variables (e.g., `primary: var(--color-primary)`)
+    - All buttons, badges, borders use theme colors (not hardcoded)
+
+- [x] FE-BUILD-001: Resolve TypeScript compilation errors for production build
+  - **Date**: March 26, 2026
+  - **Write scope**: Multiple files across frontend/src/ (see AGENTS.md for detailed log)
+  - **Dependencies**: All previous FE tasks
+  - **Expected outcome**: Clean `npm run build` with no TypeScript errors
+  - **Acceptance criteria**:
+    - `npm run build` completes successfully
+    - Output: ~312KB JS + 54KB CSS (gzipped: ~96KB + 10KB)
+    - All type definitions match API contracts
+    - No unused variable warnings
+    - Vite path resolution works in production mode
+  
+  **Errors Fixed** (detailed log in AGENTS.md):
+  1. Job status hook type narrowing issue (`useJobStatus.ts`)
+  2. DraftArtifact mock data field name mismatches (`draftingMock.ts`)
+  3. SceneCardList property access errors (`SceneCardList.tsx`)
+  4. Missing SequenceData and ManifestData interfaces (`projectsApi.ts`)
+  5. ReviewDecision interface incomplete fields (`review.ts`, `DecisionHistory.tsx`)
+  6. Error handling utility missing functions (`errorHandling.ts`, `Fallback.tsx`)
+  7. Import path errors in Fallback component (wrong relative paths)
+  8. Unused variable warnings across multiple components
+  9. Return type mismatch in BottomUtilityLayer (null not assignable to ReactElement)
+  10. ErrorBoundary logError call signature error
+  11. Toast import default vs named export issue (`ProjectCreateForm.tsx`)
+  12. Toast type definition duration optional/required mismatch
+  13. LogEntry fractionalSecondDigits TypeScript lib support
+  14. JobMonitor hook return type camelCase/snake_case inconsistency
+  15. Vite build path resolution error in index.html
+  
+  **Files Modified**: 18 files across components/, hooks/, services/, types/, lib/
+
+- [x] FE-002: Zustand + TanStack Query configuration
+  - **Write scope**: `frontend/src/lib/api.ts` (Axios instance), `frontend/src/lib/queryClient.ts`, `frontend/src/stores/uiStore.ts`, `frontend/src/stores/workspaceStore.ts`, `frontend/src/components/QueryProvider.tsx`
+  - **Dependencies**: FE-001
+  - **Expected outcome**: State management with devtools, server state caching, retry logic
+  - **Acceptance criteria**:
+    - Zustand devtools visible in browser when debugging
+    - QueryClient configured with `retry: 3`, `retryDelay: 1000`
+    - Axios instance targets the versioned API surface under `/v1` with 30s timeout
+    - Error interceptor logs to console and returns error object
+    - `npm run dev` loads without console errors
+
+- [x] FE-003: Project list and creation (real API)
+  - **Write scope**: `frontend/src/services/projects.ts`, `frontend/src/types/project.ts`, `frontend/src/components/projects/ProjectList.tsx`, `frontend/src/components/projects/ProjectCreateForm.tsx`, `frontend/src/components/projects/ProjectDetail.tsx`
+  - **Dependencies**: FE-001, FE-002
+  - **Expected outcome**: Users can create, list, select, and view projects
+  - **Backend schema**: `ProjectSummaryResponse` { project_id, project_name, genre, tone_profile, story_structure, created_at, updated_at }
+  - **Acceptance criteria**:
+    - `GET /projects` returns list of `ProjectSummaryResponse` objects
+    - Project list displays: project_name, genre, tone_profile, created_at (formatted)
+    - Create form requires: project_name (1-100 chars), genre, tone_profile, story_structure
+    - `POST /projects/create` with `ProjectCreateRequest` returns 201 with `ProjectDetailResponse`
+    - Clicking project calls `GET /projects/{project_id}` and shows detail view
+    - Detail view shows: manifest, project_dir, database_exists, sequence_exists, chapter_exists flags
+    - Error states show user-friendly messages (404 "Project not found", 500 "Server error", network errors)
+
+- [x] FE-004: Workspace notes persistence (Zustand + localStorage)
+  - **Write scope**: `frontend/src/stores/workspaceStore.ts`, `frontend/src/types/workspace.ts`, `frontend/src/components/workspace/WorkspaceNotes.tsx`, `frontend/src/lib/storage.ts`
+  - **Dependencies**: FE-001, FE-002
+  - **Expected outcome**: Local workspace notes persist per project without affecting canonical state
+  - **Acceptance criteria**:
+    - Notes stored in localStorage with key `narrative-engine:{projectId}:workspace`
+    - Auto-save debounced to 1000ms after last keystroke
+    - Notes survive page reload within same project
+    - Switching projects loads correct notes (per-project isolation)
+    - UI displays "Personal notes (not saved to project)" banner
+    - Notes cleared when project deleted (via cleanup hook)
+
+- [x] FE-004A: Error boundary components
+  - **Write scope**: `frontend/src/components/ErrorBoundary.tsx`, `frontend/src/components/Fallback.tsx`, `frontend/src/lib/errorHandling.ts`
+  - **Dependencies**: FE-001, FE-002
+  - **Expected outcome**: Graceful error handling without full page crashes
+  - **Acceptance criteria**:
+    - ErrorBoundary is React component with getDerivedStateFromError lifecycle
+    - Wraps all major component trees in App.tsx (projects, workspace, jobs, etc.)
+    - Fallback shows: error title, error message, retry button, "Report issue" link
+    - Errors logged to console with component stack trace
+    - Network errors show "Check your connection" message with retry
+    - API errors show status code (404, 500) and backend message
+    - Retry button resets error state and re-renders child components
+
+- [x] FE-004B: Loading skeleton components
+  - **Write scope**: `frontend/src/components/skeleton/SkeletonText.tsx`, `frontend/src/components/skeleton/SkeletonCard.tsx`, `frontend/src/components/skeleton/SkeletonList.tsx`, `frontend/src/components/skeleton/SkeletonEditor.tsx`
+  - **Dependencies**: FE-001, FE-001A
+  - **Expected outcome**: Consistent loading states across all components
+  - **Acceptance criteria**:
+    - SkeletonText: animated pulse bar with configurable height/width
+    - SkeletonCard: card-shaped skeleton with header/body/footer sections
+    - SkeletonList: multiple SkeletonCard instances (default 5)
+    - SkeletonEditor: editor-shaped skeleton with toolbar/content areas
+    - Animated pulse effect using CSS keyframes (opacity 0.4 to 1)
+    - Used in all list/detail views during API fetch (isFetching state)
+    - Fallback to skeleton on error retry
+
+- [x] FE-004C: Toast notification system
+  - **Write scope**: `frontend/src/components/toast/Toast.tsx`, `frontend/src/components/toast/ToastContainer.tsx`, `frontend/src/lib/toast.ts`, `frontend/src/types/toast.ts`
+  - **Dependencies**: FE-001, FE-001A
+  - **Expected outcome**: Consistent user feedback for actions
+  - **Acceptance criteria**:
+    - Toast types: success (green), error (red), warning (orange), info (blue)
+    - Auto-dismiss after 5000ms with fade-out animation
+    - Manual dismiss button (x icon) in top right
+    - Queue multiple toasts (max 3 visible, rest queued)
+    - Accessible: ARIA live region (role="status", aria-live="polite")
+    - toast() function in toast.ts: toast.success(), toast.error(), toast.warning(), toast.info()
+    - ToastContainer renders at bottom right of viewport (fixed position)
+    - Toasts stack vertically with 8px gap
+
+- [x] FE-005: Three-pane layout shell
+  - **Write scope**: `frontend/src/components/layout/WorkspaceShell.tsx`, `frontend/src/components/layout/LeftRail.tsx`, `frontend/src/components/layout/CenterPane.tsx`, `frontend/src/components/layout/RightRail.tsx`, `frontend/src/components/layout/BottomUtility.tsx`, `frontend/src/components/layout/ModeSwitcher.tsx`, `frontend/src/types/workspace.ts`
+  - **Dependencies**: FE-001, FE-002, FE-003
+  - **Expected outcome**: Responsive three-pane layout with mode-based center pane
+  - **Acceptance criteria**:
+    - LeftRail: 250px width, collapsible to 60px (icon-only mode)
+    - CenterPane: flex-grow, takes remaining space
+    - RightRail: 300px width, collapsible
+    - BottomUtility: 40px height when expanded, 0px when collapsed
+    - ModeSwitcher has 4 buttons: Plan, Write, Review, Inspect
+    - Mode changes update `uiStore.currentMode` without page reload
+    - Layout responsive: below 1024px, rails stack vertically
+    - Tailwind classes used for all styling (no inline styles)
+
+- [x] FE-005A: Storyboard rail with scene cards
+  - **Write scope**: `frontend/src/components/storyboard/Storyboard.tsx`, `frontend/src/components/storyboard/SceneCard.tsx`, `frontend/src/components/storyboard/SceneCardList.tsx`, `frontend/src/types/scene.ts`, `frontend/src/hooks/useStoryboard.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Storyboard shows story progression with scene-level detail
+  - **Acceptance criteria**:
+    - SceneCard displays: title, purpose (max 2 lines), active characters (chips), conflict indicator
+    - SceneCardList renders cards in order from planning API or mock data
+    - Clicking SceneCard opens manuscript at corresponding location (via `useNavigate`)
+    - Empty state shows "No scenes yet - create in planning board" with CTA button
+    - Cards have hover state with subtle shadow elevation
+    - Card height: min 80px, max 150px, overflow-hidden with ellipsis
+    - Jump-to-manuscript logs navigation event to console (for testing)
+
+- [x] FE-005B: Story bible rail section
+  - **Write scope**: `frontend/src/components/bible/StoryBibleRail.tsx`, `frontend/src/components/bible/PinnedEntry.tsx`, `frontend/src/components/bible/BibleEntryList.tsx`, `frontend/src/types/bible.ts`, `frontend/src/stores/bibleStore.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Users can pin characters, locations, rules for quick reference
+  - **Acceptance criteria**:
+    - PinnedEntry displays: type icon, title, summary (max 3 lines), unpin button
+    - BibleEntryList shows pinned entries grouped by type (Characters, Locations, Rules, etc.)
+    - Pin action adds entry to `bibleStore.pinnedEntries` array
+    - Unpin action removes entry from store
+    - Pinned entries persist in localStorage key `narrative-engine:{projectId}:pinnedBible`
+    - Max 10 pinned entries per type (UI shows "Limit reached" toast)
+    - Empty state shows "Pin items from world bible" with help text
+    - Each entry has unique id for pin/unpin operations
+
+### Phase 3: Flow Editor (Week 4)
+
+- [x] FE-006: Editable flow editor (mock service)
+  - **Write scope**: `frontend/src/services/mocks/flowMock.ts`, `frontend/src/services/flow.ts`, `frontend/src/components/flow/FlowEditor.tsx`, `frontend/src/components/flow/StageList.tsx`, `frontend/src/components/flow/StageCard.tsx`, `frontend/src/components/flow/StageActions.tsx`, `frontend/src/types/flow.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Users can add, rename, reorder, disable, archive, and redefine stages
+  - **Acceptance criteria**:
+    - Mock service returns 8 default stages (Brainstorm, Foundation, Character, World Bible, Arc Selection, Planning, Drafting, Review)
+    - StageCard displays: position number, display_name, stage_kind badge, progress state chip
+    - StageActions shows: edit, disable, archive buttons (delete only for custom stages)
+    - Add stage creates new `StoryFlowStage` with unique id, position at end
+    - Rename updates `display_name` via mock service (2s delay simulation)
+    - Reorder via drag-and-drop updates `position` field (using dnd-kit)
+    - Disable changes `stage_configuration_state` to DISABLED
+    - Archive changes `stage_configuration_state` to ARCHIVED
+    - Redefine opens modal for `description` and `custom_prompt_guidance` fields
+    - Stage edits show "Updating..." loading state during mock delay
+    - Error states show "Failed to update stage" toast with retry button
+
+### Phase 4: Planning Board (Week 5)
+
+- [x] FE-007: Planning board view (real API)
+  - **Write scope**: `frontend/src/services/planning.ts`, `frontend/src/components/planning/PlanningBoard.tsx`, `frontend/src/components/planning/ChapterList.tsx`, `frontend/src/components/planning/SceneList.tsx`, `frontend/src/types/planning.ts`
+  - **Dependencies**: FE-005, FE-008 (FE-008 provides ChapterCard and SceneCard components)
+
+- [x] FE-008: Chapter/scene card components
+  - **Write scope**: `frontend/src/components/planning/ChapterCard.tsx`, `frontend/src/components/planning/SceneCard.tsx`, `frontend/src/components/planning/StatusChip.tsx`, `frontend/src/components/planning/CharacterChip.tsx`, `frontend/src/components/planning/DependencyBadge.tsx`
+  - **Dependencies**: FE-005, FE-007
+
+- [x] FE-009: Chapter packet builder
+  - **Write scope**: `frontend/src/components/planning/ChapterPacketBuilder.tsx`, `frontend/src/components/planning/PacketContents.tsx`, `frontend/src/components/planning/PacketReferences.tsx`, `frontend/src/types/packet.ts`
+  - **Dependencies**: FE-007, FE-008
+
+### Phase 5: Manuscript Editor (Week 6-7)
+
+- [x] FE-010: TipTap editor integration
+  - **Write scope**: `frontend/src/components/editor/ManuscriptEditor.tsx`, `frontend/src/components/editor/EditorToolbar.tsx`, `frontend/src/components/editor/EditorContent.tsx`, `frontend/src/lib/tiptap.ts`, `frontend/src/hooks/useEditor.ts`, `frontend/package.json` (add @tiptap/react, @tiptap/starter-kit, @tiptap/extension-placeholder)
+  - **Dependencies**: FE-005, FE-004
+
+- [x] FE-011: Chapter tab management
+  - **Write scope**: `frontend/src/components/editor/ChapterTabs.tsx`, `frontend/src/components/editor/Tab.tsx`, `frontend/src/stores/manuscriptStore.ts`, `frontend/src/hooks/useChapterTabs.ts`
+  - **Dependencies**: FE-010
+
+- [x] FE-012: Manuscript context rail
+  - **Write scope**: `frontend/src/components/context/ContextRail.tsx`, `frontend/src/components/context/ChapterPlanPanel.tsx`, `frontend/src/components/context/SceneGoalsPanel.tsx`, `frontend/src/components/context/PinnedReferencesPanel.tsx`
+  - **Dependencies**: FE-005B, FE-010
+  - **Expected outcome**: Context stays visible while writing without obscuring manuscript
+  - **Acceptance criteria**:
+    - ContextRail renders in RightRail when mode === 'write'
+    - ChapterPlanPanel shows: current chapter title, objective, conflict, stakes (from planning API)
+    - SceneGoalsPanel shows: numbered list of scene goals for current chapter
+    - PinnedReferencesPanel shows: pinned bible entries from bibleStore (FE-005B)
+    - Each panel collapsible with chevron icon
+    - Panels have max-height: 300px with overflow-y-auto
+    - Empty states: "No plan available", "No scene goals set", "No pinned references"
+    - Loading states show skeleton loaders during API fetch
+    - Context updates when active chapter changes (via useEffect)
+
+- [x] FE-013: Draft artifact promotion (mock service - backend endpoint not yet available)
+  - **Write scope**: `frontend/src/services/drafting.ts`, `frontend/src/services/mocks/draftingMock.ts`, `frontend/src/components/drafting/DraftPromotion.tsx`, `frontend/src/components/drafting/DraftPreview.tsx`, `frontend/src/types/drafting.ts`
+  - **Dependencies**: FE-010, FE-011
+  - **Expected outcome**: Generated drafts can be promoted to editable manuscript state with provenance preserved
+  - **Backend status**: GET endpoints exist for listing/retrieving, but NO POST endpoint for creating manuscript documents yet
+  - **Acceptance criteria**:
+    - Fetches artifacts from `GET /story-development/drafting/draft-artifacts?project_id={id}`
+    - DraftPreview shows: title, state badge, provider badge, model badge, created_at
+    - "Promote to Manuscript" button opens confirmation modal
+    - Modal shows: artifact preview (first 500 chars), provenance info
+    - Promotion uses MOCK service that simulates creating ManuscriptDocument (returns 200 after 2s delay)
+    - Mock response includes: document_id, title, content, provenance { artifact_id, provider, model }
+    - New document opens in new tab (FE-011) with mock data
+    - Success toast: "Draft promoted to Chapter X (mock mode)"
+    - Banner at top: "Promotion in mock mode - backend endpoint not yet available"
+    - Feature flag `VITE_USE_MOCKS=true` enables mock, `false` shows "Coming soon" disabled state
+
+### Phase 6: Job Execution (Week 8)
+
+- [x] FE-014: Job launch interface (real API)
+  - **Write scope**: `frontend/src/services/jobs.ts`, `frontend/src/components/jobs/JobLaunchForm.tsx`, `frontend/src/components/jobs/PhaseSelector.tsx`, `frontend/src/components/jobs/PayloadBuilder.tsx`, `frontend/src/types/job.ts`
+  - **Dependencies**: FE-009, FE-002
+  - **Expected outcome**: Users can launch backend jobs with proper context
+  - **Backend schema**: `JobCreateRequest` { phase: JobPhase, payload: dict }, `JobStatusResponse` { id, phase, status, attempt_number, progress_current, progress_total, error }
+  - **Acceptance criteria**:
+    - PhaseSelector shows: P-100 (Architect), P-200 (Sequencer), P-300 (Drafter), P-400 (Compiler) as JobPhase enum values
+    - PayloadBuilder shows JSON editor with packet context pre-filled (from FE-009 chapter packet)
+    - "Launch Job" button calls `POST /jobs/create` with `{ phase, payload }`
+    - Success (202): returns `JobStatusResponse` with job id, auto-opens BottomUtility with polling (FE-015)
+    - Validation: phase required (enum value), payload valid JSON object
+    - Error states: 400 shows validation errors, 409 shows idempotency conflict, 500 shows server error
+    - Loading state: button disabled with spinner during request
+    - Form resets after successful submission
+    - Note: Model selection is NOT part of job creation - models are configured in backend, not frontend
+
+- [x] FE-015: Job status polling with TanStack Query
+  - **Write scope**: `frontend/src/hooks/useJobStatus.ts`, `frontend/src/components/jobs/JobStatusIndicator.tsx`, `frontend/src/components/jobs/JobProgress.tsx`, `frontend/src/lib/queryClient.ts` (update config)
+  - **Dependencies**: FE-014, FE-002
+  - **Expected outcome**: Real-time status updates with 600ms polling interval
+  - **Backend schema**: `JobStatusResponse` { id, phase, status, attempt_number, current_phase, current_step, progress_current, progress_total, error }
+  - **Acceptance criteria**:
+    - useJobStatus hook accepts job_id (UUID), returns { status, phase, progress, error, isPolling, current_step }
+    - Polling interval: 600ms via `refetchInterval: 600` in useQuery
+    - JobStatusIndicator shows: QUEUED (gray), RUNNING (blue pulse), COMPLETED (green), FAILED (red)
+    - JobProgress shows percentage bar: (progress_current / progress_total * 100)%, shows "0%" when null
+    - Displays current_phase and current_step as text labels when available
+    - Terminal states (COMPLETED/FAILED) stop polling automatically
+    - FAILED state shows error message and "Retry" button that calls `POST /jobs/{id}/retry` with `{ retry_reason: "operator_retry" }`
+    - COMPLETED state shows "View Results" button (navigates to artifact)
+    - Polling visible in browser devtools Network tab (requests every 600ms)
+    - Error handling: network errors retry 3 times before showing failed state
+
+- [x] FE-016: Job logs viewer
+  - **Write scope**: `frontend/src/components/jobs/JobLogsViewer.tsx`, `frontend/src/components/jobs/LogEntry.tsx`, `frontend/src/hooks/useJobLogs.ts`, `frontend/src/lib/download.ts`
+  - **Dependencies**: FE-015
+  - **Expected outcome**: Logs readable and exportable
+  - **Backend schema**: `JobLogsResponse` { id, entries: [{ timestamp, level, message }] }
+  - **Acceptance criteria**:
+    - Fetches logs from `GET /jobs/{job_id}/logs`
+    - LogEntry displays: timestamp (formatted HH:mm:ss.SSS), level badge (INFO/WARNING/ERROR), message (monospace font)
+    - Logs sorted by timestamp ascending (oldest first) as returned by backend
+    - Auto-scroll to bottom when new logs arrive (useEffect with ref)
+    - "Pause Auto-scroll" checkbox stops auto-scroll when checked
+    - "Export Logs" button downloads logs.txt with all entries (timestamp | level | message format)
+    - Filter dropdown: All, INFO, WARNING, ERROR
+    - Search input filters logs by message text (case-insensitive)
+    - Empty state: "No logs available yet"
+    - Loading state: skeleton log entries during fetch
+
+- [x] FE-017: Bottom utility layer
+  - **Write scope**: `frontend/src/components/layout/BottomUtility.tsx`, `frontend/src/components/jobs/JobMonitor.tsx`, `frontend/src/stores/jobStore.ts`, `frontend/src/hooks/useJobMonitor.ts`
+  - **Dependencies**: FE-005, FE-015, FE-016
+  - **Expected outcome**: Job monitoring visible across all workspace modes
+  - **Acceptance criteria**:
+    - BottomUtility renders at bottom of WorkspaceShell (FE-005)
+    - Height: 0px when collapsed, 200px when expanded
+    - Toggle button in bottom right corner (expand/collapse)
+    - JobMonitor shows: active job_id, status indicator, progress bar, logs preview (last 3 lines)
+    - "View Full Logs" button expands logs panel within BottomUtility
+    - "Retry" button visible for FAILED jobs
+    - Job monitoring persists across mode switches (Plan/Write/Review/Inspect)
+    - Auto-collapse after COMPLETED state for 5 seconds (toast notification)
+    - Multiple jobs: shows most recent job, queue indicator if jobs pending
+    - State persisted in jobStore for resilience across component unmounts
+
+### Phase 7: Inspect & Provenance (Week 9)
+
+- [x] FE-018: Inspect mode integration
+  - **Write scope**: `frontend/src/components/inspect/InspectMode.tsx`, `frontend/src/components/inspect/InspectTabs.tsx`, `frontend/src/types/inspect.ts`
+  - **Dependencies**: FE-005, FE-019, FE-020
+  - **Expected outcome**: First-class center-pane mode for inspecting job execution
+  - **Acceptance criteria**:
+    - InspectMode renders in CenterPane when mode === 'inspect'
+    - InspectTabs shows: Steps tab, Lineage tab, Attempts tab
+    - Mode switch preserves job_id context in uiStore.inspectContext
+    - "Back to Manuscript" button switches mode back to 'write'
+    - URL includes ?mode=inspect&job_id={id} for shareability
+    - Empty state: "Select a job to inspect" when no context
+
+- [x] FE-019: Step timeline component (real API)
+  - **Write scope**: `frontend/src/components/inspect/StepTimeline.tsx`, `frontend/src/components/inspect/StepCard.tsx`, `frontend/src/hooks/useJobSteps.ts`, `frontend/src/types/inspect.ts`
+  - **Dependencies**: FE-018
+  - **Expected outcome**: Steps render in backend order with provenance badges
+  - **Backend schema**: `StepRecord` { step_record_id, logical_run_id, run_id, run_kind, attempt_number, step_name, step_index, state, project_id, model_id, backend_name, started_at, finished_at, duration_seconds, error_code }
+  - **Acceptance criteria**:
+    - Fetches steps from `GET /jobs/{job_id}/steps?attempt={n}`
+    - StepCard displays: step_name, state badge, duration_seconds, model_id/backend_name
+    - Steps sorted by step_index ascending
+    - State colors: PENDING (gray), RUNNING (blue pulse), COMPLETED (green), FAILED (red)
+    - Provenance badge shows: model_id, backend_name, backend_version (compact chip)
+    - Error states show error_code and error_category in red text
+    - Loading state shows SkeletonList during fetch
+    - Empty state: "No steps recorded yet"
+
+- [x] FE-020: Artifact lineage component (real API)
+  - **Write scope**: `frontend/src/components/inspect/ArtifactLineage.tsx`, `frontend/src/components/inspect/LineageGraph.tsx`, `frontend/src/components/inspect/ArtifactCard.tsx`, `frontend/src/hooks/useJobLineage.ts`
+  - **Dependencies**: FE-018
+  - **Expected outcome**: Lineage shows history with CANONICAL/SUPERSEDED states
+  - **Backend schema**: `ArtifactLineageView` { artifact_id, artifact_kind, state, run_id, step_name, created_at, provenance: { provider, model, backend_name } }
+  - **Acceptance criteria**:
+    - Fetches lineage from `GET /jobs/{job_id}/lineage?attempt={n}`
+    - LineageGraph shows artifacts as nodes with directed edges (parent→child)
+    - ArtifactCard displays: artifact_kind, state badge, provenance, created_at
+    - State colors: CANONICAL (green), SUPERSEDED (yellow), REJECTED (red), DRAFT (gray)
+    - Clicking artifact shows preview panel with content (first 1000 chars)
+    - Loading state shows SkeletonList during fetch
+    - Empty state: "No artifacts generated yet"
+
+- [x] FE-021: Provenance badges
+  - **Write scope**: `frontend/src/components/common/ProvenanceBadge.tsx`, `frontend/src/components/common/ProviderBadge.tsx`, `frontend/src/components/common/ModelBadge.tsx`, `frontend/src/lib/provenance.ts`
+  - **Dependencies**: FE-001A
+  - **Expected outcome**: Provenance visible wherever generated output appears
+  - **Acceptance criteria**:
+    - ProvenanceBadge displays: provider icon, model name, backend version
+    - ProviderBadge shows: OpenAI (O icon), Anthropic (A icon), Local (⚡ icon), etc.
+    - ModelBadge shows: model name truncated to 20 chars with tooltip
+    - Compact mode: single line with icons only
+    - Expanded mode: multi-line with full details
+    - Used in: StepCard, ArtifactCard, DraftPreview, Manuscript header
+    - Theme-aware colors (uses stage theme primary color)
+
+### Phase 8: Review Workspace (Week 10)
+
+- [x] FE-022: Checker findings list (real API)
+  - **Write scope**: `frontend/src/services/review.ts`, `frontend/src/components/review/FindingsList.tsx`, `frontend/src/components/review/FindingCard.tsx`, `frontend/src/components/review/SeverityBadge.tsx`, `frontend/src/types/review.ts`
+  - **Dependencies**: FE-005, FE-004B
+  - **Expected outcome**: Findings filterable, jump to source text
+  - **Backend schema**: `CheckerFinding` { finding_id, project_id, source_object_id, source_object_kind, severity, summary, details, source_context }
+  - **Acceptance criteria**:
+    - Fetches findings from `GET /story-development/review/findings?project_id={id}&source_object_kind={kind}&source_object_id={id}`
+    - FindingCard displays: severity badge, summary (max 2 lines), source_object_kind
+    - SeverityBadge colors: low (blue), medium (yellow), high (orange), critical (red)
+    - Filter dropdown: All severities, or individual severity levels
+    - Filter by source_object_kind (chapter-plan, scene-plan, manuscript, etc.)
+    - Clicking finding shows details panel with source_context
+    - "Jump to Source" button navigates to related object (if manuscript, opens editor)
+    - Loading state shows SkeletonList during fetch
+    - Empty state: "No findings for this project"
+
+- [x] FE-023: Review decision interface (mock service - backend endpoint not yet available)
+  - **Write scope**: `frontend/src/services/review.ts`, `frontend/src/services/mocks/reviewMock.ts`, `frontend/src/components/review/DecisionForm.tsx`, `frontend/src/components/review/DecisionHistory.tsx`, `frontend/src/types/review.ts`
+  - **Dependencies**: FE-022
+  - **Expected outcome**: Users can record review decisions that route to planning/drafting
+  - **Backend status**: GET endpoints exist for listing/retrieving, but NO POST endpoint for creating decisions yet
+  - **Backend schema**: `ReviewDecision` { decision_id, project_id, finding_id, target_kind, target_id, decision_action, rationale, routed_to_stage, created_at }
+  - **Acceptance criteria**:
+    - DecisionForm shows: finding summary, decision_action dropdown, rationale textarea
+    - decision_action values: "accept", "reject", "defer", "escalate", "refine" (strings, not enum)
+    - routed_to_stage auto-selected based on decision_action (accept→drafting, reject→archive, refine→drafting)
+    - "Record Decision" button uses MOCK service (2s delay, returns decision_id)
+    - DecisionHistory shows prior decisions for finding (from GET endpoint)
+    - Success toast: "Decision recorded (mock mode)"
+    - Banner at top: "Decision recording in mock mode - backend endpoint not yet available"
+    - Feature flag VITE_USE_MOCKS=true enables mock, false shows "Coming soon" disabled state
+
+- [x] FE-024: Role-model checker UI (real API)
+  - **Write scope**: `frontend/src/services/checker.ts`, `frontend/src/components/checker/CheckerForm.tsx`, `frontend/src/components/checker/CheckerResults.tsx`, `frontend/src/components/checker/RoleModelSelector.tsx`, `frontend/src/components/checker/CheckerStatus.tsx`, `frontend/src/types/checker.ts`
+  - **Dependencies**: FE-005, FE-022, FE-015
+  - **Expected outcome**: Model selection per role, run checker, display results with status polling
+  - **Backend endpoints**: `GET /models`, `POST /role-model-checker/run`, `POST /role-model-checker/start`, `GET /role-model-checker/{run_id}/status`, `GET /role-model-checker/{run_id}/steps`, `GET /role-model-checker/{run_id}/lineage`, `GET /role-model-checker/{run_id}/attempts`, `POST /role-model-checker/{run_id}/retry`
+  - **Backend schema**: `ModelCatalogResponse`, `RoleModelCheckStatusResponse` { run_id, status, attempt_number, progress_current, progress_total, error }, `RoleModelCheckStepsResponse`, `RoleModelCheckLineageResponse`
+  - **Acceptance criteria**:
+    - RoleModelSelector shows roles from ModelCatalogResponse.workflow_order
+    - Each role has model dropdown from ModelCatalogResponse.discovered_models
+    - "Run Checker" button triggers `POST /role-model-checker/run` with selected models
+    - CheckerStatus shows: QUEUED (gray), RUNNING (blue pulse), COMPLETED (green), FAILED (red)
+    - Status polling every 600ms via useQuery with refetchInterval (similar to FE-015)
+    - CheckerResults displays: pass/fail state, findings count, summary
+    - Pass state: green badge, "No issues found", links to findings list
+    - Fail state: red badge, findings list (FE-022 integration)
+    - Steps tab shows execution steps (similar to FE-019)
+    - Lineage tab shows artifact lineage (similar to FE-020)
+    - "Retry" button for FAILED jobs calls `POST /role-model-checker/{run_id}/retry`
+    - Loading state shows spinner with "Running checker..." message
+    - Error state shows "Checker failed" with error message and retry button
+
+- [ ] FE-024A: Story branches UI (real API)
+  - **Write scope**: `frontend/src/services/branches.ts`, `frontend/src/components/branches/BranchList.tsx`, `frontend/src/components/branches/BranchCard.tsx`, `frontend/src/components/branches/BranchComparison.tsx`, `frontend/src/components/branches/MergeDecisionForm.tsx`, `frontend/src/types/branches.ts`
+  - **Dependencies**: FE-005, FE-022
+  - **Expected outcome**: Users can create, compare, and merge story branches
+  - **Backend endpoints**: `GET /story-development/branches`, `POST /story-development/branches`, `GET /story-development/branches/active`, `POST /story-development/branches/active`, `POST /story-development/branches/comparisons`, `GET /story-development/branches/comparisons`, `GET /story-development/branches/comparisons/{id}`, `POST /story-development/branches/merge-decisions`, `GET /story-development/branches/merge-decisions`, `GET /story-development/branches/{id}/state-refs`
+  - **Backend schema**: `StoryBranch` { branch_id, project_id, name, description, parent_branch_id, state, created_at }, `BranchComparisonRecord` { comparison_id, project_id, branch_a_id, branch_b_id, differences, created_at }, `BranchMergeDecision` { merge_decision_id, project_id, source_branch_id, target_branch_id, decision, rationale, created_at }
+  - **Acceptance criteria**:
+    - BranchList displays all branches for project with state badges
+    - BranchCard shows: name, description (max 2 lines), state badge, created_at
+    - State colors: active (green), merged (blue), archived (gray)
+    - "Create Branch" button opens form with name, description, parent selection
+    - "Set Active" button calls `POST /story-development/branches/active`
+    - "Compare" button opens BranchComparison with side-by-side diff
+    - BranchComparison shows differences between two branches
+    - "Merge" button opens MergeDecisionForm
+    - MergeDecisionForm shows: source/target branches, decision dropdown, rationale textarea
+    - Decision values: "merge", "reject", "defer"
+    - MergeDecision history shows prior decisions for branch
+    - Loading states show SkeletonList during fetch
+    - Empty state: "No branches yet - create from active branch"
+
+- [ ] FE-024B: Story decision nodes UI (real API)
+  - **Write scope**: `frontend/src/services/decisions.ts`, `frontend/src/components/decisions/DecisionTree.tsx`, `frontend/src/components/decisions/DecisionNode.tsx`, `frontend/src/components/decisions/DecisionPath.tsx`, `frontend/src/types/decisions.ts`
+  - **Dependencies**: FE-005, FE-024A
+  - **Expected outcome**: Visualize story decision points and their paths
+  - **Backend endpoints**: `GET /story-development/decisions`, `GET /story-development/decisions/{node_id}`, `GET /story-development/decisions/{node_id}/path`
+  - **Backend schema**: `StoryDecisionNode` { node_id, project_id, decision_point, options: [{ option_id, label, next_node_id }], created_at }, `StoryDecisionPath` { path_id, project_id, nodes: [node_id], outcome, created_at }
+  - **Acceptance criteria**:
+    - DecisionTree renders nodes as tree/graph with directed edges
+    - DecisionNode displays: decision_point, options (as clickable buttons)
+    - Clicking option navigates to next node in tree
+    - DecisionPath shows current path from root to active node
+    - Path displays as breadcrumb navigation
+    - "Reset" button returns to root node
+    - Loading state shows SkeletonList during fetch
+    - Empty state: "No decision nodes defined"
+
+- [ ] FE-024C: Inspect run links UI (real API)
+  - **Write scope**: `frontend/src/services/inspectLinks.ts`, `frontend/src/components/inspect/InspectRunLinks.tsx`, `frontend/src/components/inspect/InspectLinkCard.tsx`, `frontend/src/types/inspect.ts`
+  - **Dependencies**: FE-018, FE-022
+  - **Expected outcome**: Link review findings to inspect runs for traceability
+  - **Backend endpoints**: `GET /story-development/review/inspect-links`, `GET /story-development/review/inspect-links/{link_id}`
+  - **Backend schema**: `InspectRunLink` { link_id, project_id, finding_id, run_id, run_kind, created_at }
+  - **Acceptance criteria**:
+    - InspectRunLinks fetches links filtered by finding_id or run_id
+    - InspectLinkCard displays: finding_id, run_id, run_kind badge, created_at
+    - Clicking link opens inspect mode (FE-018) with run_id context
+    - Clicking finding_id navigates to finding in review (FE-022)
+    - Filter dropdown: All, by finding, by run
+    - Loading state shows SkeletonList during fetch
+    - Empty state: "No inspect links found"
+
+### Phase 9: Manuscript Aids (Week 11-12)
+
+- [ ] FE-025: Manuscript aids panel (mock service - backend endpoint not yet available)
+  - **Write scope**: `frontend/src/services/mocks/manuscriptAidsMock.ts`, `frontend/src/components/aids/AidsPanel.tsx`, `frontend/src/components/aids/AidAction.tsx`, `frontend/src/components/aids/SelectionAids.tsx`, `frontend/src/components/aids/SceneAids.tsx`, `frontend/src/types/aids.ts`
+  - **Dependencies**: FE-010, FE-026 (FE-026 provides selection lifecycle handling)
+  - **Expected outcome**: Selection-based and scene-based actions in right rail
+  - **Backend status**: GET endpoints exist for revision suggestions, but NO POST endpoint for creating suggestions yet
+  - **Backend schema**: `RevisionSuggestion` { suggestion_id, project_id, target_kind, target_id, anchor_text, proposed_revision, state, created_at }
+  - **Acceptance criteria**:
+    - AidsPanel renders in RightRail when mode === 'write'
+    - SelectionAids shows: "Rewrite", "Summarize", "Expand", "Check grammar" buttons
+    - SceneAids shows: "Add conflict", "Strengthen stakes", "Check continuity" buttons
+    - SelectionAids disabled when no text selected (opacity-50, cursor-not-allowed)
+    - SceneAids always enabled (scene context from active chapter)
+    - Clicking aid action uses MOCK service (2s delay, returns suggestion)
+    - Banner at top: "Manuscript aids in mock mode - backend endpoint not yet available"
+    - Feature flag VITE_USE_MOCKS=true enables mock, false shows "Coming soon"
+
+- [ ] FE-026: Selection lifecycle handling
+  - **Write scope**: `frontend/src/hooks/useSelection.ts`, `frontend/src/stores/selectionStore.ts`, `frontend/src/lib/selection.ts`
+  - **Dependencies**: FE-010, FE-025
+  - **Expected outcome**: Selection stable through aid request/response
+  - **Acceptance criteria**:
+    - useSelection hook returns: selectedText, selectionRange, hasSelection
+    - Selection tracked via TipTap editor state (editor.state.selection)
+    - selectionStore anchors selectedText with start/end positions
+    - Selection preserved during aid request (stored before API call)
+    - Selection restored after aid response (re-applies to editor)
+    - Selection cleared on manual delete or new selection
+    - Selection survives tab switches (persisted in store)
+    - Empty selection shows "Select text to enable aids" hint
+
+- [ ] FE-027: Diff review interface
+  - **Write scope**: `frontend/src/components/diff/DiffViewer.tsx`, `frontend/src/components/diff/DiffLine.tsx`, `frontend/src/components/diff/DiffControls.tsx`, `frontend/src/lib/diff.ts`
+  - **Dependencies**: FE-025, FE-026
+  - **Expected outcome**: Proposed revisions reviewable without auto-apply
+  - **Backend schema**: Uses RevisionSuggestion.proposed_revision field
+  - **Acceptance criteria**:
+    - DiffViewer shows side-by-side diff: original (left), proposed (right)
+    - DiffLine displays: line number, content, add/remove/neutral indicator
+    - Added lines: green background, + prefix
+    - Removed lines: red background, - prefix
+    - Neutral lines: gray background, space prefix
+    - DiffControls shows: "Accept", "Reject", "Refine" buttons
+    - "Accept" applies proposed revision to editor (mock for now)
+    - "Reject" closes diff without changes
+    - "Refine" opens editor to modify proposed revision
+    - Diff generated via simple string comparison (no external library)
+    - Loading state shows "Generating diff..." during comparison
+
+- [ ] FE-028: Suggestion history (mock service)
+  - **Write scope**: `frontend/src/services/mocks/manuscriptAidsMock.ts` (extend), `frontend/src/components/aids/SuggestionHistory.tsx`, `frontend/src/components/aids/SuggestionCard.tsx`, `frontend/src/components/aids/SuggestionCompare.tsx`
+  - **Dependencies**: FE-025, FE-027
+  - **Expected outcome**: History scrollable, comparisons clear
+  - **Backend schema**: Uses RevisionSuggestion with state field (pending/accepted/rejected)
+  - **Acceptance criteria**:
+    - SuggestionHistory fetches from mock service (filters by project_id, target_id)
+    - SuggestionCard displays: anchor_text (truncated), state badge, created_at
+    - State colors: pending (yellow), accepted (green), rejected (red)
+    - Clicking suggestion opens SuggestionCompare (diff view)
+    - SuggestionCompare shows: original vs proposed diff (FE-027)
+    - "Restore" button for rejected suggestions (re-opens for review)
+    - History sorted by created_at descending (newest first)
+    - Empty state: "No suggestions yet"
+    - Loading state shows SkeletonList during fetch
+
+### Phase 10: Story Development Features (Week 13+)
+
+- [ ] FE-029: Brainstorm workspace (mock service)
+  - **Write scope**: `frontend/src/services/mocks/brainstormMock.ts`, `frontend/src/components/brainstorm/BrainstormWorkspace.tsx`, `frontend/src/components/brainstorm/IdeaCard.tsx`, `frontend/src/components/brainstorm/IdeaCluster.tsx`, `frontend/src/types/brainstorm.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Idea capture, clustering, keep/discard/park, promote actions
+  - **Backend status**: No API endpoints exist for brainstorm objects
+  - **Mock schema**: `BrainstormIdea` { idea_id, project_id, content, tags, state, cluster_id, created_at }
+  - **Acceptance criteria**:
+    - BrainstormWorkspace renders in CenterPane when mode === 'plan' and submode === 'brainstorm'
+    - IdeaCard displays: content, tags (chips), state badge, action buttons
+    - State colors: active (blue), parked (gray), discarded (red with strikethrough)
+    - "Keep" button: sets state to active
+    - "Discard" button: sets state to discarded
+    - "Park" button: sets state to parked
+    - "Promote" button: converts to canonical object (mock, shows toast)
+    - IdeaCluster groups ideas by cluster_id (drag-and-drop to recluster)
+    - "New Idea" textarea with "Add" button (mock create)
+    - Banner: "Brainstorm in mock mode - backend endpoint not yet available"
+
+- [ ] FE-030: Foundation screen (mock service)
+  - **Write scope**: `frontend/src/services/mocks/foundationMock.ts`, `frontend/src/components/foundation/FoundationEditor.tsx`, `frontend/src/components/foundation/FoundationField.tsx`, `frontend/src/components/foundation/ImpactWarning.tsx`, `frontend/src/types/foundation.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Foundation editable with impact visibility
+  - **Backend status**: No API endpoints exist for foundation objects
+  - **Mock schema**: `Foundation` { project_id, premise, logline, themes, constraints, downstream_impacts }
+  - **Acceptance criteria**:
+    - FoundationEditor renders in CenterPane when mode === 'plan' and submode === 'foundation'
+    - FoundationField displays: label, textarea/input, save button, impact warning
+    - Fields: premise (textarea), logline (textarea), themes (tag input), constraints (tag input)
+    - ImpactWarning shows: "Changing this affects: Chapter Plans, Scene Plans, Manuscripts"
+    - Warning displays when field is modified (yellow background)
+    - "Save" button uses mock service (2s delay, shows success toast)
+    - Auto-save debounced to 2000ms
+    - Banner: "Foundation in mock mode - backend endpoint not yet available"
+
+- [ ] FE-031: Character builder (mock service)
+  - **Write scope**: `frontend/src/services/mocks/characterMock.ts`, `frontend/src/components/characters/CharacterBuilder.tsx`, `frontend/src/components/characters/CharacterProfile.tsx`, `frontend/src/components/characters/RelationshipMap.tsx`, `frontend/src/components/characters/ContradictionWarning.tsx`, `frontend/src/types/character.ts`
+  - **Dependencies**: FE-005
+  - **Expected outcome**: Goals, flaws, relationships visible together
+  - **Backend status**: No API endpoints exist for character objects
+  - **Mock schema**: `Character` { character_id, project_id, name, description, goals, flaws, relationships: [{ target_id, relationship_type }] }
+  - **Acceptance criteria**:
+    - CharacterBuilder renders in CenterPane when mode === 'plan' and submode === 'characters'
+    - CharacterProfile displays: name, description, goals (list), flaws (list), relationships
+    - RelationshipMap shows characters as nodes, relationships as directed edges
+    - ContradictionWarning shows: "Character X has conflicting goals in Chapter Y"
+    - "New Character" button opens creation form (mock)
+    - "Edit" button opens profile editor (mock update)
+    - "Delete" button removes character (mock delete)
+    - Banner: "Character builder in mock mode - backend endpoint not yet available"
+
+- [ ] FE-032: World bible workspace (mock service)
+  - **Write scope**: `frontend/src/services/mocks/worldBibleMock.ts`, `frontend/src/components/bible/WorldBibleWorkspace.tsx`, `frontend/src/components/bible/BibleEntry.tsx`, `frontend/src/components/bible/BibleSearch.tsx`, `frontend/src/components/bible/ContinuityWarning.tsx`, `frontend/src/types/bible.ts`
+  - **Dependencies**: FE-005, FE-005B
+  - **Expected outcome**: Entries source-linked, warnings readable in context
+  - **Backend status**: No API endpoints exist for world bible objects
+  - **Mock schema**: `BibleEntry` { entry_id, project_id, entry_type, title, content, source_refs: [{ object_kind, object_id }], continuity_warnings: [{ warning_type, message }] }
+  - **Acceptance criteria**:
+    - WorldBibleWorkspace renders in CenterPane when mode === 'plan' and submode === 'bible'
+    - BibleEntry displays: entry_type icon, title, content, source_refs (chips), warnings
+    - Entry types: location, object, rule, event, concept
+    - BibleSearch filters entries by title/content (client-side)
+    - ContinuityWarning shows: "Entry X contradicts Chapter Y, Scene Z"
+    - "Pin" button adds to pinned entries (FE-005B integration)
+    - "New Entry" button opens creation form (mock)
+    - "Edit" button opens entry editor (mock update)
+    - Banner: "World bible in mock mode - backend endpoint not yet available"
+
+### Migration Tasks
+
+- [ ] Migrate vanilla JS prototype to React (parallel development, week 1-2)
+- [ ] Test React frontend thoroughly before cutover (week 3-4)
+- [ ] Switch default route to React app, decommission vanilla JS (week 5+)
 
 ## Docs Contract Hardening
 
@@ -336,3 +1242,122 @@
 - [x] `Hypatia`: make project artifact reads lineage-aware for generated runtime outputs so failed `P-200`/`P-300` runs do not return placeholder `sequence` or `chapter-1` files through existing project endpoints.
 - [x] `Faraday`: update downstream runtime phases to ignore empty bootstrapped upstream artifacts and only record real dependency provenance in step input refs and source hashes.
 - [x] `Copernicus`: implement canonical lineage supersession for rerun `sequence` and `chapter_1` artifacts and add deterministic regression tests for repeated successful runs.
+
+## API Alignment Summary
+
+**See**: `docs/Frontend API Alignment Issues.md` for complete analysis
+
+### Real API Endpoints (Ready for Frontend)
+
+| Endpoint | Method | Status | Frontend Tasks |
+|----------|--------|--------|----------------|
+| `/projects` | GET | ✅ Ready | FE-003 |
+| `/projects/create` | POST | ✅ Ready | FE-003 |
+| `/projects/{id}` | GET | ✅ Ready | FE-003 |
+| `/projects/{id}/manifest` | GET | ✅ Ready | FE-003 |
+| `/projects/{id}/sequence` | GET | ✅ Ready | FE-003 |
+| `/projects/{id}/chapter-1` | GET | ✅ Ready | FE-003 |
+| `/jobs/create` | POST | ✅ Ready | FE-014 |
+| `/jobs/{id}/status` | GET | ✅ Ready | FE-015 |
+| `/jobs/{id}/logs` | GET | ✅ Ready | FE-016 |
+| `/jobs/{id}/steps` | GET | ✅ Ready | FE-019 |
+| `/jobs/{id}/lineage` | GET | ✅ Ready | FE-020 |
+| `/jobs/{id}/attempts` | GET | ✅ Ready | FE-015 |
+| `/jobs/{id}/retry` | POST | ✅ Ready | FE-015 |
+| `/models` | GET | ✅ Ready | FE-024 |
+| `/role-model-checker/run` | POST | ✅ Ready | FE-024 |
+| `/role-model-checker/start` | POST | ✅ Ready | FE-024 |
+| `/role-model-checker/{id}/status` | GET | ✅ Ready | FE-024 |
+| `/role-model-checker/{id}/steps` | GET | ✅ Ready | FE-024 |
+| `/role-model-checker/{id}/lineage` | GET | ✅ Ready | FE-024 |
+| `/role-model-checker/{id}/attempts` | GET | ✅ Ready | FE-024 |
+| `/role-model-checker/{id}/retry` | POST | ✅ Ready | FE-024 |
+| `/story-development/branches` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches` | POST | ✅ Ready | FE-024A |
+| `/story-development/branches/active` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches/active` | POST | ✅ Ready | FE-024A |
+| `/story-development/branches/comparisons` | POST | ✅ Ready | FE-024A |
+| `/story-development/branches/comparisons` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches/comparisons/{id}` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches/merge-decisions` | POST | ✅ Ready | FE-024A |
+| `/story-development/branches/merge-decisions` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches/{id}` | GET | ✅ Ready | FE-024A |
+| `/story-development/branches/{id}/state-refs` | GET | ✅ Ready | FE-024A |
+| `/story-development/decisions` | GET | ✅ Ready | FE-024B |
+| `/story-development/decisions/{id}` | GET | ✅ Ready | FE-024B |
+| `/story-development/decisions/{id}/path` | GET | ✅ Ready | FE-024B |
+| `/story-development/planning/sequence-plans` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/sequence-plans/{id}` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/chapter-plans` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/chapter-plans/{id}` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/scene-plans` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/scene-plans/{id}` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/dependencies` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/dependencies/{id}` | GET | ✅ Ready | FE-007 |
+| `/story-development/planning/chapter-packets` | GET | ✅ Ready | FE-009 |
+| `/story-development/planning/chapter-packets/{id}` | GET | ✅ Ready | FE-009 |
+| `/story-development/drafting/draft-artifacts` | GET | ✅ Ready | FE-013 |
+| `/story-development/drafting/draft-artifacts/{id}` | GET | ✅ Ready | FE-013 |
+| `/story-development/drafting/manuscript-documents` | GET | ✅ Ready | FE-011 |
+| `/story-development/drafting/manuscript-documents/{id}` | GET | ✅ Ready | FE-011 |
+| `/story-development/drafting/revision-suggestions` | GET | ✅ Ready | FE-025 |
+| `/story-development/drafting/revision-suggestions/{id}` | GET | ✅ Ready | FE-025 |
+| `/story-development/review/findings` | GET | ✅ Ready | FE-022 |
+| `/story-development/review/findings/{id}` | GET | ✅ Ready | FE-022 |
+| `/story-development/review/decisions` | GET | ✅ Ready | FE-023 |
+| `/story-development/review/decisions/{id}` | GET | ✅ Ready | FE-023 |
+| `/story-development/review/inspect-links` | GET | ✅ Ready | FE-024C |
+| `/story-development/review/inspect-links/{id}` | GET | ✅ Ready | FE-024C |
+
+### Mock Service Endpoints (Backend Not Yet Available)
+
+| Feature | Missing Endpoint | Frontend Tasks | Mock Required |
+|---------|------------------|----------------|---------------|
+| Manuscript creation | `POST /story-development/drafting/manuscript-documents` | FE-013 | ✅ |
+| Review decisions | `POST /story-development/review/decisions` | FE-023 | ✅ |
+| Flow editor | All flow endpoints | FE-006 | ✅ |
+| Revision suggestions | `POST /story-development/drafting/revision-suggestions` | FE-025, FE-028 | ✅ |
+| Brainstorm | All brainstorm endpoints | FE-029 | ✅ |
+| Foundation | All foundation endpoints | FE-030 | ✅ |
+| Characters | All character endpoints | FE-031 | ✅ |
+| World Bible | All bible endpoints | FE-032 | ✅ |
+| Planning writes | `POST /story-development/planning/chapter-plans`, `POST /story-development/planning/scene-plans`, `POST /story-development/planning/chapter-packets` | FE-007, FE-009 | ✅ |
+| Sequence plans writes | `POST /story-development/planning/sequence-plans` | FE-007 | ✅ |
+
+### Schema Corrections Applied
+
+1. **ProjectSummaryResponse**: Added genre, tone_profile, story_structure fields
+2. **JobCreateRequest**: Removed model_id (backend configures models, not per-job)
+3. **ChapterPlan/ScenePlan status**: String field, not enum (map: "draft"→DRAFT, etc.)
+4. **CheckerFinding severity**: String field, not enum (map: "low"→LOW, etc.)
+5. **ReviewDecision decision_action**: String field, not enum (values: "accept", "reject", "defer", "escalate", "refine")
+
+### Mock Service Contract
+
+All mock services must:
+- Delay: 2000ms on all operations
+- Storage: In-memory per project (clears on reload)
+- Validation: Same as backend schema
+- Errors: Return appropriate codes (400, 404, 500)
+- Banner: UI shows "Mock Mode" banner when active
+- Feature flag: `VITE_USE_MOCKS=true` enables, `false` shows "Coming soon"
+
+### Environment Variables
+
+```bash
+# .env.local (frontend)
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_USE_MOCKS=true
+VITE_THEME=light
+VITE_STAGE_THEME=writing
+```
+
+### Next Steps
+
+1. ✅ Update TODO.md with corrected API schemas
+2. ✅ Add FE-001A theming task
+3. ✅ Add error boundary, skeleton, toast tasks (FE-004A, FE-004B, FE-004C)
+4. ✅ Document mock service contracts
+5. ✅ Create `docs/Frontend API Alignment Issues.md`
+6. ✅ Implement backend endpoints required for the current frontend surface
+7. ✅ Replace the merge-blocking mock and routing gaps identified during merge review

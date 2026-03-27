@@ -7,7 +7,11 @@ from uuid import UUID, uuid4
 from ..request_identity import job_request_scope, request_hash
 from ..persistence import JobLogRepository, JobRepository
 from ..schemas.enums import JobStatus
-from ..schemas.inspect import JobLineageResponse, JobStepsResponse
+from ..schemas.inspect import (
+    JobAttemptHistoryResponse,
+    JobLineageResponse,
+    JobStepsResponse,
+)
 from ..schemas.jobs import JobCreateRequest, JobLogEntry, JobLogsResponse, JobStatusResponse
 from ..settings import settings
 from .protocol import IdempotencyConflictError, JobAcceptance, RetryNotAllowedError
@@ -225,3 +229,30 @@ class JobManager:
         if limit is not None:
             meta["returned_count"] = len(items)
         return JobLineageResponse(job_id=job_id, items=items, meta=meta)
+
+    def get_attempt_history_projection(self, job_id: UUID) -> JobAttemptHistoryResponse:
+        self.get_status(job_id)
+        meta = {"ordered_by": "attempt_number_asc"}
+        items = self._jobs.list_attempts(job_id)
+        formatted_items = []
+        for item in items:
+            formatted_items.append({
+                "attempt_number": item.get("attempt_number", 0),
+                "status": item.get("status", ""),
+                "executor_name": item.get("executor_name"),
+                "executor_instance_id": item.get("executor_instance_id"),
+                "queue_delay_ms": item.get("queue_delay_ms"),
+                "lease_owner": item.get("lease_owner"),
+                "lease_expires_at": item.get("lease_expires_at"),
+                "claimed_at": item.get("claimed_at"),
+                "started_at": item.get("started_at"),
+                "finished_at": item.get("finished_at"),
+                "last_heartbeat_at": item.get("last_heartbeat_at"),
+                "finish_reason": item.get("finish_reason"),
+                "failure_stage": item.get("failure_stage"),
+                "retryable": bool(item.get("retryable", 0)) if item.get("retryable") is not None else None,
+                "retry_reason": item.get("retry_reason"),
+                "error_code": item.get("error_code"),
+                "error_category": item.get("error_category"),
+            })
+        return JobAttemptHistoryResponse(job_id=job_id, items=formatted_items, meta=meta)

@@ -81,3 +81,35 @@ class RoleModelCheckLineageResponse(StrictModel):
     run_id: UUID
     items: list[ArtifactLineageView] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=lambda: {"ordered_by": "artifact_lineage_id_asc"})
+
+
+class AttemptHistoryItem(StrictModel):
+    attempt_number: int
+    status: str
+    executor_name: str | None = None
+    executor_instance_id: str | None = None
+    queue_delay_ms: int | None = None
+    lease_owner: str | None = None
+    lease_expires_at: str | None = None
+    claimed_at: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None
+    last_heartbeat_at: str | None = None
+    finish_reason: str | None = None
+    failure_stage: str | None = None
+    retryable: bool | None = None
+    retry_reason: str | None = None
+    error_code: str | None = None
+    error_category: str | None = None
+
+
+class JobAttemptHistoryResponse(StrictModel):
+    job_id: UUID
+    items: list[AttemptHistoryItem] = Field(default_factory=list)
+    meta: dict[str, Any] = Field(default_factory=lambda: {"ordered_by": "attempt_number_asc"})
+
+
+class RoleModelCheckAttemptHistoryResponse(StrictModel):
+    run_id: UUID
+    items: list[AttemptHistoryItem] = Field(default_factory=list)
+    meta: dict[str, Any] = Field(default_factory=lambda: {"ordered_by": "attempt_number_asc"})

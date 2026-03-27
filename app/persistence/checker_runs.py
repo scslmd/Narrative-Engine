@@ -559,3 +559,16 @@ class CheckerRunRepository:
             }
             for row in rows
         ]
+
+    def list_attempts(self, run_id: UUID) -> list[dict[str, object]]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT logical_run_id, attempt_number, status, executor_name, executor_instance_id, queue_delay_ms, lease_owner, lease_expires_at, claimed_at, started_at, finished_at, last_heartbeat_at, finish_reason, failure_stage, retryable, retry_reason, error_code, error_category
+                FROM checker_run_attempts
+                WHERE run_id = ?
+                ORDER BY attempt_number ASC
+                """,
+                (str(run_id),),
+            ).fetchall()
+        return [dict(row) for row in rows]
