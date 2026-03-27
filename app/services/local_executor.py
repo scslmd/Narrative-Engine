@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Event, Thread
@@ -93,16 +94,23 @@ class LocalExecutor:
         self._poll_interval_seconds = poll_interval_seconds
         self._stop_event = Event()
         self._threads: list[Thread] = []
+        self._start_lock = threading.Lock()
 
     def start(self) -> None:
-        if self._threads:
-            return
-        self._threads = [
-            Thread(target=self._job_loop, name="narrative-job-worker", daemon=True),
-            Thread(target=self._checker_loop, name="narrative-checker-worker", daemon=True),
-        ]
-        for thread in self._threads:
-            thread.start()
+        """Start worker threads with thread-safety (REL-03).
+        
+        Uses a lock to prevent race conditions where multiple calls could
+        create duplicate threads. The check and thread creation are atomic.
+        """
+        with self._start_lock:
+            if self._threads:
+                return
+            self._threads = [
+                Thread(target=self._job_loop, name="narrative-job-worker", daemon=True),
+                Thread(target=self._checker_loop, name="narrative-checker-worker", daemon=True),
+            ]
+            for thread in self._threads:
+                thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()

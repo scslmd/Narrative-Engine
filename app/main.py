@@ -9,6 +9,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .inference import build_inference_backend
+from .middleware.auth import AuthMiddleware
+from .middleware.path_traversal import PathTraversalMiddleware
+from .middleware.rate_limit import RateLimitMiddleware
 from .api import (
     build_jobs_router,
     build_models_router,
@@ -20,9 +23,17 @@ from .settings import settings
 from .persistence.story_development import StoryDevelopmentRepository
 from .services import JobManager, ModelRegistry, ProjectService, RoleModelCheckManager, RoleModelCheckerService
 from .services import LocalExecutor
+from .services.config_validator import validate_config_at_startup
+
+
+# Maximum request body size: 10 MB
+MAX_BODY_SIZE = 10 * 1024 * 1024
 
 
 def build_app() -> FastAPI:
+    # Validate configuration at startup (REL-07)
+    validate_config_at_startup()
+    
     root = Path(__file__).resolve().parents[1]
     data_root = root / 'data'
     models_root = data_root / 'models'
@@ -57,15 +68,32 @@ def build_app() -> FastAPI:
         finally:
             local_executor.stop()
 
-    app = FastAPI(title='Narrative-Engine', version='0.1.0', lifespan=lifespan)
+    app = FastAPI(
+        title='Narrative-Engine',
+        version='0.1.0',
+        lifespan=lifespan,
+        max_body_size=MAX_BODY_SIZE,
+    )
 
+    # Add path traversal protection middleware (SEC-04) - must be first
+    app.add_middleware(PathTraversalMiddleware)
+
+    # Add CORS middleware first (before auth so OPTIONS preflight works without auth)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'],
         allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*'],
+        allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allow_headers=['Authorization', 'Content-Type', 'X-Requested-With', 'X-API-Key'],
+        expose_headers=['X-Total-Count', 'X-Page', 'X-Per-Page'],
     )
+
+    # Add authentication middleware (skips /health endpoint)
+    if settings.api_key:
+        app.add_middleware(AuthMiddleware, api_key=settings.api_key)
+
+    # Add rate limiting middleware (SEC-05) - after auth so limits apply per authenticated client
+    app.add_middleware(RateLimitMiddleware)
 
     app.include_router(build_projects_router(project_service))
     app.include_router(build_jobs_router(job_manager))
@@ -86,6 +114,3 @@ def build_app() -> FastAPI:
         return {'status': 'ok', 'mode': 'local'}
 
     return app
-
-
-app = build_app()
