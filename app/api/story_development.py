@@ -216,8 +216,11 @@ class BranchMergeDecisionListResponse(StrictModel):
     meta: dict[str, str] = Field(default_factory=dict)
 
 
-def build_story_development_router(repository: StoryDevelopmentRepository) -> APIRouter:
-    router = APIRouter(prefix="/v1/story-development", tags=["story-development"])
+def build_story_development_router(
+    repository: StoryDevelopmentRepository,
+    prefix: str = "/story-development",
+) -> APIRouter:
+    router = APIRouter(prefix=prefix.rstrip("/") if prefix else "", tags=["story-development"])
     decision_service = StoryDecisionReviewService(repository)
     drafting_service = DraftingService(repository)
     planning_service = PlanningService(repository)

@@ -4,9 +4,10 @@ Quick checks:
 
 1. Create a Python 3.12 virtual environment in this folder.
 2. Install dependencies with `pip install -e .[dev]`.
-3. Run `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_local_executor_compiler_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`.
+3. Run `python -m pytest -q -p no:cacheprovider`.
 4. Launch the app with `start_narrative_core.cmd` or `start_narrative_core.ps1`.
 5. Open `http://127.0.0.1:8000/role-model-checker-ui`.
+6. For the frontend baseline, run `npm run lint`, `npm run typecheck`, and `npm run build` from `frontend/`.
 
 Current validation covers:
 
@@ -58,8 +59,14 @@ Current validation does not yet cover:
 
 Current verified result:
 
-- `.\.venv\Scripts\python.exe -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_local_executor_compiler_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
-- Result: `111 passed`
+- `python -m pytest -q -p no:cacheprovider`
+- Result: `365 passed`
+- `cmd /c npm.cmd run lint`
+- Result: passed
+- `cmd /c npm.cmd run typecheck`
+- Result: passed
+- `cmd /c npm.cmd run build`
+- Result: passed
 
 Continuous testing:
 

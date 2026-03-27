@@ -208,10 +208,11 @@ def test_create_branch(tmp_path):
 
 **Before committing:** Ensure both frontend and backend pass their respective checks.
 
-**Full test suite status (as of March 26, 2026):**
-- Security features: 65 tests passing (SEC-01: 39, SEC-02: 13, SEC-03: 13)
-- Reliability features: 46 tests passing (REL-01: 17, REL-02: 14, REL-03: 2, REL-04: 12, REL-06: 8)
-- Total new tests: 111 passing in 5.32s
+**Full validation status (as of March 26, 2026):**
+- `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+- `cd frontend && npm run lint` -> passed
+- `cd frontend && npm run typecheck` -> passed
+- `cd frontend && npm run build` -> passed
 
 ## Common Pitfalls
 
@@ -570,3 +571,78 @@ cd frontend && npm run build
 3. **Create specific types for different endpoints** - Not all project artifacts have the same structure
 4. **Test builds catch issues linting misses** - Always run `npm run build` after changes, not just `npm run lint`
 5. **Vite path resolution differs between dev and prod** - Use relative paths in index.html, configure aliases properly
+
+## Merge Readiness Lessons Learned
+
+These are the concrete failure patterns that had to be corrected before the repo was clean and merge-ready. Future agents should treat them as hard guardrails, not suggestions.
+
+### 1. Route changes must be validated against all callers
+
+- Do not rename or version routes in only one layer.
+- If a backend router moves from unversioned paths to `/v1/...`, verify:
+  - frontend API clients
+  - lightweight routers used directly in tests
+  - `Location` headers
+  - compatibility aliases
+- In this repo, router builder defaults had to remain unversioned for tests and direct router usage, while `app/main.py` mounted additional `/v1/...` aliases for app-level compatibility.
+
+### 2. Persisted execution records are part of the contract
+
+- Step-record rows, lineage rows, and hash values are tested as first-class API behavior.
+- A run is not "working" if it only reaches `COMPLETED`; it must also persist the exact payload shape expected by inspect and runtime tests.
+- In this repo, the `P-100` architect path was failing because the persisted `input_hash` was computed from the wrong job-request shape. The fix was to normalize the request payload before persisting success and failure records.
+
+### 3. Test isolation matters as much as business logic
+
+- Shared runtime state can create false regressions.
+- If tests reuse the same SQLite DB or report directory, idempotency collisions and stale state can make healthy code look broken.
+- In this repo, `app/settings.py` and `app/main.py` were updated so pytest runs use deterministic per-test runtime paths for the operations DB and checker report output.
+
+### 4. Frontend route state must follow the URL
+
+- If the app supports deep links, the route is the source of truth.
+- UI stores may mirror route state, but must not be the only source of it.
+- In this repo, workspace mode had to be derived from route segments and synchronized with store and theme state, otherwise deep links and mode switching drifted apart.
+
+### 5. Lightweight test routers must preserve exact error semantics
+
+- Returning the right status code is not enough if tests depend on the exact error detail.
+- In this repo, the projects router had to convert `FileNotFoundError` into `404` with the original exception string, not a generic `"Not Found"` payload.
+
+### 6. Completion ordering matters for async persistence
+
+- If a run exposes persisted metadata like `report_path`, do not mark it terminal before that metadata is written.
+- In this repo, checker execution had to be reordered so:
+  - the report file is written first
+  - the report persistence step and lineage are recorded next
+  - the final `COMPLETED` state is written last with `report_path`
+
+### 7. Warning cleanup matters after blockers are fixed
+
+- Once the repo is green, do not leave noisy warnings behind if they point at real drift.
+- In this repo:
+  - Tailwind content scanning was too broad and was pulling garbage class-like strings into the build
+  - `datetime.utcnow()` defaults were emitting deprecation warnings
+- The fixes were:
+  - narrow Tailwind content globs to `./src/**/*.{js,ts,jsx,tsx}` plus `./index.html`
+  - replace `datetime.utcnow()` defaults with a timezone-aware `_utcnow()` helper
+
+### 8. Documentation drift will reintroduce bugs
+
+- After fixing architecture or contract issues, update the docs immediately.
+- Otherwise the next agent will faithfully recreate the old mistake.
+- In this repo, `README.md`, `TODO.md`, `STRUCTURE.md`, `docs/Validation Notes v0.1.md`, and `docs/Frontend Design SRS v0.5.md` all needed updates after the code was corrected.
+
+### 9. Root-level clutter confuses both humans and local models
+
+- Historical reviews, planning packets, scratch scripts, and backups should not stay in the root once they are no longer active.
+- Archive historical artifacts under `docs/archive/` and keep the repo root limited to active source, config, launchers, and primary docs.
+
+### 10. Merge-ready means validated, not just "looks fixed"
+
+- Final merge readiness in this repo required all of the following to pass:
+  - `python -m pytest -q -p no:cacheprovider`
+  - `cd frontend && npm run lint`
+  - `cd frontend && npm run typecheck`
+  - `cd frontend && npm run build`
+- Do not declare the repo clean until all four are green.

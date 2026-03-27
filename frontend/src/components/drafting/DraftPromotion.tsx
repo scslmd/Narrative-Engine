@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
 import { getDraftArtifacts, isMockMode } from '../../services/drafting';
 import DraftPreview from './DraftPreview';
@@ -14,11 +14,7 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<DraftArtifact | null>(null);
 
-  useEffect(() => {
-    loadArtifacts();
-  }, [projectId]);
-
-  const loadArtifacts = async () => {
+  const loadArtifacts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -30,12 +26,16 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadArtifacts();
+  }, [loadArtifacts]);
 
   const handlePromoteSuccess = (manuscript: ManuscriptDocument) => {
-    console.log('Draft promoted:', manuscript.document_id);
     setSelectedArtifact(null);
-    loadArtifacts();
+    void manuscript;
+    void loadArtifacts();
   };
 
   return (

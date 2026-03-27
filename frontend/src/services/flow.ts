@@ -4,34 +4,29 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const flowService = {
   async getStages(projectId: string): Promise<StoryFlowStage[]> {
-    try {
-      const response = await fetch(`${API_BASE}/v1/story-development/flow/stages?project_id=${projectId}`);
-      if (!response.ok) {
-        console.warn('Story-flow stages endpoint not available yet, returning empty array');
-        return [];
-      }
-      const data = await response.json();
-      return data.items || [];
-    } catch (error) {
-      console.warn('Story-flow stages endpoint not available yet, returning empty array');
-      return [];
+    const response = await fetch(`${API_BASE}/v1/story-development/flow/stages?project_id=${projectId}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch flow stages for ${projectId}: ${response.status} ${response.statusText}`);
     }
+
+    const data = await response.json();
+    return data.items || [];
   },
 
-  async addStage(_projectId: string, _stageKind: StoryFlowStage['stage_kind']): Promise<StoryFlowStage> {
-    throw new Error('Story-flow stage creation not yet implemented on backend');
+  async addStage(projectId: string, stageKind: StoryFlowStage['stage_kind']): Promise<StoryFlowStage> {
+    throw new Error(`Story-flow stage creation is not implemented for ${projectId} (${stageKind})`);
   },
 
-  async updateStage(_stageId: string, _updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
-    throw new Error('Story-flow stage update not yet implemented on backend');
+  async updateStage(stageId: string, updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
+    throw new Error(`Story-flow stage update is not implemented for ${stageId}: ${JSON.stringify(updates)}`);
   },
 
-  async reorderStages(_projectId: string, _newOrder: string[]): Promise<StoryFlowStage[]> {
-    throw new Error('Story-flow stage reordering not yet implemented on backend');
+  async reorderStages(projectId: string, newOrder: string[]): Promise<StoryFlowStage[]> {
+    throw new Error(`Story-flow stage reordering is not implemented for ${projectId}: ${newOrder.join(',')}`);
   },
 
-  async deleteStage(_stageId: string): Promise<void> {
-    throw new Error('Story-flow stage deletion not yet implemented on backend');
+  async deleteStage(stageId: string): Promise<void> {
+    throw new Error(`Story-flow stage deletion is not implemented for ${stageId}`);
   },
 
   async disableStage(stageId: string): Promise<StoryFlowStage> {

@@ -18,6 +18,7 @@ data/role_model_checker_runs/
 
 # Build artifacts
 frontend/dist/
+frontend/node_modules/
 *.db
 
 # Test scripts and requirements (redundant with pyproject.toml)

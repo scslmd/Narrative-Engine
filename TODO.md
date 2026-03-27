@@ -590,7 +590,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
   - **Acceptance criteria**:
     - Zustand devtools visible in browser when debugging
     - QueryClient configured with `retry: 3`, `retryDelay: 1000`
-    - Axios instance has baseURL `/api` with 30s timeout
+    - Axios instance targets the versioned API surface under `/v1` with 30s timeout
     - Error interceptor logs to console and returns error object
     - `npm run dev` loads without console errors
 
@@ -1359,5 +1359,5 @@ VITE_STAGE_THEME=writing
 3. ✅ Add error boundary, skeleton, toast tasks (FE-004A, FE-004B, FE-004C)
 4. ✅ Document mock service contracts
 5. ✅ Create `docs/Frontend API Alignment Issues.md`
-6. ⏳ Implement backend endpoints (separate effort)
-7. ⏳ Replace mock services with real APIs when available
+6. ✅ Implement backend endpoints required for the current frontend surface
+7. ✅ Replace the merge-blocking mock and routing gaps identified during merge review

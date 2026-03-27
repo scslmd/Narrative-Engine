@@ -26,7 +26,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   const [updatingStageId, setUpdatingStageId] = useState<string | null>(null);
   const [editingStage, setEditingStage] = useState<StoryFlowStage | null>(null);
 
-  const { data: stages, isLoading } = useQuery<StoryFlowStage[]>({
+  const { data: stages, isLoading, isError, error } = useQuery<StoryFlowStage[]>({
     queryKey: ['flow-stages', projectId],
     queryFn: () => flowService.getStages(projectId),
   });
@@ -36,6 +36,9 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       addToast('Stage added successfully', 'success');
+    },
+    onError: (err: unknown) => {
+      addToast(err instanceof Error ? err.message : 'Failed to add stage', 'error');
     },
   });
 
@@ -62,7 +65,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     (kind: StoryFlowStage['stage_kind']) => {
       addStageMutation.mutate(kind);
     },
-    [addStageMutation, projectId]
+    [addStageMutation]
   );
 
   const handleEdit = useCallback((stageId: string) => {
@@ -77,8 +80,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
         await flowService.disableStage(stageId);
         queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
         addToast('Stage disabled', 'success');
-      } catch (error) {
-        addToast('Failed to disable stage', 'error');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Failed to disable stage', 'error');
       } finally {
         setUpdatingStageId(null);
       }
@@ -93,8 +96,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
         await flowService.archiveStage(stageId);
         queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
         addToast('Stage archived', 'success');
-      } catch (error) {
-        addToast('Failed to archive stage', 'error');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Failed to archive stage', 'error');
       } finally {
         setUpdatingStageId(null);
       }
@@ -106,8 +109,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     async (stageId: string) => {
       try {
         await deleteStageMutation.mutateAsync(stageId);
-      } catch (error) {
-        addToast('Failed to delete stage', 'error');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Failed to delete stage', 'error');
       }
     },
     [deleteStageMutation, addToast]
@@ -120,8 +123,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
         await flowService.renameStage(stageId, newName);
         queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
         addToast('Stage renamed successfully', 'success');
-      } catch (error) {
-        addToast('Failed to update stage', 'error');
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : 'Failed to update stage', 'error');
       } finally {
         setUpdatingStageId(null);
       }
@@ -133,6 +136,16 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error instanceof Error ? error.message : 'Failed to load flow stages'}
+        </div>
       </div>
     );
   }

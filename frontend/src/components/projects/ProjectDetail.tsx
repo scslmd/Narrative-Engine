@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ProjectDetailResponse } from '../../types/project';
 import { getProject } from '../../services/projects';
 import { SkeletonCard } from '../skeleton';
@@ -13,11 +13,7 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadProject();
-  }, [projectId]);
-
-  const loadProject = async () => {
+  const loadProject = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -29,7 +25,11 @@ export default function ProjectDetail({ projectId }: ProjectDetailProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    void loadProject();
+  }, [loadProject]);
 
   if (loading) {
     return <SkeletonCard withHeader />;

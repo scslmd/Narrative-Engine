@@ -8,7 +8,7 @@ export async function getDraftArtifacts(_projectId: string): Promise<DraftArtifa
   return [
     {
       artifact_id: 'draft-001',
-      project_id: 'project-1',
+      project_id: _projectId,
       title: 'Chapter 1 - The Beginning',
       content: 'The sun rose over the horizon, casting golden light across the valley. It was a new day, and with it came new possibilities...',
       source_plan_ids: [],
@@ -18,7 +18,7 @@ export async function getDraftArtifacts(_projectId: string): Promise<DraftArtifa
     },
     {
       artifact_id: 'draft-002',
-      project_id: 'project-1',
+      project_id: _projectId,
       title: 'Chapter 2 - The Journey Begins',
       content: 'She packed her bags with care, each item chosen deliberately. This journey would change everything...',
       source_plan_ids: [],

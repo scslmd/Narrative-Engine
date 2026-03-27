@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,8 @@ class Settings:
 
     @property
     def state_dir(self) -> Path:
+        if self._is_pytest_runtime:
+            return self._pytest_runtime_root / "state"
         return self.data_dir / "state"
 
     @property
@@ -41,7 +44,24 @@ class Settings:
 
     @property
     def role_model_reports_dir(self) -> Path:
+        if self._is_pytest_runtime:
+            return self._pytest_runtime_root / "role_model_checker_runs"
         return self.data_dir / "role_model_checker_runs"
+
+    @property
+    def _is_pytest_runtime(self) -> bool:
+        return bool(os.getenv("PYTEST_CURRENT_TEST", "").strip())
+
+    @property
+    def _pytest_runtime_root(self) -> Path:
+        current_test = os.getenv("PYTEST_CURRENT_TEST", "").strip()
+        if not current_test:
+            return self.data_dir
+
+        worker = os.getenv("PYTEST_XDIST_WORKER", "main").strip() or "main"
+        test_key = f"{worker}:{current_test}".encode("utf-8")
+        test_hash = hashlib.sha256(test_key).hexdigest()[:16]
+        return self.root_dir / ".tmp_test_projects" / "pytest_runtime" / test_hash
 
     @property
     def inference_backend(self) -> str:

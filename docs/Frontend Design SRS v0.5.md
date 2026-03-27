@@ -1176,7 +1176,7 @@ These tasks are intended to be handed to agents as bounded screen-family assignm
 - **Vite app at frontend root**: All Vite config files (`package.json`, `vite.config.ts`, `tsconfig.json`, etc.) live at `frontend/` level, NOT nested in `frontend/src/`
 - **Source code under src/**: All React source code lives directly under `frontend/src/` with NO nested `src/` folders (e.g., use `frontend/src/components/*`, NOT `frontend/src/src/components/*`)
 - **Import path pattern**: Components at `src/components/` import from `../hooks/`, `../lib/`, `../stores/`; Views at `src/views/` import from `../hooks/`, `../components/`, `../lib/`
-- **Tailwind content config**: Use `"./**/*.{js,ts,jsx,tsx}"` in `tailwind.config.js` to scan all files under `frontend/src/`
+- **Tailwind content config**: Use `"./src/**/*.{js,ts,jsx,tsx}"` plus `./index.html` in `tailwind.config.js` so the build scans only the frontend app sources and avoids `node_modules` noise
 - **Vite entry point**: `index.html` at `frontend/index.html` references `/main.tsx`, which resolves to `frontend/src/main.tsx` via Vite alias
 - **Build verification**: Run `npm run build` from `frontend/` directory after each feature to catch TypeScript errors and import issues early; do not wait until all features complete
 - **Git hygiene**: Create `.gitignore` BEFORE running `npm install` (node_modules/, dist/, .env.local, *.log)

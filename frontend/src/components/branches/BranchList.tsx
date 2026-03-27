@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StoryBranch } from '../../types/branches';
-import { getBranches, setActiveBranch } from '../../services/branches';
+import { createBranchComparison, getBranches, setActiveBranch } from '../../services/branches';
+import { useToastStore } from '../../stores/toastStore';
 import { BranchCard } from './BranchCard';
 
 interface BranchListProps {
@@ -10,7 +10,7 @@ interface BranchListProps {
 
 export function BranchList({ projectId }: BranchListProps) {
   const queryClient = useQueryClient();
-  const [selectedForCompare, setSelectedForCompare] = useState<string | null>(null);
+  const addToast = useToastStore((state) => state.addToast);
 
   const { data: branches = [], isLoading } = useQuery<StoryBranch[]>({
     queryKey: ['branches', projectId],
@@ -29,15 +29,17 @@ export function BranchList({ projectId }: BranchListProps) {
     await setActiveMutation.mutateAsync(branchId);
   };
 
-  const handleCompare = (branchAId: string, _branchBId: string) => {
-    if (!selectedForCompare) {
-      setSelectedForCompare(branchAId);
-    } else if (selectedForCompare !== branchAId) {
-      // Trigger comparison between selected and current
-      console.log('Comparing branches:', selectedForCompare, branchAId);
-      setSelectedForCompare(null);
-    } else {
-      setSelectedForCompare(null);
+  const handleCompare = async (branchAId: string, branchBId: string) => {
+    if (!branchBId) {
+      addToast('Branch comparison requires a parent branch', 'warning');
+      return;
+    }
+
+    try {
+      await createBranchComparison(projectId, branchAId, branchBId);
+      addToast('Comparison created', 'success');
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to compare branches', 'error');
     }
   };
 
@@ -60,12 +62,6 @@ export function BranchList({ projectId }: BranchListProps) {
 
   return (
     <div className="space-y-4">
-      {selectedForCompare && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded p-3 text-sm text-yellow-800">
-          Select another branch to compare with the selected one
-        </div>
-      )}
-
       <div className="grid gap-4">
         {branches.map(branch => (
           <BranchCard

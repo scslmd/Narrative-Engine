@@ -96,10 +96,10 @@ The backend code lives under [`app/`](app/). The structure is layered:
 
 ## Frontend
 
-The React + Vite frontend lives under [`frontend/src/`](frontend/src/). The vanilla JS prototype in `frontend/` root is legacy and being decommissioned.
+The React + Vite frontend is rooted at [`frontend/`](frontend/) and the application source lives under [`frontend/src/`](frontend/src/).
 
 **Directory structure (flat, no nested src folders)**:
-- [`frontend/src/index.html`](frontend/src/index.html): HTML entry point
+- [`frontend/index.html`](frontend/index.html): HTML entry point
 - [`frontend/src/main.tsx`](frontend/src/main.tsx): React application entry
 - [`frontend/src/App.tsx`](frontend/src/App.tsx): Root component with routing
 - [`frontend/src/components/`](frontend/src/components): Reusable UI components (layout, planning, editor, etc.)
@@ -110,14 +110,14 @@ The React + Vite frontend lives under [`frontend/src/`](frontend/src/). The vani
 - [`frontend/src/theme/`](frontend/src/theme): Theme configuration and CSS variables
 
 **Configuration files**:
-- `frontend/src/package.json`: Dependencies and scripts
-- `frontend/src/vite.config.ts`: Vite bundler with React plugin and API proxy to backend port 8000
-- `frontend/src/tsconfig.json`: TypeScript compiler options
-- `frontend/src/tailwind.config.js`: Tailwind CSS configuration with stage-based theme colors
+- `frontend/package.json`: Dependencies and scripts
+- `frontend/vite.config.ts`: Vite bundler with React plugin and API proxy to backend port 8000
+- `frontend/tsconfig.json`: TypeScript compiler options
+- `frontend/tailwind.config.js`: Tailwind CSS configuration with stage-based theme colors
 
 **Build commands**:
 ```bash
-cd frontend/src
+cd frontend
 npm run dev      # Start development server at http://localhost:5173
 npm run build    # Production build to dist/
 npm run lint     # ESLint check

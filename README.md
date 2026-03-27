@@ -21,9 +21,9 @@ The current codebase includes:
 
 - a FastAPI backend for projects, jobs, models, and role-model checking
 - SQLite-backed persistence for operational state and project artifact indexing
-- a React + TypeScript frontend (scaffolded in `frontend/src/`)
+- a React + TypeScript frontend rooted at `frontend/` with application code in `frontend/src/`
 - accepted-and-polled job and checker APIs backed by a local lease-claim executor
-- role-model checker scaffolding for model and workflow validation
+- runtime-backed role-model checker execution with inspectable step and lineage projections
 - CORS middleware configured for localhost:5173 and localhost:3000
 
 ## Current Status
@@ -73,11 +73,17 @@ Current verified baseline:
 
 ### Frontend
 
-1. Navigate to `frontend/src/`
+1. Navigate to `frontend/`
 2. Install dependencies: `npm install`
 3. Copy environment: `cp .env.example .env.local`
 4. Start dev server: `npm run dev`
 5. Open [http://localhost:5173](http://localhost:5173)
+
+Current verified frontend baseline:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
 
 See [docs/Frontend Development Readiness.md](docs/Frontend Development Readiness.md) for complete setup instructions.
 
@@ -89,6 +95,13 @@ See [docs/Frontend Development Readiness.md](docs/Frontend Development Readiness
   - `windows-latest` with Python `3.12`
 - Workflow command:
   - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
+
+Latest local full-suite verification:
+
+- `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+- `npm run lint` -> passed
+- `npm run typecheck` -> passed
+- `npm run build` -> passed
 
 ## Core Docs
 

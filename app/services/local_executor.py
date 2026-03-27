@@ -73,6 +73,14 @@ def _upstream_artifact_sources(step_name: str) -> list[tuple[str, str]]:
     return []
 
 
+def _normalized_p100_job_request(request_payload: dict[str, object]) -> dict[str, object]:
+    payload = dict(request_payload.get("payload", {}))
+    return {
+        "phase": request_payload.get("phase"),
+        "payload": payload,
+    }
+
+
 class LocalExecutor:
     def __init__(
         self,
@@ -479,8 +487,13 @@ class LocalExecutor:
     ) -> None:
         if not project_id:
             raise ValueError("P-100 requires payload.project_id.")
-        project = self._project_service.get_project(project_id)
+        try:
+            project = self._project_service.get_project(project_id)
+        except FileNotFoundError:
+            self._project_service.reconcile_projects()
+            project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
+        job_request = _normalized_p100_job_request(request_payload)
         inference_request = build_p100_architect_request(
             manifest=project.manifest,
             payload=payload,
@@ -521,7 +534,7 @@ class LocalExecutor:
                 backend_name=self._inferencer.descriptor.display_name,
                 backend_version=None,
                 input_payload={
-                    "job_request": request_payload,
+                    "job_request": job_request,
                     "manifest": project.manifest.model_dump(mode="json"),
                 },
                 output_payload=None,
@@ -545,7 +558,7 @@ class LocalExecutor:
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
         step_input_payload = {
-            "job_request": request_payload,
+            "job_request": job_request,
             "manifest": project.manifest.model_dump(mode="json"),
         }
         step_output_payload = {
@@ -1177,14 +1190,13 @@ class LocalExecutor:
                     completion_tokens=completion_tokens,
                     total_tokens=total_tokens,
                 )
-            final_status = self._role_check_manager.update_run(
-                run_id,
-                status="COMPLETED",
-                detail="Checker run finished.",
-                finish_reason="stub_completed",
-            )
+            final_detail = "Checker run finished."
+            report_path: Path | None = None
+            interim_status = self._role_check_manager.get_status(run_id)
             if request.save_report:
-                report_path = self._role_check_service.save_report(run_id, request, final_status.results)
+                report_path = self._role_check_service.save_report(run_id, request, interim_status.results)
+                final_detail = "Checker run finished and report saved."
+            if report_path is not None:
                 persist_finished_at = _utcnow()
                 persist_started_at = persist_finished_at
                 persist_step_record_id = self._step_records.create_step_record(
@@ -1193,17 +1205,17 @@ class LocalExecutor:
                     run_kind="role_model_check",
                     attempt_number=int(attempt["attempt_number"]),
                     step_name="report_persist",
-                    step_index=len(final_status.results) + 1,
+                    step_index=len(interim_status.results) + 1,
                     state="COMPLETED",
                     project_id=None,
                     model_id=None,
                     critic_profile=None,
                     backend_name="role-model-checker",
                     backend_version="stub",
-                    input_payload=[result.model_dump(mode="json") for result in final_status.results],
+                    input_payload=[result.model_dump(mode="json") for result in interim_status.results],
                     output_payload={"report_path": str(report_path)},
                     prompt_payload={"save_report": True},
-                    input_artifact_refs=[f"checker_result:{result.role}" for result in final_status.results],
+                    input_artifact_refs=[f"checker_result:{result.role}" for result in interim_status.results],
                     output_artifact_refs=["checker_report"],
                     started_at=persist_started_at,
                     finished_at=persist_finished_at,
@@ -1229,15 +1241,17 @@ class LocalExecutor:
                     produced_at=persist_finished_at,
                     registered_at=persist_finished_at,
                     supersedes_artifact_lineage_id=None,
-                    source_artifact_refs=[f"checker_result:{result.role}" for result in final_status.results],
+                    source_artifact_refs=[f"checker_result:{result.role}" for result in interim_status.results],
                     source_content_hashes=[],
                     output_of_step_record_id=persist_step_record_id,
                 )
-                self._role_check_manager.update_run(
-                    run_id,
-                    report_path=str(report_path),
-                    detail="Checker run finished and report saved.",
-                )
+            final_status = self._role_check_manager.update_run(
+                run_id,
+                status="COMPLETED",
+                detail=final_detail,
+                report_path=str(report_path) if report_path is not None else None,
+                finish_reason="stub_completed",
+            )
         except Exception as exc:
             self._role_check_manager.update_run(
                 run_id,

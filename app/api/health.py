@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
@@ -21,7 +20,7 @@ async def health_check() -> dict:
     Returns 200 if the application is running.
     Used for Kubernetes liveness probes.
     """
-    return {"status": "healthy"}
+    return {"status": "ok"}
 
 
 @router.get("/ready")
@@ -94,7 +93,7 @@ async def readiness_check() -> dict:
         issues.append({"component": "projects_directory", "error": str(e)})
     
     if issues:
-        return HTTPException(
+        raise HTTPException(
             status_code=503,
             detail={
                 "status": "unhealthy",

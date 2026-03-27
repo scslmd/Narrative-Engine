@@ -40,7 +40,7 @@ export default function PayloadBuilder({ initialPayload, onPayloadChange }: Payl
       const parsed = JSON.parse(defaultJson);
       setError(null);
       onPayloadChange(parsed);
-    } catch (e) {
+    } catch {
       setError('Error loading default payload');
     }
   };

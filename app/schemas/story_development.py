@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pydantic import Field, model_validator
 
@@ -38,6 +38,10 @@ def _normalize_text_list(value: object, *, field_name: str) -> list[str]:
     if not isinstance(value, list):
         raise TypeError(f"{field_name} must be a list")
     return [_normalize_text(item, field_name=field_name) for item in value]
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
 
 
 class StoryFlowStage(StrictSchemaModel):
@@ -678,8 +682,8 @@ class DraftArtifact(StrictSchemaModel):
     source_context: list[str] = Field(default_factory=list)
     provenance_note: str | None = Field(None, max_length=2000)
     status: StoryArtifactLifecycleState = StoryArtifactLifecycleState.DRAFT
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
     @model_validator(mode="before")
     @classmethod
@@ -707,8 +711,8 @@ class ManuscriptDocument(StrictSchemaModel):
     scene_id: str | None = None
     current_draft_artifact_id: str | None = None
     version: int = Field(default=1, ge=1)
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
     @model_validator(mode="before")
     @classmethod
@@ -758,8 +762,8 @@ class ReviewDecision(StrictSchemaModel):
     decision: str = Field(min_length=1)
     notes: str | None = None
     source_context: list[str] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
     @model_validator(mode="before")
     @classmethod

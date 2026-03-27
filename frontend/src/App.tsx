@@ -25,8 +25,10 @@ function App() {
               <Route index element={<Navigate to="plan" replace />} />
               <Route path="plan" element={<PlanningView />} />
               <Route path="write" element={<WritingView />} />
+              <Route path="write/:chapterId" element={<WritingView />} />
               <Route path="review" element={<ReviewView />} />
               <Route path="inspect" element={<InspectView />} />
+              <Route path="inspect/:jobId" element={<InspectView />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

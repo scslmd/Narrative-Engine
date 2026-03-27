@@ -10,7 +10,6 @@ Provides:
 from __future__ import annotations
 
 import secrets
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -272,7 +271,7 @@ class APIKeyStore:
         try:
             cursor = conn.execute(
                 "UPDATE api_keys SET expires_at = ? WHERE prefix = ?",
-                (datetime.now(timezone.utc).isoformat(), prefix),
+                ((datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat(), prefix),
             )
             conn.commit()
             return cursor.rowcount > 0

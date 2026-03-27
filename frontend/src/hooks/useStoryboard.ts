@@ -33,39 +33,42 @@ export function useStoryboard(projectId?: string) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (projectId) {
-      loadScenes();
-    } else {
-      setScenes([]);
-      setLoading(false);
-    }
+    let cancelled = false;
+
+    const loadScenes = async () => {
+      if (!projectId) {
+        setScenes([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!cancelled) {
+          setScenes(MOCK_SCENES);
+        }
+      } catch {
+        if (!cancelled) {
+          setScenes([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadScenes();
+
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
-  const loadScenes = async () => {
-    setLoading(true);
-    
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      if (projectId) {
-        setScenes(MOCK_SCENES);
-      } else {
-        setScenes([]);
-      }
-    } catch (error) {
-      console.error('Failed to load storyboard:', error);
-      setScenes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const navigateToScene = (scene: Scene) => {
-    if (scene.manuscriptLocation) {
-      console.log(`Navigating to manuscript location: ${scene.manuscriptLocation}`);
-    } else {
-      console.log(`No manuscript location for scene: ${scene.title}`);
-    }
+    return scene.manuscriptLocation ?? null;
   };
 
   return { scenes, loading, navigateToScene };

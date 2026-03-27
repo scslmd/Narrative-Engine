@@ -4,7 +4,7 @@ const MAX_TOASTS = 3;
 const DEFAULT_DURATION = 5000;
 
 let toasts: Toast[] = [];
-let listeners: Set<() => void> = new Set();
+const listeners: Set<() => void> = new Set();
 
 function notify() {
   listeners.forEach((listener) => listener());
