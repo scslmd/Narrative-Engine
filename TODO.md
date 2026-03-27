@@ -2,21 +2,94 @@
 
 ## Security & Reliability (P0 - Immediate)
 
-- [ ] SEC-01 Add authentication middleware with API key validation
-  Create `app/middleware/auth.py`, require `X-API-Key` header on all routes except `/health`, store key in `.env`.
-  Expected: All API requests require valid API key, unauthorized requests return 401.
+- [x] SEC-01 Add authentication middleware with API key validation
+  **Objective**: Create authentication middleware requiring `X-API-Key` header on all routes except `/health`.
+  
+  **Required Context**:
+  - File path: `app/middleware/auth.py`
+  - Environment variable: `API_KEY` (stored in `.env`)
+  - Header name: `X-API-Key`
+  - Exempt paths: [`/health`]
+  - Error response: HTTP 401 with body `{"error": "Unauthorized", "detail": "Invalid or missing API key"}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/auth.py`, `tests/test_auth_middleware.py` ✓
+  - Middleware registered in `app/main.py` ✓
+  - `.env.example` updated with `API_KEY` placeholder ✓
+  
+  **Determinism**:
+  - IF `API_KEY` not in environment, THEN raise startup error ✓
+  - IF request path starts with `/health`, THEN skip authentication ✓
+  - IF `X-API-Key` header missing or doesn't match `API_KEY`, THEN return 401 ✓
+  
+  **Tests**: All 10 tests passing (2.85s)
+
 - [x] SEC-02 Add CORS middleware restricting origins to localhost
   Configure `CORSMiddleware` with `["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]`, enable credentials.
   Expected: Cross-origin requests from Vite dev server allowed, other origins blocked.
-- [ ] SEC-03 Add request size limits (10 MB max body, 5 MB payload validation)
-  Set `max_body_size` on FastAPI app, validate `JobCreateRequest.payload` size.
-  Expected: Requests > 10 MB rejected with 413, memory exhaustion prevented.
-- [ ] SEC-04 Validate file paths against traversal attacks
-  Create `app/utils/path_validation.py`, validate all file operations stay within project directories.
-  Expected: Path traversal attempts (e.g., `../../../etc/passwd`) blocked with 400.
-- [ ] SEC-05 Add rate limiting (10 jobs/min, 5 checker runs/min, 60 status checks/min)
-  Install `slowapi` or implement token bucket, add rate limit headers.
-  Expected: Burst attacks throttled, 429 on limit exceeded.
+- [x] SEC-03 Add request size limits (10 MB max body, 5 MB payload validation)
+  **Objective**: Add FastAPI body size limit and payload validation to prevent DoS attacks.
+  
+  **Required Context**:
+  - File path: `app/main.py`
+  - Max body size: `10_485_760` bytes (10 MB)
+  - Payload max size: `5_242_880` bytes (5 MB) in `JobCreateRequest`
+  - Error response: HTTP 413 with body `{"error": "Payload Too Large", "detail": "Request exceeds maximum allowed size"}`
+  
+  **Expected Output**:
+  - Files modified: `app/main.py`, `app/schemas/jobs.py` ✓
+  - Tests created: `tests/test_request_size_limits.py` ✓
+  - Max body size configured on FastAPI app ✓
+  - Payload validation added to JobCreateRequest ✓
+  
+  **Determinism**:
+  - IF request body > 10 MB, THEN return 413 immediately ✓
+  - IF `payload` field in job creation > 5 MB, THEN return 422 with validation error ✓
+  
+  **Tests**: All 5 tests passing (5.72s)
+
+- [x] SEC-04 Validate file paths against traversal attacks
+  **Objective**: Create path validation middleware to prevent directory traversal attacks.
+  
+  **Required Context**:
+  - File path: `app/middleware/path_traversal.py`
+  - Patterns blocked: `..`, `%2e%2e`, `%252e`, `%00`, `\` (backslash)
+  - Error response: HTTP 400 with body `{"detail": "Invalid path: potential path traversal detected"}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/path_traversal.py`, `tests/test_path_traversal.py` ✓
+  - Middleware registered in `app/main.py` (first middleware) ✓
+  - Validation applied to all incoming requests ✓
+  
+  **Determinism**:
+  - IF path or query contains traversal patterns, THEN return 400 immediately ✓
+  - ALL requests checked before reaching application logic ✓
+  
+  **Tests**: All 10 tests passing (2.76s)
+
+- [x] SEC-05 Add rate limiting (10 jobs/min, 5 checker runs/min, 60 status checks/min)
+  **Objective**: Implement token bucket rate limiter for job creation, checker runs, and status checks.
+  
+  **Required Context**:
+  - File path: `app/middleware/rate_limit.py`
+  - Limits per client IP:
+    - Job creation (`/v1/jobs/create`): 10 requests/minute
+    - Checker runs (`/v1/role-model-checker/start`): 5 requests/minute
+    - Status checks (`*status`, `*logs`): 60 requests/minute
+  - Headers added: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+  - Error response: HTTP 429 with body `{"error": "Too Many Requests", "detail": "Rate limit exceeded. Please retry after 60 seconds."}`
+  
+  **Expected Output**:
+  - Files created: `app/middleware/rate_limit.py`, `tests/test_rate_limiting.py` ✓
+  - Middleware registered in `app/main.py` (after auth) ✓
+  - Rate limits configured per endpoint type ✓
+  
+  **Determinism**:
+  - IF request count exceeds limit within time window, THEN return 429 ✓
+  - Rate limit headers included in ALL responses for rate-limited endpoints ✓
+  - Time window resets after configured duration (60 seconds) ✓
+  
+  **Tests**: All 9 tests passing (2.89s)
 
 ## Security & Reliability (P1 - Short-Term)
 
@@ -314,6 +387,37 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Theme persists in localStorage key `narrative-engine:theme`
     - Tailwind config extends colors with theme variables (e.g., `primary: var(--color-primary)`)
     - All buttons, badges, borders use theme colors (not hardcoded)
+
+- [x] FE-BUILD-001: Resolve TypeScript compilation errors for production build
+  - **Date**: March 26, 2026
+  - **Write scope**: Multiple files across frontend/src/ (see AGENTS.md for detailed log)
+  - **Dependencies**: All previous FE tasks
+  - **Expected outcome**: Clean `npm run build` with no TypeScript errors
+  - **Acceptance criteria**:
+    - `npm run build` completes successfully
+    - Output: ~312KB JS + 54KB CSS (gzipped: ~96KB + 10KB)
+    - All type definitions match API contracts
+    - No unused variable warnings
+    - Vite path resolution works in production mode
+  
+  **Errors Fixed** (detailed log in AGENTS.md):
+  1. Job status hook type narrowing issue (`useJobStatus.ts`)
+  2. DraftArtifact mock data field name mismatches (`draftingMock.ts`)
+  3. SceneCardList property access errors (`SceneCardList.tsx`)
+  4. Missing SequenceData and ManifestData interfaces (`projectsApi.ts`)
+  5. ReviewDecision interface incomplete fields (`review.ts`, `DecisionHistory.tsx`)
+  6. Error handling utility missing functions (`errorHandling.ts`, `Fallback.tsx`)
+  7. Import path errors in Fallback component (wrong relative paths)
+  8. Unused variable warnings across multiple components
+  9. Return type mismatch in BottomUtilityLayer (null not assignable to ReactElement)
+  10. ErrorBoundary logError call signature error
+  11. Toast import default vs named export issue (`ProjectCreateForm.tsx`)
+  12. Toast type definition duration optional/required mismatch
+  13. LogEntry fractionalSecondDigits TypeScript lib support
+  14. JobMonitor hook return type camelCase/snake_case inconsistency
+  15. Vite build path resolution error in index.html
+  
+  **Files Modified**: 18 files across components/, hooks/, services/, types/, lib/
 
 - [x] FE-002: Zustand + TanStack Query configuration
   - **Write scope**: `frontend/src/lib/api.ts` (Axios instance), `frontend/src/lib/queryClient.ts`, `frontend/src/stores/uiStore.ts`, `frontend/src/stores/workspaceStore.ts`, `frontend/src/components/QueryProvider.tsx`

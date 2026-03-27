@@ -25,6 +25,24 @@ Document version: `v0.5`
 **Change log from v0.5 (Directory Structure Update - March 24, 2026)**:
 - Added Section 21 subsection on Directory Structure & Import Conventions documenting flat structure requirement, import path patterns, Tailwind config, Vite entry point, build verification strategy, and git hygiene practices
 
+**Change log from v0.5 (API Standardization - March 25, 2026)**:
+- Added Section 24 (API Reference) with complete endpoint inventory by service
+- Documented standardized API calling convention using `API_BASE` constant
+- Updated all frontend service files to use consistent `/v1/{service}/{resource}` pattern
+- Standardized environment variable configuration (`VITE_API_URL=http://localhost:8000`)
+- Added query parameters reference for all endpoints with optional filters
+- Documented error handling convention and mock mode behavior
+- Updated Narrative SRS v0.3.md Section 7 (Public Backend Surface) with versioning documentation
+
+**Change log from v0.5 (Directory Structure Correction - March 26, 2026)**:
+- Fixed frontend directory structure: Vite app root moved from `frontend/src/` to `frontend/`
+- Moved all config files (`package.json`, `vite.config.ts`, `tsconfig.json`, etc.) to `frontend/` level
+- Updated Section 21 (Technology Stack Decisions) with corrected directory layout examples
+- Added explicit "Correct vs Incorrect" structure comparison to prevent future confusion
+- Created missing type declaration file `src/vite-env.d.ts` for `import.meta.env` TypeScript support
+- Created missing utility files: `src/types/error.ts`, `src/lib/errorHandling.ts`
+- Updated AGENTS.md Project Structure section to reflect corrected layout
+
 ## 1. Purpose
 
 The frontend should feel like a writer workspace, not a generic admin panel.
@@ -1155,12 +1173,38 @@ These tasks are intended to be handed to agents as bounded screen-family assignm
 - Mock services follow same TypeScript interfaces as real API clients
 
 **Directory Structure & Import Conventions**:
-- **Flat structure required**: All source code lives directly under `frontend/src/` with NO nested `src/` folders (e.g., use `frontend/src/components/*`, NOT `frontend/src/src/components/*`)
+- **Vite app at frontend root**: All Vite config files (`package.json`, `vite.config.ts`, `tsconfig.json`, etc.) live at `frontend/` level, NOT nested in `frontend/src/`
+- **Source code under src/**: All React source code lives directly under `frontend/src/` with NO nested `src/` folders (e.g., use `frontend/src/components/*`, NOT `frontend/src/src/components/*`)
 - **Import path pattern**: Components at `src/components/` import from `../hooks/`, `../lib/`, `../stores/`; Views at `src/views/` import from `../hooks/`, `../components/`, `../lib/`
-- **Tailwind content config**: Use `"./**/*.{js,ts,jsx,tsx}"` not `"./src/**/*.{js,ts,jsx,tsx}"` when app root is already at `frontend/src/`
-- **Vite entry point**: `index.html` references `/main.tsx`, NOT `/src/main.tsx`
-- **Build verification**: Run `npm run build` after each feature to catch TypeScript errors and import issues early; do not wait until all features complete
+- **Tailwind content config**: Use `"./**/*.{js,ts,jsx,tsx}"` in `tailwind.config.js` to scan all files under `frontend/src/`
+- **Vite entry point**: `index.html` at `frontend/index.html` references `/main.tsx`, which resolves to `frontend/src/main.tsx` via Vite alias
+- **Build verification**: Run `npm run build` from `frontend/` directory after each feature to catch TypeScript errors and import issues early; do not wait until all features complete
 - **Git hygiene**: Create `.gitignore` BEFORE running `npm install` (node_modules/, dist/, .env.local, *.log)
+
+**Correct Directory Layout:**
+```
+narrative-engine/
+├── frontend/              # Vite app root
+│   ├── package.json       # NPM config at this level
+│   ├── vite.config.ts     # Vite config at this level
+│   ├── tsconfig.json      # TypeScript config at this level
+│   ├── index.html         # HTML entry point at this level
+│   └── src/               # Source code only (no config files)
+│       ├── main.tsx       # React entry point
+│       ├── components/    # React components
+│       ├── services/      # API clients
+│       ├── types/         # TypeScript interfaces
+│       └── views/         # Page-level components
+```
+
+**Incorrect Layout (DO NOT USE):**
+```
+narrative-engine/
+├── frontend/src/          # ❌ Vite app nested here
+│   ├── package.json       # ❌ Wrong location
+│   ├── vite.config.ts     # ❌ Wrong location
+│   └── src/               # ❌ Double-nested source code
+```
 
 ## 22. Migration Strategy
 
@@ -1234,4 +1278,184 @@ These tasks are intended to be handed to agents as bounded screen-family assignm
 **Phase 10 Complete When**:
 - Brainstorm, foundation, character, world bible workspaces exist
 - Mock services return realistic data
+
+## 24. API Reference
+
+### Base URL Configuration
+
+All frontend service files use a standardized `API_BASE` constant:
+
+```typescript
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+```
+
+Environment variable configuration (`.env.local`):
+```bash
+VITE_API_URL=http://localhost:8000
+VITE_USE_MOCKS=false  # Set to true for mock mode
+```
+
+### API Calling Convention
+
+All services follow this pattern:
+- Base URL from `API_BASE` constant
+- Version prefix `/v1` included in all endpoint paths
+- Relative paths appended after version prefix
+
+Example:
+```typescript
+const response = await fetch(`${API_BASE}/v1/projects`);
+```
+
+### Complete Endpoint Inventory by Service
+
+#### Models Service (`/v1/models`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| GET | `/v1/models` | Get model catalog | `getModelCatalog()` in `checker.ts` |
+
+#### Projects Service (`/v1/projects`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| POST | `/v1/projects/create` | Create new project | `createProject()` in `projects.ts` |
+| GET | `/v1/projects` | List all projects | `getProjects()` in `projects.ts` |
+| GET | `/v1/projects/{project_id}` | Get project details | `getProject()` in `projects.ts` |
+
+#### Jobs Service (`/v1/jobs`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| POST | `/v1/jobs/create` | Create and enqueue job | `jobsService.createJob()` in `jobs.ts` |
+| GET | `/v1/jobs/{job_id}/status` | Get job status | `jobsService.getStatus()` in `jobs.ts` |
+| GET | `/v1/jobs/{job_id}/logs` | Get job logs | `jobsService.getLogs()` in `jobs.ts` |
+| POST | `/v1/jobs/{job_id}/retry` | Retry failed job | `jobsService.retryJob()` in `jobs.ts` |
+
+#### Role Model Checker Service (`/v1/role-model-checker`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| POST | `/v1/role-model-checker/run` | Start checker run | `runChecker()` in `checker.ts` |
+| GET | `/v1/role-model-checker/{run_id}/status` | Get checker status | `getCheckerStatus()` in `checker.ts` |
+| POST | `/v1/role-model-checker/{run_id}/retry` | Retry checker run | `retryChecker()` in `checker.ts` |
+
+#### Story Development - Drafting (`/v1/story-development/drafting`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| GET | `/v1/story-development/drafting/draft-artifacts?project_id={id}` | List draft artifacts | `getDraftArtifacts()` in `drafting.ts` |
+| POST | `/v1/story-development/drafting/promote-draft` | Promote draft to manuscript | `promoteDraftToManuscript()` in `drafting.ts` |
+
+#### Story Development - Review (`/v1/story-development/review`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| GET | `/v1/story-development/review/findings?project_id={id}&...` | List checker findings | `getFindings()` in `review.ts` |
+| GET | `/v1/story-development/review/findings/{finding_id}` | Get finding details | `getFindingById()` in `review.ts` |
+| GET | `/v1/story-development/review/decisions?target_id={id}` | List review decisions | `getDecisionsForFinding()` in `review.ts` |
+| POST | `/v1/story-development/review/decisions` | Create review decision | `createDecision()` in `review.ts` |
+| GET | `/v1/story-development/review/inspect-links?project_id={id}&...` | List inspect links | `getInspectLinks()` in `inspectLinks.ts` |
+| GET | `/v1/story-development/review/inspect-links/{link_id}` | Get inspect link details | `getInspectLink()` in `inspectLinks.ts` |
+
+#### Story Development - Decisions (`/v1/story-development/decisions`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| GET | `/v1/story-development/decisions?project_id={id}` | List decision nodes | `getDecisions()` in `decisions.ts` |
+| GET | `/v1/story-development/decisions/{node_id}` | Get decision node | `getDecision()` in `decisions.ts` |
+| GET | `/v1/story-development/decisions/{node_id}/path` | Get decision path | `getDecisionPath()` in `decisions.ts` |
+
+#### Story Development - Branching (`/v1/story-development/branches`)
+
+| Method | Endpoint | Description | Frontend Service |
+|--------|----------|-------------|------------------|
+| GET | `/v1/story-development/branches?project_id={id}` | List branches | `getBranches()` in `branches.ts` |
+| POST | `/v1/story-development/branches` | Create branch | `createBranch()` in `branches.ts` |
+| GET | `/v1/story-development/branches/active?project_id={id}` | Get active branch | `getActiveBranch()` in `branches.ts` |
+| POST | `/v1/story-development/branches/active` | Set active branch | `setActiveBranch()` in `branches.ts` |
+| GET | `/v1/story-development/branches/{branch_id}/state-refs` | List state refs | `getBranchStateRefs()` in `branches.ts` |
+| POST | `/v1/story-development/branches/comparisons` | Create comparison | `createBranchComparison()` in `branches.ts` |
+| GET | `/v1/story-development/branches/comparisons?project_id={id}` | List comparisons | `getComparisons()` in `branches.ts` |
+| GET | `/v1/story-development/branches/comparisons/{comparison_id}` | Get comparison | `getComparison()` in `branches.ts` |
+| POST | `/v1/story-development/branches/merge-decisions` | Create merge decision | `createMergeDecision()` in `branches.ts` |
+| GET | `/v1/story-development/branches/merge-decisions?project_id={id}` | List merge decisions | `getMergeDecisions()` in `branches.ts` |
+
+### Query Parameters Reference
+
+#### Drafting Endpoints
+
+**GET /v1/story-development/drafting/draft-artifacts**
+- `project_id` (required): Project identifier string
+
+#### Review Endpoints
+
+**GET /v1/story-development/review/findings**
+- `project_id` (required): Project identifier string
+- `source_object_kind` (optional): Filter by object kind (e.g., "artifact", "scene_plan")
+- `severity` (optional): Comma-separated severity levels (e.g., "info,warning,error")
+
+**GET /v1/story-development/review/decisions**
+- `target_id` (required): Target identifier string
+
+**GET /v1/story-development/review/inspect-links**
+- `project_id` (optional): Filter by project
+- `finding_id` (optional): Filter by finding
+- `run_id` (optional): Filter by run ID
+
+#### Decisions Endpoints
+
+**GET /v1/story-development/decisions**
+- `project_id` (required): Project identifier string
+
+#### Branching Endpoints
+
+**GET /v1/story-development/branches**
+- `project_id` (required): Project identifier string
+
+**GET /v1/story-development/branches/active**
+- `project_id` (required): Project identifier string
+
+**POST /v1/story-development/branches/active**
+Request body:
+```json
+{
+  "project_id": "string",
+  "branch_id": "string"
+}
+```
+
+### Error Handling Convention
+
+All service functions throw descriptive errors on failure:
+
+```typescript
+if (!response.ok) {
+  throw new Error(`Failed to {action}: ${response.statusText}`);
+}
+```
+
+HTTP status codes are handled as follows:
+- `400`: Bad request - invalid input or validation error
+- `404`: Not found - resource does not exist
+- `409`: Conflict - idempotency conflict or duplicate operation
+- `500`: Server error - backend processing failure
+
+### Mock Mode Behavior
+
+When `VITE_USE_MOCKS=true`, services use mock implementations:
+
+```typescript
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
+
+export async function getDraftArtifacts(projectId: string): Promise<DraftArtifact[]> {
+  if (USE_MOCKS) {
+    return mockService.getDraftArtifacts(projectId);
+  }
+  
+  // Real API call...
+}
+```
+
+Mock services are located in `src/services/mocks/` directory.
 - UI is ready for backend API integration

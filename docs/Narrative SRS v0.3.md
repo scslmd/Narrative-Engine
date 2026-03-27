@@ -126,36 +126,94 @@ Current implementation note:
 
 ## 7. Public Backend Surface
 
-The current public backend surface is:
+### API Versioning Convention
 
-- `GET /health`
-- `GET /models`
-- `POST /projects/create`
-- `GET /projects`
-- `GET /projects/{project_id}`
-- `GET /projects/{project_id}/manifest`
-- `GET /projects/{project_id}/sequence`
-- `GET /projects/{project_id}/chapter-1`
-- `POST /jobs/create`
-- `GET /jobs/{job_id}/status`
-- `GET /jobs/{job_id}/logs`
-- `GET /jobs/{job_id}/steps`
-- `GET /jobs/{job_id}/lineage`
-- `POST /jobs/{job_id}/retry`
-- `POST /role-model-checker/run`
-- `POST /role-model-checker/start`
-- `GET /role-model-checker/{run_id}/status`
-- `GET /role-model-checker/{run_id}/steps`
-- `GET /role-model-checker/{run_id}/lineage`
-- `POST /role-model-checker/{run_id}/retry`
-- `GET /`
-- `GET /role-model-checker-ui`
+All public APIs use the `/v1` prefix for version management:
+
+- Base URL pattern: `{host}/v1/{service}/{resource}`
+- Environment variable: `VITE_API_URL=http://localhost:8000` (frontend)
+- All service endpoints are prefixed with `/v1`
+
+### Router Prefixes by Service
+
+| Service | Backend Router Prefix | Example Endpoint |
+|---------|----------------------|------------------|
+| Models | `/v1` | `GET /v1/models` |
+| Projects | `/v1/projects` | `POST /v1/projects/create` |
+| Jobs | `/v1/jobs` | `POST /v1/jobs/create` |
+| Role Model Checker | `/v1/role-model-checker` | `POST /v1/role-model-checker/run` |
+| Story Development | `/v1/story-development` | `GET /v1/story-development/drafting/draft-artifacts` |
+
+### Complete API Surface
+
+**Health & Static:**
+- `GET /health` - Health check endpoint (no version prefix)
+- `GET /` - Serve frontend index.html
+- `GET /role-model-checker-ui` - Serve role model checker UI
+
+**Models Service (`/v1/models`):**
+- `GET /v1/models` - Get model catalog with discovered local and runtime models
+
+**Projects Service (`/v1/projects`):**
+- `POST /v1/projects/create` - Create new project
+- `GET /v1/projects` - List all projects
+- `GET /v1/projects/{project_id}` - Get project details
+- `GET /v1/projects/{project_id}/manifest` - Get project manifest
+- `GET /v1/projects/{project_id}/sequence` - Get sequence artifact
+- `GET /v1/projects/{project_id}/chapter-1` - Get chapter-1 artifact
+
+**Jobs Service (`/v1/jobs`):**
+- `POST /v1/jobs/create` - Create and enqueue job (202 Accepted)
+- `GET /v1/jobs/{job_id}/status` - Get job status
+- `GET /v1/jobs/{job_id}/logs` - Get job logs
+- `GET /v1/jobs/{job_id}/steps` - Get job step records
+- `GET /v1/jobs/{job_id}/lineage` - Get attempt lineage
+- `POST /v1/jobs/{job_id}/retry` - Retry failed job
+
+**Role Model Checker Service (`/v1/role-model-checker`):**
+- `POST /v1/role-model-checker/run` - Start checker run (202 Accepted)
+- `POST /v1/role-model-checker/start` - Alternative start endpoint (compatibility alias)
+- `GET /v1/role-model-checker/{run_id}/status` - Get checker run status
+- `GET /v1/role-model-checker/{run_id}/steps` - Get checker step records
+- `GET /v1/role-model-checker/{run_id}/lineage` - Get checker attempt lineage
+- `POST /v1/role-model-checker/{run_id}/retry` - Retry failed checker run
+
+**Story Development Service (`/v1/story-development`):**
+
+*Drafting Subservice:*
+- `GET /v1/story-development/drafting/draft-artifacts?project_id={id}` - List draft artifacts
+- `POST /v1/story-development/drafting/promote-draft` - Promote draft to manuscript
+
+*Review Subservice:*
+- `GET /v1/story-development/review/findings` - List checker findings
+- `GET /v1/story-development/review/findings/{finding_id}` - Get finding details
+- `GET /v1/story-development/review/decisions?target_id={id}` - List review decisions
+- `POST /v1/story-development/review/decisions` - Create review decision
+- `GET /v1/story-development/review/inspect-links` - List inspect run links
+- `GET /v1/story-development/review/inspect-links/{link_id}` - Get inspect link details
+
+*Decisions Subservice:*
+- `GET /v1/story-development/decisions?project_id={id}` - List story decision nodes
+- `GET /v1/story-development/decisions/{node_id}` - Get decision node
+- `GET /v1/story-development/decisions/{node_id}/path` - Get decision path with ancestors
+
+*Branching Subservice:*
+- `GET /v1/story-development/branches?project_id={id}` - List story branches
+- `POST /v1/story-development/branches` - Create new branch
+- `GET /v1/story-development/branches/active?project_id={id}` - Get active branch
+- `POST /v1/story-development/branches/active` - Set active branch
+- `GET /v1/story-development/branches/{branch_id}/state-refs` - List branch state refs
+- `POST /v1/story-development/branches/comparisons` - Create branch comparison
+- `GET /v1/story-development/branches/comparisons?project_id={id}` - List comparisons
+- `GET /v1/story-development/branches/comparisons/{comparison_id}` - Get comparison
+- `POST /v1/story-development/branches/merge-decisions` - Create merge decision
+- `GET /v1/story-development/branches/merge-decisions?project_id={id}` - List merge decisions
 
 Implemented now:
 
-- the API surface above is live
-- `/jobs/create` and `/role-model-checker/start` are accepted-and-polled enqueue endpoints
-- `/role-model-checker/run` is a compatibility alias that follows the same accepted-and-polled contract
+- the API surface above is live with `/v1` versioning prefix
+- `/v1/jobs/create` and `/v1/role-model-checker/start` are accepted-and-polled enqueue endpoints
+- `/v1/role-model-checker/run` is a compatibility alias that follows the same accepted-and-polled contract
 
 Intentionally not yet implemented:
 
@@ -168,17 +226,17 @@ Long-running jobs and model checks must report exact backend progress.
 
 Required endpoints:
 
-- `POST /jobs/create`
-- `GET /jobs/{job_id}/status`
-- `GET /jobs/{job_id}/logs`
-- `GET /jobs/{job_id}/steps`
-- `GET /jobs/{job_id}/lineage`
-- `POST /jobs/{job_id}/retry`
-- `POST /role-model-checker/start`
-- `GET /role-model-checker/{run_id}/status`
-- `GET /role-model-checker/{run_id}/steps`
-- `GET /role-model-checker/{run_id}/lineage`
-- `POST /role-model-checker/{run_id}/retry`
+- `POST /v1/jobs/create` - Create and enqueue job (returns 202 Accepted)
+- `GET /v1/jobs/{job_id}/status` - Get job status
+- `GET /v1/jobs/{job_id}/logs` - Get job logs
+- `GET /v1/jobs/{job_id}/steps` - Get job step records
+- `GET /v1/jobs/{job_id}/lineage` - Get attempt lineage
+- `POST /v1/jobs/{job_id}/retry` - Retry failed job
+- `POST /v1/role-model-checker/start` - Start checker run (returns 202 Accepted)
+- `GET /v1/role-model-checker/{run_id}/status` - Get checker run status
+- `GET /v1/role-model-checker/{run_id}/steps` - Get checker step records
+- `GET /v1/role-model-checker/{run_id}/lineage` - Get checker attempt lineage
+- `POST /v1/role-model-checker/{run_id}/retry` - Retry failed checker run
 
 Implementation note:
 
@@ -470,7 +528,7 @@ Required persistence behaviors:
 
 ## 14. Models Endpoint Contract
 
-`GET /models` must expose a deterministic catalog that merges:
+`GET /v1/models` must expose a deterministic catalog that merges:
 
 - discovered local GGUF models under `data/models`
 - discovered runtime models from the configured inferencer
@@ -490,6 +548,34 @@ Required response categories:
 - `default_critic_profile`
 - `override_warning`
 - `inference_provider`
+
+### Request Parameters
+
+No query parameters required.
+
+### Response Schema (`ModelCatalogResponse`)
+
+```json
+{
+  "discovered_models": [...],
+  "local_discovered_models": [...],
+  "runtime_discovered_models": [...],
+  "default_selection": {...},
+  "recommended_selection": {...},
+  "workflow_order": [...],
+  "workflow_guidance": "...",
+  "critic_profiles": {...},
+  "default_critic_profile": "...",
+  "override_warning": "...",
+  "inference_provider": {...}
+}
+```
+
+### Error Responses
+
+| Status Code | Condition | Description |
+|-------------|-----------|-------------|
+| 500 | Server error | Model discovery or catalog generation failed |
 
 ## 15. Continuous Testing Baseline
 
