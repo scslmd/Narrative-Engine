@@ -10,3 +10,23 @@ data/state/
 data/projects/*/bible.db
 data/projects/*/exports/*
 data/role_model_checker_runs/
+
+# Environment files (keep .env.example, ignore actual .env)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+frontend/dist/
+*.db
+
+# Test scripts and requirements (redundant with pyproject.toml)
+run_*.bat
+requirements.txt
+requirements-dev.txt
+
+# Local development files
+LocalLLM_tasks*
+TODO.md.backup
+docs/*.backup
+code_review/
