@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { SequenceViewer } from '../components/SequenceViewer';
-import { ChapterReader } from '../components/ChapterReader';
 import { InspectMode } from '../components/inspect';
 import { FindingsList } from '../components/review';
 import { RoleModelChecker } from '../components/checker';
@@ -136,7 +135,7 @@ export function ReviewView() {
 }
 
 export function InspectView() {
-  const { projectId, jobId } = useParams<{ projectId: string; jobId?: string }>();
+  const { projectId } = useParams<{ projectId: string; jobId?: string }>();
 
   if (!projectId) {
     return <div className="text-gray-500">No project selected</div>;

@@ -1,7 +1,9 @@
 import type { ModelCatalog, RoleModelCheckStatus, RoleModelCheckRequest } from '../types/checker';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export async function getModelCatalog(): Promise<ModelCatalog> {
-  const response = await fetch('/api/models');
+  const response = await fetch(`${API_BASE}/v1/models`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch model catalog: ${response.statusText}`);
@@ -11,7 +13,7 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
 }
 
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {
-  const response = await fetch('/api/role-model-checker/run', {
+  const response = await fetch(`${API_BASE}/v1/role-model-checker/run`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -27,7 +29,7 @@ export async function runChecker(request: RoleModelCheckRequest): Promise<RoleMo
 }
 
 export async function getCheckerStatus(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await fetch(`/api/role-model-checker/${runId}/status`);
+  const response = await fetch(`${API_BASE}/v1/role-model-checker/${runId}/status`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch checker status: ${response.statusText}`);
@@ -37,7 +39,7 @@ export async function getCheckerStatus(runId: string): Promise<RoleModelCheckSta
 }
 
 export async function retryChecker(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await fetch(`/api/role-model-checker/${runId}/retry`, {
+  const response = await fetch(`${API_BASE}/v1/role-model-checker/${runId}/retry`, {
     method: 'POST',
   });
 

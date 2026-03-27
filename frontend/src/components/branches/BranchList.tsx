@@ -29,7 +29,7 @@ export function BranchList({ projectId }: BranchListProps) {
     await setActiveMutation.mutateAsync(branchId);
   };
 
-  const handleCompare = (branchAId: string, branchBId: string) => {
+  const handleCompare = (branchAId: string, _branchBId: string) => {
     if (!selectedForCompare) {
       setSelectedForCompare(branchAId);
     } else if (selectedForCompare !== branchAId) {

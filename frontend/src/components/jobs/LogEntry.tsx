@@ -24,7 +24,6 @@ export default function LogEntry({ timestamp, level, message }: LogEntryProps) {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        fractionalSecondDigits: 3,
       });
     } catch {
       return ts;

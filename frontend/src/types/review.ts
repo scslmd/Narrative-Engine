@@ -16,13 +16,24 @@ export type DecisionAction = 'accept' | 'reject' | 'defer' | 'escalate' | 'refin
 export interface ReviewDecision {
   decision_id: string;
   project_id: string;
-  finding_id: string;
   target_kind: string;
   target_id: string;
   decision_action: DecisionAction;
-  rationale: string;
+  rationale?: string;
   routed_to_stage?: string;
+  notes: string | null;
+  source_context: string[];
   created_at: string;
+}
+
+export interface ReviewDecisionCreateRequest {
+  decision_id: string;
+  project_id: string;
+  target_kind: string;
+  target_id: string;
+  decision: DecisionAction;
+  notes?: string;
+  source_context?: string[];
 }
 
 export interface FindingsFilter {

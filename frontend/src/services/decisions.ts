@@ -1,5 +1,7 @@
 import type { StoryDecisionNode, StoryDecisionPath } from '../types/decisions';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 interface DecisionListResponse {
   project_id: string;
   items: StoryDecisionNode[];
@@ -7,7 +9,7 @@ interface DecisionListResponse {
 }
 
 export async function getDecisions(projectId: string): Promise<StoryDecisionNode[]> {
-  const response = await fetch(`/api/story-development/decisions?project_id=${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/decisions?project_id=${projectId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch decisions: ${response.statusText}`);
@@ -18,7 +20,7 @@ export async function getDecisions(projectId: string): Promise<StoryDecisionNode
 }
 
 export async function getDecision(nodeId: string): Promise<StoryDecisionNode> {
-  const response = await fetch(`/api/story-development/decisions/${nodeId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/decisions/${nodeId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch decision: ${response.statusText}`);
@@ -34,7 +36,7 @@ interface DecisionPathResponse {
 }
 
 export async function getDecisionPath(nodeId: string): Promise<StoryDecisionPath> {
-  const response = await fetch(`/api/story-development/decisions/${nodeId}/path`);
+  const response = await fetch(`${API_BASE}/v1/story-development/decisions/${nodeId}/path`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch decision path: ${response.statusText}`);

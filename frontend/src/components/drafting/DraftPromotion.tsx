@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { DraftArtifact, PromotedManuscript } from '../../types/drafting';
+import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
 import { getDraftArtifacts, isMockMode } from '../../services/drafting';
+// TODO: Use promoteDraftToManuscript when promotion flow is implemented
+import { promoteDraftToManuscript as _promoteDraftToManuscript } from '../../services/drafting';
+void _promoteDraftToManuscript;
 import DraftPreview from './DraftPreview';
 import PromotionModal from './PromotionModal';
 
@@ -32,20 +35,11 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
     }
   };
 
-  const handlePromoteSuccess = (manuscript: PromotedManuscript) => {
+  const handlePromoteSuccess = (manuscript: ManuscriptDocument) => {
     console.log('Draft promoted:', manuscript.document_id);
+    setSelectedArtifact(null);
+    loadArtifacts();
   };
-
-  if (!isMockMode()) {
-    return (
-      <div className="p-4 border rounded-lg bg-gray-50">
-        <h3 className="font-semibold text-gray-900 mb-2">Draft Promotion</h3>
-        <p className="text-sm text-gray-600">
-          Backend endpoint not yet available. Set VITE_USE_MOCKS=true to enable mock mode.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -80,7 +74,7 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
 
       <div className="space-y-4">
         {artifacts.map((artifact) => (
-          <div key={artifact.id} className="border rounded-lg p-4 bg-white">
+          <div key={artifact.artifact_id} className="border rounded-lg p-4 bg-white">
             <DraftPreview artifact={artifact} />
             
             <div className="mt-4 flex justify-end">
@@ -98,6 +92,7 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
       {selectedArtifact && (
         <PromotionModal
           artifact={selectedArtifact}
+          projectId={projectId}
           onClose={() => setSelectedArtifact(null)}
           onSuccess={handlePromoteSuccess}
         />

@@ -1,20 +1,31 @@
 export interface DraftArtifact {
-  id: string;
+  artifact_id: string;
+  project_id: string;
   title: string;
-  state: 'DRAFT' | 'REVIEW' | 'APPROVED';
-  provider: string;
-  model: string;
   content: string;
-  created_at: string;
+  source_plan_ids: string[];
+  source_context: string[];
+  provenance_note: string | null;
+  status: 'DRAFT' | 'PROPOSED' | 'CANONICAL' | 'SUPERSEDED' | 'REJECTED' | 'ARCHIVED';
 }
 
-export interface PromotedManuscript {
+export interface ManuscriptDocument {
   document_id: string;
+  project_id: string;
   title: string;
   content: string;
-  provenance: {
-    artifact_id: string;
-    provider: string;
-    model: string;
-  };
+  chapter_id: string | null;
+  scene_id: string | null;
+  current_draft_artifact_id: string | null;
+  version: number;
+}
+
+export interface PromoteDraftToManuscriptRequest {
+  project_id: string;
+  document_id: string;
+  draft_artifact_id: string;
+  title?: string;
+  chapter_id?: string;
+  scene_id?: string;
+  version?: number;
 }

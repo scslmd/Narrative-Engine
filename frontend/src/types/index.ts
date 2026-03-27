@@ -1,5 +1,5 @@
 export type { Provenance } from './provenance';
-export type { BibleEntry, BibleType } from './bible';
+export type { BibleEntry, BibleEntryType } from './bible';
 export type { 
   StepRecord, 
   StepState, 

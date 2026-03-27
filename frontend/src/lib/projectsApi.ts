@@ -49,6 +49,27 @@ export interface ProjectArtifact {
   updated_at: string;
 }
 
+export interface SequenceData {
+  beats: Array<{
+    beat_id?: string;
+    beat_number: number;
+    title: string;
+    description: string;
+    purpose?: string;
+    emotional_tone?: string;
+  }>;
+  updated_at: string;
+}
+
+export interface ManifestData {
+  project_id: string;
+  project_name: string;
+  config: ManifestConfig;
+  constraints: string[];
+  premise_text?: string;
+  updated_at: string;
+}
+
 export interface ChapterSummary {
   chapter_id: string;
   chapter_number: number;
@@ -78,12 +99,12 @@ export const projectsApi = {
     return response.data;
   },
 
-  getManifest: async (projectId: string): Promise<ProjectArtifact> => {
+  getManifest: async (projectId: string): Promise<ManifestData> => {
     const response = await api.get(`/projects/${projectId}/manifest`);
     return response.data;
   },
 
-  getSequence: async (projectId: string): Promise<ProjectArtifact> => {
+  getSequence: async (projectId: string): Promise<SequenceData> => {
     const response = await api.get(`/projects/${projectId}/sequence`);
     return response.data;
   },

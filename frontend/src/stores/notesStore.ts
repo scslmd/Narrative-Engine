@@ -19,7 +19,7 @@ interface NotesStore {
 
 const generateId = (): string => Math.random().toString(36).substring(2, 9);
 
-export const useNotesStore = create<NotesStore>(
+export const useNotesStore = create<NotesStore>()(
   persist(
     (set, get) => ({
       notes: [],

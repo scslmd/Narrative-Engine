@@ -10,8 +10,8 @@ export default function SceneCardList({ scenes }: SceneCardListProps) {
   const navigate = useNavigate();
 
   const handleSceneClick = (scene: Scene) => {
-    console.log(`Navigation event: Jump to scene ${scene.scene_id}`);
-    navigate(`/project/${scene.chapter_number}/scene/${scene.scene_id}`);
+    console.log(`Navigation event: Jump to scene ${scene.id}`);
+    navigate(`/project/scene/${scene.id}`);
   };
 
   if (!scenes || scenes.length === 0) {
@@ -32,7 +32,7 @@ export default function SceneCardList({ scenes }: SceneCardListProps) {
     <div className="space-y-3">
       {scenes.map((scene) => (
         <SceneCard
-          key={scene.scene_id}
+          key={scene.id}
           scene={scene}
           onClick={() => handleSceneClick(scene)}
         />

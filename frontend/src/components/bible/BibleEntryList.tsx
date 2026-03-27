@@ -16,6 +16,7 @@ interface BibleEntryListProps {
 }
 
 export default function BibleEntryList({ projectId }: BibleEntryListProps) {
+  void projectId; // Used for filtering entries by project in future implementation
   const pinnedEntries = useBibleStore((state) => state.pinnedEntries);
 
   const grouped = pinnedEntries.reduce(

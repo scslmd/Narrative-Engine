@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import InspectMode from '../components/inspect/InspectMode';
 
 export function InspectView() {
-  const { projectId, jobId } = useParams<{ projectId: string; jobId?: string }>();
+  const { projectId } = useParams<{ projectId: string; jobId?: string }>();
 
   if (!projectId) {
     return <div className="text-gray-500">No project selected</div>;

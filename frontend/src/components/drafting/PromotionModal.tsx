@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import type { DraftArtifact, PromotedManuscript } from '../../types/drafting';
-import { promoteDraft, isMockMode } from '../../services/drafting';
+import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
+import { promoteDraftToManuscript, isMockMode } from '../../services/drafting';
 import { toast } from '../../lib/toast';
 
 interface PromotionModalProps {
   artifact: DraftArtifact;
+  projectId: string;
   onClose: () => void;
-  onSuccess?: (manuscript: PromotedManuscript) => void;
+  onSuccess?: (manuscript: ManuscriptDocument) => void;
 }
 
-export default function PromotionModal({ artifact, onClose, onSuccess }: PromotionModalProps) {
+export default function PromotionModal({ artifact, projectId, onClose, onSuccess }: PromotionModalProps) {
   const [isPromoting, setIsPromoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,13 +19,14 @@ export default function PromotionModal({ artifact, onClose, onSuccess }: Promoti
     setError(null);
 
     try {
-      const result = await promoteDraft(artifact.id);
+      const result = await promoteDraftToManuscript({
+        project_id: projectId,
+        document_id: `doc-${Date.now()}`,
+        draft_artifact_id: artifact.artifact_id,
+        title: artifact.title,
+      });
       
-      if (isMockMode()) {
-        toast.success(`Draft promoted to ${result.title} (mock mode)`);
-      } else {
-        toast.success('Draft promoted successfully');
-      }
+      toast.success(`Draft promoted to ${result.title}`);
 
       onSuccess?.(result);
       onClose();
@@ -43,7 +45,7 @@ export default function PromotionModal({ artifact, onClose, onSuccess }: Promoti
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {isMockMode() && (
           <div className="bg-yellow-100 border-b border-yellow-300 px-4 py-2 text-sm text-yellow-800">
-            Promotion in mock mode - backend endpoint not yet available
+            Mock mode enabled - promotion will simulate backend behavior
           </div>
         )}
 
@@ -63,16 +65,13 @@ export default function PromotionModal({ artifact, onClose, onSuccess }: Promoti
           </div>
 
           <div className="bg-blue-50 rounded p-4 mb-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Provenance Information</h4>
+            <h4 className="text-sm font-medium text-blue-900 mb-2">Artifact Information</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <span className="text-gray-600">Artifact ID:</span>
-              <span className="font-mono text-gray-900">{artifact.id}</span>
+              <span className="font-mono text-gray-900">{artifact.artifact_id}</span>
               
-              <span className="text-gray-600">Provider:</span>
-              <span className="text-gray-900">{artifact.provider}</span>
-              
-              <span className="text-gray-600">Model:</span>
-              <span className="text-gray-900">{artifact.model}</span>
+              <span className="text-gray-600">Status:</span>
+              <span className="text-gray-900">{artifact.status}</span>
             </div>
           </div>
 

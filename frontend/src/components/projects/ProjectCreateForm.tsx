@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { ToneProfile, StoryStructure, ProjectCreateRequest } from '../../types/project';
+import type { StoryStructure, ProjectCreateRequest } from '../../types/project';
 import { createProject } from '../../services/projects';
-import toast from '../../lib/toast';
+import { toast } from '../../lib/toast';
 
 interface ProjectCreateFormProps {
   onSuccess: (projectId: string) => void;

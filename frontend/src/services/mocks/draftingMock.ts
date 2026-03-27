@@ -1,36 +1,50 @@
-import type { DraftArtifact, PromotedManuscript } from '../types/drafting';
+import type { DraftArtifact } from '../../types/drafting';
 
 const MOCK_DELAY = 2000;
 
-export async function getDraftArtifacts(projectId: string): Promise<DraftArtifact[]> {
+export async function getDraftArtifacts(_projectId: string): Promise<DraftArtifact[]> {
   await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY / 2));
   
   return [
     {
-      id: 'draft-001',
+      artifact_id: 'draft-001',
+      project_id: 'project-1',
       title: 'Chapter 1 - The Beginning',
-      state: 'DRAFT',
-      provider: 'openai',
-      model: 'gpt-4-turbo',
       content: 'The sun rose over the horizon, casting golden light across the valley. It was a new day, and with it came new possibilities...',
-      created_at: new Date().toISOString(),
+      source_plan_ids: [],
+      source_context: [],
+      provenance_note: null,
+      status: 'DRAFT',
     },
     {
-      id: 'draft-002',
+      artifact_id: 'draft-002',
+      project_id: 'project-1',
       title: 'Chapter 2 - The Journey Begins',
-      state: 'REVIEW',
-      provider: 'anthropic',
-      model: 'claude-3-opus',
       content: 'She packed her bags with care, each item chosen deliberately. This journey would change everything...',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
+      source_plan_ids: [],
+      source_context: [],
+      provenance_note: null,
+      status: 'PROPOSED',
     },
   ];
+}
+
+export interface PromotedManuscript {
+  document_id: string;
+  title: string;
+  content: string;
+  provenance: {
+    artifact_id: string;
+    provider?: string;
+    model?: string;
+  };
 }
 
 export async function promoteDraft(artifactId: string): Promise<PromotedManuscript> {
   await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY));
   
-  const artifact = (await getDraftArtifacts('project-1')).find((a) => a.id === artifactId);
+  const artifacts = await getDraftArtifacts('project-1');
+  const artifact = artifacts.find((a) => a.artifact_id === artifactId);
   
   if (!artifact) {
     throw new Error(`Artifact ${artifactId} not found`);
@@ -41,9 +55,7 @@ export async function promoteDraft(artifactId: string): Promise<PromotedManuscri
     title: `${artifact.title} (Promoted)`,
     content: artifact.content,
     provenance: {
-      artifact_id: artifact.id,
-      provider: artifact.provider,
-      model: artifact.model,
+      artifact_id: artifact.artifact_id,
     },
   };
 }

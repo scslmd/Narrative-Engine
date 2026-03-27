@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { CheckerFinding, ReviewDecision, DecisionAction } from '../../types/review';
-import { createMockDecision } from '../../services/mocks/reviewMock';
+import type { CheckerFinding, ReviewDecision, DecisionAction, ReviewDecisionCreateRequest } from '../../types/review';
+import { createDecision } from '../../services/review';
+import { toast } from '../../lib/toast';
 
 interface DecisionFormProps {
   finding: CheckerFinding;
@@ -9,32 +10,17 @@ interface DecisionFormProps {
 
 const decisionActions: DecisionAction[] = ['accept', 'reject', 'defer', 'escalate', 'refine'];
 
-const getRoutedStageForAction = (action: DecisionAction): string | undefined => {
-  switch (action) {
-    case 'accept':
-      return 'drafting';
-    case 'reject':
-      return 'archive';
-    case 'refine':
-      return 'drafting';
-    default:
-      return undefined;
-  }
-};
-
 export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
   const [decisionAction, setDecisionAction] = useState<DecisionAction>('accept');
-  const [rationale, setRationale] = useState('');
+  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const routedStage = getRoutedStageForAction(decisionAction);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!rationale.trim()) {
-      setError('Please provide a rationale for your decision');
+    if (!notes.trim()) {
+      setError('Please provide notes for your decision');
       return;
     }
 
@@ -42,19 +28,22 @@ export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
     setError(null);
 
     try {
-      const decision = await createMockDecision({
+      const request: ReviewDecisionCreateRequest = {
+        decision_id: `decision-${Date.now()}`,
         project_id: finding.project_id,
-        finding_id: finding.finding_id,
-        target_kind: finding.source_object_kind,
-        target_id: finding.source_object_id,
-        decision_action: decisionAction,
-        rationale,
-        routed_to_stage: routedStage,
-      });
+        target_kind: 'checker_finding',
+        target_id: finding.finding_id,
+        decision: decisionAction,
+        notes,
+      };
 
+      const decision = await createDecision(request);
+      
+      toast.success('Decision recorded successfully');
       onSuccess?.(decision);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to record decision');
+      toast.error('Failed to record decision');
     } finally {
       setLoading(false);
     }
@@ -62,12 +51,6 @@ export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
 
   return (
     <div className="border-t border-gray-200 p-4 bg-gray-50">
-      <div className="mb-3">
-        <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-          Mock Mode - Backend endpoint not yet available
-        </span>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -94,23 +77,14 @@ export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
           </select>
         </div>
 
-        {routedStage && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Routed To Stage
-            </label>
-            <p className="text-sm text-blue-600">{routedStage.charAt(0).toUpperCase() + routedStage.slice(1)}</p>
-          </div>
-        )}
-
         <div>
-          <label htmlFor="rationale" className="block text-sm font-medium text-gray-700 mb-1">
-            Rationale *
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            Notes *
           </label>
           <textarea
-            id="rationale"
-            value={rationale}
-            onChange={(e) => setRationale(e.target.value)}
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             rows={4}
             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             placeholder="Explain your decision..."

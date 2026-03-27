@@ -4,7 +4,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const jobsService = {
   async createJob(request: JobCreateRequest): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/jobs/create`, {
+    const response = await fetch(`${API_BASE}/v1/jobs/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ export const jobsService = {
   },
 
   async getStatus(jobId: string): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/status`);
+    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/status`);
     
     if (!response.ok) {
       throw new Error(`Failed to get job status: ${response.statusText}`);
@@ -40,7 +40,7 @@ export const jobsService = {
   },
 
   async retryJob(jobId: string, request: JobRetryRequest): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/retry`, {
+    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/retry`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -55,8 +55,8 @@ export const jobsService = {
     return response.json();
   },
 
-  async getLogs(jobId: string): Promise<{ id: string; entries: Array<{ timestamp: string; level: string; message: string }> }> {
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/logs`);
+  async getLogs(jobId: string): Promise<{ id: string; entries: Array<{ timestamp: string; level: 'INFO' | 'WARNING' | 'ERROR'; message: string }> }> {
+    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/logs`);
     
     if (!response.ok) {
       throw new Error(`Failed to get job logs: ${response.statusText}`);

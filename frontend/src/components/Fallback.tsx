@@ -1,5 +1,5 @@
-import type { ErrorInfo } from '../../types/error';
-import { getErrorTitle, getErrorMessage, isNetworkError } from '../../lib/errorHandling';
+import type { ErrorInfo } from '../types/error';
+import { getErrorTitle, getErrorMessage, isNetworkError } from '../lib/errorHandling';
 
 interface FallbackProps {
   error: Error;

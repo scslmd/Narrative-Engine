@@ -6,7 +6,7 @@ interface Props {
   projectId: string;
 }
 
-export function BottomUtilityLayer({ projectId }: Props): React.ReactElement {
+export function BottomUtilityLayer({ projectId }: Props): React.ReactElement | null {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const { data: jobs } = useJobs(projectId);

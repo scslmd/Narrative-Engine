@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BibleEntry, BibleEntryType } from '../types/bible';
+import type { BibleEntry } from '../types/bible';
 import { getStorageKey, getItem, setItem } from '../lib/storage';
 
 const MAX_PINNED_PER_TYPE = 10;

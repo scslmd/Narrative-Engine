@@ -8,9 +8,9 @@ interface UseJobStatusResult {
   progress: number | null;
   error: string | null;
   isPolling: boolean;
-  current_step: string | null;
-  current_phase: string | null;
-  attempt_number: number | null;
+  currentStep: string | null;
+  currentPhase: string | null;
+  attemptNumber: number | null;
 }
 
 export function useJobStatus(jobId: string | null): UseJobStatusResult {
@@ -37,14 +37,16 @@ export function useJobStatus(jobId: string | null): UseJobStatusResult {
     ? Math.round((data.progress_current / data.progress_total) * 100)
     : null;
 
+  const status = data?.status || null;
+
   return {
-    status: data?.status || null,
+    status,
     phase: data?.phase || null,
     progress,
     error: data?.error || (isError ? 'Failed to fetch job status' : null),
-    isPolling: isLoading && !isTerminal(data?.status),
-    current_step: data?.current_step || null,
-    current_phase: data?.current_phase || null,
-    attempt_number: data?.attempt_number || null,
+    isPolling: isLoading && status !== 'COMPLETED' && status !== 'FAILED',
+    currentStep: data?.current_step || null,
+    currentPhase: data?.current_phase || null,
+    attemptNumber: data?.attempt_number || null,
   };
 }

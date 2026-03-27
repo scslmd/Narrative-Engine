@@ -39,15 +39,16 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     },
   });
 
-  const updateStageMutation = useMutation({
-    mutationFn: ({ stageId, updates }: { stageId: string; updates: Partial<StoryFlowStage> }) =>
-      flowService.updateStage(stageId, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-      setUpdatingStageId(null);
-      addToast('Stage updated successfully', 'success');
-    },
-  });
+  // TODO: Use updateStageMutation when editing stages is implemented
+  // const _updateStageMutation = useMutation({
+  //   mutationFn: ({ stageId, updates }: { stageId: string; updates: Partial<StoryFlowStage> }) =>
+  //     flowService.updateStage(stageId, updates),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
+  //     setUpdatingStageId(null);
+  //     addToast('Stage updated successfully', 'success');
+  //   },
+  // });
 
   const deleteStageMutation = useMutation({
     mutationFn: (stageId: string) => flowService.deleteStage(stageId),

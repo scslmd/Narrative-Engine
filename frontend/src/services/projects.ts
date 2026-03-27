@@ -1,9 +1,9 @@
 import type { ProjectSummaryResponse, ProjectDetailResponse, ProjectCreateRequest } from '../types/project';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function getProjects(): Promise<ProjectSummaryResponse[]> {
-  const response = await fetch(`${API_BASE}/projects`);
+  const response = await fetch(`${API_BASE}/v1/projects`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch projects: ${response.status}`);
@@ -13,7 +13,7 @@ export async function getProjects(): Promise<ProjectSummaryResponse[]> {
 }
 
 export async function getProject(projectId: string): Promise<ProjectDetailResponse> {
-  const response = await fetch(`${API_BASE}/projects/${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/projects/${projectId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch project: ${response.status}`);
@@ -23,7 +23,7 @@ export async function getProject(projectId: string): Promise<ProjectDetailRespon
 }
 
 export async function createProject(data: ProjectCreateRequest): Promise<ProjectDetailResponse> {
-  const response = await fetch(`${API_BASE}/projects/create`, {
+  const response = await fetch(`${API_BASE}/v1/projects/create`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

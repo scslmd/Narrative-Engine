@@ -1,5 +1,7 @@
 import type { StoryBranch, BranchComparisonRecord, BranchMergeDecision, BranchStateRef } from '../types/branches';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 interface BranchListResponse {
   project_id: string;
   items: StoryBranch[];
@@ -7,7 +9,7 @@ interface BranchListResponse {
 }
 
 export async function getBranches(projectId: string): Promise<StoryBranch[]> {
-  const response = await fetch(`/api/story-development/branches?project_id=${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches?project_id=${projectId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch branches: ${response.statusText}`);
@@ -18,7 +20,7 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
 }
 
 export async function createBranch(projectId: string, name: string, description?: string, parentBranchId?: string): Promise<StoryBranch> {
-  const response = await fetch('/api/story-development/branches', {
+  const response = await fetch(`${API_BASE}/v1/story-development/branches`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -34,7 +36,7 @@ export async function createBranch(projectId: string, name: string, description?
 }
 
 export async function getActiveBranch(projectId: string): Promise<StoryBranch | null> {
-  const response = await fetch(`/api/story-development/branches/active?project_id=${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/active?project_id=${projectId}`);
   
   if (response.status === 404) {
     return null;
@@ -48,7 +50,7 @@ export async function getActiveBranch(projectId: string): Promise<StoryBranch | 
 }
 
 export async function setActiveBranch(projectId: string, branchId: string): Promise<StoryBranch> {
-  const response = await fetch('/api/story-development/branches/active', {
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/active`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +66,7 @@ export async function setActiveBranch(projectId: string, branchId: string): Prom
 }
 
 export async function createBranchComparison(projectId: string, branchAId: string, branchBId: string): Promise<BranchComparisonRecord> {
-  const response = await fetch('/api/story-development/branches/comparisons', {
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/comparisons`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,7 +88,7 @@ interface ComparisonListResponse {
 }
 
 export async function getComparisons(projectId: string): Promise<BranchComparisonRecord[]> {
-  const response = await fetch(`/api/story-development/branches/comparisons?project_id=${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/comparisons?project_id=${projectId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch comparisons: ${response.statusText}`);
@@ -97,7 +99,7 @@ export async function getComparisons(projectId: string): Promise<BranchCompariso
 }
 
 export async function getComparison(comparisonId: string): Promise<BranchComparisonRecord> {
-  const response = await fetch(`/api/story-development/branches/comparisons/${comparisonId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/comparisons/${comparisonId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch comparison: ${response.statusText}`);
@@ -107,7 +109,7 @@ export async function getComparison(comparisonId: string): Promise<BranchCompari
 }
 
 export async function createMergeDecision(projectId: string, sourceBranchId: string, targetBranchId: string, decision: 'merge' | 'reject' | 'defer', rationale?: string): Promise<BranchMergeDecision> {
-  const response = await fetch('/api/story-development/branches/merge-decisions', {
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/merge-decisions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -129,7 +131,7 @@ interface MergeDecisionListResponse {
 }
 
 export async function getMergeDecisions(projectId: string): Promise<BranchMergeDecision[]> {
-  const response = await fetch(`/api/story-development/branches/merge-decisions?project_id=${projectId}`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/merge-decisions?project_id=${projectId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch merge decisions: ${response.statusText}`);
@@ -146,7 +148,7 @@ interface StateRefListResponse {
 }
 
 export async function getBranchStateRefs(branchId: string): Promise<BranchStateRef[]> {
-  const response = await fetch(`/api/story-development/branches/${branchId}/state-refs`);
+  const response = await fetch(`${API_BASE}/v1/story-development/branches/${branchId}/state-refs`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch branch state refs: ${response.statusText}`);
