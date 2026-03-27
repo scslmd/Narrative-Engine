@@ -1,67 +1,59 @@
 import type { JobCreateRequest, JobStatusResponse, JobRetryRequest } from '../types/job';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import api from '../lib/api';
 
 export const jobsService = {
   async createJob(request: JobCreateRequest): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/v1/jobs/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      if (response.status === 400) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Invalid request');
+    try {
+      const response = await api.post('/jobs/create', request);
+      
+      if (response.status !== 201) {
+        throw new Error(`Failed to create job: ${response.status}`);
       }
-      if (response.status === 409) {
+
+      return response.data;
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status: number; data?: { detail?: string } } };
+      
+      if (axiosError?.response?.status === 400) {
+        throw new Error(axiosError.response.data?.detail || 'Invalid request');
+      }
+      if (axiosError?.response?.status === 409) {
         throw new Error('Idempotency conflict - job may already exist');
       }
-      if (response.status === 500) {
+      if (axiosError?.response?.status === 500) {
         throw new Error('Server error occurred');
       }
-      throw new Error(`Failed to create job: ${response.statusText}`);
+      throw error;
     }
-
-    return response.json();
   },
 
   async getStatus(jobId: string): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/status`);
+    const response = await api.get(`/jobs/${jobId}/status`);
     
-    if (!response.ok) {
-      throw new Error(`Failed to get job status: ${response.statusText}`);
+    if (response.status !== 200) {
+      throw new Error(`Failed to get job status: ${response.status}`);
     }
 
-    return response.json();
+    return response.data;
   },
 
   async retryJob(jobId: string, request: JobRetryRequest): Promise<JobStatusResponse> {
-    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/retry`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
+    const response = await api.post(`/jobs/${jobId}/retry`, request);
 
-    if (!response.ok) {
-      throw new Error(`Failed to retry job: ${response.statusText}`);
+    if (response.status !== 201) {
+      throw new Error(`Failed to retry job: ${response.status}`);
     }
 
-    return response.json();
+    return response.data;
   },
 
   async getLogs(jobId: string): Promise<{ id: string; entries: Array<{ timestamp: string; level: 'INFO' | 'WARNING' | 'ERROR'; message: string }> }> {
-    const response = await fetch(`${API_BASE}/v1/jobs/${jobId}/logs`);
+    const response = await api.get(`/jobs/${jobId}/logs`);
     
-    if (!response.ok) {
-      throw new Error(`Failed to get job logs: ${response.statusText}`);
+    if (response.status !== 200) {
+      throw new Error(`Failed to get job logs: ${response.status}`);
     }
 
-    return response.json();
+    return response.data;
   },
 };

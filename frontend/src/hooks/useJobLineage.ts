@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ArtifactLineageView } from '../types/inspect';
+import api from '../lib/api';
 
 interface UseJobLineageResult {
   artifacts: ArtifactLineageView[];
@@ -20,19 +21,18 @@ export function useJobLineage(jobId: string, attemptNumber?: number): UseJobLine
     setError(null);
 
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (attemptNumber !== undefined) {
-        params.set('attempt', attemptNumber.toString());
+        params.attempt = attemptNumber.toString();
       }
 
-      const response = await fetch(`/api/jobs/${jobId}/lineage?${params}`);
+      const response = await api.get(`/jobs/${jobId}/lineage`, { params });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch lineage: ${response.statusText}`);
+      if (response.status !== 200) {
+        throw new Error(`Failed to fetch lineage: ${response.status}`);
       }
 
-      const data = await response.json();
-      setArtifacts(data.artifacts || []);
+      setArtifacts(response.data.artifacts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setArtifacts([]);

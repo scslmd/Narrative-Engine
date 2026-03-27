@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { StepRecord } from '../types/inspect';
+import api from '../lib/api';
 
 interface UseJobStepsResult {
   steps: StepRecord[];
@@ -20,19 +21,18 @@ export function useJobSteps(jobId: string, attemptNumber?: number): UseJobStepsR
     setError(null);
 
     try {
-      const params = new URLSearchParams();
+      const params: Record<string, string> = {};
       if (attemptNumber !== undefined) {
-        params.set('attempt', attemptNumber.toString());
+        params.attempt = attemptNumber.toString();
       }
 
-      const response = await fetch(`/api/jobs/${jobId}/steps?${params}`);
+      const response = await api.get(`/jobs/${jobId}/steps`, { params });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch steps: ${response.statusText}`);
+      if (response.status !== 200) {
+        throw new Error(`Failed to fetch steps: ${response.status}`);
       }
 
-      const data = await response.json();
-      setSteps(data.steps || []);
+      setSteps(response.data.steps || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setSteps([]);

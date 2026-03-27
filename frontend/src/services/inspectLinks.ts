@@ -1,6 +1,5 @@
 import type { InspectRunLink } from '../types/inspectLinks';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import api from '../lib/api';
 
 interface InspectLinkListResponse {
   project_id: string;
@@ -9,29 +8,28 @@ interface InspectLinkListResponse {
 }
 
 export async function getInspectLinks(projectId?: string, findingId?: string, runId?: string): Promise<InspectRunLink[]> {
-  const params = new URLSearchParams();
+  const params: Record<string, string> = {};
   
-  if (projectId) params.append('project_id', projectId);
-  if (findingId) params.append('finding_id', findingId);
-  if (runId) params.append('run_id', runId);
+  if (projectId) params.project_id = projectId;
+  if (findingId) params.finding_id = findingId;
+  if (runId) params.run_id = runId;
 
-  const url = `${API_BASE}/v1/story-development/review/inspect-links${params.toString() ? '?' + params.toString() : ''}`;
-  const response = await fetch(url);
+  const response = await api.get('/story-development/review/inspect-links', { params });
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch inspect links: ${response.statusText}`);
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch inspect links: ${response.status}`);
   }
 
-  const data: InspectLinkListResponse = await response.json();
+  const data: InspectLinkListResponse = response.data;
   return data.items;
 }
 
 export async function getInspectLink(linkId: string): Promise<InspectRunLink> {
-  const response = await fetch(`${API_BASE}/v1/story-development/review/inspect-links/${linkId}`);
+  const response = await api.get(`/story-development/review/inspect-links/${linkId}`);
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch inspect link: ${response.statusText}`);
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch inspect link: ${response.status}`);
   }
 
-  return response.json();
+  return response.data;
 }

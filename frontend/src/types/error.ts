@@ -4,4 +4,4 @@ export interface ErrorInfo {
   statusCode?: number;
 }
 
-export type ErrorType = 'network' | 'api' | 'unknown';
+export type ErrorType = 'network' | 'api' | 'server' | 'not-found' | 'auth' | 'validation' | 'unknown';

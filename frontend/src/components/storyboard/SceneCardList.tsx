@@ -10,7 +10,6 @@ export default function SceneCardList({ scenes }: SceneCardListProps) {
   const navigate = useNavigate();
 
   const handleSceneClick = (scene: Scene) => {
-    console.log(`Navigation event: Jump to scene ${scene.id}`);
     navigate(`/project/scene/${scene.id}`);
   };
 

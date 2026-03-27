@@ -2,9 +2,10 @@ import type { InspectRunLink } from '../../types/inspectLinks';
 
 interface InspectRunLinkCardProps {
   link: InspectRunLink;
+  onViewRunDetails?: (link: InspectRunLink) => void;
 }
 
-export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
+export function InspectRunLinkCard({ link, onViewRunDetails }: InspectRunLinkCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -53,7 +54,10 @@ export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
         </div>
       </div>
 
-      <button className="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+      <button
+        onClick={() => onViewRunDetails?.(link)}
+        className="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+      >
         View Run Details
       </button>
     </div>

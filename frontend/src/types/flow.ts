@@ -10,6 +10,7 @@ export interface StoryFlowStage {
   stage_kind: StageKind;
   description?: string;
   custom_prompt_guidance?: string;
+  depends_on?: string[];  // Dependencies on other stages
   stage_configuration_state: StageConfigurationState;
   progress_percentage?: number;
 }

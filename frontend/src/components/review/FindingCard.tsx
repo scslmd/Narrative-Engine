@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { CheckerFinding, ReviewDecision } from '../../types/review';
+import type { CheckerFinding } from '../../types/review';
 import { SeverityBadge } from './SeverityBadge';
 import { DecisionForm } from './DecisionForm';
 import { DecisionHistory } from './DecisionHistory';
@@ -29,8 +29,7 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
     }
   };
 
-  const handleDecisionSuccess = (decision: ReviewDecision) => {
-    console.log('Decision recorded:', decision.decision_id);
+  const handleDecisionSuccess = () => {
     setShowDecisionForm(false);
   };
 

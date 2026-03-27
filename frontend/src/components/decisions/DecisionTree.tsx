@@ -22,8 +22,7 @@ export function DecisionTree({ projectId }: DecisionTreeProps) {
     enabled: !!currentNodeId,
   });
 
-  const handleSelectOption = (optionId: string, nextNodeId?: string) => {
-    console.log('Selected option:', optionId);
+  const handleSelectOption = (_optionId: string, nextNodeId?: string) => {
     if (nextNodeId) {
       setCurrentNodeId(nextNodeId);
     }
@@ -46,7 +45,8 @@ export function DecisionTree({ projectId }: DecisionTreeProps) {
   }
 
   const currentNode = currentNodeId ? nodes.find(n => n.node_id === currentNodeId) : null;
-  const rootNode = nodes[0]; // Assume first node is root for now
+  // Root nodes have no parent_node_id
+  const rootNodes = nodes.filter(n => !n.parent_node_id);
 
   return (
     <div className="space-y-4">
@@ -63,16 +63,19 @@ export function DecisionTree({ projectId }: DecisionTreeProps) {
         </div>
       )}
 
-      {!currentNode && (
+      {!currentNode && rootNodes.length > 0 && (
         <div className="mb-4">
           <h3 className="font-semibold text-gray-900 mb-2">Start from root:</h3>
-          <DecisionNode
-            node={rootNode}
-            isActive={false}
-            onSelectOption={(optionId, nextNodeId) => {
-              handleSelectOption(optionId, nextNodeId);
-            }}
-          />
+          {rootNodes.map((node) => (
+            <DecisionNode
+              key={node.node_id}
+              node={node}
+              isActive={false}
+              onSelectOption={(optionId, nextNodeId) => {
+                handleSelectOption(optionId, nextNodeId);
+              }}
+            />
+          ))}
         </div>
       )}
 
