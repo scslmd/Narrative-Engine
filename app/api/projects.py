@@ -12,7 +12,7 @@ from app.services.projects import ProjectService
 
 
 def build_projects_router(project_service: ProjectService) -> APIRouter:
-    router = APIRouter(prefix="/projects", tags=["projects"])
+    router = APIRouter(prefix="/v1/projects", tags=["projects"])
 
     @router.post("/create", response_model=ProjectDetailResponse)
     def create_project(request: ProjectCreateRequest) -> ProjectDetailResponse:

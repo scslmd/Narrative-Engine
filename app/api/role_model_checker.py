@@ -20,7 +20,7 @@ from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
 
 
 def build_role_model_checker_router(manager: RoleModelCheckManager, service: RoleModelCheckerService) -> APIRouter:
-    router = APIRouter(prefix='/role-model-checker', tags=['role-model-checker'])
+    router = APIRouter(prefix='/v1/role-model-checker', tags=['role-model-checker'])
 
     def _accept_run(
         request: RoleModelCheckStartRequest,

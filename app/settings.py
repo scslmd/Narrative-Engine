@@ -4,6 +4,11 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -58,6 +63,16 @@ class Settings:
     @property
     def inference_api_key(self) -> str | None:
         value = os.getenv("NARRATIVE_INFERENCE_API_KEY", "").strip()
+        return value or None
+
+    @property
+    def api_key(self) -> str | None:
+        """API key for authentication middleware.
+        
+        Required when authentication is enabled. Set in .env file.
+        For local development, can be any string (e.g., "dev-key-123").
+        """
+        value = os.getenv("API_KEY", "").strip()
         return value or None
 
     @property

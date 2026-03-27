@@ -7,7 +7,7 @@ from ..services.model_registry import ModelRegistry
 
 
 def build_models_router(model_registry: ModelRegistry) -> APIRouter:
-    router = APIRouter(tags=['models'])
+    router = APIRouter(prefix='/v1', tags=['models'])
 
     @router.get('/models', response_model=ModelCatalogResponse)
     def get_models() -> ModelCatalogResponse:

@@ -15,7 +15,7 @@ from ..services.protocol import IdempotencyConflictError, RetryNotAllowedError
 
 
 def build_jobs_router(job_manager: JobManager) -> APIRouter:
-    router = APIRouter(prefix='/jobs', tags=['jobs'])
+    router = APIRouter(prefix='/v1/jobs', tags=['jobs'])
 
     @router.post('/create', response_model=JobStatusResponse, status_code=202)
     def create_job(

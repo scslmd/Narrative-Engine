@@ -670,14 +670,16 @@ class PlanningDependency(StrictSchemaModel):
 
 
 class DraftArtifact(StrictSchemaModel):
-    artifact_id: str = Field(min_length=1)
-    project_id: str = Field(min_length=1)
-    title: str = Field(min_length=1)
-    content: str = Field(min_length=1)
+    artifact_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=1_000_000)
     source_plan_ids: list[str] = Field(default_factory=list)
     source_context: list[str] = Field(default_factory=list)
-    provenance_note: str | None = None
+    provenance_note: str | None = Field(None, max_length=2000)
     status: StoryArtifactLifecycleState = StoryArtifactLifecycleState.DRAFT
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     @model_validator(mode="before")
     @classmethod
@@ -705,6 +707,8 @@ class ManuscriptDocument(StrictSchemaModel):
     scene_id: str | None = None
     current_draft_artifact_id: str | None = None
     version: int = Field(default=1, ge=1)
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     @model_validator(mode="before")
     @classmethod
@@ -754,6 +758,8 @@ class ReviewDecision(StrictSchemaModel):
     decision: str = Field(min_length=1)
     notes: str | None = None
     source_context: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     @model_validator(mode="before")
     @classmethod
