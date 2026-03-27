@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { CheckerFinding, ReviewDecision } from '../../types/review';
 import { SeverityBadge } from './SeverityBadge';
 import { DecisionForm } from './DecisionForm';
@@ -6,10 +7,12 @@ import { DecisionHistory } from './DecisionHistory';
 
 interface FindingCardProps {
   finding: CheckerFinding;
+  projectId: string;
   onSelect?: (finding: CheckerFinding) => void;
 }
 
-export function FindingCard({ finding, onSelect }: FindingCardProps) {
+export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [showDecisionForm, setShowDecisionForm] = useState(false);
 
@@ -18,6 +21,12 @@ export function FindingCard({ finding, onSelect }: FindingCardProps) {
       onSelect(finding);
     }
     setExpanded(!expanded);
+  };
+
+  const handleJumpToSource = () => {
+    if (finding.source_object_id) {
+      navigate(`/workspace/${projectId}/inspect?object=${finding.source_object_id}&kind=${finding.source_object_kind}`);
+    }
   };
 
   const handleDecisionSuccess = (decision: ReviewDecision) => {
@@ -56,7 +65,7 @@ export function FindingCard({ finding, onSelect }: FindingCardProps) {
                   className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('Jump to source:', finding.source_object_id);
+                    handleJumpToSource();
                   }}
                 >
                   Jump to Source

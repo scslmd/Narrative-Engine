@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { ModelCatalog, RoleModelCheckStatus } from '../../types/checker';
-import { getMockModelCatalog, runMockChecker, getMockCheckerStatus, retryMockChecker } from '../../services/mocks/checkerMock';
+import { getModelCatalog, runChecker, getCheckerStatus, retryChecker } from '../../services/checker';
 
 interface RoleModelCheckerProps {
   projectId: string;
@@ -29,7 +29,7 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
 
   const loadCatalog = async () => {
     try {
-      const data = await getMockModelCatalog();
+      const data = await getModelCatalog();
       setCatalog(data);
       
       const defaults: Record<string, string> = {};
@@ -52,7 +52,7 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
     
     try {
       while (true) {
-        const status = await getMockCheckerStatus(runId);
+        const status = await getCheckerStatus(runId);
         setCheckStatus(status);
         
         if (status.status === 'COMPLETED' || status.status === 'FAILED') {
@@ -70,7 +70,7 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
 
   const handleRunCheck = async () => {
     try {
-      const status = await runMockChecker(projectId, selectedModels);
+      const status = await runChecker({ project_id: projectId, models: selectedModels });
       setCheckStatus(status);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run checker');
@@ -81,7 +81,7 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
     if (!checkStatus?.run_id) return;
     
     try {
-      const status = await retryMockChecker(checkStatus.run_id);
+      const status = await retryChecker(checkStatus.run_id);
       setCheckStatus(status);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to retry checker');
@@ -112,12 +112,6 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
   return (
     <div className="border rounded-lg p-4">
       <h3 className="font-semibold text-gray-900 mb-4">Role Model Checker</h3>
-      
-      <div className="mb-4">
-        <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-          Mock Mode - Backend endpoint not yet available
-        </span>
-      </div>
 
       <div className="space-y-3 mb-4">
         {catalog.workflow_order.map((role) => (

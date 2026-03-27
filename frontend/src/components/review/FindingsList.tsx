@@ -112,6 +112,7 @@ export function FindingsList({ projectId }: FindingsListProps) {
               <FindingCard 
                 key={finding.finding_id} 
                 finding={finding}
+                projectId={projectId}
                 onSelect={handleSelectFinding}
               />
             ))}

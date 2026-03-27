@@ -6,12 +6,12 @@ interface Props {
 }
 
 export function JobLaunchPanel({ projectId }: Props): React.ReactElement {
-  const createJob = useCreateJob();
+  const createJob = useCreateJob(projectId);
   const { data: jobs } = useJobs(projectId);
   const [selectedPhase, setSelectedPhase] = useState<'P-100' | 'P-200' | 'P-300' | 'P-400'>('P-100');
 
   const handleLaunch = (): void => {
-    createJob.mutate({ project_id: projectId, phase: selectedPhase });
+    createJob.mutate(selectedPhase);
   };
 
   const getPhaseLabel = (phase: string): string => {

@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { jobsApi, JobCreateRequest } from '../lib/jobsApi';
+import { jobsApi, JobPhase } from '../lib/jobsApi';
 import { useToastStore } from '../stores/toastStore';
 
-export function useJobs(projectId: string) {
+export function useJobs(projectId: string | undefined) {
   return useQuery({
     queryKey: ['jobs', projectId],
-    queryFn: () => jobsApi.list(projectId),
+    queryFn: () => jobsApi.list(projectId!),
     enabled: !!projectId,
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -36,12 +36,17 @@ export function useJob(jobId: string | undefined) {
   });
 }
 
-export function useCreateJob() {
+export function useCreateJob(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (data: JobCreateRequest) => jobsApi.create(data),
+    mutationFn: (phase: JobPhase) => {
+      if (!projectId) {
+        throw new Error('No project ID provided');
+      }
+      return jobsApi.create({ project_id: projectId, phase });
+    },
     onSuccess: (data) => {
       addToast(`Job ${data.phase} started successfully`, 'success');
       queryClient.invalidateQueries({ queryKey: ['jobs', data.project_id] });

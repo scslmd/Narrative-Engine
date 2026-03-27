@@ -9,6 +9,7 @@ interface StageListProps {
   onDisable: (stageId: string) => void;
   onArchive: (stageId: string) => void;
   onDelete?: (stageId: string) => void;
+  onAddStage?: (stageKind: StoryFlowStage['stage_kind']) => void;
 }
 
 export default function StageList({
@@ -18,17 +19,20 @@ export default function StageList({
   onDisable,
   onArchive,
   onDelete,
+  onAddStage,
 }: StageListProps) {
   if (!stages || stages.length === 0) {
     return (
       <div className="p-6 text-center">
         <p className="text-gray-500 mb-2">No stages configured</p>
-        <button
-          onClick={() => console.log('Add stage')}
-          className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
-        >
-          Add Stage
-        </button>
+        {onAddStage && (
+          <button
+            onClick={() => onAddStage('brainstorm')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Add Stage
+          </button>
+        )}
       </div>
     );
   }

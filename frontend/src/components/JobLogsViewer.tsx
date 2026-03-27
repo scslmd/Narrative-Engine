@@ -27,7 +27,8 @@ export function JobLogsViewer({ jobId }: Props): React.ReactElement {
 
   const copyToClipboard = (): void => {
     if (logs) {
-      navigator.clipboard.writeText(logs);
+      const logText = logs.entries.map(e => `[${e.timestamp}] [${e.level}] ${e.message}`).join('\n');
+      navigator.clipboard.writeText(logText);
     }
   };
 
@@ -37,7 +38,7 @@ export function JobLogsViewer({ jobId }: Props): React.ReactElement {
         <h3 className="text-sm font-medium text-white">Job Logs</h3>
         <button
           onClick={copyToClipboard}
-          disabled={!logs}
+          disabled={!logs || logs.entries.length === 0}
           className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
         >
           Copy
@@ -51,9 +52,9 @@ export function JobLogsViewer({ jobId }: Props): React.ReactElement {
       >
         {isLoading ? (
           <p className="text-gray-500">Loading logs...</p>
-        ) : logs ? (
+        ) : logs && logs.entries.length > 0 ? (
           <>
-            <pre className="text-green-400 whitespace-pre-wrap">{logs}</pre>
+            <pre className="text-green-400 whitespace-pre-wrap">{logs.entries.map(e => `[${e.timestamp}] [${e.level}] ${e.message}`).join('\n')}</pre>
             <div ref={logsEndRef} />
           </>
         ) : (

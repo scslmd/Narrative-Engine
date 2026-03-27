@@ -88,7 +88,7 @@ def build_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allow_headers=['Authorization', 'Content-Type', 'X-Requested-With', 'X-API-Key'],
-        expose_headers=['X-Total-Count', 'X-Page', 'X-Per-Page'],
+        expose_headers=['X-Total-Count', 'X-Page', 'X-Per-Page', '/health'],
     )
 
     # Add authentication middleware (skips /health endpoint)

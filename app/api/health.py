@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from ..services.circuit_breaker import get_all_circuit_states, CircuitState
+from ..settings import settings
 
 
 router = APIRouter(prefix="/health", tags=["health"])
@@ -65,7 +66,7 @@ async def readiness_check() -> dict:
     
     # Check disk space (warn if < 1GB free)
     try:
-        project_dir = Path(os.getenv("NARRATIVE_PROJECTS_DIR", "data/projects"))
+        project_dir = settings.projects_dir
         if project_dir.exists():
             stat = os.statvfs(project_dir)
             free_bytes = stat.f_bavail * stat.f_frsize
@@ -81,7 +82,7 @@ async def readiness_check() -> dict:
     
     # Check project directory writability
     try:
-        projects_dir = Path(os.getenv("NARRATIVE_PROJECTS_DIR", "data/projects"))
+        projects_dir = settings.projects_dir
         if not projects_dir.exists():
             projects_dir.mkdir(parents=True, exist_ok=True)
         

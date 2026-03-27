@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
 import { getDraftArtifacts, isMockMode } from '../../services/drafting';
-// TODO: Use promoteDraftToManuscript when promotion flow is implemented
-import { promoteDraftToManuscript as _promoteDraftToManuscript } from '../../services/drafting';
-void _promoteDraftToManuscript;
 import DraftPreview from './DraftPreview';
 import PromotionModal from './PromotionModal';
 

@@ -1,33 +1,34 @@
 import { useState } from 'react';
 import type { BranchComparisonRecord, StoryBranch } from '../../types/branches';
+import { createBranchComparison } from '../../services/branches';
 
 interface BranchComparisonProps {
+  projectId: string;
   branches: StoryBranch[];
   onClose: () => void;
 }
 
-export function BranchComparison({ branches, onClose }: BranchComparisonProps) {
+export function BranchComparison({ projectId, branches, onClose }: BranchComparisonProps) {
   const [selectedA, setSelectedA] = useState<string>('');
   const [selectedB, setSelectedB] = useState<string>('');
   const [comparison, setComparison] = useState<BranchComparisonRecord | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCompare = () => {
+  const handleCompare = async () => {
     if (!selectedA || !selectedB) return;
     
-    // Mock comparison for now - would call API in real implementation
-    const mockComparison: BranchComparisonRecord = {
-      comparison_id: `cmp-${Date.now()}`,
-      project_id: branches[0]?.project_id || '',
-      branch_a_id: selectedA,
-      branch_b_id: selectedB,
-      differences: [
-        { object_kind: 'character-profile', branch_a_value: { name: 'John' }, branch_b_value: { name: 'Jonathan' } },
-        { object_kind: 'world-bible-entry', branch_a_value: { location: 'City A' }, branch_b_value: { location: 'Metropolis' } },
-      ],
-      created_at: new Date().toISOString(),
-    };
+    setLoading(true);
+    setError(null);
     
-    setComparison(mockComparison);
+    try {
+      const result = await createBranchComparison(projectId, selectedA, selectedB);
+      setComparison(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to compare branches');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const branchA = branches.find(b => b.branch_id === selectedA);
@@ -41,6 +42,12 @@ export function BranchComparison({ branches, onClose }: BranchComparisonProps) {
           ✕
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md text-sm">
+          {error}
+        </div>
+      )}
 
       {!comparison ? (
         <div className="space-y-4">
@@ -78,10 +85,10 @@ export function BranchComparison({ branches, onClose }: BranchComparisonProps) {
 
           <button
             onClick={handleCompare}
-            disabled={!selectedA || !selectedB}
+            disabled={!selectedA || !selectedB || loading}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            Compare Branches
+            {loading ? 'Comparing...' : 'Compare Branches'}
           </button>
         </div>
       ) : (

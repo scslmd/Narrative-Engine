@@ -385,7 +385,40 @@ backup.delete_backup(backup_id)
 ### Summary
 Fixed 20+ TypeScript compilation errors during frontend build on March 26, 2026. All issues related to type mismatches between API contracts and component expectations.
 
-### Detailed Error Log
+**Latest Build (March 26, 2026):** Fixed 19 merge-blocking tasks including routing fixes, service implementations, and type corrections. Build output: 312KB JS + 55KB CSS (gzipped: ~96KB + 10KB).
+
+### March 26, 2026 - Merge-Blocking Fixes
+
+#### Batch 1: Core Infrastructure
+1. **jobsApi.ts** - Added `project_id` field to `JobCreateRequest` interface
+2. **useJobs hook** - Fixed mutationFn signature for create job to accept phase parameter only
+3. **Layout.tsx** - Changed `themeStore.setMode()` to `uiStore.add('mode', ...)` 
+4. **App.tsx** - Converted workspace modes to nested routes (`/workspace/:projectId/*`)
+5. **Workspace.tsx** - Removed redundant mode rendering (now handled by router)
+
+#### Batch 2: Backend Fixes
+6. **main.py** - Added `/health` to CORS exposed headers
+7. **health.py** - Fixed readiness check to use `settings.operations_db_path`
+8. **main.py** - Added authentication service initialization in app builder
+
+#### Batch 3: Service Implementations
+9. **RoleModelChecker.tsx** - Swapped mock for real checker service, fixed field name (`models` vs `selected_models`)
+10. **flowService.ts** - Implemented real story-development endpoints with proper error handling
+11. **BranchComparison.tsx** - Connected to real branch comparison API
+
+#### Batch 4: Component Fixes
+12. **StageList.tsx** - Wired up add stage callback in empty state, fixed StageKind type ('brainstorm' vs 'PLOT_OUTLINE')
+13. **FindingCard.tsx** - Implemented "Jump to Source" navigation action with projectId prop
+14. **ProjectList.tsx** - Added `secondary_language` form field
+15. **FlowEditor.tsx** - Passed `onAddStage` prop to StageList
+
+#### Batch 5: Cleanup
+16. **DraftPromotion.tsx** - Removed unused import stub for promoteDraftToManuscript
+17. **JobLaunchPanel.tsx** - Fixed hook signature to pass projectId, simplified mutate call
+18. **JobLogsViewer.tsx** - Fixed to handle JobLogsResponse type properly (entries array)
+19. **FindingsList.tsx** - Added required projectId prop to FindingCard
+
+### Detailed Error Log (Previous Fixes)
 
 #### 1. Job Status Hook Type Narrowing Issue
 **File:** `src/hooks/useJobStatus.ts:45`  

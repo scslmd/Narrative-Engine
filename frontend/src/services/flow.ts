@@ -1,36 +1,48 @@
 import type { StoryFlowStage } from '../types/flow';
-import { flowMockService } from './mocks/flowMock';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const flowService = {
   async getStages(projectId: string): Promise<StoryFlowStage[]> {
-    return flowMockService.getStages(projectId);
+    try {
+      const response = await fetch(`${API_BASE}/v1/story-development/flow/stages?project_id=${projectId}`);
+      if (!response.ok) {
+        console.warn('Story-flow stages endpoint not available yet, returning empty array');
+        return [];
+      }
+      const data = await response.json();
+      return data.items || [];
+    } catch (error) {
+      console.warn('Story-flow stages endpoint not available yet, returning empty array');
+      return [];
+    }
   },
 
-  async addStage(projectId: string, stageKind: StoryFlowStage['stage_kind']): Promise<StoryFlowStage> {
-    return flowMockService.addStage(projectId, stageKind);
+  async addStage(_projectId: string, _stageKind: StoryFlowStage['stage_kind']): Promise<StoryFlowStage> {
+    throw new Error('Story-flow stage creation not yet implemented on backend');
   },
 
-  async updateStage(stageId: string, updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
-    return flowMockService.updateStage(stageId, updates);
+  async updateStage(_stageId: string, _updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
+    throw new Error('Story-flow stage update not yet implemented on backend');
   },
 
-  async reorderStages(projectId: string, newOrder: string[]): Promise<StoryFlowStage[]> {
-    return flowMockService.reorderStages(projectId, newOrder);
+  async reorderStages(_projectId: string, _newOrder: string[]): Promise<StoryFlowStage[]> {
+    throw new Error('Story-flow stage reordering not yet implemented on backend');
   },
 
-  async deleteStage(stageId: string): Promise<void> {
-    return flowMockService.deleteStage(stageId);
+  async deleteStage(_stageId: string): Promise<void> {
+    throw new Error('Story-flow stage deletion not yet implemented on backend');
   },
 
   async disableStage(stageId: string): Promise<StoryFlowStage> {
-    return flowMockService.updateStage(stageId, { stage_configuration_state: 'DISABLED' });
+    return this.updateStage(stageId, { stage_configuration_state: 'DISABLED' });
   },
 
   async archiveStage(stageId: string): Promise<StoryFlowStage> {
-    return flowMockService.updateStage(stageId, { stage_configuration_state: 'ARCHIVED' });
+    return this.updateStage(stageId, { stage_configuration_state: 'ARCHIVED' });
   },
 
   async renameStage(stageId: string, displayName: string): Promise<StoryFlowStage> {
-    return flowMockService.updateStage(stageId, { display_name: displayName });
+    return this.updateStage(stageId, { display_name: displayName });
   },
 };

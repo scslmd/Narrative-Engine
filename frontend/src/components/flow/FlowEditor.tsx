@@ -173,6 +173,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
             onDisable={handleDisable}
             onArchive={handleArchive}
             onDelete={handleDelete}
+            onAddStage={handleAddStage}
           />
         )}
       </div>
