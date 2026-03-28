@@ -22,6 +22,7 @@ The current codebase includes:
 - a FastAPI backend for projects, jobs, models, and role-model checking
 - SQLite-backed persistence for operational state and project artifact indexing
 - a React + TypeScript frontend rooted at `frontend/` with application code in `frontend/src/`
+- a mixed HTTP surface: versioned `/v1/...` routes for jobs, models, story-development, and checker flows, plus unversioned routes that still exist for projects, auth, backup, and health
 - accepted-and-polled job and checker APIs backed by a local lease-claim executor
 - runtime-backed role-model checker execution with inspectable step and lineage projections
 - CORS middleware configured for localhost:5173 and localhost:3000
@@ -87,7 +88,7 @@ Current verified frontend baseline:
 - `npm run typecheck`
 - `npm run build`
 
-See [docs/Frontend Development Readiness.md](docs/Frontend Development Readiness.md) for complete setup instructions.
+See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for the current active doc set.
 
 ## Continuous Testing
 
@@ -98,9 +99,9 @@ See [docs/Frontend Development Readiness.md](docs/Frontend Development Readiness
 - Workflow command:
   - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
-Latest local full-suite verification (March 27, 2026):
+Latest local full-suite verification (March 28, 2026):
 
-- `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+- `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed (314KB JS + 28KB CSS, gzipped: ~97KB + 5KB)
@@ -109,6 +110,11 @@ Latest local full-suite verification (March 27, 2026):
 
 ## Core Docs
 
+- [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md)
+- [docs/Project Index v0.1.md](docs/Project%20Index%20v0.1.md)
+- [docs/Validation Notes v0.1.md](docs/Validation%20Notes%20v0.1.md)
+- [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md)
+- [BACKEND_API_REFERENCE.md](BACKEND_API_REFERENCE.md)
 - [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md)
 - [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md)
 - [docs/Async Protocol Blueprint v0.1.md](docs/Async%20Protocol%20Blueprint%20v0.1.md)
@@ -121,10 +127,8 @@ Latest local full-suite verification (March 27, 2026):
 - [docs/Runtime Telemetry Contract v0.1.md](docs/Runtime%20Telemetry%20Contract%20v0.1.md)
 - [docs/Step and Lineage API Test Matrix v0.1.md](docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)
 
-## Frontend Docs
+## Planning Docs
 
-- [TODO.md](TODO.md) - 36 frontend tasks with backend schemas
-- [docs/Frontend API Alignment Issues.md](docs/Frontend%20API%20Alignment%20Issues.md) - Comprehensive API analysis
-- [docs/Frontend API Alignment Summary.md](docs/Frontend%20API%20Alignment%20Summary.md) - Quick reference
-- [docs/API Alignment Verification.md](docs/API%20Alignment%20Verification.md) - Endpoint verification
-- [docs/Frontend Development Readiness.md](docs/Frontend%20Development%20Readiness.md) - Setup checklist
+- [TODO.md](TODO.md) - active backlog and implementation notes
+- [docs/Frontend API Alignment Issues.md](docs/Frontend%20API%20Alignment%20Issues.md) - detailed frontend/backend alignment analysis
+- [docs/archive/](docs/archive) - superseded readiness checklists, review dumps, and temporary task materials

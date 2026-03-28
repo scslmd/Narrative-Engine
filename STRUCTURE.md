@@ -170,9 +170,11 @@ The specification and planning docs live under [`docs/`](docs/).
 - Core navigation:
   - [`docs/Documentation Guide v0.1.md`](docs/Documentation%20Guide%20v0.1.md)
   - [`docs/Project Index v0.1.md`](docs/Project%20Index%20v0.1.md)
+  - [`docs/Validation Notes v0.1.md`](docs/Validation%20Notes%20v0.1.md)
+  - [`docs/QUALITY_GUIDELINES.md`](docs/QUALITY_GUIDELINES.md)
 - Product and system contracts:
   - [`docs/Narrative SRS v0.3.md`](docs/Narrative%20SRS%20v0.3.md)
-  - [`docs/Frontend Design SRS v0.4.md`](docs/Frontend%20Design%20SRS%20v0.4.md)
+  - [`docs/Frontend Design SRS v0.5.md`](docs/Frontend%20Design%20SRS%20v0.5.md)
   - [`docs/Story Development Product Spec v0.1.md`](docs/Story%20Development%20Product%20Spec%20v0.1.md)
   - [`docs/Story Development Canonical Contract v0.1.md`](docs/Story%20Development%20Canonical%20Contract%20v0.1.md)
   - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md)

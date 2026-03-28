@@ -1,0 +1,237 @@
+[
+  {
+    "task_id": "ea913cd6-40ef-4135-9d47-2de5584d329c",
+    "purpose": "Normalize the new story-development router contracts so every newly added endpoint in `build_story_development_router()` passes only existing, service-compatible arguments. Scope is limited to `POST /foundation`, `PATCH /foundation`, `PATCH /characters/{character_id}`, `POST /relationships`, `POST /world-bible`, `PATCH /world-bible/{entry_type}/{title}`, `GET /characters/{character_id}/relationships`, `GET /arcs/candidates`, and `GET /arcs/stage-maps`. Do not introduce new endpoint families, new persistence fields, or any non-requested refactor; only reconcile request/response mapping, required field handling, and method invocations so the current backend stops throwing 500s on first FE calls.",
+    "responsible_file": "app/api/story_development.py",
+    "knowledge_base": [
+      "build_story_development_router",
+      "FoundationCreateRequest",
+      "FoundationUpdateRequest",
+      "CharacterProfileUpdateRequest",
+      "RelationshipEdgeCreateRequest",
+      "WorldBibleEntryCreateRequest",
+      "WorldBibleEntryUpdateRequest",
+      "FoundationWriteResponse",
+      "CharacterProfile",
+      "RelationshipEdge",
+      "WorldBibleEntry",
+      "ArcCandidateListResponse",
+      "ArcStageMapListResponse",
+      "FoundationService.create_foundation_revision",
+      "FoundationService.update_foundation_revision",
+      "StoryKnowledgeService.upsert_character_profile",
+      "StoryKnowledgeService.upsert_relationship_edge",
+      "StoryKnowledgeService.upsert_world_bible_entry"
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "definitions": [
+          "app/api/story_development.py::FoundationCreateRequest",
+          "app/api/story_development.py::FoundationUpdateRequest",
+          "app/api/story_development.py::CharacterProfileUpdateRequest",
+          "app/api/story_development.py::RelationshipEdgeCreateRequest",
+          "app/api/story_development.py::WorldBibleEntryCreateRequest",
+          "app/api/story_development.py::WorldBibleEntryUpdateRequest"
+        ],
+        "route_inputs": {
+          "POST /story-development/foundation": "Must supply the exact fields required by `FoundationProfileInput.from_mapping()`: `premise`, `logline`, `thematic_spine`, `emotional_promise`, `tone_and_voice_direction`, `target_audience`, `narrative_constraints`, `complexity_level`, `success_definition`.",
+          "PATCH /story-development/characters/{character_id}`": "Must merge only service-supported `CharacterProfile` fields; exclude `relationship_edges` from the upsert payload.",
+          "POST /story-development/relationships": "Map request fields to `source_character_id`, `target_character_id`, `relation_kind`, `summary`, `tension`, `notes`, and `edge_id` only.",
+          "POST/PATCH /story-development/world-bible": "Map request fields to the existing `WorldBibleEntry` contract: `summary`, `canonical_facts`, `related_character_ids`, `source_artifacts`, `visibility_scope`, `continuity_warnings`, `writer_notes`."
+        }
+      },
+      "output_data_schema": {
+        "definitions": [
+          "app/api/story_development.py::FoundationReadResponse",
+          "app/api/story_development.py::FoundationWriteResponse",
+          "app/schemas/story_development.py::CharacterProfile",
+          "app/schemas/story_development.py::RelationshipEdge",
+          "app/schemas/story_development.py::WorldBibleEntry",
+          "app/api/story_development.py::ArcCandidateListResponse",
+          "app/api/story_development.py::ArcStageMapListResponse"
+        ],
+        "response_constraints": [
+          "Route handlers must return the already-defined schema objects without accessing nonexistent attributes such as `existing.content`, `existing.related_entry_ids`, or `existing.importance_level`.",
+          "GET list route metadata must remain internally consistent with the actual service ordering."
+        ]
+      },
+      "external_refs": [
+        "AGENTS.md -> Frontend Service Pattern",
+        "AGENTS.md -> API Parameter Alignment Guidelines",
+        "AGENTS.md -> Status Code Semantics",
+        "BACKEND_API_REFERENCE.md"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI route handlers already defined in `build_story_development_router`",
+      "Existing request/response models in `app/api/story_development.py` and `app/schemas/story_development.py`",
+      "Existing service methods in `app/services/foundation.py` and `app/services/story_knowledge.py`",
+      "Existing `HTTPException` 400/404 handling patterns already used in this module"
+    ],
+    "expected_outcomes": [
+      "`POST /story-development/foundation` no longer raises `TypeError` for missing required service fields; it either succeeds with `FoundationWriteResponse` or returns a controlled 4xx.",
+      "`PATCH /story-development/characters/{character_id}` no longer passes `relationship_edges` into `upsert_character_profile()`.",
+      "`POST /story-development/relationships` invokes `StoryKnowledgeService.upsert_relationship_edge()` with the exact supported keyword arguments.",
+      "`POST` and `PATCH` world-bible routes stop dereferencing nonexistent `WorldBibleEntry` attributes and return schema-valid responses.",
+      "Router calls to relationship and arc list endpoints reference real service methods only.",
+      "No unrelated endpoints, response models, or persistence tables are modified."
+    ]
+  },
+  {
+    "task_id": "b6bdd235-3450-44af-b013-2dc4f5fa972d",
+    "purpose": "Complete the missing `StoryKnowledgeService` read surface required by the new router by implementing only the absent methods `list_relationship_edges_for_character()`, `list_arc_candidates()`, and `list_arc_stage_maps()`. Keep the implementation as thin projections over existing repository methods and current schema converters; do not redesign ranking, selection, persistence, or decision-record behavior.",
+    "responsible_file": "app/services/story_knowledge.py",
+    "knowledge_base": [
+      "StoryKnowledgeService",
+      "StoryDevelopmentRepository.list_relationship_edges_for_character",
+      "StoryDevelopmentRepository.list_arc_candidates",
+      "StoryDevelopmentRepository.list_arc_stage_maps",
+      "StoryKnowledgeService._relationship_edge_from_record",
+      "StoryKnowledgeService._arc_candidate_from_record",
+      "StoryKnowledgeService._arc_stage_map_from_record",
+      "StoryKnowledgeService._normalize_text",
+      "StoryKnowledgeService.get_character_profile",
+      "StoryKnowledgeService.get_arc_stage_map"
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "definitions": [
+          "`list_relationship_edges_for_character(project_id: str, character_id: str)`",
+          "`list_arc_candidates(project_id: str)`",
+          "`list_arc_stage_maps(project_id: str)`"
+        ],
+        "parameter_rules": [
+          "Normalize `project_id` and `character_id` with the same `_normalize_text()` rules used elsewhere in the service.",
+          "Only use repository-backed data that already exists in `app/persistence/story_development.py`."
+        ]
+      },
+      "output_data_schema": {
+        "definitions": [
+          "`tuple[RelationshipEdge, ...]`",
+          "`tuple[ArcCandidate, ...]`",
+          "`tuple[ArcStageMap, ...]`"
+        ],
+        "ordering_rules": [
+          "Relationship edges should be returned in deterministic edge-id order.",
+          "Arc candidates should be returned in deterministic name/arc-id order consistent with repository projection intent.",
+          "Arc stage maps should be returned in deterministic arc-id order."
+        ]
+      },
+      "external_refs": [
+        "app/persistence/story_development.py repository list methods",
+        "tests/test_story_knowledge_service.py",
+        "AGENTS.md -> Contract Alignment Rules"
+      ]
+    },
+    "utilized_features": [
+      "Existing repository list methods in `StoryDevelopmentRepository`",
+      "Existing schema conversion helpers already present in `StoryKnowledgeService`",
+      "Existing normalization and not-found validation patterns in `StoryKnowledgeService`"
+    ],
+    "expected_outcomes": [
+      "`hasattr(StoryKnowledgeService, 'list_relationship_edges_for_character')`, `hasattr(..., 'list_arc_candidates')`, and `hasattr(..., 'list_arc_stage_maps')` all become true through concrete method implementations.",
+      "Each new method returns schema objects, not raw repository records.",
+      "The methods introduce no write behavior, no schema changes, and no new persistence logic.",
+      "No existing comparison, selection, or stage-map update behavior changes outside the added read/list surface."
+    ]
+  },
+  {
+    "task_id": "23a653dc-a7bc-4cb2-8280-a5102ec92fdb",
+    "purpose": "Harden `FoundationService` input coercion so invalid or incomplete mappings fail through `FoundationValidationError` instead of leaking raw `TypeError`/`KeyError` from `FoundationProfileInput.from_mapping()` or `FoundationProfilePatch.from_mapping()`. Keep the persisted foundation shape unchanged; do not add new foundation fields or extend repository storage in this task.",
+    "responsible_file": "app/services/foundation.py",
+    "knowledge_base": [
+      "FoundationProfileInput.from_mapping",
+      "FoundationProfilePatch.from_mapping",
+      "FoundationService._coerce_input",
+      "FoundationService._coerce_patch",
+      "FoundationValidationError",
+      "_normalize_text",
+      "_normalize_optional_text",
+      "_normalize_text_list"
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "definitions": [
+          "Required create fields: `premise`, `logline`, `thematic_spine`, `emotional_promise`, `tone_and_voice_direction`, `target_audience`, `narrative_constraints`, `complexity_level`, `success_definition`.",
+          "Patch fields: any non-empty subset of the existing persisted foundation fields only."
+        ],
+        "failure_contract": [
+          "Missing required keys or non-string values must produce `FoundationValidationError` with a deterministic message suitable for router 400 handling.",
+          "Patch coercion must not expose raw Python exceptions to callers."
+        ]
+      },
+      "output_data_schema": {
+        "definitions": [
+          "`FoundationWriteResult` for valid creates/updates",
+          "`FoundationValidationError` for invalid inputs"
+        ]
+      },
+      "external_refs": [
+        "tests/test_foundation_service.py",
+        "AGENTS.md -> Backend Guidelines -> Exceptions"
+      ]
+    },
+    "utilized_features": [
+      "Existing `FoundationValidationError` exception type",
+      "Existing `FoundationProfileInput` and `FoundationProfilePatch` models",
+      "Existing `create_foundation_revision()` and `update_foundation_revision()` flow"
+    ],
+    "expected_outcomes": [
+      "Calling `create_foundation_revision()` with an incomplete mapping no longer raises raw `TypeError` or `KeyError`.",
+      "Calling `update_foundation_revision()` with an invalid patch no longer leaks raw coercion exceptions.",
+      "Valid create/update behavior and revision persistence stay unchanged.",
+      "No new foundation fields, repository columns, or response-schema fields are added."
+    ]
+  },
+  {
+    "task_id": "6ecb3f28-2f04-474d-8cf1-72e87419c90b",
+    "purpose": "Add route-level regression coverage for the newly added backend endpoints so the specific review findings become test-detectable. Keep the work bounded to API tests for success/error semantics on the existing routes; do not add unrelated integration scenarios or broad fixture refactors.",
+    "responsible_file": "tests/test_story_development_api.py",
+    "knowledge_base": [
+      "_build_client",
+      "_seed_story_development_data",
+      "FastAPI TestClient usage patterns already present in this file",
+      "Existing API assertion style in `test_story_development_api_returns_projected_lists_and_items`",
+      "Existing 400/404 assertion style in `test_story_development_api_validates_filter_pairs_and_returns_404s`"
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "definitions": [
+          "HTTP requests against `/story-development/foundation`",
+          "HTTP requests against `/story-development/characters/{character_id}`",
+          "HTTP requests against `/story-development/relationships`",
+          "HTTP requests against `/story-development/world-bible`",
+          "HTTP requests against `/story-development/characters/{character_id}/relationships`",
+          "HTTP requests against `/story-development/arcs/candidates`",
+          "HTTP requests against `/story-development/arcs/stage-maps`"
+        ],
+        "required_cases": [
+          "At least one success path per newly fixed endpoint family.",
+          "At least one invalid foundation payload path that proves the route returns a controlled 4xx instead of a 500.",
+          "At least one not-found or cross-project path where the route contract already implies 404 behavior."
+        ]
+      },
+      "output_data_schema": {
+        "definitions": [
+          "Pytest assertions on status code, selected response fields, and deterministic list ordering metadata."
+        ]
+      },
+      "external_refs": [
+        "AGENTS.md -> Build Verification",
+        "AGENTS.md -> Testing Patterns",
+        "Review findings captured for `app/api/story_development.py`"
+      ]
+    },
+    "utilized_features": [
+      "Existing `TestClient` fixture helpers in this test module",
+      "Existing repository seeding patterns in this test module",
+      "Existing schema-valid payloads from service tests where helpful"
+    ],
+    "expected_outcomes": [
+      "The API test module contains explicit coverage for every reviewed endpoint family that previously failed at runtime.",
+      "A minimal invalid foundation create request is asserted as a controlled client error rather than an unhandled server exception.",
+      "Character update, relationship create, world-bible write, and missing list-method endpoints all have regression coverage that would fail if the P1 bugs reappear.",
+      "No unrelated test modules or shared fixtures are modified."
+    ]
+  }
+]

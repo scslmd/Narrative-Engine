@@ -3,12 +3,19 @@
 Current project layers:
 
 - `STRUCTURE.md`: repository map for folders and key files
-- `docs/`: product, frontend, protocol, and validation documents
+- `docs/`: current product, frontend, protocol, quality, and validation documents
 - `docs/archive/`: superseded notes and historical decisions retained for reference
 - `app/`: FastAPI app, persistence layer, schemas, and services
-- `frontend/`: writer workflow prototype
+- `frontend/`: React + TypeScript writer workspace
 - `data/`: sample projects, generated artifacts, and local runtime data roots
 - `tests/`: smoke and persistence coverage
+
+Current verified validation baseline:
+
+- `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
+- `cd frontend && npm run lint` -> passed
+- `cd frontend && npm run typecheck` -> passed
+- `cd frontend && npm run build` -> passed
 
 Implemented foundation:
 
@@ -35,10 +42,12 @@ Implemented foundation:
 Current planning reference docs:
 
 - `docs/Narrative SRS v0.3.md`
-- `docs/Frontend Design SRS v0.4.md`
+- `docs/Frontend Design SRS v0.5.md`
 - `docs/Story Development Product Spec v0.1.md`
 - `docs/Story Development Canonical Contract v0.1.md`
 - `docs/Story Arc Paradigm Blueprint v0.1.md`
+- `docs/Validation Notes v0.1.md`
+- `docs/QUALITY_GUIDELINES.md`
 
 Major work still ahead:
 

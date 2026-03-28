@@ -15,7 +15,20 @@ Archived documents:
 - `docs/archive/Merge Blocking Tasks`
 - `docs/archive/Mock Up.png`
 - `docs/archive/codebase_review.md`
-- `docs/archive/AGENTS.md`
+- `docs/archive/ADVERSE_REVIEW.md`
+- `docs/archive/API Alignment Verification.md`
+- `docs/archive/API Implementation Summary.md`
+- `docs/archive/Backend Features Not Yet Implemented.md`
+- `docs/archive/code_optimization_todo.md`
+- `docs/archive/EXECUTOR_READINESS_CHECKLIST.md`
+- `docs/archive/executor_frontend_merge_tasks.json`
+- `docs/archive/executor_pre_fe_backend_review_tasks.json`
+- `docs/archive/Frontend API Alignment Summary.md`
+- `docs/archive/Frontend Design SRS v0.4.md`
+- `docs/archive/Frontend Design SRS v0.5.md.backup`
+- `docs/archive/Frontend Development Readiness.md`
+- `docs/archive/Frontend Task Parallelism Analysis.md`
+- `docs/archive/LocalLLM_TODO.md`
 - `docs/archive/SKILLS.md`
 - `docs/archive/TODO.md.backup`
 - `docs/archive/requirements.txt`

@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `424 passed`
+  - `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -328,16 +328,17 @@ Do not call the repo merge-ready unless all four of these are green:
 
 ### Versioning
 
-- All frontend-facing HTTP routes use `/v1/...`.
-- The shared frontend client already points at `/v1`.
+- The current HTTP surface is mixed.
+- The shared frontend client points at `/v1` for jobs, models, story-development, and checker routes.
+- Projects, auth, backup, and health routes still exist as unversioned server routes and should be verified before assuming a versioned alias.
 
 ### Representative Endpoints
 
 #### Projects
-- `GET /v1/projects`
-- `POST /v1/projects/create`
-- `GET /v1/projects/{project_id}`
-- `DELETE /v1/projects/{project_id}`
+- `GET /projects`
+- `POST /projects/create`
+- `GET /projects/{project_id}`
+- `DELETE /projects/{project_id}`
 
 #### Story Development - Branching
 - `GET /v1/story-development/branches?project_id={id}`
@@ -412,15 +413,18 @@ Do not call the repo merge-ready unless all four of these are green:
 - `GET /v1/story-development/arcs/stage-maps?project_id={id}`
 
 #### Jobs
-- `POST /v1/jobs`
-- `GET /v1/jobs/{job_id}`
-- `GET /v1/jobs/{job_id}/events`
+- `POST /v1/jobs/create`
+- `GET /v1/jobs/{job_id}/status`
 - `GET /v1/jobs/{job_id}/attempts`
 - `GET /v1/jobs/{job_id}/logs`
+- `GET /v1/jobs/{job_id}/steps`
+- `GET /v1/jobs/{job_id}/lineage`
+- `POST /v1/jobs/{job_id}/retry`
 
 #### Health & Metrics
-- `GET /v1/health`
-- `GET /v1/health/metrics`
+- `GET /health/`
+- `GET /health/ready`
+- `GET /health/metrics`
 
 ### Status Code Semantics
 

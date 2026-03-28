@@ -2,15 +2,16 @@
 
 ## Current Truth
 
-- The repository is currently clean on `codex/main`.
+- The active documentation surface is `README.md`, `AGENTS.md`, `BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+  - `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
 - The React frontend is merged and is now the default shipped frontend surface.
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
 - The remaining work is primarily backend expansion, deeper persistence hardening, and frontend features that still depend on backend APIs not yet implemented.
+- Temporary review notes, executor task dumps, and stale readiness checklists belong under `docs/archive/`, not in the active docs surface.
 
 ## Active Backlog
 
