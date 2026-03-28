@@ -18,6 +18,15 @@
   - `/workspace/:projectId/inspect/:jobId`
 - Inspect deep links are expected to render from the route, and review-driven "Jump to Source" should resolve an inspect run before navigation.
 
+## Agent Guardrails
+
+- Perform only the task that was explicitly requested or assigned.
+- Do not expand scope with opportunistic refactors, adjacent feature work, or speculative cleanup unless that work is required to complete the task at hand.
+- Do not "wonder" about broader improvements during execution. Verify the relevant code, make the bounded change, and stop.
+- If you notice unrelated issues, document them only when they are true blockers. Do not edit unrelated files just because they are nearby.
+- Prefer the smallest complete change that satisfies the requested contract and validation requirements.
+- When a task is documentation or review only, keep code untouched unless the task explicitly calls for code changes.
+
 ## Quick Start Commands
 
 ### Frontend

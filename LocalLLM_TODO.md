@@ -545,7 +545,7 @@
       ]
     },
     "utilized_features": [
-      "existing fetch-based service pattern",
+      "shared Axios client in `frontend/src/lib/api.ts`",
       "existing decision backend endpoints"
     ],
     "expected_outcomes": [
@@ -554,46 +554,17 @@
     ]
   },
   {
-    "task_id": "58d7d451-ac11-41f5-ba85-e2ebae3ed6e7",
-    "purpose": "Replace FE-024B UI placeholders with real decision navigation behavior. The component should stop assuming the first node is always root and stop logging option clicks to the console; instead it should derive the active node and path from actual decision data.",
-    "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/decisions/DecisionTree.tsx",
-    "knowledge_base": [
-      "currentNodeId local state",
-      "getDecisions/getDecisionPath queries",
-      "DecisionNode component contract",
-      "StoryDecisionNode fields"
-    ],
-    "references_and_schema": {
-      "input_data_schema": "Decision node arrays from `getDecisions(projectId)` and path responses from `getDecisionPath(nodeId)`.",
-      "output_data_schema": "Rendered tree/path UI that selects nodes from backend-provided ids and surfaces empty/loading states without console-only actions.",
-      "external_refs": [
-        "F:/Dev/Narrative-Engine/frontend/src/components/decisions/DecisionTree.tsx",
-        "F:/Dev/Narrative-Engine/frontend/src/components/decisions/DecisionNode.tsx",
-        "F:/Dev/Narrative-Engine/frontend/src/services/decisions.ts"
-      ]
-    },
-    "utilized_features": [
-      "@tanstack/react-query",
-      "existing DecisionNode component",
-      "React local state"
-    ],
-    "expected_outcomes": [
-      "Selecting an option updates the active node through real `next_node_id` data instead of console logging only.",
-      "The component no longer hard-codes `nodes[0]` as the root when backend data provides parent relationships."
-    ]
-  },
-  {
     "task_id": "0a74f666-5638-4413-b55e-d11b75d65431",
-    "purpose": "Align the inspect-links service with FE-024C filtering and detail retrieval so the UI can query by `project_id`, `finding_id`, and `run_id` without inventing route shapes. This task should keep the live `/v1/story-development/review/inspect-links` contract as the source of truth.",
+    "purpose": "Keep the FE-024C inspect-links service aligned with the shipped review API contract so list reads continue to use `project_id`, `object_kind`, `object_id`, and `run_id` exactly as the backend expects. This task should preserve the existing detail-read contract and avoid reintroducing the removed `finding_id` query shape.",
     "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/services/inspectLinks.ts",
     "knowledge_base": [
       "getInspectLinks()",
       "getInspectLink()",
-      "URLSearchParams usage",
+      "shared Axios client usage via `api.get()`",
       "InspectRunLink type"
     ],
     "references_and_schema": {
-      "input_data_schema": "Optional query params `project_id`, `finding_id`, and `run_id`; path param `link_id` for detail reads.",
+      "input_data_schema": "Optional query params `project_id`, `object_kind`, `object_id`, and `run_id`; path param `link_id` for detail reads.",
       "output_data_schema": "Resolved `InspectRunLink[]` list envelopes and single `InspectRunLink` detail objects.",
       "external_refs": [
         "F:/Dev/Narrative-Engine/frontend/src/services/inspectLinks.ts",
@@ -602,40 +573,40 @@
       ]
     },
     "utilized_features": [
-      "existing fetch-based service pattern",
-      "URLSearchParams"
+      "shared Axios client in `frontend/src/lib/api.ts`",
+      "existing inspect-links backend endpoints"
     ],
     "expected_outcomes": [
-      "List fetches preserve only the supported query params `project_id`, `finding_id`, and `run_id`.",
+      "List fetches preserve only the supported query params `project_id`, `object_kind`, `object_id`, and `run_id`.",
       "Detail fetches return the backend object unchanged."
     ]
   },
   {
     "task_id": "d0d3db03-34d1-429d-a420-f198de9cd1c1",
-    "purpose": "Finish FE-024C UI behavior so inspect-link cards become actionable navigation instead of passive data cards. The list component should connect selected links to existing inspect/review workspace state using already available route/store mechanisms.",
+    "purpose": "Finish the remaining FE-024C list behavior by keeping filter inputs and navigation wiring aligned with the shipped inspect-links service contract. The component should filter by `object_kind`, `object_id`, `run_id`, and `run_kind`, and it should only trigger inspect/review navigation patterns that the current route-driven workspace can render.",
     "responsible_file": "F:/Dev/Narrative-Engine/frontend/src/components/inspectLinks/InspectRunLinksList.tsx",
     "knowledge_base": [
-      "filterByFinding/filterByRunId/filterByKind local state",
+      "filterByObjectKind/filterByObjectId/filterByRunId/filterByKind local state",
       "getInspectLinks() query",
       "InspectRunLinkCard rendering",
       "existing workspace/inspect navigation patterns in the app"
     ],
     "references_and_schema": {
-      "input_data_schema": "Component prop `projectId?: string` plus filters `finding_id`, `run_id`, and `run_kind`.",
-      "output_data_schema": "Rendered list that filters live inspect-link records and triggers inspect/review navigation or state updates when a card is selected.",
+      "input_data_schema": "Component prop `projectId?: string` plus filters `object_kind`, `object_id`, `run_id`, and `run_kind`.",
+      "output_data_schema": "Rendered list that filters live inspect-link records and triggers only real inspect/review navigation or state updates when a card is selected.",
       "external_refs": [
         "F:/Dev/Narrative-Engine/frontend/src/components/inspectLinks/InspectRunLinksList.tsx",
         "F:/Dev/Narrative-Engine/frontend/src/components/inspectLinks/InspectRunLinkCard.tsx",
-        "F:/Dev/Narrative-Engine/frontend/src/stores/uiStore.ts"
+        "F:/Dev/Narrative-Engine/frontend/src/components/inspect/InspectMode.tsx"
       ]
     },
     "utilized_features": [
       "@tanstack/react-query",
-      "existing inspect/review UI state patterns",
+      "existing route-driven inspect/review UI state patterns",
       "existing InspectRunLinkCard component"
     ],
     "expected_outcomes": [
-      "The list still supports filter-by-finding, filter-by-run, and filter-by-kind.",
+      "The list supports filter-by-object-kind, filter-by-object-id, filter-by-run-id, and filter-by-kind.",
       "Selecting a link triggers a real inspect/review context change instead of rendering static text only."
     ]
   },
