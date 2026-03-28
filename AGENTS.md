@@ -228,6 +228,9 @@ def test_create_branch(tmp_path):
 | Circuit breaker open | Wait for recovery timeout (60s) or fix underlying backend issue |
 | Idempotency key conflict | Ensure payload is identical; different payloads require new keys |
 | Backup restore fails | Check disk space (>10% free required), verify backup file exists |
+| Wrong HTTP status code on endpoint | 201 for CREATE, 200 for UPDATE - check existing tests first |
+| Frontend-backend parameter mismatch | Backend uses snake_case (`project_id`); convert from camelCase in services |
+| Navigation to invalid target | Always validate `source_object_kind` and `source_object_id` before navigating |
 
 ## API Patterns
 
@@ -712,3 +715,134 @@ These are the concrete failure patterns that had to be corrected before the repo
   - `cd frontend && npm run typecheck`
   - `cd frontend && npm run build`
 - Do not declare the repo clean until all four are green.
+
+---
+
+## API Parameter Alignment Guidelines (March 27, 2026)
+
+### Critical: Frontend-Backend Contract Synchronization
+
+When modifying API endpoints or service functions, always verify parameter alignment across both layers:
+
+#### Backend → Frontend Flow
+1. **Check existing tests first** - Tests encode the expected contract. If a test expects `status_code=200`, changing to `201` breaks semantic correctness.
+2. **HTTP status code semantics matter:**
+   - `201 Created` = Resource creation (POST that creates new entity)
+   - `200 OK` = Update/selection operation (POST/PATCH that modifies existing state)
+   - Example: `/branches/active` switches which branch is active → **UPDATE** → 200 OK
+3. **Query parameter naming:** Backend uses snake_case (`project_id`, `branch_id`). Frontend services must pass exact names.
+
+#### Frontend Service Layer Pattern
+```typescript
+// CORRECT pattern for optional query parameters
+export async function getComparison(
+  comparisonId: string,
+  projectId?: string  // Optional, matches backend flexibility
+): Promise<BranchComparisonRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;  // snake_case for API
+  
+  return axios.get(
+    `${API_BASE}/story-development/branches/comparisons/${comparisonId}`,
+    { params }
+  ).then(r => r.data);
+}
+```
+
+#### Common Pitfalls to Avoid
+
+| Mistake | Correct Approach |
+|---------|------------------|
+| Adding `status_code=201` to update endpoints | Use 200 for updates, 201 only for creates |
+| Frontend camelCase params (`projectId`) sent to backend | Always convert to snake_case (`project_id`) in API calls |
+| Assuming all GET endpoints accept same query params | Check each endpoint's router definition individually |
+| Modifying service without checking calling components | Trace the call chain: component → hook → service → API |
+
+#### Verification Checklist for Parameter Changes
+
+Before committing any API parameter modification:
+
+```bash
+# 1. Run backend tests to verify contract
+python -m pytest tests/test_story_development_branches.py -v
+
+# 2. Check frontend typecheck catches mismatches
+cd frontend && npm run typecheck
+
+# 3. Build to catch runtime issues
+cd frontend && npm run build
+```
+
+#### Example: Adding Optional Project Filter
+
+**Backend (app/api/story_development.py):**
+```python
+@router.get("/branches/comparisons/{comparison_id}")
+def get_comparison(comparison_id: str, project_id: str | None = None):
+    # project_id optional for filtering/validation
+    return branching_service.get_branch_comparison(comparison_id)
+```
+
+**Frontend (frontend/src/services/branches.ts):**
+```typescript
+export async function getComparison(
+  comparisonId: string,
+  projectId?: string  // Optional parameter
+): Promise<BranchComparisonRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;  // Convert to snake_case
+  
+  return axios.get(
+    `${API_BASE}/story-development/branches/comparisons/${comparisonId}`,
+    { params }
+  ).then(r => r.data);
+}
+```
+
+**Key Principle:** Optional parameters on backend should be optional on frontend. Never make frontend required what backend makes optional.
+
+---
+
+## Database Module Pattern (March 27, 2026)
+
+### Creating Centralized Utility Modules
+
+When health checks or other modules need database access without full persistence layer:
+
+**Create `app/database.py`:**
+```python
+from __future__ import annotations
+import sqlite3
+from pathlib import Path
+from app.persistence.sqlite import connect as _connect
+from app.settings import settings
+
+def get_db_connection(db_path: Path | None = None) -> sqlite3.Connection:
+    """Get raw SQLite connection for health checks and utilities."""
+    target_path = db_path or settings.operations_db_path
+    return _connect(target_path)
+
+def check_database_health(
+    db_path: Path | None = None
+) -> tuple[bool, str | None]:
+    """Verify database connectivity. Returns (healthy, error_message)."""
+    try:
+        conn = get_db_connection(db_path)
+        conn.execute("SELECT 1")
+        conn.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+```
+
+**Use in health endpoint:**
+```python
+from app.database import check_database_health
+
+@router.get("/health")
+def health_check():
+    db_healthy, db_error = check_database_health()
+    # ... build response
+```
+
+This pattern avoids circular imports and provides clean separation between raw DB access and persistence layer.
