@@ -24,10 +24,17 @@ from app.schemas import (
     StoryBranch,
     StoryBranchState,
     StoryDecisionNode,
+    StoryFlowDefinition,
+    StoryFlowStage,
     StorySuggestionLifecycleState,
 )
 from app.schemas.base import StrictModel
 from app.services.drafting import DraftingNotFoundError, DraftingService
+from app.services.editable_flow import (
+    EditableFlowNotFoundError,
+    EditableFlowService,
+    EditableFlowValidationError,
+)
 from app.services.planning import PlanningNotFoundError, PlanningService
 from app.services.review_routing import ReviewRoutingNotFoundError, ReviewRoutingService, ReviewRoutingValidationError
 from app.services.story_branching import (
@@ -216,6 +223,33 @@ class BranchMergeDecisionListResponse(StrictModel):
     meta: dict[str, str] = Field(default_factory=dict)
 
 
+class FlowStageListResponse(StrictModel):
+    project_id: str
+    items: list[StoryFlowStage] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class FlowStageCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    stage_kind: str = Field(..., min_length=1, max_length=100)
+    display_name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    depends_on: list[str] = Field(default_factory=list)
+    insert_after_stage_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+
+
+class FlowStageUpdateRequest(StrictModel):
+    display_name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=2000)
+    depends_on: list[str] | None = None
+    writer_notes: str | None = Field(None, max_length=5000)
+    custom_prompt_guidance: str | None = Field(None, max_length=10000)
+
+
+class FlowStageReorderRequest(StrictModel):
+    stage_order: list[str] = Field(..., min_length=1)
+
+
 def build_story_development_router(
     repository: StoryDevelopmentRepository,
     prefix: str = "/story-development",
@@ -226,6 +260,7 @@ def build_story_development_router(
     planning_service = PlanningService(repository)
     branching_service = StoryBranchingService(repository)
     review_service = ReviewRoutingService(repository, drafting_service=drafting_service, planning_service=planning_service)
+    flow_service = EditableFlowService()
 
     @router.get("/branches", response_model=StoryBranchListResponse)
     def list_story_branches(project_id: str) -> StoryBranchListResponse:
@@ -235,7 +270,7 @@ def build_story_development_router(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return StoryBranchListResponse(project_id=project_id, items=items, meta={"ordered_by": "created_at_asc"})
 
-    @router.post("/branches", response_model=StoryBranch)
+    @router.post("/branches", response_model=StoryBranch, status_code=201)
     def create_story_branch(payload: StoryBranchCreateRequest) -> StoryBranch:
         try:
             return branching_service.create_story_branch(
@@ -264,7 +299,7 @@ def build_story_development_router(
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Story branch not found.") from exc
 
-    @router.post("/branches/comparisons", response_model=BranchComparisonRecord)
+    @router.post("/branches/comparisons", response_model=BranchComparisonRecord, status_code=201)
     def create_branch_comparison(payload: BranchComparisonCreateRequest) -> BranchComparisonRecord:
         try:
             return branching_service.compare_story_branches(
@@ -294,7 +329,7 @@ def build_story_development_router(
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Branch comparison not found.") from exc
 
-    @router.post("/branches/merge-decisions", response_model=BranchMergeDecision)
+    @router.post("/branches/merge-decisions", response_model=BranchMergeDecision, status_code=201)
     def record_branch_merge_decision(payload: BranchMergeDecisionCreateRequest) -> BranchMergeDecision:
         try:
             return branching_service.record_branch_merge_decision(
@@ -354,6 +389,70 @@ def build_story_development_router(
             return branching_service.get_story_branch(project_id, branch_id=branch_id)
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Story branch not found.") from exc
+
+    # Flow stage endpoints
+    @router.get("/flow/stages", response_model=FlowStageListResponse)
+    def list_flow_stages(project_id: str) -> FlowStageListResponse:
+        try:
+            items = flow_service.list_stages(project_id)
+            return FlowStageListResponse(project_id=project_id, items=items, meta={"ordered_by": "position_asc"})
+        except EditableFlowNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Flow not found for project.") from exc
+
+    @router.post("/flow/stages", response_model=StoryFlowStage, status_code=201)
+    def create_flow_stage(payload: FlowStageCreateRequest) -> StoryFlowStage:
+        try:
+            return flow_service.add_custom_stage(
+                project_id=payload.project_id,
+                display_name=payload.display_name or f"{payload.stage_kind.replace('_', ' ').title()} Stage",
+                description=payload.description,
+                stage_kind=payload.stage_kind,
+                depends_on=payload.depends_on,
+                insert_after_stage_id=payload.insert_after_stage_id,
+            )
+        except EditableFlowNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Flow not found for project.") from exc
+        except EditableFlowValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/flow/stages/{stage_id}", response_model=StoryFlowStage)
+    def update_flow_stage(stage_id: str, project_id: str, payload: FlowStageUpdateRequest) -> StoryFlowStage:
+        try:
+            updates: dict[str, Any] = {}
+            if payload.display_name is not None:
+                updates["display_name"] = payload.display_name
+            if payload.description is not None:
+                updates["description"] = payload.description
+            if payload.depends_on is not None:
+                updates["depends_on"] = payload.depends_on
+            if payload.writer_notes is not None:
+                updates["writer_notes"] = payload.writer_notes
+            if payload.custom_prompt_guidance is not None:
+                updates["custom_prompt_guidance"] = payload.custom_prompt_guidance
+            
+            return flow_service.redefine_stage(project_id=project_id, stage_id=stage_id, **updates)
+        except EditableFlowNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Stage not found.") from exc
+        except EditableFlowValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/flow/stages/reorder", response_model=StoryFlowDefinition)
+    def reorder_flow_stages(project_id: str, payload: FlowStageReorderRequest) -> StoryFlowDefinition:
+        try:
+            return flow_service.reorder_stages(project_id=project_id, stage_order=payload.stage_order)
+        except EditableFlowNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Flow not found for project.") from exc
+        except EditableFlowValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.delete("/flow/stages/{stage_id}", response_model=StoryFlowStage)
+    def delete_flow_stage(stage_id: str, project_id: str) -> StoryFlowStage:
+        try:
+            return flow_service.delete_custom_stage(project_id=project_id, stage_id=stage_id)
+        except EditableFlowNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Stage not found.") from exc
+        except EditableFlowValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/decisions", response_model=StoryDecisionNodeListResponse)
     def list_story_decisions(
@@ -604,7 +703,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Revision suggestion not found.") from exc
 
-    @router.post("/drafting/manuscript-documents", response_model=ManuscriptDocument)
+    @router.post("/drafting/manuscript-documents", response_model=ManuscriptDocument, status_code=201)
     def create_manuscript_document(payload: ManuscriptDocumentCreateRequest) -> ManuscriptDocument:
         """Create a new manuscript document.
 
@@ -634,7 +733,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Referenced draft artifact not found.") from exc
 
-    @router.post("/drafting/promote-draft", response_model=ManuscriptDocument)
+    @router.post("/drafting/promote-draft", response_model=ManuscriptDocument, status_code=201)
     def promote_draft_to_manuscript(payload: PromoteDraftToManuscriptRequest) -> ManuscriptDocument:
         """Promote a draft artifact to a manuscript document.
 
@@ -663,7 +762,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Draft artifact not found.") from exc
 
-    @router.post("/drafting/revision-suggestions", response_model=RevisionSuggestion)
+    @router.post("/drafting/revision-suggestions", response_model=RevisionSuggestion, status_code=201)
     def create_revision_suggestion(payload: RevisionSuggestionCreateRequest) -> RevisionSuggestion:
         """Create a revision suggestion for a manuscript document.
 
@@ -693,7 +792,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Target manuscript document not found.") from exc
 
-    @router.post("/review/decisions", response_model=ReviewDecision)
+    @router.post("/review/decisions", response_model=ReviewDecision, status_code=201)
     def record_review_decision(payload: ReviewDecisionCreateRequest) -> ReviewDecision:
         """Record a review decision for a target object.
 

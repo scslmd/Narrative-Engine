@@ -62,9 +62,9 @@ export function BranchCard({ branch, isActive, onSetActive, onCompare }: BranchC
           </button>
         )}
 
-        {branch.state !== 'archived' && (
+        {branch.state !== 'archived' && branch.parent_branch_id && (
           <button
-            onClick={() => onCompare(branch.branch_id, branch.parent_branch_id || '')}
+            onClick={() => onCompare(branch.branch_id, branch.parent_branch_id!)}
             className="px-3 py-1.5 text-sm rounded bg-gray-600 text-white hover:bg-gray-700"
           >
             Compare

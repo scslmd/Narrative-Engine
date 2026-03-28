@@ -1,6 +1,5 @@
 import type { StoryDecisionNode, StoryDecisionPath } from '../types/decisions';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import api from '../lib/api';
 
 interface DecisionListResponse {
   project_id: string;
@@ -9,24 +8,24 @@ interface DecisionListResponse {
 }
 
 export async function getDecisions(projectId: string): Promise<StoryDecisionNode[]> {
-  const response = await fetch(`${API_BASE}/v1/story-development/decisions?project_id=${projectId}`);
+  const response = await api.get('/story-development/decisions', { params: { project_id: projectId } });
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch decisions: ${response.statusText}`);
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch decisions: ${response.status}`);
   }
 
-  const data: DecisionListResponse = await response.json();
+  const data: DecisionListResponse = response.data;
   return data.items;
 }
 
 export async function getDecision(nodeId: string): Promise<StoryDecisionNode> {
-  const response = await fetch(`${API_BASE}/v1/story-development/decisions/${nodeId}`);
+  const response = await api.get(`/story-development/decisions/${nodeId}`);
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch decision: ${response.statusText}`);
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch decision: ${response.status}`);
   }
 
-  return response.json();
+  return response.data;
 }
 
 interface DecisionPathResponse {
@@ -36,13 +35,13 @@ interface DecisionPathResponse {
 }
 
 export async function getDecisionPath(nodeId: string): Promise<StoryDecisionPath> {
-  const response = await fetch(`${API_BASE}/v1/story-development/decisions/${nodeId}/path`);
+  const response = await api.get(`/story-development/decisions/${nodeId}/path`);
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch decision path: ${response.statusText}`);
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch decision path: ${response.status}`);
   }
 
-  const data: DecisionPathResponse = await response.json();
+  const data: DecisionPathResponse = response.data;
   return {
     path_id: data.node.node_id,
     project_id: data.project_id,

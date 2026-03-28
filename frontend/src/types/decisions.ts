@@ -2,6 +2,7 @@ export interface StoryDecisionNode {
   node_id: string;
   project_id: string;
   decision_point: string;
+  parent_node_id?: string;  // null/undefined for root nodes
   options: Array<{
     option_id: string;
     label: string;

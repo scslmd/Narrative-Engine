@@ -1,6 +1,55 @@
 # TODO
 
-## Security & Reliability (P0 - Immediate)
+## Current Truth
+
+- The repository is currently clean on `codex/main`.
+- Latest verified validation baseline:
+  - `python -m pytest -q -p no:cacheprovider` -> `365 passed`
+  - `cd frontend && npm run lint` -> passed
+  - `cd frontend && npm run typecheck` -> passed
+  - `cd frontend && npm run build` -> passed
+- The React frontend is merged and is now the default shipped frontend surface.
+- Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
+- The remaining work is primarily backend expansion, deeper persistence hardening, and frontend features that still depend on backend APIs not yet implemented.
+
+## Active Backlog
+
+Detailed acceptance criteria for the active items remain in the sections below. The checklist here is the source of truth for what is still open.
+
+### Backend Reliability
+
+- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+- [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
+- [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+
+### Persistence and Runtime Expansion
+
+- [ ] Extend persistence to support orchestration attempts, richer artifact lineage, and projection endpoints.
+- [ ] Persist chapter-packet, sequence, and future story-bible artifacts through lineage-aware registration instead of flat file assumptions.
+- [ ] Add persistence helpers for scene or chapter storyboard cards once frontend-backed planning state becomes canonical.
+- [ ] Add broader integration coverage for orchestration and runtime behavior.
+- [ ] Add tests for manuscript-aid request contracts and diff-style response payloads once the backend surface is defined.
+
+### Remaining Frontend Delivery
+
+- [ ] FE-024A: Story branches UI (real API)
+- [ ] FE-024B: Story decision nodes UI (real API)
+- [ ] FE-024C: Inspect run links UI (real API)
+- [ ] FE-025: Manuscript aids panel (mock service - backend endpoint not yet available)
+- [ ] FE-026: Selection lifecycle handling
+- [ ] FE-027: Diff review interface
+- [ ] FE-028: Suggestion history (mock service)
+- [ ] FE-029: Brainstorm workspace (mock service)
+- [ ] FE-030: Foundation screen (mock service)
+- [ ] FE-031: Character builder (mock service)
+- [ ] FE-032: World bible workspace (mock service)
+
+## Reference Material
+
+The sections below are retained for implementation detail, acceptance criteria, and historical reconstruction. They are no longer the authoritative checklist for what is still open.
+
+## Completed Security & Reliability Foundations
 
 - [x] SEC-01 Add authentication middleware with API key validation
   **Objective**: Create authentication middleware requiring `X-API-Key` header on all routes except `/health`.
@@ -91,7 +140,7 @@
   
   **Tests**: All 9 tests passing (2.89s)
 
-## Security & Reliability (P1 - Short-Term)
+## Completed Security & Reliability Expansion
 
 - [x] REL-01 Add circuit breaker for inference backend (5 failures, 60s recovery)
   **Objective**: Create `app/services/circuit_breaker.py` with token bucket pattern to protect against cascading failures.
@@ -180,11 +229,6 @@
   
   **Tests**: All 12 tests passing (full lifecycle coverage)
 
-- [x] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
-  **Objective**: Structured logging with correlation IDs, Prometheus-style metrics export.
-  
-  **Status**: Deferred to Wave 3 - Core reliability foundation complete first
-  
 - [x] REL-06 Add deep health checks (`/health/ready` with database, inference, disk, memory checks)
   **Objective**: Return 503 if critical component unhealthy for load balancer readiness.
   
@@ -270,30 +314,7 @@
   
   **Tests**: All 13 tests passing (permission hierarchies and ownership scenarios)
 
-## Security & Reliability (P2 - Medium-Term)
-
-- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
-  Structured logging with correlation IDs, Prometheus export.
-  Expected: Visibility into system health, proactive alerting.
-- [ ] REL-06 Add deep health checks (`/health/ready` with database, inference, disk, memory checks)
-  Return 503 if critical component unhealthy.
-  Expected: Accurate health reporting, load balancer readiness.
-- [ ] REL-07 Add configuration validation at startup (inference URL reachable, directories writable, API key set)
-  Create `app/services/config_validator.py`, fail fast with clear errors.
-  Expected: Configuration errors detected at startup.
-- [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
-  Validate required fields, reject malformed payloads with 400.
-  Expected: Executor crashes from bad payloads prevented.
-- [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
-  Create `app/utils/file_permissions.py`, log permission warnings.
-  Expected: Accidental overwrites prevented.
-- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
-  Create `audit_log` table, `/audit/query` endpoint, 90-day retention.
-  Expected: Complete audit trail, incident investigation capability.
-
----
-
-## CRITICAL
+## Completed Critical Contract Work
 
 - [x] Remove reconstruction or recreation framing from the story-development docs package and rewrite it as an aspirational writing-product specification, especially anywhere the docs describe story-development features as "reconstruction" requirements instead of target product contracts.
 - [x] Add one canonical docs contract table for story-development objects, with one approved name per object, a short definition, owning layer, and explicit aliases or replacements for terms that should no longer be used across the SRS, product spec, frontend SRS, and orchestrator spec.
@@ -324,7 +345,7 @@
 - [x] Implement `GET /role-model-checker/{run_id}/lineage` backed only by persisted artifact-lineage rows and the lineage projection contract.
 - [x] Update `.github/workflows/tests.yml` so CI runs `tests/test_inference_runtime.py` in addition to the existing pytest baseline.
 
-## Core Runtime
+## Completed Core Runtime
 
 - [x] Add a prompt-builder service that turns project context into provider-ready `architect` requests.
 - [x] Execute one real provider-backed `architect` step through the existing job queue and attempt pipeline.
@@ -350,7 +371,7 @@
 - [x] Persist runtime telemetry and hashes for each runtime-backed step.
 - [x] Replace stub checker role execution with runtime-backed per-role evaluation while preserving current run and attempt semantics.
 
-## Protocol Hardening
+## Completed Protocol Hardening
 
 - [x] Persist immutable request snapshots and append-only event history for jobs and checker runs.
 - [x] Add baseline attempt-lineage fields for jobs and checker runs.
@@ -367,20 +388,18 @@
 - [x] Add structured runtime telemetry for backend identity, hashes, token usage, and finish reasons.
 - [x] Add `GET /jobs/{job_id}/steps` and `GET /role-model-checker/{run_id}/steps`.
 - [x] Add `GET /jobs/{job_id}/lineage` and `GET /role-model-checker/{run_id}/lineage`.
-- [ ] Add stable response schemas for attempt history, step history, and lineage history suitable for inspect views.
+- [x] Add stable response schemas for attempt history, step history, and lineage history suitable for inspect views.
 
-## Persistence
+## Persistence Backlog and Milestones
 
 - [x] Add SQLite-backed operational persistence.
 - [x] Harden SQLite with foreign keys, WAL mode, busy timeout, indexes, and schema versioning.
 - [x] Move project reconciliation into an explicit sync or repair flow.
 - [x] Add step-record and artifact-lineage persistence for the local executor path.
-- [ ] Extend persistence to support orchestration attempts, richer artifact lineage, and projection endpoints.
+- Active backlog reference: extend persistence to support orchestration attempts, richer artifact lineage, and projection endpoints.
 - [x] Add artifact lineage supersession behavior for canonical project artifacts rather than checker-report-only lineage.
-- [ ] Persist chapter-packet, sequence, and future story-bible artifacts through lineage-aware registration instead of flat file assumptions.
-- [ ] Add persistence helpers for scene or chapter storyboard cards once frontend-backed planning state becomes canonical.
 
-## Backend Engine Completion
+## Completed Backend Engine Delivery
 
 - [x] BE-01 Canonical story-development enums and schema models:
   define the canonical backend enums and schema models for story-development state, flow, foundation, character, world bible, arc, planning, drafting, review, and inspect links in `app/schemas/`.
@@ -515,9 +534,11 @@
   Implemented route families: `/story-development/branches`, `/story-development/branches/active`, `/story-development/branches/comparisons`, `/story-development/branches/{branch_id}/state-refs`, and `/story-development/branch-merges`.
   Verification: route tests cover branch creation, listing, active-branch changes, comparison retrieval, branch-state-ref reads, merge-decision projection, validation errors, and 404 behavior.
 
-## Frontend
+## Detailed Frontend Specs (Reference)
 
 See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with 32 deterministic task cards (FE-001 through FE-032).
+
+Open frontend work is tracked in `## Active Backlog` above. This section preserves the detailed task cards and acceptance criteria.
 
 **Technology Stack**: React 18 + Vite + TypeScript, Zustand, TanStack Query, Tailwind CSS, TipTap
 
@@ -955,7 +976,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading state shows spinner with "Running checker..." message
     - Error state shows "Checker failed" with error message and retry button
 
-- [ ] FE-024A: Story branches UI (real API)
+- FE-024A Spec: Story branches UI (real API)
   - **Write scope**: `frontend/src/services/branches.ts`, `frontend/src/components/branches/BranchList.tsx`, `frontend/src/components/branches/BranchCard.tsx`, `frontend/src/components/branches/BranchComparison.tsx`, `frontend/src/components/branches/MergeDecisionForm.tsx`, `frontend/src/types/branches.ts`
   - **Dependencies**: FE-005, FE-022
   - **Expected outcome**: Users can create, compare, and merge story branches
@@ -976,7 +997,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading states show SkeletonList during fetch
     - Empty state: "No branches yet - create from active branch"
 
-- [ ] FE-024B: Story decision nodes UI (real API)
+- FE-024B Spec: Story decision nodes UI (real API)
   - **Write scope**: `frontend/src/services/decisions.ts`, `frontend/src/components/decisions/DecisionTree.tsx`, `frontend/src/components/decisions/DecisionNode.tsx`, `frontend/src/components/decisions/DecisionPath.tsx`, `frontend/src/types/decisions.ts`
   - **Dependencies**: FE-005, FE-024A
   - **Expected outcome**: Visualize story decision points and their paths
@@ -992,7 +1013,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Loading state shows SkeletonList during fetch
     - Empty state: "No decision nodes defined"
 
-- [ ] FE-024C: Inspect run links UI (real API)
+- FE-024C Spec: Inspect run links UI (real API)
   - **Write scope**: `frontend/src/services/inspectLinks.ts`, `frontend/src/components/inspect/InspectRunLinks.tsx`, `frontend/src/components/inspect/InspectLinkCard.tsx`, `frontend/src/types/inspect.ts`
   - **Dependencies**: FE-018, FE-022
   - **Expected outcome**: Link review findings to inspect runs for traceability
@@ -1009,7 +1030,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 9: Manuscript Aids (Week 11-12)
 
-- [ ] FE-025: Manuscript aids panel (mock service - backend endpoint not yet available)
+- FE-025 Spec: Manuscript aids panel (mock service - backend endpoint not yet available)
   - **Write scope**: `frontend/src/services/mocks/manuscriptAidsMock.ts`, `frontend/src/components/aids/AidsPanel.tsx`, `frontend/src/components/aids/AidAction.tsx`, `frontend/src/components/aids/SelectionAids.tsx`, `frontend/src/components/aids/SceneAids.tsx`, `frontend/src/types/aids.ts`
   - **Dependencies**: FE-010, FE-026 (FE-026 provides selection lifecycle handling)
   - **Expected outcome**: Selection-based and scene-based actions in right rail
@@ -1025,7 +1046,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Banner at top: "Manuscript aids in mock mode - backend endpoint not yet available"
     - Feature flag VITE_USE_MOCKS=true enables mock, false shows "Coming soon"
 
-- [ ] FE-026: Selection lifecycle handling
+- FE-026 Spec: Selection lifecycle handling
   - **Write scope**: `frontend/src/hooks/useSelection.ts`, `frontend/src/stores/selectionStore.ts`, `frontend/src/lib/selection.ts`
   - **Dependencies**: FE-010, FE-025
   - **Expected outcome**: Selection stable through aid request/response
@@ -1039,7 +1060,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Selection survives tab switches (persisted in store)
     - Empty selection shows "Select text to enable aids" hint
 
-- [ ] FE-027: Diff review interface
+- FE-027 Spec: Diff review interface
   - **Write scope**: `frontend/src/components/diff/DiffViewer.tsx`, `frontend/src/components/diff/DiffLine.tsx`, `frontend/src/components/diff/DiffControls.tsx`, `frontend/src/lib/diff.ts`
   - **Dependencies**: FE-025, FE-026
   - **Expected outcome**: Proposed revisions reviewable without auto-apply
@@ -1057,7 +1078,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Diff generated via simple string comparison (no external library)
     - Loading state shows "Generating diff..." during comparison
 
-- [ ] FE-028: Suggestion history (mock service)
+- FE-028 Spec: Suggestion history (mock service)
   - **Write scope**: `frontend/src/services/mocks/manuscriptAidsMock.ts` (extend), `frontend/src/components/aids/SuggestionHistory.tsx`, `frontend/src/components/aids/SuggestionCard.tsx`, `frontend/src/components/aids/SuggestionCompare.tsx`
   - **Dependencies**: FE-025, FE-027
   - **Expected outcome**: History scrollable, comparisons clear
@@ -1075,7 +1096,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 
 ### Phase 10: Story Development Features (Week 13+)
 
-- [ ] FE-029: Brainstorm workspace (mock service)
+- FE-029 Spec: Brainstorm workspace (mock service)
   - **Write scope**: `frontend/src/services/mocks/brainstormMock.ts`, `frontend/src/components/brainstorm/BrainstormWorkspace.tsx`, `frontend/src/components/brainstorm/IdeaCard.tsx`, `frontend/src/components/brainstorm/IdeaCluster.tsx`, `frontend/src/types/brainstorm.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Idea capture, clustering, keep/discard/park, promote actions
@@ -1093,7 +1114,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - "New Idea" textarea with "Add" button (mock create)
     - Banner: "Brainstorm in mock mode - backend endpoint not yet available"
 
-- [ ] FE-030: Foundation screen (mock service)
+- FE-030 Spec: Foundation screen (mock service)
   - **Write scope**: `frontend/src/services/mocks/foundationMock.ts`, `frontend/src/components/foundation/FoundationEditor.tsx`, `frontend/src/components/foundation/FoundationField.tsx`, `frontend/src/components/foundation/ImpactWarning.tsx`, `frontend/src/types/foundation.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Foundation editable with impact visibility
@@ -1109,7 +1130,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - Auto-save debounced to 2000ms
     - Banner: "Foundation in mock mode - backend endpoint not yet available"
 
-- [ ] FE-031: Character builder (mock service)
+- FE-031 Spec: Character builder (mock service)
   - **Write scope**: `frontend/src/services/mocks/characterMock.ts`, `frontend/src/components/characters/CharacterBuilder.tsx`, `frontend/src/components/characters/CharacterProfile.tsx`, `frontend/src/components/characters/RelationshipMap.tsx`, `frontend/src/components/characters/ContradictionWarning.tsx`, `frontend/src/types/character.ts`
   - **Dependencies**: FE-005
   - **Expected outcome**: Goals, flaws, relationships visible together
@@ -1125,7 +1146,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - "Delete" button removes character (mock delete)
     - Banner: "Character builder in mock mode - backend endpoint not yet available"
 
-- [ ] FE-032: World bible workspace (mock service)
+- FE-032 Spec: World bible workspace (mock service)
   - **Write scope**: `frontend/src/services/mocks/worldBibleMock.ts`, `frontend/src/components/bible/WorldBibleWorkspace.tsx`, `frontend/src/components/bible/BibleEntry.tsx`, `frontend/src/components/bible/BibleSearch.tsx`, `frontend/src/components/bible/ContinuityWarning.tsx`, `frontend/src/types/bible.ts`
   - **Dependencies**: FE-005, FE-005B
   - **Expected outcome**: Entries source-linked, warnings readable in context
@@ -1142,13 +1163,13 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
     - "Edit" button opens entry editor (mock update)
     - Banner: "World bible in mock mode - backend endpoint not yet available"
 
-### Migration Tasks
+### Migration Tasks (Completed)
 
-- [ ] Migrate vanilla JS prototype to React (parallel development, week 1-2)
-- [ ] Test React frontend thoroughly before cutover (week 3-4)
-- [ ] Switch default route to React app, decommission vanilla JS (week 5+)
+- [x] Migrate vanilla JS prototype to React (parallel development, week 1-2)
+- [x] Test React frontend thoroughly before cutover (week 3-4)
+- [x] Switch default route to React app, decommission vanilla JS (week 5+)
 
-## Docs Contract Hardening
+## Completed Docs Contract Hardening
 
 - [x] Write a single "Story Development Canonical Contract" doc section or appendix that all other story-development docs reference for object names, lifecycle enums, and term mappings.
 - [x] Update `docs/Story Development Product Spec v0.1.md` so editable-flow rules explicitly distinguish stage deletion from disabling, optionality, and archival behavior.
@@ -1161,7 +1182,7 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 - [x] Add a canonical drafting/provenance contract section that explains how generated artifacts, author-edited manuscript buffers, suggestion diffs, and promoted canonical outputs relate to each other.
 - [x] Add a canonical planning contract section that states whether beat, sequence, chapter, and scene "cards" are persistence objects, presentation objects, or projections over plan records.
 
-## Testing
+## Testing Backlog and Milestones
 
 - [x] Add smoke coverage for the current API surface.
 - [x] Add persistence coverage for jobs, checker runs, and project projections.
@@ -1172,17 +1193,15 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 - [x] Add failure-mode tests for stale lease handling.
 - [x] Add retry-lineage coverage for explicit operator requeue of failed jobs and checker runs.
 - [x] Add failure-mode tests for partial persistence failure and lock contention.
-- [ ] Add broader integration coverage for orchestration and runtime behavior.
+- Active backlog reference: add broader integration coverage for orchestration and runtime behavior.
 - [x] Add regression coverage proving failed runtime jobs do not expose placeholder-generated project artifacts through `GET /projects/{project_id}/sequence` or `GET /projects/{project_id}/chapter-1`.
 - [x] Add regression coverage proving rerun canonical job artifacts supersede prior lineage rows instead of accumulating multiple active `CANONICAL` entries.
 - [x] Add API tests for `GET /jobs/{job_id}/steps`, `GET /jobs/{job_id}/lineage`, `GET /role-model-checker/{run_id}/steps`, and `GET /role-model-checker/{run_id}/lineage`.
 - [x] Add pagination tests for `GET /jobs/{job_id}/steps` and `GET /jobs/{job_id}/lineage` now that attempt-filter support is covered.
 - [x] Add pagination tests for `GET /role-model-checker/{run_id}/steps` and `GET /role-model-checker/{run_id}/lineage` now that attempt-filter support is covered.
-- [ ] Add runtime integration tests for one real provider-backed `architect` step through the executor path.
-- [ ] Add tests for manuscript-aid request contracts and diff-style response payloads once the backend surface is defined.
 - [x] Update CI to run `tests/test_inference_runtime.py` and current projection-endpoint tests on push and pull request.
 
-## Subagent Queue
+## Subagent Queue (Historical)
 
 - [x] `Curie`: implement BE-01 by owning `app/schemas/story_development.py`, `app/schemas/enums.py`, `app/schemas/__init__.py`, and a new targeted schema test file. Do not edit persistence or service files. You are not alone in the codebase; accommodate others' changes and do not revert them.
 - [x] `Kepler`: implement BE-02 by owning `app/persistence/sqlite.py`, a new `app/persistence/story_development.py`, `app/persistence/__init__.py`, and a new targeted persistence test file. Do not edit schema or service files unless a minimal import/export adjustment is required. You are not alone in the codebase; accommodate others' changes and do not revert them.
@@ -1243,11 +1262,13 @@ See `docs/Frontend Design SRS v0.5.md` for the complete implementation plan with
 - [x] `Faraday`: update downstream runtime phases to ignore empty bootstrapped upstream artifacts and only record real dependency provenance in step input refs and source hashes.
 - [x] `Copernicus`: implement canonical lineage supersession for rerun `sequence` and `chapter_1` artifacts and add deterministic regression tests for repeated successful runs.
 
-## API Alignment Summary
+## Historical API Alignment Reference
 
 **See**: `docs/Frontend API Alignment Issues.md` for complete analysis
 
 ### Real API Endpoints (Ready for Frontend)
+
+Note: the frontend Axios client currently uses `/v1` as its base path. The backend also keeps unversioned aliases where required for tests and lightweight callers.
 
 | Endpoint | Method | Status | Frontend Tasks |
 |----------|--------|--------|----------------|
@@ -1346,7 +1367,7 @@ All mock services must:
 
 ```bash
 # .env.local (frontend)
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=http://localhost:8000/v1
 VITE_USE_MOCKS=true
 VITE_THEME=light
 VITE_STAGE_THEME=writing

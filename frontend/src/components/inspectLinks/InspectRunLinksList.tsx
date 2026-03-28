@@ -9,13 +9,20 @@ interface InspectRunLinksListProps {
 }
 
 export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
-  const [filterByFinding, setFilterByFinding] = useState<string>('');
+  const [filterByObjectKind, setFilterByObjectKind] = useState<string>('');
+  const [filterByObjectId, setFilterByObjectId] = useState<string>('');
   const [filterByRunId, setFilterByRunId] = useState<string>('');
   const [filterByKind, setFilterByKind] = useState<string>('');
 
   const { data: links = [], isLoading } = useQuery<InspectRunLink[]>({
-    queryKey: ['inspect-links', projectId, filterByFinding, filterByRunId],
-    queryFn: () => getInspectLinks(projectId, filterByFinding || undefined, filterByRunId || undefined),
+    queryKey: ['inspect-links', projectId, filterByObjectKind, filterByObjectId, filterByRunId],
+    queryFn: () =>
+      getInspectLinks(
+        projectId,
+        filterByObjectKind || undefined,
+        filterByObjectId || undefined,
+        filterByRunId || undefined,
+      ),
   });
 
   const filteredLinks = links.filter(link => {
@@ -36,9 +43,17 @@ export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
       <div className="flex gap-4 flex-wrap">
         <input
           type="text"
-          placeholder="Filter by finding ID..."
-          value={filterByFinding}
-          onChange={(e) => setFilterByFinding(e.target.value)}
+          placeholder="Filter by object kind..."
+          value={filterByObjectKind}
+          onChange={(e) => setFilterByObjectKind(e.target.value)}
+          className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        <input
+          type="text"
+          placeholder="Filter by object ID..."
+          value={filterByObjectId}
+          onChange={(e) => setFilterByObjectId(e.target.value)}
           className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
@@ -61,10 +76,11 @@ export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
           ))}
         </select>
 
-        {(filterByFinding || filterByRunId || filterByKind) && (
+        {(filterByObjectKind || filterByObjectId || filterByRunId || filterByKind) && (
           <button
             onClick={() => {
-              setFilterByFinding('');
+              setFilterByObjectKind('');
+              setFilterByObjectId('');
               setFilterByRunId('');
               setFilterByKind('');
             }}

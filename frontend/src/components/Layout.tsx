@@ -3,6 +3,7 @@ import { matchPath, useLocation, useNavigate } from 'react-router-dom'
 import { useThemeStore } from '../stores/themeStore'
 import { useUIStore } from '../stores/uiStore'
 import type { WorkspaceMode } from '../routes'
+import { useRouteSync } from '../hooks/useRouteSync'
 
 interface LayoutProps {
   children: ReactNode
@@ -20,6 +21,9 @@ export function Layout({ children }: LayoutProps) {
   const { mode: uiMode, setMode } = useUIStore()
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Sync route state with store - route is source of truth
+  useRouteSync()
 
   useEffect(() => {
     setStage(stageMap[uiMode])
@@ -39,7 +43,7 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className={`min-h-screen bg-${mode === 'dark' ? 'gray-900' : 'gray-100'}`}>
+    <div className={`min-h-screen ${mode === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <header className="border-b border-gray-300 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="text-xl font-bold">Narrative Engine</h1>

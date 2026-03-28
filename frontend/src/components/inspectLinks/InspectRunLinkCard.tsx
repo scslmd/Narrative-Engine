@@ -1,10 +1,22 @@
+import { useNavigate } from 'react-router-dom';
 import type { InspectRunLink } from '../../types/inspectLinks';
+import { useUIStore } from '../../stores/uiStore';
 
 interface InspectRunLinkCardProps {
   link: InspectRunLink;
 }
 
 export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
+  const navigate = useNavigate();
+  const { projectId } = useUIStore();
+
+  const handleViewRunDetails = () => {
+    if (projectId && link.run_id) {
+      // Navigate to inspect view with the job/run ID
+      navigate(`/workspace/${projectId}/inspect/${link.run_id}`);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -53,7 +65,10 @@ export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
         </div>
       </div>
 
-      <button className="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+      <button
+        onClick={handleViewRunDetails}
+        className="mt-3 w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+      >
         View Run Details
       </button>
     </div>

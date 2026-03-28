@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ReviewDecision } from '../../types/review';
 import { getDecisionsForFinding } from '../../services/review';
+import { useUIStore } from '../../stores/uiStore';
 
 interface DecisionHistoryProps {
   findingId: string;
 }
 
 export function DecisionHistory({ findingId }: DecisionHistoryProps) {
+  const projectId = useUIStore((state) => state.projectId);
   const [decisions, setDecisions] = useState<ReviewDecision[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +18,11 @@ export function DecisionHistory({ findingId }: DecisionHistoryProps) {
     setError(null);
 
     try {
-      const data = await getDecisionsForFinding(findingId);
+      if (!projectId) {
+        throw new Error('Project context is required to load decision history');
+      }
+
+      const data = await getDecisionsForFinding(projectId, findingId);
       setDecisions(data.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
@@ -26,7 +32,7 @@ export function DecisionHistory({ findingId }: DecisionHistoryProps) {
     } finally {
       setLoading(false);
     }
-  }, [findingId]);
+  }, [findingId, projectId]);
 
   useEffect(() => {
     loadDecisions();

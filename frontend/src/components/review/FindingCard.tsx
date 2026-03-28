@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { CheckerFinding, ReviewDecision } from '../../types/review';
+import type { CheckerFinding } from '../../types/review';
+import { getInspectLinks } from '../../services/inspectLinks';
+import { useToastStore } from '../../stores/toastStore';
 import { SeverityBadge } from './SeverityBadge';
 import { DecisionForm } from './DecisionForm';
 import { DecisionHistory } from './DecisionHistory';
@@ -13,8 +15,10 @@ interface FindingCardProps {
 
 export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) {
   const navigate = useNavigate();
+  const addToast = useToastStore((state) => state.addToast);
   const [expanded, setExpanded] = useState(false);
   const [showDecisionForm, setShowDecisionForm] = useState(false);
+  const [isResolvingInspectRun, setIsResolvingInspectRun] = useState(false);
 
   const handleCardClick = () => {
     if (onSelect) {
@@ -23,14 +27,37 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
     setExpanded(!expanded);
   };
 
-  const handleJumpToSource = () => {
-    if (finding.source_object_id) {
-      navigate(`/workspace/${projectId}/inspect?object=${finding.source_object_id}&kind=${finding.source_object_kind}`);
+  const hasValidInspectTarget =
+    Boolean(finding.source_object_kind) &&
+    Boolean(finding.source_object_id);
+
+  const handleJumpToSource = async () => {
+    if (!hasValidInspectTarget) return;
+
+    setIsResolvingInspectRun(true);
+
+    try {
+      const links = await getInspectLinks(
+        projectId,
+        finding.source_object_kind,
+        finding.source_object_id,
+      );
+      const primaryLink = links[0];
+
+      if (!primaryLink?.run_id) {
+        addToast('No inspect run is linked to this finding source yet', 'warning');
+        return;
+      }
+
+      navigate(`/workspace/${projectId}/inspect/${primaryLink.run_id}`);
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to open inspect run', 'error');
+    } finally {
+      setIsResolvingInspectRun(false);
     }
   };
 
-  const handleDecisionSuccess = (decision: ReviewDecision) => {
-    console.log('Decision recorded:', decision.decision_id);
+  const handleDecisionSuccess = () => {
     setShowDecisionForm(false);
   };
 
@@ -62,13 +89,19 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
 
               <div className="flex gap-2 mt-2">
                 <button 
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  className={`px-3 py-1.5 text-sm rounded ${
+                    hasValidInspectTarget 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleJumpToSource();
+                    void handleJumpToSource();
                   }}
+                  disabled={!hasValidInspectTarget || isResolvingInspectRun}
+                  title={!hasValidInspectTarget ? 'No inspectable source available' : ''}
                 >
-                  Jump to Source
+                  {isResolvingInspectRun ? 'Opening...' : 'Jump to Source'}
                 </button>
 
                 <button 

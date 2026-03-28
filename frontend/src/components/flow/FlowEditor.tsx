@@ -5,6 +5,12 @@ import { flowService } from '../../services/flow';
 import { useToastStore } from '../../stores/toastStore';
 import StageList from './StageList';
 
+interface StageEditPayload {
+  display_name?: string;
+  description?: string;
+  custom_prompt_guidance?: string;
+}
+
 interface FlowEditorProps {
   projectId: string;
 }
@@ -25,6 +31,9 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   const addToast = useToastStore((state) => state.addToast);
   const [updatingStageId, setUpdatingStageId] = useState<string | null>(null);
   const [editingStage, setEditingStage] = useState<StoryFlowStage | null>(null);
+  const [editedDisplayName, setEditedDisplayName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [editedPromptGuidance, setEditedPromptGuidance] = useState('');
 
   const { data: stages, isLoading, isError, error } = useQuery<StoryFlowStage[]>({
     queryKey: ['flow-stages', projectId],
@@ -42,19 +51,21 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     },
   });
 
-  // TODO: Use updateStageMutation when editing stages is implemented
-  // const _updateStageMutation = useMutation({
-  //   mutationFn: ({ stageId, updates }: { stageId: string; updates: Partial<StoryFlowStage> }) =>
-  //     flowService.updateStage(stageId, updates),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-  //     setUpdatingStageId(null);
-  //     addToast('Stage updated successfully', 'success');
-  //   },
-  // });
+  const updateStageMutation = useMutation({
+    mutationFn: ({ stageId, updates }: { stageId: string; updates: StageEditPayload }) =>
+      flowService.updateStageWithProject(projectId, stageId, updates as Partial<StoryFlowStage>),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
+      setUpdatingStageId(null);
+      addToast('Stage updated successfully', 'success');
+    },
+    onError: (err: unknown) => {
+      addToast(err instanceof Error ? err.message : 'Failed to update stage', 'error');
+    },
+  });
 
   const deleteStageMutation = useMutation({
-    mutationFn: (stageId: string) => flowService.deleteStage(stageId),
+    mutationFn: (stageId: string) => flowService.deleteStage(projectId, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       addToast('Stage deleted successfully', 'success');
@@ -70,40 +81,39 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
 
   const handleEdit = useCallback((stageId: string) => {
     if (!stages) return;
-    setEditingStage(stages.find((s) => s.stage_id === stageId) || null);
+    const stage = stages.find((s) => s.stage_id === stageId) || null;
+    setEditingStage(stage);
+    setEditedDisplayName(stage?.display_name || '');
+    setEditedDescription(stage?.description || '');
+    setEditedPromptGuidance(stage?.custom_prompt_guidance || '');
   }, [stages]);
 
-  const handleDisable = useCallback(
-    async (stageId: string) => {
-      setUpdatingStageId(stageId);
-      try {
-        await flowService.disableStage(stageId);
-        queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-        addToast('Stage disabled', 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Failed to disable stage', 'error');
-      } finally {
-        setUpdatingStageId(null);
-      }
-    },
-    [queryClient, projectId, addToast]
-  );
+  const handleSaveEdit = useCallback(() => {
+    if (!editingStage) return;
+    
+    const updates: StageEditPayload = {};
+    if (editedDisplayName !== editingStage.display_name) {
+      updates.display_name = editedDisplayName;
+    }
+    if (editedDescription !== editingStage.description) {
+      updates.description = editedDescription;
+    }
+    if (editedPromptGuidance !== editingStage.custom_prompt_guidance) {
+      updates.custom_prompt_guidance = editedPromptGuidance;
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      updateStageMutation.mutate({ stageId: editingStage.stage_id, updates });
+    }
+    setEditingStage(null);
+  }, [editingStage, editedDisplayName, editedDescription, editedPromptGuidance, updateStageMutation]);
 
-  const handleArchive = useCallback(
-    async (stageId: string) => {
-      setUpdatingStageId(stageId);
-      try {
-        await flowService.archiveStage(stageId);
-        queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-        addToast('Stage archived', 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Failed to archive stage', 'error');
-      } finally {
-        setUpdatingStageId(null);
-      }
-    },
-    [queryClient, projectId, addToast]
-  );
+  const handleCloseEdit = useCallback(() => {
+    setEditingStage(null);
+    setEditedDisplayName('');
+    setEditedDescription('');
+    setEditedPromptGuidance('');
+  }, []);
 
   const handleDelete = useCallback(
     async (stageId: string) => {
@@ -114,22 +124,6 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
       }
     },
     [deleteStageMutation, addToast]
-  );
-
-  const handleRename = useCallback(
-    async (stageId: string, newName: string) => {
-      setUpdatingStageId(stageId);
-      try {
-        await flowService.renameStage(stageId, newName);
-        queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-        addToast('Stage renamed successfully', 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Failed to update stage', 'error');
-      } finally {
-        setUpdatingStageId(null);
-      }
-    },
-    [queryClient, projectId, addToast]
   );
 
   if (isLoading) {
@@ -183,8 +177,6 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
             stages={stages}
             updatingStageId={updatingStageId}
             onEdit={handleEdit}
-            onDisable={handleDisable}
-            onArchive={handleArchive}
             onDelete={handleDelete}
             onAddStage={handleAddStage}
           />
@@ -201,13 +193,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                 <input
                   type="text"
-                  defaultValue={editingStage.display_name}
-                  onBlur={(e) => {
-                    if (e.target.value !== editingStage.display_name) {
-                      handleRename(editingStage.stage_id, e.target.value);
-                    }
-                    setEditingStage(null);
-                  }}
+                  value={editedDisplayName}
+                  onChange={(e) => setEditedDisplayName(e.target.value)}
                   className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
@@ -215,7 +202,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
-                  defaultValue={editingStage.description || ''}
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
@@ -224,18 +212,28 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Custom Prompt Guidance</label>
                 <textarea
-                  defaultValue={editingStage.custom_prompt_guidance || ''}
+                  value={editedPromptGuidance}
+                  onChange={(e) => setEditedPromptGuidance(e.target.value)}
                   rows={4}
                   className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
-              <button
-                onClick={() => setEditingStage(null)}
-                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-              >
-                Cancel
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={updateStageMutation.isPending}
+                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {updateStageMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCloseEdit}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

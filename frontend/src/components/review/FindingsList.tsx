@@ -36,8 +36,8 @@ export function FindingsList({ projectId }: FindingsListProps) {
     }
   };
 
-  const handleSelectFinding = (finding: CheckerFinding) => {
-    console.log('Selected finding:', finding.finding_id);
+  const handleSelectFinding = () => {
+    // Selection handled by parent component
   };
 
   return (

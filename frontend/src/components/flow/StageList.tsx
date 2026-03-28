@@ -6,8 +6,6 @@ interface StageListProps {
   stages: StoryFlowStage[];
   updatingStageId: string | null;
   onEdit: (stageId: string) => void;
-  onDisable: (stageId: string) => void;
-  onArchive: (stageId: string) => void;
   onDelete?: (stageId: string) => void;
   onAddStage?: (stageKind: StoryFlowStage['stage_kind']) => void;
 }
@@ -16,8 +14,6 @@ export default function StageList({
   stages,
   updatingStageId,
   onEdit,
-  onDisable,
-  onArchive,
   onDelete,
   onAddStage,
 }: StageListProps) {
@@ -51,8 +47,6 @@ export default function StageList({
             <StageActions
               stage={stage}
               onEdit={onEdit}
-              onDisable={onDisable}
-              onArchive={onArchive}
               onDelete={onDelete}
               isUpdating={updatingStageId === stage.stage_id}
             />
