@@ -126,7 +126,7 @@ export async function createMergeDecision(
   projectId: string,
   sourceBranchId: string,
   targetBranchId: string,
-  rationale: string,
+  mergeRationale: string,
 ): Promise<BranchMergeDecision> {
   // Backend requires merge_decision_id and uses merge_rationale field
   const response = await api.post('/story-development/branches/merge-decisions', {
@@ -134,7 +134,7 @@ export async function createMergeDecision(
     merge_decision_id: crypto.randomUUID(),
     source_branch_id: sourceBranchId,
     target_branch_id: targetBranchId,
-    merge_rationale: rationale,
+    merge_rationale: mergeRationale,
     resulting_decision_node_ids: [],
   });
 

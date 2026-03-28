@@ -1,24 +1,17 @@
 export interface StoryBranch {
   branch_id: string;
   project_id: string;
-  name: string;
-  description?: string;
-  parent_branch_id?: string;
-  state: 'active' | 'merged' | 'archived';
-  created_at: string;
+  branch_point_id: string;
+  branch_name: string;
+  branch_state: 'ACTIVE' | 'ARCHIVED';
 }
 
 export interface BranchComparisonRecord {
   comparison_id: string;
   project_id: string;
-  branch_a_id: string;
-  branch_b_id: string;
-  differences: Array<{
-    object_kind: string;
-    branch_a_value?: unknown;
-    branch_b_value?: unknown;
-  }>;
-  created_at: string;
+  source_branch_id: string;
+  target_branch_id: string;
+  review_notes: string[];
 }
 
 export interface BranchMergeDecision {
@@ -26,15 +19,15 @@ export interface BranchMergeDecision {
   project_id: string;
   source_branch_id: string;
   target_branch_id: string;
-  decision: 'merge' | 'reject' | 'defer';
-  rationale?: string;
-  created_at: string;
+  merge_rationale: string;
+  resulting_decision_node_ids: string[];
 }
 
 export interface BranchStateRef {
-  state_ref_id: string;
+  branch_state_ref_id: string;
+  project_id: string;
   branch_id: string;
-  object_kind: string;
-  object_id: string;
-  created_at: string;
+  state_object_type: string;
+  state_object_id: string;
+  decision_node_id: string | null;
 }
