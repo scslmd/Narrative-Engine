@@ -238,7 +238,7 @@ def test_create_branch(tmp_path):
 All APIs use `/v1` prefix for version management:
 - Base URL: `http://localhost:8000/v1/{service}/{resource}`
 - Frontend env var: `VITE_API_URL=http://localhost:8000`
-- All service files use: `const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'`
+- Frontend services should prefer the shared Axios client in `frontend/src/lib/api.ts`, which already uses `baseURL: '/v1'`
 
 **RESTful endpoints:**
 - GET `/v1/projects` - List projects
@@ -387,7 +387,7 @@ backup.delete_backup(backup_id)
 ## Frontend Quality Gate Improvements (March 27, 2026)
 
 ### Overview
-Achieved full score (12/12) on frontend quality gate by implementing production-grade improvements across service layer consistency, routing/state correctness, error handling, and type safety.
+Achieved full score (16/16) on the tracked frontend quality criteria by implementing production-grade improvements across service layer consistency, routing/state correctness, error handling, and type safety.
 
 ### Criteria Achieved
 
@@ -402,7 +402,7 @@ Achieved full score (12/12) on frontend quality gate by implementing production-
 | Tailwind Safety | 2/2 | Already compliant - no changes needed |
 | Mock/Live Boundary Discipline | 2/2 | Proper separation maintained throughout |
 
-### Files Modified (6 total)
+### Files Modified (7 areas)
 
 1. **NEW: `src/hooks/useRouteSync.ts`** - Route-to-store synchronization hook that ensures route is source of truth for workspace state, fixing deep links and page refreshes
 
@@ -412,9 +412,11 @@ Achieved full score (12/12) on frontend quality gate by implementing production-
 
 4. **`src/types/error.ts`** - Extended ErrorType enum: `'network' | 'api' | 'server' | 'not-found' | 'auth' | 'validation' | 'unknown'`
 
-5. **`src/components/Layout.tsx`** - Integrated `useRouteSync` hook, added missing `setMode` import from uiStore
+5. **`src/components/Layout.tsx`** - Integrated `useRouteSync` hook and removed brittle dynamic Tailwind class construction
 
 6. **`src/views/Workspace.tsx`** - Simplified by removing redundant state synchronization (now handled by router and useRouteSync)
+
+7. **Inspect/review follow-up** - Decision history requests now include `project_id`, inspect deep links hydrate from `/workspace/:projectId/inspect/:jobId`, and `Jump to Source` resolves an inspect run before navigation
 
 ### Key Architectural Decisions
 
@@ -426,7 +428,7 @@ Achieved full score (12/12) on frontend quality gate by implementing production-
 2. **Structured Error Handling**: The `ApiError` class extends native Error with:
    ```typescript
    class ApiError extends Error {
-     statusCode: number;
+     status: number;
      message: string;
      data?: unknown;
    }
@@ -478,7 +480,7 @@ Fixed 20+ TypeScript compilation errors during frontend build on March 26, 2026.
 
 #### Batch 4: Component Fixes
 12. **StageList.tsx** - Wired up add stage callback in empty state, fixed StageKind type ('brainstorm' vs 'PLOT_OUTLINE')
-13. **FindingCard.tsx** - Implemented "Jump to Source" navigation action with projectId prop
+13. **FindingCard.tsx** - Implemented "Jump to Source" by resolving inspect links and navigating to a renderable inspect run route
 14. **ProjectList.tsx** - Added `secondary_language` form field
 15. **FlowEditor.tsx** - Passed `onAddStage` prop to StageList
 
@@ -734,18 +736,19 @@ When modifying API endpoints or service functions, always verify parameter align
 
 #### Frontend Service Layer Pattern
 ```typescript
-// CORRECT pattern for optional query parameters
+// CORRECT pattern for optional query parameters with the shared API client
 export async function getComparison(
   comparisonId: string,
   projectId?: string  // Optional, matches backend flexibility
 ): Promise<BranchComparisonRecord> {
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;  // snake_case for API
-  
-  return axios.get(
-    `${API_BASE}/story-development/branches/comparisons/${comparisonId}`,
-    { params }
-  ).then(r => r.data);
+
+  const response = await api.get(
+    `/story-development/branches/comparisons/${comparisonId}`,
+    { params },
+  );
+  return response.data;
 }
 ```
 
@@ -791,11 +794,12 @@ export async function getComparison(
 ): Promise<BranchComparisonRecord> {
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;  // Convert to snake_case
-  
-  return axios.get(
-    `${API_BASE}/story-development/branches/comparisons/${comparisonId}`,
-    { params }
-  ).then(r => r.data);
+
+  const response = await api.get(
+    `/story-development/branches/comparisons/${comparisonId}`,
+    { params },
+  );
+  return response.data;
 }
 ```
 
