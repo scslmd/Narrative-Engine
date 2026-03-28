@@ -337,12 +337,26 @@ class FoundationService:
     def _coerce_input(self, foundation: FoundationProfileInput | Mapping[str, Any]) -> FoundationProfileInput:
         if isinstance(foundation, FoundationProfileInput):
             return foundation
-        return FoundationProfileInput.from_mapping(foundation)
+        try:
+            return FoundationProfileInput.from_mapping(foundation)
+        except KeyError as exc:
+            # Missing required key in input mapping
+            raise FoundationValidationError(f"Missing required field in foundation input: {exc}") from exc
+        except (TypeError, ValueError) as exc:
+            # Type/value errors during field coercion - likely invalid input data
+            raise FoundationValidationError(f"Invalid foundation input data: {exc}") from exc
 
     def _coerce_patch(self, changes: FoundationProfilePatch | Mapping[str, Any]) -> FoundationProfilePatch:
         if isinstance(changes, FoundationProfilePatch):
             return changes
-        return FoundationProfilePatch.from_mapping(changes)
+        try:
+            return FoundationProfilePatch.from_mapping(changes)
+        except KeyError as exc:
+            # Missing required key in patch mapping
+            raise FoundationValidationError(f"Missing required field in foundation patch: {exc}") from exc
+        except (TypeError, ValueError) as exc:
+            # Type/value errors during field coercion - likely invalid input data
+            raise FoundationValidationError(f"Invalid foundation patch data: {exc}") from exc
 
     def _to_profile(self, project_id: str, record: FoundationRevisionRecord) -> FoundationProfile:
         foundation_id = _foundation_id(project_id)

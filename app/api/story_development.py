@@ -311,38 +311,26 @@ class BrainstormPromotionListResponse(StrictModel):
 class FoundationCreateRequest(StrictModel):
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
     premise: str = Field(..., min_length=1, max_length=10000)
-    logline: str | None = Field(None, max_length=500)
-    thematic_spine: str | None = Field(None, max_length=2000)
-    emotional_promise: str | None = Field(None, max_length=2000)
-    tone_and_voice_direction: str | None = Field(None, max_length=2000)
-    target_audience: str | None = Field(None, max_length=500)
+    logline: str = Field(..., min_length=1, max_length=500)
+    thematic_spine: str = Field(..., min_length=1, max_length=2000)
+    emotional_promise: str = Field(..., min_length=1, max_length=2000)
+    tone_and_voice_direction: str = Field(..., min_length=1, max_length=2000)
+    target_audience: str = Field(..., min_length=1, max_length=500)
     narrative_constraints: list[str] = Field(default_factory=list)
-    complexity_level: str | None = Field(None, max_length=50)
-    genre_blend: str | None = Field(None, max_length=200)
-    comparative_titles: list[str] = Field(default_factory=list)
-    intended_length_category: str | None = Field(None, max_length=50)
-    pacing_preference: str | None = Field(None, max_length=50)
-    point_of_view_preference: str | None = Field(None, max_length=50)
-    tense_preference: str | None = Field(None, max_length=50)
-    writer_notes: str | None = Field(None, max_length=10000)
+    complexity_level: str = Field(..., min_length=1, max_length=50)
+    success_definition: str = Field(..., min_length=1, max_length=2000)
 
 
 class FoundationUpdateRequest(StrictModel):
     premise: str | None = Field(None, min_length=1, max_length=10000)
-    logline: str | None = Field(None, max_length=500)
-    thematic_spine: str | None = Field(None, max_length=2000)
-    emotional_promise: str | None = Field(None, max_length=2000)
-    tone_and_voice_direction: str | None = Field(None, max_length=2000)
-    target_audience: str | None = Field(None, max_length=500)
+    logline: str | None = Field(None, min_length=1, max_length=500)
+    thematic_spine: str | None = Field(None, min_length=1, max_length=2000)
+    emotional_promise: str | None = Field(None, min_length=1, max_length=2000)
+    tone_and_voice_direction: str | None = Field(None, min_length=1, max_length=2000)
+    target_audience: str | None = Field(None, min_length=1, max_length=500)
     narrative_constraints: list[str] | None = None
-    complexity_level: str | None = Field(None, max_length=50)
-    genre_blend: str | None = Field(None, max_length=200)
-    comparative_titles: list[str] | None = None
-    intended_length_category: str | None = Field(None, max_length=50)
-    pacing_preference: str | None = Field(None, max_length=50)
-    point_of_view_preference: str | None = Field(None, max_length=50)
-    tense_preference: str | None = Field(None, max_length=50)
-    writer_notes: str | None = Field(None, max_length=10000)
+    complexity_level: str | None = Field(None, min_length=1, max_length=50)
+    success_definition: str | None = Field(None, min_length=1, max_length=2000)
 
 
 class FoundationRevisionListResponse(StrictModel):
@@ -422,6 +410,7 @@ class CharacterProfileUpdateRequest(StrictModel):
     arc_stage_notes: list[str] | None = None
     continuity_facts: list[str] | None = None
     writer_notes: str | None = Field(None, max_length=5000)
+    # Note: relationship_edges is excluded from updates - it's auto-populated from relationship edges
 
 
 class CharacterProfileListResponse(StrictModel):
@@ -431,14 +420,14 @@ class CharacterProfileListResponse(StrictModel):
 
 
 class RelationshipEdgeCreateRequest(StrictModel):
-    edge_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    edge_id: str | None = Field(None, min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
-    character_a_id: str = Field(..., min_length=1, max_length=255)
-    character_b_id: str = Field(..., min_length=1, max_length=255)
-    relationship_type: str = Field(..., min_length=1, max_length=100)
-    dynamic_description: str = Field(..., min_length=1, max_length=2000)
-    tension_sources: list[str] = Field(default_factory=list)
-    shared_history_notes: str | None = Field(None, max_length=2000)
+    source_character_id: str = Field(..., min_length=1, max_length=255)
+    target_character_id: str = Field(..., min_length=1, max_length=255)
+    relation_kind: str = Field(..., min_length=1, max_length=100)
+    summary: str = Field(..., min_length=1, max_length=2000)
+    tension: str | None = Field(None, max_length=1000)
+    notes: str | None = Field(None, max_length=2000)
 
 
 class RelationshipEdgeListResponse(StrictModel):
@@ -452,20 +441,24 @@ class WorldBibleEntryCreateRequest(StrictModel):
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
     entry_type: str = Field(..., min_length=1, max_length=100)
     title: str = Field(..., min_length=1, max_length=255)
-    content: str = Field(..., min_length=1, max_length=50000)
-    category: str | None = Field(None, max_length=100)
-    tags: list[str] = Field(default_factory=list)
-    related_entry_ids: list[str] = Field(default_factory=list)
-    importance_level: str | None = Field(None, max_length=50)
+    summary: str = Field(..., min_length=1, max_length=50000)
+    canonical_facts: list[str] = Field(default_factory=list)
+    related_character_ids: list[str] = Field(default_factory=list)
+    source_artifacts: list[str] = Field(default_factory=list)
+    visibility_scope: str = Field(default="project", min_length=1, max_length=50)
+    continuity_warnings: list[str] = Field(default_factory=list)
+    writer_notes: str | None = Field(None, max_length=5000)
 
 
 class WorldBibleEntryUpdateRequest(StrictModel):
     title: str | None = Field(None, min_length=1, max_length=255)
-    content: str | None = Field(None, min_length=1, max_length=50000)
-    category: str | None = Field(None, max_length=100)
-    tags: list[str] | None = None
-    related_entry_ids: list[str] | None = None
-    importance_level: str | None = Field(None, max_length=50)
+    summary: str | None = Field(None, min_length=1, max_length=50000)
+    canonical_facts: list[str] | None = None
+    related_character_ids: list[str] | None = None
+    source_artifacts: list[str] | None = None
+    visibility_scope: str | None = Field(None, min_length=1, max_length=50)
+    continuity_warnings: list[str] | None = None
+    writer_notes: str | None = Field(None, max_length=5000)
 
 
 class WorldBibleEntryListResponse(StrictModel):
@@ -1175,13 +1168,7 @@ def build_story_development_router(
                 "target_audience": payload.target_audience,
                 "narrative_constraints": payload.narrative_constraints,
                 "complexity_level": payload.complexity_level,
-                "genre_blend": payload.genre_blend,
-                "comparative_titles": payload.comparative_titles,
-                "intended_length_category": payload.intended_length_category,
-                "pacing_preference": payload.pacing_preference,
-                "point_of_view_preference": payload.point_of_view_preference,
-                "tense_preference": payload.tense_preference,
-                "writer_notes": payload.writer_notes,
+                "success_definition": payload.success_definition,
             }
             result = foundation_service.create_foundation_revision(payload.project_id, foundation_data)
             return FoundationWriteResponse(
@@ -1218,13 +1205,7 @@ def build_story_development_router(
                     ("target_audience", payload.target_audience),
                     ("narrative_constraints", payload.narrative_constraints),
                     ("complexity_level", payload.complexity_level),
-                    ("genre_blend", payload.genre_blend),
-                    ("comparative_titles", payload.comparative_titles),
-                    ("intended_length_category", payload.intended_length_category),
-                    ("pacing_preference", payload.pacing_preference),
-                    ("point_of_view_preference", payload.point_of_view_preference),
-                    ("tense_preference", payload.tense_preference),
-                    ("writer_notes", payload.writer_notes),
+                    ("success_definition", payload.success_definition),
                 ) if value is not None
             }
             if not foundation_data:
@@ -1368,11 +1349,14 @@ def build_story_development_router(
                 **dict(existing),
                 **updates,
             }
+            # Filter out relationship_edges (auto-populated by service) and project_id
+            # Note: relationship_edges is intentionally excluded - it's auto-populated from relationship edges
+            upsert_fields = {
+                k: v for k, v in all_fields.items()
+                if v is not None and k not in ("project_id", "relationship_edges")
+            }
             # Call upsert with merged data
-            return story_knowledge_service.upsert_character_profile(
-                project_id,
-                **{k: v for k, v in all_fields.items() if v is not None and k != "project_id"},
-            )
+            return story_knowledge_service.upsert_character_profile(project_id, **upsert_fields)
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Character not found.") from exc
         except StoryKnowledgeValidationError as exc:
@@ -1381,12 +1365,15 @@ def build_story_development_router(
     @router.get("/characters/{character_id}/relationships", response_model=RelationshipEdgeListResponse)
     def list_character_relationships(character_id: str, project_id: str) -> RelationshipEdgeListResponse:
         """List all relationships for a character."""
-        relationships = list(story_knowledge_service.list_relationship_edges_for_character(project_id, character_id))
-        return RelationshipEdgeListResponse(
-            project_id=project_id,
-            items=relationships,
-            meta={"ordered_by": "edge_id_asc"},
-        )
+        try:
+            relationships = list(story_knowledge_service.list_relationship_edges_for_character(project_id, character_id))
+            return RelationshipEdgeListResponse(
+                project_id=project_id,
+                items=relationships,
+                meta={"ordered_by": "edge_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/relationships", response_model=RelationshipEdge, status_code=201)
     def create_relationship(payload: RelationshipEdgeCreateRequest) -> RelationshipEdge:
@@ -1395,12 +1382,12 @@ def build_story_development_router(
             return story_knowledge_service.upsert_relationship_edge(
                 payload.project_id,
                 edge_id=payload.edge_id,
-                character_a_id=payload.character_a_id,
-                character_b_id=payload.character_b_id,
-                relationship_type=payload.relationship_type,
-                dynamic_description=payload.dynamic_description,
-                tension_sources=payload.tension_sources,
-                shared_history_notes=payload.shared_history_notes,
+                source_character_id=payload.source_character_id,
+                target_character_id=payload.target_character_id,
+                relation_kind=payload.relation_kind,
+                summary=payload.summary,
+                tension=payload.tension,
+                notes=payload.notes,
             )
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1413,14 +1400,11 @@ def build_story_development_router(
     def list_world_bible_entries(
         project_id: str,
         entry_type: str | None = None,
-        category: str | None = None,
     ) -> WorldBibleEntryListResponse:
         """List all world bible entries for a project."""
         entries = list(story_knowledge_service.list_world_bible_entries(project_id))
         if entry_type:
             entries = [e for e in entries if e.entry_type == entry_type]
-        if category:
-            entries = [e for e in entries if e.category == category]
         return WorldBibleEntryListResponse(
             project_id=project_id,
             items=entries,
@@ -1443,11 +1427,13 @@ def build_story_development_router(
                 payload.project_id,
                 entry_type=payload.entry_type,
                 title=payload.title,
-                content=payload.content,
-                category=payload.category,
-                tags=payload.tags,
-                related_entry_ids=payload.related_entry_ids,
-                importance_level=payload.importance_level,
+                summary=payload.summary,
+                canonical_facts=payload.canonical_facts,
+                related_character_ids=payload.related_character_ids,
+                source_artifacts=payload.source_artifacts,
+                visibility_scope=payload.visibility_scope,
+                continuity_warnings=payload.continuity_warnings,
+                writer_notes=payload.writer_notes,
             )
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1458,29 +1444,43 @@ def build_story_development_router(
         try:
             # Get existing entry
             existing = story_knowledge_service.get_world_bible_entry(project_id, entry_type=entry_type, title=title)
-            # Merge updates
-            updates = {
-                key: value for key, value in (
-                    ("title", payload.title),
-                    ("content", payload.content),
-                    ("category", payload.category),
-                    ("tags", payload.tags),
-                    ("related_entry_ids", payload.related_entry_ids),
-                    ("importance_level", payload.importance_level),
-                ) if value is not None
-            }
-            if not updates:
+            
+            # Helper to compare list fields (handles tuple vs list comparison)
+            def lists_equal(a: list[str] | tuple[str, ...], b: list[str] | tuple[str, ...]) -> bool:
+                return set(a) == set(b)
+            
+            # Merge updates - use explicit type annotations to avoid union type issues
+            new_title: str = payload.title if payload.title is not None else title
+            new_summary: str = payload.summary if payload.summary is not None else existing.summary
+            new_canonical_facts: list[str] = payload.canonical_facts if payload.canonical_facts is not None else existing.canonical_facts
+            new_related_character_ids: list[str] = payload.related_character_ids if payload.related_character_ids is not None else existing.related_character_ids
+            new_source_artifacts: list[str] = payload.source_artifacts if payload.source_artifacts is not None else existing.source_artifacts
+            new_visibility_scope: str = payload.visibility_scope if payload.visibility_scope is not None else existing.visibility_scope
+            new_continuity_warnings: list[str] = payload.continuity_warnings if payload.continuity_warnings is not None else existing.continuity_warnings
+            new_writer_notes: str | None = payload.writer_notes if payload.writer_notes is not None else existing.writer_notes
+            
+            # Check if at least one field is being updated (use set comparison for lists)
+            if (new_title == title and new_summary == existing.summary and 
+                lists_equal(new_canonical_facts, existing.canonical_facts) and 
+                lists_equal(new_related_character_ids, existing.related_character_ids) and
+                lists_equal(new_source_artifacts, existing.source_artifacts) and
+                new_visibility_scope == existing.visibility_scope and
+                lists_equal(new_continuity_warnings, existing.continuity_warnings) and
+                new_writer_notes == existing.writer_notes):
                 raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
+            
             # Call upsert with merged data
             return story_knowledge_service.upsert_world_bible_entry(
                 project_id,
                 entry_type=entry_type,
-                content=updates.get("content", existing.content),
-                title=updates.get("title", title),
-                category=updates.get("category", existing.category),
-                tags=updates.get("tags", existing.tags),
-                related_entry_ids=updates.get("related_entry_ids", existing.related_entry_ids),
-                importance_level=updates.get("importance_level", existing.importance_level),
+                summary=new_summary,
+                title=new_title,
+                canonical_facts=new_canonical_facts,
+                related_character_ids=new_related_character_ids,
+                source_artifacts=new_source_artifacts,
+                visibility_scope=new_visibility_scope,
+                continuity_warnings=new_continuity_warnings,
+                writer_notes=new_writer_notes,
             )
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="World bible entry not found.") from exc
@@ -1494,12 +1494,15 @@ def build_story_development_router(
     @router.get("/arcs/candidates", response_model=ArcCandidateListResponse)
     def list_arc_candidates(project_id: str) -> ArcCandidateListResponse:
         """List all arc candidates for a project."""
-        candidates = list(story_knowledge_service.list_arc_candidates(project_id))
-        return ArcCandidateListResponse(
-            project_id=project_id,
-            items=candidates,
-            meta={"ordered_by": "candidate_id_asc"},
-        )
+        try:
+            candidates = list(story_knowledge_service.list_arc_candidates(project_id))
+            return ArcCandidateListResponse(
+                project_id=project_id,
+                items=candidates,
+                meta={"ordered_by": "candidate_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/arcs/selections", response_model=ArcSelectionListResponse)
     def list_arc_selections(project_id: str) -> ArcSelectionListResponse:
@@ -1514,11 +1517,14 @@ def build_story_development_router(
     @router.get("/arcs/stage-maps", response_model=ArcStageMapListResponse)
     def list_arc_stage_maps(project_id: str) -> ArcStageMapListResponse:
         """List all arc stage maps for a project."""
-        stage_maps = list(story_knowledge_service.list_arc_stage_maps(project_id))
-        return ArcStageMapListResponse(
-            project_id=project_id,
-            items=stage_maps,
-            meta={"ordered_by": "stage_id_asc"},
-        )
+        try:
+            stage_maps = list(story_knowledge_service.list_arc_stage_maps(project_id))
+            return ArcStageMapListResponse(
+                project_id=project_id,
+                items=stage_maps,
+                meta={"ordered_by": "stage_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return router
