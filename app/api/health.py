@@ -67,8 +67,17 @@ async def readiness_check() -> dict:
     try:
         project_dir = settings.projects_dir
         if project_dir.exists():
-            stat = os.statvfs(project_dir)
-            free_bytes = stat.f_bavail * stat.f_frsize
+            # Cross-platform disk space check
+            import shutil
+            if os.name == 'nt':  # Windows
+                # Get drive letter from path (e.g., "F:" from "F:\Dev\...")
+                drive = str(project_dir).split(':')[0] + ':'
+                total, used, free = shutil.disk_usage(drive)
+                free_bytes = free
+            else:  # Unix/Linux/macOS
+                stat = os.statvfs(project_dir)
+                free_bytes = stat.f_bavail * stat.f_frsize
+            
             min_free_bytes = 1_073_741_824  # 1 GB
             
             if free_bytes < min_free_bytes:
@@ -119,19 +128,25 @@ async def get_metrics() -> dict:
     Returns current system metrics:
     - Circuit breaker states for all inference backends
     - Failure counts and recovery times
+    - Job status counts
+    - Role model checker status counts
     
     Can be scraped by Prometheus or similar monitoring systems.
     """
+    import time
+    from ..settings import settings
+    from ..persistence.sqlite import connect
+    
     circuit_states = get_all_circuit_states()
     
     metrics = {
+        "timestamp": time.time(),
         "circuit_breakers": {},
-        "timestamp": None,  # Will be set below
+        "jobs": {},
+        "role_model_checker": {},
     }
     
-    import time
-    metrics["timestamp"] = time.time()
-    
+    # Circuit breaker states
     for backend_name, state in circuit_states.items():
         metrics["circuit_breakers"][backend_name] = {
             "state": state.state.value,
@@ -139,6 +154,54 @@ async def get_metrics() -> dict:
             "last_failure_time": state.last_failure_time,
             "last_success_time": state.last_success_time,
             "recovery_available_at": state.recovery_available_at,
+        }
+    
+    # Job status counts
+    try:
+        db_path = settings.operations_db_path
+        with connect(db_path) as connection:
+            # Count jobs by status
+            row = connection.execute(
+                "SELECT status, COUNT(*) as count FROM jobs GROUP BY status"
+            ).fetchall()
+            for r in row:
+                metrics["jobs"][r["status"]] = r["count"]
+            
+            # Ensure all terminal statuses are present
+            for status in ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]:
+                if status not in metrics["jobs"]:
+                    metrics["jobs"][status] = 0
+    except Exception:
+        # If we can't read job counts, return zeros
+        metrics["jobs"] = {
+            "PENDING": 0,
+            "PROCESSING": 0,
+            "COMPLETED": 0,
+            "FAILED": 0,
+        }
+    
+    # Role model checker status counts
+    try:
+        db_path = settings.operations_db_path
+        with connect(db_path) as connection:
+            # Count checker runs by status
+            row = connection.execute(
+                "SELECT status, COUNT(*) as count FROM checker_runs GROUP BY status"
+            ).fetchall()
+            for r in row:
+                metrics["role_model_checker"][r["status"]] = r["count"]
+            
+            # Ensure all terminal statuses are present
+            for status in ["PENDING", "RUNNING", "COMPLETED", "FAILED"]:
+                if status not in metrics["role_model_checker"]:
+                    metrics["role_model_checker"][status] = 0
+    except Exception:
+        # If we can't read checker counts, return zeros
+        metrics["role_model_checker"] = {
+            "PENDING": 0,
+            "RUNNING": 0,
+            "COMPLETED": 0,
+            "FAILED": 0,
         }
     
     return metrics

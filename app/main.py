@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +30,7 @@ from .schemas.projects import (
 )
 from .settings import settings
 from .persistence.story_development import StoryDevelopmentRepository
+from .services.authentication import fingerprint_api_key
 
 
 # Maximum request body size: 10 MB
@@ -106,6 +109,77 @@ def build_app() -> FastAPI:
 
     # Add rate limiting middleware (SEC-05)
     app.add_middleware(RateLimitMiddleware)
+
+    # Add audit logging middleware (REL-10)
+    @app.middleware("http")
+    async def audit_logging_middleware(request: Request, call_next):
+        """Log all versioned API requests to structured log file (REL-10).
+        
+        Records:
+        - timestamp
+        - HTTP method
+        - request path
+        - response status code
+        - API key fingerprint (if authenticated)
+        """
+        # Only log versioned API requests
+        if not request.url.path.startswith('/v1'):
+            return await call_next(request)
+        
+        # Get API key fingerprint if present
+        api_key = request.headers.get('X-API-Key')
+        api_key_fingerprint = None
+        if api_key:
+            api_key_fingerprint = fingerprint_api_key(api_key)
+        
+        # Record start time for duration calculation
+        import time
+        start_time = time.time()
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Calculate duration
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        # Build audit record
+        audit_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": duration_ms,
+            "api_key_fingerprint": api_key_fingerprint,
+        }
+        
+        # Extract project_id from path if present (e.g., /v1/projects/{project_id}/...)
+        path_parts = request.url.path.split('/')
+        if len(path_parts) > 2 and path_parts[1] == 'v1':
+            # Look for project_id in common patterns
+            try:
+                if path_parts[2] == 'projects' and len(path_parts) > 3:
+                    audit_record["project_id"] = path_parts[3]
+                elif path_parts[2] == 'story-development':
+                    # project_id might be in query params for story-dev endpoints
+                    project_id = request.query_params.get('project_id')
+                    if project_id:
+                        audit_record["project_id"] = project_id
+            except (IndexError, KeyError):
+                pass
+        
+        # Write to structured log file
+        try:
+            from pathlib import Path
+            log_path = Path(settings.structured_log_filename)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with open(log_path, 'a') as f:
+                f.write(json.dumps(audit_record) + '\n')
+        except Exception:
+            # Don't fail the request if logging fails
+            pass
+        
+        return response
 
     if settings.api_key:
         @app.middleware("http")

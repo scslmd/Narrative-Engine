@@ -266,7 +266,7 @@ def test_checker_start_endpoint_rejects_key_reuse_for_different_payload() -> Non
 def test_job_manager_rejects_terminal_reactivation(tmp_path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     manager = JobManager(db_path)
-    job = manager.create_job(JobCreateRequest(phase="P-100", payload={}))
+    job = manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "test-project"}))
     manager.update_job(job.id, status="PROCESSING")
     manager.update_job(job.id, status="COMPLETED")
 
@@ -295,7 +295,7 @@ def test_checker_manager_rejects_terminal_reactivation(tmp_path) -> None:
 def test_job_retry_requires_failed_state(tmp_path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     manager = JobManager(db_path)
-    job = manager.create_job(JobCreateRequest(phase="P-100", payload={}))
+    job = manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "test-project"}))
 
     with pytest.raises(RetryNotAllowedError, match="cannot be retried"):
         manager.retry_job(job.id)

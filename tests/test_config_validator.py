@@ -133,3 +133,99 @@ class TestConfigValidator:
         assert str(error) == "Test message"
         assert error.message == "Test message"
         assert error.component == "test_component"
+
+
+class TestDirectoryPermissionValidation:
+    """Test REL-09: Directory permission validation."""
+    
+    def test_safe_directory_passes_validation(self, tmp_path: Path) -> None:
+        """A safe, writable directory should pass validation."""
+        validator = ConfigValidator()
+        
+        # Create a safe directory
+        safe_dir = tmp_path / "safe_projects"
+        safe_dir.mkdir()
+        
+        with patch.dict(os.environ, {"PROJECTS_DIR": str(safe_dir)}, clear=False):
+            result = validator._validate_directories()
+            assert result is True
+    
+    def test_world_writable_directory_fails_on_unix(self, tmp_path: Path) -> None:
+        """A world-writable directory should fail validation on Unix systems."""
+        import platform
+        
+        # Skip on Windows - world-writable check only applies to Unix
+        if platform.system() == "Windows":
+            pytest.skip("World-writable check only applies to Unix systems")
+        
+        validator = ConfigValidator()
+        
+        # Create a directory and make it world-writable
+        unsafe_dir = tmp_path / "unsafe_projects"
+        unsafe_dir.mkdir()
+        os.chmod(unsafe_dir, 0o777)  # rwxrwxrwx - world-writable
+        
+        with patch.dict(os.environ, {"PROJECTS_DIR": str(unsafe_dir)}, clear=False):
+            with pytest.raises(ConfigValidationError) as exc_info:
+                validator._validate_directories()
+            
+            assert "world-writable" in str(exc_info.value).lower()
+            assert exc_info.value.component == "directories"
+    
+    def test_group_writable_directory_warns_on_unix(self, tmp_path: Path) -> None:
+        """A group-writable directory should warn but not fail on Unix systems."""
+        import platform
+        
+        # Skip on Windows - group-writable check only applies to Unix
+        if platform.system() == "Windows":
+            pytest.skip("Group-writable check only applies to Unix systems")
+        
+        validator = ConfigValidator()
+        
+        # Create a directory and make it group-writable
+        group_writable_dir = tmp_path / "group_writable_projects"
+        group_writable_dir.mkdir()
+        os.chmod(group_writable_dir, 0o775)  # rwxrwxr-x - group-writable
+        
+        with patch.dict(os.environ, {"PROJECTS_DIR": str(group_writable_dir)}, clear=False):
+            with patch('builtins.print') as mock_print:
+                result = validator._validate_directories()
+                assert result is True  # Should still pass
+                # Should have printed a warning
+                warning_calls = [call for call in mock_print.call_args_list 
+                               if 'group-writable' in str(call).lower()]
+                assert len(warning_calls) > 0
+    
+    def test_non_writable_directory_fails(self, tmp_path: Path) -> None:
+        """A non-writable directory should fail validation."""
+        import platform
+        
+        # Skip on Windows - permission model is different
+        if platform.system() == "Windows":
+            pytest.skip("Permission model different on Windows")
+        
+        validator = ConfigValidator()
+        
+        # Create a directory and make it read-only
+        readonly_dir = tmp_path / "readonly_projects"
+        readonly_dir.mkdir()
+        os.chmod(readonly_dir, 0o555)  # r-xr-xr-x - read-only
+        
+        with patch.dict(os.environ, {"PROJECTS_DIR": str(readonly_dir)}, clear=False):
+            with pytest.raises(ConfigValidationError) as exc_info:
+                validator._validate_directories()
+            
+            assert "not writable" in str(exc_info.value).lower()
+            assert exc_info.value.component == "directories"
+    
+    def test_directory_creation_on_missing(self, tmp_path: Path) -> None:
+        """Validation should create directory if it doesn't exist."""
+        validator = ConfigValidator()
+        
+        new_dir = tmp_path / "new_projects"
+        assert not new_dir.exists()
+        
+        with patch.dict(os.environ, {"PROJECTS_DIR": str(new_dir)}, clear=False):
+            result = validator._validate_directories()
+            assert result is True
+            assert new_dir.exists()

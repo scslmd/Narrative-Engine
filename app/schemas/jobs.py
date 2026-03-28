@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .base import StrictModel
 from .enums import JobPhase, JobStatus
@@ -30,6 +30,30 @@ class JobCreateRequest(StrictModel):
                 f"Payload exceeds maximum allowed size of {MAX_PAYLOAD_SIZE / (1024 * 1024):.0f} MB"
             )
         return v
+
+    @model_validator(mode='after')
+    def validate_phase_specific_payload(self) -> 'JobCreateRequest':
+        """Validate phase-specific payload requirements (REL-08).
+        
+        For phases P-100, P-200, P-300, and P-400, the payload must contain
+        a non-empty string 'project_id'.
+        """
+        # JobPhase is a str, Enum so self.phase is already a string
+        if self.phase in ('P-100', 'P-200', 'P-300', 'P-400'):
+            project_id = self.payload.get('project_id')
+            if project_id is None:
+                raise ValueError(
+                    f"Payload must contain 'project_id' for phase {self.phase}"
+                )
+            if not isinstance(project_id, str):
+                raise ValueError(
+                    f"Payload 'project_id' must be a string for phase {self.phase}"
+                )
+            if not project_id.strip():
+                raise ValueError(
+                    f"Payload 'project_id' must be a non-empty string for phase {self.phase}"
+                )
+        return self
 
 
 class JobRetryRequest(StrictModel):

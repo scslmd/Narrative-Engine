@@ -59,6 +59,10 @@ class ProjectArtifactResponse(StrictSchemaModel):
     artifact_name: str = Field(min_length=1)
     content: str
     updated_at: datetime
+    # Optional lineage fields (populated when artifact comes from lineage-aware storage)
+    lineage_id: int | None = None
+    run_id: str | None = None
+    step_name: str | None = None
 
 
 ProjectSummary = ProjectSummaryResponse

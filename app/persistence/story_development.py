@@ -53,6 +53,15 @@ def _parse_json_objects(value: str | None) -> list[dict[str, Any]]:
     return [dict(item) for item in raw]
 
 
+def _parse_json_object(value: str | None) -> dict[str, Any] | None:
+    if not value:
+        return None
+    raw = json.loads(value)
+    if not isinstance(raw, dict):
+        raise TypeError("expected a JSON object")
+    return dict(raw)
+
+
 @dataclass(frozen=True)
 class StoryFlowDefinitionRecord:
     project_id: str
@@ -500,6 +509,28 @@ class RevisionSuggestionRecord:
     rationale: str
     source_context: list[str]
     status: StorySuggestionLifecycleState
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class StoryboardCardRecord:
+    """Record for storyboard cards used in planning workspace.
+    
+    Storyboard cards represent individual planning elements (scenes, beats, ideas)
+    that can be arranged, reordered, and organized on a visual board.
+    """
+    card_id: str
+    project_id: str
+    title: str
+    content: str
+    card_type: str  # 'scene', 'beat', 'idea', 'note', etc.
+    column_id: str | None  # Column on the board (e.g., 'planned', 'drafting', 'done')
+    position: int  # Position within column for ordering
+    tags: list[str]
+    character_ids: list[str]  # Associated characters
+    dependencies: list[str]  # Card IDs this card depends on
+    metadata: dict[str, Any]  # Flexible metadata field
     created_at: datetime
     updated_at: datetime
 
@@ -3364,6 +3395,336 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_revision_suggestion_row_to_record(row) for row in rows]
 
+    # ============================================================================
+    # Storyboard Card Methods
+    # ============================================================================
+
+    def create_storyboard_card(
+        self,
+        *,
+        card_id: str,
+        project_id: str,
+        title: str,
+        content: str,
+        card_type: str = "idea",
+        column_id: str | None = None,
+        position: int = 0,
+        tags: list[str] | None = None,
+        character_ids: list[str] | None = None,
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> StoryboardCardRecord:
+        """Create a new storyboard card.
+        
+        Args:
+            card_id: Unique identifier for the card
+            project_id: Project this card belongs to
+            title: Short title/heading for the card
+            content: Main content/body of the card
+            card_type: Type of card ('scene', 'beat', 'idea', 'note', etc.)
+            column_id: Column on the board (e.g., 'planned', 'drafting', 'done')
+            position: Position within column for ordering
+            tags: List of tags for categorization
+            character_ids: Associated character IDs
+            dependencies: Card IDs this card depends on
+            metadata: Flexible metadata field
+            created_at: Creation timestamp
+            updated_at: Update timestamp
+            
+        Returns:
+            The created StoryboardCardRecord
+        """
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO storyboard_cards (
+                    card_id, project_id, title, content, card_type, column_id, position,
+                    tags, character_ids, dependencies, metadata, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    card_id,
+                    project_id,
+                    title,
+                    content,
+                    card_type,
+                    column_id,
+                    position,
+                    _json_list(tags),
+                    _json_list(character_ids),
+                    _json_list(dependencies),
+                    _json_object(metadata or {}),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_storyboard_card(card_id)
+
+    def upsert_storyboard_card(
+        self,
+        *,
+        card_id: str,
+        project_id: str,
+        title: str,
+        content: str,
+        card_type: str = "idea",
+        column_id: str | None = None,
+        position: int = 0,
+        tags: list[str] | None = None,
+        character_ids: list[str] | None = None,
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> StoryboardCardRecord:
+        """Create or update a storyboard card.
+        
+        Args:
+            card_id: Unique identifier for the card
+            project_id: Project this card belongs to
+            title: Short title/heading for the card
+            content: Main content/body of the card
+            card_type: Type of card ('scene', 'beat', 'idea', 'note', etc.)
+            column_id: Column on the board (e.g., 'planned', 'drafting', 'done')
+            position: Position within column for ordering
+            tags: List of tags for categorization
+            character_ids: Associated character IDs
+            dependencies: Card IDs this card depends on
+            metadata: Flexible metadata field
+            created_at: Creation timestamp (only used for new cards)
+            updated_at: Update timestamp
+            
+        Returns:
+            The created or updated StoryboardCardRecord
+        """
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO storyboard_cards (
+                    card_id, project_id, title, content, card_type, column_id, position,
+                    tags, character_ids, dependencies, metadata, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(card_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    title = excluded.title,
+                    content = excluded.content,
+                    card_type = excluded.card_type,
+                    column_id = excluded.column_id,
+                    position = excluded.position,
+                    tags = excluded.tags,
+                    character_ids = excluded.character_ids,
+                    dependencies = excluded.dependencies,
+                    metadata = excluded.metadata,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    card_id,
+                    project_id,
+                    title,
+                    content,
+                    card_type,
+                    column_id,
+                    position,
+                    _json_list(tags),
+                    _json_list(character_ids),
+                    _json_list(dependencies),
+                    _json_object(metadata or {}),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_storyboard_card(card_id)
+
+    def get_storyboard_card(self, card_id: str) -> StoryboardCardRecord:
+        """Get a storyboard card by ID.
+        
+        Args:
+            card_id: The card identifier
+            
+        Returns:
+            The StoryboardCardRecord
+            
+        Raises:
+            KeyError: If card not found
+        """
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                "SELECT * FROM storyboard_cards WHERE card_id = ?",
+                (card_id,),
+            ).fetchone()
+        
+        if row is None:
+            raise KeyError(f"Storyboard card not found: {card_id}")
+        
+        return _storyboard_card_row_to_record(row)
+
+    def list_storyboard_cards(
+        self,
+        project_id: str,
+        *,
+        column_id: str | None = None,
+        card_type: str | None = None,
+        tag: str | None = None,
+    ) -> list[StoryboardCardRecord]:
+        """List storyboard cards with optional filters.
+        
+        Args:
+            project_id: Project to filter by
+            column_id: Optional column filter
+            card_type: Optional card type filter
+            tag: Optional tag filter (cards containing this tag)
+            
+        Returns:
+            List of StoryboardCardRecord objects
+        """
+        query = "SELECT * FROM storyboard_cards WHERE project_id = ?"
+        params: list[str | int] = [project_id]
+        
+        if column_id is not None:
+            query += " AND column_id = ?"
+            params.append(column_id)
+        
+        if card_type is not None:
+            query += " AND card_type = ?"
+            params.append(card_type)
+        
+        if tag is not None:
+            query += " AND tags LIKE ?"
+            params.append(f"%{tag}%")
+        
+        query += " ORDER BY column_id ASC, position ASC, card_id ASC"
+        
+        with connect(self.db_path) as connection:
+            rows = connection.execute(query, params).fetchall()
+        
+        return [_storyboard_card_row_to_record(row) for row in rows]
+
+    def delete_storyboard_card(self, card_id: str) -> None:
+        """Delete a storyboard card.
+        
+        Args:
+            card_id: The card identifier
+        """
+        with connect(self.db_path) as connection:
+            connection.execute(
+                "DELETE FROM storyboard_cards WHERE card_id = ?",
+                (card_id,),
+            )
+            connection.commit()
+
+    def update_storyboard_card_position(
+        self,
+        *,
+        card_id: str,
+        column_id: str | None,
+        position: int,
+    ) -> StoryboardCardRecord:
+        """Update a card's position (for drag-and-drop reordering).
+        
+        Args:
+            card_id: The card identifier
+            column_id: Target column
+            position: New position within column
+            
+        Returns:
+            The updated StoryboardCardRecord
+        """
+        now = _now()
+        
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE storyboard_cards
+                SET column_id = ?, position = ?, updated_at = ?
+                WHERE card_id = ?
+                """,
+                (column_id, position, now.isoformat(), card_id),
+            )
+            connection.commit()
+        return self.get_storyboard_card(card_id)
+
+    def update_storyboard_card_content(
+        self,
+        *,
+        card_id: str,
+        title: str | None = None,
+        content: str | None = None,
+        card_type: str | None = None,
+        tags: list[str] | None = None,
+        character_ids: list[str] | None = None,
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+        updated_at: datetime | None = None,
+    ) -> StoryboardCardRecord:
+        """Update specific fields of a storyboard card.
+        
+        Args:
+            card_id: The card identifier
+            title: New title (optional)
+            content: New content (optional)
+            card_type: New card type (optional)
+            tags: New tags (optional)
+            character_ids: New character IDs (optional)
+            dependencies: New dependencies (optional)
+            metadata: New metadata (optional)
+            updated_at: Update timestamp
+            
+        Returns:
+            The updated StoryboardCardRecord
+        """
+        now = _now(updated_at)
+        
+        with connect(self.db_path) as connection:
+            updates = ["updated_at = ?"]
+            params: list[str | int | dict | list] = [now.isoformat()]
+            
+            if title is not None:
+                updates.append("title = ?")
+                params.append(title)
+            
+            if content is not None:
+                updates.append("content = ?")
+                params.append(content)
+            
+            if card_type is not None:
+                updates.append("card_type = ?")
+                params.append(card_type)
+            
+            if tags is not None:
+                updates.append("tags = ?")
+                params.append(_json_list(tags))
+            
+            if character_ids is not None:
+                updates.append("character_ids = ?")
+                params.append(_json_list(character_ids))
+            
+            if dependencies is not None:
+                updates.append("dependencies = ?")
+                params.append(_json_list(dependencies))
+            
+            if metadata is not None:
+                updates.append("metadata = ?")
+                params.append(_json_object(metadata))
+            
+            updates.append("WHERE card_id = ?")
+            params.append(card_id)
+            
+            query = f"UPDATE storyboard_cards SET {', '.join(updates[:-1])} {updates[-1]}"
+            connection.execute(query, params)
+            connection.commit()
+        
+        return self.get_storyboard_card(card_id)
+
     def _normalize_branch_state(self, branch_state: StoryBranchState | str) -> StoryBranchState:
         if isinstance(branch_state, StoryBranchState):
             return branch_state
@@ -4201,6 +4562,24 @@ def _world_bible_row_to_record(row) -> WorldBibleEntryRecord:
         source_artifacts=_parse_json_list(row["source_artifacts_json"]),
         continuity_warnings=_parse_json_list(row["continuity_warnings_json"]),
         writer_notes=row["writer_notes"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _storyboard_card_row_to_record(row) -> StoryboardCardRecord:
+    return StoryboardCardRecord(
+        card_id=row["card_id"],
+        project_id=row["project_id"],
+        title=row["title"],
+        content=row["content"],
+        card_type=row["card_type"],
+        column_id=row["column_id"],
+        position=int(row["position"]),
+        tags=_parse_json_list(row["tags"]),
+        character_ids=_parse_json_list(row["character_ids"]),
+        dependencies=_parse_json_list(row["dependencies"]),
+        metadata=_parse_json_object(row["metadata"]) or {},
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

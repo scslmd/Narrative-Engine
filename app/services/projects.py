@@ -73,19 +73,116 @@ class ProjectService:
         )
 
     def read_artifact(self, project_id: str, artifact_name: str) -> ProjectArtifactResponse:
+        """Read an artifact, preferring lineage-aware canonical artifacts when available.
+        
+        This method first checks for a canonical lineage-backed artifact for the given
+        project_id and artifact_name. If found, it returns that content. Otherwise,
+        it falls back to reading from the project's file-based artifact storage.
+        
+        Args:
+            project_id: The project identifier
+            artifact_name: The artifact name (e.g., 'sequence', 'chapter-1', 'manifest')
+            
+        Returns:
+            ProjectArtifactResponse with the artifact content and metadata
+            
+        Raises:
+            FileNotFoundError: If no artifact is found in either lineage or file storage
+        """
+        # For manifest, always use file-based read (not lineage-tracked)
+        if artifact_name == "manifest":
+            return self._read_file_artifact(project_id, artifact_name)
+        
+        # Try to get lineage-aware canonical artifact first
+        lineage_artifact = self._get_canonical_lineage_artifact(project_id, artifact_name)
+        if lineage_artifact is not None:
+            return self._read_lineage_artifact(lineage_artifact, artifact_name)
+        
+        # Fall back to file-based read
+        return self._read_file_artifact(project_id, artifact_name)
+    
+    def _get_canonical_lineage_artifact(self, project_id: str, artifact_name: str) -> dict[str, object] | None:
+        """Get the latest canonical lineage artifact for a project and artifact role.
+        
+        Args:
+            project_id: The project identifier
+            artifact_name: The artifact name/role
+            
+        Returns:
+            Lineage artifact dict if found, None otherwise
+        """
+        from app.persistence.steps import StepRecordRepository
+        
+        try:
+            # Use the same database path logic as the repository
+            db_path = settings.operations_db_path if self.root_dir == settings.root_dir else self.root_dir / "data" / "state" / "narrative_ops.db"
+            step_repo = StepRecordRepository(db_path)
+            return step_repo.latest_canonical_for_project_artifact(
+                project_id=project_id,
+                artifact_role=_canonical_artifact_type(artifact_name)
+            )
+        except Exception:
+            # If lineage lookup fails for any reason, return None to fall back to file read
+            return None
+    
+    def _read_lineage_artifact(self, lineage_artifact: dict[str, object], artifact_name: str) -> ProjectArtifactResponse:
+        """Read content from a lineage-tracked artifact.
+        
+        Args:
+            lineage_artifact: The lineage artifact record from the database
+            artifact_name: The original artifact name requested
+            
+        Returns:
+            ProjectArtifactResponse with the artifact content
+        """
+        artifact_path = Path(lineage_artifact["path"])
+        
+        if not artifact_path.exists():
+            raise FileNotFoundError(f"Lineage artifact path not found: {artifact_path}")
+        
+        content = artifact_path.read_text(encoding="utf-8")
+        
+        # Use produced_at timestamp from lineage record
+        produced_at = lineage_artifact.get("produced_at")
+        updated_at = datetime.fromisoformat(produced_at) if produced_at else _file_timestamp(artifact_path)
+        
+        return ProjectArtifactResponse(
+            project_id=lineage_artifact.get("project_id"),
+            artifact_name=artifact_name,
+            content=content,
+            updated_at=updated_at,
+            lineage_id=lineage_artifact.get("artifact_lineage_id"),
+            run_id=lineage_artifact.get("run_id"),
+            step_name=lineage_artifact.get("step_name"),
+        )
+    
+    def _read_file_artifact(self, project_id: str, artifact_name: str) -> ProjectArtifactResponse:
+        """Read content from a file-based artifact (fallback).
+        
+        Args:
+            project_id: The project identifier
+            artifact_name: The artifact name
+            
+        Returns:
+            ProjectArtifactResponse with the artifact content
+            
+        Raises:
+            FileNotFoundError: If artifact doesn't exist or is empty
+        """
         projection = self._require_projection(project_id)
         artifact_path = self._artifact_path(projection, artifact_name)
+        
         if artifact_path is None or not artifact_path.exists():
             raise FileNotFoundError(f"Artifact not found: {artifact_name}")
-
+        
         if artifact_name != "manifest" and artifact_path.stat().st_size == 0:
             raise FileNotFoundError(f"Artifact not found: {artifact_name}")
-
+        
         content = artifact_path.read_text(encoding="utf-8")
         if artifact_name == "manifest":
             parsed = json.loads(content)
             content = json.dumps(parsed, ensure_ascii=True, indent=2, sort_keys=True)
-
+        
         return ProjectArtifactResponse(
             project_id=projection.project_id,
             artifact_name=artifact_name,
