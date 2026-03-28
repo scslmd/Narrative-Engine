@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+import re
 
 from app.persistence.sqlite import connect, ensure_operations_db
 from app.persistence.story_development import StoryDevelopmentRepository
@@ -164,7 +165,9 @@ def test_compare_arc_candidates_ranks_options_deterministically(tmp_path: Path) 
     assert comparisons[0].score == (3, 1, 2, -5)
     assert "Quest" in comparisons[0].notes[0]
     assert {record.arc_id for record in repository.list_arc_candidates(project_id)} == {"arc-a", "arc-c"}
-    assert [record.comparison_id for record in repository.list_arc_comparisons(project_id)] == ["story-knowledge-2:comparison:001"]
+    comparison_records = repository.list_arc_comparisons(project_id)
+    assert len(comparison_records) == 1
+    assert re.fullmatch(r"story-knowledge-2:comparison:[0-9a-f]{32}", comparison_records[0].comparison_id)
     assert service.list_arc_comparisons(project_id) == (comparisons,)
 
 
@@ -202,10 +205,14 @@ def test_select_arc_candidate_remains_advisory_and_inspectable(tmp_path: Path) -
     assert selection.selected_arc.arc_id == "arc-braided"
     assert selection.rejected_arc_ids == ["arc-heroic"]
     assert selection.comparison_notes[0].startswith("Braided Arc:")
-    assert selection.comparison_record_ids == ["story-knowledge-3:comparison:001"]
-    assert [record.comparison_id for record in repository.list_arc_comparisons(project_id)] == ["story-knowledge-3:comparison:001"]
+    assert len(selection.comparison_record_ids) == 1
+    assert re.fullmatch(r"story-knowledge-3:comparison:[0-9a-f]{32}", selection.comparison_record_ids[0])
+    comparison_records = repository.list_arc_comparisons(project_id)
+    assert len(comparison_records) == 1
+    assert selection.comparison_record_ids == [comparison_records[0].comparison_id]
     decision_nodes = repository.list_story_decision_nodes(project_id)
-    assert [node.node_id for node in decision_nodes] == ["story-knowledge-3:selection:001:decision"]
+    assert len(decision_nodes) == 1
+    assert decision_nodes[0].node_id == f"{selection.selection_id}:decision"
     assert decision_nodes[0].change_type == "ARC_SELECTION"
     assert decision_nodes[0].subject_type == "ARC_SELECTION"
     assert decision_nodes[0].subject_id == selection.selection_id
@@ -242,7 +249,8 @@ def test_update_arc_stage_map_updates_latest_selection_view(tmp_path: Path) -> N
     assert stage_map.arc_stage_map_id == f"{project_id}:arc-mystery:stage-map"
     assert stage_map.stage_kinds == ["brainstorm", "character", "world_bible", "arc_selection", "planning"]
     assert latest_selection.stage_map == stage_map
-    assert latest_selection.comparison_record_ids == ["story-knowledge-4:comparison:001"]
+    assert len(latest_selection.comparison_record_ids) == 1
+    assert re.fullmatch(r"story-knowledge-4:comparison:[0-9a-f]{32}", latest_selection.comparison_record_ids[0])
     assert selection.selected_arc.arc_id == "arc-mystery"
     assert service.get_arc_stage_map(project_id, arc_id="arc-mystery") == stage_map
     assert persisted_selection.stage_map == repository.get_arc_stage_map(project_id, arc_id="arc-mystery")
@@ -250,3 +258,72 @@ def test_update_arc_stage_map_updates_latest_selection_view(tmp_path: Path) -> N
     assert [node.change_type for node in decision_nodes] == ["ARC_SELECTION", "PLANNING_PIVOT"]
     assert decision_nodes[-1].subject_type == "ARC_STAGE_MAP"
     assert decision_nodes[-1].subject_id == f"{project_id}:arc-mystery:stage-map"
+
+
+def test_list_character_profiles_batches_relationship_edge_reads(tmp_path: Path) -> None:
+    service, repository = _service(tmp_path)
+    project_id = "story-knowledge-5"
+    _seed_project(repository.db_path, project_id)
+
+    service.upsert_character_profile(project_id, **_character_kwargs())
+    service.upsert_character_profile(
+        project_id,
+        **_character_kwargs(
+            character_id="orin-vale",
+            display_name="Orin Vale",
+            role_in_story="ally",
+            archetype="skeptical scholar",
+            external_goal="Keep the archive intact.",
+            internal_need="Accept that change is inevitable.",
+            misbelief_or_wound="If he records everything, he can preserve it.",
+            core_fear="Forgetting what matters.",
+            primary_strength="Memory",
+            fatal_flaw_or_limitation="Hesitates when facts conflict.",
+            contradictions=["Cautious keeper", "Secretly curious"],
+            backstory_summary="A chronicler who believes records can outlast ruin.",
+            voice_notes="Measured, dry, and precise.",
+            secrets=["He hid a torn page from the archive."],
+            values=["Truth", "Preservation"],
+            taboos=["Destroy records"],
+            change_axis="From caution to courage",
+            arc_stage_notes=["Remain support", "Challenge assumptions"],
+            continuity_facts=["Knows the archive vault layout"],
+        ),
+    )
+    edge = service.upsert_relationship_edge(
+        project_id,
+        source_character_id="mara-vale",
+        target_character_id="orin-vale",
+        relation_kind="ally",
+        summary="They rely on each other to preserve the city record.",
+    )
+
+    list_relationship_edges_calls = 0
+    list_relationship_edges_for_character_calls = 0
+
+    original_list_relationship_edges = repository.list_relationship_edges
+    original_list_relationship_edges_for_character = repository.list_relationship_edges_for_character
+
+    def counted_list_relationship_edges(project_id_arg: str):
+        nonlocal list_relationship_edges_calls
+        list_relationship_edges_calls += 1
+        return original_list_relationship_edges(project_id_arg)
+
+    def counted_list_relationship_edges_for_character(project_id_arg: str, character_id_arg: str):
+        nonlocal list_relationship_edges_for_character_calls
+        list_relationship_edges_for_character_calls += 1
+        return original_list_relationship_edges_for_character(project_id_arg, character_id_arg)
+
+    repository.list_relationship_edges = counted_list_relationship_edges
+    repository.list_relationship_edges_for_character = counted_list_relationship_edges_for_character
+    try:
+        profiles = service.list_character_profiles(project_id)
+    finally:
+        repository.list_relationship_edges = original_list_relationship_edges
+        repository.list_relationship_edges_for_character = original_list_relationship_edges_for_character
+
+    assert list_relationship_edges_calls == 1
+    assert list_relationship_edges_for_character_calls == 0
+    assert [profile.character_id for profile in profiles] == ["mara-vale", "orin-vale"]
+    assert [relationship.edge_id for relationship in profiles[0].relationship_edges] == [edge.edge_id]
+    assert [relationship.edge_id for relationship in profiles[1].relationship_edges] == [edge.edge_id]

@@ -7,13 +7,20 @@ from pydantic import Field
 
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import (
+    ArcCandidate,
+    ArcSelection,
+    ArcStageMap,
     BranchComparisonRecord,
     BranchMergeDecision,
     BranchStateRef,
+    BrainstormItem,
+    BrainstormPromotion,
     ChapterPacket,
     ChapterPlan,
     CheckerFinding,
     DraftArtifact,
+    FoundationProfile,
+    FoundationRevision,
     InspectRunLink,
     ManuscriptDocument,
     PlanningDependency,
@@ -27,13 +34,22 @@ from app.schemas import (
     StoryFlowDefinition,
     StoryFlowStage,
     StorySuggestionLifecycleState,
+    CharacterProfile,
+    RelationshipEdge,
+    WorldBibleEntry,
 )
 from app.schemas.base import StrictModel
+from app.services.brainstorm import BrainstormNotFoundError, BrainstormService, BrainstormValidationError
 from app.services.drafting import DraftingNotFoundError, DraftingService
 from app.services.editable_flow import (
     EditableFlowNotFoundError,
     EditableFlowService,
     EditableFlowValidationError,
+)
+from app.services.foundation import (
+    FoundationNotFoundError,
+    FoundationService,
+    FoundationValidationError,
 )
 from app.services.planning import PlanningNotFoundError, PlanningService
 from app.services.review_routing import ReviewRoutingNotFoundError, ReviewRoutingService, ReviewRoutingValidationError
@@ -46,6 +62,11 @@ from app.services.story_decision_review import (
     StoryDecisionReviewNotFoundError,
     StoryDecisionReviewService,
     StoryDecisionReviewValidationError,
+)
+from app.services.story_knowledge import (
+    StoryKnowledgeNotFoundError,
+    StoryKnowledgeService,
+    StoryKnowledgeValidationError,
 )
 
 
@@ -250,6 +271,221 @@ class FlowStageReorderRequest(StrictModel):
     stage_order: list[str] = Field(..., min_length=1)
 
 
+# Brainstorm schemas
+class BrainstormItemCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    content: str = Field(..., min_length=1, max_length=10000)
+    status: str = Field(default="keep", max_length=20)
+    cluster_key: str | None = Field(None, max_length=100)
+    tags: list[str] = Field(default_factory=list)
+    source_artifact_refs: list[str] = Field(default_factory=list)
+
+
+class BrainstormItemClusterRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    item_ids: list[str] = Field(..., min_length=1)
+    cluster_key: str | None = Field(None, max_length=100)
+
+
+class BrainstormItemPromoteRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    item_id: str = Field(..., min_length=1)
+    target_object_kind: str = Field(..., min_length=1, max_length=100)
+    target_object_id: str = Field(..., min_length=1, max_length=255)
+    notes: str | None = Field(None, max_length=2000)
+
+
+class BrainstormItemListResponse(StrictModel):
+    project_id: str
+    items: list[BrainstormItem] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class BrainstormPromotionListResponse(StrictModel):
+    project_id: str
+    items: list[BrainstormPromotion] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+# Foundation schemas
+class FoundationCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    premise: str = Field(..., min_length=1, max_length=10000)
+    logline: str = Field(..., min_length=1, max_length=500)
+    thematic_spine: str = Field(..., min_length=1, max_length=2000)
+    emotional_promise: str = Field(..., min_length=1, max_length=2000)
+    tone_and_voice_direction: str = Field(..., min_length=1, max_length=2000)
+    target_audience: str = Field(..., min_length=1, max_length=500)
+    narrative_constraints: list[str] = Field(default_factory=list)
+    complexity_level: str = Field(..., min_length=1, max_length=50)
+    success_definition: str = Field(..., min_length=1, max_length=2000)
+
+
+class FoundationUpdateRequest(StrictModel):
+    premise: str | None = Field(None, min_length=1, max_length=10000)
+    logline: str | None = Field(None, min_length=1, max_length=500)
+    thematic_spine: str | None = Field(None, min_length=1, max_length=2000)
+    emotional_promise: str | None = Field(None, min_length=1, max_length=2000)
+    tone_and_voice_direction: str | None = Field(None, min_length=1, max_length=2000)
+    target_audience: str | None = Field(None, min_length=1, max_length=500)
+    narrative_constraints: list[str] | None = None
+    complexity_level: str | None = Field(None, min_length=1, max_length=50)
+    success_definition: str | None = Field(None, min_length=1, max_length=2000)
+
+
+class FoundationRevisionListResponse(StrictModel):
+    project_id: str
+    items: list[FoundationRevision] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class FoundationReviewCue(StrictModel):
+    impacted_area: str
+    reason: str
+    triggering_revision_id: str
+    triggering_fields: list[str] = Field(default_factory=list)
+
+
+class FoundationReviewCueListResponse(StrictModel):
+    project_id: str
+    items: list[FoundationReviewCue] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class FoundationReadResponse(StrictModel):
+    project_id: str
+    foundation_id: str
+    active_profile: FoundationProfile | None = None
+    current_revision_id: str | None = None
+    revision_history: list[FoundationRevision] = Field(default_factory=list)
+    downstream_review_cues: list[FoundationReviewCue] = Field(default_factory=list)
+
+
+class FoundationWriteResponse(FoundationReadResponse):
+    created_revision: FoundationRevision
+
+
+# Character schemas
+class CharacterProfileCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    character_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    display_name: str = Field(..., min_length=1, max_length=255)
+    role_in_story: str = Field(..., min_length=1, max_length=255)
+    archetype: str = Field(..., min_length=1, max_length=100)
+    external_goal: str = Field(..., min_length=1, max_length=2000)
+    internal_need: str = Field(..., min_length=1, max_length=2000)
+    misbelief_or_wound: str = Field(..., min_length=1, max_length=2000)
+    core_fear: str = Field(..., min_length=1, max_length=1000)
+    primary_strength: str = Field(..., min_length=1, max_length=1000)
+    fatal_flaw_or_limitation: str = Field(..., min_length=1, max_length=1000)
+    contradictions: list[str] = Field(default_factory=list)
+    backstory_summary: str = Field(..., min_length=1, max_length=5000)
+    voice_notes: str = Field(..., min_length=1, max_length=2000)
+    secrets: list[str] = Field(default_factory=list)
+    values: list[str] = Field(default_factory=list)
+    taboos: list[str] = Field(default_factory=list)
+    change_axis: str = Field(..., min_length=1, max_length=1000)
+    arc_stage_notes: list[str] = Field(default_factory=list)
+    continuity_facts: list[str] = Field(default_factory=list)
+    writer_notes: str | None = Field(None, max_length=5000)
+
+
+class CharacterProfileUpdateRequest(StrictModel):
+    display_name: str | None = Field(None, min_length=1, max_length=255)
+    role_in_story: str | None = Field(None, min_length=1, max_length=255)
+    archetype: str | None = Field(None, min_length=1, max_length=100)
+    external_goal: str | None = Field(None, min_length=1, max_length=2000)
+    internal_need: str | None = Field(None, min_length=1, max_length=2000)
+    misbelief_or_wound: str | None = Field(None, min_length=1, max_length=2000)
+    core_fear: str | None = Field(None, min_length=1, max_length=1000)
+    primary_strength: str | None = Field(None, min_length=1, max_length=1000)
+    fatal_flaw_or_limitation: str | None = Field(None, min_length=1, max_length=1000)
+    contradictions: list[str] | None = None
+    backstory_summary: str | None = Field(None, min_length=1, max_length=5000)
+    voice_notes: str | None = Field(None, min_length=1, max_length=2000)
+    secrets: list[str] | None = None
+    values: list[str] | None = None
+    taboos: list[str] | None = None
+    change_axis: str | None = Field(None, min_length=1, max_length=1000)
+    arc_stage_notes: list[str] | None = None
+    continuity_facts: list[str] | None = None
+    writer_notes: str | None = Field(None, max_length=5000)
+    # Note: relationship_edges is excluded from updates - it's auto-populated from relationship edges
+
+
+class CharacterProfileListResponse(StrictModel):
+    project_id: str
+    items: list[CharacterProfile] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class RelationshipEdgeCreateRequest(StrictModel):
+    edge_id: str | None = Field(None, min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    source_character_id: str = Field(..., min_length=1, max_length=255)
+    target_character_id: str = Field(..., min_length=1, max_length=255)
+    relation_kind: str = Field(..., min_length=1, max_length=100)
+    summary: str = Field(..., min_length=1, max_length=2000)
+    tension: str | None = Field(None, max_length=1000)
+    notes: str | None = Field(None, max_length=2000)
+
+
+class RelationshipEdgeListResponse(StrictModel):
+    project_id: str
+    items: list[RelationshipEdge] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+# World Bible schemas
+class WorldBibleEntryCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    entry_type: str = Field(..., min_length=1, max_length=100)
+    title: str = Field(..., min_length=1, max_length=255)
+    summary: str = Field(..., min_length=1, max_length=50000)
+    canonical_facts: list[str] = Field(default_factory=list)
+    related_character_ids: list[str] = Field(default_factory=list)
+    source_artifacts: list[str] = Field(default_factory=list)
+    visibility_scope: str = Field(default="project", min_length=1, max_length=50)
+    continuity_warnings: list[str] = Field(default_factory=list)
+    writer_notes: str | None = Field(None, max_length=5000)
+
+
+class WorldBibleEntryUpdateRequest(StrictModel):
+    title: str | None = Field(None, min_length=1, max_length=255)
+    summary: str | None = Field(None, min_length=1, max_length=50000)
+    canonical_facts: list[str] | None = None
+    related_character_ids: list[str] | None = None
+    source_artifacts: list[str] | None = None
+    visibility_scope: str | None = Field(None, min_length=1, max_length=50)
+    continuity_warnings: list[str] | None = None
+    writer_notes: str | None = Field(None, max_length=5000)
+
+
+class WorldBibleEntryListResponse(StrictModel):
+    project_id: str
+    items: list[WorldBibleEntry] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+# Arc schemas
+class ArcCandidateListResponse(StrictModel):
+    project_id: str
+    items: list[ArcCandidate] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class ArcSelectionListResponse(StrictModel):
+    project_id: str
+    items: list[ArcSelection] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class ArcStageMapListResponse(StrictModel):
+    project_id: str
+    items: list[ArcStageMap] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
 def build_story_development_router(
     repository: StoryDevelopmentRepository,
     prefix: str = "/story-development",
@@ -261,6 +497,9 @@ def build_story_development_router(
     branching_service = StoryBranchingService(repository)
     review_service = ReviewRoutingService(repository, drafting_service=drafting_service, planning_service=planning_service)
     flow_service = EditableFlowService()
+    brainstorm_service = BrainstormService(repository)
+    foundation_service = FoundationService(repository)
+    story_knowledge_service = StoryKnowledgeService(repository)
 
     @router.get("/branches", response_model=StoryBranchListResponse)
     def list_story_branches(project_id: str) -> StoryBranchListResponse:
@@ -820,5 +1059,472 @@ def build_story_development_router(
             )
         except ReviewRoutingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Target object not found.") from exc
+
+    # ============================================================================
+    # Brainstorm Endpoints
+    # ============================================================================
+
+    @router.get("/brainstorm/items", response_model=BrainstormItemListResponse)
+    def list_brainstorm_items(project_id: str) -> BrainstormItemListResponse:
+        """List all brainstorm items for a project."""
+        items = list(repository.list_brainstorm_items(project_id))
+        return BrainstormItemListResponse(
+            project_id=project_id,
+            items=[brainstorm_service._to_schema(item) for item in items],
+            meta={"ordered_by": "created_at_asc"},
+        )
+
+    @router.post("/brainstorm/items", response_model=BrainstormItem, status_code=201)
+    def create_brainstorm_item(payload: BrainstormItemCreateRequest) -> BrainstormItem:
+        """Create a new brainstorm item."""
+        try:
+            return brainstorm_service.capture_brainstorm_item(
+                project_id=payload.project_id,
+                content=payload.content,
+                status=payload.status,
+                cluster_key=payload.cluster_key,
+                tags=payload.tags,
+                source_artifact_refs=payload.source_artifact_refs,
+            )
+        except BrainstormValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/brainstorm/items/cluster", response_model=list[BrainstormItem])
+    def cluster_brainstorm_items(payload: BrainstormItemClusterRequest) -> list[BrainstormItem]:
+        """Cluster multiple brainstorm items together."""
+        try:
+            return brainstorm_service.cluster_brainstorm_items(
+                project_id=payload.project_id,
+                item_ids=payload.item_ids,
+                cluster_key=payload.cluster_key,
+            )
+        except BrainstormValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/brainstorm/items/promote", response_model=BrainstormPromotion, status_code=201)
+    def promote_brainstorm_item(payload: BrainstormItemPromoteRequest) -> BrainstormPromotion:
+        """Promote a brainstorm item to a target object."""
+        try:
+            return brainstorm_service.promote_brainstorm_item(
+                project_id=payload.project_id,
+                item_id=payload.item_id,
+                target_object_kind=payload.target_object_kind,
+                target_object_id=payload.target_object_id,
+                notes=payload.notes,
+            )
+        except BrainstormNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Brainstorm item not found.") from exc
+        except BrainstormValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/brainstorm/promotions", response_model=BrainstormPromotionListResponse)
+    def list_brainstorm_promotions(project_id: str) -> BrainstormPromotionListResponse:
+        """List all brainstorm promotions for a project."""
+        promotions = brainstorm_service.list_promotions(project_id)
+        return BrainstormPromotionListResponse(
+            project_id=project_id,
+            items=list(promotions),
+            meta={"ordered_by": "created_at_asc"},
+        )
+
+    # ============================================================================
+    # Foundation Endpoints
+    # ============================================================================
+
+    @router.get("/foundation", response_model=FoundationReadResponse)
+    def get_foundation(project_id: str) -> FoundationReadResponse:
+        """Get the active foundation profile for a project."""
+        try:
+            result = foundation_service.read_active_foundation(project_id)
+            return FoundationReadResponse(
+                project_id=result.project_id,
+                foundation_id=result.foundation_id,
+                active_profile=result.active_profile,
+                current_revision_id=result.current_revision_id,
+                revision_history=list(result.revision_history),
+                downstream_review_cues=[
+                    FoundationReviewCue(
+                        impacted_area=cue.impacted_area,
+                        reason=cue.reason,
+                        triggering_revision_id=cue.triggering_revision_id,
+                        triggering_fields=list(cue.triggering_fields),
+                    )
+                    for cue in result.downstream_review_cues
+                ],
+            )
+        except FoundationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Foundation not found.") from exc
+
+    @router.post("/foundation", response_model=FoundationWriteResponse, status_code=201)
+    def create_foundation(payload: FoundationCreateRequest) -> FoundationWriteResponse:
+        """Create a new foundation profile for a project."""
+        try:
+            foundation_data = {
+                "premise": payload.premise,
+                "logline": payload.logline,
+                "thematic_spine": payload.thematic_spine,
+                "emotional_promise": payload.emotional_promise,
+                "tone_and_voice_direction": payload.tone_and_voice_direction,
+                "target_audience": payload.target_audience,
+                "narrative_constraints": payload.narrative_constraints,
+                "complexity_level": payload.complexity_level,
+                "success_definition": payload.success_definition,
+            }
+            result = foundation_service.create_foundation_revision(payload.project_id, foundation_data)
+            return FoundationWriteResponse(
+                project_id=result.project_id,
+                foundation_id=result.foundation_id,
+                active_profile=result.active_profile,
+                current_revision_id=result.current_revision_id,
+                revision_history=list(result.revision_history),
+                downstream_review_cues=[
+                    FoundationReviewCue(
+                        impacted_area=cue.impacted_area,
+                        reason=cue.reason,
+                        triggering_revision_id=cue.triggering_revision_id,
+                        triggering_fields=list(cue.triggering_fields),
+                    )
+                    for cue in result.downstream_review_cues
+                ],
+                created_revision=result.created_revision,
+            )
+        except FoundationValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/foundation", response_model=FoundationWriteResponse)
+    def update_foundation(project_id: str, payload: FoundationUpdateRequest) -> FoundationWriteResponse:
+        """Update the active foundation profile for a project."""
+        try:
+            foundation_data = {
+                key: value for key, value in (
+                    ("premise", payload.premise),
+                    ("logline", payload.logline),
+                    ("thematic_spine", payload.thematic_spine),
+                    ("emotional_promise", payload.emotional_promise),
+                    ("tone_and_voice_direction", payload.tone_and_voice_direction),
+                    ("target_audience", payload.target_audience),
+                    ("narrative_constraints", payload.narrative_constraints),
+                    ("complexity_level", payload.complexity_level),
+                    ("success_definition", payload.success_definition),
+                ) if value is not None
+            }
+            if not foundation_data:
+                raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
+            result = foundation_service.update_foundation_revision(project_id, foundation_data)
+            return FoundationWriteResponse(
+                project_id=result.project_id,
+                foundation_id=result.foundation_id,
+                active_profile=result.active_profile,
+                current_revision_id=result.current_revision_id,
+                revision_history=list(result.revision_history),
+                downstream_review_cues=[
+                    FoundationReviewCue(
+                        impacted_area=cue.impacted_area,
+                        reason=cue.reason,
+                        triggering_revision_id=cue.triggering_revision_id,
+                        triggering_fields=list(cue.triggering_fields),
+                    )
+                    for cue in result.downstream_review_cues
+                ],
+                created_revision=result.created_revision,
+            )
+        except FoundationNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Foundation not found.") from exc
+        except FoundationValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/foundation/revisions", response_model=FoundationRevisionListResponse)
+    def list_foundation_revisions(project_id: str) -> FoundationRevisionListResponse:
+        """List all foundation revisions for a project."""
+        revisions = foundation_service.list_foundation_revisions(project_id)
+        return FoundationRevisionListResponse(
+            project_id=project_id,
+            items=list(revisions),
+            meta={"ordered_by": "created_at_asc"},
+        )
+
+    @router.get("/foundation/review-cues", response_model=FoundationReviewCueListResponse)
+    def list_foundation_review_cues(project_id: str) -> FoundationReviewCueListResponse:
+        """List downstream review cues triggered by foundation changes."""
+        cues = foundation_service.list_downstream_review_cues(project_id)
+        return FoundationReviewCueListResponse(
+            project_id=project_id,
+            items=[
+                FoundationReviewCue(
+                    impacted_area=cue.impacted_area,
+                    reason=cue.reason,
+                    triggering_revision_id=cue.triggering_revision_id,
+                    triggering_fields=list(cue.triggering_fields),
+                )
+                for cue in cues
+            ],
+            meta={"ordered_by": "created_at_asc"},
+        )
+
+    # ============================================================================
+    # Character Endpoints
+    # ============================================================================
+
+    @router.get("/characters", response_model=CharacterProfileListResponse)
+    def list_characters(project_id: str) -> CharacterProfileListResponse:
+        """List all character profiles for a project."""
+        characters = list(story_knowledge_service.list_character_profiles(project_id))
+        return CharacterProfileListResponse(
+            project_id=project_id,
+            items=characters,
+            meta={"ordered_by": "character_id_asc"},
+        )
+
+    @router.get("/characters/{character_id}", response_model=CharacterProfile)
+    def get_character(character_id: str, project_id: str) -> CharacterProfile:
+        """Get a specific character profile."""
+        try:
+            return story_knowledge_service.get_character_profile(project_id, character_id=character_id)
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Character not found.") from exc
+
+    @router.post("/characters", response_model=CharacterProfile, status_code=201)
+    def create_character(payload: CharacterProfileCreateRequest) -> CharacterProfile:
+        """Create a new character profile."""
+        try:
+            return story_knowledge_service.upsert_character_profile(
+                payload.project_id,
+                character_id=payload.character_id,
+                display_name=payload.display_name,
+                role_in_story=payload.role_in_story,
+                archetype=payload.archetype,
+                external_goal=payload.external_goal,
+                internal_need=payload.internal_need,
+                misbelief_or_wound=payload.misbelief_or_wound,
+                core_fear=payload.core_fear,
+                primary_strength=payload.primary_strength,
+                fatal_flaw_or_limitation=payload.fatal_flaw_or_limitation,
+                contradictions=payload.contradictions,
+                backstory_summary=payload.backstory_summary,
+                voice_notes=payload.voice_notes,
+                secrets=payload.secrets,
+                values=payload.values,
+                taboos=payload.taboos,
+                change_axis=payload.change_axis,
+                arc_stage_notes=payload.arc_stage_notes,
+                continuity_facts=payload.continuity_facts,
+                writer_notes=payload.writer_notes,
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/characters/{character_id}", response_model=CharacterProfile)
+    def update_character(character_id: str, project_id: str, payload: CharacterProfileUpdateRequest) -> CharacterProfile:
+        """Update a character profile."""
+        try:
+            updates = {
+                key: value for key, value in (
+                    ("display_name", payload.display_name),
+                    ("role_in_story", payload.role_in_story),
+                    ("archetype", payload.archetype),
+                    ("external_goal", payload.external_goal),
+                    ("internal_need", payload.internal_need),
+                    ("misbelief_or_wound", payload.misbelief_or_wound),
+                    ("core_fear", payload.core_fear),
+                    ("primary_strength", payload.primary_strength),
+                    ("fatal_flaw_or_limitation", payload.fatal_flaw_or_limitation),
+                    ("contradictions", payload.contradictions),
+                    ("backstory_summary", payload.backstory_summary),
+                    ("voice_notes", payload.voice_notes),
+                    ("secrets", payload.secrets),
+                    ("values", payload.values),
+                    ("taboos", payload.taboos),
+                    ("change_axis", payload.change_axis),
+                    ("arc_stage_notes", payload.arc_stage_notes),
+                    ("continuity_facts", payload.continuity_facts),
+                    ("writer_notes", payload.writer_notes),
+                ) if value is not None
+            }
+            if not updates:
+                raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
+            # Get existing character and merge with updates
+            existing = story_knowledge_service.get_character_profile(project_id, character_id=character_id)
+            all_fields = {
+                "character_id": character_id,
+                **dict(existing),
+                **updates,
+            }
+            # Filter out relationship_edges (auto-populated by service) and project_id
+            # Note: relationship_edges is intentionally excluded - it's auto-populated from relationship edges
+            upsert_fields = {
+                k: v for k, v in all_fields.items()
+                if v is not None and k not in ("project_id", "relationship_edges")
+            }
+            # Call upsert with merged data
+            return story_knowledge_service.upsert_character_profile(project_id, **upsert_fields)
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Character not found.") from exc
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/characters/{character_id}/relationships", response_model=RelationshipEdgeListResponse)
+    def list_character_relationships(character_id: str, project_id: str) -> RelationshipEdgeListResponse:
+        """List all relationships for a character."""
+        try:
+            relationships = list(story_knowledge_service.list_relationship_edges_for_character(project_id, character_id))
+            return RelationshipEdgeListResponse(
+                project_id=project_id,
+                items=relationships,
+                meta={"ordered_by": "edge_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/relationships", response_model=RelationshipEdge, status_code=201)
+    def create_relationship(payload: RelationshipEdgeCreateRequest) -> RelationshipEdge:
+        """Create a new relationship between characters."""
+        try:
+            return story_knowledge_service.upsert_relationship_edge(
+                payload.project_id,
+                edge_id=payload.edge_id,
+                source_character_id=payload.source_character_id,
+                target_character_id=payload.target_character_id,
+                relation_kind=payload.relation_kind,
+                summary=payload.summary,
+                tension=payload.tension,
+                notes=payload.notes,
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # ============================================================================
+    # World Bible Endpoints
+    # ============================================================================
+
+    @router.get("/world-bible", response_model=WorldBibleEntryListResponse)
+    def list_world_bible_entries(
+        project_id: str,
+        entry_type: str | None = None,
+    ) -> WorldBibleEntryListResponse:
+        """List all world bible entries for a project."""
+        entries = list(story_knowledge_service.list_world_bible_entries(project_id))
+        if entry_type:
+            entries = [e for e in entries if e.entry_type == entry_type]
+        return WorldBibleEntryListResponse(
+            project_id=project_id,
+            items=entries,
+            meta={"ordered_by": "title_asc"},
+        )
+
+    @router.get("/world-bible/{entry_type}/{title}", response_model=WorldBibleEntry)
+    def get_world_bible_entry(entry_type: str, title: str, project_id: str) -> WorldBibleEntry:
+        """Get a specific world bible entry."""
+        try:
+            return story_knowledge_service.get_world_bible_entry(project_id, entry_type=entry_type, title=title)
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="World bible entry not found.") from exc
+
+    @router.post("/world-bible", response_model=WorldBibleEntry, status_code=201)
+    def create_world_bible_entry(payload: WorldBibleEntryCreateRequest) -> WorldBibleEntry:
+        """Create a new world bible entry."""
+        try:
+            return story_knowledge_service.upsert_world_bible_entry(
+                payload.project_id,
+                entry_type=payload.entry_type,
+                title=payload.title,
+                summary=payload.summary,
+                canonical_facts=payload.canonical_facts,
+                related_character_ids=payload.related_character_ids,
+                source_artifacts=payload.source_artifacts,
+                visibility_scope=payload.visibility_scope,
+                continuity_warnings=payload.continuity_warnings,
+                writer_notes=payload.writer_notes,
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/world-bible/{entry_type}/{title}", response_model=WorldBibleEntry)
+    def update_world_bible_entry(entry_type: str, title: str, project_id: str, payload: WorldBibleEntryUpdateRequest) -> WorldBibleEntry:
+        """Update a world bible entry."""
+        try:
+            # Get existing entry
+            existing = story_knowledge_service.get_world_bible_entry(project_id, entry_type=entry_type, title=title)
+            
+            # Helper to compare list fields (handles tuple vs list comparison)
+            def lists_equal(a: list[str] | tuple[str, ...], b: list[str] | tuple[str, ...]) -> bool:
+                return set(a) == set(b)
+            
+            # Merge updates - use explicit type annotations to avoid union type issues
+            new_title: str = payload.title if payload.title is not None else title
+            new_summary: str = payload.summary if payload.summary is not None else existing.summary
+            new_canonical_facts: list[str] = payload.canonical_facts if payload.canonical_facts is not None else existing.canonical_facts
+            new_related_character_ids: list[str] = payload.related_character_ids if payload.related_character_ids is not None else existing.related_character_ids
+            new_source_artifacts: list[str] = payload.source_artifacts if payload.source_artifacts is not None else existing.source_artifacts
+            new_visibility_scope: str = payload.visibility_scope if payload.visibility_scope is not None else existing.visibility_scope
+            new_continuity_warnings: list[str] = payload.continuity_warnings if payload.continuity_warnings is not None else existing.continuity_warnings
+            new_writer_notes: str | None = payload.writer_notes if payload.writer_notes is not None else existing.writer_notes
+            
+            # Check if at least one field is being updated (use set comparison for lists)
+            if (new_title == title and new_summary == existing.summary and 
+                lists_equal(new_canonical_facts, existing.canonical_facts) and 
+                lists_equal(new_related_character_ids, existing.related_character_ids) and
+                lists_equal(new_source_artifacts, existing.source_artifacts) and
+                new_visibility_scope == existing.visibility_scope and
+                lists_equal(new_continuity_warnings, existing.continuity_warnings) and
+                new_writer_notes == existing.writer_notes):
+                raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
+            
+            # Call upsert with merged data
+            return story_knowledge_service.upsert_world_bible_entry(
+                project_id,
+                entry_type=entry_type,
+                summary=new_summary,
+                title=new_title,
+                canonical_facts=new_canonical_facts,
+                related_character_ids=new_related_character_ids,
+                source_artifacts=new_source_artifacts,
+                visibility_scope=new_visibility_scope,
+                continuity_warnings=new_continuity_warnings,
+                writer_notes=new_writer_notes,
+            )
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="World bible entry not found.") from exc
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # ============================================================================
+    # Arc Endpoints
+    # ============================================================================
+
+    @router.get("/arcs/candidates", response_model=ArcCandidateListResponse)
+    def list_arc_candidates(project_id: str) -> ArcCandidateListResponse:
+        """List all arc candidates for a project."""
+        try:
+            candidates = list(story_knowledge_service.list_arc_candidates(project_id))
+            return ArcCandidateListResponse(
+                project_id=project_id,
+                items=candidates,
+                meta={"ordered_by": "candidate_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/arcs/selections", response_model=ArcSelectionListResponse)
+    def list_arc_selections(project_id: str) -> ArcSelectionListResponse:
+        """List all arc selections for a project."""
+        selections = list(story_knowledge_service.list_arc_selections(project_id))
+        return ArcSelectionListResponse(
+            project_id=project_id,
+            items=selections,
+            meta={"ordered_by": "created_at_asc"},
+        )
+
+    @router.get("/arcs/stage-maps", response_model=ArcStageMapListResponse)
+    def list_arc_stage_maps(project_id: str) -> ArcStageMapListResponse:
+        """List all arc stage maps for a project."""
+        try:
+            stage_maps = list(story_knowledge_service.list_arc_stage_maps(project_id))
+            return ArcStageMapListResponse(
+                project_id=project_id,
+                items=stage_maps,
+                meta={"ordered_by": "stage_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return router

@@ -537,6 +537,146 @@ class JobRepository:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_attempt_history_with_metadata(self, job_id: UUID) -> list[dict[str, object]]:
+        """Get attempt history with richer metadata for projection endpoints.
+        
+        This method provides a consolidated view of attempt history including:
+        - Basic attempt info (status, timing, executor)
+        - Duration calculations
+        - Related events for each attempt
+        - Lineage information (parent attempt if retry)
+        
+        Args:
+            job_id: The job identifier
+            
+        Returns:
+            List of attempt records with enriched metadata
+        """
+        with connect(self.db_path) as connection:
+            # Get all attempts for this job
+            attempts = connection.execute(
+                """
+                SELECT attempt_id, logical_run_id, attempt_number, status, executor_name, 
+                       executor_instance_id, queue_delay_ms, claimed_at, started_at, finished_at,
+                       last_heartbeat_at, finish_reason, failure_stage, retryable, retry_reason,
+                       error_code, error_category, created_at
+                FROM job_attempts
+                WHERE job_id = ?
+                ORDER BY attempt_number ASC
+                """,
+                (str(job_id),),
+            ).fetchall()
+            
+            if not attempts:
+                return []
+            
+            # Get events for this job
+            events = connection.execute(
+                """
+                SELECT attempt_number, event_type, from_state, to_state, occurred_at, payload_json
+                FROM job_events
+                WHERE job_id = ?
+                ORDER BY event_id ASC
+                """,
+                (str(job_id),),
+            ).fetchall()
+        
+        # Group events by attempt number
+        events_by_attempt: dict[int, list[dict]] = {}
+        for event in events:
+            attempt_num = event['attempt_number']
+            if attempt_num not in events_by_attempt:
+                events_by_attempt[attempt_num] = []
+            events_by_attempt[attempt_num].append({
+                'event_type': event['event_type'],
+                'from_state': event['from_state'],
+                'to_state': event['to_state'],
+                'occurred_at': event['occurred_at'],
+                'payload': json.loads(event['payload_json']) if event['payload_json'] else {},
+            })
+        
+        # Build enriched attempt history
+        enriched_attempts = []
+        for attempt in attempts:
+            attempt_dict = dict(attempt)
+            
+            # Calculate duration if we have start and end times
+            duration_seconds = None
+            if attempt['started_at'] and attempt['finished_at']:
+                start = datetime.fromisoformat(attempt['started_at'])
+                end = datetime.fromisoformat(attempt['finished_at'])
+                duration_seconds = (end - start).total_seconds()
+            elif attempt['created_at'] and attempt['finished_at']:
+                start = datetime.fromisoformat(attempt['created_at'])
+                end = datetime.fromisoformat(attempt['finished_at'])
+                duration_seconds = (end - start).total_seconds()
+            
+            attempt_dict['duration_seconds'] = duration_seconds
+            
+            # Add events for this attempt
+            attempt_dict['events'] = events_by_attempt.get(attempt['attempt_number'], [])
+            
+            # Add lineage info (previous attempt if this is a retry)
+            if attempt['attempt_number'] > 1:
+                attempt_dict['parent_attempt_number'] = attempt['attempt_number'] - 1
+            
+            enriched_attempts.append(attempt_dict)
+        
+        return enriched_attempts
+
+    def get_attempt_summary_stats(self, job_id: UUID) -> dict[str, object]:
+        """Get summary statistics for all attempts of a job.
+        
+        Args:
+            job_id: The job identifier
+            
+        Returns:
+            Dictionary with summary statistics
+        """
+        with connect(self.db_path) as connection:
+            attempts = connection.execute(
+                """
+                SELECT attempt_number, status, started_at, finished_at
+                FROM job_attempts
+                WHERE job_id = ?
+                ORDER BY attempt_number ASC
+                """,
+                (str(job_id),),
+            ).fetchall()
+        
+        if not attempts:
+            return {
+                'total_attempts': 0,
+                'successful_attempts': 0,
+                'failed_attempts': 0,
+                'total_duration_seconds': 0,
+                'queue_time_seconds': 0,
+            }
+        
+        total_duration = 0.0
+        successful = 0
+        failed = 0
+        
+        for attempt in attempts:
+            if attempt['started_at'] and attempt['finished_at']:
+                start = datetime.fromisoformat(attempt['started_at'])
+                end = datetime.fromisoformat(attempt['finished_at'])
+                total_duration += (end - start).total_seconds()
+            
+            if attempt['status'] == 'COMPLETED':
+                successful += 1
+            elif attempt['status'] == 'FAILED':
+                failed += 1
+        
+        return {
+            'total_attempts': len(attempts),
+            'successful_attempts': successful,
+            'failed_attempts': failed,
+            'total_duration_seconds': total_duration,
+            'last_attempt_number': attempts[-1]['attempt_number'],
+            'last_attempt_status': attempts[-1]['status'],
+        }
+
 
 class JobLogRepository:
     def __init__(self, db_path: Path) -> None:

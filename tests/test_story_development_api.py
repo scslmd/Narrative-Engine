@@ -286,3 +286,424 @@ def test_story_development_api_validates_filter_pairs_and_returns_404s(tmp_path:
         f"/story-development/drafting/manuscript-documents/{seeded['manuscript_id']}?project_id=wrong-project"
     )
     assert cross_project.status_code == 404
+
+
+def test_story_development_api_foundation_endpoints_isolated(tmp_path: Path) -> None:
+    """Test foundation create, update, and read endpoints with isolated project."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test create foundation with valid payload
+    create_payload = {
+        "project_id": project_id,
+        "premise": "A young wizard discovers his magical heritage.",
+        "logline": "Harry Potter style premise.",
+        "thematic_spine": "Friendship and courage overcome darkness.",
+        "emotional_promise": "Readers will feel inspired and hopeful.",
+        "tone_and_voice_direction": "Whimsical yet grounded.",
+        "target_audience": "Young adult readers.",
+        "narrative_constraints": ["No deus ex machina", "Show don't tell"],
+        "complexity_level": "Medium",
+        "success_definition": "A compelling coming-of-age story.",
+    }
+    create_response = client.post("/story-development/foundation", json=create_payload)
+    assert create_response.status_code == 201
+    data = create_response.json()
+    assert data["project_id"] == project_id
+    assert data["active_profile"] is not None
+    assert data["active_profile"]["premise"] == create_payload["premise"]
+    assert "created_revision" in data
+
+    # Test read foundation
+    read_response = client.get(f"/story-development/foundation?project_id={project_id}")
+    assert read_response.status_code == 200
+    read_data = read_response.json()
+    assert read_data["project_id"] == project_id
+    assert read_data["active_profile"] is not None
+
+    # Test update foundation
+    update_payload = {"logline": "Updated logline with more detail."}
+    update_response = client.patch(f"/story-development/foundation?project_id={project_id}", json=update_payload)
+    assert update_response.status_code == 200
+    update_data = update_response.json()
+    assert update_data["active_profile"]["logline"] == update_payload["logline"]
+
+    # Test create foundation with invalid payload (missing required fields)
+    # Pydantic validation happens before service layer, so it returns 422
+    invalid_payload = {"project_id": project_id, "premise": "Only premise"}
+    invalid_response = client.post("/story-development/foundation", json=invalid_payload)
+    assert invalid_response.status_code == 422
+
+    # Test update foundation with empty payload
+    empty_update_response = client.patch(f"/story-development/foundation?project_id={project_id}", json={})
+    assert empty_update_response.status_code == 400
+
+
+def test_story_development_api_character_endpoints_isolated(tmp_path: Path) -> None:
+    """Test character create, update, read, and list endpoints with isolated project."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test create character
+    create_payload = {
+        "project_id": project_id,
+        "character_id": "char-001",
+        "display_name": "John Doe",
+        "role_in_story": "Protagonist",
+        "archetype": "The Hero",
+        "external_goal": "Save the kingdom",
+        "internal_need": "Find self-worth",
+        "misbelief_or_wound": "Believes he's unworthy",
+        "core_fear": "Being abandoned",
+        "primary_strength": "Courage",
+        "fatal_flaw_or_limitation": "Impulsiveness",
+        "contradictions": ["Brave but insecure"],
+        "backstory_summary": "Lost his parents young.",
+        "voice_notes": "Speaks with determination.",
+        "secrets": ["Has a twin"],
+        "values": ["Honor", "Justice"],
+        "taboos": ["Betrayal"],
+        "change_axis": "Self-doubt to self-acceptance",
+        "arc_stage_notes": ["Denial", "Acceptance"],
+        "continuity_facts": ["Left-handed"],
+    }
+    create_response = client.post("/story-development/characters", json=create_payload)
+    assert create_response.status_code == 201
+    char_data = create_response.json()
+    assert char_data["character_id"] == "char-001"
+    assert char_data["display_name"] == "John Doe"
+
+    # Test read character
+    read_response = client.get(f"/story-development/characters/char-001?project_id={project_id}")
+    assert read_response.status_code == 200
+    assert read_response.json()["character_id"] == "char-001"
+
+    # Test list characters
+    list_response = client.get(f"/story-development/characters?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+    # Test update character
+    update_payload = {"display_name": "John Smith"}
+    update_response = client.patch(f"/story-development/characters/char-001?project_id={project_id}", json=update_payload)
+    assert update_response.status_code == 200
+    assert update_response.json()["display_name"] == "John Smith"
+
+    # Test read non-existent character
+    not_found_response = client.get(f"/story-development/characters/non-existent?project_id={project_id}")
+    assert not_found_response.status_code == 404
+
+
+def test_story_development_api_relationship_endpoints_isolated(tmp_path: Path) -> None:
+    """Test relationship create and list endpoints with isolated project."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Create two characters first
+    for char_id, name in [("rel-char-a", "Character A"), ("rel-char-b", "Character B")]:
+        client.post(
+            "/story-development/characters",
+            json={
+                "project_id": project_id,
+                "character_id": char_id,
+                "display_name": name,
+                "role_in_story": "Supporting",
+                "archetype": "Mentor",
+                "external_goal": "Help protagonist",
+                "internal_need": "Redemption",
+                "misbelief_or_wound": "Past failures",
+                "core_fear": "Failure",
+                "primary_strength": "Wisdom",
+                "fatal_flaw_or_limitation": "Pride",
+                "contradictions": [],
+                "backstory_summary": "Experienced warrior.",
+                "voice_notes": "Gruff but kind.",
+                "secrets": [],
+                "values": ["Loyalty"],
+                "taboos": [],
+                "change_axis": "Isolation to connection",
+                "arc_stage_notes": [],
+                "continuity_facts": [],
+            },
+        )
+
+    # Test create relationship
+    create_payload = {
+        "project_id": project_id,
+        "source_character_id": "rel-char-a",
+        "target_character_id": "rel-char-b",
+        "relation_kind": "Mentor-Mentee",
+        "summary": "A mentors B in the ways of war.",
+        "tension": "A is strict, B is rebellious.",
+        "notes": "Complex dynamic.",
+    }
+    create_response = client.post("/story-development/relationships", json=create_payload)
+    assert create_response.status_code == 201
+    rel_data = create_response.json()
+    assert rel_data["source_character_id"] == "rel-char-a"
+    assert rel_data["target_character_id"] == "rel-char-b"
+
+    # Test list relationships for character
+    list_response = client.get(f"/story-development/characters/rel-char-a/relationships?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+
+def test_story_development_api_world_bible_endpoints_isolated(tmp_path: Path) -> None:
+    """Test world bible create, update, read, and list endpoints with isolated project."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test create world bible entry
+    create_payload = {
+        "project_id": project_id,
+        "entry_type": "Location",
+        "title": "The Enchanted Forest",
+        "summary": "A mystical forest where magic flows freely.",
+        "canonical_facts": ["Entry is guarded", "Time flows differently inside"],
+        "related_character_ids": [],
+        "source_artifacts": [],
+        "visibility_scope": "project",
+        "continuity_warnings": ["Don't forget the time distortion effect"],
+        "writer_notes": "Inspired by Celtic mythology.",
+    }
+    create_response = client.post("/story-development/world-bible", json=create_payload)
+    assert create_response.status_code == 201
+    wb_data = create_response.json()
+    assert wb_data["entry_type"] == "Location"
+    assert wb_data["title"] == "The Enchanted Forest"
+
+    # Test read world bible entry
+    read_response = client.get(
+        f"/story-development/world-bible/Location/The Enchanted Forest?project_id={project_id}"
+    )
+    assert read_response.status_code == 200
+    assert read_response.json()["title"] == "The Enchanted Forest"
+
+    # Test list world bible entries
+    list_response = client.get(f"/story-development/world-bible?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+    # Test update world bible entry
+    update_payload = {"summary": "Updated summary with more detail."}
+    update_response = client.patch(
+        f"/story-development/world-bible/Location/The Enchanted Forest?project_id={project_id}",
+        json=update_payload,
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["summary"] == update_payload["summary"]
+
+    # Test read non-existent world bible entry
+    not_found_response = client.get(
+        f"/story-development/world-bible/Location/Non Existent?project_id={project_id}"
+    )
+    assert not_found_response.status_code == 404
+
+
+def test_story_development_api_arc_endpoints_isolated(tmp_path: Path) -> None:
+    """Test arc candidates and stage maps list endpoints with isolated project."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test list arc candidates (should return empty list initially)
+    candidates_response = client.get(f"/story-development/arcs/candidates?project_id={project_id}")
+    assert candidates_response.status_code == 200
+    assert candidates_response.json()["items"] == []
+
+    # Test list arc stage maps (should return empty list initially)
+    stage_maps_response = client.get(f"/story-development/arcs/stage-maps?project_id={project_id}")
+    assert stage_maps_response.status_code == 200
+    assert stage_maps_response.json()["items"] == []
+
+
+def test_story_development_api_validation_errors(tmp_path: Path) -> None:
+    """Test validation error handling for new endpoints."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test empty project_id validation for arc endpoints
+    empty_project_response = client.get("/story-development/arcs/candidates?project_id=")
+    assert empty_project_response.status_code == 400
+
+    # Test empty character_id validation for relationships endpoint
+    empty_char_response = client.get(f"/story-development/characters//relationships?project_id={project_id}")
+    assert empty_char_response.status_code in (400, 404)  # Could be either depending on validation order
+
+
+def test_story_development_api_character_endpoints(tmp_path: Path) -> None:
+    """Test character create, update, read, and list endpoints."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"  # Use the seeded project ID
+
+    # Test create character
+    create_payload = {
+        "project_id": project_id,
+        "character_id": "char-001",
+        "display_name": "John Doe",
+        "role_in_story": "Protagonist",
+        "archetype": "The Hero",
+        "external_goal": "Save the kingdom",
+        "internal_need": "Find self-worth",
+        "misbelief_or_wound": "Believes he's unworthy",
+        "core_fear": "Being abandoned",
+        "primary_strength": "Courage",
+        "fatal_flaw_or_limitation": "Impulsiveness",
+        "contradictions": ["Brave but insecure"],
+        "backstory_summary": "Lost his parents young.",
+        "voice_notes": "Speaks with determination.",
+        "secrets": ["Has a twin"],
+        "values": ["Honor", "Justice"],
+        "taboos": ["Betrayal"],
+        "change_axis": "Self-doubt to self-acceptance",
+        "arc_stage_notes": ["Denial", "Acceptance"],
+        "continuity_facts": ["Left-handed"],
+    }
+    create_response = client.post("/story-development/characters", json=create_payload)
+    assert create_response.status_code == 201
+    char_data = create_response.json()
+    assert char_data["character_id"] == "char-001"
+    assert char_data["display_name"] == "John Doe"
+
+    # Test read character
+    read_response = client.get(f"/story-development/characters/char-001?project_id={project_id}")
+    assert read_response.status_code == 200
+    assert read_response.json()["character_id"] == "char-001"
+
+    # Test list characters
+    list_response = client.get(f"/story-development/characters?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+    # Test update character
+    update_payload = {"display_name": "John Smith"}
+    update_response = client.patch(f"/story-development/characters/char-001?project_id={project_id}", json=update_payload)
+    assert update_response.status_code == 200
+    assert update_response.json()["display_name"] == "John Smith"
+
+    # Test read non-existent character
+    not_found_response = client.get(f"/story-development/characters/non-existent?project_id={project_id}")
+    assert not_found_response.status_code == 404
+
+
+def test_story_development_api_relationship_endpoints(tmp_path: Path) -> None:
+    """Test relationship create and list endpoints."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"
+
+    # Create two characters first
+    for char_id, name in [("rel-char-a", "Character A"), ("rel-char-b", "Character B")]:
+        client.post(
+            "/story-development/characters",
+            json={
+                "project_id": project_id,
+                "character_id": char_id,
+                "display_name": name,
+                "role_in_story": "Supporting",
+                "archetype": "Mentor",
+                "external_goal": "Help protagonist",
+                "internal_need": "Redemption",
+                "misbelief_or_wound": "Past failures",
+                "core_fear": "Failure",
+                "primary_strength": "Wisdom",
+                "fatal_flaw_or_limitation": "Pride",
+                "contradictions": [],
+                "backstory_summary": "Experienced warrior.",
+                "voice_notes": "Gruff but kind.",
+                "secrets": [],
+                "values": ["Loyalty"],
+                "taboos": [],
+                "change_axis": "Isolation to connection",
+                "arc_stage_notes": [],
+                "continuity_facts": [],
+            },
+        )
+
+    # Test create relationship
+    create_payload = {
+        "project_id": project_id,
+        "source_character_id": "rel-char-a",
+        "target_character_id": "rel-char-b",
+        "relation_kind": "Mentor-Mentee",
+        "summary": "A mentors B in the ways of war.",
+        "tension": "A is strict, B is rebellious.",
+        "notes": "Complex dynamic.",
+    }
+    create_response = client.post("/story-development/relationships", json=create_payload)
+    assert create_response.status_code == 201
+    rel_data = create_response.json()
+    assert rel_data["source_character_id"] == "rel-char-a"
+    assert rel_data["target_character_id"] == "rel-char-b"
+
+    # Test list relationships for character
+    list_response = client.get(f"/story-development/characters/rel-char-a/relationships?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+
+def test_story_development_api_world_bible_endpoints(tmp_path: Path) -> None:
+    """Test world bible create, update, read, and list endpoints."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"
+
+    # Test create world bible entry
+    create_payload = {
+        "project_id": project_id,
+        "entry_type": "Location",
+        "title": "The Enchanted Forest",
+        "summary": "A mystical forest where magic flows freely.",
+        "canonical_facts": ["Entry is guarded", "Time flows differently inside"],
+        "related_character_ids": [],
+        "source_artifacts": [],
+        "visibility_scope": "project",
+        "continuity_warnings": ["Don't forget the time distortion effect"],
+        "writer_notes": "Inspired by Celtic mythology.",
+    }
+    create_response = client.post("/story-development/world-bible", json=create_payload)
+    assert create_response.status_code == 201
+    wb_data = create_response.json()
+    assert wb_data["entry_type"] == "Location"
+    assert wb_data["title"] == "The Enchanted Forest"
+
+    # Test read world bible entry
+    read_response = client.get(
+        f"/story-development/world-bible/Location/The Enchanted Forest?project_id={project_id}"
+    )
+    assert read_response.status_code == 200
+    assert read_response.json()["title"] == "The Enchanted Forest"
+
+    # Test list world bible entries
+    list_response = client.get(f"/story-development/world-bible?project_id={project_id}")
+    assert list_response.status_code == 200
+    assert len(list_response.json()["items"]) >= 1
+
+    # Test update world bible entry
+    update_payload = {"summary": "Updated summary with more detail."}
+    update_response = client.patch(
+        f"/story-development/world-bible/Location/The Enchanted Forest?project_id={project_id}",
+        json=update_payload,
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["summary"] == update_payload["summary"]
+
+    # Test read non-existent world bible entry
+    not_found_response = client.get(
+        f"/story-development/world-bible/Location/Non Existent?project_id={project_id}"
+    )
+    assert not_found_response.status_code == 404
+
+
+def test_story_development_api_arc_endpoints(tmp_path: Path) -> None:
+    """Test arc candidates and stage maps list endpoints."""
+    client, repository = _build_client(tmp_path)
+    project_id = "story-dev-api"
+
+    # Test list arc candidates (should return empty list initially)
+    candidates_response = client.get(f"/story-development/arcs/candidates?project_id={project_id}")
+    assert candidates_response.status_code == 200
+    assert candidates_response.json()["items"] == []
+
+    # Test list arc stage maps (should return empty list initially)
+    stage_maps_response = client.get(f"/story-development/arcs/stage-maps?project_id={project_id}")
+    assert stage_maps_response.status_code == 200
+    assert stage_maps_response.json()["items"] == []

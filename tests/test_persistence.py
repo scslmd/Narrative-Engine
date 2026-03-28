@@ -380,7 +380,7 @@ def test_project_db_applies_version_and_indexes(tmp_path: Path) -> None:
 def test_operations_db_enforces_foreign_keys_and_cascades(tmp_path: Path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     manager = JobManager(db_path)
-    job = manager.create_job(JobCreateRequest(phase="P-100", payload={}))
+    job = manager.create_job(JobCreateRequest(phase="P-100", payload={"project_id": "test-project"}))
     manager.log(job.id, "INFO", "entry")
 
     with connect(db_path) as connection:

@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 import _pytest.pathlib
 import _pytest.tmpdir
@@ -65,3 +66,66 @@ def tmp_path() -> Path:
         yield path
     finally:
         shutil.rmtree(path, ignore_errors=True)
+
+
+# ============================================================================
+# Test Utilities
+# ============================================================================
+
+
+def read_last_audit_record() -> dict[str, Any] | None:
+    """Read the last audit record from the log file."""
+    import json
+    from app.settings import settings
+    
+    log_path = Path(settings.structured_log_filename)
+    if not log_path.exists():
+        return None
+    
+    with open(log_path, 'r') as f:
+        lines = f.readlines()
+    
+    if not lines:
+        return None
+    
+    return json.loads(lines[-1])
+
+
+def count_audit_records() -> int:
+    """Count the number of audit records in the log file."""
+    from app.settings import settings
+    
+    log_path = Path(settings.structured_log_filename)
+    if not log_path.exists():
+        return 0
+    
+    with open(log_path, 'r') as f:
+        return sum(1 for _ in f)
+
+
+def get_test_job_id() -> UUID | None:
+    """Get an existing job ID from the database for testing."""
+    from uuid import UUID
+    from app.persistence.sqlite import connect
+    from app.settings import settings
+    
+    with connect(settings.operations_db_path) as conn:
+        row = conn.execute('SELECT job_id FROM jobs LIMIT 1').fetchone()
+        if row:
+            return UUID(row['job_id'])
+    return None
+
+
+def get_test_job_with_retries() -> UUID | None:
+    """Get a job ID with multiple attempts for testing."""
+    from uuid import UUID
+    from app.persistence.sqlite import connect
+    from app.settings import settings
+    
+    with connect(settings.operations_db_path) as conn:
+        row = conn.execute(
+            'SELECT job_id FROM jobs WHERE attempt_number > 1 LIMIT 1'
+        ).fetchone()
+        if row:
+            return UUID(row['job_id'])
+    return None

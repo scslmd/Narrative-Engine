@@ -61,7 +61,7 @@ class APIKey:
         """Check if key has expired."""
         if self.expires_at is None:
             return False
-        return datetime.now(timezone.utc) > self.expires_at
+        return datetime.now(timezone.utc) >= self.expires_at
     
     @property
     def is_revoked(self) -> bool:
@@ -368,6 +368,48 @@ class APIKeyStore:
             "expires_at": row[7],
             "last_used_at": row[8],
         }
+
+
+def fingerprint_api_key(api_key: str) -> str:
+    """Create a deterministic, audit-safe fingerprint of an API key (REL-10).
+    
+    The fingerprint is a SHA-256 hash prefixed with 'sha256:' to indicate
+    the algorithm used. It never contains the full API key secret and is
+    safe to include in audit logs.
+    
+    Args:
+        api_key: The full API key string (prefix.secret format)
+        
+    Returns:
+        A deterministic fingerprint string like 'sha256:abc123...'
+        
+    Example:
+        >>> fingerprint = fingerprint_api_key("abcd.xyz123...")
+        >>> fingerprint
+        'sha256:a1b2c3d4e5f6...'
+    """
+    import hashlib
+    
+    # Hash the full key to create a deterministic fingerprint
+    # This is safe to log because the hash cannot be reversed to get the original key
+    hash_value = hashlib.sha256(api_key.encode('utf-8')).hexdigest()
+    return f"sha256:{hash_value}"
+
+
+def fingerprint_api_key_from_parts(prefix: str, secret: str) -> str:
+    """Create a fingerprint from separate prefix and secret components.
+    
+    Useful when the key has already been parsed into components.
+    
+    Args:
+        prefix: The key prefix (first N characters)
+        secret: The key secret portion
+        
+    Returns:
+        A deterministic fingerprint string
+    """
+    full_key = f"{prefix}.{secret}"
+    return fingerprint_api_key(full_key)
 
 
 # Global instance (initialized in main.py)

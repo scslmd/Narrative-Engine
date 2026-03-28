@@ -29,3 +29,16 @@ export interface PromoteDraftToManuscriptRequest {
   scene_id?: string;
   version?: number;
 }
+
+export type SuggestionStatus = 'REQUESTED' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
+
+export interface RevisionSuggestion {
+  suggestion_id: string;
+  project_id: string;
+  target_document_id: string;
+  source_text: string;
+  proposed_text: string;
+  rationale: string;
+  source_context: string[];
+  status: SuggestionStatus;
+}

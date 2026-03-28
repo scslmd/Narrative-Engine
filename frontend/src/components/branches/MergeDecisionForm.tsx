@@ -1,25 +1,27 @@
 import { useState } from 'react';
-import type { StoryBranch, BranchMergeDecision } from '../../types/branches';
+import type { BranchMergeDecision, StoryBranch } from '../../types/branches';
 
 interface MergeDecisionFormProps {
   sourceBranch: StoryBranch;
   targetBranch: StoryBranch;
-  onSubmit: (decision: Omit<BranchMergeDecision, 'merge_decision_id' | 'created_at'>) => void;
+  onSubmit: (decision: Omit<BranchMergeDecision, 'merge_decision_id' | 'resulting_decision_node_ids'>) => void;
   onCancel: () => void;
 }
 
 export function MergeDecisionForm({ sourceBranch, targetBranch, onSubmit, onCancel }: MergeDecisionFormProps) {
-  const [decision, setDecision] = useState<'merge' | 'reject' | 'defer'>('merge');
-  const [rationale, setRationale] = useState('');
+  const [mergeRationale, setMergeRationale] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!mergeRationale.trim()) {
+      return;
+    }
+
     onSubmit({
       project_id: sourceBranch.project_id,
       source_branch_id: sourceBranch.branch_id,
       target_branch_id: targetBranch.branch_id,
-      decision,
-      rationale: rationale || undefined,
+      merge_rationale: mergeRationale.trim(),
     });
   };
 
@@ -29,7 +31,7 @@ export function MergeDecisionForm({ sourceBranch, targetBranch, onSubmit, onCanc
         <label className="block text-sm font-medium text-gray-700 mb-1">Source Branch</label>
         <input
           type="text"
-          value={sourceBranch.name}
+          value={sourceBranch.branch_name}
           disabled
           className="w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-600"
         />
@@ -39,42 +41,30 @@ export function MergeDecisionForm({ sourceBranch, targetBranch, onSubmit, onCanc
         <label className="block text-sm font-medium text-gray-700 mb-1">Target Branch</label>
         <input
           type="text"
-          value={targetBranch.name}
+          value={targetBranch.branch_name}
           disabled
           className="w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-600"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Decision</label>
-        <select
-          value={decision}
-          onChange={(e) => setDecision(e.target.value as 'merge' | 'reject' | 'defer')}
-          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="merge">Merge</option>
-          <option value="reject">Reject</option>
-          <option value="defer">Defer</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Rationale (optional)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Merge Rationale</label>
         <textarea
-          value={rationale}
-          onChange={(e) => setRationale(e.target.value)}
+          value={mergeRationale}
+          onChange={(e) => setMergeRationale(e.target.value)}
           rows={4}
           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Explain your decision..."
+          placeholder="Explain why these branches should be merged..."
         />
       </div>
 
       <div className="flex gap-2">
         <button
           type="submit"
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          disabled={!mergeRationale.trim()}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Record Decision
+          Record Merge Decision
         </button>
         <button
           type="button"

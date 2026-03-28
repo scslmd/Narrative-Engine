@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
+from uuid import uuid4
 
-from app.persistence.story_development import StoryDevelopmentRepository
+from app.persistence.story_development import RelationshipEdgeRecord, StoryDevelopmentRepository
 from app.schemas import (
     ArcCandidate,
     ArcSelection,
@@ -193,7 +194,7 @@ class StoryKnowledgeService:
             )
             for index, (score, candidate, notes) in enumerate(scored, start=1)
         )
-        comparison_id = self._comparison_id(normalized_project_id, len(self.repository.list_arc_comparisons(normalized_project_id)) + 1)
+        comparison_id = self._comparison_id(normalized_project_id)
         self.repository.upsert_arc_comparison(
             project_id=normalized_project_id,
             comparison_id=comparison_id,
@@ -248,10 +249,7 @@ class StoryKnowledgeService:
         if not notes:
             notes = list(self._candidate_notes(candidate))
 
-        selection_id = self._selection_id(
-            normalized_project_id,
-            len(self.repository.list_arc_selections(normalized_project_id)) + 1,
-        )
+        selection_id = self._selection_id(normalized_project_id)
         selection_record = self.repository.upsert_arc_selection(
             project_id=normalized_project_id,
             selection_id=selection_id,
@@ -330,8 +328,14 @@ class StoryKnowledgeService:
 
     def list_character_profiles(self, project_id: str) -> tuple[CharacterProfile, ...]:
         normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        relationship_edges_by_character = self._group_relationship_edges_by_character(
+            self.repository.list_relationship_edges(normalized_project_id)
+        )
         profiles = [
-            self._character_profile_from_record(record)
+            self._character_profile_from_record(
+                record,
+                relationship_edges=relationship_edges_by_character.get(record.character_id, ()),
+            )
             for record in self.repository.list_character_profiles(normalized_project_id)
         ]
         return tuple(sorted(profiles, key=lambda profile: (profile.display_name.casefold(), profile.character_id)))
@@ -369,6 +373,76 @@ class StoryKnowledgeService:
             self._selection_from_record(record)
             for record in self.repository.list_arc_selections(normalized_project_id)
         )
+
+    def list_relationship_edges_for_character(self, project_id: str, character_id: str) -> tuple[RelationshipEdge, ...]:
+        """List all relationship edges for a specific character.
+        
+        Args:
+            project_id: The project identifier.
+            character_id: The character identifier.
+            
+        Returns:
+            A tuple of RelationshipEdge objects sorted by edge_id.
+            
+        Raises:
+            StoryKnowledgeValidationError: If project_id or character_id are invalid.
+        """
+        if not project_id or not project_id.strip():
+            raise StoryKnowledgeValidationError("project_id cannot be empty.")
+        if not character_id or not character_id.strip():
+            raise StoryKnowledgeValidationError("character_id cannot be empty.")
+        
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_character_id = self._normalize_text(character_id, field_name="character_id")
+        edges = [
+            self._relationship_edge_from_record(record)
+            for record in self.repository.list_relationship_edges_for_character(normalized_project_id, normalized_character_id)
+        ]
+        return tuple(sorted(edges, key=lambda edge: edge.edge_id))
+
+    def list_arc_candidates(self, project_id: str) -> tuple[ArcCandidate, ...]:
+        """List all arc candidates for a project.
+        
+        Args:
+            project_id: The project identifier.
+            
+        Returns:
+            A tuple of ArcCandidate objects sorted by name then arc_id.
+            
+        Raises:
+            StoryKnowledgeValidationError: If project_id is invalid.
+        """
+        if not project_id or not project_id.strip():
+            raise StoryKnowledgeValidationError("project_id cannot be empty.")
+        
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        candidates = [
+            self._arc_candidate_from_record(record)
+            for record in self.repository.list_arc_candidates(normalized_project_id)
+        ]
+        return tuple(sorted(candidates, key=lambda candidate: (candidate.name.casefold(), candidate.arc_id)))
+
+    def list_arc_stage_maps(self, project_id: str) -> tuple[ArcStageMap, ...]:
+        """List all arc stage maps for a project.
+        
+        Args:
+            project_id: The project identifier.
+            
+        Returns:
+            A tuple of ArcStageMap objects sorted by arc_id.
+            
+        Raises:
+            StoryKnowledgeValidationError: If project_id is invalid.
+        """
+        if not project_id or not project_id.strip():
+            raise StoryKnowledgeValidationError("project_id cannot be empty.")
+        
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        stage_maps = [
+            self._arc_stage_map_from_record(record)
+            for record in self.repository.list_arc_stage_maps(normalized_project_id)
+        ]
+        return tuple(sorted(stage_maps, key=lambda sm: sm.arc_id))
 
     def get_arc_stage_map(self, project_id: str, *, arc_id: str) -> ArcStageMap | None:
         normalized_project_id = self._normalize_text(project_id, field_name="project_id")
@@ -475,8 +549,8 @@ class StoryKnowledgeService:
         }
         return ArcStageMap.model_validate(payload)
 
-    def _selection_id(self, project_id: str, index: int) -> str:
-        return f"{self._normalize_text(project_id, field_name='project_id')}:selection:{index:03d}"
+    def _selection_id(self, project_id: str) -> str:
+        return f"{self._normalize_text(project_id, field_name='project_id')}:selection:{uuid4().hex}"
 
     def _world_entry_id(self, project_id: str, entry_type: str, title: str) -> str:
         return f"{self._normalize_text(project_id, field_name='project_id')}:{self._normalize_text(entry_type, field_name='entry_type')}:{self._normalize_text(title, field_name='title')}"
@@ -492,8 +566,18 @@ class StoryKnowledgeService:
             notes=record.notes,
         )
 
-    def _character_profile_from_record(self, record) -> CharacterProfile:
+    def _character_profile_from_record(
+        self,
+        record,
+        *,
+        relationship_edges: Sequence[RelationshipEdgeRecord] | None = None,
+    ) -> CharacterProfile:
         arc_stage_notes = [line for line in (record.arc_stage_notes or "").splitlines() if line.strip()]
+        edge_records = (
+            list(relationship_edges)
+            if relationship_edges is not None
+            else self.repository.list_relationship_edges_for_character(record.project_id, record.character_id)
+        )
         return CharacterProfile(
             character_id=record.character_id,
             project_id=record.project_id,
@@ -511,7 +595,7 @@ class StoryKnowledgeService:
             voice_notes=record.voice_notes or "",
             relationship_edges=[
                 self._relationship_edge_from_record(edge_record)
-                for edge_record in self.repository.list_relationship_edges_for_character(record.project_id, record.character_id)
+                for edge_record in edge_records
             ],
             secrets=list(record.secrets),
             values=list(record.values),
@@ -687,8 +771,8 @@ class StoryKnowledgeService:
             informing_object_links=[],
         )
 
-    def _comparison_id(self, project_id: str, index: int) -> str:
-        return f"{self._normalize_text(project_id, field_name='project_id')}:comparison:{index:03d}"
+    def _comparison_id(self, project_id: str) -> str:
+        return f"{self._normalize_text(project_id, field_name='project_id')}:comparison:{uuid4().hex}"
 
     def _normalize_text(self, value: object, *, field_name: str) -> str:
         if not isinstance(value, str):
@@ -730,3 +814,14 @@ class StoryKnowledgeService:
             seen.add(candidate.arc_id)
             unique.append(candidate)
         return unique
+
+    def _group_relationship_edges_by_character(
+        self,
+        edges: Sequence[RelationshipEdgeRecord],
+    ) -> dict[str, list[RelationshipEdgeRecord]]:
+        grouped: dict[str, list[RelationshipEdgeRecord]] = {}
+        for edge in edges:
+            grouped.setdefault(edge.source_character_id, []).append(edge)
+            if edge.target_character_id != edge.source_character_id:
+                grouped.setdefault(edge.target_character_id, []).append(edge)
+        return grouped

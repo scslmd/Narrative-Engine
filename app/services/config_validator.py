@@ -164,8 +164,9 @@ class ConfigValidator:
                 test_conn.close()
     
     def _validate_directories(self) -> bool:
-        """Validate required directories exist and are writable."""
+        """Validate required directories exist and are writable (REL-09)."""
         import os
+        import stat
         
         base_dir = Path(os.getenv("PROJECTS_DIR", "projects"))
         
@@ -178,6 +179,32 @@ class ConfigValidator:
                     "directories",
                 )
         
+        # Check directory permissions (REL-09)
+        # Only enforce strict Unix permissions on Unix systems
+        if os.name != 'nt':  # Not Windows
+            try:
+                dir_stat = os.stat(base_dir)
+                mode = dir_stat.st_mode
+                
+                # Check if directory is world-writable (insecure on Unix)
+                if mode & stat.S_IWOTH:
+                    raise ConfigValidationError(
+                        f"Projects directory {base_dir} is world-writable (insecure permissions)",
+                        "directories",
+                    )
+                
+                # Check if directory is group-writable (warn but allow)
+                if mode & stat.S_IWGRP:
+                    print(f"[WARN] Projects directory {base_dir} is group-writable")
+                
+            except OSError as e:
+                # If we can't stat the directory, that's a problem
+                raise ConfigValidationError(
+                    f"Cannot check permissions for {base_dir}: {e}",
+                    "directories",
+                )
+        
+        # Test write permission
         test_file = base_dir / ".write_test"
         try:
             test_file.write_text("test")
