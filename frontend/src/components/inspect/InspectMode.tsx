@@ -1,15 +1,29 @@
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../stores/uiStore';
 import InspectTabs from './InspectTabs';
 
 export default function InspectMode() {
-  const { inspectContext, setMode, setInspectContext } = useUIStore();
+  const { jobId: routeJobId } = useParams<{ jobId?: string }>();
+  const navigate = useNavigate();
+  const { inspectContext, setInspectContext, projectId } = useUIStore();
+
+  // Sync route with store - route is source of truth for deep links
+  useEffect(() => {
+    if (routeJobId && (!inspectContext || inspectContext.jobId !== routeJobId)) {
+      setInspectContext({ jobId: routeJobId });
+    }
+  }, [routeJobId, inspectContext, setInspectContext]);
 
   const handleBackToManuscript = () => {
-    setMode('write');
-    setInspectContext(null);
+    if (projectId) {
+      navigate(`/workspace/${projectId}/write`, { replace: true });
+    } else {
+      navigate('/');
+    }
   };
 
-  if (!inspectContext) {
+  if (!inspectContext || !routeJobId) {
     return (
       <div className="h-full flex items-center justify-center">
         <p className="text-sm text-gray-500">Select a job to inspect</p>

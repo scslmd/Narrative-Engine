@@ -23,10 +23,19 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
     setExpanded(!expanded);
   };
 
+  const hasValidInspectTarget = 
+    finding.source_object_kind && 
+    finding.source_object_id &&
+    finding.source_object_kind !== '' &&
+    finding.source_object_id !== '';
+
   const handleJumpToSource = () => {
-    if (finding.source_object_id) {
-      navigate(`/workspace/${projectId}/inspect?object=${finding.source_object_id}&kind=${finding.source_object_kind}`);
-    }
+    // Only navigate when there's a real supported inspect target
+    if (!hasValidInspectTarget) return;
+    
+    // Navigate to inspect view - the route will be handled by InspectMode
+    // which can filter findings by object kind/id if needed
+    navigate(`/workspace/${projectId}/inspect`);
   };
 
   const handleDecisionSuccess = () => {
@@ -61,11 +70,17 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
 
               <div className="flex gap-2 mt-2">
                 <button 
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  className={`px-3 py-1.5 text-sm rounded ${
+                    hasValidInspectTarget 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleJumpToSource();
                   }}
+                  disabled={!hasValidInspectTarget}
+                  title={!hasValidInspectTarget ? 'No inspectable source available' : ''}
                 >
                   Jump to Source
                 </button>

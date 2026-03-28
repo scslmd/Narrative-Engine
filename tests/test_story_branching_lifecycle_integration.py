@@ -136,7 +136,7 @@ def test_branching_lifecycle_integration(tmp_path: Path) -> None:
             "branch_state": "ACTIVE",
         },
     )
-    assert create_main_response.status_code == 200, f"Failed to create main branch: {create_main_response.text}"
+    assert create_main_response.status_code == 201, f"Failed to create main branch: {create_main_response.text}"
     main_branch = create_main_response.json()
     assert main_branch["branch_id"] == "branch-main"
     assert main_branch["branch_name"] == "Main Timeline"
@@ -154,7 +154,7 @@ def test_branching_lifecycle_integration(tmp_path: Path) -> None:
             "branch_state": "ACTIVE",
         },
     )
-    assert create_alt_response.status_code == 200, f"Failed to create alt branch: {create_alt_response.text}"
+    assert create_alt_response.status_code == 201, f"Failed to create alt branch: {create_alt_response.text}"
     alt_branch = create_alt_response.json()
     assert alt_branch["branch_id"] == "branch-alt"
     assert alt_branch["branch_name"] == "Alternate Timeline"
@@ -186,7 +186,7 @@ def test_branching_lifecycle_integration(tmp_path: Path) -> None:
             ],
         },
     )
-    assert create_comparison_response.status_code == 200, f"Failed to create comparison: {create_comparison_response.text}"
+    assert create_comparison_response.status_code == 201, f"Failed to create comparison: {create_comparison_response.text}"
     comparison = create_comparison_response.json()
     assert comparison["comparison_id"] == "comparison-main-vs-alt"
     assert comparison["source_branch_id"] == "branch-main"
@@ -251,7 +251,7 @@ def test_branching_lifecycle_integration(tmp_path: Path) -> None:
             "resulting_decision_node_ids": ["decision-node-main", "decision-node-alt"],
         },
     )
-    assert create_merge_response.status_code == 200, f"Failed to create merge decision: {create_merge_response.text}"
+    assert create_merge_response.status_code == 201, f"Failed to create merge decision: {create_merge_response.text}"
     merge_decision = create_merge_response.json()
     assert merge_decision["merge_decision_id"] == "merge-main-into-alt"
     assert merge_decision["source_branch_id"] == "branch-main"
@@ -406,7 +406,7 @@ def test_branching_lifecycle_cross_project_isolation(tmp_path: Path) -> None:
             "branch_state": "ACTIVE",
         },
     )
-    assert create_other_branch_response.status_code == 200
+    assert create_other_branch_response.status_code == 201
 
     # Verify branches are isolated
     main_project_branches = client.get(f"/story-development/branches?project_id={project_id}")

@@ -41,18 +41,20 @@ export const flowService = {
   },
 
   // Legacy method - kept for compatibility but throws error directing users to use updateStageWithProject
-  async updateStage(_stageId: string, _updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
+  async updateStage(stageId: string, updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
+    void stageId; // Parameter kept for API compatibility
+    void updates; // Parameter kept for API compatibility
     throw new Error(`updateStage requires project_id parameter. Use updateStageWithProject(projectId, stageId, updates) instead.`);
   },
 
-  async updateStageWithProject(projectId: string, stageId: string, updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
+  async updateStageWithProject(projectId: string, stageId: string, updates: FlowStageUpdateRequest): Promise<StoryFlowStage> {
     const payload: FlowStageUpdateRequest = {};
     
     if (updates.display_name !== undefined) payload.display_name = updates.display_name;
     if (updates.description !== undefined) payload.description = updates.description;
     if (updates.depends_on !== undefined) payload.depends_on = updates.depends_on;
-    if ((updates as any).writer_notes !== undefined) payload.writer_notes = (updates as any).writer_notes;
-    if ((updates as any).custom_prompt_guidance !== undefined) payload.custom_prompt_guidance = (updates as any).custom_prompt_guidance;
+    if (updates.writer_notes !== undefined) payload.writer_notes = updates.writer_notes;
+    if (updates.custom_prompt_guidance !== undefined) payload.custom_prompt_guidance = updates.custom_prompt_guidance;
 
     const response = await api.patch(`/story-development/flow/stages/${stageId}?project_id=${projectId}`, payload);
 
@@ -86,12 +88,16 @@ export const flowService = {
     return undefined;
   },
 
-  async disableStage(_projectId: string, _stageId: string): Promise<StoryFlowStage> {
+  async disableStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
+    void projectId; // Parameter kept for API compatibility
+    void stageId; // Parameter kept for API compatibility
     // Note: Backend doesn't have a dedicated disable endpoint yet, using update
     throw new Error('disableStage not yet implemented - backend needs stage_configuration_state support');
   },
 
-  async archiveStage(_projectId: string, _stageId: string): Promise<StoryFlowStage> {
+  async archiveStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
+    void projectId; // Parameter kept for API compatibility
+    void stageId; // Parameter kept for API compatibility
     // Note: Backend doesn't have a dedicated archive endpoint yet, using update
     throw new Error('archiveStage not yet implemented - backend needs stage_configuration_state support');
   },

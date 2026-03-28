@@ -18,8 +18,19 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
   return data.items;
 }
 
-export async function createBranch(projectId: string, name: string, description?: string, parentBranchId?: string): Promise<StoryBranch> {
-  const response = await api.post('/story-development/branches', { project_id: projectId, name, description, parent_branch_id: parentBranchId });
+export async function createBranch(
+  projectId: string,
+  branchName: string,
+  branchPointId: string,
+): Promise<StoryBranch> {
+  // Backend requires branch_id and branch_point_id, uses branch_name field
+  const response = await api.post('/story-development/branches', {
+    project_id: projectId,
+    branch_id: crypto.randomUUID(),
+    branch_point_id: branchPointId,
+    branch_name: branchName,
+    branch_state: 'ACTIVE',
+  });
 
   if (response.status !== 201) {
     throw new Error(`Failed to create branch: ${response.status}`);
@@ -43,7 +54,11 @@ export async function getActiveBranch(projectId: string): Promise<StoryBranch | 
 }
 
 export async function setActiveBranch(projectId: string, branchId: string): Promise<StoryBranch> {
-  const response = await api.post('/story-development/branches/active', { project_id: projectId, branch_id: branchId });
+  // Backend expects POST with body containing project_id and branch_id
+  const response = await api.post('/story-development/branches/active', { 
+    project_id: projectId, 
+    branch_id: branchId 
+  });
 
   if (response.status !== 200) {
     throw new Error(`Failed to set active branch: ${response.status}`);
@@ -52,8 +67,19 @@ export async function setActiveBranch(projectId: string, branchId: string): Prom
   return response.data;
 }
 
-export async function createBranchComparison(projectId: string, branchAId: string, branchBId: string): Promise<BranchComparisonRecord> {
-  const response = await api.post('/story-development/branches/comparisons', { project_id: projectId, branch_a_id: branchAId, branch_b_id: branchBId });
+export async function createBranchComparison(
+  projectId: string,
+  sourceBranchId: string,
+  targetBranchId: string,
+): Promise<BranchComparisonRecord> {
+  // Backend requires comparison_id, source_branch_id, and target_branch_id
+  const response = await api.post('/story-development/branches/comparisons', {
+    project_id: projectId,
+    comparison_id: crypto.randomUUID(),
+    source_branch_id: sourceBranchId,
+    target_branch_id: targetBranchId,
+    review_notes: [],
+  });
 
   if (response.status !== 201) {
     throw new Error(`Failed to create comparison: ${response.status}`);
@@ -79,8 +105,11 @@ export async function getComparisons(projectId: string): Promise<BranchCompariso
   return data.items;
 }
 
-export async function getComparison(comparisonId: string): Promise<BranchComparisonRecord> {
-  const response = await api.get(`/story-development/branches/comparisons/${comparisonId}`);
+export async function getComparison(comparisonId: string, projectId?: string): Promise<BranchComparisonRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+  
+  const response = await api.get(`/story-development/branches/comparisons/${comparisonId}`, { params });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch comparison: ${response.status}`);
@@ -89,8 +118,21 @@ export async function getComparison(comparisonId: string): Promise<BranchCompari
   return response.data;
 }
 
-export async function createMergeDecision(projectId: string, sourceBranchId: string, targetBranchId: string, decision: 'merge' | 'reject' | 'defer', rationale?: string): Promise<BranchMergeDecision> {
-  const response = await api.post('/story-development/branches/merge-decisions', { project_id: projectId, source_branch_id: sourceBranchId, target_branch_id: targetBranchId, decision, rationale });
+export async function createMergeDecision(
+  projectId: string,
+  sourceBranchId: string,
+  targetBranchId: string,
+  rationale: string,
+): Promise<BranchMergeDecision> {
+  // Backend requires merge_decision_id and uses merge_rationale field
+  const response = await api.post('/story-development/branches/merge-decisions', {
+    project_id: projectId,
+    merge_decision_id: crypto.randomUUID(),
+    source_branch_id: sourceBranchId,
+    target_branch_id: targetBranchId,
+    merge_rationale: rationale,
+    resulting_decision_node_ids: [],
+  });
 
   if (response.status !== 201) {
     throw new Error(`Failed to create merge decision: ${response.status}`);
@@ -122,8 +164,11 @@ interface StateRefListResponse {
   meta: Record<string, string>;
 }
 
-export async function getBranchStateRefs(branchId: string): Promise<BranchStateRef[]> {
-  const response = await api.get(`/story-development/branches/${branchId}/state-refs`);
+export async function getBranchStateRefs(branchId: string, projectId?: string): Promise<BranchStateRef[]> {
+  const params: Record<string, string> = { project_id: projectId || '' };
+  if (projectId) params.project_id = projectId;
+  
+  const response = await api.get(`/story-development/branches/${branchId}/state-refs`, { params });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch branch state refs: ${response.status}`);

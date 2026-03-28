@@ -5,6 +5,12 @@ import { flowService } from '../../services/flow';
 import { useToastStore } from '../../stores/toastStore';
 import StageList from './StageList';
 
+interface StageEditPayload {
+  display_name?: string;
+  description?: string;
+  custom_prompt_guidance?: string;
+}
+
 interface FlowEditorProps {
   projectId: string;
 }
@@ -46,8 +52,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   });
 
   const updateStageMutation = useMutation({
-    mutationFn: ({ stageId, updates }: { stageId: string; updates: Partial<StoryFlowStage> }) =>
-      flowService.updateStageWithProject(projectId, stageId, updates),
+    mutationFn: ({ stageId, updates }: { stageId: string; updates: StageEditPayload }) =>
+      flowService.updateStageWithProject(projectId, stageId, updates as Partial<StoryFlowStage>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       setUpdatingStageId(null);
@@ -85,7 +91,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   const handleSaveEdit = useCallback(() => {
     if (!editingStage) return;
     
-    const updates: Partial<StoryFlowStage> = {};
+    const updates: StageEditPayload = {};
     if (editedDisplayName !== editingStage.display_name) {
       updates.display_name = editedDisplayName;
     }
@@ -93,8 +99,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
       updates.description = editedDescription;
     }
     if (editedPromptGuidance !== editingStage.custom_prompt_guidance) {
-      // Note: custom_prompt_guidance is not in StoryFlowStage type, cast needed
-      (updates as any).custom_prompt_guidance = editedPromptGuidance;
+      updates.custom_prompt_guidance = editedPromptGuidance;
     }
     
     if (Object.keys(updates).length > 0) {
@@ -109,38 +114,6 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     setEditedDescription('');
     setEditedPromptGuidance('');
   }, []);
-
-  const handleDisable = useCallback(
-    async (stageId: string) => {
-      setUpdatingStageId(stageId);
-      try {
-        await flowService.disableStage(projectId, stageId);
-        queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-        addToast('Stage disabled', 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Failed to disable stage', 'error');
-      } finally {
-        setUpdatingStageId(null);
-      }
-    },
-    [queryClient, projectId, addToast]
-  );
-
-  const handleArchive = useCallback(
-    async (stageId: string) => {
-      setUpdatingStageId(stageId);
-      try {
-        await flowService.archiveStage(projectId, stageId);
-        queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
-        addToast('Stage archived', 'success');
-      } catch (err) {
-        addToast(err instanceof Error ? err.message : 'Failed to archive stage', 'error');
-      } finally {
-        setUpdatingStageId(null);
-      }
-    },
-    [queryClient, projectId, addToast]
-  );
 
   const handleDelete = useCallback(
     async (stageId: string) => {
@@ -204,8 +177,6 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
             stages={stages}
             updatingStageId={updatingStageId}
             onEdit={handleEdit}
-            onDisable={handleDisable}
-            onArchive={handleArchive}
             onDelete={handleDelete}
             onAddStage={handleAddStage}
           />

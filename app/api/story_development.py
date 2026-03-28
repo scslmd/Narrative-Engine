@@ -270,7 +270,7 @@ def build_story_development_router(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return StoryBranchListResponse(project_id=project_id, items=items, meta={"ordered_by": "created_at_asc"})
 
-    @router.post("/branches", response_model=StoryBranch)
+    @router.post("/branches", response_model=StoryBranch, status_code=201)
     def create_story_branch(payload: StoryBranchCreateRequest) -> StoryBranch:
         try:
             return branching_service.create_story_branch(
@@ -299,7 +299,7 @@ def build_story_development_router(
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Story branch not found.") from exc
 
-    @router.post("/branches/comparisons", response_model=BranchComparisonRecord)
+    @router.post("/branches/comparisons", response_model=BranchComparisonRecord, status_code=201)
     def create_branch_comparison(payload: BranchComparisonCreateRequest) -> BranchComparisonRecord:
         try:
             return branching_service.compare_story_branches(
@@ -329,7 +329,7 @@ def build_story_development_router(
         except StoryBranchingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Branch comparison not found.") from exc
 
-    @router.post("/branches/merge-decisions", response_model=BranchMergeDecision)
+    @router.post("/branches/merge-decisions", response_model=BranchMergeDecision, status_code=201)
     def record_branch_merge_decision(payload: BranchMergeDecisionCreateRequest) -> BranchMergeDecision:
         try:
             return branching_service.record_branch_merge_decision(
@@ -399,7 +399,7 @@ def build_story_development_router(
         except EditableFlowNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Flow not found for project.") from exc
 
-    @router.post("/flow/stages", response_model=StoryFlowStage)
+    @router.post("/flow/stages", response_model=StoryFlowStage, status_code=201)
     def create_flow_stage(payload: FlowStageCreateRequest) -> StoryFlowStage:
         try:
             return flow_service.add_custom_stage(
@@ -703,7 +703,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Revision suggestion not found.") from exc
 
-    @router.post("/drafting/manuscript-documents", response_model=ManuscriptDocument)
+    @router.post("/drafting/manuscript-documents", response_model=ManuscriptDocument, status_code=201)
     def create_manuscript_document(payload: ManuscriptDocumentCreateRequest) -> ManuscriptDocument:
         """Create a new manuscript document.
 
@@ -733,7 +733,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Referenced draft artifact not found.") from exc
 
-    @router.post("/drafting/promote-draft", response_model=ManuscriptDocument)
+    @router.post("/drafting/promote-draft", response_model=ManuscriptDocument, status_code=201)
     def promote_draft_to_manuscript(payload: PromoteDraftToManuscriptRequest) -> ManuscriptDocument:
         """Promote a draft artifact to a manuscript document.
 
@@ -762,7 +762,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Draft artifact not found.") from exc
 
-    @router.post("/drafting/revision-suggestions", response_model=RevisionSuggestion)
+    @router.post("/drafting/revision-suggestions", response_model=RevisionSuggestion, status_code=201)
     def create_revision_suggestion(payload: RevisionSuggestionCreateRequest) -> RevisionSuggestion:
         """Create a revision suggestion for a manuscript document.
 
@@ -792,7 +792,7 @@ def build_story_development_router(
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Target manuscript document not found.") from exc
 
-    @router.post("/review/decisions", response_model=ReviewDecision)
+    @router.post("/review/decisions", response_model=ReviewDecision, status_code=201)
     def record_review_decision(payload: ReviewDecisionCreateRequest) -> ReviewDecision:
         """Record a review decision for a target object.
 
