@@ -46,8 +46,13 @@ interface DecisionListResponse {
   meta: Record<string, string>;
 }
 
-export async function getDecisionsForFinding(findingId: string): Promise<ReviewDecision[]> {
-  const response = await api.get('/story-development/review/decisions', { params: { target_id: findingId } });
+export async function getDecisionsForFinding(projectId: string, findingId: string): Promise<ReviewDecision[]> {
+  const response = await api.get('/story-development/review/decisions', {
+    params: {
+      project_id: projectId,
+      target_id: findingId,
+    },
+  });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch decisions: ${response.status}`);

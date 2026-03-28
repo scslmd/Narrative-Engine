@@ -9,6 +9,7 @@
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
 - The React frontend is merged and is now the default shipped frontend surface.
+- Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
 - The remaining work is primarily backend expansion, deeper persistence hardening, and frontend features that still depend on backend APIs not yet implemented.
 
 ## Active Backlog

@@ -47,6 +47,8 @@ Implemented and working now:
 - runtime-backed checker execution for `architect`, `sequencer`, `drafter`, and `critic`, with deterministic fallback preserved when runtime is unavailable or intentionally skipped
 - persisted checker-step runtime telemetry for inspectable backend identity, hashes, finish reasons, and token usage on runtime-backed checker rows
 - public inspect endpoints for persisted step records and artifact lineage on jobs and checker runs
+- route-driven inspect deep links that render directly from `/workspace/:projectId/inspect/:jobId`
+- "Jump to Source" actions that open a renderable inspect route instead of a dead-end shell view
 - frontend workflow scaffolding and documentation
 
 Still being built:

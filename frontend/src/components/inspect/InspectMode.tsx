@@ -7,8 +7,12 @@ export default function InspectMode() {
   const { jobId: routeJobId } = useParams<{ jobId?: string }>();
   const navigate = useNavigate();
   const { inspectContext, setInspectContext, projectId } = useUIStore();
+  const activeContext = inspectContext?.jobId === routeJobId
+    ? inspectContext
+    : routeJobId
+      ? { jobId: routeJobId }
+      : inspectContext;
 
-  // Sync route with store - route is source of truth for deep links
   useEffect(() => {
     if (routeJobId && (!inspectContext || inspectContext.jobId !== routeJobId)) {
       setInspectContext({ jobId: routeJobId });
@@ -23,7 +27,7 @@ export default function InspectMode() {
     }
   };
 
-  if (!inspectContext || !routeJobId) {
+  if (!activeContext?.jobId) {
     return (
       <div className="h-full flex items-center justify-center">
         <p className="text-sm text-gray-500">Select a job to inspect</p>
@@ -37,7 +41,7 @@ export default function InspectMode() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Inspect Job</h2>
-            <p className="text-sm text-gray-500">Job ID: {inspectContext.jobId}</p>
+            <p className="text-sm text-gray-500">Job ID: {activeContext.jobId}</p>
           </div>
 
           <button
@@ -50,7 +54,7 @@ export default function InspectMode() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        <InspectTabs context={inspectContext} />
+        <InspectTabs context={activeContext} />
       </main>
     </div>
   );

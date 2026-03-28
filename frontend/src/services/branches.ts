@@ -1,5 +1,5 @@
 import type { StoryBranch, BranchComparisonRecord, BranchMergeDecision, BranchStateRef } from '../types/branches';
-import api from '../lib/api';
+import api, { ApiError } from '../lib/api';
 
 interface BranchListResponse {
   project_id: string;
@@ -40,17 +40,21 @@ export async function createBranch(
 }
 
 export async function getActiveBranch(projectId: string): Promise<StoryBranch | null> {
-  const response = await api.get('/story-development/branches/active', { params: { project_id: projectId } });
-  
-  if (response.status === 404) {
-    return null;
-  }
+  try {
+    const response = await api.get('/story-development/branches/active', { params: { project_id: projectId } });
 
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch active branch: ${response.status}`);
-  }
+    if (response.status !== 200) {
+      throw new Error(`Failed to fetch active branch: ${response.status}`);
+    }
 
-  return response.data;
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export async function setActiveBranch(projectId: string, branchId: string): Promise<StoryBranch> {
@@ -165,7 +169,7 @@ interface StateRefListResponse {
 }
 
 export async function getBranchStateRefs(branchId: string, projectId?: string): Promise<BranchStateRef[]> {
-  const params: Record<string, string> = { project_id: projectId || '' };
+  const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;
   
   const response = await api.get(`/story-development/branches/${branchId}/state-refs`, { params });

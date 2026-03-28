@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CheckerFinding } from '../../types/review';
+import { getInspectLinks } from '../../services/inspectLinks';
+import { useToastStore } from '../../stores/toastStore';
 import { SeverityBadge } from './SeverityBadge';
 import { DecisionForm } from './DecisionForm';
 import { DecisionHistory } from './DecisionHistory';
@@ -13,8 +15,10 @@ interface FindingCardProps {
 
 export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) {
   const navigate = useNavigate();
+  const addToast = useToastStore((state) => state.addToast);
   const [expanded, setExpanded] = useState(false);
   const [showDecisionForm, setShowDecisionForm] = useState(false);
+  const [isResolvingInspectRun, setIsResolvingInspectRun] = useState(false);
 
   const handleCardClick = () => {
     if (onSelect) {
@@ -23,19 +27,34 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
     setExpanded(!expanded);
   };
 
-  const hasValidInspectTarget = 
-    finding.source_object_kind && 
-    finding.source_object_id &&
-    finding.source_object_kind !== '' &&
-    finding.source_object_id !== '';
+  const hasValidInspectTarget =
+    Boolean(finding.source_object_kind) &&
+    Boolean(finding.source_object_id);
 
-  const handleJumpToSource = () => {
-    // Only navigate when there's a real supported inspect target
+  const handleJumpToSource = async () => {
     if (!hasValidInspectTarget) return;
-    
-    // Navigate to inspect view - the route will be handled by InspectMode
-    // which can filter findings by object kind/id if needed
-    navigate(`/workspace/${projectId}/inspect`);
+
+    setIsResolvingInspectRun(true);
+
+    try {
+      const links = await getInspectLinks(
+        projectId,
+        finding.source_object_kind,
+        finding.source_object_id,
+      );
+      const primaryLink = links[0];
+
+      if (!primaryLink?.run_id) {
+        addToast('No inspect run is linked to this finding source yet', 'warning');
+        return;
+      }
+
+      navigate(`/workspace/${projectId}/inspect/${primaryLink.run_id}`);
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to open inspect run', 'error');
+    } finally {
+      setIsResolvingInspectRun(false);
+    }
   };
 
   const handleDecisionSuccess = () => {
@@ -77,12 +96,12 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleJumpToSource();
+                    void handleJumpToSource();
                   }}
-                  disabled={!hasValidInspectTarget}
+                  disabled={!hasValidInspectTarget || isResolvingInspectRun}
                   title={!hasValidInspectTarget ? 'No inspectable source available' : ''}
                 >
-                  Jump to Source
+                  {isResolvingInspectRun ? 'Opening...' : 'Jump to Source'}
                 </button>
 
                 <button 
