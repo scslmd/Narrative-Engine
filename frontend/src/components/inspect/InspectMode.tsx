@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getCheckerStatus } from '../../services/checker';
+import { jobsService } from '../../services/jobs';
 import { useUIStore } from '../../stores/uiStore';
 import InspectTabs from './InspectTabs';
 
@@ -7,19 +9,73 @@ export default function InspectMode() {
   const { jobId: routeJobId } = useParams<{ jobId?: string }>();
   const navigate = useNavigate();
   const { inspectContext, setInspectContext, projectId } = useUIStore();
-  
+  const [isResolvingContext, setIsResolvingContext] = useState(false);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (routeJobId && (!inspectContext || inspectContext.jobId !== routeJobId)) {
-      const runKind: 'pipeline_job' | 'role_model_check' = 
-        inspectContext?.jobId === routeJobId ? inspectContext.runKind : 'pipeline_job';
-      const attemptNumber = inspectContext?.jobId === routeJobId ? inspectContext.attemptNumber : undefined;
-      
-      setInspectContext({ 
-        jobId: routeJobId, 
-        runKind,
-        attemptNumber 
-      });
+    if (!routeJobId) {
+      setResolutionError(null);
+      setIsResolvingContext(false);
+      return;
     }
+
+    if (inspectContext?.jobId === routeJobId) {
+      setResolutionError(null);
+      setIsResolvingContext(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const resolveContext = async () => {
+      setIsResolvingContext(true);
+      setResolutionError(null);
+
+      const checkerStatus = await getCheckerStatus(routeJobId)
+        .then((status) => ({ ok: true as const, status }))
+        .catch(() => ({ ok: false as const }));
+
+      if (cancelled) {
+        return;
+      }
+
+      if (checkerStatus.ok) {
+        setInspectContext({
+          jobId: routeJobId,
+          runKind: 'role_model_check',
+          attemptNumber: checkerStatus.status.attempt_number,
+        });
+        setIsResolvingContext(false);
+        return;
+      }
+
+      const jobStatus = await jobsService.getStatus(routeJobId)
+        .then((status) => ({ ok: true as const, status }))
+        .catch(() => ({ ok: false as const }));
+
+      if (cancelled) {
+        return;
+      }
+
+      if (jobStatus.ok) {
+        setInspectContext({
+          jobId: routeJobId,
+          runKind: 'pipeline_job',
+          attemptNumber: jobStatus.status.attempt_number,
+        });
+        setIsResolvingContext(false);
+        return;
+      }
+
+      setResolutionError('Could not resolve an inspectable run for this route.');
+      setIsResolvingContext(false);
+    };
+
+    void resolveContext();
+
+    return () => {
+      cancelled = true;
+    };
   }, [routeJobId, inspectContext, setInspectContext]);
 
   const handleBackToManuscript = () => {
@@ -29,6 +85,22 @@ export default function InspectMode() {
       navigate('/');
     }
   };
+
+  if (isResolvingContext) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-sm text-gray-500">Resolving inspect run...</p>
+      </div>
+    );
+  }
+
+  if (resolutionError) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-sm text-red-600">{resolutionError}</p>
+      </div>
+    );
+  }
 
   if (!inspectContext?.jobId) {
     return (

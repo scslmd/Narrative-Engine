@@ -40,7 +40,7 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {
   const response = await api.post('/role-model-checker/run', request);
 
-  if (response.status !== 201 && response.status !== 200) {
+  if (response.status !== 202 && response.status !== 200) {
     throw new Error(`Failed to run checker: ${response.status}`);
   }
 

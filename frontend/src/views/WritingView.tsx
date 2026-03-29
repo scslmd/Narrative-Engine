@@ -36,20 +36,30 @@ export function WritingView() {
   const revisionSuggestions = (suggestionsQuery.data as RevisionSuggestion[]) ?? [];
 
   useEffect(() => {
-    if (manuscriptDocuments.length > 0 && !selectedDocumentId) {
-      if (chapterId) {
-        const docForChapter = manuscriptDocuments.find(
-          (doc: ManuscriptDocument) => doc.chapter_id === chapterId
-        );
-        if (docForChapter) {
+    if (manuscriptDocuments.length === 0) {
+      setSelectedDocumentId(null);
+      return;
+    }
+
+    if (chapterId) {
+      const docForChapter = manuscriptDocuments.find(
+        (doc: ManuscriptDocument) => doc.chapter_id === chapterId
+      );
+
+      if (docForChapter) {
+        if (docForChapter.document_id !== selectedDocumentId) {
           setSelectedDocumentId(docForChapter.document_id);
-          return;
         }
+        return;
       }
-      
-      if (!selectedDocumentId && manuscriptDocuments.length > 0) {
-        setSelectedDocumentId(manuscriptDocuments[0].document_id);
-      }
+    }
+
+    const selectedDocumentStillExists = manuscriptDocuments.some(
+      (doc: ManuscriptDocument) => doc.document_id === selectedDocumentId
+    );
+
+    if (!selectedDocumentStillExists) {
+      setSelectedDocumentId(manuscriptDocuments[0].document_id);
     }
   }, [manuscriptDocuments, chapterId, selectedDocumentId]);
 

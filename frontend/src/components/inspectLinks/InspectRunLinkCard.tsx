@@ -8,11 +8,15 @@ interface InspectRunLinkCardProps {
 
 export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
   const navigate = useNavigate();
-  const { projectId } = useUIStore();
+  const { projectId, setInspectContext } = useUIStore();
 
   const handleViewRunDetails = () => {
     if (projectId && link.run_id) {
-      // Navigate to inspect view with the job/run ID
+      setInspectContext({
+        jobId: link.run_id,
+        runKind: link.run_kind === 'role_model_check' ? 'role_model_check' : 'pipeline_job',
+        attemptNumber: link.attempt_number ?? undefined,
+      });
       navigate(`/workspace/${projectId}/inspect/${link.run_id}`);
     }
   };
