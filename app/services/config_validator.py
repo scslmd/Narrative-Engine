@@ -166,10 +166,22 @@ class ConfigValidator:
     def _validate_directories(self) -> bool:
         """Validate required directories exist and are writable (REL-09)."""
         import os
-        import stat
         
         base_dir = Path(os.getenv("PROJECTS_DIR", "projects"))
         
+        # Ensure directory exists
+        self._ensure_directory_exists(base_dir)
+        
+        # Run all validation checks
+        self._validate_system_path(base_dir)
+        self._validate_windows_readonly(base_dir)
+        self._validate_unix_permissions(base_dir)
+        self._validate_write_permission(base_dir)
+        
+        return True
+    
+    def _ensure_directory_exists(self, base_dir: Path) -> None:
+        """Create directory if it doesn't exist."""
         if not base_dir.exists():
             try:
                 base_dir.mkdir(parents=True, exist_ok=True)
@@ -178,33 +190,69 @@ class ConfigValidator:
                     f"Cannot create projects directory {base_dir}: {e}",
                     "directories",
                 )
+    
+    def _validate_system_path(self, base_dir: Path) -> None:
+        """Check for system-protected paths (cross-platform)."""
+        path_str = str(base_dir).upper().replace("\\", "/")
+        system_paths = [
+            "/WINDOWS/", "/PROGRAM FILES/", "/PROGRAM FILES (X86)/",
+            "/SYSTEM32/", "/PROGRAMDATA/", "/SYSTEM/", "/BIN/",
+            "/SBIN/", "/USR/", "/PRIVATE/",
+        ]
         
-        # Check directory permissions (REL-09)
-        # Only enforce strict Unix permissions on Unix systems
-        if os.name != 'nt':  # Not Windows
-            try:
-                dir_stat = os.stat(base_dir)
-                mode = dir_stat.st_mode
-                
-                # Check if directory is world-writable (insecure on Unix)
-                if mode & stat.S_IWOTH:
-                    raise ConfigValidationError(
-                        f"Projects directory {base_dir} is world-writable (insecure permissions)",
-                        "directories",
-                    )
-                
-                # Check if directory is group-writable (warn but allow)
-                if mode & stat.S_IWGRP:
-                    print(f"[WARN] Projects directory {base_dir} is group-writable")
-                
-            except OSError as e:
-                # If we can't stat the directory, that's a problem
+        for protected in system_paths:
+            if protected in path_str:
                 raise ConfigValidationError(
-                    f"Cannot check permissions for {base_dir}: {e}",
+                    f"Projects directory {base_dir} is in a system-protected path. "
+                    f"Use a user-writable location like Documents or Desktop.",
                     "directories",
                 )
+    
+    def _validate_windows_readonly(self, base_dir: Path) -> None:
+        """Check for read-only attribute (Windows only)."""
+        import os
+        if os.name != 'nt':
+            return
         
-        # Test write permission
+        import ctypes
+        try:
+            attributes = ctypes.windll.kernel32.GetFileAttributesW(str(base_dir))
+            if attributes != -1 and (attributes & 0x0001):
+                raise ConfigValidationError(
+                    f"Projects directory {base_dir} has read-only attribute set",
+                    "directories",
+                )
+        except (OSError, AttributeError, ctypes.ArgumentError):
+            pass  # Fall through to write test
+    
+    def _validate_unix_permissions(self, base_dir: Path) -> None:
+        """Check Unix directory permissions."""
+        import os
+        import stat
+        
+        if os.name == 'nt':
+            return
+        
+        try:
+            mode = os.stat(base_dir).st_mode
+            
+            if mode & stat.S_IWOTH:
+                raise ConfigValidationError(
+                    f"Projects directory {base_dir} is world-writable (insecure permissions)",
+                    "directories",
+                )
+            
+            if mode & stat.S_IWGRP:
+                print(f"[WARN] Projects directory {base_dir} is group-writable")
+                
+        except OSError as e:
+            raise ConfigValidationError(
+                f"Cannot check permissions for {base_dir}: {e}",
+                "directories",
+            )
+    
+    def _validate_write_permission(self, base_dir: Path) -> None:
+        """Test write permission (cross-platform)."""
         test_file = base_dir / ".write_test"
         try:
             test_file.write_text("test")
@@ -214,8 +262,6 @@ class ConfigValidator:
                 f"Projects directory {base_dir} is not writable: {e}",
                 "directories",
             )
-        
-        return True
     
     def get_validation_report(self) -> dict[str, Any]:
         """Get a summary report of validation results."""

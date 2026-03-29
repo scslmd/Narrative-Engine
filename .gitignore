@@ -31,3 +31,9 @@ LocalLLM_tasks*
 TODO.md.backup
 docs/*.backup
 code_review/
+.tmp_review/
+telemetry.jsonl
+executor_atomic_todo_tasks.json
+quality-check-portable.zip
+20260328_Code_Review
+nul

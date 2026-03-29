@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Quality Check CLI
+
+A command-line interface for the quality check skill.
+
+Usage:
+    quality-check              # General quality check
+    quality-check frontend     # Frontend-specific quality check
+    quality-check backend      # Backend-specific quality check
+    quality-check merge        # Pre-merge quality validation
+    quality-check --adverse-only  # Only run adverse review
+"""
+
+from __future__ import annotations
+
+import sys
+import argparse
+from pathlib import Path
+
+# Add the project root to the path
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+from scripts.quality_check_engine import QualityCheckSkill
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Quality Check Assessment Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  quality-check                    Run general quality check
+  quality-check frontend           Run frontend-specific checks
+  quality-check backend            Run backend-specific checks
+  quality-check merge              Run pre-merge validation
+  quality-check --adverse-only     Only run adverse review
+  quality-check --files file1.py file2.ts  Specify changed files
+"""
+    )
+
+    parser.add_argument(
+        "context",
+        nargs="?",
+        default="general",
+        choices=["general", "frontend", "backend", "merge"],
+        help="Context for the quality check"
+    )
+
+    parser.add_argument(
+        "--adverse-only",
+        action="store_true",
+        help="Only run the adverse code review"
+    )
+
+    parser.add_argument(
+        "--files",
+        nargs="*",
+        help="List of files that were changed"
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 1.0.0"
+    )
+
+    args = parser.parse_args()
+
+    # Create skill instance
+    skill = QualityCheckSkill()
+
+    # Run appropriate check
+    if args.adverse_only:
+        report = skill.run_adverse_review(args.files, args.context)
+    else:
+        report = skill.run_quality_check_with_adverse_review(args.context, args.files)
+
+    # Print report
+    print(report)
+
+
+if __name__ == "__main__":
+    main()

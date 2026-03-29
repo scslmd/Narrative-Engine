@@ -1,30 +1,52 @@
 /**
  * FE-027: Diff utilities
- * 
+ *
  * Utilities for computing and rendering text diffs.
- * Uses a simple LCS-based algorithm for line-level diffs.
+ * Uses a linear prefix/middle/suffix comparison so large manuscripts do not pay
+ * the quadratic cost of a full LCS matrix.
  */
 
-import type { DiffResult } from '../types/aids';
-
-export interface DiffChange {
-  type: 'equal' | 'insert' | 'delete' | 'replace';
-  value: string;
-  originalIndex?: number;
-  modifiedIndex?: number;
-}
+import type { DiffChange, DiffResult } from '../types/aids';
 
 /**
  * Compute a line-level diff between two texts.
- * Uses a simplified LCS algorithm optimized for readability.
+ *
+ * The diff is intentionally conservative: it preserves common prefixes and
+ * suffixes, then treats the changed middle as one replace / insert / delete
+ * block. That keeps the output honest without pretending to have a fine-grained
+ * edit script when we are not paying for one.
  */
 export function computeDiff(original: string, modified: string): DiffResult {
-  const originalLines = original.split('\n');
-  const modifiedLines = modified.split('\n');
-  
-  const lcs = computeLCS(originalLines, modifiedLines);
-  const changes = buildChanges(originalLines, modifiedLines, lcs);
-  
+  const originalLines = splitLines(original);
+  const modifiedLines = splitLines(modified);
+  const changes: DiffChange[] = [];
+
+  const prefixLength = findCommonPrefixLength(originalLines, modifiedLines);
+  const suffixLength = findCommonSuffixLength(originalLines, modifiedLines, prefixLength);
+
+  if (prefixLength > 0) {
+    changes.push(createChange('equal', originalLines.slice(0, prefixLength), originalLines.slice(0, prefixLength)));
+  }
+
+  const originalMiddle = originalLines.slice(prefixLength, originalLines.length - suffixLength);
+  const modifiedMiddle = modifiedLines.slice(prefixLength, modifiedLines.length - suffixLength);
+
+  if (originalMiddle.length > 0 || modifiedMiddle.length > 0) {
+    if (originalMiddle.length > 0 && modifiedMiddle.length > 0) {
+      changes.push(createChange('replace', originalMiddle, modifiedMiddle));
+    } else if (originalMiddle.length > 0) {
+      changes.push(createChange('delete', originalMiddle, []));
+    } else {
+      changes.push(createChange('insert', [], modifiedMiddle));
+    }
+  }
+
+  if (suffixLength > 0) {
+    const suffixStartOriginal = originalLines.length - suffixLength;
+    const suffixLines = originalLines.slice(suffixStartOriginal);
+    changes.push(createChange('equal', suffixLines, suffixLines, suffixStartOriginal, modifiedLines.length - suffixLength));
+  }
+
   return {
     original,
     modified,
@@ -32,143 +54,49 @@ export function computeDiff(original: string, modified: string): DiffResult {
   };
 }
 
-/**
- * Compute Longest Common Subsequence of line indices.
- */
-function computeLCS(a: string[], b: string[]): number[][] {
-  const m = a.length;
-  const n = b.length;
-  
-  // DP table for LCS lengths
-  const dp = Array(m + 1).fill(0).map(() => Array(n + 1).fill(0));
-  
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-  
-  // Backtrack to find actual LCS
-  const lcs: number[][] = [];
-  let i = m, j = n;
-  
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.unshift([i - 1, j - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] > dp[i][j - 1]) {
-      i--;
-    } else {
-      j--;
-    }
-  }
-  
-  return lcs;
+function splitLines(text: string): string[] {
+  return text.length === 0 ? [] : text.split('\n');
 }
 
-/**
- * Build change list from original, modified, and LCS.
- */
-function buildChanges(a: string[], b: string[], lcs: number[][]): DiffChange[] {
-  const changes: DiffChange[] = [];
-  let aIdx = 0;
-  let bIdx = 0;
-  let lcsIdx = 0;
-  
-  while (aIdx < a.length || bIdx < b.length) {
-    if (lcsIdx < lcs.length) {
-      const [ai, bi] = lcs[lcsIdx];
-      
-      // Handle deletions before next match
-      while (aIdx < ai) {
-        changes.push({
-          type: 'delete',
-          value: a[aIdx] + '\n',
-          originalIndex: aIdx,
-        });
-        aIdx++;
-      }
-      
-      // Handle insertions before next match
-      while (bIdx < bi) {
-        changes.push({
-          type: 'insert',
-          value: b[bIdx] + '\n',
-          modifiedIndex: bIdx,
-        });
-        bIdx++;
-      }
-      
-      // Add equal segment
-      changes.push({
-        type: 'equal',
-        value: a[ai] + '\n',
-        originalIndex: ai,
-        modifiedIndex: bi,
-      });
-      
-      aIdx = ai + 1;
-      bIdx = bi + 1;
-      lcsIdx++;
-    } else {
-      // Remaining deletions
-      while (aIdx < a.length) {
-        changes.push({
-          type: 'delete',
-          value: a[aIdx] + '\n',
-          originalIndex: aIdx,
-        });
-        aIdx++;
-      }
-      
-      // Remaining insertions
-      while (bIdx < b.length) {
-        changes.push({
-          type: 'insert',
-          value: b[bIdx] + '\n',
-          modifiedIndex: bIdx,
-        });
-        bIdx++;
-      }
-    }
+function findCommonPrefixLength(a: string[], b: string[]): number {
+  const limit = Math.min(a.length, b.length);
+  let index = 0;
+
+  while (index < limit && a[index] === b[index]) {
+    index++;
   }
-  
-  return consolidateChanges(changes);
+
+  return index;
 }
 
-/**
- * Consolidate adjacent insert/delete pairs into replaces.
- */
-function consolidateChanges(changes: DiffChange[]): DiffChange[] {
-  const result: DiffChange[] = [];
-  
-  for (let i = 0; i < changes.length; i++) {
-    const change = changes[i];
-    
-    // Look for delete followed by insert -> replace
-    if (
-      change.type === 'delete' &&
-      i + 1 < changes.length &&
-      changes[i + 1].type === 'insert'
-    ) {
-      result.push({
-        type: 'replace',
-        value: change.value + changes[i + 1].value,
-        originalIndex: change.originalIndex,
-        modifiedIndex: changes[i + 1].modifiedIndex,
-      });
-      i++; // Skip next change
-    } else {
-      result.push(change);
-    }
+function findCommonSuffixLength(a: string[], b: string[], prefixLength: number): number {
+  const maxSuffix = Math.min(a.length - prefixLength, b.length - prefixLength);
+  let suffixLength = 0;
+
+  while (
+    suffixLength < maxSuffix &&
+    a[a.length - 1 - suffixLength] === b[b.length - 1 - suffixLength]
+  ) {
+    suffixLength++;
   }
-  
-  return result;
+
+  return suffixLength;
+}
+
+function createChange(
+  type: DiffChange['type'],
+  originalLines: string[],
+  modifiedLines: string[],
+  originalIndex?: number,
+  modifiedIndex?: number,
+): DiffChange {
+  return {
+    type,
+    originalText: originalLines.join('\n'),
+    modifiedText: modifiedLines.join('\n'),
+    originalIndex,
+    modifiedIndex,
+  };
 }
 
 /**
@@ -176,18 +104,20 @@ function consolidateChanges(changes: DiffChange[]): DiffChange[] {
  */
 export function formatDiff(diff: DiffResult): string {
   return diff.changes
-    .map(change => {
-      if (change.type === 'delete') {
-        return `-${change.value.replace(/\n$/, '')}`;
+    .flatMap((change) => {
+      switch (change.type) {
+        case 'equal':
+          return prefixLines(change.originalText, ' ');
+        case 'insert':
+          return prefixLines(change.modifiedText, '+');
+        case 'delete':
+          return prefixLines(change.originalText, '-');
+        case 'replace':
+          return [
+            ...prefixLines(change.originalText, '-'),
+            ...prefixLines(change.modifiedText, '+'),
+          ];
       }
-      if (change.type === 'insert') {
-        return `+${change.value.replace(/\n$/, '')}`;
-      }
-      if (change.type === 'replace') {
-        const parts = change.value.split('\n');
-        return parts.map(p => `~${p}`).join('\n');
-      }
-      return ` ${change.value.replace(/\n$/, '')}`;
     })
     .join('\n');
 }
@@ -205,23 +135,37 @@ export function getDiffSummary(diff: DiffResult): {
   let deletions = 0;
   let replacements = 0;
   let unchanged = 0;
-  
+
   for (const change of diff.changes) {
     switch (change.type) {
       case 'insert':
-        additions += change.value.split('\n').length - 1;
+        additions += countLines(change.modifiedText);
         break;
       case 'delete':
-        deletions += change.value.split('\n').length - 1;
+        deletions += countLines(change.originalText);
         break;
       case 'replace':
-        replacements++;
+        additions += countLines(change.modifiedText);
+        deletions += countLines(change.originalText);
+        replacements += 1;
         break;
       case 'equal':
-        unchanged += change.value.split('\n').length - 1;
+        unchanged += countLines(change.originalText);
         break;
     }
   }
-  
+
   return { additions, deletions, replacements, unchanged };
+}
+
+function countLines(text: string): number {
+  return text.length === 0 ? 0 : text.split('\n').length;
+}
+
+function prefixLines(text: string, marker: string): string[] {
+  if (!text) {
+    return [marker];
+  }
+
+  return text.split('\n').map((line) => `${marker}${line}`);
 }

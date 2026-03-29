@@ -4,7 +4,7 @@
  * React hook for managing text selections with keyboard shortcuts and mouse events.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSelectionStore } from '../stores/selectionStore';
 import type { SelectionRecord } from '../types/aids';
 import { createSelectionRecord } from '../lib/selection';
@@ -20,8 +20,17 @@ interface UseSelectionOptions {
 export function useSelection(options: UseSelectionOptions) {
   const { projectId, sourceType, sourceId, sourceText, onSelectionChange } = options;
   const textareaRef = useRef<HTMLTextAreaElement | HTMLDivElement>(null);
+  const selectionTimeoutRef = useRef<number | null>(null);
   
   const { setActiveSelection, addSelectionToHistory, clearSelections } = useSelectionStore();
+
+  useEffect(() => {
+    return () => {
+      if (selectionTimeoutRef.current !== null) {
+        window.clearTimeout(selectionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSelect = useCallback((event: Event) => {
     const target = event.target as HTMLTextAreaElement | HTMLDivElement;
@@ -32,36 +41,39 @@ export function useSelection(options: UseSelectionOptions) {
     }
     
     const range = selection.getRangeAt(0);
-    const selectionStart = target instanceof HTMLTextAreaElement 
-      ? target.selectionStart 
+    const selectionStart = target instanceof HTMLTextAreaElement
+      ? target.selectionStart
       : getTextNodeOffset(target, range.startContainer, range.startOffset);
-    
+
     const selectionEnd = target instanceof HTMLTextAreaElement
       ? target.selectionEnd
       : getTextNodeOffset(target, range.endContainer, range.endOffset);
-    
-    if (selectionStart === selectionEnd) {
+
+    const normalizedStart = Math.min(selectionStart, selectionEnd);
+    const normalizedEnd = Math.max(selectionStart, selectionEnd);
+
+    if (normalizedStart === normalizedEnd) {
       return; // No actual selection
     }
-    
-    const selectedText = sourceText.slice(selectionStart, selectionEnd);
-    
+
+    const selectedText = sourceText.slice(normalizedStart, normalizedEnd);
+
     if (!selectedText.trim()) {
       return; // Empty selection
     }
-    
+
     const selectionRecord = createSelectionRecord(
       projectId,
       sourceType,
       sourceId,
-      selectionStart,
-      selectionEnd,
+      normalizedStart,
+      normalizedEnd,
       selectedText,
     );
-    
+
     setActiveSelection(selectionRecord);
     addSelectionToHistory(selectionRecord);
-    
+
     if (onSelectionChange) {
       onSelectionChange(selectionRecord);
     }
@@ -77,8 +89,12 @@ export function useSelection(options: UseSelectionOptions) {
   const handleDoubleClick = useCallback((event: React.MouseEvent) => {
     // Word selection on double-click is handled by browser
     // This just ensures the selection event fires
-    setTimeout(() => {
-      handleSelect({ target: event.target as EventTarget } as Event);
+    if (selectionTimeoutRef.current !== null) {
+      window.clearTimeout(selectionTimeoutRef.current);
+    }
+
+    selectionTimeoutRef.current = window.setTimeout(() => {
+      handleSelect(event.nativeEvent);
     }, 0);
   }, [handleSelect]);
 

@@ -1,21 +1,20 @@
 /**
  * FE-025/026/027/028: Shared types for manuscript aids
- * 
+ *
  * Types used across aids panel, selection, diff viewer, and suggestion history.
  */
+
+export type SuggestionStatus = 'REQUESTED' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SUPERSEDED';
 
 export interface RevisionSuggestion {
   suggestion_id: string;
   project_id: string;
-  manuscript_id: string;
-  draft_id: string | null;
-  suggestion_type: 'INSERT' | 'REPLACE' | 'DELETE';
-  anchor_position: number;
-  anchor_text: string;
+  target_document_id: string;
+  source_text: string;
   proposed_text: string;
   rationale: string;
-  state: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: string;
+  source_context: string[];
+  status: SuggestionStatus;
 }
 
 export interface SelectionRecord {
@@ -29,15 +28,18 @@ export interface SelectionRecord {
   created_at: string;
 }
 
+export interface DiffChange {
+  type: 'equal' | 'insert' | 'delete' | 'replace';
+  originalText: string;
+  modifiedText: string;
+  originalIndex?: number;
+  modifiedIndex?: number;
+}
+
 export interface DiffResult {
   original: string;
   modified: string;
-  changes: Array<{
-    type: 'equal' | 'insert' | 'delete' | 'replace';
-    value: string;
-    original_index?: number;
-    modified_index?: number;
-  }>;
+  changes: DiffChange[];
 }
 
 export interface AidsPanelState {

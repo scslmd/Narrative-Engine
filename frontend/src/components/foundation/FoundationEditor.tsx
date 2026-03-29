@@ -1,36 +1,74 @@
-import { useState } from 'react';
-import type { FoundationRecord } from '../../types/foundation';
+import { useEffect, useState } from 'react';
+import type { FoundationProfile } from '../../types/foundation';
 
 interface FoundationEditorProps {
   projectId: string;
-  foundation?: FoundationRecord;
-  onSave?: (foundation: Partial<FoundationRecord>) => void;
+  foundation?: FoundationProfile;
+  onSave?: (foundation: Partial<FoundationProfile>) => void;
   onCancel?: () => void;
 }
 
-export function FoundationEditor({ foundation, onSave, onCancel }: FoundationEditorProps) {
-  const [coreConcept, setCoreConcept] = useState(foundation?.core_concept || '');
-  const [protagonist, setProtagonist] = useState(foundation?.protagonist || '');
-  const [antagonist, setAntagonist] = useState(foundation?.antagonist || '');
-  const [centralConflict, setCentralConflict] = useState(foundation?.central_conflict || '');
-  const [setting, setSetting] = useState(foundation?.setting || '');
-  const [theme, setTheme] = useState(foundation?.theme || '');
-  const [tone, setTone] = useState(foundation?.tone || '');
+export function FoundationEditor({ projectId, foundation, onSave, onCancel }: FoundationEditorProps) {
   const [premise, setPremise] = useState(foundation?.premise || '');
   const [logline, setLogline] = useState(foundation?.logline || '');
+  const [thematicSpine, setThematicSpine] = useState(foundation?.thematic_spine || '');
+  const [emotionalPromise, setEmotionalPromise] = useState(foundation?.emotional_promise || '');
+  const [toneAndVoiceDirection, setToneAndVoiceDirection] = useState(foundation?.tone_and_voice_direction || '');
+  const [targetAudience, setTargetAudience] = useState(foundation?.target_audience || '');
+  const [narrativeConstraints, setNarrativeConstraints] = useState<string[]>(foundation?.narrative_constraints || []);
+  const [complexityLevel, setComplexityLevel] = useState(foundation?.complexity_level || '');
+  const [successDefinition, setSuccessDefinition] = useState(foundation?.success_definition || '');
+
+  useEffect(() => {
+    setPremise(foundation?.premise || '');
+    setLogline(foundation?.logline || '');
+    setThematicSpine(foundation?.thematic_spine || '');
+    setEmotionalPromise(foundation?.emotional_promise || '');
+    setToneAndVoiceDirection(foundation?.tone_and_voice_direction || '');
+    setTargetAudience(foundation?.target_audience || '');
+    setNarrativeConstraints(foundation?.narrative_constraints || []);
+    setComplexityLevel(foundation?.complexity_level || '');
+    setSuccessDefinition(foundation?.success_definition || '');
+  }, [foundation]);
 
   const handleSave = () => {
     onSave?.({
-      core_concept: coreConcept,
-      protagonist,
-      antagonist,
-      central_conflict: centralConflict,
-      setting,
-      theme,
-      tone,
+      project_id: projectId,
       premise,
       logline,
+      thematic_spine: thematicSpine,
+      emotional_promise: emotionalPromise,
+      tone_and_voice_direction: toneAndVoiceDirection,
+      target_audience: targetAudience,
+      narrative_constraints: narrativeConstraints,
+      complexity_level: complexityLevel,
+      success_definition: successDefinition,
     });
+  };
+
+  const canSave = Boolean(
+    premise.trim() &&
+      logline.trim() &&
+      thematicSpine.trim() &&
+      emotionalPromise.trim() &&
+      toneAndVoiceDirection.trim() &&
+      targetAudience.trim() &&
+      complexityLevel.trim() &&
+      successDefinition.trim(),
+  );
+
+  const handleAddConstraint = () => {
+    setNarrativeConstraints([...narrativeConstraints, '']);
+  };
+
+  const handleConstraintChange = (index: number, value: string) => {
+    const updated = [...narrativeConstraints];
+    updated[index] = value;
+    setNarrativeConstraints(updated);
+  };
+
+  const handleRemoveConstraint = (index: number) => {
+    setNarrativeConstraints(narrativeConstraints.filter((_, i) => i !== index));
   };
 
   return (
@@ -47,7 +85,8 @@ export function FoundationEditor({ foundation, onSave, onCancel }: FoundationEdi
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={!canSave}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save
             </button>
@@ -66,16 +105,6 @@ export function FoundationEditor({ foundation, onSave, onCancel }: FoundationEdi
       {/* Editor content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Core Concept */}
-          <Section title="Core Concept" description="The central idea or concept of your story">
-            <textarea
-              value={coreConcept}
-              onChange={(e) => setCoreConcept(e.target.value)}
-              placeholder="What is your story fundamentally about? What's the central idea?"
-              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
           {/* Premise */}
           <Section title="Premise" description="The foundational situation or scenario">
             <textarea
@@ -96,69 +125,99 @@ export function FoundationEditor({ foundation, onSave, onCancel }: FoundationEdi
             />
           </Section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Protagonist */}
-            <Section title="Protagonist" description="The main character">
-              <textarea
-                value={protagonist}
-                onChange={(e) => setProtagonist(e.target.value)}
-                placeholder="Who is your main character? What do they want?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-
-            {/* Antagonist */}
-            <Section title="Antagonist" description="The opposing force">
-              <textarea
-                value={antagonist}
-                onChange={(e) => setAntagonist(e.target.value)}
-                placeholder="Who or what opposes your protagonist?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-          </div>
-
-          {/* Central Conflict */}
-          <Section title="Central Conflict" description="The main struggle or tension">
+          {/* Thematic Spine */}
+          <Section title="Thematic Spine" description="The central theme or message">
             <textarea
-              value={centralConflict}
-              onChange={(e) => setCentralConflict(e.target.value)}
-              placeholder="What is the main conflict or struggle in your story?"
+              value={thematicSpine}
+              onChange={(e) => setThematicSpine(e.target.value)}
+              placeholder="What is your story really about? What's the deeper meaning?"
               className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </Section>
 
-          {/* Setting */}
-          <Section title="Setting" description="Where and when the story takes place">
+          {/* Emotional Promise */}
+          <Section title="Emotional Promise" description="What readers will feel">
             <textarea
-              value={setting}
-              onChange={(e) => setSetting(e.target.value)}
-              placeholder="Where and when does your story take place?"
+              value={emotionalPromise}
+              onChange={(e) => setEmotionalPromise(e.target.value)}
+              placeholder="What emotional journey will readers experience?"
               className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </Section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Theme */}
-            <Section title="Theme" description="The underlying message or meaning">
-              <textarea
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                placeholder="What is your story really about? What's the deeper meaning?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
+          {/* Tone and Voice Direction */}
+          <Section title="Tone and Voice Direction" description="The mood and narrative style">
+            <textarea
+              value={toneAndVoiceDirection}
+              onChange={(e) => setToneAndVoiceDirection(e.target.value)}
+              placeholder="What is the mood and narrative voice? (e.g., dark and lyrical, light and conversational)"
+              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </Section>
 
-            {/* Tone */}
-            <Section title="Tone" description="The mood and atmosphere">
-              <textarea
-                value={tone}
-                onChange={(e) => setTone(e.target.value)}
-                placeholder="What is the mood and atmosphere of your story? (e.g., dark, hopeful, comedic)"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-          </div>
+          {/* Target Audience */}
+          <Section title="Target Audience" description="Who will read this story">
+            <textarea
+              value={targetAudience}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              placeholder="Who is your intended readership?"
+              className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </Section>
+
+          {/* Complexity Level */}
+          <Section title="Complexity Level" description="Narrative complexity">
+            <select
+              value={complexityLevel}
+              onChange={(e) => setComplexityLevel(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select complexity level</option>
+              <option value="simple">Simple</option>
+              <option value="moderate">Moderate</option>
+              <option value="complex">Complex</option>
+              <option value="very complex">Very Complex</option>
+            </select>
+          </Section>
+
+          {/* Narrative Constraints */}
+          <Section title="Narrative Constraints" description="Guidelines and limitations">
+            <div className="space-y-2">
+              {narrativeConstraints.map((constraint, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={constraint}
+                    onChange={(e) => handleConstraintChange(index, e.target.value)}
+                    placeholder={`Constraint ${index + 1}`}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => handleRemoveConstraint(index)}
+                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={handleAddConstraint}
+                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+              >
+                + Add Constraint
+              </button>
+            </div>
+          </Section>
+
+          {/* Success Definition */}
+          <Section title="Success Definition" description="What makes this story successful">
+            <textarea
+              value={successDefinition}
+              onChange={(e) => setSuccessDefinition(e.target.value)}
+              placeholder="What would make this story a success? What should it achieve?"
+              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            />
+          </Section>
         </div>
       </div>
     </div>

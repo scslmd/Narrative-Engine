@@ -3,51 +3,64 @@ import type { RevisionSuggestion } from '../../types/aids';
 
 interface SuggestionHistoryProps {
   suggestions: RevisionSuggestion[];
+  selectedSuggestionId?: string | null;
   onSelect?: (suggestion: RevisionSuggestion) => void;
 }
 
-export function SuggestionHistory({ suggestions, onSelect }: SuggestionHistoryProps) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
+type SuggestionFilter = 'all' | 'requested' | 'pending' | 'accepted' | 'rejected' | 'superseded';
 
-  const filteredSuggestions = suggestions.filter(s => {
-    if (filter === 'all') return true;
-    return s.state.toLowerCase() === filter;
+export function SuggestionHistory({
+  suggestions,
+  selectedSuggestionId,
+  onSelect,
+}: SuggestionHistoryProps) {
+  const [filter, setFilter] = useState<SuggestionFilter>('all');
+
+  const filteredSuggestions = suggestions.filter((suggestion) => {
+    if (filter === 'all') {
+      return true;
+    }
+
+    return suggestion.status.toLowerCase() === filter;
   });
 
-  const groupedByDate = groupSuggestionsByDate(filteredSuggestions);
+  const groupedByDocument = groupSuggestionsByDocument(filteredSuggestions);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Filter tabs */}
-      <div className="flex border-b border-gray-200 bg-white">
-        {(['all', 'pending', 'accepted', 'rejected'] as const).map(f => (
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap border-b border-gray-200 bg-white">
+        {(['all', 'requested', 'pending', 'accepted', 'rejected', 'superseded'] as const).map((value) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
+            key={value}
+            type="button"
+            onClick={() => setFilter(value)}
             className={`px-4 py-2 text-sm font-medium capitalize ${
-              filter === f
-                ? 'text-blue-600 border-b-2 border-blue-600'
+              filter === value
+                ? 'border-b-2 border-blue-600 text-blue-600'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {f}
+            {value}
             <span className="ml-1 text-gray-400">
-              ({suggestions.filter(s => f === 'all' || s.state.toLowerCase() === f).length})
+              ({suggestions.filter((suggestion) => value === 'all' || suggestion.status.toLowerCase() === value).length})
             </span>
           </button>
         ))}
       </div>
 
-      {/* History list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {Object.entries(groupedByDate).map(([date, dateSuggestions]) => (
-          <div key={date}>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">{formatDate(date)}</h3>
+      <div className="flex-1 space-y-6 overflow-y-auto p-4">
+        {Object.entries(groupedByDocument).map(([documentId, documentSuggestions]) => (
+          <div key={documentId}>
+            <h3 className="mb-2 text-sm font-medium text-gray-500">
+              {documentId}
+              <span className="ml-2 text-gray-400">({documentSuggestions.length})</span>
+            </h3>
             <div className="space-y-2">
-              {dateSuggestions.map(suggestion => (
+              {documentSuggestions.map((suggestion) => (
                 <SuggestionItem
                   key={suggestion.suggestion_id}
                   suggestion={suggestion}
+                  selected={selectedSuggestionId === suggestion.suggestion_id}
                   onClick={() => onSelect?.(suggestion)}
                 />
               ))}
@@ -56,7 +69,7 @@ export function SuggestionHistory({ suggestions, onSelect }: SuggestionHistoryPr
         ))}
 
         {filteredSuggestions.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-gray-500">
             <p>No suggestions found</p>
           </div>
         )}
@@ -67,68 +80,71 @@ export function SuggestionHistory({ suggestions, onSelect }: SuggestionHistoryPr
 
 function SuggestionItem({
   suggestion,
+  selected,
   onClick,
 }: {
   suggestion: RevisionSuggestion;
+  selected: boolean;
   onClick?: () => void;
 }) {
   const stateColor = {
+    REQUESTED: 'bg-slate-100 text-slate-700',
     PENDING: 'bg-yellow-100 text-yellow-800',
     ACCEPTED: 'bg-green-100 text-green-800',
     REJECTED: 'bg-red-100 text-red-800',
-  }[suggestion.state];
+    SUPERSEDED: 'bg-gray-100 text-gray-700',
+  }[suggestion.status];
 
   return (
-    <div
-      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-gray-300 transition-colors`}
+    <button
+      type="button"
+      className={`w-full rounded-lg border bg-white p-3 text-left transition-colors ${
+        selected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
+      }`}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between mb-2">
-        <span className={`px-2 py-0.5 text-xs rounded ${stateColor}`}>
-          {suggestion.state}
-        </span>
-        <span className="text-xs text-gray-400">
-          {new Date(suggestion.created_at).toLocaleTimeString()}
-        </span>
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <span className={`rounded px-2 py-0.5 text-xs ${stateColor}`}>{suggestion.status}</span>
+        <span className="text-xs text-gray-400">{suggestion.target_document_id}</span>
       </div>
 
-      <div className="text-sm text-gray-700 mb-1">
-        <span className="text-red-600 line-through mr-2">{truncate(suggestion.anchor_text, 30)}</span>
-        <span className="text-green-600">{truncate(suggestion.proposed_text, 40)}</span>
+      <div className="mb-2 text-sm text-gray-700">
+        <span className="mr-2 text-red-600 line-through">{truncate(suggestion.source_text, 40)}</span>
+        <span className="text-green-600">{truncate(suggestion.proposed_text, 48)}</span>
       </div>
 
-      <p className="text-xs text-gray-500 italic">{suggestion.rationale}</p>
-    </div>
+      <p className="text-xs italic text-gray-500">{suggestion.rationale}</p>
+
+      {suggestion.source_context.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {suggestion.source_context.slice(0, 4).map((context) => (
+            <span key={context} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+              {context}
+            </span>
+          ))}
+        </div>
+      )}
+    </button>
   );
 }
 
-function groupSuggestionsByDate(suggestions: RevisionSuggestion[]): Record<string, RevisionSuggestion[]> {
+function groupSuggestionsByDocument(
+  suggestions: RevisionSuggestion[],
+): Record<string, RevisionSuggestion[]> {
   return suggestions.reduce((acc, suggestion) => {
-    const date = new Date(suggestion.created_at).toLocaleDateString();
-    if (!acc[date]) {
-      acc[date] = [];
+    if (!acc[suggestion.target_document_id]) {
+      acc[suggestion.target_document_id] = [];
     }
-    acc[date].push(suggestion);
+
+    acc[suggestion.target_document_id].push(suggestion);
     return acc;
   }, {} as Record<string, RevisionSuggestion[]>);
 }
 
-function formatDate(date: string): string {
-  const d = new Date(date);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date === today.toLocaleDateString()) {
-    return 'Today';
-  }
-  if (date === yesterday.toLocaleDateString()) {
-    return 'Yesterday';
-  }
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-}
-
 function truncate(text: string, length: number): string {
-  if (text.length <= length) return text;
-  return text.slice(0, length) + '...';
+  if (text.length <= length) {
+    return text;
+  }
+
+  return `${text.slice(0, length)}...`;
 }

@@ -229,3 +229,82 @@ class TestDirectoryPermissionValidation:
             result = validator._validate_directories()
             assert result is True
             assert new_dir.exists()
+    
+    def test_system_path_rejected_windows_style(self, tmp_path: Path) -> None:
+        """Windows-style system paths should be rejected."""
+        validator = ConfigValidator()
+        
+        # Simulate Windows-style system paths
+        windows_system_paths = [
+            str(tmp_path / "Windows" / "Test"),
+            str(tmp_path / "Program Files" / "Test"),
+            str(tmp_path / "Program Files (x86)" / "Test"),
+            str(tmp_path / "System32" / "Test"),
+            str(tmp_path / "ProgramData" / "Test"),
+        ]
+        
+        for system_path in windows_system_paths:
+            system_path_obj = Path(system_path)
+            system_path_obj.mkdir(parents=True, exist_ok=True)
+            
+            with patch.dict(os.environ, {"PROJECTS_DIR": system_path}, clear=False):
+                with pytest.raises(ConfigValidationError) as exc_info:
+                    validator._validate_directories()
+                
+                assert "system-protected" in str(exc_info.value).lower()
+                assert exc_info.value.component == "directories"
+    
+    def test_system_path_rejected_macos_style(self, tmp_path: Path) -> None:
+        """macOS-style system paths should be rejected."""
+        validator = ConfigValidator()
+        
+        # Simulate macOS-style system paths
+        macos_system_paths = [
+            str(tmp_path / "System" / "Test"),
+            str(tmp_path / "bin" / "Test"),
+            str(tmp_path / "sbin" / "Test"),
+            str(tmp_path / "usr" / "Test"),
+            str(tmp_path / "private" / "Test"),
+        ]
+        
+        for system_path in macos_system_paths:
+            system_path_obj = Path(system_path)
+            system_path_obj.mkdir(parents=True, exist_ok=True)
+            
+            with patch.dict(os.environ, {"PROJECTS_DIR": system_path}, clear=False):
+                with pytest.raises(ConfigValidationError) as exc_info:
+                    validator._validate_directories()
+                
+                assert "system-protected" in str(exc_info.value).lower()
+                assert exc_info.value.component == "directories"
+    
+    @pytest.mark.skipif(os.name != 'nt', reason="Windows-only test")
+    def test_read_only_directory_rejected_on_windows(self, tmp_path: Path) -> None:
+        """A read-only directory should fail validation on Windows."""
+        import ctypes
+        
+        validator = ConfigValidator()
+        
+        # Create a directory with a safe name (not matching system paths)
+        readonly_dir = tmp_path / "user_projects_readonly"
+        readonly_dir.mkdir()
+        
+        # Set read-only attribute using Windows API
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(str(readonly_dir))
+        result = ctypes.windll.kernel32.SetFileAttributesW(str(readonly_dir), attrs | 0x0001)
+        
+        # Verify attribute was set
+        attrs_after = ctypes.windll.kernel32.GetFileAttributesW(str(readonly_dir))
+        assert attrs_after & 0x0001, "Read-only attribute not set correctly"
+        
+        try:
+            with patch.dict(os.environ, {"PROJECTS_DIR": str(readonly_dir)}, clear=False):
+                with pytest.raises(ConfigValidationError) as exc_info:
+                    validator._validate_directories()
+                
+                assert "read-only" in str(exc_info.value).lower()
+                assert exc_info.value.component == "directories"
+        finally:
+            # Clean up: remove read-only attribute
+            attrs = ctypes.windll.kernel32.GetFileAttributesW(str(readonly_dir))
+            ctypes.windll.kernel32.SetFileAttributesW(str(readonly_dir), attrs & ~0x0001)

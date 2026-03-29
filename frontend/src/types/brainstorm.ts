@@ -1,29 +1,30 @@
 /**
  * Brainstorm Types
- * 
+ *
  * Types for brainstorm items and promotions.
  * Backend schema: app.schemas.story_development.BrainstormItem
- * 
- * Note: The backend uses 'status' but frontend components expect 'state' and 'item_type'.
- * These are mapped for compatibility.
  */
 
-export type BrainstormItemType = 'IDEA' | 'CHARACTER' | 'SETTING' | 'PLOT_POINT' | 'THEME' | 'QUESTION';
+export type BrainstormItemStatus = 'keep' | 'discard' | 'park';
+
+/**
+ * Legacy uppercase alias kept for mock compatibility.
+ */
 export type BrainstormItemState = 'KEEP' | 'DISCARD' | 'PARK';
 
 export interface BrainstormItem {
   item_id: string;
   project_id: string;
   content: string;
-  status: string; // Backend field - maps to 'state' in frontend
-  state: BrainstormItemState; // Frontend alias for 'status'
-  item_type: BrainstormItemType; // Frontend field for categorization
+  status: BrainstormItemStatus;
   tags: string[];
-  cluster_id: string | null;
-  promoted_to: string | null;
-  promoted_at: string | null;
-  created_at: string;
   source_notes: string | null;
+  state?: BrainstormItemState;
+  item_type?: string;
+  cluster_id?: string | null;
+  promoted_to?: string | null;
+  promoted_at?: string | null;
+  created_at?: string;
 }
 
 export interface BrainstormPromotion {
@@ -38,9 +39,9 @@ export interface BrainstormPromotion {
 export interface BrainstormItemCreateRequest {
   project_id: string;
   content: string;
-  status?: string;
+  status?: BrainstormItemStatus;
   state?: BrainstormItemState;
-  item_type?: BrainstormItemType;
+  item_type?: string;
   cluster_key?: string | null;
   cluster_id?: string | null;
   tags?: string[];
