@@ -1,0 +1,800 @@
+[
+  {
+    "task_id": "0f3580e1-9977-463a-8443-4e1b909af8cd",
+    "purpose": "Stage 1. Convert `StageList` into a read-only-capable presenter by making `onEdit`, `onDelete`, and `onAddStage` optional and rendering no edit/delete hover controls and no empty-state add button when those callbacks are absent. This allows `FlowEditor` to keep using `StageList` for `StoryFlowStage[]` display while cutting unsupported v1.0 stage mutations from the shipped routed surface.",
+    "responsible_file": "frontend/src/components/flow/StageList.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `frontend/src/components/flow/StageCard.tsx` or `frontend/src/components/flow/StageActions.tsx`.",
+      "Do not change the `StoryFlowStage` type or any API route contract in `frontend/src/services/flow.ts`.",
+      "Do not add new props, stores, routes, or mutation behavior.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`StageList` currently accepts `stages`, `updatingStageId`, `onEdit`, `onDelete`, and `onAddStage` and always renders `StageActions` plus an empty-state `Add Stage` button.",
+      "`StageCard` already renders the read-only stage content for each `StoryFlowStage`.",
+      "`FlowEditor` is the only current routed caller of `StageList` in the shipped planning workspace.",
+      "The current v1.0 scope in active docs treats editable flow as deferred and stage visibility as the shipped routed behavior."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "StageList({ stages, updatingStageId, onEdit, onDelete, onAddStage }: StageListProps)",
+        "prop_shape": {
+          "stages": "StoryFlowStage[]",
+          "updatingStageId": "string | null",
+          "onEdit": "(stageId: string) => void",
+          "onDelete": "((stageId: string) => void) | undefined",
+          "onAddStage": "((stageKind: StoryFlowStage['stage_kind']) => void) | undefined"
+        },
+        "rendered_elements_to_gate": [
+          "The empty-state `Add Stage` button rendered when `stages.length === 0`",
+          "The `StageActions` hover controls rendered for each stage row"
+        ]
+      },
+      "output_data_schema": {
+        "prop_shape": {
+          "onEdit": "((stageId: string) => void) | undefined",
+          "onDelete": "((stageId: string) => void) | undefined",
+          "onAddStage": "((stageKind: StoryFlowStage['stage_kind']) => void) | undefined"
+        },
+        "rendered_states": [
+          "When `onAddStage` is undefined, the empty-state branch shows only `No stages configured` with no action button.",
+          "When both `onEdit` and `onDelete` are undefined, no `StageActions` control block is rendered for any stage row.",
+          "When callbacks are provided, existing `StageActions` and empty-state add-button behavior remain unchanged."
+        ],
+        "query_keys": [
+          "No React Query keys are introduced or changed in this file."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/flow/StageList.tsx",
+        "frontend/src/components/flow/StageCard.tsx",
+        "frontend/src/components/flow/StageActions.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "docs/Frontend Design SRS v0.5.md"
+      ]
+    },
+    "utilized_features": [
+      "React functional component props",
+      "Conditional JSX rendering",
+      "Existing `StageCard` component",
+      "Existing `StageActions` component"
+    ],
+    "expected_outcomes": [
+      "`StageListProps` no longer requires `onEdit`.",
+      "The file can render `StageList` in a fully read-only mode with no edit/delete/add controls.",
+      "The file still renders each `StoryFlowStage` through `StageCard`."
+    ]
+  },
+  {
+    "task_id": "e6bc6778-cdb6-4fe1-adfc-4130a8c053bf",
+    "purpose": "Stage 1. Remove interactive stage-mutation controls from `FlowEditor` so the routed `flow` tab becomes a read-only stage-visibility surface for v1.0. Eliminate the `addStageMutation`, `updateStageMutation`, `deleteStageMutation`, edit modal state, and top-level `Add Stage` select, and pass no mutation callbacks into `StageList` while preserving the existing `useQuery` call, query key `['flow-stages', projectId]`, and error/loading branches.",
+    "responsible_file": "frontend/src/components/flow/FlowEditor.tsx",
+    "serial_dependencies": [
+      "0f3580e1-9977-463a-8443-4e1b909af8cd"
+    ],
+    "guardrails": [
+      "Do not modify `frontend/src/services/flow.ts` or any backend route.",
+      "Do not change the `useQuery` query key `['flow-stages', projectId]`.",
+      "Do not introduce new buttons, toggles, or replacement mutation workflows.",
+      "Do not edit docs, specs, or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`FlowEditor` currently fetches stages through `flowService.getStages(projectId)` and also wires `flowService.addStage`, `flowService.updateStageWithProject`, and `flowService.deleteStage` through React Query mutations.",
+      "`StageList` is the existing presenter for the fetched `StoryFlowStage[]` list.",
+      "The routed planning workspace mounts `FlowEditor` from `PlanningView` when `activeTab === 'flow'`.",
+      "The current docs already describe editable flow as deferred beyond v1.0."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "FlowEditor({ projectId }: FlowEditorProps)",
+        "prop_shape": {
+          "projectId": "string"
+        },
+        "query_contract": {
+          "query_key": "['flow-stages', projectId]",
+          "query_fn": "flowService.getStages(projectId)"
+        },
+        "symbols_to_remove_from_active_behavior": [
+          "addStageMutation",
+          "updateStageMutation",
+          "deleteStageMutation",
+          "editingStage",
+          "editedDisplayName",
+          "editedDescription",
+          "editedPromptGuidance",
+          "handleAddStage",
+          "handleEdit",
+          "handleSaveEdit",
+          "handleCloseEdit",
+          "handleDelete"
+        ],
+        "exact_rendered_strings_to_replace": [
+          "Configure your story development stages"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The header no longer renders the top-level `Add Stage` select.",
+          "The file no longer renders the edit modal headed by `Edit Stage`.",
+          "`StageList` is rendered without mutation callbacks so the flow tab is read-only.",
+          "The header text explicitly describes the surface as the current routed stage overview rather than an editing tool."
+        ],
+        "query_keys": [
+          "['flow-stages', projectId]"
+        ],
+        "service_calls_preserved": [
+          "flowService.getStages(projectId)"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/components/flow/StageList.tsx",
+        "frontend/src/services/flow.ts",
+        "frontend/src/views/PlanningView.tsx",
+        "docs/Frontend Design SRS v0.5.md"
+      ]
+    },
+    "utilized_features": [
+      "React Query useQuery",
+      "Conditional JSX rendering",
+      "Existing `StageList` component",
+      "Existing `flowService.getStages`"
+    ],
+    "expected_outcomes": [
+      "The file still fetches `StoryFlowStage[]` with query key `['flow-stages', projectId]`.",
+      "The file no longer contains an `Add Stage` select or an `Edit Stage` modal.",
+      "The routed flow surface shows stage visibility only and does not invoke `flowService.addStage`, `flowService.updateStageWithProject`, or `flowService.deleteStage`."
+    ]
+  },
+  {
+    "task_id": "c1da1f97-2061-4843-ba6d-1b2d8cbef95e",
+    "purpose": "Stage 1. Recompose `Workspace` so the routed `Outlet` is the clear primary workspace pane and the supporting `NotesPanel` and `JobLaunchPanel` occupy a single stacked right rail instead of two parallel side columns. Keep `WorkspaceShell` and `BottomUtilityLayer projectId={projectId}` intact and change only the layout structure and sizing inside `Workspace`.",
+    "responsible_file": "frontend/src/views/Workspace.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify route paths, nested route ownership, or the `Outlet` placement contract.",
+      "Do not edit `frontend/src/App.tsx`, `frontend/src/components/NotesPanel.tsx`, `frontend/src/components/JobLaunchPanel.tsx`, or `frontend/src/components/BottomUtilityLayer.tsx`.",
+      "Do not add new state, stores, or components.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`Workspace` currently renders `WorkspaceShell`, `Outlet`, `NotesPanel`, `JobLaunchPanel`, and `BottomUtilityLayer`.",
+      "The routed views mounted inside the `Outlet` are `/workspace/:projectId/plan`, `/workspace/:projectId/write`, `/workspace/:projectId/review`, and `/workspace/:projectId/inspect`.",
+      "`NotesPanel` and `JobLaunchPanel` already accept `projectId` as their only prop."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "Workspace()",
+        "route_params": {
+          "projectId": "string"
+        },
+        "current_children": [
+          "WorkspaceShell",
+          "Outlet",
+          "NotesPanel",
+          "JobLaunchPanel",
+          "BottomUtilityLayer"
+        ]
+      },
+      "output_data_schema": {
+        "layout_requirements": [
+          "The `Outlet` container is the main flexible pane.",
+          "A single right rail contains `NotesPanel projectId={projectId}` and `JobLaunchPanel projectId={projectId}` stacked vertically.",
+          "`BottomUtilityLayer projectId={projectId}` still renders after `WorkspaceShell`."
+        ],
+        "routes_unchanged": [
+          "/workspace/:projectId/plan",
+          "/workspace/:projectId/write",
+          "/workspace/:projectId/review",
+          "/workspace/:projectId/inspect"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/Workspace.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/components/NotesPanel.tsx",
+        "frontend/src/components/JobLaunchPanel.tsx",
+        "frontend/src/components/BottomUtilityLayer.tsx",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "React Router `Outlet`",
+      "Existing `WorkspaceShell` component",
+      "Existing `NotesPanel` component",
+      "Existing `JobLaunchPanel` component",
+      "Existing `BottomUtilityLayer` component"
+    ],
+    "expected_outcomes": [
+      "The `Outlet` is no longer visually squeezed between two separate fixed-width side columns.",
+      "`NotesPanel` and `JobLaunchPanel` remain present, but in a single stacked right rail.",
+      "The file still renders `BottomUtilityLayer projectId={projectId}`."
+    ]
+  },
+  {
+    "task_id": "91eb7d31-4470-45ae-a585-f15499eaefdb",
+    "purpose": "Stage 1. Replace placeholder-style empty-state copy in `PlanningView` with explicit, route-accurate product states for the current read-heavy planning workspace. Update the exact rendered strings `No sequence plans yet`, `No chapter plans yet`, `No scene plans yet`, `No dependencies defined yet`, `No chapter packets yet`, `No arc selected yet`, `No arc candidates yet`, and `No characters yet` without changing any query keys, mutations, tab logic, or service calls.",
+    "responsible_file": "frontend/src/views/PlanningView.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `PlanningTab` union or `activeTab` behavior.",
+      "Do not modify any React Query keys such as `['planning-sequence-plans', projectId]`, `['arc-candidates', projectId]`, or `['planning', 'characters', projectId]`.",
+      "Do not edit service files under `frontend/src/services/`.",
+      "Do not add new buttons, routes, or mutation behavior.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`PlanningView` owns the routed `/workspace/:projectId/plan` screen and already renders read queries for sequence plans, chapter plans, scene plans, planning dependencies, chapter packets, arc candidates, arc selections, arc stage maps, and characters.",
+      "The file already distinguishes loading, empty, and populated branches for planning and arc sections.",
+      "Character creation and updates already flow through `createCharacter` and `updateCharacter`; this task changes only empty-state wording."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "PlanningView()",
+        "route_params": {
+          "projectId": "string"
+        },
+        "query_keys": [
+          "['planning-sequence-plans', projectId]",
+          "['planning-chapter-plans', projectId]",
+          "['planning-scene-plans', projectId]",
+          "['planning-dependencies', projectId]",
+          "['planning-chapter-packets', projectId]",
+          "['arc-candidates', projectId]",
+          "['arc-selections', projectId]",
+          "['arc-stage-maps', projectId]",
+          "['planning', 'characters', projectId]"
+        ],
+        "exact_strings_to_replace": [
+          "No sequence plans yet",
+          "No chapter plans yet",
+          "No scene plans yet",
+          "No dependencies defined yet",
+          "No chapter packets yet",
+          "No arc selected yet",
+          "No arc candidates yet",
+          "No characters yet"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The file no longer contains any of the eight exact placeholder strings listed in the input schema.",
+          "Planning empty states explicitly describe missing fetched records or next valid routed actions.",
+          "The arcs section remains read-only and continues to show selected arc, selected stage map, and all candidates without new decision controls."
+        ],
+        "mutations_unchanged": [
+          "createBrainstormItem",
+          "clusterBrainstormItems",
+          "createFoundation",
+          "updateFoundation",
+          "createCharacter",
+          "updateCharacter",
+          "createWorldBibleEntry",
+          "updateWorldBibleEntry"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/services/planning.ts",
+        "frontend/src/services/arcs.ts",
+        "frontend/src/services/characters.ts",
+        "README.md",
+        "docs/Frontend Design SRS v0.5.md"
+      ]
+    },
+    "utilized_features": [
+      "React Query useQuery",
+      "React Query useMutation",
+      "React Router `useParams`",
+      "Existing `WorkspaceStatus` helper in `PlanningView`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains `No sequence plans yet`, `No chapter plans yet`, `No scene plans yet`, `No dependencies defined yet`, `No chapter packets yet`, `No arc selected yet`, `No arc candidates yet`, or `No characters yet`.",
+      "All existing query keys and mutation wiring remain unchanged.",
+      "Users see explicit empty-state copy instead of prototype-style wording."
+    ]
+  },
+  {
+    "task_id": "418b7e40-5c5e-4e92-a66a-ed5a95cab26a",
+    "purpose": "Stage 1. Replace the inspect attempts empty-state copy in `InspectTabs` so the `attempts` tab uses explicit inspect wording instead of the generic line `No attempts recorded yet`. Keep the existing `loadAttempts` behavior, `jobsService.getAttempts`, `getCheckerAttempts`, and `AttemptHistoryItem` rendering intact.",
+    "responsible_file": "frontend/src/components/inspect/InspectTabs.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `loadAttempts`, `useEffect`, or the `TabKey` union.",
+      "Do not change calls to `jobsService.getAttempts(context.jobId)` or `getCheckerAttempts(context.jobId)`.",
+      "Do not edit `frontend/src/components/inspect/StepTimeline.tsx` or `frontend/src/components/inspect/ArtifactLineage.tsx` in this task.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`InspectTabs` owns the `steps`, `lineage`, and `attempts` tabbed surface for an `InspectContext`.",
+      "The `attempts` tab already distinguishes loading, error, empty, and populated branches.",
+      "`AttemptHistoryItem` includes `attempt_number`, `status`, `started_at`, `finished_at`, `finish_reason`, and `error_code`, which already render in the populated branch."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "InspectTabs({ context }: InspectTabsProps)",
+        "prop_shape": {
+          "context": "InspectContext"
+        },
+        "run_kind_values": [
+          "pipeline_job",
+          "role_model_check"
+        ],
+        "exact_string_to_replace": "No attempts recorded yet"
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The attempts empty-state branch no longer contains the exact string `No attempts recorded yet`.",
+          "The loading skeleton, error panel, and populated attempt cards remain unchanged.",
+          "The file still renders attempt metadata for `AttemptHistoryItem[]` when attempts exist."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/inspect/InspectTabs.tsx",
+        "frontend/src/services/jobs.ts",
+        "frontend/src/services/checker.ts",
+        "frontend/src/types/inspect.ts"
+      ]
+    },
+    "utilized_features": [
+      "React `useState`",
+      "React `useEffect`",
+      "React `useCallback`",
+      "Existing `jobsService.getAttempts`",
+      "Existing `getCheckerAttempts`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the string `No attempts recorded yet`.",
+      "The attempts tab remains fully functional for both `pipeline_job` and `role_model_check` runs.",
+      "Only user-facing copy changes in the empty-state branch."
+    ]
+  },
+  {
+    "task_id": "27a05d44-e30c-4e56-b1ca-7fc16dd25f67",
+    "purpose": "Stage 1. Replace the step-timeline empty-state copy in `StepTimeline` so the inspect steps tab no longer renders the generic line `No steps recorded yet`. Keep the existing `useJobSteps(jobId, runKind, attemptNumber)` hook usage, retry button behavior, and `StepCard` rendering unchanged.",
+    "responsible_file": "frontend/src/components/inspect/StepTimeline.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `useJobSteps` hook signature or the values passed from `context`.",
+      "Do not modify the loading skeleton, error retry button, or `sortedSteps` ordering logic.",
+      "Do not edit `frontend/src/components/inspect/StepCard.tsx`.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`StepTimeline` reads `jobId`, `runKind`, and `attemptNumber` from `InspectContext` and delegates the fetch to `useJobSteps`.",
+      "The file already has distinct loading, error, empty, and populated states.",
+      "`StepCard` already renders each `StepRecord` in the populated branch."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "StepTimeline({ context }: StepTimelineProps)",
+        "prop_shape": {
+          "context": "InspectContext"
+        },
+        "hook_call": "useJobSteps(jobId, runKind, attemptNumber)",
+        "exact_string_to_replace": "No steps recorded yet"
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The empty-state branch no longer contains `No steps recorded yet`.",
+          "The file still renders a retry button when `error` is truthy.",
+          "The file still sorts steps by `step_index` before rendering `StepCard`."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/inspect/StepTimeline.tsx",
+        "frontend/src/hooks/useJobSteps.ts",
+        "frontend/src/components/inspect/StepCard.tsx",
+        "frontend/src/types/inspect.ts"
+      ]
+    },
+    "utilized_features": [
+      "Existing `useJobSteps` hook",
+      "Conditional JSX rendering",
+      "Array sorting by `step_index`",
+      "Existing `StepCard` component"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the string `No steps recorded yet`.",
+      "Loading, error, retry, and populated step rendering behavior remain unchanged.",
+      "Only the empty-state copy changes."
+    ]
+  },
+  {
+    "task_id": "1fc9744f-cd5b-4537-aea5-9506fd27df40",
+    "purpose": "Stage 1. Replace the artifact-lineage empty-state copy in `ArtifactLineage` so the inspect lineage tab uses explicit persisted-lineage wording instead of the generic line `No artifacts generated yet`. Keep `useJobLineage(jobId, runKind, attemptNumber)`, retry behavior, and `ArtifactCard` rendering unchanged.",
+    "responsible_file": "frontend/src/components/inspect/ArtifactLineage.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `useJobLineage` hook signature or the values passed from `context`.",
+      "Do not modify the loading skeleton, error retry button, or populated artifact-card branch.",
+      "Do not edit `frontend/src/components/inspect/ArtifactCard.tsx`.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`ArtifactLineage` reads `jobId`, `runKind`, and `attemptNumber` from `InspectContext` and delegates the fetch to `useJobLineage`.",
+      "The file already has distinct loading, error, empty, and populated states.",
+      "`ArtifactCard` already renders each `ArtifactLineageView` in the populated branch."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "ArtifactLineage({ context }: ArtifactLineageProps)",
+        "prop_shape": {
+          "context": "InspectContext"
+        },
+        "hook_call": "useJobLineage(jobId, runKind, attemptNumber)",
+        "exact_string_to_replace": "No artifacts generated yet"
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The empty-state branch no longer contains `No artifacts generated yet`.",
+          "The file still renders a retry button when `error` is truthy.",
+          "The file still renders `ArtifactCard` for each artifact when lineage data exists."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/inspect/ArtifactLineage.tsx",
+        "frontend/src/hooks/useJobLineage.ts",
+        "frontend/src/components/inspect/ArtifactCard.tsx",
+        "frontend/src/types/inspect.ts"
+      ]
+    },
+    "utilized_features": [
+      "Existing `useJobLineage` hook",
+      "Conditional JSX rendering",
+      "Existing `ArtifactCard` component"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the string `No artifacts generated yet`.",
+      "Loading, error, retry, and populated lineage rendering behavior remain unchanged.",
+      "Only the empty-state copy changes."
+    ]
+  },
+  {
+    "task_id": "508f39db-b1ef-456f-bf58-48efe76ce275",
+    "purpose": "Stage 2. Update the `Current Status` and workspace-scope language in `README.md` so the active repo-level narrative matches the shipped routed product exactly: `/workspace/:projectId/plan` is a read-heavy planning surface, `FlowEditor` is routed stage visibility rather than shipped editable flow, `CharacterBuilder` ships profile editing while relationship-map workflows are deferred, and arc support is the existing read-only `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` surface rather than a decision-mutation workflow.",
+    "responsible_file": "README.md",
+    "serial_dependencies": [
+      "e6bc6778-cdb6-4fe1-adfc-4130a8c053bf",
+      "c1da1f97-2061-4843-ba6d-1b2d8cbef95e",
+      "91eb7d31-4470-45ae-a585-f15499eaefdb",
+      "418b7e40-5c5e-4e92-a66a-ed5a95cab26a",
+      "27a05d44-e30c-4e56-b1ca-7fc16dd25f67",
+      "1fc9744f-cd5b-4537-aea5-9506fd27df40"
+    ],
+    "guardrails": [
+      "Do not edit any code files.",
+      "Do not change the verified validation numbers or command list in this task.",
+      "Do not invent new routes, new mutation endpoints, or new shipped workflows.",
+      "Do not rewrite unrelated backend runtime sections."
+    ],
+    "knowledge_base": [
+      "`README.md` is part of the active documentation surface called out in `TODO.md` and `AGENTS.md`.",
+      "`PlanningView` already mounts planning reads, routed arc reads, `FlowEditor`, and `CharacterBuilder`.",
+      "`FlowEditor` and `StageList` are being reduced to read-only routed stage visibility for v1.0 in the code tasks that precede this doc update.",
+      "Arc reads already exist through `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`, but no shipped routed arc-decision mutation workflow exists."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "## Current Status",
+          "Still being built"
+        ],
+        "exact_symbols": [
+          "PlanningView",
+          "FlowEditor",
+          "CharacterBuilder",
+          "getArcCandidates",
+          "getArcSelections",
+          "getArcStageMaps",
+          "/workspace/:projectId/plan"
+        ]
+      },
+      "output_data_schema": {
+        "documented_behavior": [
+          "The README states that the planning route is read-heavy and route-backed.",
+          "The README states that `FlowEditor` is not a shipped editable-flow workflow for v1.0.",
+          "The README states that `CharacterBuilder` ships profile editing and defers relationship-map workflows.",
+          "The README states that arc support is the existing read-only routed surface backed by `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`."
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing routed workspace paths",
+      "Existing frontend service names"
+    ],
+    "expected_outcomes": [
+      "The README no longer reads as if editable flow, relationship-map workflows, or arc-decision mutations are shipped in v1.0.",
+      "The README continues to describe the current routed frontend as API-backed and real rather than mock-backed where routes already exist.",
+      "The README remains consistent with the shipped code after the Stage 1 tasks."
+    ]
+  },
+  {
+    "task_id": "bc449669-54f4-429f-af93-cc8d177ca53c",
+    "purpose": "Stage 2. Correct the current-state language in `docs/Frontend Design SRS v0.5.md` so the implementation-status rows and mock-service notes describe the shipped routed frontend precisely after the Stage 1 code changes: `FlowEditor` is read-only stage visibility, planning tabs are read-heavy, character profile editing is shipped through `CharacterBuilder`, relationship mapping is deferred, and arc support is the current read-only projections from `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`.",
+    "responsible_file": "docs/Frontend Design SRS v0.5.md",
+    "serial_dependencies": [
+      "e6bc6778-cdb6-4fe1-adfc-4130a8c053bf",
+      "91eb7d31-4470-45ae-a585-f15499eaefdb"
+    ],
+    "guardrails": [
+      "Do not edit any code files.",
+      "Do not delete historical task inventory; only correct current-state wording.",
+      "Do not invent new routes, mutation flows, or helper layers.",
+      "Do not rewrite unrelated inspect or drafting sections beyond wording needed for consistency."
+    ],
+    "knowledge_base": [
+      "The file already contains implementation-status rows for `Flow Editor`, `Character Builder`, and `Arc Comparison` plus a mock-service note in Section 12.4.",
+      "`PlanningView` is the shipped routed source for planning, flow, arcs, and character profile editing.",
+      "`FlowEditor` and `StageList` are being reduced to read-only routed stage visibility for v1.0 rather than editable stage management."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_targets": [
+          "Implementation status rows that mention `Flow Editor`",
+          "Implementation status rows that mention `Character Builder`",
+          "Implementation status rows that mention `Arc Comparison`",
+          "The note that starts with `Use mock services where incomplete`"
+        ],
+        "exact_symbols": [
+          "FlowEditor",
+          "CharacterBuilder",
+          "getArcCandidates",
+          "getArcSelections",
+          "getArcStageMaps"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "The SRS describes `FlowEditor` as read-only stage visibility in the shipped routed app.",
+          "The SRS describes planning tabs as read-heavy where routes already exist.",
+          "The SRS describes `CharacterBuilder` as shipped profile editing and relationship mapping as deferred.",
+          "The SRS describes arc support as current read-only projections rather than a shipped arc-decision workflow."
+        ]
+      },
+      "external_refs": [
+        "docs/Frontend Design SRS v0.5.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts",
+        "README.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing component names",
+      "Existing frontend service names"
+    ],
+    "expected_outcomes": [
+      "The SRS no longer presents editable flow, relationship mapping, or arc-decision workflows as shipped v1.0 routed behavior.",
+      "The mock-service note no longer describes already-routed planning and arc reads as speculative.",
+      "The file remains aligned with the routed code after Stage 1."
+    ]
+  },
+  {
+    "task_id": "99ff6a99-94f5-455d-8980-50cb7d5318d1",
+    "purpose": "Stage 2. Tighten `docs/Story Development Product Spec v0.1.md` so its present-tense product language matches the current shipped route set: planning is the existing read-heavy routed view, `FlowEditor` is not a shipped editable-flow tool for v1.0, character profile editing ships through `CharacterBuilder`, relationship-map workflows remain deferred, and arc support in the routed product is the current read-only projections rather than interactive selection/comparison mutations.",
+    "responsible_file": "docs/Story Development Product Spec v0.1.md",
+    "serial_dependencies": [
+      "e6bc6778-cdb6-4fe1-adfc-4130a8c053bf",
+      "91eb7d31-4470-45ae-a585-f15499eaefdb"
+    ],
+    "guardrails": [
+      "Do not edit any code files.",
+      "Do not remove canonical object names such as `StoryFlowStage`, `RelationshipEdge`, `ArcComparisonRecord`, or `ArcSelection`.",
+      "Do not invent new route paths, status codes, or release commitments.",
+      "Do not rewrite unrelated sections outside planning, flow, character relationships, arcs, and required screens."
+    ],
+    "knowledge_base": [
+      "The product spec already contains sections for editable flow, character tools, arc support, and required screens or modes.",
+      "`PlanningView` is the shipped routed source for planning tabs, arcs, flow visibility, and character profile editing.",
+      "No shipped routed UI currently exposes arc-decision mutations or a relationship-map workflow."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "### 4.1 Editable Flow Requirements",
+          "### 8.3 Character Tools",
+          "### 10.2 Arc Support Requirements",
+          "### 14.2 Required Screens or Modes"
+        ],
+        "exact_symbols": [
+          "StoryFlowStage",
+          "FlowEditor",
+          "CharacterBuilder",
+          "RelationshipEdge",
+          "ArcComparisonRecord",
+          "ArcSelection"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "Editable flow is documented as deferred product scope rather than shipped routed behavior.",
+          "Character profile editing is documented as the shipped character capability, while relationship-map workflows are deferred.",
+          "Arc support is documented as the shipped read-only routed projections, while interactive decision workflows are deferred."
+        ]
+      },
+      "external_refs": [
+        "docs/Story Development Product Spec v0.1.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts",
+        "README.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing canonical object names",
+      "Existing routed component names"
+    ],
+    "expected_outcomes": [
+      "The product spec no longer reads as if editable flow, relationship-map workflows, or arc-decision mutations are already shipped in the routed app.",
+      "Canonical object names remain intact.",
+      "The spec is consistent with the routed code after Stage 1."
+    ]
+  },
+  {
+    "task_id": "7c14dd43-c2f2-4eb7-b585-ddca2f1fbaae",
+    "purpose": "Stage 2. Update `docs/Narrative SRS v0.3.md` so the current-state and requirements language matches the actual shipped routed app after the Stage 1 code changes: planning and arc views are current routed read surfaces, `CharacterBuilder` ships profile editing only, relationship-map workflows are deferred, and interactive arc-decision behavior remains deferred even though `ArcSelection` and related backend concepts exist.",
+    "responsible_file": "docs/Narrative SRS v0.3.md",
+    "serial_dependencies": [
+      "e6bc6778-cdb6-4fe1-adfc-4130a8c053bf",
+      "91eb7d31-4470-45ae-a585-f15499eaefdb"
+    ],
+    "guardrails": [
+      "Do not edit any code files.",
+      "Do not remove backend-domain terminology or canonical object references.",
+      "Do not add new UI components, routes, or endpoint claims.",
+      "Do not rewrite unrelated backend-runtime sections."
+    ],
+    "knowledge_base": [
+      "The Narrative SRS already contains scope-clarification text for arc projections and relationship mapping, but it still includes present-tense product language around those concepts.",
+      "`CharacterBuilder` is the existing routed UI for character profile editing.",
+      "`getArcCandidates`, `getArcSelections`, and `getArcStageMaps` already back the routed arc tab in `PlanningView`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_targets": [
+          "Current-state passages that mention planning, relationship maps, or story arc selection",
+          "Requirement passages that mention `relationship map`",
+          "Requirement passages that mention `Story arc selection`"
+        ],
+        "exact_symbols": [
+          "CharacterBuilder",
+          "RelationshipEdge",
+          "ArcSelection",
+          "ArcStageMap",
+          "getArcCandidates",
+          "getArcSelections",
+          "getArcStageMaps"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "The SRS treats relationship-map workflows as deferred product behavior rather than shipped routed behavior.",
+          "The SRS treats arc support in the current routed app as read-only projections rather than interactive arc decisions.",
+          "The SRS remains consistent with shipped character profile editing through `CharacterBuilder`."
+        ]
+      },
+      "external_refs": [
+        "docs/Narrative SRS v0.3.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts",
+        "README.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing backend-domain terminology",
+      "Existing routed component and service names"
+    ],
+    "expected_outcomes": [
+      "The Narrative SRS no longer implies that relationship-map or interactive arc-decision workflows are shipped in the routed app.",
+      "The file still uses canonical domain names such as `RelationshipEdge`, `ArcSelection`, and `ArcStageMap`.",
+      "The file aligns with the README and frontend SRS after Stage 2."
+    ]
+  },
+  {
+    "task_id": "f3092970-98f6-4d66-8847-1dd5b61c4c34",
+    "purpose": "Stage 3. Reconcile the top-level backlog in `TODO.md` so the active checklist reflects current code and current active docs after Stages 1 and 2. Update the `### v1.0 Release Checklist` and `### Backend Reliability` sections to close items already satisfied by shipped code or explicit scope-cut docs, keep only true remaining blockers open, and rewrite any still-open items so they no longer describe already-completed work or already-resolved scope decisions.",
+    "responsible_file": "TODO.md",
+    "serial_dependencies": [
+      "c1da1f97-2061-4843-ba6d-1b2d8cbef95e",
+      "91eb7d31-4470-45ae-a585-f15499eaefdb",
+      "418b7e40-5c5e-4e92-a66a-ed5a95cab26a",
+      "27a05d44-e30c-4e56-b1ca-7fc16dd25f67",
+      "1fc9744f-cd5b-4537-aea5-9506fd27df40",
+      "508f39db-b1ef-456f-bf58-48efe76ce275",
+      "bc449669-54f4-429f-af93-cc8d177ca53c",
+      "99ff6a99-94f5-455d-8980-50cb7d5318d1",
+      "7c14dd43-c2f2-4eb7-b585-ddca2f1fbaae"
+    ],
+    "guardrails": [
+      "Do not edit any code files.",
+      "Do not add new backlog sections or delete historical implementation notes outside the active top checklist sections.",
+      "Do not re-open items already verified complete unless the preceding Stage 1 or Stage 2 work made them incomplete.",
+      "Do not invent new product capabilities or roadmap categories."
+    ],
+    "knowledge_base": [
+      "`TODO.md` is the active source of truth for what is still open.",
+      "The top checklist currently leaves `V1-003`, `V1-006`, `V1-007`, `V1-008`, `V1-009`, `V1-012`, `REL-05`, `REL-08`, and `REL-10` open even though current code and current docs already satisfy or scope-cut substantial parts of those items.",
+      "Current code already includes `success_rate` and `failure_rate` in `app/api/health.py`, runtime override validation in `app/schemas/jobs.py`, and `target_resource` audit logging in `app/main.py`.",
+      "After Stage 1, the remaining obvious v1.0 blockers should be the final workspace-composition polish, placeholder-copy cleanup status, final 1.0 scope review, and any truly unimplemented reliability or persistence hardening items."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "todo_sections": [
+          "### v1.0 Release Checklist",
+          "### Backend Reliability",
+          "### Persistence and Runtime Expansion"
+        ],
+        "items_to_reconcile": [
+          "V1-003",
+          "V1-006",
+          "V1-007",
+          "V1-008",
+          "V1-009",
+          "V1-010",
+          "V1-011",
+          "V1-012",
+          "V1-013",
+          "V1-014",
+          "REL-05",
+          "REL-08",
+          "REL-09",
+          "REL-10"
+        ],
+        "current_verified_code_refs": [
+          "app/api/health.py",
+          "app/schemas/jobs.py",
+          "app/main.py",
+          "frontend/src/views/Workspace.tsx",
+          "frontend/src/views/PlanningView.tsx",
+          "frontend/src/components/inspect/InspectTabs.tsx",
+          "frontend/src/components/inspect/StepTimeline.tsx",
+          "frontend/src/components/inspect/ArtifactLineage.tsx"
+        ]
+      },
+      "output_data_schema": {
+        "backlog_state": [
+          "Items already satisfied by current code or scope-aligned docs are marked complete or rewritten as no longer blockers.",
+          "Truly remaining blockers stay open with wording that matches the shipped repo state after Stages 1 and 2.",
+          "The active checklist no longer cites stale validation drift or already-completed reliability work as open."
+        ]
+      },
+      "external_refs": [
+        "TODO.md",
+        "README.md",
+        "docs/Frontend Design SRS v0.5.md",
+        "docs/Story Development Product Spec v0.1.md",
+        "docs/Narrative SRS v0.3.md",
+        "app/api/health.py",
+        "app/schemas/jobs.py",
+        "app/main.py"
+      ]
+    },
+    "utilized_features": [
+      "Markdown backlog checklist editing",
+      "Existing code and docs as the source of truth",
+      "Existing release-blocker structure in `TODO.md`"
+    ],
+    "expected_outcomes": [
+      "The top-level checklist in `TODO.md` no longer lists already-completed work as open.",
+      "Open items describe only the real remaining work after Stages 1 and 2.",
+      "A new executor can use the active backlog without tripping over stale or contradictory top-level status lines."
+    ]
+  }
+]

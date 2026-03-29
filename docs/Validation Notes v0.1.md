@@ -60,7 +60,7 @@ Current validation does not yet cover:
 Current verified result:
 
 - `python -m pytest -q -p no:cacheprovider`
-- Result: `435 passed, 9 skipped`
+- Result: `455 passed, 9 skipped`
 - `cmd /c npm.cmd run lint`
 - Result: passed
 - `cmd /c npm.cmd run typecheck`

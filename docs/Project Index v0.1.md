@@ -6,13 +6,13 @@ Current project layers:
 - `docs/`: current product, frontend, protocol, quality, and validation documents
 - `docs/archive/`: superseded notes and historical decisions retained for reference
 - `app/`: FastAPI app, persistence layer, schemas, and services
-- `frontend/`: React + TypeScript writer workspace
+- `frontend/`: React + TypeScript writer workspace (routed views: `frontend/src/views/PlanningView.tsx`, `frontend/src/views/WritingView.tsx`, `frontend/src/views/ReviewView.tsx`, `frontend/src/views/InspectView.tsx`)
 - `data/`: sample projects, generated artifacts, and local runtime data roots
 - `tests/`: smoke and persistence coverage
 
 Current verified validation baseline:
 
-- `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed

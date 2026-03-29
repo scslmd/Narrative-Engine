@@ -332,7 +332,7 @@ export function PlanningView() {
               {sequencePlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." />
               ) : sequencePlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No sequence plans yet</p>
+                <p className="text-sm text-gray-500">No sequence plans configured. Create a sequence to define the high-level story structure.</p>
               ) : (
                 <div className="space-y-2">
                   {sequencePlans.map((seq) => (
@@ -350,7 +350,7 @@ export function PlanningView() {
               {chapterPlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." />
               ) : chapterPlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No chapter plans yet</p>
+                <p className="text-sm text-gray-500">No chapter plans configured. Chapters will appear once sequence planning is complete.</p>
               ) : (
                 <div className="space-y-2">
                   {chapterPlans.map((chap) => (
@@ -368,7 +368,7 @@ export function PlanningView() {
               {scenePlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." />
               ) : scenePlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No scene plans yet</p>
+                <p className="text-sm text-gray-500">No scene plans configured. Scenes will appear once chapter planning is complete.</p>
               ) : (
                 <div className="space-y-2">
                   {scenePlans.map((scene) => (
@@ -386,7 +386,7 @@ export function PlanningView() {
               {dependenciesQuery.isLoading ? (
                 <WorkspaceStatus title="Loading dependencies" detail="Fetching planning dependencies..." />
               ) : dependencies.length === 0 ? (
-                <p className="text-sm text-gray-500">No dependencies defined yet</p>
+                <p className="text-sm text-gray-500">No dependencies defined. Dependencies track relationships between planning artifacts.</p>
               ) : (
                 <div className="space-y-2">
                   {dependencies.map((dep) => (
@@ -408,7 +408,7 @@ export function PlanningView() {
               {chapterPacketsQuery.isLoading ? (
                 <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." />
               ) : chapterPackets.length === 0 ? (
-                <p className="text-sm text-gray-500">No chapter packets yet</p>
+                <p className="text-sm text-gray-500">No chapter packets configured. Packets will appear once chapters are ready for drafting.</p>
               ) : (
                 <div className="space-y-2">
                   {chapterPackets.map((packet) => (
@@ -441,7 +441,7 @@ export function PlanningView() {
                   {selectedArc.summary && <p className="text-sm text-gray-600 mt-1">{selectedArc.summary}</p>}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No arc selected yet</p>
+                <p className="text-sm text-gray-500">No arc selected. Arc selections define the narrative trajectory for this project.</p>
               )}
             </section>
 
@@ -468,7 +468,7 @@ export function PlanningView() {
               {arcCandidatesQuery.isLoading ? (
                 <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." />
               ) : arcCandidates.length === 0 ? (
-                <p className="text-sm text-gray-500">No arc candidates yet</p>
+                <p className="text-sm text-gray-500">No arc candidates available. Arcs will appear once foundation and character work is complete.</p>
               ) : (
                 <div className="space-y-2">
                   {arcCandidates.map((candidate) => {
@@ -580,7 +580,7 @@ export function PlanningView() {
 
                 {characters.length === 0 && (
                   <div className="text-center py-12 text-gray-500">
-                    <p>No characters yet</p>
+                    <p>No character profiles configured</p>
                     <p className="text-sm mt-2">Create a character to start building the cast.</p>
                   </div>
                 )}

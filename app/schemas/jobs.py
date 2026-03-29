@@ -36,7 +36,8 @@ class JobCreateRequest(StrictModel):
         """Validate phase-specific payload requirements (REL-08).
         
         For phases P-100, P-200, P-300, and P-400, the payload must contain
-        a non-empty string 'project_id'.
+        a non-empty string 'project_id'. Optional runtime override keys are
+        type-checked when present.
         """
         # JobPhase is a str, Enum so self.phase is already a string
         if self.phase in ('P-100', 'P-200', 'P-300', 'P-400'):
@@ -53,6 +54,30 @@ class JobCreateRequest(StrictModel):
                 raise ValueError(
                     f"Payload 'project_id' must be a non-empty string for phase {self.phase}"
                 )
+            
+            # Validate optional runtime override keys when present
+            model_id = self.payload.get('model_id')
+            if model_id is not None and not isinstance(model_id, str):
+                raise ValueError("Payload 'model_id' must be a string")
+            
+            model = self.payload.get('model')
+            if model is not None and not isinstance(model, str):
+                raise ValueError("Payload 'model' must be a string")
+            
+            premise_text = self.payload.get('premise_text')
+            if premise_text is not None and not isinstance(premise_text, str):
+                raise ValueError("Payload 'premise_text' must be a string")
+            
+            temperature = self.payload.get('temperature')
+            if temperature is not None and not isinstance(temperature, (int, float)):
+                raise ValueError("Payload 'temperature' must be a number")
+            
+            max_tokens = self.payload.get('max_tokens')
+            if max_tokens is not None:
+                if not isinstance(max_tokens, int):
+                    raise ValueError("Payload 'max_tokens' must be an integer")
+                if max_tokens < 1:
+                    raise ValueError("Payload 'max_tokens' must be >= 1")
         return self
 
 

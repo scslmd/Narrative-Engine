@@ -1,0 +1,163 @@
+[
+  {
+    "task_id": "7de0df2c-7c47-4787-9c6c-3d9b826ca6ec",
+    "purpose": "Update the `Manuscript Aids` section in `docs/Frontend Workspace Behavior Contract v0.1.md` so it documents the current routed write-workspace contract exactly: `WritingView` reads revision suggestions through `getRevisionSuggestions(projectId, targetDocumentId?)`, uses the query key `['revision-suggestions', projectId, selectedDocumentId ?? 'all']`, and renders `AidsPanel`, `DiffViewer`, and `SuggestionHistory` as read-only review surfaces. Explicitly state that `onSuggestionAccept` and `onSuggestionReject` are optional props on `AidsPanel` but are not provided by `WritingView` and must not be documented as shipped behavior until a backend-backed mutation route exists.",
+    "responsible_file": "docs/Frontend Workspace Behavior Contract v0.1.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit any frontend code files.",
+      "Do not invent a new accept/reject API route, mutation hook, or store key.",
+      "Do not remove the existing implementation guidance for `DiffViewer` or `frontend/src/lib/diff.ts`.",
+      "Do not change non-manuscript-aids sections unless required to cross-reference the exact current write route paths."
+    ],
+    "knowledge_base": [
+      "Component `AidsPanel` is defined in `frontend/src/components/aids/AidsPanel.tsx` with optional props `onSuggestionAccept` and `onSuggestionReject`.",
+      "Component `WritingView` in `frontend/src/views/WritingView.tsx` passes `projectId` and `suggestions` to `AidsPanel` but does not pass accept/reject callbacks.",
+      "Service function `getRevisionSuggestions(projectId, targetDocumentId?)` is defined in `frontend/src/services/drafting.ts`.",
+      "The write routes are `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "## Manuscript Aids",
+          "## Implementation Rules",
+          "## Quick Sanity Check"
+        ],
+        "exact_symbols": [
+          "AidsPanel",
+          "DiffViewer",
+          "SuggestionHistory",
+          "getRevisionSuggestions",
+          "['revision-suggestions', projectId, selectedDocumentId ?? 'all']"
+        ]
+      },
+      "output_data_schema": {
+        "documented_contract": [
+          "The doc states that the current routed write workspace performs GET reads only for revision suggestions.",
+          "The doc states that `onSuggestionAccept` and `onSuggestionReject` are optional `AidsPanel` props and are not currently supplied by `WritingView`.",
+          "The doc does not claim that accepting or rejecting a suggestion mutates `ManuscriptDocument` state."
+        ]
+      },
+      "external_refs": [
+        "docs/Frontend Workspace Behavior Contract v0.1.md",
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/components/aids/AidsPanel.tsx",
+        "frontend/src/services/drafting.ts"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing route paths `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId`",
+      "Service function `getRevisionSuggestions`"
+    ],
+    "expected_outcomes": [
+      "The Manuscript Aids doc text matches the current routed implementation: review-only suggestion reads with no shipped accept/reject mutation path.",
+      "The file explicitly names `AidsPanel`, `DiffViewer`, `SuggestionHistory`, and the query key `['revision-suggestions', projectId, selectedDocumentId ?? 'all']`.",
+      "The file contains no invented backend mutation route for manuscript aids."
+    ]
+  },
+  {
+    "task_id": "c77ea09f-1d92-4444-93c9-e20df5d1c271",
+    "purpose": "Rewrite the `V1-003 Ship a complete manuscript aids workflow inside the routed writing experience` entry in `TODO.md` so it stops implying that callback-backed accept/reject work is still an implementation choice. Record the smallest valid scope decision explicitly: v1.0 ships the current read-only `AidsPanel`/`DiffViewer`/`SuggestionHistory` review surface backed by `GET /v1/story-development/drafting/revision-suggestions`, and callback-backed accept/reject remains deferred until a backend write contract exists.",
+    "responsible_file": "TODO.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit frontend or backend code files.",
+      "Do not mark `V1-003` complete if the text would imply shipped accept/reject mutations.",
+      "Do not change unrelated backlog items outside the `### v1.0 Release Checklist` section.",
+      "Do not add a speculative route name for suggestion acceptance or rejection."
+    ],
+    "knowledge_base": [
+      "The active backlog entry `V1-003` already references `AidsPanel` and notes that acceptance/rejection actions are pending backend endpoints.",
+      "The current write workspace lives in `frontend/src/views/WritingView.tsx` and renders `AidsPanel` with `suggestions` only.",
+      "The revision-suggestion read endpoint already exists at `GET /v1/story-development/drafting/revision-suggestions?project_id={id}` with optional `target_document_id`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "todo_section": "### v1.0 Release Checklist",
+        "target_item": "V1-003 Ship a complete manuscript aids workflow inside the routed writing experience",
+        "exact_symbols": [
+          "AidsPanel",
+          "DiffViewer",
+          "SuggestionHistory",
+          "GET /v1/story-development/drafting/revision-suggestions"
+        ]
+      },
+      "output_data_schema": {
+        "backlog_state": [
+          "The `V1-003` text explicitly describes the v1.0 shipped behavior as read-only suggestion review.",
+          "The `V1-003` text explicitly defers callback-backed accept/reject until a backend write contract exists.",
+          "The item text contains no `either/or` implementation language."
+        ]
+      },
+      "external_refs": [
+        "TODO.md",
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/components/aids/AidsPanel.tsx",
+        "app/api/story_development.py"
+      ]
+    },
+    "utilized_features": [
+      "Markdown backlog checklist in `TODO.md`",
+      "Existing route `GET /v1/story-development/drafting/revision-suggestions`"
+    ],
+    "expected_outcomes": [
+      "The `V1-003` entry in `TODO.md` reflects a deterministic read-only v1.0 scope decision.",
+      "The file no longer frames accept/reject as an unbounded implementation item for the current v1.0 wave.",
+      "No code changes are introduced."
+    ]
+  },
+  {
+    "task_id": "4b3fd5bd-510c-49b8-b1fb-378663501e26",
+    "purpose": "Update the `Current Status` and write-workspace references in `README.md` so the active docs stop implying that manuscript suggestion decisions are already shipped. Keep the current routed write capability description exact: `WritingView` reads `ManuscriptDocument`, `DraftArtifact`, and `RevisionSuggestion` records through the existing GET routes, and the routed aids rail is a review surface rather than a backend-backed accept/reject workflow.",
+    "responsible_file": "README.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit code files.",
+      "Do not change the verified validation numbers or build sizes in this task.",
+      "Do not claim a new mutation route, diff-apply workflow, or manuscript rewrite endpoint.",
+      "Do not rewrite unrelated backend architecture sections."
+    ],
+    "knowledge_base": [
+      "The `README.md` `Current Status` section already lists route-driven inspect links and frontend workflow scaffolding.",
+      "The routed write workspace currently lives in `frontend/src/views/WritingView.tsx` and uses `getManuscriptDocuments`, `getDraftArtifacts`, and `getRevisionSuggestions` from `frontend/src/services/drafting.ts`.",
+      "The backend exposes GET drafting endpoints in `app/api/story_development.py` for `draft-artifacts`, `manuscript-documents`, and `revision-suggestions`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "## Current Status",
+          "### Frontend"
+        ],
+        "exact_symbols": [
+          "WritingView",
+          "getManuscriptDocuments",
+          "getDraftArtifacts",
+          "getRevisionSuggestions"
+        ]
+      },
+      "output_data_schema": {
+        "documented_behavior": [
+          "The README states that the write workspace performs real GET reads for manuscript documents, draft artifacts, and revision suggestions.",
+          "The README does not claim that suggestion accept/reject decisions are shipped.",
+          "The README continues to describe the routed write workspace as real API-backed rather than mock-backed."
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/services/drafting.ts",
+        "app/api/story_development.py"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing GET drafting endpoints in `app/api/story_development.py`"
+    ],
+    "expected_outcomes": [
+      "README write-workspace language matches the current codebase: API-backed reads with no documented accept/reject write flow.",
+      "No speculative manuscript-aids mutation capability is introduced in the docs.",
+      "The file remains consistent with `WritingView` and `AidsPanel` as currently implemented."
+    ]
+  }
+]

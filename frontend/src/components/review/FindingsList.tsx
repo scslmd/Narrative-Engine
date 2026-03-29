@@ -105,7 +105,7 @@ export function FindingsList({ projectId }: FindingsListProps) {
 
         {!loading && !error && findings.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            <p>No findings for this project</p>
+            <p>No review findings have been fetched yet. Findings are generated when checker/inspect jobs run on project artifacts such as chapter plans, scene plans, and manuscripts.</p>
           </div>
         )}
 

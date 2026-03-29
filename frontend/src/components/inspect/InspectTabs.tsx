@@ -92,7 +92,7 @@ export default function InspectTabs({ context }: InspectTabsProps) {
             
             {!attemptsLoading && !attemptsError && attempts.length === 0 && (
               <div className="text-center text-sm text-gray-500">
-                No attempts recorded yet
+                No execution attempts found for this job. Run the job to see attempt history.
               </div>
             )}
             

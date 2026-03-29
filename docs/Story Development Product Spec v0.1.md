@@ -70,7 +70,9 @@ The default guided flow should be:
 
 This flow should be project-configurable.
 
-### 4.1 Editable Flow Requirements
+### 4.1 Editable Flow Requirements (Target Product Requirement)
+
+This section describes the target product requirement for editable flow management. Current v1.0 routed behavior provides read projections of flow stages; full mutation support for adding, reordering, and deleting stages is deferred to a future release wave.
 
 Each `StoryFlowStage` should support:
 
@@ -217,7 +219,9 @@ Each major character should support:
 - `continuity_facts`
 - `writer_notes`
 
-### 8.3 Character Tools
+### 8.3 Character Tools (Target Product Requirement)
+
+Current v1.0 provides character profile editing via the CharacterBuilder routed state. Relationship-map workflows and advanced analysis tools described below are deferred to a future release wave.
 
 - generate or refine character backstory
 - compare character arcs
@@ -273,7 +277,9 @@ Each entry should support:
 
 The user should be able to choose an arc deliberately, compare alternatives, and change the chosen arc without losing project knowledge.
 
-### 10.2 Arc Support Requirements
+### 10.2 Arc Support Requirements (Target Product Requirement)
+
+Current v1.0 provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`. Arc selection mutations, comparison mutations, and arc-driven guidance features described below are deferred to a future release wave.
 
 The system should support:
 
@@ -479,9 +485,9 @@ The main workspace should stay aligned with the current three-pane direction.
 - promises
 - constraints
 
-4. Character Builder
+4. Character Builder (Current v1.0: character profile editing via routed state)
 - character cards
-- relationship map
+- relationship map (deferred to future release; current v1.0 provides profile fields only)
 - arc-change fields
 - contradictions and secrets panel
 
@@ -490,11 +496,11 @@ The main workspace should stay aligned with the current three-pane direction.
 - locations, factions, rules, history
 - continuity warning panel
 
-6. Arc Selection and Comparison
+6. Arc Selection and Comparison (Current v1.0: read-only projections via getArcCandidates, getArcSelections, getArcStageMaps)
 - recommended arcs
-- arc comparison table
+- arc comparison table (deferred to future release; mutations not yet available in v1.0)
 - stage-map preview
-- "stay" versus "pivot" suggestion panel
+- "stay" versus "pivot" suggestion panel (deferred to future release)
 
 7. Planning Board
 - sequence view

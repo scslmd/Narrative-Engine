@@ -68,10 +68,19 @@ def test_health_metrics_jobs_section_has_status_buckets() -> None:
     assert 'COMPLETED' in jobs
     assert 'FAILED' in jobs
     
-    # Check that all values are non-negative integers
-    for status, count in jobs.items():
+    # Check that status counts are non-negative integers
+    for status in ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED']:
+        count = jobs[status]
         assert isinstance(count, int)
         assert count >= 0
+    
+    # Check that rate fields exist and are floats between 0 and 1
+    assert 'success_rate' in jobs
+    assert 'failure_rate' in jobs
+    assert isinstance(jobs['success_rate'], float)
+    assert isinstance(jobs['failure_rate'], float)
+    assert 0.0 <= jobs['success_rate'] <= 1.0
+    assert 0.0 <= jobs['failure_rate'] <= 1.0
 
 
 def test_health_metrics_role_model_checker_section_has_status_buckets() -> None:
@@ -89,10 +98,19 @@ def test_health_metrics_role_model_checker_section_has_status_buckets() -> None:
     assert 'COMPLETED' in checker
     assert 'FAILED' in checker
     
-    # Check that all values are non-negative integers
-    for status, count in checker.items():
+    # Check that status counts are non-negative integers
+    for status in ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']:
+        count = checker[status]
         assert isinstance(count, int)
         assert count >= 0
+    
+    # Check that rate fields exist and are floats between 0 and 1
+    assert 'success_rate' in checker
+    assert 'failure_rate' in checker
+    assert isinstance(checker['success_rate'], float)
+    assert isinstance(checker['failure_rate'], float)
+    assert 0.0 <= checker['success_rate'] <= 1.0
+    assert 0.0 <= checker['failure_rate'] <= 1.0
 
 
 def test_health_metrics_endpoint_no_auth_required() -> None:

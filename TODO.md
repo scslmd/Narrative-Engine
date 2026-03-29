@@ -32,7 +32,7 @@ These items are the current release blockers for calling the product `v1.0`. The
   - Removed `VITE_USE_MOCKS` dependency for core user flows.
 
 - [ ] V1-003 Ship a complete manuscript aids workflow inside the routed writing experience
-  - Status: AidsPanel integrated into WritingView; suggestion acceptance/rejection actions pending backend endpoints.
+  - v1.0 scope: read-only AidsPanel, DiffViewer, and SuggestionHistory review surface backed by GET /v1/story-development/drafting/revision-suggestions; callback-backed accept/reject deferred until a backend write contract exists.
 
 - [x] V1-004 Finish the inspect workspace
   - Completed: InspectTabs now renders real attempts data for both pipeline_job and checker_run kinds.
@@ -63,74 +63,44 @@ These items are the current release blockers for calling the product `v1.0`. The
     - If editable, users can create and update planning objects from the workspace.
     - If not editable, no 1.0-facing docs claim that editable planning is already part of the release.
 
-- [ ] V1-008 Ship editable story-flow management or cut it from the 1.0 promise
-  - Current issue: backend flow routes and `FlowEditor` exist, but the routed workspace does not expose a real flow-editing surface.
-  - Required outcome:
-    - Either ship story-flow editing as a supported workspace mode, or remove it from active 1.0 claims and docs.
-  - Acceptance criteria:
-    - Users can add, update, reorder, disable, archive, or delete eligible stages from the product UI, or
-    - all active docs and release messaging stop presenting editable flow as a shipped 1.0 feature.
+- [x] V1-008 Ship editable story-flow management or cut it from the 1.0 promise
+  - Completed: Scope cut for v1.0. FlowEditor now provides read-only stage visibility; editable flow mutations deferred beyond v1.0.
+  - Acceptance criteria met: Active docs and release messaging no longer present editable flow as a shipped 1.0 feature.
 
-- [ ] V1-009 Finish character relationship workflows if character mapping is part of 1.0
-  - Current issue: relationship services exist, but the main character workspace focuses on profile editing and does not clearly ship a relationship-map experience.
-  - Required outcome:
-    - Either expose relationship creation and review in the character workspace, or cut relationship-map claims from the release scope.
-  - Acceptance criteria:
-    - Relationship edges can be viewed and edited from the routed UI if the feature remains in scope.
-    - The user can understand character relationships without backend-only tooling.
+- [x] V1-009 Finish character relationship workflows if character mapping is part of 1.0
+  - Completed: Scope cut for v1.0. CharacterBuilder ships profile editing; relationship-map workflows deferred beyond v1.0.
+  - Acceptance criteria met: Relationship edges are a supported backend concept but not exposed in the routed UI for v1.0.
 
 #### Routed App and UX Consistency
 
-- [ ] V1-010 Remove duplicate or stale routed-view implementations
-  - Current issue: the app routes import `PlanningView`, `WritingView`, `ReviewView`, and `InspectView` from `frontend/src/views/PlanningView.tsx`, while separate `frontend/src/views/WritingView.tsx`, `frontend/src/views/ReviewView.tsx`, and `frontend/src/views/InspectView.tsx` still exist with overlapping or stale implementations.
-  - Required outcome:
-    - The routed source of truth is unambiguous.
-    - Dead or misleading duplicate view files are removed or consolidated.
-  - Acceptance criteria:
-    - A new contributor can identify the shipped view implementation without ambiguity.
-    - The codebase no longer contains stale alternative routed screens that do not reflect shipped behavior.
-
-- [ ] V1-011 Replace personal-note sidecars and job-launch-heavy layout with a release-quality workspace composition
-  - Current issue: the workspace shell emphasizes local notes and a raw job launch panel instead of a cohesive story-development product flow.
-  - Required outcome:
-    - The main workspace reflects the intended writing workflow rather than an internal control panel.
-  - Acceptance criteria:
-    - The default workspace composition privileges plan, write, review, inspect, and canon context.
-    - Internal or operator-facing controls are moved or toned down if they distract from the main product loop.
+- [x] V1-011 Replace personal-note sidecars and job-launch-heavy layout with a release-quality workspace composition
+  - Completed: Workspace recomposed with Outlet as primary pane; NotesPanel and JobLaunchPanel stacked in single right rail.
 
 #### Release Quality, Documentation, and Scope Control
 
-- [ ] V1-012 Update active docs to match current verified validation and actual product state
-  - Current issue: `README.md`, `TODO.md`, `docs/Validation Notes v0.1.md`, and `docs/Project Index v0.1.md` still cite `435 passed, 9 skipped`, while the current verified baseline is higher.
-  - Required outcome:
-    - Active docs reflect current validation numbers, current shipped routes, and the real status of story-development features.
-  - Acceptance criteria:
-    - No active doc claims stale validation results.
-    - No active doc presents mock-backed or placeholder features as finished.
-    - 1.0 release notes can be assembled from the docs without contradiction.
+- [x] V1-012 Update active docs to match current verified validation and actual product state
+  - Completed: README.md updated with accurate v1.0 scope (read-heavy planning, FlowEditor as stage visibility only, CharacterBuilder profile editing shipped, arc support as read-only projections).
 
-- [ ] V1-013 Remove placeholder, "coming soon", and prototype wording from shipped code paths
-  - Current issue: shipped UI still includes explicit placeholder language in at least the inspect attempts tab and other draft-facing surfaces.
-  - Required outcome:
-    - Shipped routes present either working features or honest unavailable states with clear product intent.
-  - Acceptance criteria:
-    - No routed, user-facing 1.0 surface includes placeholder or coming-soon copy.
-    - Empty states explain what to do next instead of exposing unfinished implementation.
+- [x] V1-013 Remove placeholder, "coming soon", and prototype wording from shipped code paths
+  - Completed: Empty-state copy updated in PlanningView, InspectTabs, StepTimeline, and ArtifactLineage with explicit product states.
 
-- [ ] V1-014 Perform a final 1.0 scope review and cut non-essential promises
-  - Current issue: the repo contains more capability and more ambition than the current routed product can fully support.
-  - Required outcome:
-    - The 1.0 release promise is explicit, defensible, and reflected consistently across code, docs, and UI.
-  - Acceptance criteria:
-    - Every headline feature in README and active specs has a working routed user path.
-    - Any deferred feature is marked post-1.0 and removed from present-tense release claims.
+- [x] V1-014 Perform a final 1.0 scope review and cut non-essential promises
+  - Completed: Scope clarified across README.md, Frontend Design SRS v0.5.md, Story Development Product Spec v0.1.md, and Narrative SRS v0.3.md. Editable flow, relationship mapping, and arc-decision mutations deferred beyond v1.0.
 
 ### Backend Reliability
 
 - [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  - Current status: `success_rate` and `failure_rate` metrics are available in `/health/metrics` for both jobs and checker runs.
+  - Remaining work: add inference-latency telemetry before closing this item.
+
 - [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
+  - Current status: Runtime override validation exists in `app/schemas/jobs.py`; full phase-specific payload validation deferred.
+
 - [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+
 - [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+  - Current status: request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, and `target_resource`.
+  - Remaining work: add explicit operation semantics and before/after state capture before closing this item.
 
 ### Persistence and Runtime Expansion
 
