@@ -4,7 +4,7 @@ import type { BrainstormItem, BrainstormItemCreateRequest } from '../../types/br
 interface BrainstormWorkspaceProps {
   projectId: string;
   items?: BrainstormItem[];
-  onItemAdd?: (item: BrainstormItem) => void;
+  onItemAdd?: (item: BrainstormItemCreateRequest) => void;
   onItemUpdate?: (item: BrainstormItem) => void;
   onItemDelete?: (itemId: string) => void;
   onClusterCreate?: (itemIds: string[]) => void;
@@ -12,6 +12,7 @@ interface BrainstormWorkspaceProps {
 }
 
 export function BrainstormWorkspace({
+  projectId,
   items = [],
   onItemAdd,
   onItemDelete,
@@ -37,13 +38,14 @@ export function BrainstormWorkspace({
     if (!newItemContent.trim()) return;
 
     const newItem: BrainstormItemCreateRequest = {
+      project_id: projectId,
       content: newItemContent.trim(),
       item_type: newItemType,
     };
 
-    onItemAdd?.(newItem as BrainstormItem);
+    onItemAdd?.(newItem);
     setNewItemContent('');
-  }, [newItemContent, newItemType, onItemAdd]);
+  }, [newItemContent, newItemType, onItemAdd, projectId]);
 
   const handleToggleSelect = useCallback((itemId: string) => {
     setSelectedItems(prev => {
@@ -231,14 +233,14 @@ function BrainstormCard({ item, selected, onSelect, onPromote, onDelete }: Brain
             className="px-2 py-1 text-xs bg-purple-50 text-purple-700 rounded hover:bg-purple-100"
             title="Promote to Character"
           >
-            → Character
+            to Character
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onPromote('setting'); }}
             className="px-2 py-1 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100"
             title="Promote to Setting"
           >
-            → Setting
+            to Setting
           </button>
         </div>
         <button

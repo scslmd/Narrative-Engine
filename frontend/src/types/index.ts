@@ -1,5 +1,5 @@
 export type { Provenance } from './provenance';
-export type { BibleEntry, BibleEntryType } from './bible';
+export type { BibleEntry, BibleEntryType, WorldBibleEntry, WorldBibleEntryType } from './bible';
 export type { 
   StepRecord, 
   StepState, 
@@ -13,3 +13,49 @@ export type { ModelCatalog, RoleModelCheckStatus, CheckerStatus } from './checke
 export type { StoryBranch, BranchComparisonRecord, BranchMergeDecision, BranchStateRef } from './branches';
 export type { StoryDecisionNode, StoryDecisionPath } from './decisions';
 export type { InspectRunLink } from './inspectLinks';
+
+// Planning types
+export type {
+  SequencePlan,
+  ChapterPlan,
+  ScenePlan,
+  ChapterPacket,
+  PlanningDependency,
+  BeatPlan,
+} from './planning';
+
+// Arcs types
+export type {
+  ArcCandidate,
+  ArcSelection,
+  ArcStageMap,
+  ArcComparisonRecord,
+  ArcComparisonCandidateRecord,
+} from './arcs';
+
+// Brainstorm types
+export type {
+  BrainstormItem,
+  BrainstormPromotion,
+  BrainstormItemCreateRequest,
+  BrainstormItemClusterRequest,
+  BrainstormItemPromoteRequest,
+} from './brainstorm';
+
+// Foundation types
+export type {
+  FoundationProfile,
+  FoundationRevision,
+  FoundationReviewCue,
+  FoundationCreateRequest,
+  FoundationUpdateRequest,
+} from './foundation';
+
+// Character types
+export type {
+  CharacterProfile,
+  RelationshipEdge,
+  CharacterProfileCreateRequest,
+  CharacterProfileUpdateRequest,
+  RelationshipEdgeCreateRequest,
+} from './characters';

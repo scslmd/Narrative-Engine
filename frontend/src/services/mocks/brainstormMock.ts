@@ -5,7 +5,7 @@
  * Uses 2000ms delay and project-scoped in-memory storage.
  */
 
-import type { BrainstormItem, BrainstormItemCreateRequest, BrainstormClusterRequest } from '../../types/brainstorm';
+import type { BrainstormItem, BrainstormItemCreateRequest, BrainstormClusterRequest, BrainstormItemState } from '../../types/brainstorm';
 
 const DELAY_MS = 2000;
 
@@ -39,13 +39,15 @@ export async function createBrainstormItem(
     item_id: crypto.randomUUID(),
     project_id: projectId,
     content: request.content,
+    status: request.status || 'keep',
+    state: (request.state || 'KEEP') as BrainstormItemState,
     item_type: request.item_type || 'IDEA',
-    state: request.state || 'KEEP',
     tags: request.tags || [],
     cluster_id: request.cluster_id || null,
     promoted_to: null,
     promoted_at: null,
     created_at: new Date().toISOString(),
+    source_notes: null,
   };
   
   items.unshift(newItem);
