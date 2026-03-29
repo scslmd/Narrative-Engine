@@ -20,6 +20,7 @@ export interface StepRecord {
 
 export interface InspectContext {
   jobId: string;
+  runKind: 'pipeline_job' | 'role_model_check';
   attemptNumber?: number;
 }
 
@@ -45,4 +46,36 @@ export interface ArtifactLineageView {
     model?: string;
     backend_name?: string;
   };
+}
+
+export interface AttemptHistoryItem {
+  attempt_number: number;
+  status: string;
+  executor_name: string | null;
+  executor_instance_id: string | null;
+  queue_delay_ms: number | null;
+  lease_owner: string | null;
+  lease_expires_at: string | null;
+  claimed_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  last_heartbeat_at: string | null;
+  finish_reason: string | null;
+  failure_stage: string | null;
+  retryable: boolean | null;
+  retry_reason: string | null;
+  error_code: string | null;
+  error_category: string | null;
+}
+
+export interface JobAttemptHistoryResponse {
+  job_id: string;
+  items: AttemptHistoryItem[];
+  meta: Record<string, string>;
+}
+
+export interface RoleModelCheckAttemptHistoryResponse {
+  run_id: string;
+  items: AttemptHistoryItem[];
+  meta: Record<string, string>;
 }

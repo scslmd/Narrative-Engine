@@ -7,15 +7,18 @@ export default function InspectMode() {
   const { jobId: routeJobId } = useParams<{ jobId?: string }>();
   const navigate = useNavigate();
   const { inspectContext, setInspectContext, projectId } = useUIStore();
-  const activeContext = inspectContext?.jobId === routeJobId
-    ? inspectContext
-    : routeJobId
-      ? { jobId: routeJobId }
-      : inspectContext;
-
+  
   useEffect(() => {
     if (routeJobId && (!inspectContext || inspectContext.jobId !== routeJobId)) {
-      setInspectContext({ jobId: routeJobId });
+      const runKind: 'pipeline_job' | 'role_model_check' = 
+        inspectContext?.jobId === routeJobId ? inspectContext.runKind : 'pipeline_job';
+      const attemptNumber = inspectContext?.jobId === routeJobId ? inspectContext.attemptNumber : undefined;
+      
+      setInspectContext({ 
+        jobId: routeJobId, 
+        runKind,
+        attemptNumber 
+      });
     }
   }, [routeJobId, inspectContext, setInspectContext]);
 
@@ -27,7 +30,7 @@ export default function InspectMode() {
     }
   };
 
-  if (!activeContext?.jobId) {
+  if (!inspectContext?.jobId) {
     return (
       <div className="h-full flex items-center justify-center">
         <p className="text-sm text-gray-500">Select a job to inspect</p>
@@ -40,8 +43,9 @@ export default function InspectMode() {
       <header className="border-b px-4 py-3 bg-white">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Inspect Job</h2>
-            <p className="text-sm text-gray-500">Job ID: {activeContext.jobId}</p>
+            <h2 className="text-lg font-semibold text-gray-900">Inspect Run</h2>
+            <p className="text-sm text-gray-500">Run ID: {inspectContext.jobId}</p>
+            <p className="text-sm text-gray-500">Run Kind: {inspectContext.runKind}</p>
           </div>
 
           <button
@@ -54,7 +58,7 @@ export default function InspectMode() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        <InspectTabs context={activeContext} />
+        <InspectTabs context={inspectContext} />
       </main>
     </div>
   );

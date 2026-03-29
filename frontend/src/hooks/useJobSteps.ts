@@ -9,7 +9,7 @@ interface UseJobStepsResult {
   refetch: () => void;
 }
 
-export function useJobSteps(jobId: string, attemptNumber?: number): UseJobStepsResult {
+export function useJobSteps(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number): UseJobStepsResult {
   const [steps, setSteps] = useState<StepRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,20 +26,24 @@ export function useJobSteps(jobId: string, attemptNumber?: number): UseJobStepsR
         params.attempt = attemptNumber.toString();
       }
 
-      const response = await api.get(`/jobs/${jobId}/steps`, { params });
+      const endpoint = runKind === 'pipeline_job' 
+        ? `/jobs/${jobId}/steps`
+        : `/role-model-checker/${jobId}/steps`;
+      
+      const response = await api.get(endpoint, { params });
       
       if (response.status !== 200) {
         throw new Error(`Failed to fetch steps: ${response.status}`);
       }
 
-      setSteps(response.data.steps || []);
+      setSteps(response.data.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setSteps([]);
     } finally {
       setLoading(false);
     }
-  }, [jobId, attemptNumber]);
+  }, [jobId, runKind, attemptNumber]);
 
   useEffect(() => {
     fetchSteps();

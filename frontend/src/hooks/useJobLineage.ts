@@ -9,7 +9,7 @@ interface UseJobLineageResult {
   refetch: () => void;
 }
 
-export function useJobLineage(jobId: string, attemptNumber?: number): UseJobLineageResult {
+export function useJobLineage(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number): UseJobLineageResult {
   const [artifacts, setArtifacts] = useState<ArtifactLineageView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,20 +26,24 @@ export function useJobLineage(jobId: string, attemptNumber?: number): UseJobLine
         params.attempt = attemptNumber.toString();
       }
 
-      const response = await api.get(`/jobs/${jobId}/lineage`, { params });
+      const endpoint = runKind === 'pipeline_job' 
+        ? `/jobs/${jobId}/lineage`
+        : `/role-model-checker/${jobId}/lineage`;
+      
+      const response = await api.get(endpoint, { params });
       
       if (response.status !== 200) {
         throw new Error(`Failed to fetch lineage: ${response.status}`);
       }
 
-      setArtifacts(response.data.artifacts || []);
+      setArtifacts(response.data.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setArtifacts([]);
     } finally {
       setLoading(false);
     }
-  }, [jobId, attemptNumber]);
+  }, [jobId, runKind, attemptNumber]);
 
   useEffect(() => {
     fetchLineage();

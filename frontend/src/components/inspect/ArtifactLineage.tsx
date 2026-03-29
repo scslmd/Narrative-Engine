@@ -7,8 +7,8 @@ interface ArtifactLineageProps {
 }
 
 export default function ArtifactLineage({ context }: ArtifactLineageProps) {
-  const { jobId, attemptNumber } = context;
-  const { artifacts, loading, error, refetch } = useJobLineage(jobId, attemptNumber);
+  const { jobId, runKind, attemptNumber } = context;
+  const { artifacts, loading, error, refetch } = useJobLineage(jobId, runKind, attemptNumber);
 
   if (loading) {
     return (

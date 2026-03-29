@@ -17,16 +17,6 @@ export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getRunKindColor = (kind: string) => {
     switch (kind.toLowerCase()) {
       case 'architect':
@@ -56,13 +46,22 @@ export function InspectRunLinkCard({ link }: InspectRunLinkCardProps) {
 
       <div className="space-y-2 mt-3">
         <div className="text-sm">
-          <span className="font-medium text-gray-700">Finding ID:</span>
-          <span className="ml-2 text-gray-600">{link.finding_id.substring(0, 8)}...</span>
+          <span className="font-medium text-gray-700">Object:</span>
+          <span className="ml-2 text-gray-600">{link.object_kind}: {link.object_id.substring(0, 12)}...</span>
         </div>
 
-        <div className="text-xs text-gray-500">
-          Created: {formatDate(link.created_at)}
-        </div>
+        {link.label && (
+          <div className="text-sm">
+            <span className="font-medium text-gray-700">Label:</span>
+            <span className="ml-2 text-gray-600">{link.label}</span>
+          </div>
+        )}
+
+        {link.attempt_number !== null && (
+          <div className="text-xs text-gray-500">
+            Attempt: #{link.attempt_number}
+          </div>
+        )}
       </div>
 
       <button

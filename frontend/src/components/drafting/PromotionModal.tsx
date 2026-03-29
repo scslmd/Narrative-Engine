@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
-import { promoteDraftToManuscript, isMockMode } from '../../services/drafting';
+import { promoteDraftToManuscript } from '../../services/drafting';
 import { toast } from '../../lib/toast';
 
 interface PromotionModalProps {
@@ -43,12 +43,6 @@ export default function PromotionModal({ artifact, projectId, onClose, onSuccess
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        {isMockMode() && (
-          <div className="bg-yellow-100 border-b border-yellow-300 px-4 py-2 text-sm text-yellow-800">
-            Mock mode enabled - promotion will simulate backend behavior
-          </div>
-        )}
-
         <div className="p-6">
           <h2 className="text-xl font-semibold mb-4">Promote Draft to Manuscript</h2>
 

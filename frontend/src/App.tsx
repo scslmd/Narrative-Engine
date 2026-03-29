@@ -3,7 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ProjectList } from './views/ProjectList'
 import { Workspace } from './views/Workspace'
-import { PlanningView, WritingView, ReviewView, InspectView } from './views/PlanningView'
+import { PlanningView } from './views/PlanningView'
+import { WritingView } from './views/WritingView'
+import { ReviewView } from './views/ReviewView'
+import { InspectView } from './views/InspectView'
 
 const queryClient = new QueryClient({
   defaultOptions: {

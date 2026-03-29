@@ -2,21 +2,32 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { ManifestViewer } from '../components/ManifestViewer';
-import { SequenceViewer } from '../components/SequenceViewer';
-import { InspectMode } from '../components/inspect';
-import { FindingsList } from '../components/review';
 import { RoleModelChecker } from '../components/checker';
 import { StoryBranchesList } from '../components/branches';
 import { DecisionTree } from '../components/decisions';
-import { InspectRunLinksList } from '../components/inspectLinks';
 import { BrainstormWorkspace } from '../components/brainstorm/BrainstormWorkspace';
 import { FoundationEditor } from '../components/foundation/FoundationEditor';
 import { CharacterBuilder } from '../components/characters/CharacterBuilder';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
+import FlowEditor from '../components/flow/FlowEditor';
 import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from '../services/brainstorm';
 import { getFoundation, createFoundation, updateFoundation } from '../services/foundation';
 import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
 import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
+import {
+  getSequencePlans,
+  getChapterPlans,
+  getScenePlans,
+  getPlanningDependencies,
+  getChapterPackets,
+} from '../services/planning';
+import {
+  getArcCandidates,
+  getArcSelections,
+  getArcStageMaps,
+  getSelectedArc,
+  getStageMapForArc,
+} from '../services/arcs';
 import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
@@ -24,10 +35,12 @@ import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpda
 
 type PlanningTab =
   | 'manifest'
-  | 'sequences'
-  | 'checker'
+  | 'planning'
+  | 'flow'
+  | 'arcs'
   | 'branches'
   | 'decisions'
+  | 'checker'
   | 'brainstorm'
   | 'foundation'
   | 'characters'
@@ -64,6 +77,54 @@ export function PlanningView() {
     queryKey: ['planning', 'world-bible', projectId],
     queryFn: () => getWorldBibleEntries(projectId || ''),
     enabled: Boolean(projectId) && activeTab === 'world-bible',
+  });
+
+  const sequencePlansQuery = useQuery({
+    queryKey: ['planning-sequence-plans', projectId],
+    queryFn: () => getSequencePlans(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const chapterPlansQuery = useQuery({
+    queryKey: ['planning-chapter-plans', projectId],
+    queryFn: () => getChapterPlans(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const scenePlansQuery = useQuery({
+    queryKey: ['planning-scene-plans', projectId],
+    queryFn: () => getScenePlans(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const dependenciesQuery = useQuery({
+    queryKey: ['planning-dependencies', projectId],
+    queryFn: () => getPlanningDependencies(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const chapterPacketsQuery = useQuery({
+    queryKey: ['planning-chapter-packets', projectId],
+    queryFn: () => getChapterPackets(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const arcCandidatesQuery = useQuery({
+    queryKey: ['arc-candidates', projectId],
+    queryFn: () => getArcCandidates(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'arcs',
+  });
+
+  const arcSelectionsQuery = useQuery({
+    queryKey: ['arc-selections', projectId],
+    queryFn: () => getArcSelections(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'arcs',
+  });
+
+  const arcStageMapsQuery = useQuery({
+    queryKey: ['arc-stage-maps', projectId],
+    queryFn: () => getArcStageMaps(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'arcs',
   });
 
   const brainstormCreateMutation = useMutation({
@@ -173,6 +234,18 @@ export function PlanningView() {
     : null;
   const worldBibleEntries = worldBibleQuery.data ?? [];
 
+  const sequencePlans = sequencePlansQuery.data ?? [];
+  const chapterPlans = chapterPlansQuery.data ?? [];
+  const scenePlans = scenePlansQuery.data ?? [];
+  const dependencies = dependenciesQuery.data ?? [];
+  const chapterPackets = chapterPacketsQuery.data ?? [];
+
+  const arcCandidates = arcCandidatesQuery.data ?? [];
+  const arcSelections = arcSelectionsQuery.data ?? [];
+  const arcStageMaps = arcStageMapsQuery.data ?? [];
+  const selectedArc = arcSelections.length > 0 ? getSelectedArc(arcSelections, projectId) : null;
+  const selectedArcStageMap = selectedArc ? getStageMapForArc(arcStageMaps, selectedArc.arc_id) : undefined;
+
   return (
     <div className="h-full flex flex-col">
       <header className="border-b px-4 py-2 bg-white">
@@ -184,10 +257,22 @@ export function PlanningView() {
             Manifest
           </button>
           <button
-            onClick={() => setActiveTab('sequences')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'sequences' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            onClick={() => setActiveTab('planning')}
+            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'planning' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
           >
-            Sequences
+            Planning
+          </button>
+          <button
+            onClick={() => setActiveTab('flow')}
+            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'flow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            Flow
+          </button>
+          <button
+            onClick={() => setActiveTab('arcs')}
+            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'arcs' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            Arcs
           </button>
           <button
             onClick={() => setActiveTab('branches')}
@@ -239,7 +324,169 @@ export function PlanningView() {
 
       <main className="flex-1 overflow-y-auto pr-2">
         {activeTab === 'manifest' && <ManifestViewer projectId={projectId} />}
-        {activeTab === 'sequences' && <SequenceViewer projectId={projectId} />}
+        
+        {activeTab === 'planning' && (
+          <div className="p-4 space-y-6">
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Sequences ({sequencePlans.length})</h3>
+              {sequencePlansQuery.isLoading ? (
+                <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." />
+              ) : sequencePlans.length === 0 ? (
+                <p className="text-sm text-gray-500">No sequence plans yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {sequencePlans.map((seq) => (
+                    <div key={seq.sequence_id} className="p-3 bg-white border rounded">
+                      <div className="font-medium text-gray-900">{seq.title}</div>
+                      {seq.summary && <p className="text-sm text-gray-600 mt-1">{seq.summary}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Chapters ({chapterPlans.length})</h3>
+              {chapterPlansQuery.isLoading ? (
+                <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." />
+              ) : chapterPlans.length === 0 ? (
+                <p className="text-sm text-gray-500">No chapter plans yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {chapterPlans.map((chap) => (
+                    <div key={chap.chapter_id} className="p-3 bg-white border rounded">
+                      <div className="font-medium text-gray-900">{chap.title}</div>
+                      {chap.sequence_id && <span className="text-xs text-gray-500">Sequence: {chap.sequence_id}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Scenes ({scenePlans.length})</h3>
+              {scenePlansQuery.isLoading ? (
+                <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." />
+              ) : scenePlans.length === 0 ? (
+                <p className="text-sm text-gray-500">No scene plans yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {scenePlans.map((scene) => (
+                    <div key={scene.scene_id} className="p-3 bg-white border rounded">
+                      <div className="font-medium text-gray-900">{scene.title}</div>
+                      {scene.chapter_id && <span className="text-xs text-gray-500">Chapter: {scene.chapter_id}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Dependencies ({dependencies.length})</h3>
+              {dependenciesQuery.isLoading ? (
+                <WorkspaceStatus title="Loading dependencies" detail="Fetching planning dependencies..." />
+              ) : dependencies.length === 0 ? (
+                <p className="text-sm text-gray-500">No dependencies defined yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {dependencies.map((dep) => (
+                    <div key={dep.dependency_id} className="p-3 bg-white border rounded text-sm">
+                      <span className="text-gray-700">{dep.upstream_id}</span>
+                      <span className="mx-2">→</span>
+                      <span className="text-gray-700">{dep.downstream_id}</span>
+                      {dep.reason && (
+                        <div className="mt-1 text-xs text-gray-500 italic">{dep.reason}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Chapter Packets ({chapterPackets.length})</h3>
+              {chapterPacketsQuery.isLoading ? (
+                <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." />
+              ) : chapterPackets.length === 0 ? (
+                <p className="text-sm text-gray-500">No chapter packets yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {chapterPackets.map((packet) => (
+                    <div key={packet.packet_id} className="p-3 bg-white border rounded">
+                      <div className="font-medium text-gray-900">{packet.chapter_id}</div>
+                      <span className="text-xs text-gray-500">{packet.included_reference_ids.length} references included</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'flow' && (
+          <div className="h-full">
+            <FlowEditor projectId={projectId} />
+          </div>
+        )}
+
+        {activeTab === 'arcs' && (
+          <div className="p-4 space-y-6">
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">Selected Arc</h3>
+              {arcSelectionsQuery.isLoading ? (
+                <WorkspaceStatus title="Loading arc selections" detail="Fetching selected arcs..." />
+              ) : selectedArc ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded">
+                  <div className="font-medium text-gray-900">{selectedArc.arc_id}</div>
+                  {selectedArc.summary && <p className="text-sm text-gray-600 mt-1">{selectedArc.summary}</p>}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No arc selected yet</p>
+              )}
+            </section>
+
+            {selectedArc && selectedArcStageMap && (
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Selected Arc Stage Map</h3>
+                {arcStageMapsQuery.isLoading ? (
+                  <WorkspaceStatus title="Loading stage maps" detail="Fetching arc stage mappings..." />
+                ) : (
+                  <div className="p-4 bg-white border rounded">
+                    <div className="text-sm text-gray-600">
+                      <div>Stage Kinds: {selectedArcStageMap.stage_kinds.join(', ')}</div>
+                      {selectedArcStageMap.notes && (
+                        <div className="mt-2 italic">{selectedArcStageMap.notes}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            <section>
+              <h3 className="font-semibold text-gray-900 mb-2">All Arc Candidates ({arcCandidates.length})</h3>
+              {arcCandidatesQuery.isLoading ? (
+                <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." />
+              ) : arcCandidates.length === 0 ? (
+                <p className="text-sm text-gray-500">No arc candidates yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {arcCandidates.map((candidate) => {
+                    const isSelected = selectedArc?.arc_id === candidate.arc_id;
+                    return (
+                      <div key={candidate.arc_id} className={`p-3 border rounded ${isSelected ? 'bg-green-50 border-green-300' : 'bg-white'}`}>
+                        <div className="font-medium text-gray-900">{candidate.name}</div>
+                        {candidate.summary && <p className="text-sm text-gray-600 mt-1">{candidate.summary}</p>}
+                        {isSelected && <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">Selected</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
         {activeTab === 'branches' && (
           <div className="p-4">
             <StoryBranchesList projectId={projectId} />
@@ -386,77 +633,6 @@ export function PlanningView() {
           </div>
         )}
       </main>
-    </div>
-  );
-}
-
-export function WritingView() {
-  const { projectId } = useParams<{ projectId: string }>();
-
-  if (!projectId) {
-    return <div className="text-gray-500">No project selected</div>;
-  }
-
-  return (
-    <div className="h-full overflow-y-auto pr-2">
-      <SequenceViewer projectId={projectId} />
-    </div>
-  );
-}
-
-export function ReviewView() {
-  const { projectId } = useParams<{ projectId: string }>();
-  const [activeTab, setActiveTab] = useState<'findings' | 'links'>('findings');
-
-  if (!projectId) {
-    return <div className="text-gray-500">No project selected</div>;
-  }
-
-  return (
-    <div className="h-full flex flex-col">
-      <header className="border-b px-4 py-2 bg-white">
-        <nav className="flex gap-4">
-          <button
-            onClick={() => setActiveTab('findings')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'findings' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Findings
-          </button>
-          <button
-            onClick={() => setActiveTab('links')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'links' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Inspect Run Links
-          </button>
-        </nav>
-      </header>
-
-      <main className="flex-1 overflow-y-auto pr-2">
-        {activeTab === 'findings' && (
-          <div className="p-4">
-            <FindingsList projectId={projectId} />
-          </div>
-        )}
-        {activeTab === 'links' && (
-          <div className="p-4">
-            <InspectRunLinksList projectId={projectId} />
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
-
-export function InspectView() {
-  const { projectId } = useParams<{ projectId: string; jobId?: string }>();
-
-  if (!projectId) {
-    return <div className="text-gray-500">No project selected</div>;
-  }
-
-  return (
-    <div className="h-full">
-      <InspectMode />
     </div>
   );
 }

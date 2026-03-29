@@ -4,7 +4,7 @@
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -16,6 +16,114 @@
 ## Active Backlog
 
 Detailed acceptance criteria for the active items remain in the sections below. The checklist here is the source of truth for what is still open.
+
+### v1.0 Release Checklist
+
+These items are the current release blockers for calling the product `v1.0`. They are intentionally scoped to end-user product completeness, not just backend capability.
+
+#### Release-Critical Product Completion
+
+- [x] V1-001 Replace the routed `write` workspace stub with a real drafting workspace
+  - Completed: WritingView now renders manuscript documents, draft artifacts, and revision suggestions via React Query.
+  - Routes `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` are fully functional.
+
+- [x] V1-002 Remove mock-backed behavior from all core writing workflows
+  - Completed: Replaced mock drafting client with real API calls in `frontend/src/services/drafting.ts`.
+  - Removed `VITE_USE_MOCKS` dependency for core user flows.
+
+- [ ] V1-003 Ship a complete manuscript aids workflow inside the routed writing experience
+  - Status: AidsPanel integrated into WritingView; suggestion acceptance/rejection actions pending backend endpoints.
+
+- [x] V1-004 Finish the inspect workspace
+  - Completed: InspectTabs now renders real attempts data for both pipeline_job and checker_run kinds.
+  - Attempts tab shows attempt_number, status, timestamps, finish_reason, and error_code.
+
+- [x] V1-005 Fix the review workspace so it is usable without manual refresh workarounds
+  - Completed: FindingsList auto-loads on mount and re-fetches when filters change via useCallback/useEffect pattern.
+
+#### Story-Development Scope Required For v1.0
+
+- [ ] V1-006 Ship an arc selection and comparison product surface
+  - Current issue: arc services and types exist, but the routed workspace does not expose a real arc UI and the backend surface is currently read-oriented.
+  - Required outcome:
+    - Users can view arc candidates, see current selections, inspect stage maps, and make or revise arc decisions from the product.
+  - Acceptance criteria:
+    - The workspace includes a routed or tabbed arc surface.
+    - Arc data is visible without dev-only tooling.
+    - The product promise around arc-aware planning is supported by a real user flow.
+
+- [ ] V1-007 Decide and implement the v1.0 planning contract
+  - Current issue: planning APIs are largely read-only in the current public surface, while the product spec promises sequence, chapter, scene, packet, and dependency workflows.
+  - Required outcome:
+    - Either:
+      - planning create, update, reorder, and packet workflows are shipped for v1.0, or
+      - the 1.0 scope is reduced and docs/UI are updated to remove unsupported promises.
+  - Acceptance criteria:
+    - The shipped product and docs agree on whether planning is read-only or editable.
+    - If editable, users can create and update planning objects from the workspace.
+    - If not editable, no 1.0-facing docs claim that editable planning is already part of the release.
+
+- [ ] V1-008 Ship editable story-flow management or cut it from the 1.0 promise
+  - Current issue: backend flow routes and `FlowEditor` exist, but the routed workspace does not expose a real flow-editing surface.
+  - Required outcome:
+    - Either ship story-flow editing as a supported workspace mode, or remove it from active 1.0 claims and docs.
+  - Acceptance criteria:
+    - Users can add, update, reorder, disable, archive, or delete eligible stages from the product UI, or
+    - all active docs and release messaging stop presenting editable flow as a shipped 1.0 feature.
+
+- [ ] V1-009 Finish character relationship workflows if character mapping is part of 1.0
+  - Current issue: relationship services exist, but the main character workspace focuses on profile editing and does not clearly ship a relationship-map experience.
+  - Required outcome:
+    - Either expose relationship creation and review in the character workspace, or cut relationship-map claims from the release scope.
+  - Acceptance criteria:
+    - Relationship edges can be viewed and edited from the routed UI if the feature remains in scope.
+    - The user can understand character relationships without backend-only tooling.
+
+#### Routed App and UX Consistency
+
+- [ ] V1-010 Remove duplicate or stale routed-view implementations
+  - Current issue: the app routes import `PlanningView`, `WritingView`, `ReviewView`, and `InspectView` from `frontend/src/views/PlanningView.tsx`, while separate `frontend/src/views/WritingView.tsx`, `frontend/src/views/ReviewView.tsx`, and `frontend/src/views/InspectView.tsx` still exist with overlapping or stale implementations.
+  - Required outcome:
+    - The routed source of truth is unambiguous.
+    - Dead or misleading duplicate view files are removed or consolidated.
+  - Acceptance criteria:
+    - A new contributor can identify the shipped view implementation without ambiguity.
+    - The codebase no longer contains stale alternative routed screens that do not reflect shipped behavior.
+
+- [ ] V1-011 Replace personal-note sidecars and job-launch-heavy layout with a release-quality workspace composition
+  - Current issue: the workspace shell emphasizes local notes and a raw job launch panel instead of a cohesive story-development product flow.
+  - Required outcome:
+    - The main workspace reflects the intended writing workflow rather than an internal control panel.
+  - Acceptance criteria:
+    - The default workspace composition privileges plan, write, review, inspect, and canon context.
+    - Internal or operator-facing controls are moved or toned down if they distract from the main product loop.
+
+#### Release Quality, Documentation, and Scope Control
+
+- [ ] V1-012 Update active docs to match current verified validation and actual product state
+  - Current issue: `README.md`, `TODO.md`, `docs/Validation Notes v0.1.md`, and `docs/Project Index v0.1.md` still cite `435 passed, 9 skipped`, while the current verified baseline is higher.
+  - Required outcome:
+    - Active docs reflect current validation numbers, current shipped routes, and the real status of story-development features.
+  - Acceptance criteria:
+    - No active doc claims stale validation results.
+    - No active doc presents mock-backed or placeholder features as finished.
+    - 1.0 release notes can be assembled from the docs without contradiction.
+
+- [ ] V1-013 Remove placeholder, "coming soon", and prototype wording from shipped code paths
+  - Current issue: shipped UI still includes explicit placeholder language in at least the inspect attempts tab and other draft-facing surfaces.
+  - Required outcome:
+    - Shipped routes present either working features or honest unavailable states with clear product intent.
+  - Acceptance criteria:
+    - No routed, user-facing 1.0 surface includes placeholder or coming-soon copy.
+    - Empty states explain what to do next instead of exposing unfinished implementation.
+
+- [ ] V1-014 Perform a final 1.0 scope review and cut non-essential promises
+  - Current issue: the repo contains more capability and more ambition than the current routed product can fully support.
+  - Required outcome:
+    - The 1.0 release promise is explicit, defensible, and reflected consistently across code, docs, and UI.
+  - Acceptance criteria:
+    - Every headline feature in README and active specs has a working routed user path.
+    - Any deferred feature is marked post-1.0 and removed from present-tense release claims.
 
 ### Backend Reliability
 

@@ -1,0 +1,1065 @@
+[
+  {
+    "task_id": "f0d1d8de-1a0b-4ac1-88f4-1bb8cbb2f801",
+    "purpose": "Replace the shipped drafting client with exact calls to the existing story-development drafting routes and remove all shipped mock branching. Implement only these exports in this file: `getDraftArtifacts(projectId)`, `getDraftArtifact(artifactId, projectId)`, `getManuscriptDocuments(projectId)`, `getManuscriptDocument(documentId, projectId)`, `createManuscriptDocument(request)`, `promoteDraftToManuscript(request)`, `getRevisionSuggestions(projectId, targetDocumentId?)`, and `createRevisionSuggestion(request)`. Delete the `draftingMock` import, delete `USE_MOCKS`, and delete `isMockMode`.",
+    "responsible_file": "frontend/src/services/drafting.ts",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Use only `frontend/src/lib/api.ts`.",
+      "Do not import any file from `frontend/src/services/mocks/`.",
+      "Do not add PATCH or DELETE helpers because no shipped backend route exists for those mutations.",
+      "Keep request payload keys in snake_case exactly as defined by the backend request models."
+    ],
+    "knowledge_base": [
+      "Current exports in `frontend/src/services/drafting.ts`.",
+      "`frontend/src/types/drafting.ts` interfaces `DraftArtifact`, `ManuscriptDocument`, `PromoteDraftToManuscriptRequest`, and `RevisionSuggestion`.",
+      "`app/api/story_development.py` drafting routes at `/drafting/draft-artifacts`, `/drafting/manuscript-documents`, `/drafting/promote-draft`, and `/drafting/revision-suggestions`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "getDraftArtifacts": "GET /v1/story-development/drafting/draft-artifacts?project_id={projectId}",
+        "getDraftArtifact": "GET /v1/story-development/drafting/draft-artifacts/{artifact_id}?project_id={projectId}",
+        "getManuscriptDocuments": "GET /v1/story-development/drafting/manuscript-documents?project_id={projectId}",
+        "getManuscriptDocument": "GET /v1/story-development/drafting/manuscript-documents/{document_id}?project_id={projectId}",
+        "createManuscriptDocument": {
+          "method": "POST",
+          "path": "/v1/story-development/drafting/manuscript-documents",
+          "body": {
+            "document_id": "string",
+            "project_id": "string",
+            "title": "string",
+            "content": "string",
+            "chapter_id": "string | null",
+            "scene_id": "string | null",
+            "current_draft_artifact_id": "string | null",
+            "version": "number | null"
+          }
+        },
+        "promoteDraftToManuscript": {
+          "method": "POST",
+          "path": "/v1/story-development/drafting/promote-draft",
+          "body": {
+            "project_id": "string",
+            "document_id": "string",
+            "draft_artifact_id": "string",
+            "title": "string | null",
+            "chapter_id": "string | null",
+            "scene_id": "string | null",
+            "version": "number | null"
+          }
+        },
+        "getRevisionSuggestions": "GET /v1/story-development/drafting/revision-suggestions?project_id={projectId}[&target_document_id={documentId}]",
+        "createRevisionSuggestion": {
+          "method": "POST",
+          "path": "/v1/story-development/drafting/revision-suggestions",
+          "body": {
+            "suggestion_id": "string",
+            "project_id": "string",
+            "target_document_id": "string",
+            "source_text": "string",
+            "proposed_text": "string",
+            "rationale": "string",
+            "source_context": "string[]",
+            "status": "REQUESTED | PENDING | ACCEPTED | REJECTED | SUPERSEDED"
+          }
+        }
+      },
+      "output_data_schema": {
+        "draft_list_response": "DraftArtifact[]",
+        "draft_item_response": "DraftArtifact",
+        "manuscript_list_response": "ManuscriptDocument[]",
+        "manuscript_item_response": "ManuscriptDocument",
+        "revision_suggestion_list_response": "RevisionSuggestion[]",
+        "revision_suggestion_item_response": "RevisionSuggestion"
+      },
+      "external_refs": [
+        "app/api/story_development.py lines 895-1032",
+        "frontend/src/types/drafting.ts"
+      ]
+    },
+    "utilized_features": [
+      "Shared Axios client `api`",
+      "Existing drafting backend routes only"
+    ],
+    "expected_outcomes": [
+      "The file contains no mock imports and no `VITE_USE_MOCKS` branch.",
+      "Every exported drafting helper calls one existing backend endpoint and returns typed `response.data`.",
+      "No exported function in this file references `isMockMode`."
+    ]
+  },
+  {
+    "task_id": "1ff924f8-36d2-4626-a8ff-c8a49c21a802",
+    "purpose": "Make manuscript aids truthful for v1.0 by hiding action buttons when no persistence callback exists. In the suggestion card list, render `Accept` only when `onSuggestionAccept` is defined and render `Reject` only when `onSuggestionReject` is defined. Do not render inert buttons.",
+    "responsible_file": "frontend/src/components/aids/AidsPanel.tsx",
+    "serial_dependencies": [
+      "f0d1d8de-1a0b-4ac1-88f4-1bb8cbb2f801"
+    ],
+    "guardrails": [
+      "Do not add local optimistic state for accepted or rejected suggestions.",
+      "Do not invent PATCH calls from this file.",
+      "Keep the existing tabs `suggestions`, `diff`, and `history`."
+    ],
+    "knowledge_base": [
+      "`AidsPanelProps` already exposes `onSuggestionAccept` and `onSuggestionReject` as optional callbacks.",
+      "`SuggestionHistory` and `DiffViewer` are already mounted from this file."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "props": {
+          "projectId": "string",
+          "suggestions": "RevisionSuggestion[]",
+          "onSuggestionSelect": "((suggestion: RevisionSuggestion) => void) | undefined",
+          "onSuggestionAccept": "((suggestionId: string) => void) | undefined",
+          "onSuggestionReject": "((suggestionId: string) => void) | undefined"
+        }
+      },
+      "output_data_schema": {
+        "open_suggestion_row": "Suggestion row with zero, one, or two action buttons depending on callback presence."
+      },
+      "external_refs": [
+        "frontend/src/types/aids.ts",
+        "frontend/src/views/WritingView.tsx"
+      ]
+    },
+    "utilized_features": [
+      "Existing optional callback props only"
+    ],
+    "expected_outcomes": [
+      "When WritingView passes no accept or reject callbacks, no inert action buttons render.",
+      "The diff and history tabs still function unchanged."
+    ]
+  },
+  {
+    "task_id": "4a1f074d-7408-4588-9940-e1be97a54d03",
+    "purpose": "Correct the jobs client to match the real HTTP contract and expose attempt-history reads. Keep the existing `jobsService` object. Update `createJob` to accept status `202` and status `200` for idempotent replay of terminal jobs, update `retryJob` to require status `202`, and add `getAttempts(jobId)` that returns the backend attempt-history envelope.",
+    "responsible_file": "frontend/src/services/jobs.ts",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `/jobs` URL family.",
+      "Do not rename `jobsService`.",
+      "Keep existing error classification behavior for 400, 409, and 500."
+    ],
+    "knowledge_base": [
+      "Current `jobsService` exports in `frontend/src/services/jobs.ts`.",
+      "`app/api/jobs.py` status codes and attempt-history route."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "createJob": {
+          "method": "POST",
+          "path": "/v1/jobs/create",
+          "success_statuses": [200, 202]
+        },
+        "retryJob": {
+          "method": "POST",
+          "path": "/v1/jobs/{job_id}/retry",
+          "success_statuses": [202]
+        },
+        "getAttempts": {
+          "method": "GET",
+          "path": "/v1/jobs/{job_id}/attempts"
+        }
+      },
+      "output_data_schema": {
+        "createJob": "JobStatusResponse",
+        "retryJob": "JobStatusResponse",
+        "getAttempts": {
+          "job_id": "string",
+          "items": [
+            {
+              "attempt_number": "number",
+              "status": "string",
+              "executor_name": "string | null",
+              "executor_instance_id": "string | null",
+              "queue_delay_ms": "number | null",
+              "lease_owner": "string | null",
+              "lease_expires_at": "string | null",
+              "claimed_at": "string | null",
+              "started_at": "string | null",
+              "finished_at": "string | null",
+              "last_heartbeat_at": "string | null",
+              "finish_reason": "string | null",
+              "failure_stage": "string | null",
+              "retryable": "boolean | null",
+              "retry_reason": "string | null",
+              "error_code": "string | null",
+              "error_category": "string | null"
+            }
+          ],
+          "meta": "Record<string, string>"
+        }
+      },
+      "external_refs": [
+        "app/api/jobs.py",
+        "app/schemas/inspect.py"
+      ]
+    },
+    "utilized_features": [
+      "Existing `jobsService` object",
+      "Shared Axios client `api`"
+    ],
+    "expected_outcomes": [
+      "`createJob` no longer throws when the backend correctly returns `202`.",
+      "`retryJob` only accepts `202`.",
+      "`jobsService.getAttempts(jobId)` exists and returns `response.data` from `/jobs/{jobId}/attempts`."
+    ]
+  },
+  {
+    "task_id": "91261565-4933-4df2-9d03-0a1f5419be04",
+    "purpose": "Correct the checker client to match the real HTTP contract and expose checker attempt-history reads. Keep the current named exports. Update `runChecker` and `retryChecker` to accept backend status `202`, and add `getCheckerAttempts(runId)` for `/role-model-checker/{run_id}/attempts`.",
+    "responsible_file": "frontend/src/services/checker.ts",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `/role-model-checker` URL family.",
+      "Do not rename existing exports `getModelCatalog`, `runChecker`, `getCheckerStatus`, or `retryChecker`."
+    ],
+    "knowledge_base": [
+      "Current checker service functions in `frontend/src/services/checker.ts`.",
+      "`app/api/role_model_checker.py` route statuses and attempt-history route."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "runChecker": {
+          "method": "POST",
+          "path": "/v1/role-model-checker/run",
+          "success_statuses": [200, 202]
+        },
+        "retryChecker": {
+          "method": "POST",
+          "path": "/v1/role-model-checker/{run_id}/retry",
+          "success_statuses": [202]
+        },
+        "getCheckerAttempts": {
+          "method": "GET",
+          "path": "/v1/role-model-checker/{run_id}/attempts"
+        }
+      },
+      "output_data_schema": {
+        "runChecker": "RoleModelCheckStatus",
+        "retryChecker": "RoleModelCheckStatus",
+        "getCheckerAttempts": {
+          "run_id": "string",
+          "items": "AttemptHistoryItem[]",
+          "meta": "Record<string, string>"
+        }
+      },
+      "external_refs": [
+        "app/api/role_model_checker.py",
+        "app/schemas/inspect.py"
+      ]
+    },
+    "utilized_features": [
+      "Shared Axios client `api`",
+      "Existing checker service exports only"
+    ],
+    "expected_outcomes": [
+      "`runChecker` no longer rejects correct `202 Accepted` responses.",
+      "`retryChecker` no longer expects `201`.",
+      "`getCheckerAttempts(runId)` exists and returns the attempt-history envelope from the backend."
+    ]
+  },
+  {
+    "task_id": "3c3d6fdf-5f27-493e-b89c-0851b4506505",
+    "purpose": "Make inspect context and attempt-history types match the actual backend contract. Extend `InspectContext` so it includes `runKind: 'pipeline_job' | 'role_model_check'` in addition to `jobId` and optional `attemptNumber`. Add exported interfaces `AttemptHistoryItem`, `JobAttemptHistoryResponse`, and `RoleModelCheckAttemptHistoryResponse` using the backend field names exactly.",
+    "responsible_file": "frontend/src/types/inspect.ts",
+    "serial_dependencies": [
+      "4a1f074d-7408-4588-9940-e1be97a54d03",
+      "91261565-4933-4df2-9d03-0a1f5419be04"
+    ],
+    "guardrails": [
+      "Keep the existing `jobId` property name so callers in Zustand and route code do not need a wider rename.",
+      "Do not camelCase any backend field."
+    ],
+    "knowledge_base": [
+      "Current `InspectContext`, `StepRecord`, and `ArtifactLineageView` definitions.",
+      "Attempt history schemas in `app/schemas/inspect.py`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "InspectContext": {
+          "jobId": "string",
+          "runKind": "'pipeline_job' | 'role_model_check'",
+          "attemptNumber": "number | undefined"
+        }
+      },
+      "output_data_schema": {
+        "AttemptHistoryItem": {
+          "attempt_number": "number",
+          "status": "string",
+          "executor_name": "string | null",
+          "executor_instance_id": "string | null",
+          "queue_delay_ms": "number | null",
+          "lease_owner": "string | null",
+          "lease_expires_at": "string | null",
+          "claimed_at": "string | null",
+          "started_at": "string | null",
+          "finished_at": "string | null",
+          "last_heartbeat_at": "string | null",
+          "finish_reason": "string | null",
+          "failure_stage": "string | null",
+          "retryable": "boolean | null",
+          "retry_reason": "string | null",
+          "error_code": "string | null",
+          "error_category": "string | null"
+        },
+        "JobAttemptHistoryResponse": {
+          "job_id": "string",
+          "items": "AttemptHistoryItem[]",
+          "meta": "Record<string, string>"
+        },
+        "RoleModelCheckAttemptHistoryResponse": {
+          "run_id": "string",
+          "items": "AttemptHistoryItem[]",
+          "meta": "Record<string, string>"
+        }
+      },
+      "external_refs": [
+        "app/schemas/inspect.py",
+        "frontend/src/stores/uiStore.ts"
+      ]
+    },
+    "utilized_features": [
+      "TypeScript interfaces only"
+    ],
+    "expected_outcomes": [
+      "`InspectContext` includes an exact `runKind` discriminator.",
+      "The attempt-history response types exist and can be imported by inspect UI code and service code."
+    ]
+  },
+  {
+    "task_id": "f1f274a6-8b98-450a-b6d9-fc3ed268fe06",
+    "purpose": "Align the inspect-link frontend type with the backend schema. Replace the current fields with the exact backend shape: `link_id`, `project_id`, `object_kind`, `object_id`, `logical_run_id`, `run_id`, `run_kind`, `attempt_number`, and `label`.",
+    "responsible_file": "frontend/src/types/inspectLinks.ts",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not keep stale fields `finding_id` or `created_at` because they are not part of the backend contract.",
+      "Use snake_case exactly."
+    ],
+    "knowledge_base": [
+      "Current `InspectRunLink` interface.",
+      "Backend `InspectRunLink` schema in `app/schemas/story_development.py`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "backend_schema": {
+          "link_id": "string",
+          "project_id": "string",
+          "object_kind": "string",
+          "object_id": "string",
+          "logical_run_id": "string",
+          "run_id": "string",
+          "run_kind": "string",
+          "attempt_number": "number | null",
+          "label": "string | null"
+        }
+      },
+      "output_data_schema": {
+        "InspectRunLink": "TypeScript interface matching the backend schema exactly."
+      },
+      "external_refs": [
+        "app/schemas/story_development.py `InspectRunLink`"
+      ]
+    },
+    "utilized_features": [
+      "TypeScript interface only"
+    ],
+    "expected_outcomes": [
+      "The inspect-link type matches the backend fields exactly.",
+      "Consumers can read `run_kind` and `attempt_number` without type casts."
+    ]
+  },
+  {
+    "task_id": "abec80c6-29b3-4982-b8db-9c8cb2ed4f07",
+    "purpose": "Generalize the steps hook so the inspect route can render both pipeline jobs and checker runs from one context object. Keep the hook name `useJobSteps`, but change the function signature to `useJobSteps(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number)`. Route to `/jobs/{jobId}/steps` when `runKind === 'pipeline_job'` and to `/role-model-checker/{jobId}/steps` when `runKind === 'role_model_check'`.",
+    "responsible_file": "frontend/src/hooks/useJobSteps.ts",
+    "serial_dependencies": [
+      "3c3d6fdf-5f27-493e-b89c-0851b4506505"
+    ],
+    "guardrails": [
+      "Keep the hook return shape `{ steps, loading, error, refetch }` unchanged.",
+      "Keep the optional `attempt` query param name unchanged.",
+      "Do not move this logic into a new service file."
+    ],
+    "knowledge_base": [
+      "Current `useJobSteps` implementation.",
+      "Job steps endpoint in `app/api/jobs.py`.",
+      "Checker steps endpoint in `app/api/role_model_checker.py`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "hook_signature": "useJobSteps(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number)"
+      },
+      "output_data_schema": {
+        "steps": "StepRecord[]",
+        "loading": "boolean",
+        "error": "string | null",
+        "refetch": "() => void"
+      },
+      "external_refs": [
+        "app/api/jobs.py `GET /{job_id}/steps`",
+        "app/api/role_model_checker.py `GET /{run_id}/steps`"
+      ]
+    },
+    "utilized_features": [
+      "React state and effect hooks",
+      "Shared Axios client `api`"
+    ],
+    "expected_outcomes": [
+      "The hook selects the endpoint strictly from `runKind`.",
+      "Existing loading, error, and refetch semantics remain intact."
+    ]
+  },
+  {
+    "task_id": "6d58dbca-2c41-47a8-9b8d-7b4ffbc85108",
+    "purpose": "Generalize the lineage hook so the inspect route can render both pipeline jobs and checker runs from one context object. Keep the hook name `useJobLineage`, but change the function signature to `useJobLineage(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number)`. Route to `/jobs/{jobId}/lineage` when `runKind === 'pipeline_job'` and to `/role-model-checker/{jobId}/lineage` when `runKind === 'role_model_check'`.",
+    "responsible_file": "frontend/src/hooks/useJobLineage.ts",
+    "serial_dependencies": [
+      "3c3d6fdf-5f27-493e-b89c-0851b4506505"
+    ],
+    "guardrails": [
+      "Keep the hook return shape `{ artifacts, loading, error, refetch }` unchanged.",
+      "Keep the optional `attempt` query param name unchanged.",
+      "Do not add extra caching layers."
+    ],
+    "knowledge_base": [
+      "Current `useJobLineage` implementation.",
+      "Job lineage endpoint in `app/api/jobs.py`.",
+      "Checker lineage endpoint in `app/api/role_model_checker.py`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "hook_signature": "useJobLineage(jobId: string, runKind: 'pipeline_job' | 'role_model_check', attemptNumber?: number)"
+      },
+      "output_data_schema": {
+        "artifacts": "ArtifactLineageView[]",
+        "loading": "boolean",
+        "error": "string | null",
+        "refetch": "() => void"
+      },
+      "external_refs": [
+        "app/api/jobs.py `GET /{job_id}/lineage`",
+        "app/api/role_model_checker.py `GET /{run_id}/lineage`"
+      ]
+    },
+    "utilized_features": [
+      "React state and effect hooks",
+      "Shared Axios client `api`"
+    ],
+    "expected_outcomes": [
+      "The hook selects the endpoint strictly from `runKind`.",
+      "Existing loading, error, and refetch semantics remain intact."
+    ]
+  },
+  {
+    "task_id": "1e42fc62-76a9-40df-a1d5-a587ffcab709",
+    "purpose": "Preserve the inspect route context for both direct route entry and review-driven navigation. When `routeJobId` differs from the store context, call `setInspectContext({ jobId: routeJobId, runKind: inspectContext?.jobId === routeJobId ? inspectContext.runKind : 'pipeline_job', attemptNumber: inspectContext?.jobId === routeJobId ? inspectContext.attemptNumber : undefined })`. Update the header copy from `Inspect Job` to `Inspect Run` and display both `Run ID` and `Run Kind`.",
+    "responsible_file": "frontend/src/components/inspect/InspectMode.tsx",
+    "serial_dependencies": [
+      "3c3d6fdf-5f27-493e-b89c-0851b4506505"
+    ],
+    "guardrails": [
+      "Do not change the route path shape.",
+      "Keep the `jobId` route param name unchanged.",
+      "If the route is entered directly with no stored context, default `runKind` to `pipeline_job`."
+    ],
+    "knowledge_base": [
+      "Current route-param handling in `InspectMode`.",
+      "Zustand store shape in `frontend/src/stores/uiStore.ts`.",
+      "Updated `InspectContext` type."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "route_params": {
+          "projectId": "string",
+          "jobId": "string | undefined"
+        },
+        "store_context": {
+          "jobId": "string",
+          "runKind": "'pipeline_job' | 'role_model_check'",
+          "attemptNumber": "number | undefined"
+        }
+      },
+      "output_data_schema": {
+        "header": {
+          "title": "Inspect Run",
+          "subtitle_line_1": "Run ID: {jobId}",
+          "subtitle_line_2": "Run Kind: {runKind}"
+        }
+      },
+      "external_refs": [
+        "frontend/src/stores/uiStore.ts",
+        "frontend/src/types/inspect.ts"
+      ]
+    },
+    "utilized_features": [
+      "React Router `useParams` and `useNavigate`",
+      "Zustand `useUIStore`"
+    ],
+    "expected_outcomes": [
+      "InspectMode always passes an `InspectContext` containing `runKind` to its child tabs.",
+      "Review-driven navigation can preserve `role_model_check` runs without route changes."
+    ]
+  },
+  {
+    "task_id": "2b0c18af-d1ca-4d54-b92f-42cd6558c810",
+    "purpose": "Replace the attempts placeholder with real attempt-history rendering. Import `jobsService.getAttempts`, `getCheckerAttempts`, and the new attempt-history types. For `context.runKind === 'pipeline_job'`, load `/jobs/{job_id}/attempts`; for `context.runKind === 'role_model_check'`, load `/role-model-checker/{run_id}/attempts`. Render one card per attempt with `attempt_number`, `status`, `started_at`, `finished_at`, `finish_reason`, and `error_code` when present. Render explicit loading, error, and empty states.",
+    "responsible_file": "frontend/src/components/inspect/InspectTabs.tsx",
+    "serial_dependencies": [
+      "4a1f074d-7408-4588-9940-e1be97a54d03",
+      "91261565-4933-4df2-9d03-0a1f5419be04",
+      "3c3d6fdf-5f27-493e-b89c-0851b4506505",
+      "1e42fc62-76a9-40df-a1d5-a587ffcab709"
+    ],
+    "guardrails": [
+      "Do not leave the string `Attempts view coming soon...` anywhere in the file.",
+      "Keep the tab keys `steps`, `lineage`, and `attempts` unchanged.",
+      "Use file-local component state for attempts loading only; do not create a new store."
+    ],
+    "knowledge_base": [
+      "Current tab rendering in `InspectTabs`.",
+      "Attempt-history response types from `frontend/src/types/inspect.ts`.",
+      "Jobs and checker services with new attempt readers."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "context": {
+          "jobId": "string",
+          "runKind": "'pipeline_job' | 'role_model_check'",
+          "attemptNumber": "number | undefined"
+        }
+      },
+      "output_data_schema": {
+        "attempt_card": {
+          "title": "Attempt #{attempt_number}",
+          "fields": [
+            "status",
+            "started_at",
+            "finished_at",
+            "finish_reason",
+            "error_code"
+          ]
+        },
+        "empty_state": "No attempts recorded yet"
+      },
+      "external_refs": [
+        "frontend/src/services/jobs.ts",
+        "frontend/src/services/checker.ts",
+        "frontend/src/types/inspect.ts"
+      ]
+    },
+    "utilized_features": [
+      "React `useEffect` and `useState`",
+      "Existing tab UI"
+    ],
+    "expected_outcomes": [
+      "The attempts tab renders data from the real backend.",
+      "The file contains explicit loading, error, and empty states for attempts.",
+      "No placeholder text remains."
+    ]
+  },
+  {
+    "task_id": "6f596c83-4fb5-488f-b6c9-fc71806c9811",
+    "purpose": "Make review-to-inspect navigation preserve the exact run context from inspect links. Import `useUIStore`, resolve inspect links with the existing `getInspectLinks(projectId, finding.source_object_kind, finding.source_object_id)`, pick the first returned link, call `setInspectContext({ jobId: link.run_id, runKind: link.run_kind === 'role_model_check' ? 'role_model_check' : 'pipeline_job', attemptNumber: link.attempt_number ?? undefined })`, then navigate to `/workspace/${projectId}/inspect/${link.run_id}`.",
+    "responsible_file": "frontend/src/components/review/FindingCard.tsx",
+    "serial_dependencies": [
+      "3c3d6fdf-5f27-493e-b89c-0851b4506505",
+      "f1f274a6-8b98-450a-b6d9-fc3ed268fe06",
+      "1e42fc62-76a9-40df-a1d5-a587ffcab709"
+    ],
+    "guardrails": [
+      "Do not change the inspect route path.",
+      "Do not infer `runKind` from `finding.source_object_kind`; use the inspect-link payload only.",
+      "Keep the existing toast behavior for the no-link case."
+    ],
+    "knowledge_base": [
+      "Current `handleJumpToSource` implementation.",
+      "`useUIStore` setter `setInspectContext`.",
+      "Updated inspect-link schema."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "inspect_link": {
+          "run_id": "string",
+          "run_kind": "string",
+          "attempt_number": "number | null"
+        }
+      },
+      "output_data_schema": {
+        "store_write": {
+          "jobId": "run_id",
+          "runKind": "'pipeline_job' | 'role_model_check'",
+          "attemptNumber": "attempt_number | undefined"
+        }
+      },
+      "external_refs": [
+        "frontend/src/services/inspectLinks.ts",
+        "frontend/src/stores/uiStore.ts"
+      ]
+    },
+    "utilized_features": [
+      "React Router `useNavigate`",
+      "Zustand `useUIStore`"
+    ],
+    "expected_outcomes": [
+      "Clicking `Jump to Source` seeds inspect context with both `runKind` and `attemptNumber` before navigation.",
+      "Checker findings no longer open inspect as an implicit pipeline job."
+    ]
+  },
+  {
+    "task_id": "9bfaf7fc-4f67-4db7-bcb2-18b36ab8590a",
+    "purpose": "Load review findings automatically on first render and on filter changes. Add one `useEffect` whose dependency list is `[projectId, severityFilter, sourceKindFilter]` and calls `void loadFindings()`. Keep the manual Refresh button as an explicit refetch action.",
+    "responsible_file": "frontend/src/components/review/FindingsList.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not move state into React Query or Zustand in this task.",
+      "Keep `loadFindings` as the single data-loading function.",
+      "Do not change the filter field names passed to `getFindings`."
+    ],
+    "knowledge_base": [
+      "Current local state in `FindingsList`.",
+      "`getFindings` service contract in `frontend/src/services/review.ts`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "getFindings_filter": {
+          "project_id": "string",
+          "severity": "Severity[] | undefined",
+          "source_object_kind": "string | undefined"
+        }
+      },
+      "output_data_schema": {
+        "view_states": [
+          "loading skeleton",
+          "error message",
+          "empty state",
+          "finding list"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/services/review.ts",
+        "frontend/src/types/review.ts"
+      ]
+    },
+    "utilized_features": [
+      "React `useEffect`",
+      "Existing local state and service calls"
+    ],
+    "expected_outcomes": [
+      "Opening `/workspace/:projectId/review` triggers `loadFindings()` without a button click.",
+      "Changing either filter triggers a reload.",
+      "The Refresh button still triggers a manual reload."
+    ]
+  },
+  {
+    "task_id": "24f2a52c-63aa-4fd2-88e2-f84c4797040b",
+    "purpose": "Replace the placeholder write view with a real routed drafting workspace built entirely from existing components and existing backend routes. Use `useParams<{ projectId: string; chapterId?: string }>()`. Create these React Query queries with these exact keys: `['draft-artifacts', projectId]` -> `getDraftArtifacts(projectId)`, `['manuscript-documents', projectId]` -> `getManuscriptDocuments(projectId)`, and `['revision-suggestions', projectId, selectedDocumentId ?? 'all']` -> `getRevisionSuggestions(projectId, selectedDocumentId ?? undefined)`. Maintain `selectedDocumentId` local state. On first successful manuscript load, if `chapterId` is present pick the first document whose `chapter_id === chapterId`; otherwise pick the first document. Render: left column manuscript list, center column selected manuscript content, and right column `AidsPanel` with `suggestions={revisionSuggestions}` and no accept/reject callbacks.",
+    "responsible_file": "frontend/src/views/WritingView.tsx",
+    "serial_dependencies": [
+      "f0d1d8de-1a0b-4ac1-88f4-1bb8cbb2f801",
+      "1ff924f8-36d2-4626-a8ff-c8a49c21a802"
+    ],
+    "guardrails": [
+      "Do not import any mock service.",
+      "Do not implement manuscript save, accept, or reject mutations in this file.",
+      "Use existing components only: `AidsPanel` and `DraftPreview` are allowed; do not create a new workspace component file.",
+      "Render explicit empty states for both `manuscriptDocuments.length === 0` and `draftArtifacts.length === 0`."
+    ],
+    "knowledge_base": [
+      "Current placeholder `WritingView` implementation.",
+      "`frontend/src/services/drafting.ts` real drafting helpers.",
+      "`frontend/src/components/aids/AidsPanel.tsx`.",
+      "`frontend/src/components/drafting/DraftPreview.tsx`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "route_params": {
+          "projectId": "string",
+          "chapterId": "string | undefined"
+        }
+      },
+      "output_data_schema": {
+        "query_keys": [
+          "['draft-artifacts', projectId]",
+          "['manuscript-documents', projectId]",
+          "['revision-suggestions', projectId, selectedDocumentId ?? 'all']"
+        ],
+        "render_structure": {
+          "left_column": "Selectable manuscript-document list with title, chapter_id, and version.",
+          "center_column": "Selected manuscript title plus read-only full content.",
+          "right_column": "AidsPanel fed by revision suggestions for the selected document."
+        }
+      },
+      "external_refs": [
+        "frontend/src/services/drafting.ts",
+        "frontend/src/types/drafting.ts",
+        "frontend/src/components/aids/AidsPanel.tsx"
+      ]
+    },
+    "utilized_features": [
+      "React Query `useQuery`",
+      "React `useEffect` and `useState`",
+      "React Router `useParams`"
+    ],
+    "expected_outcomes": [
+      "`/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` render real manuscript and suggestion data.",
+      "The file no longer renders static chapter cards or a dead textarea.",
+      "No mock-mode banner appears in the routed write screen."
+    ]
+  },
+  {
+    "task_id": "109385df-9708-4733-a5fd-93f9a9fe960c",
+    "purpose": "Turn the planning route into the canonical plan workspace and stop using this file as the write, review, and inspect route owner. Remove the exports `WritingView`, `ReviewView`, and `InspectView` from this file. Keep only `PlanningView`. Replace tab key `sequences` with `planning` and add tab keys `flow` and `arcs`. Add read-only React Query reads with these exact keys: `['planning-sequence-plans', projectId]`, `['planning-chapter-plans', projectId]`, `['planning-scene-plans', projectId]`, `['planning-dependencies', projectId]`, `['planning-chapter-packets', projectId]`, `['arc-candidates', projectId]`, `['arc-selections', projectId]`, and `['arc-stage-maps', projectId]`. Use only existing read helpers from `frontend/src/services/planning.ts` and `frontend/src/services/arcs.ts`. Mount existing `FlowEditor` under the `flow` tab. The `planning` tab is read-only in v1.0: render counts and lists for sequences, chapters, scenes, dependencies, and chapter packets. The `arcs` tab is read-only in v1.0: render candidates, selected arc, and selected arc stage map using `getSelectedArc` and `getStageMapForArc`.",
+    "responsible_file": "frontend/src/views/PlanningView.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not import or call planning create, update, reorder, or arc mutation helpers in this file.",
+      "Keep existing brainstorm, foundation, characters, world-bible, branches, decisions, and checker tabs working.",
+      "Use `FlowEditor` exactly as already implemented for the editable-flow feature.",
+      "Remove the `SequenceViewer`-driven write fallback from this file completely."
+    ],
+    "knowledge_base": [
+      "Current tab implementation in `PlanningView.tsx`.",
+      "Existing read services in `frontend/src/services/planning.ts` and `frontend/src/services/arcs.ts`.",
+      "Existing `FlowEditor` component in `frontend/src/components/flow/FlowEditor.tsx`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "planning_queries": [
+          "getSequencePlans(projectId)",
+          "getChapterPlans(projectId)",
+          "getScenePlans(projectId)",
+          "getPlanningDependencies(projectId)",
+          "getChapterPackets(projectId)"
+        ],
+        "arc_queries": [
+          "getArcCandidates(projectId)",
+          "getArcSelections(projectId)",
+          "getArcStageMaps(projectId)"
+        ]
+      },
+      "output_data_schema": {
+        "tab_order": [
+          "manifest",
+          "planning",
+          "flow",
+          "arcs",
+          "branches",
+          "decisions",
+          "checker",
+          "brainstorm",
+          "foundation",
+          "characters",
+          "world-bible"
+        ],
+        "planning_tab_sections": [
+          "Sequences",
+          "Chapters",
+          "Scenes",
+          "Dependencies",
+          "Chapter Packets"
+        ],
+        "arcs_tab_sections": [
+          "Selected Arc",
+          "Selected Arc Stage Map",
+          "All Arc Candidates"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/services/planning.ts",
+        "frontend/src/services/arcs.ts",
+        "frontend/src/components/flow/FlowEditor.tsx"
+      ]
+    },
+    "utilized_features": [
+      "React Query `useQuery`",
+      "Existing `WorkspaceStatus` helper in this file",
+      "Existing planning-adjacent components already mounted here"
+    ],
+    "expected_outcomes": [
+      "This file exports only `PlanningView`.",
+      "The planning route shows read-only planning data and editable flow.",
+      "The planning route shows arc review data without adding unsupported mutations."
+    ]
+  },
+  {
+    "task_id": "54d52ca8-3e50-4a70-9a96-5f59d17d280c",
+    "purpose": "Make the top-level router import one module per routed screen. Replace the current import from `./views/PlanningView` with four imports: `PlanningView` from `./views/PlanningView`, `WritingView` from `./views/WritingView`, `ReviewView` from `./views/ReviewView`, and `InspectView` from `./views/InspectView`. Keep every existing route path unchanged.",
+    "responsible_file": "frontend/src/App.tsx",
+    "serial_dependencies": [
+      "24f2a52c-63aa-4fd2-88e2-f84c4797040b",
+      "109385df-9708-4733-a5fd-93f9a9fe960c"
+    ],
+    "guardrails": [
+      "Do not change route URLs.",
+      "Do not change `QueryClient` options.",
+      "Do not add or remove routes."
+    ],
+    "knowledge_base": [
+      "Current BrowserRouter configuration.",
+      "Dedicated view files already present in `frontend/src/views/`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "routes": [
+          "/",
+          "/workspace/:projectId/plan",
+          "/workspace/:projectId/write",
+          "/workspace/:projectId/write/:chapterId",
+          "/workspace/:projectId/review",
+          "/workspace/:projectId/inspect",
+          "/workspace/:projectId/inspect/:jobId"
+        ]
+      },
+      "output_data_schema": {
+        "imports": [
+          "import { PlanningView } from './views/PlanningView'",
+          "import { WritingView } from './views/WritingView'",
+          "import { ReviewView } from './views/ReviewView'",
+          "import { InspectView } from './views/InspectView'"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/views/ReviewView.tsx",
+        "frontend/src/views/InspectView.tsx"
+      ]
+    },
+    "utilized_features": [
+      "React Router route table only"
+    ],
+    "expected_outcomes": [
+      "A new contributor can identify the routed implementation by file name alone.",
+      "No route in `App.tsx` imports `WritingView`, `ReviewView`, or `InspectView` from `PlanningView.tsx`."
+    ]
+  },
+  {
+    "task_id": "c11b3140-a004-4268-adfd-433c8c53040d",
+    "purpose": "Update README to match the actual v1.0 release path. In `## Product Intent`, add one sentence stating: `v1.0 ships editable flow plus routed write, review, and inspect workspaces, with read-only planning and arc review surfaces; plan editing, arc mutation, relationship-map editing, and suggestion accept/reject persistence remain post-v1.0.` In `## Current Status`, add bullets for the routed write workspace, auto-loading review findings, and inspect attempts. Replace any hard-coded full-suite result count with the exact output of the final command `python -m pytest -q -p no:cacheprovider` executed during merge-readiness validation.",
+    "responsible_file": "README.md",
+    "serial_dependencies": [
+      "24f2a52c-63aa-4fd2-88e2-f84c4797040b",
+      "109385df-9708-4733-a5fd-93f9a9fe960c",
+      "2b0c18af-d1ca-4d54-b92f-42cd6558c810",
+      "9bfaf7fc-4f67-4db7-bcb2-18b36ab8590a"
+    ],
+    "guardrails": [
+      "Do not describe plan editing, arc mutation, relationship-map editing, or suggestion accept/reject persistence as shipped.",
+      "Do not leave the exact stale string `435 passed, 9 skipped` anywhere in the file."
+    ],
+    "knowledge_base": [
+      "Current sections `## Product Intent`, `## Current Status`, and validation bullets in `README.md`.",
+      "The final routed behavior after the code tasks above land."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "required_new_sentence": "v1.0 ships editable flow plus routed write, review, and inspect workspaces, with read-only planning and arc review surfaces; plan editing, arc mutation, relationship-map editing, and suggestion accept/reject persistence remain post-v1.0.",
+        "validation_command": "python -m pytest -q -p no:cacheprovider"
+      },
+      "output_data_schema": {
+        "updated_sections": [
+          "Product Intent",
+          "Current Status",
+          "Latest local full-suite verification"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/review/FindingsList.tsx",
+        "frontend/src/components/inspect/InspectTabs.tsx"
+      ]
+    },
+    "utilized_features": [
+      "Existing README structure only"
+    ],
+    "expected_outcomes": [
+      "README states the exact shipped scope and exact deferred scope for v1.0.",
+      "No stale validation count remains in README."
+    ]
+  },
+  {
+    "task_id": "382667af-7a17-48f9-989f-d85fbe64300f",
+    "purpose": "Update the active v1.0 checklist so it reflects the chosen release contract instead of leaving scope decisions open. In `## Current Truth`, replace the hard-coded full-suite count with the exact output of `python -m pytest -q -p no:cacheprovider`. Rewrite V1-003 so manuscript aids are defined as `view, diff, and history` for v1.0 and explicitly note that accept/reject persistence is deferred. Rewrite V1-006 so the arc surface is `read-only review of candidates, current selection, and stage map` for v1.0. Rewrite V1-007 so the planning contract is explicitly `read-only planning board in v1.0`. Rewrite V1-009 so relationship-map editing is explicitly deferred post-v1.0.",
+    "responsible_file": "TODO.md",
+    "serial_dependencies": [
+      "24f2a52c-63aa-4fd2-88e2-f84c4797040b",
+      "109385df-9708-4733-a5fd-93f9a9fe960c"
+    ],
+    "guardrails": [
+      "Do not leave any checklist item whose acceptance criteria still says `either ... or ...` for V1-003, V1-006, V1-007, or V1-009.",
+      "Do not leave the exact stale string `435 passed, 9 skipped` anywhere in the file."
+    ],
+    "knowledge_base": [
+      "The `### v1.0 Release Checklist` section in `TODO.md`.",
+      "The chosen v1.0 scope encoded by the executor tasks in this JSON file."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "exact_v1_scope": {
+          "manuscript_aids": "view, diff, history only",
+          "planning": "read-only",
+          "arcs": "read-only",
+          "editable_flow": "shipped",
+          "relationship_map_editing": "deferred"
+        }
+      },
+      "output_data_schema": {
+        "updated_items": [
+          "Current Truth validation count",
+          "V1-003",
+          "V1-006",
+          "V1-007",
+          "V1-009"
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "docs/Story Development Product Spec v0.1.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing TODO checklist structure only"
+    ],
+    "expected_outcomes": [
+      "The active TODO list no longer leaves the v1.0 planning, arcs, manuscript aids, or relationship-map contract undecided.",
+      "No stale validation count remains in TODO.md."
+    ]
+  },
+  {
+    "task_id": "1a32ffca-616b-44ef-804e-0b5c3e0fc10d",
+    "purpose": "Amend the product spec so the shipped v1.0 scope is explicit and non-aspirational. Add these exact v1.0 sentences to the relevant sections: under `## 8. Character Background`, add `For v1.0, the shipped frontend supports profile-centric character editing; relationship-map graph editing is deferred post-v1.0.` Under `## 10. Story Arc Selection`, add `For v1.0, the shipped frontend surface is read-only: it lists arc candidates, the current selection, and the current stage map; creating or changing arc selections from the UI is deferred post-v1.0.` Under `## 11. Sequence and Chapter Planning`, add `For v1.0, the planning board is read-only in the shipped frontend; direct create, update, reorder, and dependency editing workflows are deferred post-v1.0.` Under `## 13. Suggestions and Revision Tools`, add `For v1.0, suggestions can be viewed, diffed, and browsed in history from the write workspace; accept/reject persistence is deferred post-v1.0.`",
+    "responsible_file": "docs/Story Development Product Spec v0.1.md",
+    "serial_dependencies": [
+      "382667af-7a17-48f9-989f-d85fbe64300f"
+    ],
+    "guardrails": [
+      "Do not remove the editable-flow promise from section 4; editable flow is part of the shipped v1.0 path.",
+      "Do not leave relationship-map editing, arc mutation, planning mutation, or suggestion accept/reject persistence described in present tense as shipped v1.0 behavior."
+    ],
+    "knowledge_base": [
+      "Sections 8, 10, 11, and 13 in the product spec.",
+      "The final chosen v1.0 contract from TODO.md and README.md."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "target_sections": [
+          "## 8. Character Background",
+          "## 10. Story Arc Selection",
+          "## 11. Sequence and Chapter Planning",
+          "## 13. Suggestions and Revision Tools"
+        ]
+      },
+      "output_data_schema": {
+        "required_added_sentences": [
+          "For v1.0, the shipped frontend supports profile-centric character editing; relationship-map graph editing is deferred post-v1.0.",
+          "For v1.0, the shipped frontend surface is read-only: it lists arc candidates, the current selection, and the current stage map; creating or changing arc selections from the UI is deferred post-v1.0.",
+          "For v1.0, the planning board is read-only in the shipped frontend; direct create, update, reorder, and dependency editing workflows are deferred post-v1.0.",
+          "For v1.0, suggestions can be viewed, diffed, and browsed in history from the write workspace; accept/reject persistence is deferred post-v1.0."
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing product spec markdown only"
+    ],
+    "expected_outcomes": [
+      "The product spec states the exact shipped and deferred scope for v1.0.",
+      "The file no longer implies that unsupported UI mutations are already shipped."
+    ]
+  },
+  {
+    "task_id": "f6cc3382-a091-4a6e-a63d-92b3747def0f",
+    "purpose": "Update validation notes to remove the stale full-suite count and record the exact final merge-readiness result. Replace the line `Result: 435 passed, 9 skipped` with the exact output from the final `python -m pytest -q -p no:cacheprovider` run. Add one bullet under the validation summary stating: `Frontend merge-readiness also requires routed write, review, and inspect verification with `npm run lint`, `npm run typecheck`, and `npm run build`.`",
+    "responsible_file": "docs/Validation Notes v0.1.md",
+    "serial_dependencies": [
+      "24f2a52c-63aa-4fd2-88e2-f84c4797040b",
+      "109385df-9708-4733-a5fd-93f9a9fe960c",
+      "2b0c18af-d1ca-4d54-b92f-42cd6558c810",
+      "9bfaf7fc-4f67-4db7-bcb2-18b36ab8590a"
+    ],
+    "guardrails": [
+      "Do not leave the exact string `Result: 435 passed, 9 skipped` anywhere in the file.",
+      "Do not invent a new pytest command; use the existing merge-readiness command."
+    ],
+    "knowledge_base": [
+      "Current validation summary lines in `docs/Validation Notes v0.1.md`.",
+      "Repo merge-readiness commands from AGENTS and README."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "required_commands": [
+          "python -m pytest -q -p no:cacheprovider",
+          "cd frontend && npm run lint",
+          "cd frontend && npm run typecheck",
+          "cd frontend && npm run build"
+        ]
+      },
+      "output_data_schema": {
+        "updated_summary": [
+          "Exact current pytest result",
+          "Explicit note that frontend lint, typecheck, and build are part of merge readiness"
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "AGENTS.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing validation-notes markdown only"
+    ],
+    "expected_outcomes": [
+      "Validation Notes reflects the exact current pytest baseline.",
+      "The file explicitly calls out the frontend validation trio as part of merge readiness."
+    ]
+  },
+  {
+    "task_id": "14f8b7d8-01ec-4f9b-a5dd-0ff2a50f5f68",
+    "purpose": "Update the project index so the summary matches the shipped v1.0 surface and the exact current validation count. Replace the line `python -m pytest -q -p no:cacheprovider -> 435 passed, 9 skipped` with the exact current command output. In the feature summary section, add one bullet stating: `The shipped frontend surface for v1.0 is route-driven: editable flow plus routed write, review, and inspect workspaces, with read-only planning and arc review surfaces.` Add a second bullet stating: `Relationship-map editing and suggestion accept/reject persistence remain post-v1.0.`",
+    "responsible_file": "docs/Project Index v0.1.md",
+    "serial_dependencies": [
+      "c11b3140-a004-4268-adfd-433c8c53040d",
+      "382667af-7a17-48f9-989f-d85fbe64300f",
+      "1a32ffca-616b-44ef-804e-0b5c3e0fc10d",
+      "f6cc3382-a091-4a6e-a63d-92b3747def0f"
+    ],
+    "guardrails": [
+      "Do not leave the exact stale string `435 passed, 9 skipped` anywhere in the file.",
+      "Do not describe planning mutations, arc mutations, relationship-map editing, or suggestion accept/reject persistence as shipped."
+    ],
+    "knowledge_base": [
+      "Current feature-summary bullets in `docs/Project Index v0.1.md`.",
+      "Final shipped-scope wording from README and TODO."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "required_new_bullets": [
+          "The shipped frontend surface for v1.0 is route-driven: editable flow plus routed write, review, and inspect workspaces, with read-only planning and arc review surfaces.",
+          "Relationship-map editing and suggestion accept/reject persistence remain post-v1.0."
+        ]
+      },
+      "output_data_schema": {
+        "updated_sections": [
+          "Validation baseline line",
+          "Feature summary bullets"
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "TODO.md",
+        "docs/Story Development Product Spec v0.1.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing project-index markdown only"
+    ],
+    "expected_outcomes": [
+      "Project Index states the exact current validation baseline.",
+      "Project Index states the exact shipped and deferred v1.0 frontend surface."
+    ]
+  }
+]

@@ -7,8 +7,8 @@ interface StepTimelineProps {
 }
 
 export default function StepTimeline({ context }: StepTimelineProps) {
-  const { jobId, attemptNumber } = context;
-  const { steps, loading, error, refetch } = useJobSteps(jobId, attemptNumber);
+  const { jobId, runKind, attemptNumber } = context;
+  const { steps, loading, error, refetch } = useJobSteps(jobId, runKind, attemptNumber);
 
   if (loading) {
     return (

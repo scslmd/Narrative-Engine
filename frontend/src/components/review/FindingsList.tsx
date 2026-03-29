@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { CheckerFinding, Severity } from '../../types/review';
 import { getFindings } from '../../services/review';
 import { FindingCard } from './FindingCard';
@@ -17,7 +17,7 @@ export function FindingsList({ projectId }: FindingsListProps) {
   const [severityFilter, setSeverityFilter] = useState<Severity[] | null>(null);
   const [sourceKindFilter, setSourceKindFilter] = useState<string | null>(null);
 
-  const loadFindings = async () => {
+  const loadFindings = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -34,7 +34,11 @@ export function FindingsList({ projectId }: FindingsListProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, severityFilter, sourceKindFilter]);
+
+  useEffect(() => {
+    void loadFindings();
+  }, [loadFindings]);
 
   const handleSelectFinding = () => {
     // Selection handled by parent component

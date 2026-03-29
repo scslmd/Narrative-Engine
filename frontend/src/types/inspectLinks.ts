@@ -1,8 +1,11 @@
 export interface InspectRunLink {
   link_id: string;
   project_id: string;
-  finding_id: string;
+  object_kind: string;
+  object_id: string;
+  logical_run_id: string;
   run_id: string;
   run_kind: string;
-  created_at: string;
+  attempt_number: number | null;
+  label: string | null;
 }

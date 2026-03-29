@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { DraftArtifact, ManuscriptDocument } from '../../types/drafting';
-import { getDraftArtifacts, isMockMode } from '../../services/drafting';
+import { getDraftArtifacts } from '../../services/drafting';
 import DraftPreview from './DraftPreview';
 import PromotionModal from './PromotionModal';
 
@@ -40,12 +40,6 @@ export default function DraftPromotion({ projectId }: DraftPromotionProps) {
 
   return (
     <div className="space-y-4">
-      {isMockMode() && (
-        <div className="bg-yellow-100 border border-yellow-300 px-4 py-2 text-sm text-yellow-800 rounded">
-          Mock mode enabled - promotion will simulate backend behavior
-        </div>
-      )}
-
       <h3 className="font-semibold text-gray-900">Draft Artifacts</h3>
 
       {loading && (

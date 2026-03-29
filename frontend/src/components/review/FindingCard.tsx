@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { CheckerFinding } from '../../types/review';
 import { getInspectLinks } from '../../services/inspectLinks';
 import { useToastStore } from '../../stores/toastStore';
+import { useUIStore } from '../../stores/uiStore';
 import { SeverityBadge } from './SeverityBadge';
 import { DecisionForm } from './DecisionForm';
 import { DecisionHistory } from './DecisionHistory';
@@ -16,6 +17,7 @@ interface FindingCardProps {
 export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) {
   const navigate = useNavigate();
   const addToast = useToastStore((state) => state.addToast);
+  const setInspectContext = useUIStore((state) => state.setInspectContext);
   const [expanded, setExpanded] = useState(false);
   const [showDecisionForm, setShowDecisionForm] = useState(false);
   const [isResolvingInspectRun, setIsResolvingInspectRun] = useState(false);
@@ -48,6 +50,15 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
         addToast('No inspect run is linked to this finding source yet', 'warning');
         return;
       }
+
+      const runKind: 'pipeline_job' | 'role_model_check' = 
+        primaryLink.run_kind === 'role_model_check' ? 'role_model_check' : 'pipeline_job';
+      
+      setInspectContext({
+        jobId: primaryLink.run_id,
+        runKind,
+        attemptNumber: primaryLink.attempt_number ?? undefined,
+      });
 
       navigate(`/workspace/${projectId}/inspect/${primaryLink.run_id}`);
     } catch (error) {

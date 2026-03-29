@@ -116,28 +116,34 @@ export function AidsPanel({
 
                   <p className="text-xs italic text-gray-500">{suggestion.rationale}</p>
 
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSuggestionAccept?.(suggestion.suggestion_id);
-                      }}
-                      className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:bg-green-200"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSuggestionReject?.(suggestion.suggestion_id);
-                      }}
-                      className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
-                    >
-                      Reject
-                    </button>
-                  </div>
+                  {(onSuggestionAccept || onSuggestionReject) && (
+                    <div className="mt-3 flex gap-2">
+                      {onSuggestionAccept && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSuggestionAccept(suggestion.suggestion_id);
+                          }}
+                          className="rounded bg-green-100 px-2 py-1 text-xs text-green-700 hover:bg-green-200"
+                        >
+                          Accept
+                        </button>
+                      )}
+                      {onSuggestionReject && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSuggestionReject(suggestion.suggestion_id);
+                          }}
+                          className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+                        >
+                          Reject
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}

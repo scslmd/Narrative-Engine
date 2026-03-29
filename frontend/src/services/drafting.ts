@@ -1,8 +1,6 @@
 import type { DraftArtifact, ManuscriptDocument, PromoteDraftToManuscriptRequest } from '../types/drafting';
-import * as mockService from './mocks/draftingMock';
+import type { RevisionSuggestion } from '../types/aids';
 import api from '../lib/api';
-
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 interface DraftArtifactListResponse {
   project_id: string;
@@ -10,11 +8,19 @@ interface DraftArtifactListResponse {
   meta: Record<string, string>;
 }
 
+interface ManuscriptDocumentListResponse {
+  project_id: string;
+  items: ManuscriptDocument[];
+  meta: Record<string, string>;
+}
+
+interface RevisionSuggestionListResponse {
+  project_id: string;
+  items: RevisionSuggestion[];
+  meta: Record<string, string>;
+}
+
 export async function getDraftArtifacts(projectId: string): Promise<DraftArtifact[]> {
-  if (USE_MOCKS) {
-    return mockService.getDraftArtifacts(projectId);
-  }
-  
   const response = await api.get('/story-development/drafting/draft-artifacts', { params: { project_id: projectId } });
   
   if (response.status !== 200) {
@@ -25,21 +31,48 @@ export async function getDraftArtifacts(projectId: string): Promise<DraftArtifac
   return data.items;
 }
 
-export async function promoteDraftToManuscript(request: PromoteDraftToManuscriptRequest): Promise<ManuscriptDocument> {
-  if (USE_MOCKS) {
-    const result = await mockService.promoteDraft(request.draft_artifact_id);
-    return {
-      document_id: result.document_id,
-      project_id: request.project_id,
-      title: result.title,
-      content: result.content,
-      chapter_id: null,
-      scene_id: null,
-      current_draft_artifact_id: request.draft_artifact_id,
-      version: 1,
-    };
+export async function getDraftArtifact(artifactId: string, projectId: string): Promise<DraftArtifact> {
+  const response = await api.get(`/story-development/drafting/draft-artifacts/${artifactId}`, { params: { project_id: projectId } });
+  
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch draft artifact: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getManuscriptDocuments(projectId: string): Promise<ManuscriptDocument[]> {
+  const response = await api.get('/story-development/drafting/manuscript-documents', { params: { project_id: projectId } });
+  
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch manuscript documents: ${response.status}`);
+  }
+
+  const data: ManuscriptDocumentListResponse = response.data;
+  return data.items;
+}
+
+export async function getManuscriptDocument(documentId: string, projectId: string): Promise<ManuscriptDocument> {
+  const response = await api.get(`/story-development/drafting/manuscript-documents/${documentId}`, { params: { project_id: projectId } });
+  
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch manuscript document: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function createManuscriptDocument(request: ManuscriptDocument): Promise<ManuscriptDocument> {
+  const response = await api.post('/story-development/drafting/manuscript-documents', request);
+  
+  if (response.status !== 201) {
+    throw new Error(`Failed to create manuscript document: ${response.status}`);
   }
   
+  return response.data;
+}
+
+export async function promoteDraftToManuscript(request: PromoteDraftToManuscriptRequest): Promise<ManuscriptDocument> {
   const response = await api.post('/story-development/drafting/promote-draft', request);
   
   if (response.status !== 201) {
@@ -49,6 +82,28 @@ export async function promoteDraftToManuscript(request: PromoteDraftToManuscript
   return response.data;
 }
 
-export function isMockMode(): boolean {
-  return USE_MOCKS;
+export async function getRevisionSuggestions(projectId: string, targetDocumentId?: string): Promise<RevisionSuggestion[]> {
+  const params: Record<string, string> = { project_id: projectId };
+  if (targetDocumentId) {
+    params.target_document_id = targetDocumentId;
+  }
+  
+  const response = await api.get('/story-development/drafting/revision-suggestions', { params });
+  
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch revision suggestions: ${response.status}`);
+  }
+
+  const data: RevisionSuggestionListResponse = response.data;
+  return data.items;
+}
+
+export async function createRevisionSuggestion(request: RevisionSuggestion): Promise<RevisionSuggestion> {
+  const response = await api.post('/story-development/drafting/revision-suggestions', request);
+  
+  if (response.status !== 201) {
+    throw new Error(`Failed to create revision suggestion: ${response.status}`);
+  }
+  
+  return response.data;
 }

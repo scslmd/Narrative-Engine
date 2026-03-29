@@ -99,14 +99,14 @@ See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for
 - Workflow command:
   - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
-Latest local full-suite verification (March 28, 2026):
+Latest local full-suite verification (March 29, 2026):
 
-- `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
-- `cd frontend && npm run build` -> passed (314KB JS + 28KB CSS, gzipped: ~97KB + 5KB)
+- `cd frontend && npm run build` -> passed (390KB JS + 31KB CSS, gzipped: ~112KB + 5KB)
 
-**Frontend Quality Gate**: Full score achieved (12/12) with production-grade improvements to routing/state synchronization, structured error handling, and type safety.
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance.
 
 ## Core Docs
 
