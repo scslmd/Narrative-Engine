@@ -142,6 +142,7 @@ class TestAuditLogging:
         record = read_last_audit_record()
         assert record is not None
         assert record.get('project_id') == 'test-project-id'
+        assert record.get('target_resource') == 'project:test-project-id'
 
     def test_audit_record_includes_project_id_from_query(self) -> None:
         """Audit record should include project_id from query params for story-dev."""
@@ -151,6 +152,23 @@ class TestAuditLogging:
         record = read_last_audit_record()
         assert record is not None
         assert record.get('project_id') == 'query-project-id'
+        assert record.get('target_resource') == 'story_project:query-project-id'
+
+    def test_audit_record_includes_target_resource_for_job_route(self) -> None:
+        """Job routes should record a job-scoped target resource."""
+        self.client.get('/v1/jobs/test-job-id/status')
+
+        record = read_last_audit_record()
+        assert record is not None
+        assert record.get('target_resource') == 'job:test-job-id'
+
+    def test_audit_record_includes_target_resource_for_checker_route(self) -> None:
+        """Checker routes should record a checker-run target resource."""
+        self.client.get('/v1/role-model-checker/test-run-id')
+
+        record = read_last_audit_record()
+        assert record is not None
+        assert record.get('target_resource') == 'role_model_check:test-run-id'
 
     def test_audit_record_timestamp_is_iso_format(self) -> None:
         """Audit record timestamp should be ISO format."""

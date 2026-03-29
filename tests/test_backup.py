@@ -196,6 +196,34 @@ class TestBackupService:
         
         assert "not found" in str(exc_info.value).lower()
 
+    def test_restore_backup_raises_error_when_disk_space_is_insufficient(
+        self,
+        backup_service: BackupService,
+    ) -> None:
+        """Should refuse restore when free space is lower than the backup size."""
+        original_backup = backup_service.create_backup(description="Original")
+
+        with patch("app.services.backup.shutil.disk_usage") as mock_disk_usage:
+            mock_disk_usage.return_value = (10_000, 9_990, 1)
+
+            with pytest.raises(BackupError) as exc_info:
+                backup_service.restore_backup(original_backup["backup_id"])
+
+        assert str(exc_info.value) == "Insufficient disk space to restore backup"
+
+    def test_restore_backup_raises_error_when_disk_space_check_fails(
+        self,
+        backup_service: BackupService,
+    ) -> None:
+        """Should fail closed when free-space verification cannot be completed."""
+        original_backup = backup_service.create_backup(description="Original")
+
+        with patch("app.services.backup.shutil.disk_usage", side_effect=OSError("disk unavailable")):
+            with pytest.raises(BackupError) as exc_info:
+                backup_service.restore_backup(original_backup["backup_id"])
+
+        assert str(exc_info.value) == "Failed to verify disk space before restore"
+
 
 class TestBackupRetentionPolicy:
     """Test backup retention policy enforcement."""

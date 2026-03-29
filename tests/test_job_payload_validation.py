@@ -85,6 +85,55 @@ class TestJobCreateRequestValidation:
         assert req.payload['project_id'] == 'test-project'
         assert req.payload['extra_field'] == 'value'
 
+    def test_optional_runtime_override_fields_accept_valid_types(self) -> None:
+        """Known runtime override fields should be accepted with valid types."""
+        req = JobCreateRequest(
+            phase='P-100',
+            payload={
+                'project_id': 'test-project',
+                'model_id': 'architect-override-model',
+                'model': 'qwen-test',
+                'premise_text': 'A test premise',
+                'temperature': 0.7,
+                'max_tokens': 512,
+            },
+        )
+
+        assert req.payload['model_id'] == 'architect-override-model'
+        assert req.payload['model'] == 'qwen-test'
+        assert req.payload['premise_text'] == 'A test premise'
+        assert req.payload['temperature'] == 0.7
+        assert req.payload['max_tokens'] == 512
+
+    @pytest.mark.parametrize(
+        ("payload_key", "payload_value", "message_fragment"),
+        [
+            ('model_id', 123, "Payload 'model_id' must be a string"),
+            ('model', 123, "Payload 'model' must be a string"),
+            ('premise_text', 123, "Payload 'premise_text' must be a string"),
+            ('temperature', 'hot', "Payload 'temperature' must be a number"),
+            ('max_tokens', '512', "Payload 'max_tokens' must be an integer"),
+            ('max_tokens', 0, "Payload 'max_tokens' must be >= 1"),
+        ],
+    )
+    def test_optional_runtime_override_fields_reject_invalid_types(
+        self,
+        payload_key: str,
+        payload_value: object,
+        message_fragment: str,
+    ) -> None:
+        """Known runtime override fields should raise deterministic validation errors."""
+        with pytest.raises(ValidationError) as exc_info:
+            JobCreateRequest(
+                phase='P-100',
+                payload={
+                    'project_id': 'test-project',
+                    payload_key: payload_value,
+                },
+            )
+
+        assert message_fragment in exc_info.value.errors()[0]['msg']
+
 
 class TestJobCreateEndpointValidation:
     """Test HTTP endpoint validation for /jobs/create."""

@@ -89,16 +89,18 @@ These items are the current release blockers for calling the product `v1.0`. The
 
 ### Backend Reliability
 
-- [x] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
-  - Completed: `success_rate` and `failure_rate` metrics available in `/health/metrics` for both jobs and checker runs.
+- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  - Current status: `success_rate` and `failure_rate` metrics are available in `/health/metrics` for both jobs and checker runs.
+  - Remaining work: add inference-latency telemetry before closing this item.
 
 - [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
   - Current status: Runtime override validation exists in `app/schemas/jobs.py`; full phase-specific payload validation deferred.
 
 - [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
 
-- [x] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
-  - Completed: `target_resource` audit logging implemented in `app/main.py`.
+- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+  - Current status: request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, and `target_resource`.
+  - Remaining work: add explicit operation semantics and before/after state capture before closing this item.
 
 ### Persistence and Runtime Expansion
 
