@@ -23,6 +23,10 @@ Use this note when touching `frontend/` planning workspaces or manuscript aids. 
 
 ## Manuscript Aids
 
+- `WritingView` at `/workspace/:projectId/write` reads revision suggestions through `getRevisionSuggestions(projectId, targetDocumentId?)`.
+- Uses query key `['revision-suggestions', projectId, selectedDocumentId ?? 'all']`.
+- Renders `AidsPanel`, `DiffViewer`, and `SuggestionHistory` as read-only review surfaces.
+- `onSuggestionAccept` and `onSuggestionReject` are optional props on `AidsPanel` but are NOT provided by `WritingView`; do not document accept/reject as shipped behavior until a backend-backed mutation route exists.
 - `frontend/src/components/aids/AidsPanel.tsx` should not pretend comparison works when no comparison pair exists.
 - `frontend/src/components/aids/DiffViewer.tsx` must render original and modified content as distinct sides. Rendering the same combined output in both panes is wrong.
 - `frontend/src/lib/diff.ts` must stay correct on manuscript-sized text without forcing a full quadratic walk over large inputs.

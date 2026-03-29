@@ -3,7 +3,7 @@ import type { StoryFlowStage } from '../../types/flow';
 
 interface StageActionsProps {
   stage: StoryFlowStage;
-  onEdit: (stageId: string) => void;
+  onEdit?: (stageId: string) => void;
   onDelete?: (stageId: string) => void;
   isUpdating: boolean;
 }
@@ -18,19 +18,23 @@ export default function StageActions({
 
   const isDefaultStage = ['brainstorm', 'foundation', 'character', 'world_bible', 'arc_selection', 'planning', 'drafting', 'review'].includes(stage.stage_kind);
 
+  if (!onEdit && !onDelete) return null;
+
   return (
     <div className="flex items-center gap-2">
-      <button
-        onClick={() => onEdit(stage.stage_id)}
-        disabled={isUpdating}
-        className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
-      >
-        Edit
-      </button>
+      {onEdit && (
+        <button
+          onClick={() => onEdit(stage.stage_id)}
+          disabled={isUpdating}
+          className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          Edit
+        </button>
+      )}
 
-      {!isDefaultStage && onDelete && (
+      {onDelete && (
         <>
-          <span className="text-gray-300">|</span>
+          {!isDefaultStage && onEdit && <span className="text-gray-300">|</span>}
           
           {showDeleteConfirm ? (
             <div className="flex items-center gap-2">

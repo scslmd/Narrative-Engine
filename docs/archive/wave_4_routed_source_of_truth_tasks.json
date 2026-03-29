@@ -1,0 +1,165 @@
+[
+  {
+    "task_id": "b5e38686-7b47-4348-8586-bb8eaef62eb9",
+    "purpose": "Restructure `Workspace` so the routed `Outlet` becomes the primary surface instead of the narrow left column, while keeping `NotesPanel`, `JobLaunchPanel`, and `BottomUtilityLayer` in the layout. Make the `Outlet` container the main flexible pane and move `NotesPanel` plus `JobLaunchPanel` into a narrower right-side column so the current routed views `PlanningView`, `WritingView`, `ReviewView`, and `InspectView` are visually privileged without changing route ownership or component imports.",
+    "responsible_file": "frontend/src/views/Workspace.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change route paths, route nesting, or the `Outlet` placement contract.",
+      "Do not modify `frontend/src/App.tsx`, `frontend/src/components/WorkspaceShell.tsx`, `frontend/src/components/NotesPanel.tsx`, or `frontend/src/components/JobLaunchPanel.tsx`.",
+      "Do not remove `BottomUtilityLayer`.",
+      "Do not add new state, new stores, or new components."
+    ],
+    "knowledge_base": [
+      "Component `Workspace` in `frontend/src/views/Workspace.tsx` currently renders `WorkspaceShell`, an `Outlet`, `NotesPanel`, `JobLaunchPanel`, and `BottomUtilityLayer`.",
+      "The `Outlet` renders the routed views for `/workspace/:projectId/plan`, `/workspace/:projectId/write`, `/workspace/:projectId/review`, and `/workspace/:projectId/inspect`.",
+      "The current layout gives the `Outlet` a fixed-width column and leaves `JobLaunchPanel` as the main flexible pane."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "Workspace()",
+        "route_param": {
+          "projectId": "string"
+        },
+        "current_children": [
+          "WorkspaceShell",
+          "Outlet",
+          "NotesPanel",
+          "JobLaunchPanel",
+          "BottomUtilityLayer"
+        ]
+      },
+      "output_data_schema": {
+        "layout_requirements": [
+          "The `Outlet` container is the main flexible workspace pane.",
+          "The right rail still contains both `NotesPanel` and `JobLaunchPanel`.",
+          "No route or component ownership changes occur."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/Workspace.tsx",
+        "frontend/src/App.tsx",
+        "frontend/src/components/NotesPanel.tsx",
+        "frontend/src/components/JobLaunchPanel.tsx",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "React Router `Outlet`",
+      "Component `WorkspaceShell`",
+      "Component `NotesPanel`",
+      "Component `JobLaunchPanel`",
+      "Component `BottomUtilityLayer`"
+    ],
+    "expected_outcomes": [
+      "The `Outlet` is rendered in the primary flexible pane rather than a fixed-width side column.",
+      "`NotesPanel` and `JobLaunchPanel` remain present in the layout.",
+      "The file still renders `BottomUtilityLayer projectId={projectId}` after `WorkspaceShell`."
+    ]
+  },
+  {
+    "task_id": "5b34bf52-6dd7-40a8-9f5d-51df6e8ac9dd",
+    "purpose": "Update `docs/Project Index v0.1.md` so the active index reflects the current routed frontend source of truth and the current verified validation baseline. Replace the stale pytest result `435 passed, 9 skipped` with `455 passed, 9 skipped`, and add an explicit note in the `frontend/` layer description or implemented-foundation bullets that the router-owned view files are `frontend/src/views/PlanningView.tsx`, `frontend/src/views/WritingView.tsx`, `frontend/src/views/ReviewView.tsx`, and `frontend/src/views/InspectView.tsx`.",
+    "responsible_file": "docs/Project Index v0.1.md",
+    "serial_dependencies": [
+      "b5e38686-7b47-4348-8586-bb8eaef62eb9"
+    ],
+    "guardrails": [
+      "Do not edit code files.",
+      "Do not change sections unrelated to the project-layer index, routed frontend ownership, or validation baseline.",
+      "Do not invent additional frontend route files or remove existing layer descriptions.",
+      "Do not change the documented build/lint/typecheck commands."
+    ],
+    "knowledge_base": [
+      "The active router imports `PlanningView`, `WritingView`, `ReviewView`, and `InspectView` in `frontend/src/App.tsx`.",
+      "The current full-suite baseline in `README.md` is `455 passed, 9 skipped`.",
+      "The current `Project Index v0.1.md` still reports `435 passed, 9 skipped`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "Current project layers",
+          "Current verified validation baseline",
+          "Implemented foundation"
+        ],
+        "exact_values_to_update": [
+          "435 passed, 9 skipped",
+          "455 passed, 9 skipped"
+        ],
+        "exact_file_paths_to_document": [
+          "frontend/src/views/PlanningView.tsx",
+          "frontend/src/views/WritingView.tsx",
+          "frontend/src/views/ReviewView.tsx",
+          "frontend/src/views/InspectView.tsx"
+        ]
+      },
+      "output_data_schema": {
+        "documented_state": [
+          "The project index lists the current routed frontend source files explicitly.",
+          "The validation baseline in the file is `455 passed, 9 skipped`.",
+          "The frontend layer description no longer leaves routed ownership ambiguous."
+        ]
+      },
+      "external_refs": [
+        "docs/Project Index v0.1.md",
+        "README.md",
+        "frontend/src/App.tsx",
+        "frontend/src/views/Workspace.tsx"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing router imports in `frontend/src/App.tsx`"
+    ],
+    "expected_outcomes": [
+      "The file contains `455 passed, 9 skipped` and no longer contains `435 passed, 9 skipped`.",
+      "The file explicitly names `frontend/src/views/PlanningView.tsx`, `frontend/src/views/WritingView.tsx`, `frontend/src/views/ReviewView.tsx`, and `frontend/src/views/InspectView.tsx` as the routed frontend view files.",
+      "The active project index is consistent with the current routed app."
+    ]
+  },
+  {
+    "task_id": "03576de3-8ab8-4a9f-8124-b7d56fb31ea2",
+    "purpose": "Update `docs/Validation Notes v0.1.md` so the `Current verified result` block and any stale validation references use the current checked baseline `455 passed, 9 skipped` while preserving the existing command list. Keep the document focused on validation scope and results only; do not fold in new feature claims or unrelated doc cleanup.",
+    "responsible_file": "docs/Validation Notes v0.1.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit code files.",
+      "Do not change the command list under `Current verified result` except to keep wording consistent with the existing commands.",
+      "Do not add feature-scope commentary or release-scope decisions to this file.",
+      "Do not modify the CI command list."
+    ],
+    "knowledge_base": [
+      "The `Current verified result` block in `docs/Validation Notes v0.1.md` still states `435 passed, 9 skipped`.",
+      "The current verified baseline recorded elsewhere in the repo is `455 passed, 9 skipped`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_section": "Current verified result",
+        "exact_values_to_update": [
+          "435 passed, 9 skipped",
+          "455 passed, 9 skipped"
+        ]
+      },
+      "output_data_schema": {
+        "documented_state": [
+          "The file reports `455 passed, 9 skipped` in `Current verified result`.",
+          "The command list remains the same.",
+          "The file contains no new implementation promises."
+        ]
+      },
+      "external_refs": [
+        "docs/Validation Notes v0.1.md",
+        "README.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains `435 passed, 9 skipped`.",
+      "The file contains `455 passed, 9 skipped` in the verified-result section.",
+      "The validation notes remain focused on commands and observed results."
+    ]
+  }
+]

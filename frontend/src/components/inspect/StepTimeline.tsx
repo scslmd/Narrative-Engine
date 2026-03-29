@@ -42,7 +42,7 @@ export default function StepTimeline({ context }: StepTimelineProps) {
   if (steps.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p className="text-sm text-gray-500">No steps recorded yet</p>
+        <p className="text-sm text-gray-500">No execution steps found for this attempt. Steps are recorded when the job runs.</p>
       </div>
     );
   }

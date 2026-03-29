@@ -638,6 +638,8 @@ Current backend milestone now implemented:
 - public API wiring for story-development routes is still intentionally not implemented
 - branch identity, branch state, branch comparison, merge behavior, and story-development route surfaces remain separate upcoming slices
 
+**v1.0 scope clarification**: The current routed app provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; character profile editing via CharacterBuilder; and planning reads where API endpoints exist. Interactive decision workflows (arc selection mutations, relationship mapping) are deferred to future releases while remaining supported backend concepts.
+
 ### 17.1 Editable Core Flow
 
 The editable core flow is the project-local workflow graph that replaces a rigid wizard.
@@ -770,7 +772,7 @@ Required character data:
 - fear
 - strength
 - flaw or limitation
-- relationship map
+- relationship map (deferred to future release; current v1.0 provides profile fields only)
 - secrets
 - continuity facts
 - change axis
@@ -846,13 +848,15 @@ Required task functions:
 
 Story arc selection is the planning layer that lets the user choose a story shape, compare alternatives, and change course without losing prior work.
 
+**v1.0 scope clarification**: Current routed app provides read-only arc projections (`getArcCandidates`, `getArcSelections`, `getArcStageMaps`); interactive arc-decision workflows (comparison mutations, selection changes) are deferred to future releases.
+
 What it solves:
 
 - it gives the project a structural lens for suggestions and pacing
 - it supports multiple story families without hardcoding one narrative template
 - it helps the system flag missing beats, drift, or mismatch between intent and execution
 
-Required arc behavior:
+Required arc behavior (target product requirements):
 
 - recommend arcs from premise, genre, and tone
 - compare multiple arc candidates

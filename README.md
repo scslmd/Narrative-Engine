@@ -50,7 +50,12 @@ Implemented and working now:
 - public inspect endpoints for persisted step records and artifact lineage on jobs and checker runs
 - route-driven inspect deep links that render directly from `/workspace/:projectId/inspect/:jobId`
 - "Jump to Source" actions that open a renderable inspect route instead of a dead-end shell view
-- frontend workflow scaffolding and documentation
+- routed planning workspace at `/workspace/:projectId/plan` with read-heavy tabs for sequence plans, chapter plans, scene plans, dependencies, and chapter packets
+- routed flow stage visibility via `FlowEditor` showing current `StoryFlowStage[]` without shipped editable-flow mutations for v1.0
+- character profile editing through `CharacterBuilder` with create/update workflows; relationship-map workflows deferred beyond v1.0
+- arc support as read-only projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; interactive arc-decision mutations deferred beyond v1.0
+- routed write workspace at `/workspace/:projectId/write` with API-backed reads for `ManuscriptDocument`, `DraftArtifact`, and `RevisionSuggestion` records via existing GET routes (`getManuscriptDocuments`, `getDraftArtifacts`, `getRevisionSuggestions`)
+- review-driven aids rail as a surface for viewing revision suggestions without backend-backed accept/reject workflow
 
 Still being built:
 
@@ -59,6 +64,9 @@ Still being built:
 - runtime-backed job phases beyond `P-100`
 - richer runtime telemetry
 - broader production-grade tests
+- editable-flow stage mutations (add/update/delete) via `FlowEditor`
+- relationship-map workflows for character relationships
+- interactive arc-decision mutation workflows
 
 ## Quickstart
 

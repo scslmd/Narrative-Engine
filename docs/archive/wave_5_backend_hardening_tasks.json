@@ -1,0 +1,238 @@
+[
+  {
+    "task_id": "e615c7d7-f212-4ccd-b8d8-e991ac4fd491",
+    "purpose": "Extend `get_metrics` in `app/api/health.py` so the existing `/health/metrics` response reports terminal success and failure rates for both jobs and checker runs in addition to the current raw status counts. Compute `success_rate` and `failure_rate` from `COMPLETED` and `FAILED` counts only, guard division by zero by returning `0.0` when no terminal rows exist, and keep the existing count keys under `jobs` and `role_model_checker` unchanged.",
+    "responsible_file": "app/api/health.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not create a new route or rename `/health/metrics`.",
+      "Do not change the existing `circuit_breakers` payload shape.",
+      "Do not edit database schema files or persistence helpers.",
+      "Do not modify `readiness_check` or unrelated health routes."
+    ],
+    "knowledge_base": [
+      "Route `@router.get(\"/metrics\")` is implemented in `app/api/health.py` and currently returns `timestamp`, `circuit_breakers`, `jobs`, and `role_model_checker`.",
+      "The route already queries `jobs` and `checker_runs` tables and initializes count keys.",
+      "Job terminal statuses in this file are currently represented as `COMPLETED` and `FAILED`; checker terminal statuses are also `COMPLETED` and `FAILED`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "route": "GET /health/metrics",
+        "existing_output_keys": [
+          "timestamp",
+          "circuit_breakers",
+          "jobs",
+          "role_model_checker"
+        ],
+        "source_tables": [
+          "jobs",
+          "checker_runs"
+        ]
+      },
+      "output_data_schema": {
+        "response_envelope": {
+          "jobs": {
+            "PENDING": "int",
+            "PROCESSING": "int",
+            "COMPLETED": "int",
+            "FAILED": "int",
+            "success_rate": "float",
+            "failure_rate": "float"
+          },
+          "role_model_checker": {
+            "PENDING": "int",
+            "RUNNING": "int",
+            "COMPLETED": "int",
+            "FAILED": "int",
+            "success_rate": "float",
+            "failure_rate": "float"
+          }
+        },
+        "calculation_rule": "success_rate = COMPLETED / (COMPLETED + FAILED), failure_rate = FAILED / (COMPLETED + FAILED), with 0.0 when denominator is 0"
+      },
+      "external_refs": [
+        "app/api/health.py",
+        "README.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI `APIRouter`",
+      "SQLite access via `app.persistence.sqlite.connect`",
+      "Existing route `GET /health/metrics`"
+    ],
+    "expected_outcomes": [
+      "Route `GET /health/metrics` still returns existing status counts for jobs and checker runs.",
+      "Route `GET /health/metrics` now includes `success_rate` and `failure_rate` under both `jobs` and `role_model_checker`.",
+      "Division-by-zero cases return `0.0` instead of raising."
+    ]
+  },
+  {
+    "task_id": "48e5d2cb-bc81-4d74-b7cc-3204bf0325c5",
+    "purpose": "Tighten `JobCreateRequest.validate_phase_specific_payload` in `app/schemas/jobs.py` so the existing optional runtime override keys already consumed by `runtime_prompts.py` are type-checked deterministically. Keep the current required `payload['project_id']` validation for phases `P-100`, `P-200`, `P-300`, and `P-400`, and additionally validate these optional keys when present: `model_id` must be `str`, `model` must be `str`, `premise_text` must be `str`, `temperature` must be `int | float`, and `max_tokens` must be `int` with value `>= 1`.",
+    "responsible_file": "app/schemas/jobs.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `JobCreateRequest` field names or remove `idempotency_key`.",
+      "Do not add new required payload keys beyond the existing `project_id` requirement.",
+      "Do not edit `app/services/runtime_prompts.py`, `app/services/local_executor.py`, or test files in this task.",
+      "Do not reject extra payload keys not listed in this task."
+    ],
+    "knowledge_base": [
+      "Class `JobCreateRequest` is defined in `app/schemas/jobs.py` and already validates payload size plus required `project_id` presence for phases `P-100`, `P-200`, `P-300`, and `P-400`.",
+      "Module `app/services/runtime_prompts.py` reads optional payload keys `model_id`, `model`, `temperature`, `max_tokens`, and `premise_text`.",
+      "The current schema intentionally allows extra payload keys."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "class": "JobCreateRequest(StrictModel)",
+        "validator": "validate_phase_specific_payload(self) -> 'JobCreateRequest'",
+        "required_payload_keys_by_phase": {
+          "P-100": [
+            "project_id"
+          ],
+          "P-200": [
+            "project_id"
+          ],
+          "P-300": [
+            "project_id"
+          ],
+          "P-400": [
+            "project_id"
+          ]
+        },
+        "optional_payload_keys_to_validate_when_present": {
+          "model_id": "str",
+          "model": "str",
+          "premise_text": "str",
+          "temperature": "int | float",
+          "max_tokens": "int >= 1"
+        }
+      },
+      "output_data_schema": {
+        "validation_behavior": [
+          "Existing `project_id` validation remains intact.",
+          "Optional override keys raise `ValueError` when present with the wrong type.",
+          "Extra payload fields not listed remain allowed."
+        ]
+      },
+      "external_refs": [
+        "app/schemas/jobs.py",
+        "app/services/runtime_prompts.py",
+        "tests/test_job_payload_validation.py"
+      ]
+    },
+    "utilized_features": [
+      "Pydantic `model_validator`",
+      "Existing class `JobCreateRequest`",
+      "Existing enum `JobPhase`"
+    ],
+    "expected_outcomes": [
+      "Function `validate_phase_specific_payload` still requires a non-empty string `project_id` for phases `P-100`, `P-200`, `P-300`, and `P-400`.",
+      "Payload keys `model_id`, `model`, and `premise_text` are rejected when present with non-string values.",
+      "Payload key `temperature` is rejected when present with a non-numeric value.",
+      "Payload key `max_tokens` is rejected when present with a non-integer value or an integer less than 1."
+    ]
+  },
+  {
+    "task_id": "27a0b5f4-145d-4c58-9e7b-95f3244be23d",
+    "purpose": "Extend `audit_logging_middleware` in `app/main.py` so each logged `/v1` request includes an explicit `target_resource` string derived from existing route families. Use these exact resource formats: `project:{project_id}` for `/v1/projects/{project_id}`, `job:{job_id}` for `/v1/jobs/{job_id}`, `role_model_check:{run_id}` for `/v1/role-model-checker/{run_id}`, and `story_project:{project_id}` for `/v1/story-development/*` requests that carry `project_id` in query params.",
+    "responsible_file": "app/main.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change middleware ordering.",
+      "Do not modify authentication, CORS, rate limiting, or router registration.",
+      "Do not add request-body snapshots, `before_state`, or `after_state` capture in this task.",
+      "Do not edit `app/api/*` modules or persistence files."
+    ],
+    "knowledge_base": [
+      "Function `build_app()` in `app/main.py` defines `audit_logging_middleware` as an inline middleware for `/v1` requests.",
+      "The middleware already records `timestamp`, `method`, `path`, `status_code`, `duration_ms`, and `api_key_fingerprint` and sometimes `project_id`.",
+      "Existing versioned route families are `/v1/projects/*`, `/v1/jobs/*`, `/v1/role-model-checker/*`, and `/v1/story-development/*`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "middleware": "audit_logging_middleware(request: Request, call_next)",
+        "route_families": {
+          "/v1/projects/{project_id}": "target_resource = 'project:{project_id}'",
+          "/v1/jobs/{job_id}": "target_resource = 'job:{job_id}'",
+          "/v1/role-model-checker/{run_id}": "target_resource = 'role_model_check:{run_id}'",
+          "/v1/story-development/*?project_id={project_id}": "target_resource = 'story_project:{project_id}'"
+        }
+      },
+      "output_data_schema": {
+        "audit_record_fields": [
+          "timestamp",
+          "method",
+          "path",
+          "status_code",
+          "duration_ms",
+          "api_key_fingerprint",
+          "target_resource"
+        ],
+        "write_behavior": "Records are still appended as one JSON object per line to settings.structured_log_filename"
+      },
+      "external_refs": [
+        "app/main.py",
+        "app/api/jobs.py",
+        "app/api/role_model_checker.py",
+        "app/api/story_development.py"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI middleware in `build_app()`",
+      "Existing helper `fingerprint_api_key`",
+      "Existing JSON-line audit logging file path `settings.structured_log_filename`"
+    ],
+    "expected_outcomes": [
+      "Each logged `/v1` audit record includes a `target_resource` field when the route matches one of the defined families.",
+      "Existing audit fields remain present.",
+      "Router registration and middleware order are unchanged."
+    ]
+  },
+  {
+    "task_id": "4a1e0860-0569-47d1-93fe-9ce2cfbdb956",
+    "purpose": "Add a pre-restore disk-space check to `BackupService.restore_backup` in `app/services/backup.py` so the service refuses to restore a backup when the destination filesystem does not have enough free space for the backup file being copied. Use the existing destination `db_path`, compare available bytes on that filesystem against `backup_file.stat().st_size`, and raise `BackupError(\"Insufficient disk space to restore backup\")` before any restore copy happens when free space is lower than the backup size.",
+    "responsible_file": "app/services/backup.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the backup file naming scheme or retention policy.",
+      "Do not edit `app/api/backup.py` or add new backup endpoints.",
+      "Do not remove the existing pre-restore backup creation behavior.",
+      "Do not add a new configuration setting for the minimum free-space threshold in this task."
+    ],
+    "knowledge_base": [
+      "Class `BackupService` in `app/services/backup.py` already checks backup existence and performs restore copies in `restore_backup`.",
+      "Method `create_backup` already uses filesystem operations and `db_path` defaults to `data_root / 'state' / 'narrative_ops.db'`.",
+      "The repository guidance explicitly calls out backup-restore failures and verifying disk space before restore."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "class": "BackupService",
+        "method": "restore_backup(self, backup_id: str, db_path: Path | None = None) -> dict[str, Any]",
+        "source_value": "backup_file.stat().st_size",
+        "destination_value": "free bytes for filesystem containing db_path"
+      },
+      "output_data_schema": {
+        "error_behavior": "Raise BackupError('Insufficient disk space to restore backup') before any restore copy when free space < backup_file.stat().st_size",
+        "success_behavior": "Existing restore metadata shape remains unchanged when sufficient space exists"
+      },
+      "external_refs": [
+        "app/services/backup.py",
+        "app/api/health.py",
+        "AGENTS.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Class `BackupService`",
+      "Path operations from `pathlib.Path`",
+      "Existing filesystem utilities `shutil.copy2` and `os` module helpers"
+    ],
+    "expected_outcomes": [
+      "Method `restore_backup` raises `BackupError('Insufficient disk space to restore backup')` before copying when the destination filesystem lacks enough free space.",
+      "The existing backup existence check remains intact.",
+      "Successful restore behavior and return payload shape are unchanged when disk space is sufficient."
+    ]
+  }
+]

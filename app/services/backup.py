@@ -155,6 +155,24 @@ class BackupService:
         if not backup_file.exists():
             raise BackupError(f"Backup not found: {backup_id}")
         
+        # Check disk space before restore
+        try:
+            import shutil
+            backup_size = backup_file.stat().st_size
+            dest_dir = db_path.parent
+            if os.name == 'nt':  # Windows
+                drive = str(dest_dir).split(':')[0] + ':'
+                total, used, free = shutil.disk_usage(drive)
+                free_bytes = free
+            else:  # Unix/Linux/macOS
+                stat = os.statvfs(dest_dir)
+                free_bytes = stat.f_bavail * stat.f_frsize
+            
+            if free_bytes < backup_size:
+                raise BackupError("Insufficient disk space to restore backup")
+        except OSError:
+            pass
+        
         try:
             # Create backup of current database before restore
             pre_restore_backup = None

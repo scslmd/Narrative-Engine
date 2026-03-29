@@ -89,7 +89,7 @@ export function WritingView() {
         )}
 
         {!manuscriptQuery.isLoading && manuscriptDocuments.length === 0 && (
-          <p className="text-sm text-gray-500">No manuscript documents yet</p>
+          <p className="text-sm text-gray-500">This project has no manuscript records. Create manuscripts via the drafting workflow.</p>
         )}
 
         {!manuscriptQuery.isLoading && manuscriptDocuments.length > 0 && (
@@ -125,7 +125,7 @@ export function WritingView() {
         )}
 
         {!draftsQuery.isLoading && draftArtifacts.length === 0 && (
-          <p className="text-sm text-gray-500">No draft artifacts yet</p>
+          <p className="text-sm text-gray-500">No draft artifacts for this project. Drafting jobs create these records.</p>
         )}
 
         {!draftsQuery.isLoading && draftArtifacts.length > 0 && (
@@ -160,7 +160,7 @@ export function WritingView() {
           </>
         ) : (
           <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-gray-500">Select a manuscript document to view</p>
+            <p className="text-sm text-gray-500">Select a document from the left pane to populate this viewer.</p>
           </div>
         )}
       </div>

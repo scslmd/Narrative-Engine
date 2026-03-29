@@ -1,0 +1,173 @@
+[
+  {
+    "task_id": "95ef0e18-06c4-4627-8c54-f7df2fd396d1",
+    "purpose": "Update `docs/Story Development Product Spec v0.1.md` so the sections that currently read like shipped v1.0 commitments for editable flow, relationship-map workflows, and arc selection/comparison are recast as target product requirements rather than present-tense release claims. Keep all canonical object names intact, but add exact scope language in sections `4.1 Editable Flow Requirements`, `8.3 Character Tools`, `10.2 Arc Support Requirements`, and `14.2 Required Screens or Modes` that the current routed build exposes read-only planning and arc projections plus character profile editing, not a shipped editable flow editor, relationship map, or arc-decision workflow.",
+    "responsible_file": "docs/Story Development Product Spec v0.1.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit frontend or backend code files.",
+      "Do not remove canonical object names such as `StoryFlowStage`, `RelationshipEdge`, `ArcComparisonRecord`, or `ArcSelection`.",
+      "Do not invent new route paths, mutation endpoints, or release promises.",
+      "Do not change sections unrelated to editable flow, character relationships, arc selection, and required screens unless needed to keep wording internally consistent."
+    ],
+    "knowledge_base": [
+      "The current routed planning shell is `frontend/src/views/PlanningView.tsx`.",
+      "The planning shell renders `FlowEditor`, arc read views from `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`, and `CharacterBuilder` for profile editing.",
+      "The backend route family includes read endpoints for arcs in `app/api/story_development.py`, while the current frontend does not expose a backend-backed arc decision mutation flow.",
+      "The current character UI edits `CharacterProfile` fields but does not expose a separate relationship-map screen."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "### 4.1 Editable Flow Requirements",
+          "### 8.3 Character Tools",
+          "### 10.2 Arc Support Requirements",
+          "### 14.2 Required Screens or Modes"
+        ],
+        "exact_symbols": [
+          "FlowEditor",
+          "CharacterBuilder",
+          "RelationshipEdge",
+          "ArcSelection",
+          "ArcComparisonRecord"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "Editable flow is documented as a target product requirement, not a shipped v1.0 routed guarantee.",
+          "Relationship-map workflows are documented as deferred target functionality, while current routed behavior remains character profile editing.",
+          "Arc selection/comparison is documented as deferred target functionality, while current routed behavior remains arc candidate, selection, and stage-map reads."
+        ]
+      },
+      "external_refs": [
+        "docs/Story Development Product Spec v0.1.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing component names `FlowEditor` and `CharacterBuilder`",
+      "Existing arc service functions `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`"
+    ],
+    "expected_outcomes": [
+      "The product spec no longer reads as though editable flow, relationship-map workflows, and arc-decision mutations are already shipped in the current routed app.",
+      "Canonical object names remain unchanged.",
+      "The file contains explicit wording that distinguishes target product requirements from current routed v1.0 behavior."
+    ]
+  },
+  {
+    "task_id": "34500d40-8a27-47d2-8cad-bbc51cfcb5dd",
+    "purpose": "Update the frontend status and roadmap language in `docs/Frontend Design SRS v0.5.md` so the current implementation-status table, feature inventory, and mock-service notes stop overstating shipped v1.0 behavior for flow editing, relationship mapping, and arc comparison. Keep the existing symbols and task names, but revise the exact sections that mention `Flow Editor`, `Character Builder`, `relationship map`, `arc comparison`, and the note `Use mock services where incomplete ...` to describe the current routed state precisely: read-heavy planning tabs, profile editing for characters, and deferred relationship-map and arc-decision product surfaces.",
+    "responsible_file": "docs/Frontend Design SRS v0.5.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit code files.",
+      "Do not delete the historical phase/task inventory from the SRS; only correct current-state wording.",
+      "Do not claim new backend routes or frontend mutation flows.",
+      "Do not rewrite unrelated sections such as inspect, drafting, or checker behavior."
+    ],
+    "knowledge_base": [
+      "The file contains current-state rows for `Flow Editor` and `Character Builder`, plus references to `relationship map`, `arc comparison`, and the note `Use mock services where incomplete (flow editor, brainstorm, foundation, character, world bible, arc comparison, manuscript aids)`.",
+      "The current routed planning UI is implemented in `frontend/src/views/PlanningView.tsx`.",
+      "The `FlowEditor` component already calls real API methods in `frontend/src/services/flow.ts`, but the v1.0 scope decision is to treat editable flow as non-shipped rather than expand scope.",
+      "The `CharacterBuilder` component edits `CharacterProfile` records but does not provide a relationship-map surface."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_targets": [
+          "Implementation status rows that mention `Flow Editor`",
+          "Implementation status rows that mention `Character Builder`",
+          "Sections that contain the exact strings `relationship map`, `arc comparison`, and `Use mock services where incomplete`"
+        ],
+        "exact_symbols": [
+          "FlowEditor",
+          "CharacterBuilder",
+          "flowService",
+          "RelationshipEdge"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "The SRS distinguishes current routed implementation from deferred product goals for flow editing, relationship mapping, and arc comparison.",
+          "The note about incomplete mock-service areas no longer describes already-real API-backed reads as mocks, but it still defers non-shipped decision workflows.",
+          "The file does not introduce new route or endpoint claims."
+        ]
+      },
+      "external_refs": [
+        "docs/Frontend Design SRS v0.5.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/flow/FlowEditor.tsx",
+        "frontend/src/services/flow.ts",
+        "frontend/src/components/characters/CharacterBuilder.tsx"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing component `FlowEditor`",
+      "Existing component `CharacterBuilder`",
+      "Existing service `flowService`"
+    ],
+    "expected_outcomes": [
+      "The SRS no longer overstates flow-editing, relationship-map, or arc-comparison behavior as shipped v1.0 routed functionality.",
+      "The file remains aligned with the current routed planning shell and existing component names.",
+      "The file contains no speculative new implementation guidance."
+    ]
+  },
+  {
+    "task_id": "27c1543d-d1fd-4511-8dcc-ef30f59d7a13",
+    "purpose": "Revise the current-state and requirements wording in `docs/Narrative SRS v0.3.md` so the document stops implying that relationship-map and arc-selection product surfaces are already delivered in the current routed app. Keep the exact backend-domain terminology, but change the present-tense passages that mention `relationship map`, `Story arc selection`, and current service foundations to say that these remain supported backend concepts and future product surfaces, while the shipped routed app currently provides read-only arc projections and character profile editing.",
+    "responsible_file": "docs/Narrative SRS v0.3.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not edit code files.",
+      "Do not remove backend-domain terminology or canonical object references.",
+      "Do not add new route names, mutation endpoints, or UI components.",
+      "Do not rewrite unrelated sections outside the current-state and story-development requirement passages that mention relationship maps or arc selection."
+    ],
+    "knowledge_base": [
+      "The file contains lines that mention `relationship map` and `Story arc selection` in present-tense product language.",
+      "The current routed character screen uses `CharacterBuilder` for `CharacterProfile` editing.",
+      "The current routed planning screen uses `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` for arc reads without a separate arc-decision mutation UI."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_targets": [
+          "Current-state passages that mention service foundations",
+          "Requirement passages that contain `relationship map`",
+          "Requirement passages that contain `Story arc selection`"
+        ],
+        "exact_symbols": [
+          "CharacterProfile",
+          "RelationshipEdge",
+          "ArcSelection",
+          "ArcStageMap"
+        ]
+      },
+      "output_data_schema": {
+        "documented_scope": [
+          "Relationship-map workflows are described as backend-supported/future product behavior rather than current routed delivery.",
+          "Arc selection is described as a supported domain concept with current routed read projections instead of a shipped interactive decision workflow.",
+          "The SRS stays consistent with the current frontend implementation and existing backend contracts."
+        ]
+      },
+      "external_refs": [
+        "docs/Narrative SRS v0.3.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/characters/CharacterBuilder.tsx",
+        "frontend/src/services/arcs.ts"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation",
+      "Existing domain types `CharacterProfile`, `RelationshipEdge`, `ArcSelection`, and `ArcStageMap`"
+    ],
+    "expected_outcomes": [
+      "The SRS no longer implies that relationship-map and arc-decision surfaces are already shipped in the routed app.",
+      "Current-state wording remains faithful to the existing codebase.",
+      "No code changes are introduced."
+    ]
+  }
+]

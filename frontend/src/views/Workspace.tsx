@@ -15,14 +15,14 @@ export function Workspace() {
     <>
       <WorkspaceShell>
         <div className="flex h-full gap-4">
-          <div className="w-80 flex-shrink-0 overflow-hidden">
+          <div className="flex-1 h-full overflow-hidden">
             <Outlet />
           </div>
-          <div className="flex-1 flex gap-4 overflow-hidden">
-            <div className="w-80 flex-shrink-0 h-full overflow-hidden">
+          <div className="w-80 flex-shrink-0 h-full overflow-hidden flex flex-col gap-4">
+            <div className="flex-1 overflow-hidden">
               <NotesPanel projectId={projectId} />
             </div>
-            <div className="flex-1 h-full overflow-hidden">
+            <div className="flex-1 overflow-hidden">
               <JobLaunchPanel projectId={projectId} />
             </div>
           </div>

@@ -67,7 +67,7 @@ export default function InspectMode() {
         return;
       }
 
-      setResolutionError('Could not resolve an inspectable run for this route.');
+      setResolutionError(`Job ID "${routeJobId}" not found in checker or jobs services. Verify the job exists or navigate back.`);
       setIsResolvingContext(false);
     };
 
@@ -89,7 +89,7 @@ export default function InspectMode() {
   if (isResolvingContext) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-sm text-gray-500">Resolving inspect run...</p>
+        <p className="text-sm text-gray-500">Loading inspection data for job from route...</p>
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function InspectMode() {
   if (!inspectContext?.jobId) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-sm text-gray-500">Select a job to inspect</p>
+        <p className="text-sm text-gray-500">No inspection context active. Navigate to review or jobs view to select a job.</p>
       </div>
     );
   }

@@ -1,0 +1,225 @@
+[
+  {
+    "task_id": "c4bd0bdb-67a5-4e35-a563-2a8d2b1c0f61",
+    "purpose": "Replace the routed write-workspace empty-state copy in `WritingView` so the existing sections for manuscript documents, draft artifacts, and the document viewer use action-oriented text instead of placeholder-style lines. Change the exact rendered strings `No manuscript documents yet`, `No draft artifacts yet`, and `Select a manuscript document to view` to explicit product states that tell the user the project has no fetched records yet and that selecting a document is required to populate the center pane.",
+    "responsible_file": "frontend/src/views/WritingView.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify query keys `['manuscript-documents', projectId]`, `['draft-artifacts', projectId]`, or `['revision-suggestions', projectId, selectedDocumentId ?? 'all']`.",
+      "Do not change `useQuery`, `useEffect`, or `selectedDocumentId` selection logic.",
+      "Do not edit `frontend/src/services/drafting.ts`, `frontend/src/components/aids/AidsPanel.tsx`, or any docs files.",
+      "Do not add new routes, callbacks, or mutation behavior."
+    ],
+    "knowledge_base": [
+      "Component `WritingView` in `frontend/src/views/WritingView.tsx` renders the routed `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` views.",
+      "The file already renders three user-facing empty states in the manuscript list, draft artifact list, and center pane.",
+      "The view consumes `getManuscriptDocuments`, `getDraftArtifacts`, and `getRevisionSuggestions` via `React Query useQuery`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "WritingView()",
+        "route_params": {
+          "projectId": "string",
+          "chapterId": "string | undefined"
+        },
+        "exact_strings_to_replace": [
+          "No manuscript documents yet",
+          "No draft artifacts yet",
+          "Select a manuscript document to view"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The manuscript empty state no longer contains the exact string `No manuscript documents yet`.",
+          "The draft-artifact empty state no longer contains the exact string `No draft artifacts yet`.",
+          "The center-pane empty state no longer contains the exact string `Select a manuscript document to view`."
+        ],
+        "query_keys_unchanged": [
+          "['manuscript-documents', projectId]",
+          "['draft-artifacts', projectId]",
+          "['revision-suggestions', projectId, selectedDocumentId ?? 'all']"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/WritingView.tsx",
+        "docs/Frontend Workspace Behavior Contract v0.1.md",
+        "AGENTS.md"
+      ]
+    },
+    "utilized_features": [
+      "React functional component `WritingView`",
+      "React Query `useQuery`",
+      "Route params via `useParams`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the exact strings `No manuscript documents yet`, `No draft artifacts yet`, or `Select a manuscript document to view`.",
+      "The existing layout and query behavior remain unchanged.",
+      "Users see explicit, non-placeholder empty-state copy in all three existing write-workspace sections."
+    ]
+  },
+  {
+    "task_id": "5eaa8688-c587-4495-a1d0-9b02c14a0395",
+    "purpose": "Replace the routed review-workspace empty-state copy in `FindingsList` so the rendered no-data state is explicit and next-step oriented instead of the generic line `No findings for this project`. Keep the existing `loading`, `error`, and findings list branches intact and change only the empty-state text shown when `!loading && !error && findings.length === 0`.",
+    "responsible_file": "frontend/src/components/review/FindingsList.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not change the `loadFindings` function signature or its call to `getFindings`.",
+      "Do not modify filter state keys `severityFilter` or `sourceKindFilter`.",
+      "Do not edit `frontend/src/components/review/FindingCard.tsx`, `frontend/src/services/review.ts`, or any docs files.",
+      "Do not add new buttons, routes, or mutation behavior."
+    ],
+    "knowledge_base": [
+      "Component `FindingsList` owns the current review empty state in `frontend/src/components/review/FindingsList.tsx`.",
+      "The file already distinguishes `loading`, `error`, empty, and populated states.",
+      "The empty state is rendered inside the branch `!loading && !error && findings.length === 0`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "FindingsList({ projectId }: FindingsListProps)",
+        "prop_shape": {
+          "projectId": "string"
+        },
+        "exact_string_to_replace": "No findings for this project"
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The review empty state no longer contains the exact string `No findings for this project`.",
+          "The `loading` and `error` branches remain unchanged.",
+          "The populated findings list still renders `FindingCard` for each `finding.finding_id`."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/review/FindingsList.tsx",
+        "frontend/src/components/review/FindingCard.tsx",
+        "docs/Frontend Workspace Behavior Contract v0.1.md"
+      ]
+    },
+    "utilized_features": [
+      "React `useState`",
+      "React `useEffect`",
+      "React `useCallback`",
+      "Service function `getFindings`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the exact string `No findings for this project`.",
+      "The existing refresh button and filter controls behave exactly as before.",
+      "The empty review state is explicit about the absence of fetched findings rather than reading as a placeholder."
+    ]
+  },
+  {
+    "task_id": "cf9fe55d-cd8f-4e49-94a2-f535395ac634",
+    "purpose": "Replace the routed inspect-workspace status copy in `InspectMode` so the route-resolution and no-context branches use explicit inspect wording instead of generic placeholder phrasing. Update the exact strings `Resolving inspect run...`, `Could not resolve an inspectable run for this route.`, and `Select a job to inspect` while keeping the existing `routeJobId` resolution flow, `inspectContext` checks, and `InspectTabs` rendering logic unchanged.",
+    "responsible_file": "frontend/src/components/inspect/InspectMode.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify the `useEffect` route-resolution logic or the calls to `getCheckerStatus`, `jobsService.getStatus`, or `setInspectContext`.",
+      "Do not change the `InspectTabs` props shape or the `handleBackToManuscript` navigation target `/workspace/${projectId}/write`.",
+      "Do not edit `frontend/src/components/inspect/InspectTabs.tsx`, `frontend/src/services/checker.ts`, `frontend/src/services/jobs.ts`, or any docs files.",
+      "Do not add retries, polling, or new store fields."
+    ],
+    "knowledge_base": [
+      "Component `InspectMode` handles route-only inspect resolution in `frontend/src/components/inspect/InspectMode.tsx`.",
+      "The file already distinguishes `isResolvingContext`, `resolutionError`, missing `inspectContext?.jobId`, and the populated inspect view.",
+      "The routed inspect screen is `/workspace/:projectId/inspect/:jobId`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "InspectMode()",
+        "route_params": {
+          "jobId": "string | undefined"
+        },
+        "store_keys": [
+          "useUIStore.inspectContext",
+          "useUIStore.projectId",
+          "useUIStore.setInspectContext"
+        ],
+        "exact_strings_to_replace": [
+          "Resolving inspect run...",
+          "Could not resolve an inspectable run for this route.",
+          "Select a job to inspect"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The resolving branch no longer contains the exact string `Resolving inspect run...`.",
+          "The error branch no longer contains the exact string `Could not resolve an inspectable run for this route.`.",
+          "The no-context branch no longer contains the exact string `Select a job to inspect`."
+        ],
+        "routes_unchanged": [
+          "/workspace/:projectId/inspect",
+          "/workspace/:projectId/inspect/:jobId"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/inspect/InspectMode.tsx",
+        "frontend/src/components/inspect/InspectTabs.tsx",
+        "frontend/src/stores/uiStore.ts"
+      ]
+    },
+    "utilized_features": [
+      "React `useEffect`",
+      "React `useState`",
+      "React Router `useParams`",
+      "React Router `useNavigate`",
+      "useUIStore.setInspectContext"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the exact strings `Resolving inspect run...`, `Could not resolve an inspectable run for this route.`, or `Select a job to inspect`.",
+      "Inspect route resolution still uses `getCheckerStatus` first and `jobsService.getStatus` second.",
+      "Only user-facing copy changes; no runtime behavior or route behavior changes."
+    ]
+  },
+  {
+    "task_id": "bb9eecff-3ce6-48ba-a534-a6fd4af4a57d",
+    "purpose": "Replace the routed review inspect-links empty-state copy in `InspectRunLinksList` so the current no-data branch uses explicit filter-aware wording instead of the generic line `No inspect run links found`. Keep the existing `useQuery` call, filter inputs, and card rendering logic unchanged and update only the user-facing empty-state text block.",
+    "responsible_file": "frontend/src/components/inspectLinks/InspectRunLinksList.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify the query key `['inspect-links', projectId, filterByObjectKind, filterByObjectId, filterByRunId]`.",
+      "Do not change the `getInspectLinks` call signature or any filter state variable names.",
+      "Do not edit `frontend/src/components/inspectLinks/InspectRunLinkCard.tsx`, `frontend/src/services/inspectLinks.ts`, or any docs files.",
+      "Do not add new routes, buttons, or mutation behavior."
+    ],
+    "knowledge_base": [
+      "Component `InspectRunLinksList` owns the inspect-link empty state in `frontend/src/components/inspectLinks/InspectRunLinksList.tsx`.",
+      "The file already computes `filteredLinks` from `links` and filter state.",
+      "The empty state is rendered when `filteredLinks.length === 0`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "component": "InspectRunLinksList({ projectId }: InspectRunLinksListProps)",
+        "prop_shape": {
+          "projectId": "string | undefined"
+        },
+        "filter_state_keys": [
+          "filterByObjectKind",
+          "filterByObjectId",
+          "filterByRunId",
+          "filterByKind"
+        ],
+        "exact_string_to_replace": "No inspect run links found"
+      },
+      "output_data_schema": {
+        "rendered_states": [
+          "The empty-state block no longer contains the exact string `No inspect run links found`.",
+          "The filters, link count summary, and `InspectRunLinkCard` grid remain unchanged."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/components/inspectLinks/InspectRunLinksList.tsx",
+        "frontend/src/components/inspectLinks/InspectRunLinkCard.tsx",
+        "frontend/src/services/inspectLinks.ts"
+      ]
+    },
+    "utilized_features": [
+      "React Query `useQuery`",
+      "React `useState`",
+      "Service function `getInspectLinks`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the exact string `No inspect run links found`.",
+      "The `useQuery` call and filter controls are unchanged.",
+      "The routed review inspect-links screen shows explicit no-data wording instead of placeholder-style copy."
+    ]
+  }
+]

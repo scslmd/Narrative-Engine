@@ -97,7 +97,7 @@ export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
 
       {filteredLinks.length === 0 ? (
         <div className="border rounded-lg p-8 text-center bg-gray-50">
-          <p className="text-gray-600">No inspect run links found</p>
+          <p className="text-gray-600">No inspect run links match your current filters. Either no links exist for this project, or the active filters are too restrictive. Try clearing filters to see all available links.</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

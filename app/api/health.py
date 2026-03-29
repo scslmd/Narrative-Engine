@@ -171,6 +171,17 @@ async def get_metrics() -> dict:
             for status in ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]:
                 if status not in metrics["jobs"]:
                     metrics["jobs"][status] = 0
+            
+            # Compute success and failure rates from terminal states only
+            completed_count = metrics["jobs"].get("COMPLETED", 0)
+            failed_count = metrics["jobs"].get("FAILED", 0)
+            terminal_total = completed_count + failed_count
+            if terminal_total > 0:
+                metrics["jobs"]["success_rate"] = completed_count / terminal_total
+                metrics["jobs"]["failure_rate"] = failed_count / terminal_total
+            else:
+                metrics["jobs"]["success_rate"] = 0.0
+                metrics["jobs"]["failure_rate"] = 0.0
     except Exception:
         # If we can't read job counts, return zeros
         metrics["jobs"] = {
@@ -178,6 +189,8 @@ async def get_metrics() -> dict:
             "PROCESSING": 0,
             "COMPLETED": 0,
             "FAILED": 0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
         }
     
     # Role model checker status counts
@@ -195,6 +208,17 @@ async def get_metrics() -> dict:
             for status in ["PENDING", "RUNNING", "COMPLETED", "FAILED"]:
                 if status not in metrics["role_model_checker"]:
                     metrics["role_model_checker"][status] = 0
+            
+            # Compute success and failure rates from terminal states only
+            completed_count = metrics["role_model_checker"].get("COMPLETED", 0)
+            failed_count = metrics["role_model_checker"].get("FAILED", 0)
+            terminal_total = completed_count + failed_count
+            if terminal_total > 0:
+                metrics["role_model_checker"]["success_rate"] = completed_count / terminal_total
+                metrics["role_model_checker"]["failure_rate"] = failed_count / terminal_total
+            else:
+                metrics["role_model_checker"]["success_rate"] = 0.0
+                metrics["role_model_checker"]["failure_rate"] = 0.0
     except Exception:
         # If we can't read checker counts, return zeros
         metrics["role_model_checker"] = {
@@ -202,6 +226,8 @@ async def get_metrics() -> dict:
             "RUNNING": 0,
             "COMPLETED": 0,
             "FAILED": 0,
+            "success_rate": 0.0,
+            "failure_rate": 0.0,
         }
     
     return metrics

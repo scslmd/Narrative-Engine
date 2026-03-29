@@ -42,7 +42,7 @@ export default function ArtifactLineage({ context }: ArtifactLineageProps) {
   if (artifacts.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p className="text-sm text-gray-500">No artifacts generated yet</p>
+        <p className="text-sm text-gray-500">No persisted artifacts found for this attempt. Artifacts are stored when job steps produce output.</p>
       </div>
     );
   }

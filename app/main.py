@@ -152,18 +152,22 @@ def build_app() -> FastAPI:
             "api_key_fingerprint": api_key_fingerprint,
         }
         
-        # Extract project_id from path if present (e.g., /v1/projects/{project_id}/...)
+        # Extract target_resource from path and query params
         path_parts = request.url.path.split('/')
         if len(path_parts) > 2 and path_parts[1] == 'v1':
-            # Look for project_id in common patterns
             try:
                 if path_parts[2] == 'projects' and len(path_parts) > 3:
                     audit_record["project_id"] = path_parts[3]
+                    audit_record["target_resource"] = f"project:{path_parts[3]}"
+                elif path_parts[2] == 'jobs' and len(path_parts) > 3:
+                    audit_record["target_resource"] = f"job:{path_parts[3]}"
+                elif path_parts[2] == 'role-model-checker' and len(path_parts) > 3:
+                    audit_record["target_resource"] = f"role_model_check:{path_parts[3]}"
                 elif path_parts[2] == 'story-development':
-                    # project_id might be in query params for story-dev endpoints
                     project_id = request.query_params.get('project_id')
                     if project_id:
                         audit_record["project_id"] = project_id
+                        audit_record["target_resource"] = f"story_project:{project_id}"
             except (IndexError, KeyError):
                 pass
         
