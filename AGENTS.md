@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `435 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -65,6 +65,24 @@ cd frontend && npm run lint
 cd frontend && npm run typecheck
 cd frontend && npm run build
 ```
+
+### Quality Review Helper
+```bash
+python scripts/qc.py                   # review branch diff vs codex/main
+python scripts/qc.py --latest-commit   # review files changed in HEAD
+python scripts/qc.py app/main.py       # review one specific file
+python scripts/qc.py file1.py file2.ts # review multiple specific files
+python scripts/qc.py --verbose         # show review steps and analyzer results
+python scripts/qc.py --allow-directories app   # expand coding files under a directory target
+```
+
+- `scripts/qc.py` is the portable implementation. The repo root `qc.py` remains a thin compatibility wrapper.
+- `scripts/qc.py` defaults to branch-diff review against `codex/main`, then falls back to `HEAD`, then to recent modified coding files if no git-derived targets are found.
+- Direct file targets override auto-detection and only review the files you pass.
+- Directory targets require `--allow-directories`; otherwise `scripts/qc.py` fails clearly instead of silently skipping them.
+- Missing or unsupported explicit targets fail clearly instead of degrading into a generic run.
+- `--verbose` prints the selection path, review steps, and per-file analyzer summary before the full report.
+- The adverse review output should include concrete file-aware findings from the analyzed files, not just a generic checklist.
 
 ## Project Structure
 
@@ -379,21 +397,21 @@ Do not call the repo merge-ready unless all four of these are green:
 - `GET /v1/story-development/drafting/revision-suggestions?project_id={id}`
 - `POST /v1/story-development/drafting/revision-suggestions`
 
-#### Story Development - Brainstorm (NEW)
+#### Story Development - Brainstorm
 - `GET /v1/story-development/brainstorm/items?project_id={id}`
 - `POST /v1/story-development/brainstorm/items`
 - `POST /v1/story-development/brainstorm/items/cluster`
 - `POST /v1/story-development/brainstorm/items/promote`
 - `GET /v1/story-development/brainstorm/promotions?project_id={id}`
 
-#### Story Development - Foundation (NEW)
+#### Story Development - Foundation
 - `GET /v1/story-development/foundation?project_id={id}`
 - `POST /v1/story-development/foundation`
 - `PATCH /v1/story-development/foundation?project_id={id}`
 - `GET /v1/story-development/foundation/revisions?project_id={id}`
 - `GET /v1/story-development/foundation/review-cues?project_id={id}`
 
-#### Story Development - Characters (NEW)
+#### Story Development - Characters
 - `GET /v1/story-development/characters?project_id={id}`
 - `GET /v1/story-development/characters/{character_id}?project_id={id}`
 - `POST /v1/story-development/characters`
@@ -401,13 +419,13 @@ Do not call the repo merge-ready unless all four of these are green:
 - `GET /v1/story-development/characters/{character_id}/relationships?project_id={id}`
 - `POST /v1/story-development/relationships`
 
-#### Story Development - World Bible (NEW)
+#### Story Development - World Bible
 - `GET /v1/story-development/world-bible?project_id={id}`
 - `GET /v1/story-development/world-bible/{entry_type}/{title}?project_id={id}`
 - `POST /v1/story-development/world-bible`
 - `PATCH /v1/story-development/world-bible/{entry_type}/{title}?project_id={id}`
 
-#### Story Development - Arcs (NEW)
+#### Story Development - Arcs
 - `GET /v1/story-development/arcs/candidates?project_id={id}`
 - `GET /v1/story-development/arcs/selections?project_id={id}`
 - `GET /v1/story-development/arcs/stage-maps?project_id={id}`
@@ -510,7 +528,7 @@ backup = get_backup_service()
 
 ## Frontend Quality Gate Notes
 
-The frontend improvements work established these repo-level guardrails:
+These repo-level guardrails apply to merged frontend work:
 
 - Services should use one shared API client pattern.
 - Route state must survive refreshes and deep links.
