@@ -56,6 +56,8 @@ Implemented and working now:
 - arc support as read-only projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; interactive arc-decision mutations deferred beyond v1.0
 - routed write workspace at `/workspace/:projectId/write` with API-backed reads for `ManuscriptDocument`, `DraftArtifact`, and `RevisionSuggestion` records via existing GET routes (`getManuscriptDocuments`, `getDraftArtifacts`, `getRevisionSuggestions`)
 - review-driven aids rail as a surface for viewing revision suggestions without backend-backed accept/reject workflow
+- latency telemetry in `/health/metrics` endpoint with average, min, and max latency fields for both jobs and role-model-checker runs (REL-05)
+- operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
 
 Still being built:
 

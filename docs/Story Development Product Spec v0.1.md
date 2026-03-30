@@ -1,5 +1,12 @@
 # Story Development Product Spec v0.1
 
+**Change log from v0.1 (v1.0 Scope Clarification - March 29, 2026)**:
+- Updated Section 4.1 to clarify that current v1.0 provides read projections of flow stages; full mutation support for adding, reordering, and deleting stages is deferred to a future release wave
+- Updated Section 8.3 to document that current v1.0 provides character profile editing via CharacterBuilder routed state; relationship-map workflows are deferred to a future release wave
+- Updated Section 10.2 to clarify that current v1.0 provides read-only arc projections via getArcCandidates, getArcSelections, and getArcStageMaps; arc selection mutations and comparison mutations are deferred to a future release wave
+- Updated Section 14.2 screens list to note v1.0 scope for Character Builder (profile editing only) and Arc Selection (read-only projections)
+- Added explicit documentation that planning is read-heavy for v1.0 via existing GET planning endpoints; create, update, reorder, and packet-edit mutations are deferred
+
 ## 1. Purpose
 
 This document defines the target product feature set for guided story development in Narrative-Engine.
@@ -72,7 +79,9 @@ This flow should be project-configurable.
 
 ### 4.1 Editable Flow Requirements (Target Product Requirement)
 
-This section describes the target product requirement for editable flow management. Current v1.0 routed behavior provides read projections of flow stages; full mutation support for adding, reordering, and deleting stages is deferred to a future release wave.
+This section describes the target product requirement for editable flow management. 
+
+**Current v1.0 scope**: The routed PlanningView provides read projections of flow stages via existing backend services. Full mutation support for adding, reordering, renaming, and deleting stages is deferred to a future release wave.
 
 Each `StoryFlowStage` should support:
 
@@ -221,7 +230,7 @@ Each major character should support:
 
 ### 8.3 Character Tools (Target Product Requirement)
 
-Current v1.0 provides character profile editing via the CharacterBuilder routed state. Relationship-map workflows and advanced analysis tools described below are deferred to a future release wave.
+**Current v1.0 scope**: The CharacterBuilder component in PlanningView provides character profile editing via GET|POST|PATCH /v1/story-development/characters endpoints. Relationship-map workflows and advanced analysis tools described below are deferred to a future release wave.
 
 - generate or refine character backstory
 - compare character arcs
@@ -279,7 +288,7 @@ The user should be able to choose an arc deliberately, compare alternatives, and
 
 ### 10.2 Arc Support Requirements (Target Product Requirement)
 
-Current v1.0 provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`. Arc selection mutations, comparison mutations, and arc-driven guidance features described below are deferred to a future release wave.
+**Current v1.0 scope**: The PlanningView arcs tab provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` which consume GET /v1/story-development/arcs/candidates, GET /v1/story-development/arcs/selections, and GET /v1/story-development/arcs/stage-maps. Arc selection mutations, comparison mutations, and arc-driven guidance features described below are deferred to a future release wave.
 
 The system should support:
 
@@ -378,6 +387,8 @@ Planning objects should support:
 - unresolved questions
 - status
 - writer notes
+
+**Current v1.0 scope**: The PlanningView planning tab provides read-heavy planning visibility via `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets` which consume GET /v1/story-development/planning/sequence-plans, GET /v1/story-development/planning/chapter-plans, GET /v1/story-development/planning/scene-plans, GET /v1/story-development/planning/dependencies, and GET /v1/story-development/planning/chapter-packets. Create, update, reorder, and packet-edit mutations are deferred to a future release wave.
 
 ### 11.4 Planner Capabilities
 
@@ -485,7 +496,7 @@ The main workspace should stay aligned with the current three-pane direction.
 - promises
 - constraints
 
-4. Character Builder (Current v1.0: character profile editing via routed state)
+4. Character Builder (Current v1.0: character profile editing via routed state using GET|POST|PATCH /v1/story-development/characters)
 - character cards
 - relationship map (deferred to future release; current v1.0 provides profile fields only)
 - arc-change fields
@@ -496,17 +507,17 @@ The main workspace should stay aligned with the current three-pane direction.
 - locations, factions, rules, history
 - continuity warning panel
 
-6. Arc Selection and Comparison (Current v1.0: read-only projections via getArcCandidates, getArcSelections, getArcStageMaps)
+6. Arc Selection and Comparison (Current v1.0: read-only projections via getArcCandidates, getArcSelections, getArcStageMaps consuming GET /v1/story-development/arcs/*)
 - recommended arcs
 - arc comparison table (deferred to future release; mutations not yet available in v1.0)
 - stage-map preview
 - "stay" versus "pivot" suggestion panel (deferred to future release)
 
-7. Planning Board
+7. Planning Board (Current v1.0: read-heavy planning via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, getChapterPackets consuming GET /v1/story-development/planning/*)
 - sequence view
 - chapter cards
 - scene cards
-- drag reorder
+- drag reorder (deferred to future release; mutations not yet available in v1.0)
 - dependency and arc-stage badges
 
 8. Drafting Workspace

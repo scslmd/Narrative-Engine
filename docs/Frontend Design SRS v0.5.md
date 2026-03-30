@@ -32,6 +32,12 @@ Document version: `v0.5`
 - Updated Section 14.6 (Arc Comparison) to clarify current implementation provides read-only arc projections; comparative analysis workflows are deferred
 - Updated Section 12.4 mock service note: planning and character reads are API-backed where endpoints exist; decision workflows and editable flow stages remain deferred
 
+**Change log from v0.5 (API Contract Alignment - March 29, 2026)**:
+- Updated Section 12A API Availability Matrix to reflect that AidsPanel, BrainstormWorkspace, FoundationEditor, CharacterBuilder, and WorldBibleWorkspace are now routed surfaces backed by existing story-development GET/POST/PATCH contracts
+- Removed mock service claims for FE-025 (manuscript aids), FE-029 (brainstorm), FE-030 (foundation), FE-031 (characters), and FE-032 (world bible) since backend endpoints exist in app/api/story_development.py
+- Updated Section 12.4 to document that planning is read-heavy for v1.0 via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, and getChapterPackets; arcs are documented as read-only projections via getArcCandidates, getArcSelections, and getArcStageMaps
+- Added query key patterns: ['revision-suggestions', projectId, selectedDocumentId ?? 'all'], ['brainstorm-items', projectId], ['foundation', projectId], ['planning', 'characters', projectId], ['world-bible', projectId]
+
 **Change log from v0.5 (Directory Structure Update - March 24, 2026)**:
 - Added Section 21 subsection on Directory Structure & Import Conventions documenting flat structure requirement, import path patterns, Tailwind config, Vite entry point, build verification strategy, and git hygiene practices
 
@@ -575,21 +581,41 @@ The following features have **no backend implementation yet**:
 
 ### 12.4 Frontend Implementation Strategy
 
-**Hybrid approach**: The frontend will use real backend APIs where available and mock services where endpoints are incomplete. This allows UI development to proceed without blocking on backend completion.
+**API-backed approach**: The frontend uses real backend APIs for all story-development features where endpoints exist in `app/api/story_development.py`. Mock services are only used for deferred capabilities (editable flow stages, relationship mapping UI, arc comparison mutations).
 
-**Mock service pattern**:
-- Implement mock services that return realistic payloads matching the canonical schema
-- Use environment variable `VITE_USE_MOCKS=true` to toggle between mock and real APIs
-- Mock services should follow the same TypeScript interfaces as real API clients
-- When backend endpoints are added, flip the flag and remove mock implementations
+**v1.0 scope clarification**: 
+- Planning is read-heavy via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, and getChapterPackets
+- Arcs are documented as read-only projections via getArcCandidates, getArcSelections, and getArcStageMaps
+- AidsPanel (FE-025), BrainstormWorkspace (FE-029), FoundationEditor (FE-030), CharacterBuilder (FE-031), and WorldBibleWorkspace (FE-032) are routed surfaces backed by existing GET/POST/PATCH contracts
+- Decision workflows (review decisions, merge decisions), editable flow stages, relationship mapping UI, and arc comparison mutations remain deferred beyond v1.0
 
-**v1.0 scope clarification**: Planning reads (sequence plans, chapter plans, scene plans, dependencies, chapter packets) and character profile reads are API-backed where endpoints exist; decision workflows (review decisions, merge decisions), editable flow stages, relationship mapping, and arc comparison remain deferred beyond v1.0
+**Existing backend contracts**:
+- `GET /v1/story-development/drafting/revision-suggestions` - AidsPanel revision suggestions
+- `POST /v1/story-development/brainstorm/items`, `POST /v1/story-development/brainstorm/items/cluster`, `GET /v1/story-development/brainstorm/promotions` - BrainstormWorkspace
+- `GET|POST|PATCH /v1/story-development/foundation` - FoundationEditor
+- `GET|POST|PATCH /v1/story-development/characters`, `GET /v1/story-development/characters/{character_id}/relationships`, `POST /v1/story-development/relationships` - CharacterBuilder
+- `GET|POST|PATCH /v1/story-development/world-bible` - WorldBibleWorkspace
 
 **Priority order**:
 1. Core writing workflow (project → plan → write → review) using existing APIs
 2. Inspect mode using existing step/lineage endpoints
-3. Story development features with mock services where needed
-4. Manuscript aids with mock service (no backend exists yet)
+3. Story development features via routed API-backed surfaces (BrainstormWorkspace, FoundationEditor, CharacterBuilder, WorldBibleWorkspace, AidsPanel)
+4. Deferred capabilities: editable flow stages, relationship mapping, arc comparison mutations
+
+**Query key patterns**:
+- `['revision-suggestions', projectId, selectedDocumentId ?? 'all']` - AidsPanel revision suggestions
+- `['brainstorm-items', projectId]` - BrainstormWorkspace items
+- `['foundation', projectId]` - FoundationEditor profile
+- `['planning', 'characters', projectId]` - CharacterBuilder profiles
+- `['world-bible', projectId]` - WorldBibleWorkspace entries
+- `['planning-sequence-plans', projectId]` - Sequence plans read
+- `['planning-chapter-plans', projectId]` - Chapter plans read
+- `['planning-scene-plans', projectId]` - Scene plans read
+- `['planning-dependencies', projectId]` - Planning dependencies read
+- `['planning-chapter-packets', projectId]` - Chapter packets read
+- `['arc-candidates', projectId]` - Arc candidates read-only projection
+- `['arc-selections', projectId]` - Arc selections read-only projection
+- `['arc-stage-maps', projectId]` - Arc stage maps read-only projection
 
 ## 12A. Backend API Availability Matrix
 
@@ -600,18 +626,18 @@ The following features have **no backend implementation yet**:
 | Models | ✅ Complete | Use real API |
 | Role-Model Checker | ✅ Complete | Use real API |
 | Inspect (steps/lineage) | ✅ Complete | Use real API |
-| Planning (read) | ✅ Complete | Use real API |
+| Planning (read) | ✅ Complete | Use real API via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, getChapterPackets |
 | Drafting (read) | ✅ Complete | Use real API |
 | Review (read) | ✅ Complete | Use real API |
 | Branching | ✅ Complete | Use real API |
 | Story Decisions | ✅ Complete | Use real API |
 | Flow Editor | ⚠️ Services only; FlowEditor component exists | Mock service; editable stages deferred beyond v1.0 |
-| Brainstorm | ⚠️ Services only | Mock service |
-| Foundation | ⚠️ Services only | Mock service |
-| Character Builder | ⚠️ Services only; profile reads/writes via mock | Mock service; relationship map deferred beyond v1.0 |
-| World Bible | ⚠️ Services only | Mock service |
-| Arc Comparison | ⚠️ Services only; read-only projections available | Mock service; comparative analysis workflows deferred beyond v1.0 |
-| Manuscript Aids | ❌ Not started | Mock service |
+| Brainstorm | ✅ GET/POST/PATCH endpoints exist | Routed surface via POST /v1/story-development/brainstorm/items, POST /v1/story-development/brainstorm/items/cluster, GET /v1/story-development/brainstorm/promotions |
+| Foundation | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/foundation |
+| Character Builder | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/characters; relationship map deferred beyond v1.0 |
+| World Bible | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/world-bible |
+| Arc Comparison | ⚠️ Services only; read-only projections available | Read-only projections via getArcCandidates, getArcSelections, getArcStageMaps; comparative analysis workflows deferred beyond v1.0 |
+| Manuscript Aids | ✅ GET endpoint exists | Routed surface via GET /v1/story-development/drafting/revision-suggestions (AidsPanel) |
 
 ## 13. Feature Responsibilities And Task Contracts
 

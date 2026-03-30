@@ -89,18 +89,19 @@ These items are the current release blockers for calling the product `v1.0`. The
 
 ### Backend Reliability
 
-- [ ] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
-  - Current status: `success_rate` and `failure_rate` metrics are available in `/health/metrics` for both jobs and checker runs.
-  - Remaining work: add inference-latency telemetry before closing this item.
+- [x] REL-05 Add monitoring and telemetry (job success/failure rates, inference latency, `/metrics` endpoint)
+  - Current status: `success_rate`, `failure_rate`, and latency telemetry (`average_latency_ms`, `min_latency_ms`, `max_latency_ms`) are available in `/health/metrics` for both jobs and checker runs.
+  - Completed: Latency fields computed from `started_at`/`finished_at` timestamps with deterministic test coverage.
 
 - [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
   - Current status: Runtime override validation exists in `app/schemas/jobs.py`; full phase-specific payload validation deferred.
 
 - [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
 
-- [ ] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
-  - Current status: request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, and `target_resource`.
-  - Remaining work: add explicit operation semantics and before/after state capture before closing this item.
+- [x] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
+  - Current status: Request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, `target_resource`, and normalized `operation` field.
+  - Completed: Operation normalization via `_normalize_operation()` function with stable semantic names (e.g., `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read`). Full test coverage in `tests/test_audit_logging.py`.
+  - Remaining work: before/after state capture deferred beyond v1.0.
 
 ### Persistence and Runtime Expansion
 
@@ -115,14 +116,14 @@ These items are the current release blockers for calling the product `v1.0`. The
 - [ ] FE-024A: Story branches UI (real API)
 - [ ] FE-024B: Story decision nodes UI (real API)
 - [ ] FE-024C: Inspect run links UI (real API)
-- [ ] FE-025: Manuscript aids panel (mock service - backend endpoint not yet available)
+- [x] FE-025: Manuscript aids panel (API-backed via GET /v1/story-development/drafting/revision-suggestions; AidsPanel routed surface exists in PlanningView)
 - [ ] FE-026: Selection lifecycle handling
 - [ ] FE-027: Diff review interface
 - [ ] FE-028: Suggestion history (mock service)
-- [ ] FE-029: Brainstorm workspace (mock service)
-- [ ] FE-030: Foundation screen (mock service)
-- [ ] FE-031: Character builder (mock service)
-- [ ] FE-032: World bible workspace (mock service)
+- [x] FE-029: Brainstorm workspace (API-backed via POST /v1/story-development/brainstorm/items, POST /v1/story-development/brainstorm/items/cluster, GET /v1/story-development/brainstorm/promotions; BrainstormWorkspace routed surface exists in PlanningView)
+- [x] FE-030: Foundation screen (API-backed via GET|POST|PATCH /v1/story-development/foundation; FoundationEditor routed surface exists in PlanningView)
+- [x] FE-031: Character builder (API-backed via GET|POST|PATCH /v1/story-development/characters; CharacterBuilder routed surface exists in PlanningView; relationship-map workflows deferred beyond v1.0)
+- [x] FE-032: World bible workspace (API-backed via GET|POST|PATCH /v1/story-development/world-bible; WorldBibleWorkspace routed surface exists in PlanningView)
 
 ## Reference Material
 

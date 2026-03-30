@@ -199,3 +199,154 @@ class TestAuditLogging:
         
         # Request should complete (status code may vary)
         assert response.status_code < 500  # Not a server error
+
+
+class TestAuditLoggingOperationField:
+    """Test REL-10: Audit operation field normalization."""
+
+    def setup_method(self) -> None:
+        """Set up test fixtures."""
+        log_path = Path(settings.structured_log_filename)
+        if log_path.exists():
+            log_path.unlink()
+        
+        self.original_api_key = os.environ.get('API_KEY')
+        os.environ['API_KEY'] = ''
+        
+        self.client = TestClient(build_app())
+
+    def teardown_method(self) -> None:
+        """Clean up after tests."""
+        if self.original_api_key:
+            os.environ['API_KEY'] = self.original_api_key
+        elif 'API_KEY' in os.environ:
+            del os.environ['API_KEY']
+        
+        log_path = Path(settings.structured_log_filename)
+        if log_path.exists():
+            log_path.unlink()
+
+    def test_audit_record_includes_operation_field(self) -> None:
+        """Audit record should include operation field."""
+        self.client.get('/v1/jobs')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert 'operation' in record
+        assert isinstance(record['operation'], str)
+
+    def test_project_create_operation(self) -> None:
+        """POST /v1/projects/create should have operation project.create."""
+        self.client.post('/v1/projects/create', json={'project_name': 'test'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'project.create'
+
+    def test_project_artifact_read_operation(self) -> None:
+        """GET /v1/projects/{id}/manifest should have operation project_artifact.manifest.read."""
+        self.client.get('/v1/projects/test-project-id/manifest')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'project_artifact.manifest.read'
+
+    def test_job_status_read_operation(self) -> None:
+        """GET /v1/jobs/{id}/status should have operation job.status.read."""
+        self.client.get('/v1/jobs/test-job-id/status')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.status.read'
+
+    def test_job_logs_read_operation(self) -> None:
+        """GET /v1/jobs/{id}/logs should have operation job.logs.read."""
+        self.client.get('/v1/jobs/test-job-id/logs')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.logs.read'
+
+    def test_job_steps_read_operation(self) -> None:
+        """GET /v1/jobs/{id}/steps should have operation job.steps.read."""
+        self.client.get('/v1/jobs/test-job-id/steps')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.steps.read'
+
+    def test_job_lineage_read_operation(self) -> None:
+        """GET /v1/jobs/{id}/lineage should have operation job.lineage.read."""
+        self.client.get('/v1/jobs/test-job-id/lineage')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.lineage.read'
+
+    def test_story_development_draft_artifacts_read_operation(self) -> None:
+        """GET /v1/story-development/drafting/draft-artifacts should have operation story_development.drafting.draft_artifacts.read."""
+        self.client.get('/v1/story-development/drafting/draft-artifacts', 
+                       params={'project_id': 'test-project-id'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.drafting.draft_artifacts.read'
+
+    def test_story_development_branches_create_operation(self) -> None:
+        """POST /v1/story-development/branches should have operation story_development.branches.create."""
+        self.client.post('/v1/story-development/branches', 
+                        json={'project_id': 'test-project-id', 'branch_name': 'test-branch'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.branches.create'
+
+    def test_story_development_foundation_update_operation(self) -> None:
+        """PATCH /v1/story-development/foundation should have operation story_development.foundation.update."""
+        self.client.patch('/v1/story-development/foundation', 
+                         params={'project_id': 'test-project-id'},
+                         json={'premise': 'updated premise'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.foundation.update'
+
+    def test_role_model_check_create_operation(self) -> None:
+        """POST /v1/role-model-checker/run should have operation role_model_check.create."""
+        self.client.post('/v1/role-model-checker/run', 
+                        json={'project_id': 'test-project-id'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'role_model_check.create'
+
+    def test_role_model_check_status_read_operation(self) -> None:
+        """GET /v1/role-model-checker/{id}/status should have operation role_model_check.status.read."""
+        self.client.get('/v1/role-model-checker/test-run-id/status')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'role_model_check.status.read'
+
+    def test_operation_field_preserved_with_target_resource(self) -> None:
+        """Operation field should be present alongside target_resource."""
+        self.client.get('/v1/jobs/test-job-id/status')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert 'operation' in record
+        assert 'target_resource' in record
+        assert record['operation'] == 'job.status.read'
+        assert record['target_resource'] == 'job:test-job-id'
+
+    def test_operation_field_preserved_with_project_id(self) -> None:
+        """Operation field should be present alongside project_id."""
+        self.client.get('/v1/story-development/drafting/draft-artifacts', 
+                       params={'project_id': 'query-project-id'})
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert 'operation' in record
+        assert 'project_id' in record
+        assert record['operation'] == 'story_development.drafting.draft_artifacts.read'
+        assert record['project_id'] == 'query-project-id'

@@ -1,0 +1,171 @@
+[
+  {
+    "task_id": "a2d5b1d8-c650-483b-a485-dc0dbb5aa6fc",
+    "purpose": "Update `README.md` so the active project summary matches the final post-task repo state. Refresh the local verification baseline to the current validated counts, preserve the mixed-surface routing description, and add the two completed reliability details: latency telemetry in `GET /health/metrics` and audit records that now include the `operation` field.",
+    "responsible_file": "README.md",
+    "serial_dependencies": [
+      "73c3c2be-8c62-4d72-9a7a-b4a2d35fb84b",
+      "4b28d362-c20e-4d0c-91b7-a92f519f9f16"
+    ],
+    "guardrails": [
+      "Do not modify code, tests, or any other docs file in this task.",
+      "Do not change product scope beyond aligning the README to the already implemented routed/API state.",
+      "Do not claim before/after audit-state capture, editable flow mutations, relationship-map UI, or interactive arc-decision mutations are shipped.",
+      "Do not remove the existing mixed HTTP surface wording."
+    ],
+    "knowledge_base": [
+      "`README.md` currently lists the mixed HTTP surface correctly but still carries an outdated local full-suite verification baseline.",
+      "`app/api/health.py` will expose latency fields under `/health/metrics` after the REL-05 task lands.",
+      "`app/main.py` will expose `operation` in versioned audit records after the REL-10 task lands.",
+      "The most recent verified suite count after the last merge-readiness fixes was `466 passed, 9 skipped`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "sections_to_update": [
+          "Current Status",
+          "Continuous Testing",
+          "Latest local full-suite verification"
+        ],
+        "exact_strings_to_replace": [
+          "`python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`"
+        ],
+        "implemented_details_to_add": [
+          "GET /health/metrics exposes `success_rate`, `failure_rate`, `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` for `jobs` and `role_model_checker`.",
+          "Versioned audit records include `operation` alongside `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, and `target_resource`."
+        ]
+      },
+      "output_data_schema": {
+        "rendered_doc_state": [
+          "The README shows the current full-suite baseline count.",
+          "The reliability/status bullets mention latency telemetry and audit `operation` support.",
+          "The mixed-surface route summary remains intact."
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "app/api/health.py",
+        "app/main.py",
+        "TODO.md",
+        "docs/Validation Notes v0.1.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing README current-status summary",
+      "Existing validation-baseline section",
+      "Implemented `/health/metrics` and audit-log contracts"
+    ],
+    "expected_outcomes": [
+      "The README no longer contains the string ``455 passed, 9 skipped`` as the latest local full-suite verification baseline.",
+      "The README explicitly mentions latency telemetry fields under `/health/metrics`.",
+      "The README explicitly mentions the audit `operation` field."
+    ]
+  },
+  {
+    "task_id": "f0b6d1c3-e2f8-4f2d-9f81-1d7a4d92707c",
+    "purpose": "Reconcile `TODO.md` so the active backlog is the final source of truth after the code and doc alignment tasks land. Mark the actually shipped items complete (`REL-05`, `REL-08`, `FE-024A`, `FE-024B`, `FE-024C`, `FE-025`, `FE-029`, `FE-030`, `FE-031`, `FE-032`), convert the unsupported ownership half of `REL-09` into a scoped future note while closing the implemented directory-safety validation, and resolve the v1.0 blockers `V1-006` and `V1-007` by documenting the final scope cut: arcs remain read-only projections and planning remains read-heavy for v1.0.",
+    "responsible_file": "TODO.md",
+    "serial_dependencies": [
+      "48e19c7e-d4be-4a52-b6ca-4f51120cd476",
+      "8a6749a3-1a37-4f64-a4ec-7f7f0cd5d2ad",
+      "2d35b1e6-967e-47d0-89d8-3f4a8e3894e2",
+      "73c3c2be-8c62-4d72-9a7a-b4a2d35fb84b",
+      "4b28d362-c20e-4d0c-91b7-a92f519f9f16",
+      "a2d5b1d8-c650-483b-a485-dc0dbb5aa6fc"
+    ],
+    "guardrails": [
+      "Do not modify any code or test file in this task.",
+      "Do not leave any item marked open when the implementation or scope-cut has already landed in the repo and docs.",
+      "Do not mark unsupported capabilities complete unless the text is explicitly rewritten to the current shipped scope.",
+      "Do not add new backlog items, new wave labels, or speculative future features beyond scoped future notes already implied by the existing TODO."
+    ],
+    "knowledge_base": [
+      "`app/schemas/jobs.py` already implements `JobCreateRequest.validate_phase_specific_payload()` for `P-100`, `P-200`, `P-300`, and `P-400`, including `project_id`, `model_id`, `model`, `premise_text`, `temperature`, and `max_tokens` validation; `tests/test_job_payload_validation.py` covers it.",
+      "`app/services/config_validator.py` already rejects system paths, Windows read-only directories, Unix world-writable directories, and non-writable directories; explicit directory-ownership validation is not implemented.",
+      "`frontend/src/views/PlanningView.tsx` already renders `BranchList`, `DecisionTree`, `BrainstormWorkspace`, `FoundationEditor`, `CharacterBuilder`, `WorldBibleWorkspace`, arc reads, and planning reads; `frontend/src/views/ReviewView.tsx` already renders `InspectRunLinksList`; `frontend/src/views/WritingView.tsx` already renders `AidsPanel`.",
+      "`docs/Frontend Design SRS v0.5.md`, `docs/Story Development Product Spec v0.1.md`, `docs/Narrative SRS v0.3.md`, and `README.md` will already be aligned before this file is updated."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "backlog_items_to_update": [
+          "V1-006",
+          "V1-007",
+          "REL-05",
+          "REL-08",
+          "REL-09",
+          "REL-10",
+          "FE-024A",
+          "FE-024B",
+          "FE-024C",
+          "FE-025",
+          "FE-029",
+          "FE-030",
+          "FE-031",
+          "FE-032"
+        ],
+        "exact_symbols_and_routes_to cite": [
+          "getArcCandidates",
+          "getArcSelections",
+          "getArcStageMaps",
+          "getSequencePlans",
+          "getChapterPlans",
+          "getScenePlans",
+          "getPlanningDependencies",
+          "getChapterPackets",
+          "JobCreateRequest.validate_phase_specific_payload",
+          "ConfigValidator._validate_directories",
+          "GET /health/metrics",
+          "operation",
+          "target_resource",
+          "BranchList",
+          "DecisionTree",
+          "InspectRunLinksList",
+          "AidsPanel",
+          "BrainstormWorkspace",
+          "FoundationEditor",
+          "CharacterBuilder",
+          "WorldBibleWorkspace"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_backlog_state": [
+          "`V1-006` is closed as a documented v1.0 scope cut to read-only arc projections.",
+          "`V1-007` is closed as a documented v1.0 scope cut to read-heavy planning.",
+          "`REL-05` is closed with `success_rate`, `failure_rate`, `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` on `/health/metrics`.",
+          "`REL-08` is closed with the existing `JobCreateRequest.validate_phase_specific_payload()` implementation.",
+          "`REL-09` is rewritten to the implemented directory-safety checks and closed without claiming ownership validation exists.",
+          "`REL-10` remains open only for before/after state capture if that capability still does not exist after the `operation` task lands.",
+          "`FE-024A`, `FE-024B`, `FE-024C`, `FE-025`, `FE-029`, `FE-030`, `FE-031`, and `FE-032` are marked complete with references to the actual routed/API-backed surfaces."
+        ]
+      },
+      "external_refs": [
+        "TODO.md",
+        "README.md",
+        "docs/Frontend Design SRS v0.5.md",
+        "docs/Story Development Product Spec v0.1.md",
+        "docs/Narrative SRS v0.3.md",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/views/ReviewView.tsx",
+        "frontend/src/views/WritingView.tsx",
+        "app/api/health.py",
+        "app/main.py",
+        "app/schemas/jobs.py",
+        "app/services/config_validator.py",
+        "tests/test_job_payload_validation.py"
+      ]
+    },
+    "utilized_features": [
+      "Active backlog structure in `TODO.md`",
+      "Existing routed workspace components",
+      "Existing `JobCreateRequest.validate_phase_specific_payload()` implementation",
+      "Existing `ConfigValidator._validate_directories()` implementation",
+      "Implemented `/health/metrics` latency telemetry",
+      "Implemented audit `operation` field"
+    ],
+    "expected_outcomes": [
+      "The active backlog no longer lists FE-024A, FE-024B, FE-024C, FE-025, FE-029, FE-030, FE-031, or FE-032 as open.",
+      "The active backlog no longer leaves REL-08 open.",
+      "The active backlog closes V1-006 and V1-007 by documenting the final v1.0 scope cut instead of promising unsupported arc/planning mutations.",
+      "REL-10 text no longer implies `operation` is still missing after the code task lands."
+    ]
+  }
+]

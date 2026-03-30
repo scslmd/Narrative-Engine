@@ -126,20 +126,30 @@ Current implementation note:
 
 ## 7. Public Backend Surface
 
+**Change log (Mixed HTTP Surface Correction - March 29, 2026)**:
+- Updated API Versioning Convention to document the mixed surface: versioned `/v1/...` routes for jobs, models, story-development, and checker flows; unversioned routes for projects, auth, backup, and health
+- Corrected Projects Service section to use unversioned paths (`/projects`, not `/v1/projects`)
+- Added Health endpoints section with `GET /health/`, `GET /health/ready`, and `GET /health/metrics`
+
 ### API Versioning Convention
 
-All public APIs use the `/v1` prefix for version management:
+The backend uses a **mixed HTTP surface** with both versioned and unversioned routes:
 
-- Base URL pattern: `{host}/v1/{service}/{resource}`
+- **Versioned routes (`/v1`)**: Jobs, models, story-development, and role-model-checker services
+- **Unversioned routes**: Projects, authentication, backup, and health endpoints
+
+Base URL patterns:
+- Versioned: `{host}/v1/{service}/{resource}`
+- Unversioned: `{host}/{service}/{resource}`
 - Environment variable: `VITE_API_URL=http://localhost:8000` (frontend)
-- All service endpoints are prefixed with `/v1`
 
 ### Router Prefixes by Service
 
 | Service | Backend Router Prefix | Example Endpoint |
 |---------|----------------------|------------------|
+| Health | `/health` | `GET /health/ready` |
+| Projects | `/projects` | `POST /projects/create` |
 | Models | `/v1` | `GET /v1/models` |
-| Projects | `/v1/projects` | `POST /v1/projects/create` |
 | Jobs | `/v1/jobs` | `POST /v1/jobs/create` |
 | Role Model Checker | `/v1/role-model-checker` | `POST /v1/role-model-checker/run` |
 | Story Development | `/v1/story-development` | `GET /v1/story-development/drafting/draft-artifacts` |
@@ -147,20 +157,22 @@ All public APIs use the `/v1` prefix for version management:
 ### Complete API Surface
 
 **Health & Static:**
-- `GET /health` - Health check endpoint (no version prefix)
+- `GET /health/` - Health check endpoint
+- `GET /health/ready` - Readiness check endpoint
+- `GET /health/metrics` - Metrics endpoint with latency telemetry
 - `GET /` - Serve frontend index.html
 - `GET /role-model-checker-ui` - Serve role model checker UI
 
+**Projects Service (`/projects`):**
+- `POST /projects/create` - Create new project
+- `GET /projects` - List all projects
+- `GET /projects/{project_id}` - Get project details
+- `GET /projects/{project_id}/manifest` - Get project manifest
+- `GET /projects/{project_id}/sequence` - Get sequence artifact
+- `GET /projects/{project_id}/chapter-1` - Get chapter-1 artifact
+
 **Models Service (`/v1/models`):**
 - `GET /v1/models` - Get model catalog with discovered local and runtime models
-
-**Projects Service (`/v1/projects`):**
-- `POST /v1/projects/create` - Create new project
-- `GET /v1/projects` - List all projects
-- `GET /v1/projects/{project_id}` - Get project details
-- `GET /v1/projects/{project_id}/manifest` - Get project manifest
-- `GET /v1/projects/{project_id}/sequence` - Get sequence artifact
-- `GET /v1/projects/{project_id}/chapter-1` - Get chapter-1 artifact
 
 **Jobs Service (`/v1/jobs`):**
 - `POST /v1/jobs/create` - Create and enqueue job (202 Accepted)

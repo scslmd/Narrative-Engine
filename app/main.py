@@ -37,6 +37,117 @@ from .services.authentication import fingerprint_api_key
 MAX_BODY_SIZE = 10 * 1024 * 1024
 
 
+def _normalize_operation(method: str, path: str) -> str:
+    """Normalize a method+path into a stable operation name.
+    
+    Examples:
+    - POST /v1/jobs/create -> job.create
+    - GET /v1/jobs/{job_id}/status -> job.status.read
+    - GET /v1/story-development/drafting/draft-artifacts -> story_development.drafting.draft_artifacts.read
+    """
+    path_parts = path.split('/')
+    
+    # Handle /v1/projects routes (unversioned in reality but may appear in audit)
+    if len(path_parts) >= 3 and path_parts[2] == 'projects':
+        if method == 'POST' and len(path_parts) >= 4 and path_parts[3] == 'create':
+            return 'project.create'
+        elif method == 'GET' and len(path_parts) == 3:
+            return 'project.list'
+        elif method == 'GET' and len(path_parts) >= 4:
+            # For /v1/projects/{id}/{artifact}, extract just the artifact name
+            if len(path_parts) == 5:
+                artifact = path_parts[4]
+            else:
+                artifact = '/'.join(path_parts[3:])
+            return f'project_artifact.{artifact.replace("-", "_")}.read'
+        elif method == 'DELETE':
+            return 'project.delete'
+    
+    # Handle /v1/jobs routes
+    if len(path_parts) >= 3 and path_parts[2] == 'jobs':
+        if method == 'POST' and len(path_parts) >= 4 and path_parts[3] == 'create':
+            return 'job.create'
+        elif method == 'GET' and len(path_parts) == 3:
+            return 'job.list'
+        elif len(path_parts) >= 5:
+            subresource = path_parts[4] if len(path_parts) > 4 else ''
+            op_map = {
+                'status': 'job.status.read',
+                'logs': 'job.logs.read',
+                'steps': 'job.steps.read',
+                'lineage': 'job.lineage.read',
+                'attempts': 'job.attempts.read',
+            }
+            if subresource in op_map:
+                return op_map[subresource]
+            elif method == 'POST' and subresource == 'retry':
+                return 'job.retry'
+    
+    # Handle /v1/role-model-checker routes
+    if len(path_parts) >= 3 and path_parts[2] == 'role-model-checker':
+        if method == 'POST' and len(path_parts) >= 4:
+            action = path_parts[3]
+            if action in ('start', 'run'):
+                return 'role_model_check.create'
+        elif len(path_parts) >= 5:
+            subresource = path_parts[4] if len(path_parts) > 4 else ''
+            op_map = {
+                'status': 'role_model_check.status.read',
+                'logs': 'role_model_check.logs.read',
+                'steps': 'role_model_check.steps.read',
+                'lineage': 'role_model_check.lineage.read',
+                'attempts': 'role_model_check.attempts.read',
+            }
+            if subresource in op_map:
+                return op_map[subresource]
+            elif method == 'POST' and subresource == 'retry':
+                return 'role_model_check.retry'
+    
+    # Handle /v1/story-development routes
+    if len(path_parts) >= 3 and path_parts[2] == 'story-development':
+        if len(path_parts) >= 4:
+            subservice = path_parts[3]
+            resource_parts = path_parts[4:]
+            
+            # Normalize subservice (replace hyphens with underscores)
+            subservice_normalized = subservice.replace('-', '_')
+            
+            # Build resource name from remaining parts
+            if resource_parts and resource_parts[0]:
+                resource_name = '_'.join(resource_parts).replace('-', '_').replace('/', '_')
+                full_resource = f"{subservice_normalized}.{resource_name}"
+            else:
+                full_resource = subservice_normalized
+            
+            # Map HTTP method to operation suffix
+            method_suffix_map = {
+                'GET': 'read',
+                'POST': 'create',
+                'PATCH': 'update',
+                'PUT': 'update',
+                'DELETE': 'delete',
+            }
+            suffix = method_suffix_map.get(method, 'unknown')
+            
+            return f'story_development.{full_resource}.{suffix}'
+    
+    # Handle /v1/models routes
+    if len(path_parts) >= 3 and path_parts[2] == 'models':
+        if method == 'GET':
+            return 'model.list.read'
+    
+    # Fallback: return generic operation based on method
+    method_suffix_map = {
+        'GET': 'read',
+        'POST': 'create',
+        'PATCH': 'update',
+        'PUT': 'update',
+        'DELETE': 'delete',
+    }
+    suffix = method_suffix_map.get(method, 'unknown')
+    return f'unknown.{suffix}'
+
+
 def build_app() -> FastAPI:
     from .inference import build_inference_backend
     from .services.config_validator import validate_config_at_startup
@@ -120,7 +231,10 @@ def build_app() -> FastAPI:
         - HTTP method
         - request path
         - response status code
+        - duration_ms
         - API key fingerprint (if authenticated)
+        - target_resource
+        - operation (stable semantic name)
         """
         # Only log versioned API requests
         if not request.url.path.startswith('/v1'):
@@ -170,6 +284,10 @@ def build_app() -> FastAPI:
                         audit_record["target_resource"] = f"story_project:{project_id}"
             except (IndexError, KeyError):
                 pass
+        
+        # Normalize operation name from method and path
+        operation = _normalize_operation(request.method, request.url.path)
+        audit_record["operation"] = operation
         
         # Write to structured log file
         try:

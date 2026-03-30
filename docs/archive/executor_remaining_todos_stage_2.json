@@ -1,0 +1,339 @@
+[
+  {
+    "task_id": "73c3c2be-8c62-4d72-9a7a-b4a2d35fb84b",
+    "purpose": "Extend `app/api/health.py` so `GET /health/metrics` reports inference-latency telemetry for both pipeline jobs and checker runs using already-persisted timestamps. Add `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` under both `metrics['jobs']` and `metrics['role_model_checker']`, computing each value from rows whose `started_at` and `finished_at` are both non-null in the existing `jobs` and `checker_runs` tables.",
+    "responsible_file": "app/api/health.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/persistence/sqlite.py`, `app/services/job_manager.py`, `app/services/role_model_check_manager.py`, or any migration/schema file.",
+      "Do not introduce a new endpoint; keep the work limited to `GET /health/metrics`.",
+      "Do not rename existing response fields `success_rate` or `failure_rate`.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`get_metrics()` already opens the existing SQLite database with `connect(settings.operations_db_path)` and returns `timestamp`, `circuit_breakers`, `jobs`, and `role_model_checker`.",
+      "The `jobs` and `checker_runs` tables already persist `started_at` and `finished_at` timestamps through the existing repositories.",
+      "`tests/test_health_api.py` already verifies the top-level `/health/metrics` envelope and status buckets.",
+      "The existing REL-05 backlog wording only leaves inference latency telemetry as the remaining functional gap."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "endpoint": "GET /health/metrics",
+        "existing_response_fields": {
+          "top_level": [
+            "timestamp",
+            "circuit_breakers",
+            "jobs",
+            "role_model_checker"
+          ],
+          "jobs": [
+            "PENDING",
+            "PROCESSING",
+            "COMPLETED",
+            "FAILED",
+            "success_rate",
+            "failure_rate"
+          ],
+          "role_model_checker": [
+            "PENDING",
+            "RUNNING",
+            "COMPLETED",
+            "FAILED",
+            "success_rate",
+            "failure_rate"
+          ]
+        },
+        "data_source_contract": {
+          "jobs_query_fields": [
+            "started_at",
+            "finished_at"
+          ],
+          "checker_runs_query_fields": [
+            "started_at",
+            "finished_at"
+          ]
+        }
+      },
+      "output_data_schema": {
+        "response_fields_to_add": {
+          "jobs": [
+            "average_latency_ms",
+            "min_latency_ms",
+            "max_latency_ms"
+          ],
+          "role_model_checker": [
+            "average_latency_ms",
+            "min_latency_ms",
+            "max_latency_ms"
+          ]
+        },
+        "field_types": {
+          "average_latency_ms": "float",
+          "min_latency_ms": "float",
+          "max_latency_ms": "float"
+        },
+        "calculation_rules": [
+          "Compute latency in milliseconds from `finished_at - started_at` for rows with both timestamps present.",
+          "When no qualifying rows exist, set all three latency fields to `0.0`.",
+          "If a database read fails, preserve the current zero-filled fallback behavior and include the new latency fields with `0.0` values."
+        ],
+        "status_code_expectations": [
+          "GET /health/metrics returns 200."
+        ]
+      },
+      "external_refs": [
+        "app/api/health.py",
+        "app/persistence/sqlite.py",
+        "tests/test_health_api.py",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI `APIRouter`",
+      "Existing `connect(settings.operations_db_path)` SQLite helper",
+      "Existing `/health/metrics` response shape",
+      "Existing persisted `started_at` and `finished_at` columns"
+    ],
+    "expected_outcomes": [
+      "`GET /health/metrics` returns `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` under `jobs`.",
+      "`GET /health/metrics` returns `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` under `role_model_checker`.",
+      "The existing `success_rate` and `failure_rate` fields remain present and unchanged."
+    ]
+  },
+  {
+    "task_id": "d9845033-f0f8-42a1-92d6-e6e0e4fc0f23",
+    "purpose": "Add deterministic coverage in `tests/test_health_api.py` for the new latency telemetry fields exposed by `GET /health/metrics`. Create focused tests that seed known `started_at` and `finished_at` values through the existing persistence layer or repositories, then assert the exact `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` values for both `jobs` and `role_model_checker`.",
+    "responsible_file": "tests/test_health_api.py",
+    "serial_dependencies": [
+      "73c3c2be-8c62-4d72-9a7a-b4a2d35fb84b"
+    ],
+    "guardrails": [
+      "Do not modify `app/api/health.py`, repository code, or database schema files in this task.",
+      "Do not weaken existing assertions for status buckets, `success_rate`, or `failure_rate`.",
+      "Do not add network calls or non-deterministic time-based assertions.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`tests/test_health_api.py` already uses `TestClient(build_app())` and verifies the `/health/metrics` JSON envelope.",
+      "`app/persistence/sqlite.py` persists `started_at` and `finished_at` for both `jobs` and `checker_runs`.",
+      "The new code task adds latency fields only to `/health/metrics`; no endpoint shape change occurs elsewhere.",
+      "Existing backend tests in this repo use deterministic ISO timestamps when exact duration math matters."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "endpoint": "GET /health/metrics",
+        "existing_test_module": "tests/test_health_api.py",
+        "seed_data_shape": {
+          "jobs_rows": [
+            {
+              "started_at": "ISO 8601 string",
+              "finished_at": "ISO 8601 string"
+            }
+          ],
+          "checker_runs_rows": [
+            {
+              "started_at": "ISO 8601 string",
+              "finished_at": "ISO 8601 string"
+            }
+          ]
+        }
+      },
+      "output_data_schema": {
+        "tests_to_add": [
+          "A test that `data['jobs']['average_latency_ms']`, `data['jobs']['min_latency_ms']`, and `data['jobs']['max_latency_ms']` match seeded values.",
+          "A test that `data['role_model_checker']['average_latency_ms']`, `data['role_model_checker']['min_latency_ms']`, and `data['role_model_checker']['max_latency_ms']` match seeded values.",
+          "A test or assertion branch that latency fields are present and equal `0.0` when no qualifying timestamps exist."
+        ],
+        "field_types_to_assert": {
+          "average_latency_ms": "float",
+          "min_latency_ms": "float",
+          "max_latency_ms": "float"
+        }
+      },
+      "external_refs": [
+        "tests/test_health_api.py",
+        "app/api/health.py",
+        "app/persistence/sqlite.py",
+        "app/services/job_manager.py",
+        "app/services/role_model_check_manager.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "FastAPI `TestClient(build_app())`",
+      "Existing SQLite-backed persistence fixtures/patterns in backend tests"
+    ],
+    "expected_outcomes": [
+      "The test file asserts the presence of `average_latency_ms`, `min_latency_ms`, and `max_latency_ms` for both metric sections.",
+      "At least one deterministic test verifies exact millisecond values from seeded timestamps.",
+      "The test file still covers the existing `/health/metrics` top-level sections and status buckets."
+    ]
+  },
+  {
+    "task_id": "4b28d362-c20e-4d0c-91b7-a92f519f9f16",
+    "purpose": "Extend the audit middleware in `app/main.py` to include a stable `operation` field in each versioned audit record without adding new persistence behavior. Add route-normalization logic in this file that resolves exact operation names for the existing versioned route families so the audit record contains `operation` alongside `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, and `target_resource`.",
+    "responsible_file": "app/main.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/services/authentication.py`, `tests/`, or any router implementation file.",
+      "Do not add before/after state capture, database writes, or a new audit store; keep the audit sink as the existing structured log file.",
+      "Do not change the rule that only `/v1` requests are logged.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "The current `audit_logging_middleware` already logs `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, `project_id` when available, and `target_resource` when available.",
+      "`app/main.py` registers versioned routes for jobs, models, story-development, and role-model-checker.",
+      "The existing audit tests already assert `target_resource` extraction for project, job, checker, and story-development requests.",
+      "The remaining REL-10 gap that can be completed in-place is explicit operation naming."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "middleware": "audit_logging_middleware(request: Request, call_next)",
+        "current_audit_record_fields": [
+          "timestamp",
+          "method",
+          "path",
+          "status_code",
+          "duration_ms",
+          "api_key_fingerprint",
+          "project_id",
+          "target_resource"
+        ],
+        "operation_mapping_contract": {
+          "POST /v1/projects/create": "project.create",
+          "GET /v1/projects/{project_id}": "project.read",
+          "DELETE /v1/projects/{project_id}": "project.delete",
+          "GET /v1/projects/{project_id}/manifest": "project_artifact.read",
+          "GET /v1/projects/{project_id}/sequence": "project_artifact.read",
+          "GET /v1/projects/{project_id}/chapter-1": "project_artifact.read",
+          "POST /v1/jobs/create": "job.create",
+          "GET /v1/jobs/{job_id}/status": "job.status.read",
+          "GET /v1/jobs/{job_id}/attempts": "job.attempts.read",
+          "GET /v1/jobs/{job_id}/logs": "job.logs.read",
+          "GET /v1/jobs/{job_id}/steps": "job.steps.read",
+          "GET /v1/jobs/{job_id}/lineage": "job.lineage.read",
+          "POST /v1/jobs/{job_id}/retry": "job.retry",
+          "POST /v1/role-model-checker/start": "role_model_check.create",
+          "POST /v1/role-model-checker/run": "role_model_check.create",
+          "GET /v1/role-model-checker/{run_id}/status": "role_model_check.status.read",
+          "GET /v1/role-model-checker/{run_id}/attempts": "role_model_check.attempts.read",
+          "GET /v1/role-model-checker/{run_id}/steps": "role_model_check.steps.read",
+          "GET /v1/role-model-checker/{run_id}/lineage": "role_model_check.lineage.read",
+          "POST /v1/role-model-checker/{run_id}/retry": "role_model_check.retry",
+          "GET /v1/story-development/{subservice}/{resource...}": "story_development.<normalized_resource>.read",
+          "POST /v1/story-development/{subservice}/{resource...}": "story_development.<normalized_resource>.create",
+          "PATCH /v1/story-development/{subservice}/{resource...}": "story_development.<normalized_resource>.update",
+          "DELETE /v1/story-development/{subservice}/{resource...}": "story_development.<normalized_resource>.delete"
+        }
+      },
+      "output_data_schema": {
+        "audit_record_fields": [
+          "timestamp",
+          "method",
+          "path",
+          "status_code",
+          "duration_ms",
+          "api_key_fingerprint",
+          "project_id",
+          "target_resource",
+          "operation"
+        ],
+        "field_type": {
+          "operation": "string"
+        },
+        "status_code_expectations": [
+          "Audit logging still must not fail the request if log writing fails."
+        ]
+      },
+      "external_refs": [
+        "app/main.py",
+        "tests/test_audit_logging.py",
+        "app/api/story_development.py",
+        "app/api/jobs.py",
+        "app/api/role_model_checker.py",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI middleware",
+      "Existing `fingerprint_api_key` helper",
+      "Existing structured JSON log sink in `settings.structured_log_filename`"
+    ],
+    "expected_outcomes": [
+      "Every logged `/v1` audit record includes an `operation` field.",
+      "`operation` is a stable semantic name such as `job.status.read` or `story_development.drafting.draft_artifacts.read`, not a raw duplicate of `path`.",
+      "The middleware still skips non-`/v1` requests and still does not fail the request when audit logging errors occur."
+    ]
+  },
+  {
+    "task_id": "b6a83658-9e0a-4e7e-93bd-1ab75f51dfbf",
+    "purpose": "Add deterministic operation-field assertions to `tests/test_audit_logging.py` for the new audit `operation` contract. Extend the existing audit tests so they verify exact `operation` values for representative project, job, checker, and story-development requests while preserving the current `target_resource`, `duration_ms`, and `api_key_fingerprint` checks.",
+    "responsible_file": "tests/test_audit_logging.py",
+    "serial_dependencies": [
+      "4b28d362-c20e-4d0c-91b7-a92f519f9f16"
+    ],
+    "guardrails": [
+      "Do not modify `app/main.py` or any router file in this task.",
+      "Do not remove or weaken existing assertions for `target_resource`, `project_id`, `duration_ms`, or API-key handling.",
+      "Do not add tests for before/after state capture because that capability is not part of this task.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`tests/test_audit_logging.py` already reads the last JSON log entry through `read_last_audit_record()` and already exercises project, job, checker, and story-development routes.",
+      "`app/main.py` now adds an `operation` field to each `/v1` audit record.",
+      "Representative currently exercised routes already include `/v1/projects/create`, `/v1/projects/test-project-id/manifest`, `/v1/jobs/test-job-id/status`, `/v1/role-model-checker/test-run-id`, and `/v1/story-development/drafting/draft-artifacts?project_id=query-project-id`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "test_targets": [
+          {
+            "request": "POST /v1/projects/create",
+            "expected_operation": "project.create"
+          },
+          {
+            "request": "GET /v1/projects/test-project-id/manifest",
+            "expected_operation": "project_artifact.read"
+          },
+          {
+            "request": "GET /v1/jobs/test-job-id/status",
+            "expected_operation": "job.status.read"
+          },
+          {
+            "request": "GET /v1/story-development/drafting/draft-artifacts?project_id=query-project-id",
+            "expected_operation": "story_development.drafting.draft_artifacts.read"
+          }
+        ],
+        "existing_helpers": [
+          "read_last_audit_record",
+          "count_audit_records"
+        ]
+      },
+      "output_data_schema": {
+        "assertions_to_add": [
+          "Audit records include the `operation` key.",
+          "Representative routes produce exact expected operation values.",
+          "Existing `target_resource` assertions continue to pass in the same test module."
+        ],
+        "field_type": {
+          "operation": "string"
+        }
+      },
+      "external_refs": [
+        "tests/test_audit_logging.py",
+        "app/main.py",
+        "tests/conftest.py",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "FastAPI `TestClient(build_app())`",
+      "Existing audit-log helper functions in `tests/conftest.py`"
+    ],
+    "expected_outcomes": [
+      "The test module checks exact `operation` values for representative project, job, and story-development requests.",
+      "The file still asserts `target_resource` and `project_id` extraction.",
+      "The file does not introduce assertions for unsupported before/after audit state."
+    ]
+  }
+]

@@ -182,6 +182,29 @@ async def get_metrics() -> dict:
             else:
                 metrics["jobs"]["success_rate"] = 0.0
                 metrics["jobs"]["failure_rate"] = 0.0
+            
+            # Compute latency telemetry from job_attempts with both started_at and finished_at
+            latency_rows = connection.execute(
+                """SELECT started_at, finished_at FROM job_attempts 
+                   WHERE started_at IS NOT NULL AND finished_at IS NOT NULL"""
+            ).fetchall()
+            
+            if latency_rows:
+                latencies_ms = []
+                for lr in latency_rows:
+                    from datetime import datetime
+                    started = datetime.fromisoformat(lr["started_at"].replace('Z', '+00:00'))
+                    finished = datetime.fromisoformat(lr["finished_at"].replace('Z', '+00:00'))
+                    duration_ms = (finished - started).total_seconds() * 1000
+                    latencies_ms.append(duration_ms)
+                
+                metrics["jobs"]["average_latency_ms"] = sum(latencies_ms) / len(latencies_ms)
+                metrics["jobs"]["min_latency_ms"] = min(latencies_ms)
+                metrics["jobs"]["max_latency_ms"] = max(latencies_ms)
+            else:
+                metrics["jobs"]["average_latency_ms"] = 0.0
+                metrics["jobs"]["min_latency_ms"] = 0.0
+                metrics["jobs"]["max_latency_ms"] = 0.0
     except Exception:
         # If we can't read job counts, return zeros
         metrics["jobs"] = {
@@ -191,6 +214,9 @@ async def get_metrics() -> dict:
             "FAILED": 0,
             "success_rate": 0.0,
             "failure_rate": 0.0,
+            "average_latency_ms": 0.0,
+            "min_latency_ms": 0.0,
+            "max_latency_ms": 0.0,
         }
     
     # Role model checker status counts
@@ -219,6 +245,29 @@ async def get_metrics() -> dict:
             else:
                 metrics["role_model_checker"]["success_rate"] = 0.0
                 metrics["role_model_checker"]["failure_rate"] = 0.0
+            
+            # Compute latency telemetry from checker_run_attempts with both started_at and finished_at
+            latency_rows = connection.execute(
+                """SELECT started_at, finished_at FROM checker_run_attempts 
+                   WHERE started_at IS NOT NULL AND finished_at IS NOT NULL"""
+            ).fetchall()
+            
+            if latency_rows:
+                latencies_ms = []
+                for lr in latency_rows:
+                    from datetime import datetime
+                    started = datetime.fromisoformat(lr["started_at"].replace('Z', '+00:00'))
+                    finished = datetime.fromisoformat(lr["finished_at"].replace('Z', '+00:00'))
+                    duration_ms = (finished - started).total_seconds() * 1000
+                    latencies_ms.append(duration_ms)
+                
+                metrics["role_model_checker"]["average_latency_ms"] = sum(latencies_ms) / len(latencies_ms)
+                metrics["role_model_checker"]["min_latency_ms"] = min(latencies_ms)
+                metrics["role_model_checker"]["max_latency_ms"] = max(latencies_ms)
+            else:
+                metrics["role_model_checker"]["average_latency_ms"] = 0.0
+                metrics["role_model_checker"]["min_latency_ms"] = 0.0
+                metrics["role_model_checker"]["max_latency_ms"] = 0.0
     except Exception:
         # If we can't read checker counts, return zeros
         metrics["role_model_checker"] = {
@@ -228,6 +277,9 @@ async def get_metrics() -> dict:
             "FAILED": 0,
             "success_rate": 0.0,
             "failure_rate": 0.0,
+            "average_latency_ms": 0.0,
+            "min_latency_ms": 0.0,
+            "max_latency_ms": 0.0,
         }
     
     return metrics

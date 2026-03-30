@@ -1,0 +1,276 @@
+[
+  {
+    "task_id": "48e19c7e-d4be-4a52-b6ca-4f51120cd476",
+    "purpose": "Update `docs/Frontend Design SRS v0.5.md` so the active frontend contract matches the shipped routed workspace and existing API-backed components. Replace the stale mock-service claims for `AidsPanel`, `BrainstormWorkspace`, `FoundationEditor`, `CharacterBuilder`, and `WorldBibleWorkspace`; recast the planning surface as read-heavy via `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets`; and keep arcs described as read-only projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` with mutation workflows deferred.",
+    "responsible_file": "docs/Frontend Design SRS v0.5.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify any files under `frontend/src/`, `app/`, or `tests/`.",
+      "Do not introduce new routes, endpoints, components, hooks, or mutation workflows in the document.",
+      "Do not keep or reword any claim that `FE-025`, `FE-029`, `FE-030`, `FE-031`, or `FE-032` are blocked because backend endpoints do not exist when those GET/POST/PATCH contracts already exist in `app/api/story_development.py`.",
+      "Do not change v1.0 scope to promise editable flow, relationship-map UI, or arc-decision mutations."
+    ],
+    "knowledge_base": [
+      "`frontend/src/views/WritingView.tsx` renders `AidsPanel` and reads revision suggestions with query key `['revision-suggestions', projectId, selectedDocumentId ?? 'all']` via `getRevisionSuggestions`.",
+      "`frontend/src/views/PlanningView.tsx` already renders `BrainstormWorkspace`, `FoundationEditor`, `CharacterBuilder`, and `WorldBibleWorkspace` with API-backed services from `frontend/src/services/brainstorm.ts`, `frontend/src/services/foundation.ts`, `frontend/src/services/characters.ts`, and `frontend/src/services/worldBible.ts`.",
+      "`frontend/src/views/PlanningView.tsx` already renders arc and planning reads via `getArcCandidates`, `getArcSelections`, `getArcStageMaps`, `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets`.",
+      "`app/api/story_development.py` already exposes `GET /v1/story-development/drafting/revision-suggestions`, `POST /v1/story-development/brainstorm/items`, `POST /v1/story-development/brainstorm/items/cluster`, `GET|POST|PATCH /v1/story-development/foundation`, `GET|POST|PATCH /v1/story-development/characters`, `GET /v1/story-development/characters/{character_id}/relationships`, `POST /v1/story-development/relationships`, and `GET|POST|PATCH /v1/story-development/world-bible`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "Section 12A API Availability Matrix",
+          "Section 12.4 mock-service note",
+          "Section 14.2 Brainstorm Workspace",
+          "Section 14.3 Story Foundation Screen",
+          "Section 14.4 Character Builder",
+          "Section 14.5 World Bible Workspace",
+          "Section 18 Implementation Order",
+          "Section 19 Deterministic Orchestrator Tasks"
+        ],
+        "exact_strings_to_remove_or_replace": [
+          "mock service - backend endpoint not yet available",
+          "Profile reads/writes via mock",
+          "Uses mock service until backend API endpoints are added",
+          "Brainstorm | ⚠️ Services only | Mock service",
+          "Foundation | ⚠️ Services only | Mock service",
+          "Character Builder | ⚠️ Services only; profile reads/writes via mock | Mock service; relationship map deferred beyond v1.0",
+          "World Bible | ⚠️ Services only | Mock service",
+          "Manuscript aids with mock service (no backend exists yet)"
+        ],
+        "existing_contracts_to_name": [
+          "GET /v1/story-development/drafting/revision-suggestions",
+          "POST /v1/story-development/brainstorm/items",
+          "POST /v1/story-development/brainstorm/items/cluster",
+          "GET /v1/story-development/brainstorm/promotions",
+          "GET /v1/story-development/foundation",
+          "POST /v1/story-development/foundation",
+          "PATCH /v1/story-development/foundation?project_id={id}",
+          "GET /v1/story-development/characters",
+          "POST /v1/story-development/characters",
+          "PATCH /v1/story-development/characters/{character_id}?project_id={id}",
+          "GET /v1/story-development/world-bible",
+          "POST /v1/story-development/world-bible",
+          "PATCH /v1/story-development/world-bible/{entry_type}/{title}?project_id={id}"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_doc_state": [
+          "`AidsPanel` is described as a routed read-only revision-suggestion surface backed by `GET /v1/story-development/drafting/revision-suggestions`.",
+          "`BrainstormWorkspace`, `FoundationEditor`, `CharacterBuilder`, and `WorldBibleWorkspace` are described as real API-backed routed surfaces using the existing story-development endpoints.",
+          "Planning is documented as read-heavy for v1.0 and arcs are documented as read-only projections for v1.0.",
+          "The file no longer labels `FE-025`, `FE-029`, `FE-030`, `FE-031`, or `FE-032` as blocked by missing backend endpoints."
+        ],
+        "query_keys": [
+          "['revision-suggestions', projectId, selectedDocumentId ?? 'all']",
+          "['brainstorm-items', projectId]",
+          "['foundation', projectId]",
+          "['planning', 'characters', projectId]",
+          "['world-bible', projectId]",
+          "['planning-sequence-plans', projectId]",
+          "['planning-chapter-plans', projectId]",
+          "['planning-scene-plans', projectId]",
+          "['planning-dependencies', projectId]",
+          "['planning-chapter-packets', projectId]",
+          "['arc-candidates', projectId]",
+          "['arc-selections', projectId]",
+          "['arc-stage-maps', projectId]"
+        ],
+        "status_expectations": [
+          "No section in this document claims editable flow mutations, relationship-map UI, or arc-decision mutations are shipped in v1.0."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/WritingView.tsx",
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/components/aids/AidsPanel.tsx",
+        "frontend/src/services/brainstorm.ts",
+        "frontend/src/services/foundation.ts",
+        "frontend/src/services/characters.ts",
+        "frontend/src/services/worldBible.ts",
+        "frontend/src/services/planning.ts",
+        "frontend/src/services/arcs.ts",
+        "app/api/story_development.py",
+        "README.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing routed `PlanningView` tab inventory",
+      "Existing routed `WritingView` aids surface",
+      "Existing story-development GET|POST|PATCH routes in `app/api/story_development.py`",
+      "Existing React Query query-key patterns in `frontend/src/views/PlanningView.tsx` and `frontend/src/views/WritingView.tsx`"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the phrase `mock service - backend endpoint not yet available` for FE-025, FE-029, FE-030, FE-031, or FE-032.",
+      "The API availability matrix names `AidsPanel`, `BrainstormWorkspace`, `FoundationEditor`, `CharacterBuilder`, and `WorldBibleWorkspace` as routed surfaces backed by existing contracts.",
+      "The planning and arc sections explicitly describe v1.0 as read-heavy planning plus read-only arc projections."
+    ]
+  },
+  {
+    "task_id": "8a6749a3-1a37-4f64-a4ec-7f7f0cd5d2ad",
+    "purpose": "Update `docs/Story Development Product Spec v0.1.md` so the product spec resolves the remaining v1.0 scope decision without inventing unsupported editing contracts. Keep editable flow, relationship mapping, arc-decision mutations, and planning-write workflows as future-target requirements, but add current-v1.0 notes that the shipped workspace exposes read-only arc projections through `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`, and read-heavy planning through the existing GET planning routes only.",
+    "responsible_file": "docs/Story Development Product Spec v0.1.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `frontend/src/`, `app/`, `tests/`, or `README.md`.",
+      "Do not describe any new POST, PATCH, DELETE, or reorder endpoint that is not already present in `app/api/story_development.py`.",
+      "Do not remove target-product sections; keep them clearly marked as deferred or future-target requirements.",
+      "Do not claim that `FlowEditor`, relationship-map UI, arc comparison mutations, or planning-write mutations are shipped in v1.0."
+    ],
+    "knowledge_base": [
+      "`frontend/src/views/PlanningView.tsx` is the current routed surface for planning, arcs, brainstorm, foundation, characters, and world bible.",
+      "`frontend/src/services/arcs.ts` only exposes `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` and has no mutation method for selecting or revising arcs.",
+      "`frontend/src/services/planning.ts` exposes read methods `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets`.",
+      "`app/api/story_development.py` exposes planning GET routes and arc GET routes, but no public planning-create, planning-update, planning-reorder, arc-select, or arc-compare-mutation route."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "Section 4.1 Editable Flow Requirements (Target Product Requirement)",
+          "Section 10 Story Arc Selection",
+          "Section 10.2 Arc Support Requirements (Target Product Requirement)",
+          "Section 11 Sequence and Chapter Planning",
+          "Section 11.2 Planning Layers",
+          "Section 11.3 Required Planning Fields",
+          "Section 15 Primary Screens"
+        ],
+        "existing_symbols_and_routes_to_name": [
+          "PlanningView",
+          "getArcCandidates",
+          "getArcSelections",
+          "getArcStageMaps",
+          "getSequencePlans",
+          "getChapterPlans",
+          "getScenePlans",
+          "getPlanningDependencies",
+          "getChapterPackets",
+          "GET /v1/story-development/arcs/candidates",
+          "GET /v1/story-development/arcs/selections",
+          "GET /v1/story-development/arcs/stage-maps",
+          "GET /v1/story-development/planning/sequence-plans",
+          "GET /v1/story-development/planning/chapter-plans",
+          "GET /v1/story-development/planning/scene-plans",
+          "GET /v1/story-development/planning/dependencies",
+          "GET /v1/story-development/planning/chapter-packets"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_doc_state": [
+          "The arc section says current v1.0 is read-only projection visibility and explicitly defers selection/comparison mutations.",
+          "The planning section says current v1.0 exposes read-heavy planning visibility and explicitly defers create, update, reorder, and packet-edit mutations.",
+          "Target-product sections remain present but are labeled as future-target behavior, not current shipped behavior."
+        ],
+        "status_expectations": [
+          "The document no longer contradicts README/TODO by promising current editable arc or planning workflows."
+        ],
+        "ui_sections": [
+          "PlanningView arcs tab",
+          "PlanningView planning tab"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/views/PlanningView.tsx",
+        "frontend/src/services/arcs.ts",
+        "frontend/src/services/planning.ts",
+        "app/api/story_development.py",
+        "README.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing `PlanningView` routed tabs",
+      "Existing `frontend/src/services/arcs.ts` read methods",
+      "Existing `frontend/src/services/planning.ts` read methods",
+      "Existing story-development route inventory in `app/api/story_development.py`"
+    ],
+    "expected_outcomes": [
+      "The file names the current arc contract as read-only projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`.",
+      "The file names the current planning contract as read-heavy reads via the existing GET planning endpoints only.",
+      "The file does not claim that planning write workflows or arc-decision mutations are already shipped in v1.0."
+    ]
+  },
+  {
+    "task_id": "2d35b1e6-967e-47d0-89d8-3f4a8e3894e2",
+    "purpose": "Correct `docs/Narrative SRS v0.3.md` so the backend contract describes the actual mixed HTTP surface instead of an all-`/v1` surface. Replace the incorrect `/v1/projects` routing claims with the current unversioned project routes, preserve versioned jobs/models/story-development/checker routes, and add the currently shipped health endpoints `GET /health/`, `GET /health/ready`, and `GET /health/metrics` without inventing any new aliases.",
+    "responsible_file": "docs/Narrative SRS v0.3.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/main.py`, `app/api/health.py`, `app/api/story_development.py`, or any frontend file.",
+      "Do not add `/v1/projects` aliases to the document because those routes are not the active current truth.",
+      "Do not remove the versioned route descriptions for `/v1/jobs`, `/v1/models`, `/v1/story-development`, or `/v1/role-model-checker`.",
+      "Do not change product-scope decisions in this file beyond route-contract correction."
+    ],
+    "knowledge_base": [
+      "`app/main.py` registers unversioned project routes (`/projects`, `/projects/create`, `/projects/{project_id}`, `/projects/{project_id}/manifest`, `/projects/{project_id}/sequence`, `/projects/{project_id}/chapter-1`).",
+      "`app/main.py` registers versioned jobs, models, story-development, and role-model-checker routes.",
+      "`app/api/health.py` exposes `GET /health/`, `GET /health/ready`, and `GET /health/metrics`.",
+      "`README.md` already describes the mixed surface as versioned `/v1/...` routes for jobs, models, story-development, and checker flows plus unversioned projects, auth, backup, and health."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "doc_sections": [
+          "Section 7 Public Backend Surface",
+          "API Versioning Convention",
+          "Router Prefixes by Service",
+          "Complete API Surface"
+        ],
+        "exact_strings_to_remove_or_replace": [
+          "All public APIs use the `/v1` prefix for version management:",
+          "Projects | `/v1/projects` | `POST /v1/projects/create` |",
+          "`POST /v1/projects/create` - Create new project",
+          "`GET /v1/projects` - List all projects",
+          "`GET /v1/projects/{project_id}` - Get project details",
+          "`GET /v1/projects/{project_id}/manifest` - Get project manifest",
+          "`GET /v1/projects/{project_id}/sequence` - Get sequence artifact",
+          "`GET /v1/projects/{project_id}/chapter-1` - Get chapter-1 artifact"
+        ],
+        "exact_routes_to_add_or_preserve": [
+          "POST /projects/create",
+          "GET /projects",
+          "GET /projects/{project_id}",
+          "GET /projects/{project_id}/manifest",
+          "GET /projects/{project_id}/sequence",
+          "GET /projects/{project_id}/chapter-1",
+          "GET /health/",
+          "GET /health/ready",
+          "GET /health/metrics",
+          "POST /v1/jobs/create",
+          "GET /v1/jobs/{job_id}/status",
+          "GET /v1/jobs/{job_id}/attempts",
+          "GET /v1/jobs/{job_id}/logs",
+          "GET /v1/jobs/{job_id}/steps",
+          "GET /v1/jobs/{job_id}/lineage",
+          "POST /v1/jobs/{job_id}/retry"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_doc_state": [
+          "Section 7 describes a mixed HTTP surface instead of a fully versioned surface.",
+          "Project routes are documented under their current unversioned paths.",
+          "Health endpoints include `/health/`, `/health/ready`, and `/health/metrics`."
+        ],
+        "status_expectations": [
+          "The file no longer contains `/v1/projects` route claims as the active contract."
+        ]
+      },
+      "external_refs": [
+        "app/main.py",
+        "app/api/health.py",
+        "README.md",
+        "BACKEND_API_REFERENCE.md",
+        "TODO.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing route registration in `app/main.py`",
+      "Existing health router in `app/api/health.py`",
+      "Existing mixed-surface wording in `README.md`"
+    ],
+    "expected_outcomes": [
+      "The file documents project routes as `/projects...`, not `/v1/projects...`.",
+      "The file explicitly lists `GET /health/`, `GET /health/ready`, and `GET /health/metrics`.",
+      "The versioning section no longer claims that all public APIs use `/v1`."
+    ]
+  }
+]
