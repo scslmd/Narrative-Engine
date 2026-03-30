@@ -1,0 +1,58 @@
+[
+  {
+    "task_id": "f1b4320e-d030-4c42-83c4-bc7c94179a88",
+    "purpose": "Isolate the new latency-metrics tests in `tests/test_health_api.py` from the shared operations database by moving them onto a temp database path under `tmp_path` and pointing the tested app state at that isolated file for each latency scenario. Preserve the exact assertions for `average_latency_ms`, `min_latency_ms`, and `max_latency_ms`, but stop directly inserting and deleting rows in the shared `settings.operations_db_path` test database.",
+    "responsible_file": "tests/test_health_api.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/api/health.py` in this task.",
+      "Do not remove the existing latency-field assertions.",
+      "Do not edit any docs or backlog files in this task.",
+      "Do not relax the tests into non-deterministic range assertions."
+    ],
+    "knowledge_base": [
+      "`tests/test_health_api.py` currently inserts and deletes rows in `settings.operations_db_path` when testing latency telemetry.",
+      "The repo test suite already uses `tmp_path`-scoped database files in many persistence-heavy tests.",
+      "`app/main.py` and `app/api/health.py` read the operations database path from `settings.operations_db_path`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "test_functions_to_update": [
+          "test_health_metrics_jobs_latency_computation_deterministic",
+          "test_health_metrics_checker_latency_computation_deterministic",
+          "test_health_metrics_latency_zero_when_no_completed_jobs"
+        ],
+        "existing_assertions_to_preserve": [
+          "jobs['average_latency_ms'] == 2000.0",
+          "jobs['min_latency_ms'] == 1000.0",
+          "jobs['max_latency_ms'] == 3000.0",
+          "checker['average_latency_ms'] == 1500.0",
+          "checker['min_latency_ms'] == 500.0",
+          "checker['max_latency_ms'] == 2500.0"
+        ]
+      },
+      "output_data_schema": {
+        "test_behavior": [
+          "The latency tests seed only an isolated temp database.",
+          "The latency tests do not delete rows from the shared operations database.",
+          "The exact latency assertions remain unchanged."
+        ]
+      },
+      "external_refs": [
+        "tests/test_health_api.py",
+        "tests/conftest.py",
+        "app/api/health.py",
+        "app/main.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest `tmp_path` fixture",
+      "Existing SQLite `connect` helper",
+      "Existing deterministic latency assertions in `tests/test_health_api.py`"
+    ],
+    "expected_outcomes": [
+      "The file no longer writes latency seed data into `settings.operations_db_path` for those tests.",
+      "The file still asserts exact latency values of `2000.0`, `1000.0`, `3000.0`, `1500.0`, `500.0`, and `2500.0`."
+    ]
+  }
+]

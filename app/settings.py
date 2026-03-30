@@ -118,5 +118,22 @@ class Settings:
         }
         return aliases.get(self.inference_backend, [])
 
+    @property
+    def cors_origins(self) -> list[str]:
+        raw_value = os.getenv("CORS_ORIGINS", "").strip()
+        if raw_value:
+            return [origin.strip() for origin in raw_value.split(",") if origin.strip()]
+        return [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+
+    @property
+    def cors_allow_credentials(self) -> bool:
+        raw_value = os.getenv("CORS_ALLOW_CREDENTIALS", "").strip()
+        return raw_value.lower() == "true"
+
 
 settings = Settings()

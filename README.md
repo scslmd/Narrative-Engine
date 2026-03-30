@@ -58,6 +58,7 @@ Implemented and working now:
 - review-driven aids rail as a surface for viewing revision suggestions without backend-backed accept/reject workflow
 - latency telemetry in `/health/metrics` endpoint with average, min, and max latency fields for both jobs and role-model-checker runs (REL-05)
 - operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
+- file permission validation with world-writable directory rejection and directory-safety checks (REL-09)
 
 Still being built:
 
@@ -111,7 +112,7 @@ See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for
 
 Latest local full-suite verification (March 29, 2026):
 
-- `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `485 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed (390KB JS + 31KB CSS, gzipped: ~112KB + 5KB)

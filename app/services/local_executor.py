@@ -11,6 +11,7 @@ from uuid import UUID
 from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
 from ..persistence.steps import stable_hash_payload, stable_hash_text
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
+from ..services.file_permissions import FilePermissionValidator
 from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
@@ -427,6 +428,10 @@ class LocalExecutor:
 
     def _write_staged_output(self, *, output_path: Path, output_text: str) -> Path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        validator = FilePermissionValidator(strict=True)
+        validator.validate_directory(output_path.parent, check_world_writable=True)
+        
         staged_output_path = output_path.with_name(f"{output_path.name}.staged")
         staged_output_path.write_text(output_text, encoding="utf-8")
         return staged_output_path

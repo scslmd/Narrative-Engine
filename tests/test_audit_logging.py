@@ -350,3 +350,80 @@ class TestAuditLoggingOperationField:
         assert 'project_id' in record
         assert record['operation'] == 'story_development.drafting.draft_artifacts.read'
         assert record['project_id'] == 'query-project-id'
+
+    def test_story_development_characters_read_operation_stable(self) -> None:
+        """GET /v1/story-development/characters/{id} should have stable operation story_development.characters.read."""
+        self.client.get('/v1/story-development/characters/test-character-id')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.characters.read'
+        assert 'test-character-id' not in record['operation']
+
+    def test_story_development_characters_relationships_read_operation_stable(self) -> None:
+        """GET /v1/story-development/characters/{id}/relationships should have stable operation."""
+        self.client.get('/v1/story-development/characters/test-character-id/relationships')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.characters.relationships.read'
+        assert 'test-character-id' not in record['operation']
+
+    def test_story_development_findings_read_operation_stable(self) -> None:
+        """GET /v1/story-development/review/findings/{id} should have stable operation story_development.review.findings.read."""
+        self.client.get('/v1/story-development/review/findings/test-finding-id')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.review.findings.read'
+        assert 'test-finding-id' not in record['operation']
+
+    def test_story_development_inspect_links_read_operation_stable(self) -> None:
+        """GET /v1/story-development/review/inspect-links/{id} should have stable operation."""
+        self.client.get('/v1/story-development/review/inspect-links/test-link-id')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.review.inspect_links.read'
+        assert 'test-link-id' not in record['operation']
+
+    def test_story_development_world_bible_read_operation_stable(self) -> None:
+        """GET /v1/story-development/world-bible/{type}/{title} should have stable operation."""
+        self.client.get('/v1/story-development/world-bible/location/Test Title')
+        
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'story_development.world_bible.read'
+        assert 'Test Title' not in record['operation']
+
+    def test_assembled_app_job_create_status_flow(self) -> None:
+        """Assembled-app flow: POST create then GET status should log both operations."""
+        # Create a job
+        create_response = self.client.post(
+            '/v1/jobs/create',
+            json={
+                'phase': 'P-100',
+                'payload': {
+                    'project_id': 'test-project-id',
+                    'premise_text': 'Test premise'
+                }
+            }
+        )
+        
+        assert create_response.status_code in (200, 202)
+        job_id = create_response.json()['id']
+        
+        # Verify create operation logged
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.create'
+        
+        # Follow with status check
+        status_response = self.client.get(f'/v1/jobs/{job_id}/status')
+        
+        assert status_response.status_code == 200
+        
+        # Verify status operation logged
+        record = read_last_audit_record()
+        assert record is not None
+        assert record['operation'] == 'job.status.read'

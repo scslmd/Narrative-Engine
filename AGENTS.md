@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `514 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -41,21 +41,21 @@ npm run build
 ### Backend
 ```bash
 # From project root
-pytest
-pytest tests/test_smoke.py
-pytest -k test_name
-pytest tests/test_story_branching_service.py::test_create_branch
+python -m pytest
+python -m pytest tests/test_smoke.py
+python -m pytest -k test_name
+python -m pytest tests/test_story_branching_service.py::test_create_branch
 python -m app.main
 ```
 
 ### Security and Reliability Focused Tests
 ```bash
-pytest tests/test_input_validation.py
-pytest tests/test_authentication.py
-pytest tests/test_authorization.py
-pytest tests/test_circuit_breaker.py
-pytest tests/test_idempotency.py
-pytest tests/test_backup.py
+python -m pytest tests/test_input_validation.py
+python -m pytest tests/test_authentication.py
+python -m pytest tests/test_authorization.py
+python -m pytest tests/test_circuit_breaker.py
+python -m pytest tests/test_idempotency.py
+python -m pytest tests/test_backup.py
 ```
 
 ### Full Merge-Readiness Validation

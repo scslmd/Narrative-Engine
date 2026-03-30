@@ -1,0 +1,305 @@
+[
+  {
+    "task_id": "cb58e37f-0a43-4816-b26f-7f88d4cfca52",
+    "purpose": "Refine `_normalize_operation(method: str, path: str) -> str` so audit `operation` values stay stable for dynamic versioned routes instead of embedding live identifiers from paths such as `GET /v1/story-development/characters/{character_id}`, `GET /v1/story-development/review/findings/{finding_id}`, and `GET /v1/story-development/world-bible/{entry_type}/{title}`. Keep existing stable outputs for `POST /v1/jobs/create`, `GET /v1/jobs/{job_id}/status`, `POST /v1/role-model-checker/run`, and `GET /v1/story-development/drafting/draft-artifacts`, but normalize story-development detail routes to semantic names that strip instance ids and titles.",
+    "responsible_file": "app/main.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `tests/test_audit_logging.py` in this task.",
+      "Do not add before/after state capture, new audit sinks, database writes, or any new middleware.",
+      "Do not change the rule that only `/v1` requests are logged by `audit_logging_middleware`.",
+      "Do not edit `README.md`, `TODO.md`, or any docs file in this task."
+    ],
+    "knowledge_base": [
+      "`app/main.py` currently defines `_normalize_operation(method: str, path: str) -> str` and uses it inside `audit_logging_middleware` to populate `audit_record['operation']`.",
+      "`audit_logging_middleware` already writes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, `project_id`, `target_resource`, and `operation` to `settings.structured_log_filename`.",
+      "`app/api/story_development.py` exposes dynamic detail routes including `GET /v1/story-development/decisions/{node_id}`, `GET /v1/story-development/review/findings/{finding_id}`, `GET /v1/story-development/review/inspect-links/{link_id}`, `GET /v1/story-development/characters/{character_id}`, `GET /v1/story-development/characters/{character_id}/relationships`, `GET /v1/story-development/world-bible/{entry_type}/{title}`, and `GET /v1/story-development/branches/{branch_id}/state-refs`.",
+      "The merge review identified that the current story-development branch in `_normalize_operation` joins remaining path segments and therefore produces high-cardinality operations for detail routes."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "function_signature": "_normalize_operation(method: str, path: str) -> str",
+        "current_call_site": "audit_logging_middleware(request: Request, call_next)",
+        "route_examples_to_normalize": [
+          {
+            "method": "GET",
+            "path": "/v1/story-development/characters/test-character-id",
+            "expected_operation_shape": "story_development.characters.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/characters/test-character-id/relationships",
+            "expected_operation_shape": "story_development.characters.relationships.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/review/findings/test-finding-id",
+            "expected_operation_shape": "story_development.review.findings.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/world-bible/location/Test Title",
+            "expected_operation_shape": "story_development.world_bible.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/branches/test-branch-id/state-refs",
+            "expected_operation_shape": "story_development.branches.state_refs.read"
+          }
+        ],
+        "stable_outputs_to_preserve": [
+          {
+            "method": "POST",
+            "path": "/v1/jobs/create",
+            "operation": "job.create"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/jobs/test-job-id/status",
+            "operation": "job.status.read"
+          },
+          {
+            "method": "POST",
+            "path": "/v1/role-model-checker/run",
+            "operation": "role_model_check.create"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/drafting/draft-artifacts",
+            "operation": "story_development.drafting.draft_artifacts.read"
+          }
+        ]
+      },
+      "output_data_schema": {
+        "audit_record_fields": [
+          "timestamp",
+          "method",
+          "path",
+          "status_code",
+          "duration_ms",
+          "api_key_fingerprint",
+          "project_id",
+          "target_resource",
+          "operation"
+        ],
+        "operation_requirements": [
+          "`operation` remains a string.",
+          "`operation` must be stable across different ids or titles for the same route family.",
+          "`operation` must not include live `character_id`, `finding_id`, `link_id`, `node_id`, `branch_id`, `entry_type`, or world-bible `title` values."
+        ],
+        "status_code_expectations": [
+          "The middleware still must not fail the request if audit-log writing fails."
+        ]
+      },
+      "external_refs": [
+        "app/main.py",
+        "app/api/story_development.py",
+        "tests/test_audit_logging.py"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI middleware",
+      "Existing `_normalize_operation` helper",
+      "Existing `audit_logging_middleware`",
+      "Existing `settings.structured_log_filename` audit log sink"
+    ],
+    "expected_outcomes": [
+      "Calling `_normalize_operation('GET', '/v1/story-development/characters/test-character-id')` no longer returns a string containing `test-character-id`.",
+      "Calling `_normalize_operation('GET', '/v1/story-development/review/findings/test-finding-id')` no longer returns a string containing `test-finding-id`.",
+      "Existing stable operations like `job.create`, `job.status.read`, and `story_development.drafting.draft_artifacts.read` are preserved."
+    ]
+  },
+  {
+    "task_id": "e2617f7d-6542-4aef-b225-4f64dbe6defc",
+    "purpose": "Update `tests/test_audit_logging.py` so the audit-operation test suite verifies that dynamic story-development detail routes produce stable semantic `operation` values with identifiers stripped. Add exact assertions for `GET /v1/story-development/characters/{character_id}`, `GET /v1/story-development/characters/{character_id}/relationships`, `GET /v1/story-development/review/findings/{finding_id}`, `GET /v1/story-development/review/inspect-links/{link_id}`, and `GET /v1/story-development/world-bible/{entry_type}/{title}` while preserving the current assertions for `job.status.read`, `project_artifact.manifest.read`, and `story_development.drafting.draft_artifacts.read`.",
+    "responsible_file": "tests/test_audit_logging.py",
+    "serial_dependencies": [
+      "cb58e37f-0a43-4816-b26f-7f88d4cfca52"
+    ],
+    "guardrails": [
+      "Do not modify `app/main.py` in this task.",
+      "Do not remove existing assertions for `target_resource`, `project_id`, `duration_ms`, or `api_key_fingerprint`.",
+      "Do not add assertions for before/after audit state capture.",
+      "Do not edit `README.md`, `TODO.md`, or any docs file in this task."
+    ],
+    "knowledge_base": [
+      "`tests/test_audit_logging.py` already uses `read_last_audit_record()` and `TestClient(build_app())`.",
+      "The current test module already asserts exact operations for `POST /v1/projects/create`, `GET /v1/projects/{id}/manifest`, `GET /v1/jobs/{id}/status`, and `GET /v1/story-development/drafting/draft-artifacts`.",
+      "The merge review identified that dynamic story-development detail routes currently risk producing high-cardinality `operation` values."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "existing_test_class": "TestAuditLoggingOperationField",
+        "requests_to_add": [
+          {
+            "method": "GET",
+            "path": "/v1/story-development/characters/test-character-id",
+            "expected_operation": "story_development.characters.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/characters/test-character-id/relationships",
+            "expected_operation": "story_development.characters.relationships.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/review/findings/test-finding-id",
+            "expected_operation": "story_development.review.findings.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/review/inspect-links/test-link-id",
+            "expected_operation": "story_development.review.inspect_links.read"
+          },
+          {
+            "method": "GET",
+            "path": "/v1/story-development/world-bible/location/Test Title",
+            "expected_operation": "story_development.world_bible.read"
+          }
+        ]
+      },
+      "output_data_schema": {
+        "assertions_to_add": [
+          "Each new route produces an exact stable `operation` string.",
+          "None of the asserted `operation` strings include the live id or title from the request path."
+        ],
+        "field_types": {
+          "operation": "string"
+        }
+      },
+      "external_refs": [
+        "tests/test_audit_logging.py",
+        "app/main.py",
+        "tests/conftest.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "FastAPI `TestClient(build_app())`",
+      "Existing `read_last_audit_record` helper"
+    ],
+    "expected_outcomes": [
+      "The test file contains exact assertions for stable `operation` values on dynamic story-development detail routes.",
+      "The test file still asserts `job.status.read` and `story_development.drafting.draft_artifacts.read`.",
+      "The test file does not introduce any before/after state assertions."
+    ]
+  },
+  {
+    "task_id": "ee78b3ff-8b74-4a7f-a5eb-99832ccf2cd8",
+    "purpose": "Reconcile the active source-of-truth backlog in `TODO.md` with the current repo state and the audited merge findings. Rewrite `REL-10` so it is not marked complete while still carrying unresolved before/after state capture, mark `REL-08` complete based on `JobCreateRequest.validate_phase_specific_payload`, mark `FE-024A`, `FE-024B`, and `FE-024C` complete based on the shipped `BranchList`, `DecisionTree`, and `InspectRunLinksList` routed surfaces, and correct the `FE-025` note so it references `WritingView` rather than `PlanningView`.",
+    "responsible_file": "TODO.md",
+    "serial_dependencies": [
+      "cb58e37f-0a43-4816-b26f-7f88d4cfca52"
+    ],
+    "guardrails": [
+      "Do not modify any file under `app/`, `frontend/`, or `tests/` in this task.",
+      "Do not mark a backlog item complete unless the file text names the exact existing implementation or the exact scoped deferral.",
+      "Do not add new backlog items or speculative feature work.",
+      "Do not edit `README.md` or any docs file under `docs/`."
+    ],
+    "knowledge_base": [
+      "`TODO.md` is the active source of truth for what is still open.",
+      "`app/schemas/jobs.py` already implements `JobCreateRequest.validate_phase_specific_payload()` for `P-100`, `P-200`, `P-300`, and `P-400`, and `tests/test_job_payload_validation.py` covers it.",
+      "`frontend/src/components/branches/BranchList.tsx`, `frontend/src/components/decisions/DecisionTree.tsx`, and `frontend/src/components/inspectLinks/InspectRunLinksList.tsx` are already routed into the shipped workspace via `PlanningView` and `ReviewView`.",
+      "`frontend/src/views/WritingView.tsx` renders `AidsPanel`; `PlanningView` does not."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "backlog_items_to_change": [
+          "REL-08",
+          "REL-10",
+          "FE-024A",
+          "FE-024B",
+          "FE-024C",
+          "FE-025"
+        ],
+        "exact_symbols_to cite": [
+          "JobCreateRequest.validate_phase_specific_payload",
+          "BranchList",
+          "DecisionTree",
+          "InspectRunLinksList",
+          "AidsPanel",
+          "WritingView"
+        ],
+        "exact_strings_to remove_or_replace": [
+          "PlanningView",
+          "Remaining work: before/after state capture deferred beyond v1.0."
+        ]
+      },
+      "output_data_schema": {
+        "rendered_backlog_state": [
+          "`REL-08` is marked complete with explicit reference to `JobCreateRequest.validate_phase_specific_payload`.",
+          "`REL-10` is internally consistent: either unchecked with remaining work, or checked only if no remaining work text remains.",
+          "`FE-024A`, `FE-024B`, and `FE-024C` are marked complete with references to `BranchList`, `DecisionTree`, and `InspectRunLinksList`.",
+          "`FE-025` references `WritingView` as the routed surface containing `AidsPanel`."
+        ]
+      },
+      "external_refs": [
+        "TODO.md",
+        "app/schemas/jobs.py",
+        "tests/test_job_payload_validation.py",
+        "frontend/src/components/branches/BranchList.tsx",
+        "frontend/src/components/decisions/DecisionTree.tsx",
+        "frontend/src/components/inspectLinks/InspectRunLinksList.tsx",
+        "frontend/src/views/WritingView.tsx"
+      ]
+    },
+    "utilized_features": [
+      "Existing active backlog structure in `TODO.md`",
+      "Existing `JobCreateRequest.validate_phase_specific_payload` implementation",
+      "Existing routed `BranchList`, `DecisionTree`, and `InspectRunLinksList` components",
+      "Existing routed `AidsPanel` usage in `WritingView`"
+    ],
+    "expected_outcomes": [
+      "`TODO.md` no longer marks `REL-10` complete while simultaneously listing unresolved remaining work.",
+      "`TODO.md` marks `REL-08` complete.",
+      "`TODO.md` marks `FE-024A`, `FE-024B`, and `FE-024C` complete.",
+      "`TODO.md` no longer attributes the `AidsPanel` routed surface to `PlanningView`."
+    ]
+  },
+  {
+    "task_id": "8924690d-9137-4ed4-b6d2-a3e4637fbdc4",
+    "purpose": "Update `README.md` so the active documentation surface no longer reports a stale local full-suite verification baseline. Replace the exact string ``python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`` with the current verified result and keep the surrounding lint, typecheck, and build lines aligned to the same validation run.",
+    "responsible_file": "README.md",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify any code, test, or docs file other than `README.md`.",
+      "Do not change product scope statements in this task.",
+      "Do not add new feature claims or remove the mixed HTTP surface wording.",
+      "Do not edit `TODO.md` in this task."
+    ],
+    "knowledge_base": [
+      "`README.md` contains a `Latest local full-suite verification (March 29, 2026)` section.",
+      "The current verified validation result on this branch is `485 passed, 9 skipped` from `python -m pytest -q -p no:cacheprovider`.",
+      "The frontend validation commands still pass: `npm run lint`, `npm run typecheck`, and `npm run build`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "section": "Latest local full-suite verification (March 29, 2026)",
+        "exact_string_to_replace": "`python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`",
+        "exact_verified_values": [
+          "`python -m pytest -q -p no:cacheprovider` -> `485 passed, 9 skipped`",
+          "`cd frontend && npm run lint` -> passed",
+          "`cd frontend && npm run typecheck` -> passed",
+          "`cd frontend && npm run build` -> passed"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_doc_state": [
+          "The README no longer contains `455 passed, 9 skipped` in the latest full-suite verification section.",
+          "The README latest full-suite verification section reports `485 passed, 9 skipped`."
+        ]
+      },
+      "external_refs": [
+        "README.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing README validation section"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the string ``455 passed, 9 skipped`` in the latest full-suite verification section.",
+      "The file contains the string ``485 passed, 9 skipped`` in that section."
+    ]
+  }
+]

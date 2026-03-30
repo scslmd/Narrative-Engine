@@ -1,0 +1,41 @@
+[
+  {
+    "task_id": "6aa4056c-09f7-49fe-934a-2df1f0ee7618",
+    "purpose": "Replace the current `/v1/projects` handling comment in `_normalize_operation` with wording that matches the real public surface and the actual code path. The comment currently says `Handle /v1/projects routes (unversioned in reality but may appear in audit)`; rewrite it so it does not imply a supported active route family that the repo does not expose as current truth.",
+    "responsible_file": "app/main.py",
+    "serial_dependencies": [
+      "cb58e37f-0a43-4816-b26f-7f88d4cfca52"
+    ],
+    "guardrails": [
+      "Do not change executable logic in `_normalize_operation` during this task.",
+      "Do not modify tests or docs in this task.",
+      "Do not add `/v1/projects` routes anywhere."
+    ],
+    "knowledge_base": [
+      "`app/main.py` includes a comment above the `_normalize_operation` `/v1/projects` branch.",
+      "The active route truth is a mixed surface with unversioned project routes and versioned jobs/models/story-development/checker routes."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "location": "Comment immediately above the `/v1/projects` branch in `_normalize_operation`",
+        "exact_string_to_replace": "Handle /v1/projects routes (unversioned in reality but may appear in audit)"
+      },
+      "output_data_schema": {
+        "comment_behavior": [
+          "The comment describes the branch as compatibility handling rather than an active public route family."
+        ]
+      },
+      "external_refs": [
+        "app/main.py",
+        "README.md",
+        "docs/Narrative SRS v0.3.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing `_normalize_operation` helper"
+    ],
+    "expected_outcomes": [
+      "The file no longer contains the exact comment `Handle /v1/projects routes (unversioned in reality but may appear in audit)`."
+    ]
+  }
+]

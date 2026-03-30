@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -28,13 +29,46 @@ from .schemas.projects import (
     ProjectDetailResponse,
     ProjectSummaryResponse,
 )
+from .constants import MAX_BODY_SIZE
 from .settings import settings
 from .persistence.story_development import StoryDevelopmentRepository
 from .services.authentication import fingerprint_api_key
 
 
-# Maximum request body size: 10 MB
-MAX_BODY_SIZE = 10 * 1024 * 1024
+def _is_id_or_title_segment(segment: str) -> bool:
+    """Check if a path segment looks like an ID or title that should be stripped."""
+    from .constants import UUID_LENGTH
+
+    if len(segment) == UUID_LENGTH and segment.count('-') == 4:
+        return True
+    # Numeric IDs
+    if segment.isdigit():
+        return True
+    # Single word segments that don't look like resource types are likely IDs/titles
+    # We check against known resource type patterns
+    resource_types = {
+        'characters', 'decisions', 'findings', 'inspect_links', 'inspect-links',
+        'world_bible', 'world-bible', 'branches', 'branches', 'state-refs',
+        'relationships', 'read', 'create', 'update', 'delete', 'status', 'logs',
+        'steps', 'lineage', 'attempts', 'retry', 'start', 'run', 'list', 'manifest',
+        'sequence', 'chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'chapter-5',
+        'draft-artifacts', 'revision-suggestions', 'manuscript-documents',
+        'story-branches', 'branch-comparisons', 'merge-decisions', 'active',
+        'stage-maps', 'candidates', 'selections', 'items', 'promotions', 'clusters',
+        'plan', 'plans', 'scene-plans', 'chapter-plans', 'sequence-plans',
+        'dependencies', 'chapter-packets', 'decisions', 'findings', 'inspect-links',
+        'review', 'brainstorm', 'foundation', 'characters', 'world-bible', 'arcs',
+        'branches', 'drafting', 'planning', 'review', 'inspect', 'inspects',
+    }
+    # Convert segment to check against resource types
+    normalized = segment.replace('-', '_').replace('/', '')
+    if normalized in resource_types:
+        return False
+    # If it's a short segment that's not a known resource type, it's likely an ID/title
+    # Allow up to 3 hyphenated parts (e.g., "test-character-id" is an ID)
+    if len(segment.split('-')) <= 3 and len(segment) < 50:
+        return True
+    return False
 
 
 def _normalize_operation(method: str, path: str) -> str:
@@ -47,7 +81,7 @@ def _normalize_operation(method: str, path: str) -> str:
     """
     path_parts = path.split('/')
     
-    # Handle /v1/projects routes (unversioned in reality but may appear in audit)
+    # Handle /v1/projects routes (unversioned routes preserved for backward compatibility - compatibility handling for legacy audit entries)
     if len(path_parts) >= 3 and path_parts[2] == 'projects':
         if method == 'POST' and len(path_parts) >= 4 and path_parts[3] == 'create':
             return 'project.create'
@@ -104,7 +138,7 @@ def _normalize_operation(method: str, path: str) -> str:
                 return 'role_model_check.retry'
     
     # Handle /v1/story-development routes
-    if len(path_parts) >= 3 and path_parts[2] == 'story-development':
+    if len(path_parts) >= 3 and path_parts[1] == 'v1' and path_parts[2] == 'story-development':
         if len(path_parts) >= 4:
             subservice = path_parts[3]
             resource_parts = path_parts[4:]
@@ -112,10 +146,59 @@ def _normalize_operation(method: str, path: str) -> str:
             # Normalize subservice (replace hyphens with underscores)
             subservice_normalized = subservice.replace('-', '_')
             
-            # Build resource name from remaining parts
+            # Build resource name from remaining parts (strip IDs/titles for stable operations)
             if resource_parts and resource_parts[0]:
-                resource_name = '_'.join(resource_parts).replace('-', '_').replace('/', '_')
-                full_resource = f"{subservice_normalized}.{resource_name}"
+                # Map detail route resource types to stable names (strip IDs/titles)
+                # The subservice itself is the resource type for story-development routes
+                detail_resource_map = {
+                    'characters': 'characters',
+                    'decisions': 'decisions',
+                    'findings': 'findings',
+                    'inspect_links': 'inspect_links',
+                    'inspect-links': 'inspect_links',
+                    'world_bible': 'world_bible',
+                    'world-bible': 'world_bible',
+                    'branches': 'branches',
+                }
+                # Check if subservice or first resource part is in the map
+                resource_type = resource_parts[0] if resource_parts else ''
+                mapped_type = detail_resource_map.get(subservice) or detail_resource_map.get(resource_type)
+                
+                if mapped_type:
+                    # For detail routes, use stable resource type name
+                    # Strip any ID/title segments that follow
+                    # Determine which part contains the resource type
+                    if subservice in detail_resource_map:
+                        # subservice is the resource type (e.g., 'characters')
+                        # full_resource = characters
+                        parts_to_check = resource_parts[1:] if len(resource_parts) > 1 else []
+                    else:
+                        # first resource part is the resource type (e.g., 'findings' under 'review')
+                        # full_resource = review.findings
+                        parts_to_check = resource_parts[1:] if len(resource_parts) > 1 else []
+                    
+                    # Filter out ID-like segments
+                    filtered_sub_resources = []
+                    for part in parts_to_check:
+                        if not _is_id_or_title_segment(part):
+                            filtered_sub_resources.append(part)
+                    
+                    if filtered_sub_resources:
+                        resource_name = '_'.join(filtered_sub_resources).replace('-', '_').replace('/', '_')
+                        # Rebuild full_resource with the filtered resource_name
+                        if subservice in detail_resource_map:
+                            full_resource = f"{mapped_type}.{resource_name}"
+                        else:
+                            full_resource = f"{subservice_normalized}.{mapped_type}.{resource_name}"
+                    else:
+                        resource_name = ''
+                        if subservice in detail_resource_map:
+                            full_resource = f"{mapped_type}"
+                        else:
+                            full_resource = f"{subservice_normalized}.{mapped_type}"
+                else:
+                    resource_name = '_'.join(resource_parts).replace('-', '_').replace('/', '_')
+                    full_resource = f"{subservice_normalized}.{resource_name}"
             else:
                 full_resource = subservice_normalized
             
@@ -129,6 +212,7 @@ def _normalize_operation(method: str, path: str) -> str:
             }
             suffix = method_suffix_map.get(method, 'unknown')
             
+            # Return stable operation name without IDs/titles
             return f'story_development.{full_resource}.{suffix}'
     
     # Handle /v1/models routes
@@ -211,8 +295,8 @@ def build_app() -> FastAPI:
     # Add CORS middleware first (before auth so OPTIONS preflight works without auth)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'],
-        allow_credentials=True,
+        allow_origins=settings.cors_origins,
+        allow_credentials=settings.cors_allow_credentials,
         allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allow_headers=['Authorization', 'Content-Type', 'X-Requested-With', 'X-API-Key'],
         expose_headers=['X-Total-Count', 'X-Page', 'X-Per-Page', '/health'],
@@ -308,7 +392,15 @@ def build_app() -> FastAPI:
         async def versioned_api_key_gate(request: Request, call_next):
             if request.url.path.startswith('/v1'):
                 api_key = request.headers.get('X-API-Key')
-                if api_key != settings.api_key:
+                if api_key is None:
+                    return JSONResponse(
+                        status_code=401,
+                        content={'detail': 'Invalid or missing API key'},
+                        headers={'WWW-Authenticate': 'Bearer'},
+                    )
+                if not hmac.compare_digest(
+                    api_key.encode("utf-8"), settings.api_key.encode("utf-8")
+                ):
                     return JSONResponse(
                         status_code=401,
                         content={'detail': 'Invalid or missing API key'},

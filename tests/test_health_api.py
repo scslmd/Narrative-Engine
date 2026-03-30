@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+
 from fastapi.testclient import TestClient
 
 from app.main import build_app

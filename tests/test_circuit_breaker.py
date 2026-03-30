@@ -288,6 +288,20 @@ class TestCircuitBreakerRegistry:
         assert len(states) == 2
 
 
+def test_get_circuit_breaker_preserves_per_backend_recovery_timeout() -> None:
+    """Different backends should preserve their own recovery_timeout values."""
+    # Reset registry for clean test
+    from app.services import circuit_breaker
+    circuit_breaker._registry = circuit_breaker.CircuitBreakerRegistry()
+    
+    cb1 = get_circuit_breaker("executor-local-backend", recovery_timeout=30.0)
+    cb2 = get_circuit_breaker("executor-remote-backend", recovery_timeout=120.0)
+    
+    assert cb1.config.recovery_timeout == 30.0
+    assert cb2.config.recovery_timeout == 120.0
+    assert cb1 is not cb2
+
+
 class TestCircuitBreakerThreadSafety:
     """Test thread safety of circuit breaker."""
     

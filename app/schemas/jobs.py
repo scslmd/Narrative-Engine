@@ -10,9 +10,7 @@ from pydantic import Field, field_validator, model_validator
 from .base import StrictModel
 from .enums import JobPhase, JobStatus
 
-
-# Maximum payload size: 5 MB
-MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
+from ..constants import MAX_PAYLOAD_SIZE
 
 
 class JobCreateRequest(StrictModel):

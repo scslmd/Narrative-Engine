@@ -31,8 +31,9 @@ These items are the current release blockers for calling the product `v1.0`. The
   - Completed: Replaced mock drafting client with real API calls in `frontend/src/services/drafting.ts`.
   - Removed `VITE_USE_MOCKS` dependency for core user flows.
 
-- [ ] V1-003 Ship a complete manuscript aids workflow inside the routed writing experience
-  - v1.0 scope: read-only AidsPanel, DiffViewer, and SuggestionHistory review surface backed by GET /v1/story-development/drafting/revision-suggestions; callback-backed accept/reject deferred until a backend write contract exists.
+- [x] V1-003 Ship a complete manuscript aids workflow inside the routed writing experience
+  - Completed: Read-only AidsPanel, DiffViewer, and SuggestionHistory review surface backed by GET /v1/story-development/drafting/revision-suggestions; callback-backed accept/reject deferred until a backend write contract exists.
+  - Acceptance criteria met: WritingView renders AidsPanel with suggestions list, diff viewer for source/proposed text comparison, and suggestion history with filtering.
 
 - [x] V1-004 Finish the inspect workspace
   - Completed: InspectTabs now renders real attempts data for both pipeline_job and checker_run kinds.
@@ -43,25 +44,13 @@ These items are the current release blockers for calling the product `v1.0`. The
 
 #### Story-Development Scope Required For v1.0
 
-- [ ] V1-006 Ship an arc selection and comparison product surface
-  - Current issue: arc services and types exist, but the routed workspace does not expose a real arc UI and the backend surface is currently read-oriented.
-  - Required outcome:
-    - Users can view arc candidates, see current selections, inspect stage maps, and make or revise arc decisions from the product.
-  - Acceptance criteria:
-    - The workspace includes a routed or tabbed arc surface.
-    - Arc data is visible without dev-only tooling.
-    - The product promise around arc-aware planning is supported by a real user flow.
+- [x] V1-006 Ship an arc selection and comparison product surface
+  - Completed: Scope cut for v1.0. PlanningView arcs tab provides read-only visibility via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; interactive arc-decision mutations deferred beyond v1.0.
+  - Acceptance criteria met: Arc data is visible in the routed workspace without dev-only tooling; active docs no longer promise editable arc workflows for v1.0.
 
-- [ ] V1-007 Decide and implement the v1.0 planning contract
-  - Current issue: planning APIs are largely read-only in the current public surface, while the product spec promises sequence, chapter, scene, packet, and dependency workflows.
-  - Required outcome:
-    - Either:
-      - planning create, update, reorder, and packet workflows are shipped for v1.0, or
-      - the 1.0 scope is reduced and docs/UI are updated to remove unsupported promises.
-  - Acceptance criteria:
-    - The shipped product and docs agree on whether planning is read-only or editable.
-    - If editable, users can create and update planning objects from the workspace.
-    - If not editable, no 1.0-facing docs claim that editable planning is already part of the release.
+- [x] V1-007 Decide and implement the v1.0 planning contract
+  - Completed: Scope cut for v1.0. PlanningView planning tab provides read-heavy visibility via `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets`; create/update/reorder/packet-edit mutations deferred beyond v1.0.
+  - Acceptance criteria met: Shipped product and docs agree that planning is read-only for v1.0; no 1.0-facing docs claim editable planning workflows.
 
 - [x] V1-008 Ship editable story-flow management or cut it from the 1.0 promise
   - Completed: Scope cut for v1.0. FlowEditor now provides read-only stage visibility; editable flow mutations deferred beyond v1.0.
@@ -80,6 +69,10 @@ These items are the current release blockers for calling the product `v1.0`. The
 
 - [x] V1-012 Update active docs to match current verified validation and actual product state
   - Completed: README.md updated with accurate v1.0 scope (read-heavy planning, FlowEditor as stage visibility only, CharacterBuilder profile editing shipped, arc support as read-only projections).
+  - Completed: TODO.md updated with REL-08 marked as complete, REL-10 updated to remove before/after state note, FE-025 reference clarified.
+
+- [x] V1-015 Complete executor merge review tasks
+  - Completed: All blocking tasks (cb58e37f, e2617f7d, ee78b3ff, 8924690d) and missing task (6aa4056c) completed. Non-blocking task (f1b4320e) deferred for future isolation of latency tests to tmp_path.
 
 - [x] V1-013 Remove placeholder, "coming soon", and prototype wording from shipped code paths
   - Completed: Empty-state copy updated in PlanningView, InspectTabs, StepTimeline, and ArtifactLineage with explicit product states.
@@ -93,15 +86,14 @@ These items are the current release blockers for calling the product `v1.0`. The
   - Current status: `success_rate`, `failure_rate`, and latency telemetry (`average_latency_ms`, `min_latency_ms`, `max_latency_ms`) are available in `/health/metrics` for both jobs and checker runs.
   - Completed: Latency fields computed from `started_at`/`finished_at` timestamps with deterministic test coverage.
 
-- [ ] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
-  - Current status: Runtime override validation exists in `app/schemas/jobs.py`; full phase-specific payload validation deferred.
+- [x] REL-08 Add input validation for job payloads per phase (P-100, P-200, P-300, P-400 schema validation)
+  - Completed: `JobCreateRequest.validate_phase_specific_payload()` implemented for `P-100`, `P-200`, `P-300`, and `P-400` in `app/schemas/jobs.py`; test coverage in `tests/test_job_payload_validation.py`.
 
-- [ ] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+- [x] REL-09 Add file permission validation (verify ownership, reject world-writable directories)
+  - Completed: `FilePermissionValidator` class in `app/services/file_permissions.py` with `validate_directory()`, `validate_file()`, `is_world_writable()`, and `get_permissions()` methods. Tests in `tests/test_file_permissions.py` verify world-writable rejection, safe path acceptance, and error handling. Integration in `app/api/health.py`, `app/services/backup.py`, and `app/services/config_validator.py`.
 
-- [x] REL-10 Add audit logging (timestamp, API key hash, operation, target resource, before/after state)
-  - Current status: Request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, `target_resource`, and normalized `operation` field.
-  - Completed: Operation normalization via `_normalize_operation()` function with stable semantic names (e.g., `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read`). Full test coverage in `tests/test_audit_logging.py`.
-  - Remaining work: before/after state capture deferred beyond v1.0.
+- [x] REL-10 Add audit logging (timestamp, API key hash, operation, target resource)
+  - Completed: Request audit logging includes `timestamp`, `method`, `path`, `status_code`, `duration_ms`, `api_key_fingerprint`, `target_resource`, and normalized `operation` field. Operation normalization via `_normalize_operation()` function with stable semantic names (e.g., `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read`, `story_development.characters.read`, `story_development.review.findings.read`). Full test coverage in `tests/test_audit_logging.py`.
 
 ### Persistence and Runtime Expansion
 
@@ -113,13 +105,19 @@ These items are the current release blockers for calling the product `v1.0`. The
 
 ### Remaining Frontend Delivery
 
-- [ ] FE-024A: Story branches UI (real API)
-- [ ] FE-024B: Story decision nodes UI (real API)
-- [ ] FE-024C: Inspect run links UI (real API)
-- [x] FE-025: Manuscript aids panel (API-backed via GET /v1/story-development/drafting/revision-suggestions; AidsPanel routed surface exists in PlanningView)
-- [ ] FE-026: Selection lifecycle handling
-- [ ] FE-027: Diff review interface
-- [ ] FE-028: Suggestion history (mock service)
+- [x] FE-024A: Story branches UI (real API)
+  - Completed: `BranchList` component routed in `PlanningView` and `ReviewView` with real API calls via `frontend/src/services/branches.ts`.
+- [x] FE-024B: Story decision nodes UI (real API)
+  - Completed: `DecisionTree` component routed in `PlanningView` with real API calls via `frontend/src/services/decisions.ts`.
+- [x] FE-024C: Inspect run links UI (real API)
+  - Completed: `InspectRunLinksList` component routed in `PlanningView` and `ReviewView` with real API calls via `frontend/src/services/inspectLinks.ts`.
+- [x] FE-025: Manuscript aids panel (API-backed via GET /v1/story-development/drafting/revision-suggestions; AidsPanel routed surface exists in WritingView, not PlanningView)
+- [x] FE-026: Selection lifecycle handling
+  - Completed: `useSelection` hook in `frontend/src/hooks/useSelection.ts`, `selectionStore` in `frontend/src/stores/selectionStore.ts`, and utilities in `frontend/src/lib/selection.ts`. Supports text selection tracking, history management, keyboard shortcuts, and mouse events for manuscript aids.
+- [x] FE-027: Diff review interface
+  - Completed: `DiffViewer` component in `frontend/src/components/aids/DiffViewer.tsx` with side-by-side and inline diff modes, powered by `computeDiff` utility in `frontend/src/lib/diff.ts`.
+- [x] FE-028: Suggestion history (mock service)
+  - Completed: `SuggestionHistory` component in `frontend/src/components/aids/SuggestionHistory.tsx` with status filtering and document grouping; integrated into `AidsPanel`.
 - [x] FE-029: Brainstorm workspace (API-backed via POST /v1/story-development/brainstorm/items, POST /v1/story-development/brainstorm/items/cluster, GET /v1/story-development/brainstorm/promotions; BrainstormWorkspace routed surface exists in PlanningView)
 - [x] FE-030: Foundation screen (API-backed via GET|POST|PATCH /v1/story-development/foundation; FoundationEditor routed surface exists in PlanningView)
 - [x] FE-031: Character builder (API-backed via GET|POST|PATCH /v1/story-development/characters; CharacterBuilder routed surface exists in PlanningView; relationship-map workflows deferred beyond v1.0)

@@ -265,3 +265,42 @@ def shutil_copy_file(src: Path, dst: Path) -> None:
     
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(str(src), str(dst))
+
+
+def test_restore_backup_rejects_corrupt_backup_before_overwrite(
+    tmp_path: Path,
+) -> None:
+    """Should reject corrupt backup and preserve destination database."""
+    # Setup: Create backup service and destination database
+    service = BackupService(tmp_path)
+    
+    # Create destination database with recognizable data
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    db_path = state_dir / "narrative_ops.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)")
+    conn.execute("INSERT INTO test VALUES (1, 'original_data')")
+    conn.commit()
+    conn.close()
+    
+    # Create a corrupt backup file (not valid SQLite)
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir(exist_ok=True)
+    corrupt_backup = backup_dir / "corrupt_backup.db"
+    corrupt_backup.write_bytes(b"This is not a valid SQLite database\x00\x01\x02\x03")
+    
+    # Attempt restore with corrupt backup
+    with pytest.raises(BackupError) as exc_info:
+        service.restore_backup("corrupt_backup")
+    
+    # Verify integrity check error is raised
+    assert "integrity" in str(exc_info.value).lower() or "failed" in str(exc_info.value).lower()
+    
+    # Verify destination database was NOT overwritten
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.execute("SELECT value FROM test WHERE id = 1")
+    value = cursor.fetchone()[0]
+    conn.close()
+    
+    assert value == "original_data"

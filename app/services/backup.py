@@ -16,6 +16,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .file_permissions import FilePermissionValidator
+
 
 BACKUP_RETENTION_DAYS = 7
 BACKUPS_DIR_NAME = "backups"
@@ -92,6 +94,10 @@ class BackupService:
         except Exception as e:
             raise BackupError(f"Failed to checkpoint WAL: {e}") from e
         
+        # Validate backup directory permissions
+        validator = FilePermissionValidator(strict=True)
+        validator.validate_directory(self.backups_dir, check_world_writable=True)
+        
         # Create backup with timestamp
         timestamp = datetime.now(timezone.utc)
         backup_path = self._get_backup_path(timestamp)
@@ -129,6 +135,27 @@ class BackupService:
             
             raise BackupError(f"Failed to create backup: {e}") from e
     
+    def _validate_backup_file(self, backup_file: Path) -> None:
+        """Validate backup file integrity using SQLite PRAGMA integrity_check.
+        
+        Args:
+            backup_file: Path to backup file to validate
+            
+        Raises:
+            BackupError: If integrity check fails
+        """
+        try:
+            conn = sqlite3.connect(str(backup_file))
+            cursor = conn.cursor()
+            cursor.execute("PRAGMA integrity_check")
+            result = cursor.fetchone()[0]
+            conn.close()
+            
+            if result != "ok":
+                raise BackupError(f"Backup file integrity check failed: {result}")
+        except Exception as e:
+            raise BackupError(f"Failed to validate backup file: {e}") from e
+
     def restore_backup(
         self,
         backup_id: str,
@@ -154,6 +181,9 @@ class BackupService:
         
         if not backup_file.exists():
             raise BackupError(f"Backup not found: {backup_id}")
+        
+        # Validate backup file integrity before proceeding
+        self._validate_backup_file(backup_file)
         
         # Refuse restore when we cannot verify free space on the destination filesystem.
         try:

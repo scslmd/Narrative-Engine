@@ -185,8 +185,10 @@ def sanitize_project_id(project_id: str) -> str:
     if not project_id:
         raise ValidationError("Project ID cannot be empty", code="EMPTY_PROJECT_ID")
     
+    from ..constants import UUID_LENGTH
+
     # Check length (UUIDs are 36 chars, allow some buffer)
-    if len(project_id) > 128:
+    if len(project_id) > UUID_LENGTH + 32:
         raise ValidationError(
             "Project ID exceeds maximum length of 128 characters",
             code="PROJECT_ID_TOO_LONG",

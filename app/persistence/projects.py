@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ..schemas.manifest import Manifest
+from ..services.file_permissions import FilePermissionValidator
 from .sqlite import connect, ensure_operations_db, ensure_project_db
 
 
@@ -149,6 +150,10 @@ class ProjectRepository:
         canonical_type = self._canonical_artifact_type(artifact_type)
         if not artifact_path.exists() or not artifact_path.is_file():
             raise FileNotFoundError(str(artifact_path))
+        
+        validator = FilePermissionValidator(strict=True)
+        validator.validate_file(artifact_path, check_ownership=True, check_world_writable=True)
+        
         projection = self.get_project_projection(project_id)
         if projection is None:
             raise FileNotFoundError(f"Project projection not found for project_id={project_id}")

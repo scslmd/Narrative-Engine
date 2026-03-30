@@ -7,6 +7,7 @@ Used for project creation and story-development writes.
 from __future__ import annotations
 
 import hashlib
+import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -14,8 +15,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-
-IDEMPOTENCY_TTL_HOURS = 24
+from ..constants import IDEMPOTENCY_TTL_HOURS
 
 
 @dataclass
