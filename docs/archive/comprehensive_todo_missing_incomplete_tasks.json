@@ -1,0 +1,72 @@
+[
+  {
+    "task_id": "38081fbd-4d4b-4b97-a994-932d7fc6efee",
+    "purpose": "Update `comprehensive_todo.md` after the implementation tasks land so the checklist and effort summary reflect actual completed work. Mark `S-001`, `R-003`, `S-002`, `TC-001`, `CQ-004`, `R-002`, and `R-001` complete only if their dependent tasks are finished, leave `CQ-001`, `PF-002`, `CQ-002`, and `TC-002` unchecked, and keep all headings and wording aligned to the current codebase state.",
+    "responsible_file": "comprehensive_todo.md",
+    "serial_dependencies": [
+      "b6c0f6f2-91d1-4623-8a87-8156f3fb7379",
+      "cf684602-7716-4448-92e3-0e0f78cb8ebb",
+      "cb171379-4db1-42ba-ba71-b5f2dbbda5a2",
+      "39ff6d49-6459-42ad-a6ab-2c9a7874c968",
+      "490e6982-d8cc-44d4-a6cf-258dbf54e98d",
+      "dff0f7ae-998f-4ca2-a2d3-10ef5b6f4c26",
+      "123ea1ba-b12f-4582-bc86-272fb52ad51a",
+      "f872e7ab-b40d-443b-80bf-c7d2f7993efd"
+    ],
+    "guardrails": [
+      "Do not modify any code or test file in this task.",
+      "Do not mark a checklist item complete unless its dependent executor task is finished.",
+      "Do not introduce new TODO headings, new feature scope, or new endpoints.",
+      "Do not edit any file under `docs/archive/` in this task."
+    ],
+    "knowledge_base": [
+      "`comprehensive_todo.md` is the active current-codebase review backlog for this workstream.",
+      "The checklist already contains the exact item identifiers `S-001`, `R-003`, `S-002`, `CQ-001`, `TC-001`, `CQ-004`, `PF-002`, `R-001`, `R-002`, `CQ-002`, and `TC-002`.",
+      "This task is documentation-only and must reflect the final implemented state after dependent tasks land."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "checklist_items_to_mark_complete_if_done": [
+          "S-001",
+          "R-003",
+          "S-002",
+          "TC-001",
+          "CQ-004",
+          "R-001",
+          "R-002"
+        ],
+        "checklist_items_to_leave_open": [
+          "CQ-001",
+          "PF-002",
+          "CQ-002",
+          "TC-002"
+        ],
+        "summary_sections_to_recompute": [
+          "Implementation Checklist",
+          "Summary",
+          "Notes"
+        ]
+      },
+      "output_data_schema": {
+        "doc_requirements": [
+          "The checklist state matches the finished executor tasks exactly.",
+          "The effort totals and counts stay internally consistent with the checked and unchecked items.",
+          "The file remains a markdown document and not a JSON manifest."
+        ]
+      },
+      "external_refs": [
+        "comprehensive_todo.md",
+        "docs/archive/comprehensive_todo_blocking_tasks.json",
+        "docs/archive/comprehensive_todo_non_blocking_tasks.json"
+      ]
+    },
+    "utilized_features": [
+      "Existing markdown checklist in `comprehensive_todo.md`"
+    ],
+    "expected_outcomes": [
+      "`comprehensive_todo.md` checklist states match the finished code/test tasks.",
+      "`comprehensive_todo.md` continues to list `CQ-001`, `PF-002`, `CQ-002`, and `TC-002` as remaining work unless separately implemented.",
+      "The summary counts and effort totals are internally consistent after the update."
+    ]
+  }
+]

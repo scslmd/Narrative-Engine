@@ -1,0 +1,235 @@
+[
+  {
+    "task_id": "490e6982-d8cc-44d4-a6cf-258dbf54e98d",
+    "purpose": "Expand assembled-app integration coverage in the existing audit logging test module by adding one exact request flow that uses `TestClient(build_app())` to call `POST /v1/jobs/create`, reads the returned job identifier from `response.json()['id']`, follows with `GET /v1/jobs/{job_id}/status`, and asserts both audit `operation` values are `job.create` and `job.status.read`. Preserve existing audit-log assertions and use the exact `Location` header shape `/v1/jobs/{job_id}/status`.",
+    "responsible_file": "tests/test_audit_logging.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/main.py` or `app/api/jobs.py` in this task.",
+      "Do not remove or relax existing audit logging assertions.",
+      "Do not add placeholder routes such as `/v1/jobs/{job_id}/accept`.",
+      "Do not edit docs or backlog files in this task."
+    ],
+    "knowledge_base": [
+      "`tests/test_audit_logging.py` already uses `TestClient(build_app())` and reads structured audit records.",
+      "`app/api/jobs.py` exposes `POST /v1/jobs/create` and `GET /v1/jobs/{job_id}/status`.",
+      "`JobStatusResponse` uses the field name `id` for the job identifier in API responses.",
+      "`audit_logging_middleware` writes `operation` values including `job.create` and `job.status.read`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "requests_to_add": [
+          {
+            "method": "POST",
+            "path": "/v1/jobs/create",
+            "request_body": {
+              "project_id": "string",
+              "phase": "P-100",
+              "payload": {
+                "premise_text": "string"
+              }
+            }
+          },
+          {
+            "method": "GET",
+            "path_template": "/v1/jobs/{job_id}/status",
+            "route_param_source": "response.json()['id'] from the create response"
+          }
+        ],
+        "headers_to_assert": [
+          "Location"
+        ]
+      },
+      "output_data_schema": {
+        "status_code_expectations": [
+          "Create response status code is `202` or `200`.",
+          "Status response status code is `200`."
+        ],
+        "audit_assertions": [
+          "The create request logs `operation == 'job.create'`.",
+          "The status request logs `operation == 'job.status.read'`."
+        ],
+        "header_assertions": [
+          "The create response `Location` header starts with `/v1/jobs/` and ends with `/status`."
+        ]
+      },
+      "external_refs": [
+        "tests/test_audit_logging.py",
+        "app/main.py",
+        "app/api/jobs.py",
+        "app/schemas/jobs.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "FastAPI `TestClient(build_app())`",
+      "Existing audit-log reader helper",
+      "Existing jobs API routes"
+    ],
+    "expected_outcomes": [
+      "`tests/test_audit_logging.py` includes one assembled-app job create/status flow.",
+      "The new test reads the job id from `response.json()['id']`.",
+      "The new test asserts `job.create`, `job.status.read`, and the `Location` header shape."
+    ]
+  },
+  {
+    "task_id": "dff0f7ae-998f-4ca2-a2d3-10ef5b6f4c26",
+    "purpose": "Add a single app-root error boundary directly in `frontend/src/main.tsx` by defining an inline class component named `RootErrorBoundary` with state `{ hasError: boolean; error: Error | null }`, implementing `static getDerivedStateFromError(error: Error)` and `componentDidCatch(error: Error, errorInfo: ErrorInfo)`, and wrapping `<App />` with that boundary inside `<StrictMode>`. Render a deterministic fallback containing the exact heading text `Something went wrong` and a reload button using `window.location.reload()`.",
+    "responsible_file": "frontend/src/main.tsx",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not create a new file such as `frontend/src/components/ErrorBoundary.tsx` in this task.",
+      "Do not modify `frontend/src/App.tsx` or any route/view component.",
+      "Do not change theme bootstrap calls `getThemeConfig()` or `applyTheme(config)`.",
+      "Do not edit docs, stylesheets, or package files in this task."
+    ],
+    "knowledge_base": [
+      "`frontend/src/main.tsx` currently imports `StrictMode`, `createRoot`, `App`, `getThemeConfig`, and `applyTheme` and renders `<App />` directly.",
+      "The frontend uses React + TypeScript and can define a class-based error boundary in the entry file.",
+      "The task only needs an app-root fallback; it does not require route-specific error UI."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "target_component_tree": [
+          "StrictMode",
+          "App"
+        ],
+        "new_component_signature": "class RootErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }>",
+        "required_fallback_strings": [
+          "Something went wrong",
+          "Reload Page"
+        ]
+      },
+      "output_data_schema": {
+        "rendered_tree": [
+          "<StrictMode><RootErrorBoundary><App /></RootErrorBoundary></StrictMode>"
+        ],
+        "fallback_behavior": [
+          "An uncaught render error shows a fallback heading `Something went wrong`.",
+          "The fallback includes a button that calls `window.location.reload()`."
+        ]
+      },
+      "external_refs": [
+        "frontend/src/main.tsx",
+        "comprehensive_todo.md"
+      ]
+    },
+    "utilized_features": [
+      "React `StrictMode`",
+      "React class component error boundary pattern",
+      "`createRoot` from `react-dom/client`"
+    ],
+    "expected_outcomes": [
+      "`frontend/src/main.tsx` defines `RootErrorBoundary` inline.",
+      "`frontend/src/main.tsx` no longer renders `<App />` directly under `<StrictMode>`.",
+      "The file contains the exact strings `Something went wrong` and `Reload Page`."
+    ]
+  },
+  {
+    "task_id": "123ea1ba-b12f-4582-bc86-272fb52ad51a",
+    "purpose": "Make idempotency retention configurable in `app/services/idempotency.py` by replacing the fixed module constant `IDEMPOTENCY_TTL_HOURS = 24` with an environment-backed integer parse from `IDEMPOTENCY_TTL_HOURS`, while preserving all existing `timedelta(hours=IDEMPOTENCY_TTL_HOURS)` retention calculations and all current record field names.",
+    "responsible_file": "app/services/idempotency.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify any caller or test file in this task.",
+      "Do not rename `IDEMPOTENCY_TTL_HOURS`.",
+      "Do not change idempotency key storage schema, request payload matching, or conflict semantics.",
+      "Do not edit docs or settings modules in this task."
+    ],
+    "knowledge_base": [
+      "`app/services/idempotency.py` currently defines `IDEMPOTENCY_TTL_HOURS = 24` and uses it in `timedelta(hours=IDEMPOTENCY_TTL_HOURS)` calculations.",
+      "The task only needs environment-backed configurability; it does not require a move into `Settings`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "exact_string_to_replace": "IDEMPOTENCY_TTL_HOURS = 24",
+        "replacement_shape": "IDEMPOTENCY_TTL_HOURS = int(os.getenv('IDEMPOTENCY_TTL_HOURS', '24'))",
+        "required_import": "os"
+      },
+      "output_data_schema": {
+        "preserved_symbols": [
+          "IDEMPOTENCY_TTL_HOURS"
+        ],
+        "preserved_behavior": [
+          "All existing retention comparisons still use `timedelta(hours=IDEMPOTENCY_TTL_HOURS)`."
+        ]
+      },
+      "external_refs": [
+        "app/services/idempotency.py",
+        "comprehensive_todo.md"
+      ]
+    },
+    "utilized_features": [
+      "Python `os.getenv`",
+      "Existing idempotency TTL constant"
+    ],
+    "expected_outcomes": [
+      "`app/services/idempotency.py` no longer contains the exact string `IDEMPOTENCY_TTL_HOURS = 24`.",
+      "`app/services/idempotency.py` parses `IDEMPOTENCY_TTL_HOURS` from the environment.",
+      "All TTL calculations still reference the symbol `IDEMPOTENCY_TTL_HOURS`."
+    ]
+  },
+  {
+    "task_id": "f872e7ab-b40d-443b-80bf-c7d2f7993efd",
+    "purpose": "Add a focused regression test proving the current circuit breaker already supports per-backend recovery timeouts. In `tests/test_circuit_breaker.py`, add one test that calls `get_circuit_breaker('executor-local-backend', recovery_timeout=30.0)` and `get_circuit_breaker('executor-remote-backend', recovery_timeout=120.0)`, then asserts each returned breaker keeps its own `config.recovery_timeout` value and the two objects are distinct.",
+    "responsible_file": "tests/test_circuit_breaker.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/services/circuit_breaker.py` in this task.",
+      "Do not reset or redesign the registry implementation.",
+      "Do not weaken existing circuit-breaker tests.",
+      "Do not edit docs or unrelated tests in this task."
+    ],
+    "knowledge_base": [
+      "`get_circuit_breaker(backend_name: str, failure_threshold: int = 5, recovery_timeout: float = 60.0) -> CircuitBreaker` already exists in `app/services/circuit_breaker.py`.",
+      "`CircuitBreaker.config.recovery_timeout` is the exact field to inspect.",
+      "The test module already covers breaker behavior and registry reuse."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "new_test_name": "test_get_circuit_breaker_preserves_per_backend_recovery_timeout",
+        "calls": [
+          {
+            "function": "get_circuit_breaker",
+            "args": [
+              "executor-local-backend"
+            ],
+            "kwargs": {
+              "recovery_timeout": 30.0
+            }
+          },
+          {
+            "function": "get_circuit_breaker",
+            "args": [
+              "executor-remote-backend"
+            ],
+            "kwargs": {
+              "recovery_timeout": 120.0
+            }
+          }
+        ]
+      },
+      "output_data_schema": {
+        "assertions": [
+          "The first breaker has `config.recovery_timeout == 30.0`.",
+          "The second breaker has `config.recovery_timeout == 120.0`.",
+          "The two breaker objects are not the same object."
+        ]
+      },
+      "external_refs": [
+        "tests/test_circuit_breaker.py",
+        "app/services/circuit_breaker.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "Existing `get_circuit_breaker` helper",
+      "Existing `CircuitBreaker.config` dataclass"
+    ],
+    "expected_outcomes": [
+      "`tests/test_circuit_breaker.py` contains a test named `test_get_circuit_breaker_preserves_per_backend_recovery_timeout`.",
+      "The new test uses the exact backend names `executor-local-backend` and `executor-remote-backend`.",
+      "The new test proves the current implementation already supports distinct timeout values per backend name."
+    ]
+  }
+]

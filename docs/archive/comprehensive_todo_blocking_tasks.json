@@ -1,0 +1,239 @@
+[
+  {
+    "task_id": "b6c0f6f2-91d1-4623-8a87-8156f3fb7379",
+    "purpose": "Add environment-backed CORS settings to `Settings` so the app can read `CORS_ORIGINS` and `CORS_ALLOW_CREDENTIALS` without hardcoded host lists in `app/main.py`. Implement exact properties `Settings.cors_origins` returning `list[str]` parsed from a comma-delimited env var and `Settings.cors_allow_credentials` returning a `bool` parsed from `CORS_ALLOW_CREDENTIALS`.",
+    "responsible_file": "app/settings.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `app/main.py` in this task.",
+      "Do not change any existing settings names unrelated to `CORS_ORIGINS` or `CORS_ALLOW_CREDENTIALS`.",
+      "Do not add new route paths, middleware, or startup behavior.",
+      "Do not edit tests, docs, or frontend files in this task."
+    ],
+    "knowledge_base": [
+      "`app/main.py` currently builds `CORSMiddleware` with a hardcoded `allow_origins` list and `allow_credentials=True`.",
+      "`app/settings.py` defines the `Settings` object that `app/main.py` imports as `settings`.",
+      "The repo keeps backend field and setting names exact; use `CORS_ORIGINS` and `CORS_ALLOW_CREDENTIALS` exactly."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "target_symbols": [
+          "Settings.cors_origins",
+          "Settings.cors_allow_credentials"
+        ],
+        "env_vars": [
+          {
+            "name": "CORS_ORIGINS",
+            "format": "comma-delimited string",
+            "default": "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+          },
+          {
+            "name": "CORS_ALLOW_CREDENTIALS",
+            "format": "string boolean",
+            "default": "true"
+          }
+        ],
+        "function_shape": {
+          "cors_origins": "property returning list[str]",
+          "cors_allow_credentials": "property returning bool"
+        }
+      },
+      "output_data_schema": {
+        "new_symbols": [
+          "settings.cors_origins",
+          "settings.cors_allow_credentials"
+        ],
+        "parsing_requirements": [
+          "`cors_origins` trims whitespace and drops empty entries.",
+          "`cors_allow_credentials` treats only the lowercased string `true` as true."
+        ]
+      },
+      "external_refs": [
+        "app/settings.py",
+        "app/main.py",
+        "comprehensive_todo.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing `Settings` class",
+      "Existing process environment parsing pattern in backend settings"
+    ],
+    "expected_outcomes": [
+      "`app/settings.py` exports `settings.cors_origins` as a parsed `list[str]`.",
+      "`app/settings.py` exports `settings.cors_allow_credentials` as a parsed `bool`.",
+      "The file contains the exact strings `CORS_ORIGINS` and `CORS_ALLOW_CREDENTIALS`."
+    ]
+  },
+  {
+    "task_id": "cf684602-7716-4448-92e3-0e0f78cb8ebb",
+    "purpose": "Harden app bootstrap security/configuration in `build_app()` by replacing the hardcoded `CORSMiddleware` values with `settings.cors_origins` and `settings.cors_allow_credentials`, and by replacing the direct `api_key != settings.api_key` comparison inside `versioned_api_key_gate` with `hmac.compare_digest` over UTF-8 encoded values. Leave all route registrations and response payloads unchanged.",
+    "responsible_file": "app/main.py",
+    "serial_dependencies": [
+      "b6c0f6f2-91d1-4623-8a87-8156f3fb7379"
+    ],
+    "guardrails": [
+      "Do not modify `app/settings.py` in this task.",
+      "Do not change route paths such as `/v1/jobs/create`, `/projects/create`, or `/health/`.",
+      "Do not add new middleware or remove existing middleware.",
+      "Do not edit docs or tests in this task."
+    ],
+    "knowledge_base": [
+      "`build_app()` adds `CORSMiddleware` using `allow_origins`, `allow_credentials`, `allow_methods`, and `allow_headers`.",
+      "`versioned_api_key_gate` currently reads `request.headers.get('X-API-Key')` and compares it against `settings.api_key`.",
+      "`settings` is imported from `app.settings` and should be the only source of CORS configuration values."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "target_callsites": [
+          "app.add_middleware(CORSMiddleware, ...)",
+          "versioned_api_key_gate(request: Request, call_next)"
+        ],
+        "exact_strings_to_replace": [
+          "allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000']",
+          "allow_credentials=True",
+          "if api_key != settings.api_key:"
+        ],
+        "replacement_symbols": [
+          "settings.cors_origins",
+          "settings.cors_allow_credentials",
+          "hmac.compare_digest"
+        ]
+      },
+      "output_data_schema": {
+        "middleware_requirements": [
+          "`CORSMiddleware.allow_origins` reads from `settings.cors_origins`.",
+          "`CORSMiddleware.allow_credentials` reads from `settings.cors_allow_credentials`."
+        ],
+        "auth_gate_requirements": [
+          "The gate still returns status code `401` with `{'detail': 'Invalid or missing API key'}` for invalid or missing keys.",
+          "The file no longer contains the exact string `if api_key != settings.api_key:`."
+        ]
+      },
+      "external_refs": [
+        "app/main.py",
+        "app/settings.py",
+        "comprehensive_todo.md"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI `CORSMiddleware`",
+      "Existing `settings` object",
+      "Python `hmac.compare_digest`"
+    ],
+    "expected_outcomes": [
+      "`app/main.py` uses `settings.cors_origins` for `allow_origins`.",
+      "`app/main.py` uses `settings.cors_allow_credentials` for `allow_credentials`.",
+      "`app/main.py` uses `hmac.compare_digest` in `versioned_api_key_gate`."
+    ]
+  },
+  {
+    "task_id": "cb171379-4db1-42ba-ba71-b5f2dbbda5a2",
+    "purpose": "Add explicit source-backup integrity validation in `BackupService` by introducing a private helper named `_validate_backup_file(self, backup_file: Path) -> None` that runs `PRAGMA integrity_check` against the candidate backup database and raises `BackupError` on any non-`ok` result. Call this helper during `restore_backup()` before any destination overwrite or pre-restore copy step.",
+    "responsible_file": "app/services/backup.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify `tests/test_backup.py` in this task.",
+      "Do not remove the existing free-space check in `restore_backup()`.",
+      "Do not remove creation of `pre_restore_backup` when `db_path.exists()` is true.",
+      "Do not add checksum persistence, new tables, or new backup metadata files in this task."
+    ],
+    "knowledge_base": [
+      "`BackupService.restore_backup()` currently finds the backup, verifies free space, optionally creates `pre_restore_backup`, copies the database, copies WAL/SHM sidecars, and checkpoints the restored DB.",
+      "`BackupError` is the existing domain exception for backup failures.",
+      "`sqlite3` and `Path` are already imported in `app/services/backup.py`."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "target_symbols": [
+          "BackupService.restore_backup",
+          "BackupError"
+        ],
+        "new_symbol": "_validate_backup_file(self, backup_file: Path) -> None",
+        "exact_sql": "PRAGMA integrity_check",
+        "call_order_requirement": "Run `_validate_backup_file(backup_file)` before any call to `self.create_backup(...)` or `shutil.copy2(str(backup_file), str(db_path))`."
+      },
+      "output_data_schema": {
+        "exception_requirements": [
+          "If integrity check returns anything other than `ok`, raise `BackupError`.",
+          "The existing `restore_backup()` return shape remains `dict[str, Any]` with keys `restored_from`, `restored_to`, `timestamp`, and `pre_restore_backup`."
+        ],
+        "preserved_behavior": [
+          "Disk-space validation still happens.",
+          "WAL/SHM restore handling still happens.",
+          "Post-restore checkpoint still happens."
+        ]
+      },
+      "external_refs": [
+        "app/services/backup.py",
+        "tests/test_backup.py",
+        "comprehensive_todo.md"
+      ]
+    },
+    "utilized_features": [
+      "Existing `BackupService` class",
+      "Existing `BackupError` exception",
+      "Python `sqlite3`",
+      "SQLite `PRAGMA integrity_check`"
+    ],
+    "expected_outcomes": [
+      "`app/services/backup.py` contains a helper named `_validate_backup_file`.",
+      "`restore_backup()` calls `_validate_backup_file(backup_file)` before overwriting the destination database.",
+      "A corrupt backup produces `BackupError` before restore copy logic runs."
+    ]
+  },
+  {
+    "task_id": "39ff6d49-6459-42ad-a6ab-2c9a7874c968",
+    "purpose": "Extend backup tests so the restore path proves corrupt backups are rejected before overwrite. Add one deterministic test to `tests/test_backup.py` that creates a valid destination database, writes a deliberately corrupt backup file, invokes `BackupService.restore_backup(...)`, asserts `BackupError`, and confirms the destination database contents remain unchanged.",
+    "responsible_file": "tests/test_backup.py",
+    "serial_dependencies": [
+      "cb171379-4db1-42ba-ba71-b5f2dbbda5a2"
+    ],
+    "guardrails": [
+      "Do not modify `app/services/backup.py` in this task.",
+      "Do not weaken or remove existing backup tests.",
+      "Do not add network access, subprocess calls, or nondeterministic sleeps.",
+      "Do not edit docs or other test modules in this task."
+    ],
+    "knowledge_base": [
+      "`tests/test_backup.py` already exercises `BackupService` create/restore behavior.",
+      "`BackupService.restore_backup(...)` raises `BackupError` on restore failures.",
+      "The repo uses `tmp_path` and direct SQLite reads for deterministic persistence assertions."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "new_test_name": "test_restore_backup_rejects_corrupt_backup_before_overwrite",
+        "symbols_under_test": [
+          "BackupService.restore_backup",
+          "BackupError"
+        ],
+        "setup_requirements": [
+          "Create a destination SQLite database with recognizable data.",
+          "Create a backup file path under the backup directory containing invalid SQLite bytes.",
+          "Pass the corrupt backup identifier into `restore_backup`."
+        ]
+      },
+      "output_data_schema": {
+        "assertions": [
+          "`BackupError` is raised.",
+          "The destination database still contains the original recognizable data after the failed restore.",
+          "No successful restore metadata dict is returned."
+        ]
+      },
+      "external_refs": [
+        "tests/test_backup.py",
+        "app/services/backup.py"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "Pytest `tmp_path` fixture",
+      "Existing `BackupService` test patterns",
+      "Direct SQLite assertions"
+    ],
+    "expected_outcomes": [
+      "`tests/test_backup.py` contains a test named `test_restore_backup_rejects_corrupt_backup_before_overwrite`.",
+      "The new test asserts `BackupError` for a corrupt backup file.",
+      "The new test verifies destination DB contents are unchanged after the failed restore."
+    ]
+  }
+]
