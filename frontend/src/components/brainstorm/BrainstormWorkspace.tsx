@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import type { BrainstormItem, BrainstormItemCreateRequest, BrainstormItemStatus } from '../../types/brainstorm';
+import type { BrainstormItemType } from '../../types/braindump';
 
 interface BrainstormWorkspaceProps {
   projectId: string;
@@ -13,6 +14,19 @@ const STATUS_OPTIONS: Array<{ value: BrainstormItemStatus; label: string }> = [
   { value: 'park', label: 'Park' },
   { value: 'discard', label: 'Discard' },
 ];
+
+const CATEGORY_BADGE_STYLES: Record<BrainstormItemType, { color: string; label: string }> = {
+  character: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Character' },
+  location: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Location' },
+  plot_point: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Plot Point' },
+  theme: { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Theme' },
+  conflict: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Conflict' },
+  world_building: { color: 'bg-teal-100 text-teal-800 border-teal-200', label: 'World' },
+  dialogue: { color: 'bg-pink-100 text-pink-800 border-pink-200', label: 'Dialogue' },
+  relationship: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Relationship' },
+  object: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', label: 'Object' },
+  rule: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', label: 'Rule' },
+};
 
 export function BrainstormWorkspace({
   projectId,
@@ -205,9 +219,16 @@ function BrainstormCard({ item, selected, onSelect }: BrainstormCardProps) {
       }`}
     >
       <div className="flex items-start justify-between mb-2">
-        <span className={`px-2 py-0.5 text-xs rounded border ${statusStyles[item.status]}`}>
-          {item.status}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {item.item_type && (
+            <span className={`px-1.5 py-0.5 text-xs rounded border ${CATEGORY_BADGE_STYLES[item.item_type as BrainstormItemType].color}`}>
+              {CATEGORY_BADGE_STYLES[item.item_type as BrainstormItemType].label}
+            </span>
+          )}
+          <span className={`px-2 py-0.5 text-xs rounded border ${statusStyles[item.status]}`}>
+            {item.status}
+          </span>
+        </div>
       </div>
 
       <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap break-words">

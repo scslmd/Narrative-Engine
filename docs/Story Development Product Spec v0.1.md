@@ -709,16 +709,61 @@ Recommended build order:
 
 1. editable story-flow definition
 2. brainstorm workspace
-3. character builder
-4. world bible or codex workspace
-5. arc selection and comparison
-6. planning board
-7. drafting workspace
-8. suggestion and revision workflow
-9. continuity and review integration
-10. richer inspect and provenance integration across all story-development artifacts
+3. brain dump capture flow
+4. character builder
+5. world bible or codex workspace
+6. arc selection and comparison
+7. planning board
+8. drafting workspace
+9. suggestion and revision workflow
+10. continuity and review integration
+11. richer inspect and provenance integration across all story-development artifacts
 
-## 19. Non-Goals For The First Product Wave
+## 19. Brain Dump Workflow
+
+The Brain Dump project type provides a distraction-free capture mode for authors who want to brainstorm without structural constraints.
+
+### 19.1 User Flow
+
+1. **Create Brain Dump project** — user selects "Brain Dump" as the project type during creation. The form shows only the project name field.
+2. **Free-text capture** — user is taken directly to a distraction-free canvas with a large textarea. No cards, no status dropdowns, no categorization.
+3. **Auto-save** — text is auto-saved with a 2-second debounce. Word count is displayed subtly in the bottom-right corner.
+4. **Organize with AI** — when the user has written more than 100 characters, a floating "Organize with AI" button appears. Clicking it triggers mock AI categorization.
+5. **Categorization** — the raw text is split into paragraphs and distributed across 10 categories: Character, Location, Plot Point, Theme, Conflict, World Building, Dialogue, Relationship, Object, Rule. Each category receives items displayed as cards with colored badges.
+6. **Review and edit** — organized items appear in the standard Brainstorm Workspace where the user can continue managing them (keep/park/discard, clustering, promotion).
+
+### 19.2 Session State Machine
+
+- `active` — new or editing session. Can transition to `organized` or `archived`.
+- `organized` — AI categorization has been applied. Can transition to `archived`.
+- `archived` — session is final and immutable.
+
+Invalid transitions (e.g., `organized` -> `active`, `archived` -> `organized`) raise `BrainDumpValidationError`.
+
+### 19.3 Mock AI Categorization
+
+The organize endpoint uses a placeholder implementation:
+- Splits raw text by double-newlines into blocks
+- Round-robin assigns each block to one of the 10 categories
+- Creates `BrainstormItem` records with the appropriate `item_type`
+
+This is clearly marked with a TODO for future LLM-based NLP integration.
+
+### 19.4 API Endpoints
+
+- `POST /v1/story-development/braindump/sessions` — create session (201)
+- `GET /v1/story-development/braindump/sessions` — list sessions (200)
+- `GET /v1/story-development/braindump/sessions/{id}` — get session (200)
+- `PATCH /v1/story-development/braindump/sessions/{id}` — update session (200)
+- `DELETE /v1/story-development/braindump/sessions/{id}` — delete session (204)
+- `POST /v1/story-development/braindump/sessions/{id}/organize` — organize and categorize (201)
+
+### 19.5 Frontend Routes
+
+- `/workspace/:projectId/braindump` — BrainDumpView renders the canvas and organize flow
+- Brain Dump projects default to the braindump route when opened
+
+## 20. Non-Goals For The First Product Wave
 
 This spec does not require immediate implementation of:
 

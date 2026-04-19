@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { useUIStore } from '../stores/uiStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { LayoutList, BookOpen, Search, Sparkles } from 'lucide-react'
+import { LayoutList, BookOpen, Search, Sparkles, Lightbulb } from 'lucide-react'
 
 interface WorkspaceShellProps {
   children: ReactNode
@@ -16,6 +16,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { key: 'braindump', label: 'Brain Dump', icon: Lightbulb, gradient: 'from-amber-500 to-amber-600', glow: 'glow-braindump' },
   { key: 'plan', label: 'Planning', icon: LayoutList, gradient: 'from-blue-500 to-blue-600', glow: 'glow-planning' },
   { key: 'write', label: 'Writing', icon: BookOpen, gradient: 'from-emerald-500 to-emerald-600', glow: 'glow-writing' },
   { key: 'review', label: 'Review', icon: Search, gradient: 'from-amber-500 to-amber-600', glow: 'glow-review' },

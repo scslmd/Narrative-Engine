@@ -4,7 +4,7 @@ export interface ToneProfile {
 }
 
 export interface StoryStructure {
-  structure_type: 'three_act' | 'hero_journey' | 'fichtean_curve' | 'seven_point';
+  structure_type: 'three_act' | 'hero_journey' | 'fichtean_curve' | 'seven_point' | 'BRAINDUMP';
   act_breakdown?: string[];
 }
 
@@ -28,7 +28,8 @@ export interface ProjectDetailResponse extends ProjectSummaryResponse {
 
 export interface ProjectCreateRequest {
   project_name: string;
-  genre: string;
-  tone_profile: ToneProfile;
+  project_kind?: string;
+  genre?: string;
+  tone_profile?: ToneProfile;
   story_structure: StoryStructure;
 }

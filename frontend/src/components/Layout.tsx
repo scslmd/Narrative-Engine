@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { matchPath, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, Grid3x3, LayoutList, Moon, Search, Sparkles, Sun, Settings } from 'lucide-react'
+import { BookOpen, ChevronRight, Grid3x3, LayoutList, Lightbulb, Moon, Search, Sparkles, Sun, Settings } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useUIStore } from '../stores/uiStore'
 import { useProjects } from '../hooks/useProjects'
@@ -15,6 +15,7 @@ interface LayoutProps {
 
 const stageMap: Record<WorkspaceMode, 'planning' | 'writing' | 'review' | 'inspect'> = {
   plan: 'planning',
+  braindump: 'planning',
   write: 'writing',
   review: 'review',
   inspect: 'inspect',
@@ -22,6 +23,7 @@ const stageMap: Record<WorkspaceMode, 'planning' | 'writing' | 'review' | 'inspe
 
 const modeIcons: Record<WorkspaceMode, typeof Grid3x3> = {
   plan: LayoutList,
+  braindump: Lightbulb,
   write: BookOpen,
   review: Search,
   inspect: Sparkles,
@@ -29,6 +31,7 @@ const modeIcons: Record<WorkspaceMode, typeof Grid3x3> = {
 
 const modeLabels: Record<WorkspaceMode, string> = {
   plan: 'Planning',
+  braindump: 'Brain Dump',
   write: 'Writing',
   review: 'Review',
   inspect: 'Inspect',

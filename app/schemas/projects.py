@@ -20,6 +20,7 @@ class ProjectCreateRequest(StrictSchemaModel):
     constraints: list[str] = Field(default_factory=list)
     premise_text: str | None = None
     idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)  # REL-02
+    project_kind: str = Field(default="standard", max_length=20)
     
     def to_manifest(self) -> Manifest:
         return Manifest(

@@ -1,0 +1,1058 @@
+[
+  {
+    "task_id": "770b0dfa-c451-470a-a420-19d2094be277",
+    "task_code": "BD-001",
+    "purpose": "Add BRAINDUMP to StoryStructure enum and BRAINSTORM_ITEM_TYPES enum to the backend. Add 10 brainstorm item type values: CHARACTER, LOCATION, PLOT_POINT, THEME, CONFLICT, WORLD_BUILDING, DIALOGUE, RELATIONSHIP, OBJECT, RULE. Add BRAINDUMP to StoryStructure enum.",
+    "responsible_file": "app/schemas/enums.py",
+    "serial_dependencies": [],
+    "guardrails": [
+      "Do not modify any existing enum values.",
+      "Add all new enums in the same file, grouped near existing enums.",
+      "Do not change PovMode or any other existing enum.",
+      "Follow the existing naming convention: UPPER_SNAKE_CASE with full string values."
+    ],
+    "knowledge_base": [
+      "Current StoryStructure enum with SAVE_THE_CAT and THREE_ACT.",
+      "PovMode enum pattern in the same file.",
+      "Brainstorm item types from research: character, location, plot_point, theme, conflict, world_building, dialogue, relationship, object, rule."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "new_enum_values": {
+          "StoryStructure": ["SAVE_THE_CAT", "THREE_ACT", "BRAINDUMP"],
+          "BrainstormItemTypes": ["CHARACTER", "LOCATION", "PLOT_POINT", "THEME", "CONFLICT", "WORLD_BUILDING", "DIALOGUE", "RELATIONSHIP", "OBJECT", "RULE"]
+        }
+      },
+      "output_data_schema": {
+        "file_modification": "Append two new Enum classes to app/schemas/enums.py"
+      },
+      "external_refs": [
+        "app/schemas/enums.py lines 6-14",
+        "docs/Story Arc Paradigm Blueprint v0.1.md section 10 categories"
+      ]
+    },
+    "utilized_features": [
+      "Python enum only"
+    ],
+    "expected_outcomes": [
+      "StoryStructure enum contains BRAINDUMP alongside existing values.",
+      "BrainstormItemTypes enum exists with all 10 category values.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures.",
+      "No existing code is broken by the enum additions."
+    ]
+  },
+  {
+    "task_id": "6568a179-a4f4-4acd-a936-a546e6b3772c",
+    "task_code": "BD-002",
+    "purpose": "Add BrainDumpSessionRecord dataclass and repository methods to the persistence layer. The dataclass needs: session_id (int PK auto), project_id (str), title (str, nullable), raw_text (str, default empty), state (str, default 'active'), created_at (datetime), updated_at (datetime). Add repo methods: create_braindump_session, get_braindump_session, list_braindump_sessions, update_braindump_session, delete_braindump_session.",
+    "responsible_file": "app/persistence/story_development.py",
+    "serial_dependencies": [
+      "770b0dfa-c451-470a-a420-19d2094be277"
+    ],
+    "guardrails": [
+      "Follow existing dataclass patterns in the file (check BrainstormItemRecord as a reference).",
+      "Use datetime.now(timezone.utc) for timestamp defaults.",
+      "Repository methods must use self.conn (sqlite3 Connection).",
+      "State values: 'active', 'organized', 'archived'.",
+      "Do not modify any existing dataclasses or methods."
+    ],
+    "knowledge_base": [
+      "Existing BrainstormItemRecord pattern for reference.",
+      "Existing repository methods pattern for create/get/list/update/delete.",
+      "BrainDumpSession needs: session_id, project_id, title, raw_text, state, created_at, updated_at."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "BrainDumpSessionRecord": {
+          "session_id": "int (PK, auto-increment)",
+          "project_id": "str",
+          "title": "str | None",
+          "raw_text": "str",
+          "state": "str ('active'|'organized'|'archived')",
+          "created_at": "datetime",
+          "updated_at": "datetime"
+        }
+      },
+      "output_data_schema": {
+        "repo_methods": [
+          "create_braindump_session(self, project_id: str, title: str | None, raw_text: str) -> BrainDumpSessionRecord",
+          "get_braindump_session(self, session_id: int) -> BrainDumpSessionRecord",
+          "list_braindump_sessions(self, project_id: str) -> tuple[BrainDumpSessionRecord, ...]",
+          "update_braindump_session(self, session_id: int, raw_text: str | None = None, title: str | None = None, state: str | None = None) -> BrainDumpSessionRecord",
+          "delete_braindump_session(self, session_id: int) -> None"
+        ]
+      },
+      "external_refs": [
+        "app/persistence/story_development.py existing dataclass patterns",
+        "app/persistence/story_development.py existing repo method patterns"
+      ]
+    },
+    "utilized_features": [
+      "SQLite persistence",
+      "Python dataclasses",
+      "datetime with timezone"
+    ],
+    "expected_outcomes": [
+      "BrainDumpSessionRecord dataclass exists with all fields.",
+      "Five repository CRUD methods exist and match the signature.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "c4c97227-08b6-44d7-a719-0737f436ef5b",
+    "task_code": "BD-003",
+    "purpose": "Create BrainDumpService in app/services/braindump.py. The service provides: create_session(project_id, title, raw_text), update_session(session_id, raw_text, title, state), get_session(session_id), list_sessions(project_id), delete_session(session_id). The service uses the repository. Add state transition validation: active -> organized, active -> archived, organized -> archived. Raise BrainDumpValidationError on invalid transitions.",
+    "responsible_file": "app/services/braindump.py",
+    "serial_dependencies": [
+      "6568a179-a4f4-4acd-a936-a546e6b3772c"
+    ],
+    "guardrails": [
+      "Follow existing service patterns: error classes (BrainDumpServiceError, BrainDumpValidationError, BrainDumpNotFoundError), repository constructor, methods.",
+      "State transitions: allowed = {'active': ['organized', 'archived'], 'organized': ['archived']}.",
+      "Do not implement organize logic yet — that is a separate task.",
+      "Do not modify any existing service files.",
+      "Service must accept repository as constructor parameter (not create it internally)."
+    ],
+    "knowledge_base": [
+      "Existing BrainstormService pattern in app/services/brainstorm.py.",
+      "State transition validation pattern: check current state against allowed next states.",
+      "Persistence: BrainDumpSessionRecord from BD-002."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "service_methods": {
+          "create_session": "(self, project_id: str, title: str | None, raw_text: str) -> BrainDumpSessionRecord",
+          "update_session": "(self, session_id: int, raw_text: str | None = None, title: str | None = None, state: str | None = None) -> BrainDumpSessionRecord",
+          "get_session": "(self, session_id: int) -> BrainDumpSessionRecord",
+          "list_sessions": "(self, project_id: str) -> tuple[BrainDumpSessionRecord, ...]",
+          "delete_session": "(self, session_id: int) -> None"
+        },
+        "allowed_transitions": {
+          "active": ["organized", "archived"],
+          "organized": ["archived"]
+        }
+      },
+      "output_data_schema": {
+        "new_file": "app/services/braindump.py with service class, error classes, and transition validation"
+      },
+      "external_refs": [
+        "app/services/brainstorm.py patterns",
+        "app/persistence/story_development.py BrainDumpSessionRecord"
+      ]
+    },
+    "utilized_features": [
+      "Service layer pattern",
+      "State machine validation",
+      "SQLite repository"
+    ],
+    "expected_outcomes": [
+      "BrainDumpService exists with all 5 CRUD methods.",
+      "State transitions are validated (invalid transitions raise BrainDumpValidationError).",
+      "Three error classes exist: BrainDumpServiceError, BrainDumpValidationError, BrainDumpNotFoundError.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "4748ff92-aaa2-42b3-ac79-577b7dd2c4d0",
+    "task_code": "BD-004",
+    "purpose": "Add brain dump session API routes to app/api/story_development.py. Endpoints: POST /braindump/sessions (201), GET /braindump/sessions (200), GET /braindump/sessions/{session_id} (200), PATCH /braindump/sessions/{session_id} (200), DELETE /braindump/sessions/{session_id} (204). Request/response schemas defined inline in this file. Each endpoint takes project_id query param. Use the BrainDumpService.",
+    "responsible_file": "app/api/story_development.py",
+    "serial_dependencies": [
+      "c4c97227-08b6-44d7-a719-0737f436ef5b"
+    ],
+    "guardrails": [
+      "Define request schemas inline in this file (same pattern as BrainstormItemCreateRequest at line 275).",
+      "Define response schemas inline in this file (same pattern as BrainstormItemListResponse).",
+      "GET list endpoint returns BrainDumpSessionListResponse with project_id and sessions list.",
+      "PATCH endpoint accepts partial fields: raw_text, title, state.",
+      "DELETE returns 204 No Content.",
+      "Register a new APIRouter instance or add routes within the existing story_development router. Check if the existing router is the right place or if a separate router is needed.",
+      "Import BrainDumpService from app.services.braindump."
+    ],
+    "knowledge_base": [
+      "Existing BrainstormItemCreateRequest schema at app/api/story_development.py line 275.",
+      "Existing brainstorm routes at lines 1067-1128.",
+      "BrainDumpService from BD-003.",
+      "State: 'active', 'organized', 'archived'.",
+      "Field: session_id, project_id, title, raw_text, state, created_at, updated_at."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "POST /braindump/sessions": {
+          "body": {
+            "project_id": "str",
+            "title": "str | None",
+            "raw_text": "str"
+          }
+        },
+        "GET /braindump/sessions": {
+          "query": {"project_id": "str"}
+        },
+        "GET /braindump/sessions/{session_id}": {
+          "path": {"session_id": "str"}
+        },
+        "PATCH /braindump/sessions/{session_id}": {
+          "path": {"session_id": "str"},
+          "body": {"raw_text": "str | None", "title": "str | None", "state": "str | None"}
+        },
+        "DELETE /braindump/sessions/{session_id}": {
+          "path": {"session_id": "str"}
+        }
+      },
+      "output_data_schema": {
+        "schemas": [
+          "BrainDumpSessionCreateRequest(project_id, title?, raw_text)",
+          "BrainDumpSessionPatchRequest(raw_text?, title?, state?)",
+          "BrainDumpSessionResponse(session_id, project_id, title, raw_text, state, created_at, updated_at)",
+          "BrainDumpSessionListResponse(project_id, sessions: BrainDumpSessionResponse[], meta)"
+        ],
+        "status_codes": [
+          "POST -> 201",
+          "GET -> 200",
+          "PATCH -> 200",
+          "DELETE -> 204"
+        ]
+      },
+      "external_refs": [
+        "app/api/story_development.py brainstorm routes lines 1063-1128",
+        "app/services/braindump.py"
+      ]
+    },
+    "utilized_features": [
+      "FastAPI route definitions",
+      "Pydantic request/response schemas",
+      "BrainDumpService"
+    ],
+    "expected_outcomes": [
+      "Five brain dump session endpoints exist under /braindump/sessions.",
+      "POST creates a session and returns 201.",
+      "GET list returns BrainDumpSessionListResponse.",
+      "GET by id returns single BrainDumpSessionResponse.",
+      "PATCH accepts partial fields and validates state transitions.",
+      "DELETE returns 204.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "29ee4451-5a55-478c-b2fb-e85fb86a5f19",
+    "task_code": "BD-005",
+    "purpose": "Add POST /braindump/sessions/{session_id}/organize endpoint to app/api/story_development.py. The endpoint takes a BrainDumpSession, runs mock AI categorization (returns BrainstormItem[] with item_type assigned to one of 10 categories), creates those BrainstormItems via BrainstormService, updates session state to 'organized', and returns the categorized items grouped by type. The organize logic is a placeholder that splits the raw_text into lines/paragraphs and distributes them across categories for now — structured so the real LLM integration point is clearly defined.",
+    "responsible_file": "app/api/story_development.py",
+    "serial_dependencies": [
+      "4748ff92-aaa2-42b3-ac79-577b7dd2c4d0",
+      "3232d0b5-409e-49f0-9193-d8c6fd2e5d71"
+    ],
+    "guardrails": [
+      "The organize endpoint returns BrainDumpOrganizeResponse with categorized_items (dict mapping type -> BrainstormItem[]), session_id, and total_items.",
+      "Mock categorization: split raw_text by double-newlines into blocks, round-robin assign to categories, set tags from category name.",
+      "The mock categorization function must be clearly marked with a TODO comment for LLM integration.",
+      "Each generated BrainstormItem must have: item_id (new UUID), project_id, content (text block), status='keep', tags=[category], item_type (enum value).",
+      "Update session state to 'organized' after successful categorization.",
+      "Add item_type to BrainstormItemResponse (see BD-006 dependency for schema).",
+      "Do not implement real AI logic — leave a clearly marked placeholder function."
+    ],
+    "knowledge_base": [
+      "BrainDumpService from BD-003.",
+      "BrainstormService.capture_brainstorm_item for creating categorized items.",
+      "BrainstormItemTypes enum from BD-001.",
+      "Raw text from BrainDumpSession.",
+      "10 categories: CHARACTER, LOCATION, PLOT_POINT, THEME, CONFLICT, WORLD_BUILDING, DIALOGUE, RELATIONSHIP, OBJECT, RULE."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "POST /braindump/sessions/{session_id}/organize": {
+          "path": {"session_id": "str"},
+          "body": {}
+        }
+      },
+      "output_data_schema": {
+        "BrainDumpOrganizeResponse": {
+          "session_id": "str",
+          "categorized_items": {
+            "CHARACTER": ["BrainstormItem[]"],
+            "LOCATION": ["BrainstormItem[]"],
+            "PLOT_POINT": ["BrainstormItem[]"],
+            "THEME": ["BrainstormItem[]"],
+            "CONFLICT": ["BrainstormItem[]"],
+            "WORLD_BUILDING": ["BrainstormItem[]"],
+            "DIALOGUE": ["BrainstormItem[]"],
+            "RELATIONSHIP": ["BrainstormItem[]"],
+            "OBJECT": ["BrainstormItem[]"],
+            "RULE": ["BrainstormItem[]"]
+          },
+          "total_items": "int"
+        }
+      },
+      "external_refs": [
+        "app/api/story_development.py",
+        "app/services/braindump.py",
+        "app/services/brainstorm.py",
+        "app/schemas/enums.py BrainstormItemTypes"
+      ]
+    },
+    "utilized_features": [
+      "Text processing (split by paragraphs)",
+      "Round-robin category assignment",
+      "BrainstormItem creation",
+      "Session state update"
+    ],
+    "expected_outcomes": [
+      "POST /braindump/sessions/{session_id}/organize exists and returns 201.",
+      "Returns BrainDumpOrganizeResponse with categorized_items grouped by type.",
+      "Session state transitions to 'organized' after categorization.",
+      "BrainstormItems are created with correct item_type values.",
+      "Mock categorization is clearly marked as a placeholder for LLM integration.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "3232d0b5-409e-49f0-9193-d8c6fd2e5d71",
+    "task_code": "BD-006",
+    "purpose": "Add item_type field to BrainstormItem and BrainstormItemListResponse schemas in app/schemas/story_development.py. Add item_type: str | None = None to BrainstormItem. Add item_type to BrainstormItemListResponse's internal schema (it wraps BrainstormItem, so it picks up automatically if done at the item level). Update BrainstormItem._to_schema in braindump service if needed. Ensure the field appears in API responses.",
+    "responsible_file": "app/schemas/story_development.py",
+    "serial_dependencies": [
+      "770b0dfa-c451-470a-a420-19d2094be277"
+    ],
+    "guardrails": [
+      "Add item_type: str | None = None to the BrainstormItem class.",
+      "Update the normalize_payload method to handle item_type field.",
+      "Ensure backward compatibility — item_type defaults to None for existing items.",
+      "Do not modify any other schemas in this file.",
+      "The field must be optional (str | None = None) to avoid breaking existing API consumers."
+    ],
+    "knowledge_base": [
+      "BrainstormItem class at line 143 of app/schemas/story_development.py.",
+      "Existing normalize_payload validator pattern.",
+      "BrainstormItemTypes enum from BD-001."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "BrainstormItem_addition": {
+          "item_type": "str | None = None"
+        }
+      },
+      "output_data_schema": {
+        "modified_class": "BrainstormItem with item_type field added"
+      },
+      "external_refs": [
+        "app/schemas/story_development.py lines 143-164",
+        "app/schemas/enums.py BrainstormItemTypes"
+      ]
+    },
+    "utilized_features": [
+      "Pydantic model field addition",
+      "Backward-compatible optional fields"
+    ],
+    "expected_outcomes": [
+      "BrainstormItem has item_type: str | None = None field.",
+      "normalize_payload handles item_type.",
+      "Existing BrainstormItems without item_type work fine (defaults to None).",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "ad10d2ff-72df-4d82-8d5f-ce3868efd82b",
+    "task_code": "BD-007",
+    "purpose": "Update ProjectCreateRequest schema to accept a new project_kind field and handle brain_dump projects differently. In app/schemas/projects.py, add project_kind: str = 'standard' to ProjectCreateRequest. When project_kind is 'brain_dump', skip foundation validation and auto-create a brain dump session. In the project create endpoint, detect brain_dump kind and initialize accordingly.",
+    "responsible_file": "app/schemas/projects.py",
+    "serial_dependencies": [
+      "770b0dfa-c451-470a-a420-19d2094be277"
+    ],
+    "guardrails": [
+      "Add project_kind: str = 'standard' (default to 'standard' for backward compatibility).",
+      "When project_kind is 'brain_dump', the story_structure field should accept 'BRAINDUMP' value.",
+      "The project create endpoint must detect brain_dump kind and create an initial brain dump session.",
+      "Do not remove or rename any existing fields.",
+      "Check the project create endpoint in app/api to wire up the brain_dump initialization."
+    ],
+    "knowledge_base": [
+      "ProjectCreateRequest in app/schemas/projects.py.",
+      "Project create endpoint in app/api to check how projects are initialized.",
+      "BrainDumpService from BD-003."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "ProjectCreateRequest_addition": {
+          "project_kind": "str = 'standard'"
+        }
+      },
+      "output_data_schema": {
+        "modified_schema": "ProjectCreateRequest with project_kind field",
+        "endpoint_change": "Project create detects brain_dump kind and initializes session"
+      },
+      "external_refs": [
+        "app/schemas/projects.py",
+        "app/api to check project creation flow"
+      ]
+    },
+    "utilized_features": [
+      "Pydantic model field",
+      "Conditional project initialization",
+      "Backward-compatible default value"
+    ],
+    "expected_outcomes": [
+      "ProjectCreateRequest has project_kind: str = 'standard'.",
+      "brain_dump projects auto-create an initial brain dump session.",
+      "Backward compatibility: existing project creations without project_kind still work.",
+      "python -m pytest -q -p no:cacheprovider still passes with no new failures."
+    ]
+  },
+  {
+    "task_id": "1151e15f-708c-4461-9a30-eb617ef3d503",
+    "task_code": "BD-008",
+    "purpose": "Create frontend TypeScript types for brain dump in frontend/src/types/braindump.ts. Define: BrainDumpSessionState ('active' | 'organized' | 'archived'), BrainDumpSession (session_id, project_id, title, raw_text, state, created_at, updated_at), BrainDumpSessionCreateRequest (project_id, title?, raw_text), BrainDumpSessionPatchRequest (raw_text?, title?, state?), BrainDumpSessionResponse (same as BrainDumpSession), BrainDumpSessionListResponse (project_id, sessions: BrainDumpSession[], meta), BrainDumpOrganizeResponse (session_id, categorized_items: Record<BrainstormItemType, BrainstormItem[]>, total_items). Also create BrainstormItemType union type.",
+    "responsible_file": "frontend/src/types/braindump.ts",
+    "serial_dependencies": [
+      "770b0dfa-c451-470a-a420-19d2094be277",
+      "3232d0b5-409e-49f0-9193-d8c6fd2e5d71"
+    ],
+    "guardrails": [
+      "Use snake_case for backend field names as per frontend conventions.",
+      "item_type values: 'character' | 'location' | 'plot_point' | 'theme' | 'conflict' | 'world_building' | 'dialogue' | 'relationship' | 'object' | 'rule'.",
+      "Session state values: 'active' | 'organized' | 'archived'.",
+      "Use interfaces for object-shaped types (BrainDumpSession, BrainDumpOrganizeResponse).",
+      "Use type unions for enum-like values (BrainDumpSessionState, BrainstormItemType).",
+      "Do not add any logic or imports beyond type definitions."
+    ],
+    "knowledge_base": [
+      "BrainDumpSession needs: session_id (string), project_id (string), title (string | null), raw_text (string), state (string), created_at (string | null), updated_at (string | null).",
+      "BrainstormItemType from research: 10 categories.",
+      "BrainstormItem type from existing frontend/src/types/brainstorm.ts."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "types_to_define": [
+          "BrainDumpSessionState = 'active' | 'organized' | 'archived'",
+          "BrainstormItemType = 'character' | 'location' | 'plot_point' | 'theme' | 'conflict' | 'world_building' | 'dialogue' | 'relationship' | 'object' | 'rule'",
+          "BrainDumpSession interface",
+          "BrainDumpSessionCreateRequest interface",
+          "BrainDumpSessionPatchRequest interface",
+          "BrainDumpSessionListResponse interface",
+          "BrainDumpOrganizeResponse interface"
+        ]
+      },
+      "output_data_schema": {
+        "new_file": "frontend/src/types/braindump.ts with all type definitions"
+      },
+      "external_refs": [
+        "frontend/src/types/brainstorm.ts for reference patterns",
+        "app/schemas/story_development.py BrainDumpSessionResponse"
+      ]
+    },
+    "utilized_features": [
+      "TypeScript interfaces and type unions"
+    ],
+    "expected_outcomes": [
+      "All 7 types exist in frontend/src/types/braindump.ts.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "All types match backend schema field names (snake_case)."
+    ]
+  },
+  {
+    "task_id": "ed8351ad-2589-4737-b9f4-4ee29b79a6af",
+    "task_code": "BD-009",
+    "purpose": "Create the brain dump API service in frontend/src/services/braindump.ts. Export functions: createBrainDumpSession(request), getBrainDumpSessions(projectId), getBrainDumpSession(sessionId, projectId), updateBrainDumpSession(sessionId, projectId, patch), deleteBrainDumpSession(sessionId, projectId), organizeBrainDumpSession(sessionId, projectId). Use shared api client from frontend/src/lib/api.ts. All routes under /v1/story-development/braindump/. Handle error status codes per backend convention: 201 for create, 200 for reads/updates, 204 for delete, 201 for organize.",
+    "responsible_file": "frontend/src/services/braindump.ts",
+    "serial_dependencies": [
+      "1151e15f-708c-4461-9a30-eb617ef3d503",
+      "4748ff92-aaa2-42b3-ac79-577b7dd2c4d0"
+    ],
+    "guardrails": [
+      "Use only the shared api client from frontend/src/lib/api.ts.",
+      "All URL paths use /v1/story-development/braindump/ prefix.",
+      "projectId is always passed as query param project_id (snake_case).",
+      "Do not add API_BASE or fetch logic — use shared client only.",
+      "Return response.data from each call.",
+      "Error handling: throw descriptive errors on non-success status codes."
+    ],
+    "knowledge_base": [
+      "Shared API client pattern from frontend/src/lib/api.ts.",
+      "Existing brainstorm service in frontend/src/services/brainstorm.ts for reference.",
+      "Backend routes from BD-004."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "endpoints": [
+          "POST /v1/story-development/braindump/sessions",
+          "GET /v1/story-development/braindump/sessions?project_id={projectId}",
+          "GET /v1/story-development/braindump/sessions/{sessionId}?project_id={projectId}",
+          "PATCH /v1/story-development/braindump/sessions/{sessionId}?project_id={projectId}",
+          "DELETE /v1/story-development/braindump/sessions/{sessionId}?project_id={projectId}",
+          "POST /v1/story-development/braindump/sessions/{sessionId}/organize?project_id={projectId}"
+        ]
+      },
+      "output_data_schema": {
+        "exports": [
+          "createBrainDumpSession(request) -> BrainDumpSession",
+          "getBrainDumpSessions(projectId) -> BrainDumpSession[]",
+          "getBrainDumpSession(sessionId, projectId) -> BrainDumpSession",
+          "updateBrainDumpSession(sessionId, projectId, patch) -> BrainDumpSession",
+          "deleteBrainDumpSession(sessionId, projectId) -> void",
+          "organizeBrainDumpSession(sessionId, projectId) -> BrainDumpOrganizeResponse"
+        ]
+      },
+      "external_refs": [
+        "frontend/src/services/brainstorm.ts patterns",
+        "frontend/src/lib/api.ts shared client"
+      ]
+    },
+    "utilized_features": [
+      "Axios shared client",
+      "TypeScript typed functions",
+      "HTTP status handling"
+    ],
+    "expected_outcomes": [
+      "Six exported functions exist matching the endpoint specifications.",
+      "All functions use the shared api client with correct paths and params.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "6174edea-fc26-4673-a533-af27a6519782",
+    "task_code": "BD-010",
+    "purpose": "Create the BrainDumpCanvas component in frontend/src/components/braindump/BrainDumpCanvas.tsx. This is the distraction-free typing interface. Props: sessionId (string | null — null means new session), projectId (string), onSave?(rawText: string): void, onOrganize?(): void. Features: 1) Large textarea that fills the available space, 2) Auto-save with 2s debounce via onSave callback, 3) Word count displayed subtly in bottom-right corner, 4) 'Organize with AI' floating button appears when rawText.length > 100 and session state is 'active', 5) Clean minimal design with CSS variables for theming support, 6) Typewriter-style scrolling (active line centered), 7) Hidden controls that appear on hover — save indicator, word count. Use Tailwind for styling. Handle empty state: when sessionId is null, show a title input + placeholder text, then transition to typing mode once title is set.",
+    "responsible_file": "frontend/src/components/braindump/BrainDumpCanvas.tsx",
+    "serial_dependencies": [
+      "ed8351ad-2589-4737-b9f4-4ee29b79a6af",
+      "1151e15f-708c-4461-9a30-eb617ef3d503"
+    ],
+    "guardrails": [
+      "The textarea must be the dominant visual element — no sidebars, no cards, no status dropdowns.",
+      "Auto-save must be debounced at 2 seconds (use a simple useState + setTimeout pattern, do not add lodash).",
+      "Word count: total words = text.trim().split(/\\s+/).filter(Boolean).length.",
+      "Organize button only shows when text length > 100 AND session state is 'active'.",
+      "Use CSS custom properties from theme variables: --bg-base, --text-primary, --text-secondary, --border-subtle.",
+      "Typewriter scrolling: use CSS line-height + overflow, set textarea scroll to center active line.",
+      "When sessionId is null: render a simple title input at top + a prompt text, then a textarea that appears once title is entered.",
+      "No external dependencies beyond React and Tailwind.",
+      "Export as named export: export function BrainDumpCanvas(props)"
+    ],
+    "knowledge_base": [
+      "Brain dump session types from BD-008.",
+      "Brain dump service functions from BD-009.",
+      "Theme CSS variables from frontend/src/theme/variables.css.",
+      "FocusWriter/iA Writer patterns: minimal UI, typewriter scrolling, auto-save.",
+      "Current brainstorm workspace in frontend/src/components/brainstorm/BrainstormWorkspace.tsx for contrast."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "props": {
+          "sessionId": "string | null",
+          "projectId": "string",
+          "onSave": "(rawText: string) => void",
+          "onOrganize": "() => void"
+        }
+      },
+      "output_data_schema": {
+        "component": "BrainDumpCanvas with textarea, auto-save, word count, organize button, title setup mode"
+      },
+      "external_refs": [
+        "frontend/src/components/brainstorm/BrainstormWorkspace.tsx (for contrast)",
+        "frontend/src/theme/variables.css (CSS variables)",
+        "frontend/src/types/braindump.ts types"
+      ]
+    },
+    "utilized_features": [
+      "React useState, useEffect, useCallback, useRef",
+      "Debounced state updates",
+      "Tailwind CSS",
+      "CSS custom properties for theming",
+      "Textarea scrolling behavior"
+    ],
+    "expected_outcomes": [
+      "BrainDumpCanvas renders a full-height distraction-free textarea.",
+      "Auto-save fires on text change with 2-second debounce.",
+      "Word count updates in real-time, displayed subtly.",
+      "Organize button appears conditionally when text > 100 chars and session is active.",
+      "Title setup mode exists for new sessions (sessionId === null).",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "cd270c33-ba66-4093-9aca-96c8df6aa8b9",
+    "task_code": "BD-011",
+    "purpose": "Create BrainDumpView in frontend/src/views/BrainDumpView.tsx. This view loads the existing brain dump session for a project (or creates one if none exists), passes it to BrainDumpCanvas, and handles the organize flow. Route: /workspace/:projectId/braindump. Logic: 1) On mount, query GET /braindump/sessions for the project. 2) If no session exists, call POST to create one (auto-created on brain_dump project setup). 3) Load session data and pass to BrainDumpCanvas. 4) On organize click, call organizeBrainDumpSession and show a toast with the summary of extracted items by category. 5) After organize, update the session state and show a summary card with counts per category. Use React Query for session data loading.",
+    "responsible_file": "frontend/src/views/BrainDumpView.tsx",
+    "serial_dependencies": [
+      "6174edea-fc26-4673-a533-af27a6519782",
+      "ed8351ad-2589-4737-b9f4-4ee29b79a6af"
+    ],
+    "guardrails": [
+      "Use React Query (useQuery, useMutation) from @tanstack/react-query.",
+      "Query key for session list: ['braindump-sessions', projectId].",
+      "Query key for organize: ['braindump-organize', sessionId].",
+      "After successful organize: invalidate both query keys and refetch.",
+      "Show a loading state while session is being fetched.",
+      "Show an error state if session fetch fails.",
+      "After organize succeeds, display a summary: 'Organized N items: X characters, Y locations, ...'.",
+      "Import BrainDumpCanvas from the correct relative path: ../../components/braindump/BrainDumpCanvas.",
+      "Use useParams<{ projectId: string }>() from react-router-dom."
+    ],
+    "knowledge_base": [
+      "BrainDumpCanvas from BD-010.",
+      "Brain dump service from BD-009.",
+      "Brain dump types from BD-008.",
+      "React Query patterns from existing views (PlanningView.tsx useQuery usage).",
+      "Toast utility from frontend/src/lib/toast."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "route": "/workspace/:projectId/braindump",
+        "queries": [
+          "['braindump-sessions', projectId] -> getBrainDumpSessions(projectId)",
+          "['braindump-organize', sessionId] -> organizeBrainDumpSession(sessionId, projectId)"
+        ]
+      },
+      "output_data_schema": {
+        "view": "BrainDumpView with session loading, BrainDumpCanvas rendering, organize flow, summary display"
+      },
+      "external_refs": [
+        "frontend/src/views/PlanningView.tsx (React Query patterns)",
+        "frontend/src/components/braindump/BrainDumpCanvas.tsx",
+        "frontend/src/services/braindump.ts"
+      ]
+    },
+    "utilized_features": [
+      "React Query useQuery and useMutation",
+      "React Router useParams",
+      "React useState for organize summary state",
+      "Toast notifications"
+    ],
+    "expected_outcomes": [
+      "BrainDumpView loads and displays the brain dump session.",
+      "Organize flow triggers the API call and shows summary.",
+      "Loading and error states are handled.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "849d86f8-349e-4c5d-a045-c041b6d0bb4f",
+    "task_code": "BD-012",
+    "purpose": "Update ProjectCreateForm to add 'Brain Dump' as a project type option. When 'Brain Dump' is selected, show a minimal form: project name only (genre, tone, structure are hidden). On submit, set project_kind='brain_dump' and story_structure='BRAINDUMP'. For standard projects, keep the existing form fields unchanged.",
+    "responsible_file": "frontend/src/components/projects/ProjectCreateForm.tsx",
+    "serial_dependencies": [
+      "1151e15f-708c-4461-9a30-eb617ef3d503"
+    ],
+    "guardrails": [
+      "Add a new radio/button group for project type: 'Standard' (default) and 'Brain Dump'.",
+      "When 'Brain Dump' is selected: show only project name field + project kind/structure hidden fields.",
+      "When 'Standard' is selected: show all existing fields (name, genre, tone, structure).",
+      "On submit with brain_dump: include project_kind: 'brain_dump' and story_structure: { structure_type: 'BRAINDUMP' }.",
+      "Do not modify any existing validation logic for standard projects.",
+      "Brain dump projects should have a shorter project name limit — use same 100 char limit for now."
+    ],
+    "knowledge_base": [
+      "Existing ProjectCreateForm at frontend/src/components/projects/ProjectCreateForm.tsx.",
+      "ProjectCreateRequest type from frontend/src/types/project.ts.",
+      "User chose: dedicated 'Brain Dump' project type."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "form_state": {
+          "projectType": "'standard' | 'brain_dump'",
+          "projectName": "string",
+          "projectKind": "'standard' | 'brain_dump'",
+          "storyStructure": "string"
+        }
+      },
+      "output_data_schema": {
+        "modified_form": "ProjectCreateForm with project type selector + conditional field rendering"
+      },
+      "external_refs": [
+        "frontend/src/components/projects/ProjectCreateForm.tsx current implementation",
+        "frontend/src/types/project.ts StoryStructure type",
+        "frontend/src/services/projects.ts createProject"
+      ]
+    },
+    "utilized_features": [
+      "Conditional form rendering",
+      "React state for project type selection",
+      "Tailwind CSS for layout"
+    ],
+    "expected_outcomes": [
+      "Project create form has 'Standard' and 'Brain Dump' options.",
+      "Brain Dump mode shows minimal form (name only).",
+      "Standard mode is unchanged.",
+      "Submit with brain_dump sets correct project_kind and story_structure.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "81d56917-5f3f-40dd-87fa-a4f6d209ce43",
+    "task_code": "BD-013",
+    "purpose": "Redirect brain_dump projects to BrainDumpView by default. Update the routing in App.tsx to add a new route: /workspace/:projectId/braindump -> <BrainDumpView/>. When a brain_dump project is navigated to via /workspace/:projectId (the base workspace route), it should default to /braindump instead of /plan. In WorkspaceShell or the workspace router, check the project's project_kind — if it's 'brain_dump', redirect to /braindump.",
+    "responsible_file": "frontend/src/App.tsx",
+    "serial_dependencies": [
+      "cd270c33-ba66-4093-9aca-96c8df6aa8b9"
+    ],
+    "guardrails": [
+      "Add new route: <Route path='/workspace/:projectId/braindump' element={<BrainDumpView />} />.",
+      "Import BrainDumpView from './views/BrainDumpView'.",
+      "Keep all existing routes unchanged.",
+      "The workspace redirect logic should check project_kind from the project data loaded in WorkspaceShell or Workspace view.",
+      "Do not break any existing routes.",
+      "Use React Router <Navigate> or <Redirect> for the conditional redirect."
+    ],
+    "knowledge_base": [
+      "Current App.tsx route configuration.",
+      "BrainDumpView from BD-011.",
+      "Project data available in workspace context (project_kind field).",
+      "User wants brain_dump projects to land directly on the brainstorm canvas."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "new_route": "/workspace/:projectId/braindump",
+        "redirect_logic": "project_kind === 'brain_dump' -> navigate to /braindump"
+      },
+      "output_data_schema": {
+        "updated_router": "App.tsx with new BrainDumpView route + conditional workspace redirect"
+      },
+      "external_refs": [
+        "frontend/src/App.tsx current routes",
+        "frontend/src/views/BrainDumpView.tsx",
+        "frontend/src/components/WorkspaceShell.tsx"
+      ]
+    },
+    "utilized_features": [
+      "React Router route addition",
+      "Conditional navigation based on project kind",
+      "React Navigate component"
+    ],
+    "expected_outcomes": [
+      "New route /workspace/:projectId/braindump renders BrainDumpView.",
+      "brain_dump projects default to /braindump workspace route.",
+      "All existing routes still work.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "6628c7ed-6cc4-45e1-8d6b-b66387f36e9e",
+    "task_code": "BD-014",
+    "purpose": "Add a Brain Dump navigation item to the sidebar in WorkspaceShell. The nav item should: 1) Only show for projects with project_kind === 'brain_dump', 2) Navigate to /workspace/:projectId/braindump, 3) Use a lightbulb icon (same as brainstorm), 4) Label: 'Brain Dump', 5) Be placed at the top of the sidebar (before Planning). Update the workspace sidebar to show this item when the current project is a brain_dump type.",
+    "responsible_file": "frontend/src/components/WorkspaceShell.tsx",
+    "serial_dependencies": [
+      "81d56917-5f3f-40dd-87fa-a4f6d209ce43"
+    ],
+    "guardrails": [
+      "Check project data for project_kind === 'brain_dump'.",
+      "Use lucide-react Lightbulb icon (already imported for brainstorm).",
+      "Navigate to /workspace/:projectId/braindump.",
+      "Label: 'Brain Dump'.",
+      "Place at the top of the sidebar nav list, before 'Planning'.",
+      "Do not modify the existing brainstorm nav item — it stays as-is.",
+      "The nav item should be highlighted (active state) when on /braindump route."
+    ],
+    "knowledge_base": [
+      "Current WorkspaceShell sidebar in frontend/src/components/WorkspaceShell.tsx.",
+      "Lightbulb icon import from lucide-react.",
+      "Navigation pattern using React Router useNavigate.",
+      "Project data available in workspace context."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "nav_item": {
+          "label": "Brain Dump",
+          "icon": "Lightbulb",
+          "path": "/workspace/:projectId/braindump",
+          "condition": "project_kind === 'brain_dump'"
+        }
+      },
+      "output_data_schema": {
+        "modified_component": "WorkspaceShell with conditional Brain Dump nav item at top"
+      },
+      "external_refs": [
+        "frontend/src/components/WorkspaceShell.tsx",
+        "frontend/src/App.tsx routes"
+      ]
+    },
+    "utilized_features": [
+      "Conditional rendering",
+      "React Router navigation",
+      "Lucide React icons"
+    ],
+    "expected_outcomes": [
+      "Brain Dump nav item appears in sidebar for brain_dump projects.",
+      "NavItem is at top of sidebar before Planning.",
+      "Active state highlights when on /braindump route.",
+      "Standard projects see no change to sidebar.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "19dd88de-fe1c-49bf-83bd-24a193fe8d2d",
+    "task_code": "BD-015",
+    "purpose": "Update brainstorm item card rendering to show category badges from item_type. In BrainstormWorkspace.tsx, when a BrainstormItem has item_type set, render a colored badge next to the status badge showing the category. Map each BrainstormItemType to a Tailwind color class and a display label. Categories: character (blue), location (green), plot_point (amber), theme (purple), conflict (red), world_building (teal), dialogue (pink), relationship (orange), object (cyan), rule (indigo).",
+    "responsible_file": "frontend/src/components/brainstorm/BrainstormWorkspace.tsx",
+    "serial_dependencies": [
+      "3232d0b5-409e-49f0-9193-d8c6fd2e5d71",
+      "ed8351ad-2589-4737-b9f4-4ee29b79a6af"
+    ],
+    "guardrails": [
+      "Only show item_type badge when item.item_type is defined and non-empty.",
+      "Create a type-safe mapping: Record<BrainstormItemType, { color: string; label: string }>.",
+      "Color -> label mapping: character/Character, location/Location, plot_point/Plot Point, theme/Theme, conflict/Conflict, world_building/World Building, dialogue/Dialogue, relationship/Relationship, object/Object, rule/Rule.",
+      "Badge should be small, next to (not replacing) the status badge.",
+      "Use consistent badge styling (same as existing status badges).",
+      "Import BrainstormItemType type from the existing brainstorm types file."
+    ],
+    "knowledge_base": [
+      "Existing BrainstormCard component in frontend/src/components/brainstorm/BrainstormWorkspace.tsx.",
+      "BrainstormItemType values from BD-001.",
+      "Tailwind color classes for badges.",
+      "Current status badge rendering pattern."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "category_mapping": {
+          "character": { "color": "bg-blue-100 text-blue-800 border-blue-200", "label": "Character" },
+          "location": { "color": "bg-green-100 text-green-800 border-green-200", "label": "Location" },
+          "plot_point": { "color": "bg-amber-100 text-amber-800 border-amber-200", "label": "Plot Point" },
+          "theme": { "color": "bg-purple-100 text-purple-800 border-purple-200", "label": "Theme" },
+          "conflict": { "color": "bg-red-100 text-red-800 border-red-200", "label": "Conflict" },
+          "world_building": { "color": "bg-teal-100 text-teal-800 border-teal-200", "label": "World" },
+          "dialogue": { "color": "bg-pink-100 text-pink-800 border-pink-200", "label": "Dialogue" },
+          "relationship": { "color": "bg-orange-100 text-orange-800 border-orange-200", "label": "Relationship" },
+          "object": { "color": "bg-cyan-100 text-cyan-800 border-cyan-200", "label": "Object" },
+          "rule": { "color": "bg-indigo-100 text-indigo-800 border-indigo-200", "label": "Rule" }
+        }
+      },
+      "output_data_schema": {
+        "modified_component": "BrainstormCard with optional item_type badge"
+      },
+      "external_refs": [
+        "frontend/src/components/brainstorm/BrainstormWorkspace.tsx",
+        "frontend/src/types/brainstorm.ts BrainstormItem"
+      ]
+    },
+    "utilized_features": [
+      "Conditional rendering",
+      "Type-safe Record mapping",
+      "Tailwind CSS badge styling"
+    ],
+    "expected_outcomes": [
+      "Brainstorm items with item_type show a colored category badge.",
+      "Items without item_type (legacy) show no category badge — only status.",
+      "All 10 categories have distinct colors and labels.",
+      "TypeScript typecheck passes: cd frontend && npm run typecheck.",
+      "Lint passes: cd frontend && npm run lint."
+    ]
+  },
+  {
+    "task_id": "4cb3a164-2d75-48d1-b4c2-9beabbd5cb8c",
+    "task_code": "BD-016",
+    "purpose": "Add backend unit tests for the BrainDumpService and brain dump API routes. Create tests file tests/test_braindump_service.py. Test cases: 1) create_session - creates session with all fields, 2) create_session - validates state defaults to 'active', 3) get_session - returns correct session, 4) get_session - raises NotFound for invalid id, 5) list_sessions - returns only sessions for the given project_id, 6) update_session - updates raw_text and title, 7) update_session - validates state transitions (active->organized OK, active->active raises error), 8) delete_session - removes session, 9) organize - creates brainstorm items from text, 10) organize - updates session state to 'organized', 11) organize - returns correct counts per category. Use tmp_path for test isolation.",
+    "responsible_file": "tests/test_braindump_service.py",
+    "serial_dependencies": [
+      "29ee4451-5a55-478c-b2fb-e85fb86a5f19",
+      "4748ff92-aaa2-42b3-ac79-577b7dd2c4d0",
+      "3232d0b5-409e-49f0-9193-d8c6fd2e5d71"
+    ],
+    "guardrails": [
+      "Follow existing test patterns in tests/test_brainstorm_service.py.",
+      "Use tmp_path for all file-based operations.",
+      "Use TestClient(build_app()) for API route tests.",
+      "Use pytest fixtures for repository and service setup.",
+      "Test state transition validation explicitly (valid and invalid transitions).",
+      "Test organize mock categorization returns items for all 10 categories.",
+      "No test should depend on shared mutable state."
+    ],
+    "knowledge_base": [
+      "Existing test pattern: tests/test_brainstorm_service.py.",
+      "TestClient and build_app from FastAPI test utilities.",
+      "BrainDumpService methods and state machine from BD-003.",
+      "BrainDumpService errors: BrainDumpValidationError, BrainDumpNotFoundError."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "test_files": [
+          "tests/test_braindump_service.py"
+        ],
+        "test_categories": [
+          "Service CRUD operations (create, get, list, update, delete)",
+          "State transition validation (valid and invalid)",
+          "API route tests (POST, GET, PATCH, DELETE)",
+          "Organize endpoint (categorization, state update, response shape)"
+        ]
+      },
+      "output_data_schema": {
+        "new_file": "tests/test_braindump_service.py with comprehensive test coverage"
+      },
+      "external_refs": [
+        "tests/test_brainstorm_service.py (test patterns)",
+        "app/services/braindump.py",
+        "app/api/story_development.py brain dump routes"
+      ]
+    },
+    "utilized_features": [
+      "Pytest with tmp_path",
+      "FastAPI TestClient",
+      "State machine testing",
+      "Mock-based organize testing"
+    ],
+    "expected_outcomes": [
+      "All brain dump CRUD operations are tested.",
+      "State transition validation is tested (valid and invalid).",
+      "Organize endpoint is tested (categorization, state update, response shape).",
+      "No tests depend on shared mutable state.",
+      "python -m pytest -q -p no:cacheprovider shows zero new failures."
+    ]
+  },
+  {
+    "task_id": "e6c3af0b-60db-4b8c-aa2f-70efa0b0a6e5",
+    "task_code": "BD-017",
+    "purpose": "Add frontend lint and typecheck validation for all new brain dump files. Run cd frontend && npm run lint, cd frontend && npm run typecheck, cd frontend && npm run build to verify all new files pass. Specifically: frontend/src/types/braindump.ts, frontend/src/services/braindump.ts, frontend/src/components/braindump/BrainDumpCanvas.tsx, frontend/src/views/BrainDumpView.tsx. Fix any lint or type errors that arise.",
+    "responsible_file": "N/A — validation pass only",
+    "serial_dependencies": [
+      "6174edea-fc26-4673-a533-af27a6519782",
+      "cd270c33-ba66-4093-9aca-96c8df6aa8b9",
+      "849d86f8-349e-4c5d-a045-c041b6d0bb4f",
+      "81d56917-5f3f-40dd-87fa-a4f6d209ce43",
+      "6628c7ed-6cc4-45e1-8d6b-b66387f36e9e",
+      "19dd88de-fe1c-49bf-83bd-24a193fe8d2d"
+    ],
+    "guardrails": [
+      "Run all three commands and fix any issues found.",
+      "Do not introduce any ESLint disable comments without justification.",
+      "Fix type errors by correcting types, not by casting to 'any'.",
+      "If build fails due to a missing file, go back to the responsible task to verify the file exists."
+    ],
+    "knowledge_base": [
+      "All frontend files created in BD-008 through BD-015.",
+      "Merge-readiness validation commands from AGENTS.md."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "validation_commands": [
+          "cd frontend && npm run lint",
+          "cd frontend && npm run typecheck",
+          "cd frontend && npm run build"
+        ]
+      },
+      "output_data_schema": {
+        "result": "All three commands pass with no errors or warnings."
+      },
+      "external_refs": [
+        "frontend/src/types/braindump.ts",
+        "frontend/src/services/braindump.ts",
+        "frontend/src/components/braindump/BrainDumpCanvas.tsx",
+        "frontend/src/views/BrainDumpView.tsx",
+        "frontend/src/components/projects/ProjectCreateForm.tsx",
+        "frontend/src/App.tsx"
+      ]
+    },
+    "utilized_features": [
+      "ESLint",
+      "TypeScript compiler",
+      "Vite build"
+    ],
+    "expected_outcomes": [
+      "cd frontend && npm run lint -> passed.",
+      "cd frontend && npm run typecheck -> passed.",
+      "cd frontend && npm run build -> passed."
+    ]
+  },
+  {
+    "task_id": "87aab454-3e3a-4c7c-94cf-e8b27ac8fcd1",
+    "task_code": "BD-018",
+    "purpose": "Run full merge-readiness validation. Run all four validation commands: 1) python -m pytest -q -p no:cacheprovider -> must show same pass count as baseline plus any new brain dump tests, 2) cd frontend && npm run lint, 3) cd frontend && npm run typecheck, 4) cd frontend && npm run build. Verify that no pre-existing tests are broken by the changes.",
+    "responsible_file": "N/A — validation pass only",
+    "serial_dependencies": [
+      "4cb3a164-2d75-48d1-b4c2-9beabbd5cb8c",
+      "e6c3af0b-60db-4b8c-aa2f-70efa0b0a6e5"
+    ],
+    "guardrails": [
+      "Record the baseline pass count from AGENTS.md (514 passed, 9 skipped) and verify the new count includes all brain dump tests.",
+      "If any test fails, identify the responsible task and fix it.",
+      "If frontend build fails, check for missing imports, wrong file paths, or unresolved types.",
+      "Document the final pass count."
+    ],
+    "knowledge_base": [
+      "Baseline from AGENTS.md: 514 passed, 9 skipped.",
+      "New brain dump tests from BD-016.",
+      "Merge-readiness commands from AGENTS.md."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "validation_commands": [
+          "python -m pytest -q -p no:cacheprovider",
+          "cd frontend && npm run lint",
+          "cd frontend && npm run typecheck",
+          "cd frontend && npm run build"
+        ]
+      },
+      "output_data_schema": {
+        "result": "All four commands pass. Final pytest count: 514 + N brain dump tests passed."
+      },
+      "external_refs": [
+        "AGENTS.md merge-readiness section"
+      ]
+    },
+    "utilized_features": [
+      "Pytest",
+      "ESLint",
+      "TypeScript compiler",
+      "Vite build"
+    ],
+    "expected_outcomes": [
+      "python -m pytest -q -p no:cacheprovider: all tests pass (baseline + brain dump tests).",
+      "cd frontend && npm run lint: passed.",
+      "cd frontend && npm run typecheck: passed.",
+      "cd frontend && npm run build: passed."
+    ]
+  },
+  {
+    "task_id": "22365425-c4be-449b-9012-5f1236a06bd0",
+    "task_code": "BD-019",
+    "purpose": "Update documentation to reflect the new Brain Dump project type. 1) Update README.md: add 'Brain Dump' to the project creation options description. 2) Update TODO.md if there's a v1.0 checklist related to brainstorming or project types. 3) Update docs/Story Development Product Spec v0.1.md: add a section describing the Brain Dump workflow (free-text capture -> AI categorization -> brainstorm items).",
+    "responsible_file": "README.md",
+    "serial_dependencies": [
+      "87aab454-3e3a-4c7c-94cf-e8b27ac8fcd1"
+    ],
+    "guardrails": [
+      "Only update documentation — no code changes in this task.",
+      "README.md: add Brain Dump to project options description if the file lists them.",
+      "If TODO.md has a brainstorming-related checklist item, update it to mention the Brain Dump flow.",
+      "Product Spec: add a brief 'Brain Dump Workflow' section describing the 3-step process.",
+      "Do not invent features that were not implemented."
+    ],
+    "knowledge_base": [
+      "Brain Dump workflow: free-text capture -> AI organize -> brainstorm items with categories.",
+      "README.md and TODO.md current content.",
+      "docs/Story Development Product Spec v0.1.md structure."
+    ],
+    "references_and_schema": {
+      "input_data_schema": {
+        "documentation_changes": [
+          "README.md: mention Brain Dump project type",
+          "TODO.md: update brainstorming-related items if present",
+          "Product Spec: add Brain Dump workflow section"
+        ]
+      },
+      "output_data_schema": {
+        "updated_docs": [
+          "README.md with Brain Dump mention",
+          "Product Spec with Brain Dump workflow section"
+        ]
+      },
+      "external_refs": [
+        "README.md",
+        "TODO.md",
+        "docs/Story Development Product Spec v0.1.md"
+      ]
+    },
+    "utilized_features": [
+      "Markdown documentation"
+    ],
+    "expected_outcomes": [
+      "README.md mentions Brain Dump project type if it lists project options.",
+      "Product Spec describes the Brain Dump 3-step workflow.",
+      "No stale or inaccurate documentation remains."
+    ]
+  }
+]

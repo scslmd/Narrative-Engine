@@ -300,6 +300,17 @@ CREATE TABLE IF NOT EXISTS brainstorm_items (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS brain_dump_sessions (
+    session_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    title TEXT,
+    raw_text TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS foundation_profiles (
     project_id TEXT PRIMARY KEY,
     current_revision_id INTEGER,

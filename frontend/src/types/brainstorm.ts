@@ -5,6 +5,8 @@
  * Backend schema: app.schemas.story_development.BrainstormItem
  */
 
+import type { BrainstormItemType } from './braindump';
+
 export type BrainstormItemStatus = 'keep' | 'discard' | 'park';
 
 /**
@@ -20,7 +22,7 @@ export interface BrainstormItem {
   tags: string[];
   source_notes: string | null;
   state?: BrainstormItemState;
-  item_type?: string;
+  item_type: BrainstormItemType | null;
   cluster_id?: string | null;
   promoted_to?: string | null;
   promoted_at?: string | null;
@@ -41,7 +43,7 @@ export interface BrainstormItemCreateRequest {
   content: string;
   status?: BrainstormItemStatus;
   state?: BrainstormItemState;
-  item_type?: string;
+  item_type?: BrainstormItemType | null;
   cluster_key?: string | null;
   cluster_id?: string | null;
   tags?: string[];

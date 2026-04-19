@@ -147,6 +147,7 @@ class BrainstormItem(StrictSchemaModel):
     status: str = Field(default="keep", min_length=1)
     tags: list[str] = Field(default_factory=list)
     source_notes: str | None = None
+    item_type: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -161,6 +162,8 @@ class BrainstormItem(StrictSchemaModel):
         payload["tags"] = _normalize_text_list(payload.get("tags", []), field_name="tags")
         if "source_notes" in payload:
             payload["source_notes"] = _normalize_optional_text(payload["source_notes"], field_name="source_notes")
+        if "item_type" in payload and payload["item_type"] is not None:
+            payload["item_type"] = _normalize_text(payload["item_type"], field_name="item_type")
         return payload
 
 

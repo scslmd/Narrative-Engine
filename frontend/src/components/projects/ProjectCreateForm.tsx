@@ -8,6 +8,8 @@ interface ProjectCreateFormProps {
   onCancel: () => void;
 }
 
+type ProjectType = 'standard' | 'brain_dump';
+
 const GENRES = [
   'Fantasy',
   'Science Fiction',
@@ -27,6 +29,7 @@ const STRUCTURE_TYPES: StoryStructure['structure_type'][] = [
 ];
 
 export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreateFormProps) {
+  const [projectType, setProjectType] = useState<ProjectType>('standard');
   const [projectName, setProjectName] = useState('');
   const [genre, setGenre] = useState(GENRES[0]);
   const [primaryTone, setPrimaryTone] = useState('');
@@ -68,7 +71,7 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
       return;
     }
 
-    if (!primaryTone) {
+    if (projectType === 'standard' && !primaryTone) {
       toast.error('Primary tone is required');
       return;
     }
@@ -78,15 +81,19 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
     try {
       const data: ProjectCreateRequest = {
         project_name: projectName.trim(),
-        genre,
-        tone_profile: {
-          primary_tone: primaryTone,
-          secondary_tones: secondaryTones,
-        },
+        project_kind: projectType === 'brain_dump' ? 'brain_dump' : 'standard',
         story_structure: {
-          structure_type: structureType,
+          structure_type: projectType === 'brain_dump' ? 'BRAINDUMP' : structureType,
         },
       };
+
+      if (projectType === 'standard') {
+        data.genre = genre;
+        data.tone_profile = {
+          primary_tone: primaryTone,
+          secondary_tones: secondaryTones,
+        };
+      }
 
       const result = await createProject(data);
       toast.success('Project created successfully');
@@ -100,6 +107,38 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Project Type
+        </label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setProjectType('standard')}
+            className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+              projectType === 'standard'
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <div className="font-semibold">Standard Project</div>
+            <div className="text-xs mt-1 opacity-70">Full project setup with genre, tone & structure</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setProjectType('brain_dump')}
+            className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+              projectType === 'brain_dump'
+                ? 'border-amber-500 bg-amber-50 text-amber-700'
+                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <div className="font-semibold">Brain Dump</div>
+            <div className="text-xs mt-1 opacity-70">Skip setup — start typing ideas immediately</div>
+          </button>
+        </div>
+      </div>
+
       <div>
         <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-1">
           Project Name *
@@ -116,82 +155,86 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
         <p className="mt-1 text-xs text-gray-500">{projectName.length}/100 characters</p>
       </div>
 
-      <div>
-        <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
-          Genre *
-        </label>
-        <select
-          id="genre"
-          value={genre}
-          onChange={(e) => setGenre(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          {GENRES.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="primaryTone" className="block text-sm font-medium text-gray-700 mb-1">
-          Primary Tone *
-        </label>
-        <select
-          id="primaryTone"
-          value={primaryTone}
-          onChange={(e) => setPrimaryTone(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">Select a tone</option>
-          {TONES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Secondary Tones (optional, max 3)
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {TONES.filter((t) => t !== primaryTone).map((tone) => (
-            <button
-              key={tone}
-              type="button"
-              onClick={() => toggleSecondaryTone(tone)}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                secondaryTones.includes(tone)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+      {projectType === 'standard' && (
+        <>
+          <div>
+            <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
+              Genre *
+            </label>
+            <select
+              id="genre"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {tone}
-            </button>
-          ))}
-        </div>
-      </div>
+              {GENRES.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <div>
-        <label htmlFor="structureType" className="block text-sm font-medium text-gray-700 mb-1">
-          Story Structure *
-        </label>
-        <select
-          id="structureType"
-          value={structureType}
-          onChange={(e) => setStructureType(e.target.value as StoryStructure['structure_type'])}
-          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          {STRUCTURE_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div>
+            <label htmlFor="primaryTone" className="block text-sm font-medium text-gray-700 mb-1">
+              Primary Tone *
+            </label>
+            <select
+              id="primaryTone"
+              value={primaryTone}
+              onChange={(e) => setPrimaryTone(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select a tone</option>
+              {TONES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Secondary Tones (optional, max 3)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {TONES.filter((t) => t !== primaryTone).map((tone) => (
+                <button
+                  key={tone}
+                  type="button"
+                  onClick={() => toggleSecondaryTone(tone)}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    secondaryTones.includes(tone)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {tone}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="structureType" className="block text-sm font-medium text-gray-700 mb-1">
+              Story Structure *
+            </label>
+            <select
+              id="structureType"
+              value={structureType}
+              onChange={(e) => setStructureType(e.target.value as StoryStructure['structure_type'])}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {STRUCTURE_TYPES.map((s) => (
+                <option key={s} value={s}>
+                  {s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
 
       <div className="flex gap-3 pt-4">
         <button

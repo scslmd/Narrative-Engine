@@ -7,6 +7,7 @@ import { PlanningView } from './views/PlanningView'
 import { WritingView } from './views/WritingView'
 import { ReviewView } from './views/ReviewView'
 import { InspectView } from './views/InspectView'
+import { BrainDumpView } from './views/BrainDumpView'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,7 @@ function App() {
               <Route path="review" element={<ReviewView />} />
               <Route path="inspect" element={<InspectView />} />
               <Route path="inspect/:jobId" element={<InspectView />} />
+              <Route path="braindump" element={<BrainDumpView />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
