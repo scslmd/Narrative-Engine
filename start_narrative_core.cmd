@@ -45,8 +45,11 @@ exit /b 1
 
 :done
 echo.
-echo Backend: http://%HOST%:%PORT%
-echo Frontend: http://localhost:5173
+echo ============================================
+echo   Server running at http://%HOST%:%PORT%
+echo   API docs:    http://%HOST%:%PORT%/docs
+echo   Frontend:    http://localhost:5173
+echo ============================================
 echo.
 echo Usage: start_narrative_core.cmd [--host HOST] [--port PORT] [--full]
 echo   --full    also starts the frontend (default when called with no args)
