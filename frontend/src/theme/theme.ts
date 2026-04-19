@@ -1,4 +1,4 @@
-export type ThemeMode = 'light' | 'dark'
+export type ThemeMode = 'light' | 'dark' | 'midnight' | 'forest' | 'ocean'
 export type StageTheme = 'planning' | 'writing' | 'review' | 'inspect'
 
 export interface ThemeConfig {
@@ -13,11 +13,27 @@ export const stageColors: Record<StageTheme, { primary: string; secondary: strin
   inspect: { primary: '#7c3aed', secondary: '#8b5cf6' },
 }
 
+
+
+export const themeMeta: Record<ThemeMode, { label: string; icon: string }> = {
+  light: { label: 'Light', icon: '☀' },
+  dark: { label: 'Dark', icon: '🌙' },
+  midnight: { label: 'Midnight', icon: '🌌' },
+  forest: { label: 'Forest', icon: '🌲' },
+  ocean: { label: 'Ocean', icon: '🌊' },
+}
+
+const allThemes: ThemeMode[] = ['light', 'dark', 'midnight', 'forest', 'ocean']
+const allStages: StageTheme[] = ['planning', 'writing', 'review', 'inspect']
+
 export const getThemeConfig = (): ThemeConfig => {
   const stored = localStorage.getItem('narrative-engine:theme')
   if (stored) {
     try {
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      if (parsed && allThemes.includes(parsed.mode) && allStages.includes(parsed.stage)) {
+        return parsed
+      }
     } catch {
       // ignore parse errors
     }

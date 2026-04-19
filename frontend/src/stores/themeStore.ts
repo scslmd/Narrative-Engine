@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { ThemeMode, StageTheme, setThemeConfig as applyThemeConfig } from '../theme/theme'
+import { ThemeMode, StageTheme, setThemeConfig as applyThemeConfig, getThemeConfig } from '../theme/theme'
 
 interface ThemeStore {
   mode: ThemeMode
@@ -9,22 +9,29 @@ interface ThemeStore {
   toggleMode: () => void
 }
 
-export const useThemeStore = create<ThemeStore>((set) => ({
-  mode: 'light',
-  stage: 'planning',
-  setMode: (mode) => {
-    set({ mode })
-    applyThemeConfig({ mode, stage: useThemeStore.getState().stage })
-  },
-  setStage: (stage) => {
-    set({ stage })
-    applyThemeConfig({ mode: useThemeStore.getState().mode, stage })
-  },
-  toggleMode: () => {
-    set((state) => {
-      const newMode = state.mode === 'light' ? 'dark' : 'light'
-      applyThemeConfig({ mode: newMode, stage: state.stage })
-      return { mode: newMode }
-    })
-  },
-}))
+const themeOrder: ThemeMode[] = ['light', 'dark', 'midnight', 'forest', 'ocean']
+
+export const useThemeStore = create<ThemeStore>((set, get) => {
+  const stored = getThemeConfig()
+  return {
+    mode: stored.mode,
+    stage: stored.stage,
+    setMode: (mode) => {
+      set({ mode })
+      applyThemeConfig({ mode, stage: get().stage })
+    },
+    setStage: (stage) => {
+      set({ stage })
+      applyThemeConfig({ mode: get().mode, stage })
+    },
+    toggleMode: () => {
+      set((state) => {
+        const currentIndex = themeOrder.indexOf(state.mode)
+        const nextIndex = (currentIndex + 1) % themeOrder.length
+        const newMode = themeOrder[nextIndex]
+        applyThemeConfig({ mode: newMode, stage: state.stage })
+        return { mode: newMode }
+      })
+    },
+  }
+})

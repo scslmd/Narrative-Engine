@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { useUIStore } from '../stores/uiStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { LayoutList, BookOpen, Search, Sparkles } from 'lucide-react'
 
 interface WorkspaceShellProps {
@@ -23,6 +24,9 @@ const navItems: NavItem[] = [
 
 export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { mode, setMode } = useUIStore()
+  const { iconMode, showTooltips } = useSettingsStore()
+  const iconsOnly = iconMode !== 'labels'
+  const showTooltipsEnabled = showTooltips && iconsOnly
 
   return (
     <div className="flex gap-5">
@@ -31,26 +35,28 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           {navItems.map((item) => {
             const isActive = mode === item.key
             const Icon = item.icon
+            const tooltipText = showTooltipsEnabled ? item.label : undefined
             return (
               <button
                 key={item.key}
                 onClick={() => setMode(item.key as typeof mode)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
+                data-tooltip={tooltipText}
+                className={`w-full nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
                   isActive
-                    ? 'bg-gradient-to-r from-slate-800/60 to-slate-800/30 text-white shadow-card'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/40'
+                    ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-card'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
+                <div className={`nav-icon-wrapper w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
                   isActive
                     ? `bg-gradient-to-br ${item.gradient} text-white shadow-sm`
-                    : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 group-hover:bg-slate-200 dark:group-hover:bg-slate-700'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-tertiary)] group-hover:bg-[var(--bg-tertiary)] group-hover:text-[var(--text-secondary)]'
                 }`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="flex-1 text-left">{item.label}</span>
+                <span className="flex-1 text-left nav-label">{item.label}</span>
                 {isActive && (
-                  <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${item.gradient}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${item.gradient} nav-label`} />
                 )}
               </button>
             )

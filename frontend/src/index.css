@@ -33,6 +33,21 @@
   background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
 }
 
+/* === App gradient background for midnight theme === */
+[data-theme="midnight"] body {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+}
+
+/* === App gradient background for forest theme === */
+[data-theme="forest"] body {
+  background: linear-gradient(135deg, #0a1f14 0%, #14532d 100%);
+}
+
+/* === App gradient background for ocean theme === */
+[data-theme="ocean"] body {
+  background: linear-gradient(135deg, #082f49 0%, #164e63 100%);
+}
+
 /* === Stage indicator bar === */
 .stage-bar {
   position: fixed;
@@ -110,4 +125,94 @@
   .no-print {
     display: none !important;
   }
+}
+
+/* === Tooltip === */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]:not([data-tooltip=""])::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  padding: 4px 10px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast) ease, transform var(--transition-fast) ease;
+  z-index: 300;
+  box-shadow: var(--shadow-card);
+}
+
+[data-tooltip]:not([data-tooltip=""]):hover::after {
+  opacity: 1;
+}
+
+/* === Icon-only mode === */
+[data-icon-mode="icons-only"] .nav-label,
+[data-icon-mode="icons-only"] .mode-label {
+  display: none;
+}
+
+[data-icon-mode="icons-only"] .nav-item {
+  justify-content: center;
+  padding: 10px;
+  border-radius: var(--radius-md);
+}
+
+[data-icon-mode="icons-only"] .nav-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-icon-mode="icons-only"] .nav-item:hover {
+  background: var(--bg-secondary);
+}
+
+/* === Icons only, small === */
+[data-icon-mode="icons-small"] .nav-label,
+[data-icon-mode="icons-small"] .mode-label {
+  display: none;
+}
+
+[data-icon-mode="icons-small"] .nav-item {
+  justify-content: center;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+}
+
+[data-icon-mode="icons-small"] .nav-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* === Icons only, large === */
+[data-icon-mode="icons-large"] .nav-label,
+[data-icon-mode="icons-large"] .mode-label {
+  display: none;
+}
+
+[data-icon-mode="icons-large"] .nav-item {
+  justify-content: center;
+  padding: 12px;
+  border-radius: var(--radius-md);
+}
+
+[data-icon-mode="icons-large"] .nav-item svg {
+  width: 24px;
+  height: 24px;
+}
+
+[data-icon-mode="icons-large"] .nav-item:hover {
+  background: var(--bg-secondary);
 }

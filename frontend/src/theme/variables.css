@@ -121,6 +121,119 @@
   --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.5), 0 2px 8px -3px rgb(0 0 0 / 0.3);
 }
 
+/* === Midnight Theme === */
+[data-theme="midnight"] {
+  --bg-base: #020617;
+  --bg-primary: #0a0f1e;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1e293b;
+  --bg-elevated: #111827;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-surface: #111827;
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-disabled: #334155;
+  --text-link: #818cf8;
+
+  --border-primary: #111827;
+  --border-secondary: #1e293b;
+  --border-focus: rgba(99, 102, 241, 0.4);
+
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.6), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.7), 0 4px 10px -4px rgb(0 0 0 / 0.3);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.7), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(99, 102, 241, 0.2);
+
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-subtle: rgba(99, 102, 241, 0.1);
+  --color-primary-border: rgba(99, 102, 241, 0.25);
+  --color-secondary: #8b5cf6;
+  --color-secondary-hover: #a78bfa;
+}
+
+/* === Forest Theme === */
+[data-theme="forest"] {
+  --bg-base: #0a1f14;
+  --bg-primary: #0f2a1a;
+  --bg-secondary: #1a3a2a;
+  --bg-tertiary: #234d38;
+  --bg-elevated: #1a3a2a;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-surface: #1a3a2a;
+
+  --text-primary: #ecfdf5;
+  --text-secondary: #6ee7b7;
+  --text-tertiary: #34d399;
+  --text-disabled: #1a4d33;
+  --text-link: #34d399;
+
+  --border-primary: #1a3a2a;
+  --border-secondary: #234d38;
+  --border-focus: rgba(52, 211, 153, 0.4);
+
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.6), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.7), 0 4px 10px -4px rgb(0 0 0 / 0.3);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.7), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(52, 211, 153, 0.2);
+
+  --color-primary: #34d399;
+  --color-primary-hover: #6ee7b7;
+  --color-primary-subtle: rgba(52, 211, 153, 0.1);
+  --color-primary-border: rgba(52, 211, 153, 0.25);
+  --color-secondary: #10b981;
+  --color-secondary-hover: #34d399;
+
+  --color-success: #34d399;
+  --color-success-subtle: rgba(52, 211, 153, 0.1);
+  --color-success-border: rgba(52, 211, 153, 0.25);
+}
+
+/* === Ocean Theme === */
+[data-theme="ocean"] {
+  --bg-base: #082f49;
+  --bg-primary: #0c4a6e;
+  --bg-secondary: #164e63;
+  --bg-tertiary: #155e75;
+  --bg-elevated: #164e63;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-surface: #164e63;
+
+  --text-primary: #f0f9ff;
+  --text-secondary: #7dd3fc;
+  --text-tertiary: #38bdf8;
+  --text-disabled: #0c4a6e;
+  --text-link: #38bdf8;
+
+  --border-primary: #164e63;
+  --border-secondary: #155e75;
+  --border-focus: rgba(56, 189, 248, 0.4);
+
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.6), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.6), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.7), 0 4px 10px -4px rgb(0 0 0 / 0.3);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.7), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(56, 189, 248, 0.2);
+
+  --color-primary: #38bdf8;
+  --color-primary-hover: #7dd3fc;
+  --color-primary-subtle: rgba(56, 189, 248, 0.1);
+  --color-primary-border: rgba(56, 189, 248, 0.25);
+  --color-secondary: #0ea5e9;
+  --color-secondary-hover: #38bdf8;
+
+  --color-info: #38bdf8;
+  --color-info-subtle: rgba(56, 189, 248, 0.1);
+  --color-info-border: rgba(56, 189, 248, 0.25);
+}
+
 /* === Stage Theme Overrides === */
 [data-stage="planning"] {
   --color-primary: #3b82f6;
