@@ -34,14 +34,6 @@ const modeLabels: Record<WorkspaceMode, string> = {
   inspect: 'Inspect',
 }
 
-const themeBgMap: Record<string, string> = {
-  light: 'bg-[#f8fafc]',
-  dark: 'bg-[#0f172a]',
-  midnight: 'bg-[#020617]',
-  forest: 'bg-[#0a1f14]',
-  ocean: 'bg-[#082f49]',
-}
-
 export function Layout({ children }: LayoutProps) {
   const { mode, toggleMode, setStage } = useThemeStore()
   const { mode: uiMode, setMode, projectId } = useUIStore()
@@ -72,14 +64,13 @@ export function Layout({ children }: LayoutProps) {
     navigate(`/workspace/${matchedProjectId}/${nextMode}`)
   }
 
-  const bgClass = themeBgMap[mode] || 'bg-[#f8fafc]'
   const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
   const isWorkspace = location.pathname.startsWith('/workspace/')
   const iconsOnly = iconMode !== 'labels'
   const showIcons = iconsOnly || window.innerWidth < 640
 
   return (
-    <div className={`min-h-screen flex flex-col ${bgClass}`} data-icon-mode={iconsOnly ? iconMode : ''}>
+    <div className="min-h-screen flex flex-col bg-[var(--bg-base)]" data-icon-mode={iconsOnly ? iconMode : ''}>
       <div className="stage-bar" />
       <header className="border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 glass sticky top-0 z-[200]">
         <div className="flex items-center justify-between px-4 lg:px-6 py-2.5">

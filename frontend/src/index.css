@@ -30,22 +30,22 @@
 
 /* === App gradient background for dark mode === */
 [data-theme="dark"] body {
-  background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
 }
 
 /* === App gradient background for midnight theme === */
 [data-theme="midnight"] body {
-  background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #111827 0%, #1e293b 100%);
 }
 
 /* === App gradient background for forest theme === */
 [data-theme="forest"] body {
-  background: linear-gradient(135deg, #0a1f14 0%, #14532d 100%);
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%);
 }
 
 /* === App gradient background for ocean theme === */
 [data-theme="ocean"] body {
-  background: linear-gradient(135deg, #082f49 0%, #164e63 100%);
+  background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
 }
 
 /* === Stage indicator bar === */
