@@ -14,7 +14,7 @@ from app.services.projects import ProjectService
 def build_projects_router(project_service: ProjectService) -> APIRouter:
     router = APIRouter(prefix="/projects", tags=["projects"])
 
-    @router.post("/create", response_model=ProjectDetailResponse)
+    @router.post("/create", response_model=ProjectDetailResponse, status_code=201)
     def create_project(request: ProjectCreateRequest) -> ProjectDetailResponse:
         try:
             return project_service.create_project(request)
