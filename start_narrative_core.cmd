@@ -28,7 +28,7 @@ if errorlevel 1 (
 
 :: Start backend
 echo Starting backend on %HOST%:%PORT% ...
-start "Narrative Engine Backend" cmd /k "%PYTHON% -m uvicorn app.main:app --reload --host %HOST% --port %PORT%"
+start "Narrative Engine Backend" cmd /k "%PYTHON% -m uvicorn app.main:build_app --factory --reload --host %HOST% --port %PORT%"
 
 :: Start frontend if --full flag or no arguments
 if "%FULL%"=="1" goto :start_frontend
