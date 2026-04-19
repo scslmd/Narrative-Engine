@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .middleware.path_traversal import PathTraversalMiddleware
@@ -479,12 +479,24 @@ def build_app() -> FastAPI:
         def serve_frontend() -> FileResponse:
             return FileResponse(frontend_index)
 
-        # Catch-all for SPA client-side routing
-        @app.get('/{path_name:path}', include_in_schema=False)
-        def serve_frontend_catch_all(path_name: str) -> FileResponse:
-            # Skip API and static paths
-            if path_name.startswith(('api', 'v1', 'docs', 'openapi.json', 'redoc', 'swagger')):
-                raise HTTPException(status_code=404, detail='Not found')
+        # Middleware for SPA client-side routing
+        _frontend_skip_prefixes = (
+            'api', 'v1', 'docs', 'openapi.json', 'redoc', 'swagger',
+            'health', 'assets', 'static', 'favicon',
+            'jobs', 'projects', 'models', 'role-model-checker',
+        )
+        _frontend_skip_extensions = ('.css', '.js', '.svg', '.png', '.jpg', '.ico')
+
+        async def spa_catch_all_middleware(request: Request, call_next):
+            path = request.url.path.lstrip('/')
+            first_segment = path.split('/')[0] if path else ''
+            if first_segment in _frontend_skip_prefixes:
+                return await call_next(request)
+            for ext in _frontend_skip_extensions:
+                if path.endswith(ext):
+                    return await call_next(request)
             return FileResponse(frontend_index)
+
+        app.middleware('http')(spa_catch_all_middleware)
 
     return app

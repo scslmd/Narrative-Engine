@@ -3,3 +3,111 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* === Selection === */
+::selection {
+  background-color: var(--color-primary);
+  color: var(--text-inverse);
+}
+
+/* === Focus Visible === */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-glow-primary);
+}
+
+/* === Smooth transitions for theme changes === */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 100ms;
+  transition-timing-function: ease;
+}
+
+/* === App gradient background for light mode === */
+[data-theme="light"] body {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+/* === App gradient background for dark mode === */
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+}
+
+/* === Stage indicator bar === */
+.stage-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 300;
+}
+
+[data-stage="planning"] .stage-bar {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+[data-stage="writing"] .stage-bar {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+[data-stage="review"] .stage-bar {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+[data-stage="inspect"] .stage-bar {
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+/* === Card hover effects === */
+@layer components {
+  .card-hover {
+    @apply transition-all duration-200;
+  }
+  
+  [data-theme="light"] .card-hover {
+    @apply hover:shadow-card-hover;
+  }
+  
+  [data-theme="dark"] .card-hover {
+    @apply hover:shadow-card-hover hover:border-slate-700;
+  }
+}
+
+/* === Skeleton loading === */
+@layer components {
+  .skeleton {
+    @apply relative overflow-hidden;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  [data-theme="light"] .skeleton {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 0, 0, 0.04),
+      transparent
+    );
+  }
+}
+
+/* === Utility classes === */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
+
+/* === Print styles === */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

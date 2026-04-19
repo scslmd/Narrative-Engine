@@ -8,8 +8,8 @@ export interface ThemeConfig {
 
 export const stageColors: Record<StageTheme, { primary: string; secondary: string }> = {
   planning: { primary: '#2563eb', secondary: '#3b82f6' },
-  writing: { primary: '#16a34a', secondary: '#22c55e' },
-  review: { primary: '#ea580c', secondary: '#f97316' },
+  writing: { primary: '#059669', secondary: '#10b981' },
+  review: { primary: '#d97706', secondary: '#f59e0b' },
   inspect: { primary: '#7c3aed', secondary: '#8b5cf6' },
 }
 

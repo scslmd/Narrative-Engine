@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import {
+  LayoutList, Map, GitBranch, Network, FileCheck,
+  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight
+} from 'lucide-react';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { RoleModelChecker } from '../components/checker';
 import { StoryBranchesList } from '../components/branches';
@@ -32,6 +36,7 @@ import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
+import { useThemeStore } from '../stores/themeStore';
 
 type PlanningTab =
   | 'manifest'
@@ -48,12 +53,59 @@ type PlanningTab =
 
 type CharacterEditorMode = 'list' | 'create' | 'edit';
 
+const coreTabs: { key: PlanningTab; label: string; icon: typeof LayoutList }[] = [
+  { key: 'manifest', label: 'Manifest', icon: LayoutList },
+  { key: 'planning', label: 'Planning', icon: Map },
+  { key: 'flow', label: 'Flow', icon: GitBranch },
+  { key: 'arcs', label: 'Arcs', icon: Network },
+  { key: 'branches', label: 'Branches', icon: GitBranch },
+  { key: 'decisions', label: 'Decisions', icon: Sparkles },
+  { key: 'checker', label: 'Checker', icon: FileCheck },
+];
+
+const contentTabs: { key: PlanningTab; label: string; icon: typeof Lightbulb }[] = [
+  { key: 'brainstorm', label: 'Brainstorm', icon: Lightbulb },
+  { key: 'foundation', label: 'Foundation', icon: Anchor },
+  { key: 'characters', label: 'Characters', icon: User },
+  { key: 'world-bible', label: 'World Bible', icon: Book },
+];
+
+const tabActiveBgMap: Record<PlanningTab, string> = {
+  manifest: 'bg-indigo-600',
+  planning: 'bg-blue-600',
+  flow: 'bg-blue-600',
+  arcs: 'bg-purple-600',
+  branches: 'bg-teal-600',
+  decisions: 'bg-violet-600',
+  checker: 'bg-rose-600',
+  brainstorm: 'bg-amber-600',
+  foundation: 'bg-emerald-600',
+  characters: 'bg-pink-600',
+  'world-bible': 'bg-indigo-600',
+};
+
+const tabActiveBgDarkMap: Record<PlanningTab, string> = {
+  manifest: 'bg-indigo-500',
+  planning: 'bg-blue-500',
+  flow: 'bg-blue-500',
+  arcs: 'bg-purple-500',
+  branches: 'bg-teal-500',
+  decisions: 'bg-violet-500',
+  checker: 'bg-rose-500',
+  brainstorm: 'bg-amber-500',
+  foundation: 'bg-emerald-500',
+  characters: 'bg-pink-500',
+  'world-bible': 'bg-indigo-500',
+};
+
 export function PlanningView() {
   const { projectId } = useParams<{ projectId: string }>();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PlanningTab>('manifest');
   const [characterEditorMode, setCharacterEditorMode] = useState<CharacterEditorMode>('list');
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  const { mode } = useThemeStore();
+  const isDark = mode === 'dark';
 
   const brainstormQuery = useQuery({
     queryKey: ['planning', 'brainstorm-items', projectId],
@@ -223,7 +275,7 @@ export function PlanningView() {
   });
 
   if (!projectId) {
-    return <div className="text-gray-500">No project selected</div>;
+    return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
   }
 
   const brainstormItems = brainstormQuery.data ?? [];
@@ -246,180 +298,136 @@ export function PlanningView() {
   const selectedArc = arcSelections.length > 0 ? getSelectedArc(arcSelections, projectId) : null;
   const selectedArcStageMap = selectedArc ? getStageMapForArc(arcStageMaps, selectedArc.arc_id) : undefined;
 
+  const renderTabButton = (tab: { key: PlanningTab; label: string }, isCore: boolean) => {
+    const isActive = activeTab === tab.key;
+    const Icon = (isCore ? coreTabs : contentTabs).find(t => t.key === tab.key)?.icon;
+    const activeBg = isDark ? tabActiveBgDarkMap[tab.key] : tabActiveBgMap[tab.key];
+
+    return (
+      <button
+        key={tab.key}
+        onClick={() => setActiveTab(tab.key)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+          isActive
+            ? `${activeBg} text-white shadow-sm`
+            : isDark
+              ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80'
+        }`}
+      >
+        {Icon && <Icon className="w-3.5 h-3.5" />}
+        <span>{tab.label}</span>
+      </button>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col">
-      <header className="border-b px-4 py-2 bg-white">
-        <nav className="flex gap-4 flex-wrap">
-          <button
-            onClick={() => setActiveTab('manifest')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'manifest' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Manifest
-          </button>
-          <button
-            onClick={() => setActiveTab('planning')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'planning' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Planning
-          </button>
-          <button
-            onClick={() => setActiveTab('flow')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'flow' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Flow
-          </button>
-          <button
-            onClick={() => setActiveTab('arcs')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'arcs' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Arcs
-          </button>
-          <button
-            onClick={() => setActiveTab('branches')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'branches' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Branches
-          </button>
-          <button
-            onClick={() => setActiveTab('decisions')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'decisions' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Decisions
-          </button>
-          <button
-            onClick={() => setActiveTab('checker')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'checker' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Checker
-          </button>
+      <div className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white/60'} px-4 py-2`}>
+        <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1">
+            {coreTabs.map((tab) => renderTabButton(tab, true))}
+          </div>
+          <ChevronRight className={`w-3.5 h-3.5 mx-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`} />
+          <div className="flex items-center gap-1">
+            {contentTabs.map((tab) => renderTabButton(tab, false))}
+          </div>
+        </div>
+      </div>
 
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
-
-          <button
-            onClick={() => setActiveTab('brainstorm')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'brainstorm' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Brainstorm
-          </button>
-          <button
-            onClick={() => setActiveTab('foundation')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'foundation' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Foundation
-          </button>
-          <button
-            onClick={() => setActiveTab('characters')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'characters' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            Characters
-          </button>
-          <button
-            onClick={() => setActiveTab('world-bible')}
-            className={`px-3 py-1.5 text-sm rounded ${activeTab === 'world-bible' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            World Bible
-          </button>
-        </nav>
-      </header>
-
-      <main className="flex-1 overflow-y-auto pr-2">
+      <main className="flex-1 overflow-y-auto">
         {activeTab === 'manifest' && <ManifestViewer projectId={projectId} />}
         
         {activeTab === 'planning' && (
-          <div className="p-4 space-y-6">
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Sequences ({sequencePlans.length})</h3>
+          <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+            <Section title="Sequences" count={sequencePlans.length}>
               {sequencePlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." />
+                <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." isDark={isDark} />
               ) : sequencePlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No sequence plans configured. Create a sequence to define the high-level story structure.</p>
+                <EmptyState text="No sequence plans configured. Create a sequence to define the high-level story structure." />
               ) : (
                 <div className="space-y-2">
                   {sequencePlans.map((seq) => (
-                    <div key={seq.sequence_id} className="p-3 bg-white border rounded">
-                      <div className="font-medium text-gray-900">{seq.title}</div>
-                      {seq.summary && <p className="text-sm text-gray-600 mt-1">{seq.summary}</p>}
+                    <div key={seq.sequence_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="font-medium">{seq.title}</div>
+                      {seq.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{seq.summary}</p>}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Section>
 
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Chapters ({chapterPlans.length})</h3>
+            <Section title="Chapters" count={chapterPlans.length}>
               {chapterPlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." />
+                <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." isDark={isDark} />
               ) : chapterPlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No chapter plans configured. Chapters will appear once sequence planning is complete.</p>
+                <EmptyState text="No chapter plans configured. Chapters will appear once sequence planning is complete." />
               ) : (
                 <div className="space-y-2">
                   {chapterPlans.map((chap) => (
-                    <div key={chap.chapter_id} className="p-3 bg-white border rounded">
-                      <div className="font-medium text-gray-900">{chap.title}</div>
-                      {chap.sequence_id && <span className="text-xs text-gray-500">Sequence: {chap.sequence_id}</span>}
+                    <div key={chap.chapter_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="font-medium">{chap.title}</div>
+                      {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Section>
 
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Scenes ({scenePlans.length})</h3>
+            <Section title="Scenes" count={scenePlans.length}>
               {scenePlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." />
+                <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." isDark={isDark} />
               ) : scenePlans.length === 0 ? (
-                <p className="text-sm text-gray-500">No scene plans configured. Scenes will appear once chapter planning is complete.</p>
+                <EmptyState text="No scene plans configured. Scenes will appear once chapter planning is complete." />
               ) : (
                 <div className="space-y-2">
                   {scenePlans.map((scene) => (
-                    <div key={scene.scene_id} className="p-3 bg-white border rounded">
-                      <div className="font-medium text-gray-900">{scene.title}</div>
-                      {scene.chapter_id && <span className="text-xs text-gray-500">Chapter: {scene.chapter_id}</span>}
+                    <div key={scene.scene_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="font-medium">{scene.title}</div>
+                      {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Section>
 
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Dependencies ({dependencies.length})</h3>
+            <Section title="Dependencies" count={dependencies.length}>
               {dependenciesQuery.isLoading ? (
-                <WorkspaceStatus title="Loading dependencies" detail="Fetching planning dependencies..." />
+                <WorkspaceStatus title="Loading dependencies" detail="Fetching planning dependencies..." isDark={isDark} />
               ) : dependencies.length === 0 ? (
-                <p className="text-sm text-gray-500">No dependencies defined. Dependencies track relationships between planning artifacts.</p>
+                <EmptyState text="No dependencies defined. Dependencies track relationships between planning artifacts." />
               ) : (
                 <div className="space-y-2">
                   {dependencies.map((dep) => (
-                    <div key={dep.dependency_id} className="p-3 bg-white border rounded text-sm">
-                      <span className="text-gray-700">{dep.upstream_id}</span>
-                      <span className="mx-2">→</span>
-                      <span className="text-gray-700">{dep.downstream_id}</span>
+                    <div key={dep.dependency_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} text-sm`}>
+                      <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.upstream_id}</span>
+                      <span className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>→</span>
+                      <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.downstream_id}</span>
                       {dep.reason && (
-                        <div className="mt-1 text-xs text-gray-500 italic">{dep.reason}</div>
+                        <div className={`mt-1 text-xs italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{dep.reason}</div>
                       )}
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Section>
 
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Chapter Packets ({chapterPackets.length})</h3>
+            <Section title="Chapter Packets" count={chapterPackets.length}>
               {chapterPacketsQuery.isLoading ? (
-                <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." />
+                <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." isDark={isDark} />
               ) : chapterPackets.length === 0 ? (
-                <p className="text-sm text-gray-500">No chapter packets configured. Packets will appear once chapters are ready for drafting.</p>
+                <EmptyState text="No chapter packets configured. Packets will appear once chapters are ready for drafting." />
               ) : (
                 <div className="space-y-2">
                   {chapterPackets.map((packet) => (
-                    <div key={packet.packet_id} className="p-3 bg-white border rounded">
-                      <div className="font-medium text-gray-900">{packet.chapter_id}</div>
-                      <span className="text-xs text-gray-500">{packet.included_reference_ids.length} references included</span>
+                    <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="font-medium">{packet.chapter_id}</div>
+                      <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Section>
           </div>
         )}
 
@@ -430,75 +438,75 @@ export function PlanningView() {
         )}
 
         {activeTab === 'arcs' && (
-          <div className="p-4 space-y-6">
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">Selected Arc</h3>
+          <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+            <Section title="Selected Arc">
               {arcSelectionsQuery.isLoading ? (
-                <WorkspaceStatus title="Loading arc selections" detail="Fetching selected arcs..." />
+                <WorkspaceStatus title="Loading arc selections" detail="Fetching selected arcs..." isDark={isDark} />
               ) : selectedArc ? (
-                <div className="p-4 bg-green-50 border border-green-200 rounded">
-                  <div className="font-medium text-gray-900">{selectedArc.arc_id}</div>
-                  {selectedArc.summary && <p className="text-sm text-gray-600 mt-1">{selectedArc.summary}</p>}
+                <div className={`p-4 rounded-lg border ${isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="font-medium">{selectedArc.arc_id}</div>
+                  {selectedArc.summary && <p className={`text-sm mt-1 ${isDark ? 'text-emerald-300/70' : 'text-emerald-700'}`}>{selectedArc.summary}</p>}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No arc selected. Arc selections define the narrative trajectory for this project.</p>
+                <EmptyState text="No arc selected. Arc selections define the narrative trajectory for this project." />
               )}
-            </section>
+            </Section>
 
             {selectedArc && selectedArcStageMap && (
-              <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Selected Arc Stage Map</h3>
-                {arcStageMapsQuery.isLoading ? (
-                  <WorkspaceStatus title="Loading stage maps" detail="Fetching arc stage mappings..." />
-                ) : (
-                  <div className="p-4 bg-white border rounded">
-                    <div className="text-sm text-gray-600">
-                      <div>Stage Kinds: {selectedArcStageMap.stage_kinds.join(', ')}</div>
-                      {selectedArcStageMap.notes && (
-                        <div className="mt-2 italic">{selectedArcStageMap.notes}</div>
-                      )}
-                    </div>
+              <Section title="Stage Map">
+                <div className={`p-4 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <div>Stage Kinds: {selectedArcStageMap.stage_kinds.join(', ')}</div>
+                    {selectedArcStageMap.notes && (
+                      <div className={`mt-2 italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{selectedArcStageMap.notes}</div>
+                    )}
                   </div>
-                )}
-              </section>
+                </div>
+              </Section>
             )}
 
-            <section>
-              <h3 className="font-semibold text-gray-900 mb-2">All Arc Candidates ({arcCandidates.length})</h3>
+            <Section title="Arc Candidates" count={arcCandidates.length}>
               {arcCandidatesQuery.isLoading ? (
-                <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." />
+                <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." isDark={isDark} />
               ) : arcCandidates.length === 0 ? (
-                <p className="text-sm text-gray-500">No arc candidates available. Arcs will appear once foundation and character work is complete.</p>
+                <EmptyState text="No arc candidates available. Arcs will appear once foundation and character work is complete." />
               ) : (
                 <div className="space-y-2">
                   {arcCandidates.map((candidate) => {
                     const isSelected = selectedArc?.arc_id === candidate.arc_id;
                     return (
-                      <div key={candidate.arc_id} className={`p-3 border rounded ${isSelected ? 'bg-green-50 border-green-300' : 'bg-white'}`}>
-                        <div className="font-medium text-gray-900">{candidate.name}</div>
-                        {candidate.summary && <p className="text-sm text-gray-600 mt-1">{candidate.summary}</p>}
-                        {isSelected && <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">Selected</span>}
+                      <div key={candidate.arc_id} className={`p-3 rounded-lg border ${isSelected
+                        ? isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-300'
+                        : isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
+                        <div className="font-medium">{candidate.name}</div>
+                        {candidate.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{candidate.summary}</p>}
+                        {isSelected && (
+                          <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                            Selected
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
-            </section>
+            </Section>
           </div>
         )}
 
         {activeTab === 'branches' && (
-          <div className="p-4">
+          <div className="p-5">
             <StoryBranchesList projectId={projectId} />
           </div>
         )}
         {activeTab === 'decisions' && (
-          <div className="p-4">
+          <div className="p-5">
             <DecisionTree projectId={projectId} />
           </div>
         )}
         {activeTab === 'checker' && (
-          <div className="p-4">
+          <div className="p-5">
             <RoleModelChecker projectId={projectId} />
           </div>
         )}
@@ -506,9 +514,9 @@ export function PlanningView() {
         {activeTab === 'brainstorm' && (
           <div className="h-full">
             {brainstormQuery.isLoading ? (
-              <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." />
+              <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." isDark={isDark} />
             ) : brainstormQuery.error ? (
-              <WorkspaceStatus title="Could not load brainstorm" detail={getErrorMessage(brainstormQuery.error)} tone="error" />
+              <WorkspaceStatus title="Could not load brainstorm" detail={getErrorMessage(brainstormQuery.error)} tone="error" isDark={isDark} />
             ) : (
               <BrainstormWorkspace
                 projectId={projectId}
@@ -523,9 +531,9 @@ export function PlanningView() {
         {activeTab === 'foundation' && (
           <div className="h-full">
             {foundationQuery.isLoading ? (
-              <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." />
+              <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." isDark={isDark} />
             ) : foundationQuery.error ? (
-              <WorkspaceStatus title="Could not load foundation" detail={getErrorMessage(foundationQuery.error)} tone="error" />
+              <WorkspaceStatus title="Could not load foundation" detail={getErrorMessage(foundationQuery.error)} tone="error" isDark={isDark} />
             ) : (
               <FoundationEditor
                 projectId={projectId}
@@ -539,15 +547,15 @@ export function PlanningView() {
         {activeTab === 'characters' && (
           <div className="h-full">
             {charactersQuery.isLoading ? (
-              <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." />
+              <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." isDark={isDark} />
             ) : charactersQuery.error ? (
-              <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" />
+              <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" isDark={isDark} />
             ) : characterEditorMode === 'list' ? (
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Characters</h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h2 className={`text-lg font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Characters</h2>
+                    <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       {characters.length} profiles in this project
                     </p>
                   </div>
@@ -556,7 +564,7 @@ export function PlanningView() {
                       setSelectedCharacterId(null);
                       setCharacterEditorMode('create');
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-xs font-medium rounded-lg hover:from-pink-600 hover:to-pink-700 shadow-sm transition-all"
                   >
                     + New Character
                   </button>
@@ -570,19 +578,20 @@ export function PlanningView() {
                         setSelectedCharacterId(character.character_id);
                         setCharacterEditorMode('edit');
                       }}
-                      className="text-left bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all"
+                      className={`text-left rounded-lg border p-4 cursor-pointer transition-all duration-150 ${
+                        isDark
+                          ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card'
+                          : 'bg-white border-slate-200 hover:border-pink-300 hover:shadow-card'
+                      }`}
                     >
-                      <h3 className="font-medium text-gray-900">{character.display_name}</h3>
-                      <p className="text-sm text-gray-600">{character.role_in_story}</p>
+                      <h3 className={`font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{character.display_name}</h3>
+                      <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{character.role_in_story}</p>
                     </button>
                   ))}
                 </div>
 
                 {characters.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <p>No character profiles configured</p>
-                    <p className="text-sm mt-2">Create a character to start building the cast.</p>
-                  </div>
+                  <EmptyState text="No character profiles configured. Create a character to start building the cast." />
                 )}
               </div>
             ) : characterEditorMode === 'create' ? (
@@ -609,6 +618,7 @@ export function PlanningView() {
                 title="Character not found"
                 detail="The selected character is no longer available. Return to the list and pick another profile."
                 tone="error"
+                isDark={isDark}
               />
             )}
           </div>
@@ -617,9 +627,9 @@ export function PlanningView() {
         {activeTab === 'world-bible' && (
           <div className="h-full">
             {worldBibleQuery.isLoading ? (
-              <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." />
+              <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." isDark={isDark} />
             ) : worldBibleQuery.error ? (
-              <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" />
+              <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" isDark={isDark} />
             ) : (
               <WorldBibleWorkspace
                 projectId={projectId}
@@ -637,20 +647,48 @@ export function PlanningView() {
   );
 }
 
+function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return (
+    <div>
+      <h3 className={`font-semibold text-sm uppercase tracking-wider mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+        {title}
+        {count !== undefined && (
+          <span className={`ml-2 font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>({count})</span>
+        )}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return (
+    <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{text}</p>
+  );
+}
+
 function WorkspaceStatus({
   title,
   detail,
   tone = 'neutral',
+  isDark,
 }: {
   title: string;
   detail: string;
   tone?: 'neutral' | 'error';
+  isDark: boolean;
 }) {
   return (
-    <div className="flex h-full items-center justify-center p-8">
-      <div className={`max-w-md rounded-lg border p-6 text-center ${tone === 'error' ? 'border-red-200 bg-red-50 text-red-900' : 'border-gray-200 bg-white text-gray-900'}`}>
-        <p className="text-lg font-semibold">{title}</p>
-        <p className="mt-2 text-sm text-gray-600">{detail}</p>
+    <div className="flex h-48 items-center justify-center">
+      <div className={`max-w-sm rounded-lg border p-5 text-center ${
+        tone === 'error'
+          ? isDark ? 'border-red-900/50 bg-red-950/30 text-red-300' : 'border-red-200 bg-red-50 text-red-800'
+          : isDark ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-700'
+      }`}>
+        <p className="text-sm font-semibold">{title}</p>
+        <p className={`mt-1.5 text-xs ${tone === 'error' ? (isDark ? 'text-red-400/80' : 'text-red-600') : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{detail}</p>
       </div>
     </div>
   );
@@ -660,7 +698,6 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-
   return 'An unexpected error occurred.';
 }
 

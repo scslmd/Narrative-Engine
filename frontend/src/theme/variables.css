@@ -1,51 +1,327 @@
+/* === Design Tokens === */
 :root {
-  --color-primary: #2563eb;
-  --color-secondary: #3b82f6;
-}
+  /* Primary & Accent */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-primary-active: #4338ca;
+  --color-primary-subtle: rgba(99, 102, 241, 0.08);
+  --color-primary-border: rgba(99, 102, 241, 0.2);
+  --color-secondary: #8b5cf6;
+  --color-secondary-hover: #7c3aed;
 
-[data-theme="dark"] {
-  --bg-primary: #1f2937;
-  --bg-secondary: #374151;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-}
+  /* Semantic colors */
+  --color-success: #10b981;
+  --color-success-subtle: rgba(16, 185, 129, 0.08);
+  --color-success-border: rgba(16, 185, 129, 0.2);
+  --color-warning: #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.08);
+  --color-warning-border: rgba(245, 158, 11, 0.2);
+  --color-danger: #ef4444;
+  --color-danger-subtle: rgba(239, 68, 68, 0.08);
+  --color-danger-border: rgba(239, 68, 68, 0.2);
+  --color-info: #3b82f6;
+  --color-info-subtle: rgba(59, 130, 246, 0.08);
+  --color-info-border: rgba(59, 130, 246, 0.2);
 
-[data-theme="light"] {
+  /* Background layers */
+  --bg-base: #f8fafc;
   --bg-primary: #ffffff;
-  --bg-secondary: #f3f4f6;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-surface: #ffffff;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --text-inverse: #ffffff;
+  --text-disabled: #cbd5e1;
+  --text-link: #6366f1;
+
+  /* Borders */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-focus: rgba(99, 102, 241, 0.4);
+
+  /* Shadows */
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.03);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.1), 0 2px 8px -3px rgb(0 0 0 / 0.05);
+  --shadow-glow-primary: 0 0 0 3px rgba(99, 102, 241, 0.15);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+
+  /* Transition */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
 }
 
+/* === Dark Theme === */
+[data-theme="dark"] {
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-primary-active: #4f46e5;
+  --color-primary-subtle: rgba(129, 140, 248, 0.1);
+  --color-primary-border: rgba(129, 140, 248, 0.25);
+  --color-secondary: #a78bfa;
+  --color-secondary-hover: #8b5cf6;
+
+  --color-success: #34d399;
+  --color-success-subtle: rgba(52, 211, 153, 0.1);
+  --color-success-border: rgba(52, 211, 153, 0.25);
+  --color-warning: #fbbf24;
+  --color-warning-subtle: rgba(251, 191, 36, 0.1);
+  --color-warning-border: rgba(251, 191, 36, 0.25);
+  --color-danger: #f87171;
+  --color-danger-subtle: rgba(248, 113, 113, 0.1);
+  --color-danger-border: rgba(248, 113, 113, 0.25);
+  --color-info: #60a5fa;
+  --color-info-subtle: rgba(96, 165, 250, 0.1);
+  --color-info-border: rgba(96, 165, 250, 0.25);
+
+  --bg-base: #0b1120;
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-elevated: #1e293b;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-surface: #1e293b;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+  --text-disabled: #475569;
+  --text-link: #818cf8;
+
+  --border-primary: #1e293b;
+  --border-secondary: #334155;
+  --border-focus: rgba(129, 140, 248, 0.4);
+
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.2);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.5), 0 2px 8px -3px rgb(0 0 0 / 0.3);
+}
+
+/* === Stage Theme Overrides === */
 [data-stage="planning"] {
-  --color-primary: #2563eb;
-  --color-secondary: #3b82f6;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-active: #1d4ed8;
+  --color-primary-subtle: rgba(59, 130, 246, 0.08);
+  --color-primary-border: rgba(59, 130, 246, 0.2);
+  --color-secondary: #60a5fa;
+  --color-secondary-hover: #3b82f6;
+  --border-focus: rgba(59, 130, 246, 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="dark"][data-stage="planning"] {
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-primary-active: #2563eb;
+  --color-primary-subtle: rgba(96, 165, 250, 0.1);
+  --color-primary-border: rgba(96, 165, 250, 0.25);
+  --color-secondary: #93c5fd;
+  --color-secondary-hover: #60a5fa;
+  --border-focus: rgba(96, 165, 250, 0.4);
 }
 
 [data-stage="writing"] {
-  --color-primary: #16a34a;
-  --color-secondary: #22c55e;
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  --color-primary-active: #047857;
+  --color-primary-subtle: rgba(16, 185, 129, 0.08);
+  --color-primary-border: rgba(16, 185, 129, 0.2);
+  --color-secondary: #34d399;
+  --color-secondary-hover: #10b981;
+  --border-focus: rgba(16, 185, 129, 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"][data-stage="writing"] {
+  --color-primary: #34d399;
+  --color-primary-hover: #10b981;
+  --color-primary-active: #059669;
+  --color-primary-subtle: rgba(52, 211, 153, 0.1);
+  --color-primary-border: rgba(52, 211, 153, 0.25);
+  --color-secondary: #6ee7b7;
+  --color-secondary-hover: #34d399;
+  --border-focus: rgba(52, 211, 153, 0.4);
 }
 
 [data-stage="review"] {
-  --color-primary: #ea580c;
-  --color-secondary: #f97316;
+  --color-primary: #f59e0b;
+  --color-primary-hover: #d97706;
+  --color-primary-active: #b45309;
+  --color-primary-subtle: rgba(245, 158, 11, 0.08);
+  --color-primary-border: rgba(245, 158, 11, 0.2);
+  --color-secondary: #fbbf24;
+  --color-secondary-hover: #f59e0b;
+  --border-focus: rgba(245, 158, 11, 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+[data-theme="dark"][data-stage="review"] {
+  --color-primary: #fbbf24;
+  --color-primary-hover: #f59e0b;
+  --color-primary-active: #d97706;
+  --color-primary-subtle: rgba(251, 191, 36, 0.1);
+  --color-primary-border: rgba(251, 191, 36, 0.25);
+  --color-secondary: #fcd34d;
+  --color-secondary-hover: #fbbf24;
+  --border-focus: rgba(251, 191, 36, 0.4);
 }
 
 [data-stage="inspect"] {
-  --color-primary: #7c3aed;
-  --color-secondary: #8b5cf6;
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+  --color-primary-active: #6d28d9;
+  --color-primary-subtle: rgba(139, 92, 246, 0.08);
+  --color-primary-border: rgba(139, 92, 246, 0.2);
+  --color-secondary: #a78bfa;
+  --color-secondary-hover: #8b5cf6;
+  --border-focus: rgba(139, 92, 246, 0.4);
+  --shadow-glow-primary: 0 0 0 3px rgba(139, 92, 246, 0.15);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+[data-theme="dark"][data-stage="inspect"] {
+  --color-primary: #a78bfa;
+  --color-primary-hover: #8b5cf6;
+  --color-primary-active: #7c3aed;
+  --color-primary-subtle: rgba(167, 139, 250, 0.1);
+  --color-primary-border: rgba(167, 139, 250, 0.25);
+  --color-secondary: #c4b5fd;
+  --color-secondary-hover: #a78bfa;
+  --border-focus: rgba(167, 139, 250, 0.4);
 }
 
-.animate-pulse-slow {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { opacity: 1; transform: scale(1.05); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--transition-slow) ease forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--transition-normal) ease forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* === Base === */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Utility: Glass effect === */
+.glass {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+/* === Utility: Gradient text === */
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

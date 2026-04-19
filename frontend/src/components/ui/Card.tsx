@@ -3,33 +3,47 @@ import { HTMLAttributes, ReactNode } from 'react'
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
   title?: string
+  subtitle?: string
   actions?: ReactNode
   variant?: 'default' | 'elevated' | 'outlined'
+  hover?: boolean
 }
 
 export function Card({
   children,
   title,
+  subtitle,
   actions,
   variant = 'default',
+  hover = false,
   className = '',
   ...props
 }: CardProps) {
-  const variantStyles = {
-    default: 'bg-white dark:bg-gray-800',
-    elevated: 'bg-white dark:bg-gray-800 shadow-lg',
-    outlined: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  
+  const baseBorder = isDark ? 'border-slate-800' : 'border-slate-200'
+  const baseBg = isDark ? 'bg-slate-900' : 'bg-white'
+  
+  const variantStyles: Record<string, string> = {
+    default: `${baseBg} border ${baseBorder}`,
+    elevated: `${baseBg} border ${baseBorder} shadow-card`,
+    outlined: `${baseBg} border ${isDark ? 'border-slate-700' : 'border-slate-300'}`,
   }
-
+  
+  const hoverStyle = hover ? `transition-all duration-150 ${isDark ? 'hover:shadow-card-hover hover:border-slate-700' : 'hover:shadow-card-hover hover:border-slate-300'}` : ''
+  
   return (
     <div
-      className={`rounded-lg p-4 ${variantStyles[variant]} ${className}`}
+      className={`rounded-xl p-5 ${variantStyles[variant]} ${hoverStyle} ${className}`}
       {...props}
     >
       {(title || actions) && (
-        <div className="flex items-center justify-between mb-4">
-          {title && <h3 className="text-lg font-semibold">{title}</h3>}
-          {actions && <div>{actions}</div>}
+        <div className="flex items-start justify-between mb-4 gap-4">
+          <div>
+            {title && <h3 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h3>}
+            {subtitle && <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{subtitle}</p>}
+          </div>
+          {actions && <div className="flex-shrink-0">{actions}</div>}
         </div>
       )}
       {children}

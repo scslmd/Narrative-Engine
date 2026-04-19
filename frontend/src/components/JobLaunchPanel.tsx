@@ -1,35 +1,42 @@
 import { useState } from 'react';
 import { useCreateJob, useJobs } from '../hooks/useJobs';
+import { Rocket, Code, Cpu, Layers, Play } from 'lucide-react';
 
 interface Props {
   projectId: string;
 }
 
+interface PhaseOption {
+  value: 'P-100' | 'P-200' | 'P-300' | 'P-400';
+  label: string;
+  description: string;
+  icon: typeof Rocket;
+  gradient: string;
+}
+
+const phases: PhaseOption[] = [
+  { value: 'P-100', label: 'Architect', description: 'Build project architecture', icon: Rocket, gradient: 'from-blue-500 to-blue-600' },
+  { value: 'P-200', label: 'Sequencer', description: 'Plan story sequence', icon: Layers, gradient: 'from-emerald-500 to-emerald-600' },
+  { value: 'P-300', label: 'Drafter', description: 'Draft narrative content', icon: Code, gradient: 'from-violet-500 to-violet-600' },
+  { value: 'P-400', label: 'Compiler', description: 'Compile and finalize', icon: Cpu, gradient: 'from-amber-500 to-amber-600' },
+];
+
 export function JobLaunchPanel({ projectId }: Props): React.ReactElement {
   const createJob = useCreateJob(projectId);
   const { data: jobs } = useJobs(projectId);
   const [selectedPhase, setSelectedPhase] = useState<'P-100' | 'P-200' | 'P-300' | 'P-400'>('P-100');
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
   const handleLaunch = (): void => {
     createJob.mutate(selectedPhase);
   };
 
-  const getPhaseLabel = (phase: string): string => {
-    switch (phase) {
-      case 'P-100': return 'Architect';
-      case 'P-200': return 'Sequencer';
-      case 'P-300': return 'Drafter';
-      case 'P-400': return 'Compiler';
-      default: return phase;
-    }
-  };
-
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'COMPLETED': return 'text-green-600 dark:text-green-400';
-      case 'FAILED': return 'text-red-600 dark:text-red-400';
-      case 'PROCESSING': return 'text-blue-600 dark:text-blue-400 animate-pulse';
-      default: return 'text-gray-600 dark:text-gray-400';
+      case 'COMPLETED': return isDark ? 'text-emerald-400' : 'text-emerald-600';
+      case 'FAILED': return isDark ? 'text-red-400' : 'text-red-600';
+      case 'PROCESSING': return isDark ? 'text-blue-400' : 'text-blue-600';
+      default: return isDark ? 'text-slate-500' : 'text-slate-500';
     }
   };
 
@@ -37,51 +44,103 @@ export function JobLaunchPanel({ projectId }: Props): React.ReactElement {
     (job) => job.status === 'PROCESSING' || job.status === 'PENDING'
   );
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Launch Job</h3>
+  const selectedPhaseOption = phases.find(p => p.value === selectedPhase);
 
-      <div className="space-y-2">
-        <label htmlFor="phase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Phase
-        </label>
-        <select
-          id="phase"
-          value={selectedPhase}
-          onChange={(e) => setSelectedPhase(e.target.value as 'P-100' | 'P-200' | 'P-300' | 'P-400')}
-          disabled={createJob.isPending || hasProcessingJob}
-          className="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-        >
-          <option value="P-100">P-100: Architect</option>
-          <option value="P-200">P-200: Sequencer</option>
-          <option value="P-300">P-300: Drafter</option>
-          <option value="P-400">P-400: Compiler</option>
-        </select>
+  return (
+    <div className={`rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col h-full`}>
+      <div className={`flex items-center gap-2 px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+        <Rocket className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} />
+        <h3 className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Launch Job</h3>
       </div>
 
-      <button
-        onClick={handleLaunch}
-        disabled={createJob.isPending || hasProcessingJob}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {createJob.isPending ? 'Launching...' : `Launch ${getPhaseLabel(selectedPhase)}`}
-      </button>
-
-      {jobs && jobs.length > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recent Jobs</h4>
-          <ul className="space-y-2 max-h-48 overflow-y-auto">
-            {jobs.slice(0, 5).map((job) => (
-              <li key={job.job_id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">{getPhaseLabel(job.phase)}</span>
-                <span className={`font-medium ${getStatusColor(job.status)}`}>
-                  {job.status}
-                </span>
-              </li>
-            ))}
-          </ul>
+      <div className="p-3 space-y-3">
+        <div>
+          <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+            Phase
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {phases.map((phase) => {
+              const Icon = phase.icon;
+              const isSelected = selectedPhase === phase.value;
+              return (
+                <button
+                  key={phase.value}
+                  onClick={() => setSelectedPhase(phase.value)}
+                  disabled={createJob.isPending || hasProcessingJob}
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all duration-150 text-xs ${
+                    isSelected
+                      ? `bg-gradient-to-r ${phase.gradient} text-white shadow-sm`
+                      : isDark
+                        ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="font-medium">{phase.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      )}
+
+        {selectedPhaseOption && (
+          <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            {selectedPhaseOption.description}
+          </p>
+        )}
+
+        <button
+          onClick={handleLaunch}
+          disabled={createJob.isPending || hasProcessingJob}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 ${
+            hasProcessingJob
+              ? isDark ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-sm hover:shadow-md'
+          } disabled:opacity-60`}
+        >
+          {createJob.isPending ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Launching...
+            </>
+          ) : hasProcessingJob ? (
+            <>
+              <div className={`w-2 h-2 rounded-full bg-blue-500 animate-pulse`} />
+              Job Running
+            </>
+          ) : (
+            <>
+              <Play className="w-3.5 h-3.5" />
+              Launch {selectedPhaseOption?.label}
+            </>
+          )}
+        </button>
+
+        {jobs && jobs.length > 0 && (
+          <div className={`border-t pt-3 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            <h4 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              Recent Jobs
+            </h4>
+            <ul className="space-y-1.5">
+              {jobs.slice(0, 4).map((job) => (
+                <li key={job.job_id} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-md ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{job.phase}</span>
+                  <span className={`font-medium ${getStatusColor(job.status)}`}>
+                    {job.status === 'PROCESSING' ? (
+                      <span className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        {job.status}
+                      </span>
+                    ) : (
+                      job.status
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

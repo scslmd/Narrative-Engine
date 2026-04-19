@@ -6,15 +6,23 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ label, error, className = '', ...props }: InputProps) {
-  const inputStyles = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    error ? 'border-red-500' : 'border-gray-300'
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  
+  const baseStyles = `w-full px-3 py-2 rounded-lg border text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 ${isDark ? 'focus:ring-offset-slate-900' : 'focus:ring-offset-white'}`
+  
+  const inputStyles = `${baseStyles} ${
+    error 
+      ? 'border-red-500 focus:ring-red-500/40 focus:border-red-500'
+      : isDark
+        ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:ring-indigo-500/30 hover:border-slate-600'
+        : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-indigo-500/30 hover:border-slate-400'
   } ${className}`
 
   return (
-    <div className="flex flex-col gap-1">
-      {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
+    <div className="flex flex-col gap-1.5">
+      {label && <label className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>}
       <input className={inputStyles} {...props} />
-      {error && <span className="text-sm text-red-500">{error}</span>}
+      {error && <span className="text-xs text-red-500 font-medium">{error}</span>}
     </div>
   )
 }
