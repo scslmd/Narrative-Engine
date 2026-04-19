@@ -479,4 +479,12 @@ def build_app() -> FastAPI:
         def serve_frontend() -> FileResponse:
             return FileResponse(frontend_index)
 
+        # Catch-all for SPA client-side routing
+        @app.get('/{path_name:path}', include_in_schema=False)
+        def serve_frontend_catch_all(path_name: str) -> FileResponse:
+            # Skip API and static paths
+            if path_name.startswith(('api', 'v1', 'docs', 'openapi.json', 'redoc', 'swagger')):
+                raise HTTPException(status_code=404, detail='Not found')
+            return FileResponse(frontend_index)
+
     return app
