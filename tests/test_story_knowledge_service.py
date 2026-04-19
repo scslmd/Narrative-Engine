@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 
@@ -10,7 +10,7 @@ from app.schemas import ArcCandidate, ArcStageMap
 from app.services.story_knowledge import StoryKnowledgeService
 
 
-STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
+STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc)
 
 
 def _seed_project(db_path: Path, project_id: str) -> None:

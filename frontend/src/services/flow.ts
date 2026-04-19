@@ -13,6 +13,7 @@ interface FlowStageUpdateRequest {
   depends_on?: string[];
   writer_notes?: string;
   custom_prompt_guidance?: string;
+  stage_configuration_state?: string;
 }
 
 export const flowService = {
@@ -55,6 +56,7 @@ export const flowService = {
     if (updates.depends_on !== undefined) payload.depends_on = updates.depends_on;
     if (updates.writer_notes !== undefined) payload.writer_notes = updates.writer_notes;
     if (updates.custom_prompt_guidance !== undefined) payload.custom_prompt_guidance = updates.custom_prompt_guidance;
+    if (updates.stage_configuration_state !== undefined) payload.stage_configuration_state = updates.stage_configuration_state;
 
     const response = await api.patch(`/story-development/flow/stages/${stageId}?project_id=${projectId}`, payload);
 
@@ -89,17 +91,11 @@ export const flowService = {
   },
 
   async disableStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
-    void projectId; // Parameter kept for API compatibility
-    void stageId; // Parameter kept for API compatibility
-    // Note: Backend doesn't have a dedicated disable endpoint yet, using update
-    throw new Error('disableStage not yet implemented - backend needs stage_configuration_state support');
+    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'disabled' });
   },
 
   async archiveStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
-    void projectId; // Parameter kept for API compatibility
-    void stageId; // Parameter kept for API compatibility
-    // Note: Backend doesn't have a dedicated archive endpoint yet, using update
-    throw new Error('archiveStage not yet implemented - backend needs stage_configuration_state support');
+    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'archived' });
   },
 
   async renameStage(projectId: string, stageId: string, displayName: string): Promise<StoryFlowStage> {

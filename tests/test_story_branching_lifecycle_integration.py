@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -13,7 +13,7 @@ from app.schemas import StoryBranchState
 
 
 # Fixed timestamp for deterministic test runs
-STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
+STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc)
 
 
 def _seed_project(db_path: Path, project_id: str) -> None:

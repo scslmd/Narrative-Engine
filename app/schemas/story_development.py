@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from pydantic import Field, model_validator
 
@@ -41,7 +41,7 @@ def _normalize_text_list(value: object, *, field_name: str) -> list[str]:
 
 
 def _utcnow() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 class StoryFlowStage(StrictSchemaModel):

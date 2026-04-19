@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -23,7 +23,7 @@ from .sqlite import connect, ensure_operations_db
 
 
 def _now(now: datetime | None = None) -> datetime:
-    return now or datetime.now(UTC)
+    return now or datetime.now(timezone.utc)
 
 
 def _json_list(values: list[str] | None) -> str:
@@ -4127,8 +4127,8 @@ def _arc_candidate_record_from_mapping(value: Mapping[str, Any]) -> ArcCandidate
         stage_map_notes=list(candidate.stage_map_notes),
         fit_notes=list(candidate.fit_notes),
         tags=list(candidate.tags),
-        created_at=datetime.fromisoformat(str(value["created_at"])) if "created_at" in value else datetime.now(UTC),
-        updated_at=datetime.fromisoformat(str(value["updated_at"])) if "updated_at" in value else datetime.now(UTC),
+        created_at=datetime.fromisoformat(str(value["created_at"])) if "created_at" in value else datetime.now(timezone.utc),
+        updated_at=datetime.fromisoformat(str(value["updated_at"])) if "updated_at" in value else datetime.now(timezone.utc),
     )
 
 
@@ -4206,8 +4206,8 @@ def _coerce_arc_candidate(project_id: str, candidate: ArcCandidate | ArcCandidat
             stage_map_notes=list(candidate.stage_map_notes),
             fit_notes=list(candidate.fit_notes),
             tags=list(candidate.tags),
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
     normalized = ArcCandidate.model_validate(
         {
@@ -4226,8 +4226,8 @@ def _coerce_arc_candidate(project_id: str, candidate: ArcCandidate | ArcCandidat
         stage_map_notes=list(normalized.stage_map_notes),
         fit_notes=list(normalized.fit_notes),
         tags=list(normalized.tags),
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
 
@@ -4343,8 +4343,8 @@ def _coerce_arc_stage_map(
             arc_id=stage_map.arc_id,
             stage_kinds=list(stage_map.stage_kinds),
             notes=stage_map.notes,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
     normalized = ArcStageMap.model_validate(
         {
@@ -4361,8 +4361,8 @@ def _coerce_arc_stage_map(
         arc_id=normalized.arc_id,
         stage_kinds=list(normalized.stage_kinds),
         notes=normalized.notes,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
 

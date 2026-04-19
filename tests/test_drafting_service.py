@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.persistence.sqlite import connect, ensure_operations_db
@@ -10,7 +10,7 @@ from app.services.drafting import DraftingNotFoundError, DraftingService, Drafti
 from app.services.planning import PlanningService
 
 
-STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
+STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc)
 
 
 def _seed_project(db_path: Path, project_id: str) -> None:

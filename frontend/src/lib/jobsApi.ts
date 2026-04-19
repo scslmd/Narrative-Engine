@@ -8,27 +8,11 @@ export interface JobCreateRequest {
 
 export type JobPhase = 'P-100' | 'P-200' | 'P-300' | 'P-400';
 
-export type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-
-const normalizeJobStatus = (status: string): JobStatus => {
-  switch (status) {
-    case 'QUEUED':
-      return 'PENDING';
-    case 'RUNNING':
-      return 'PROCESSING';
-    case 'COMPLETED':
-    case 'FAILED':
-      return status;
-    default:
-      return 'FAILED';
-  }
-};
-
 export interface JobSummary {
   job_id: string;
   project_id?: string;
   phase: JobPhase;
-  status: JobStatus;
+  status: string;
   created_at: string;
   started_at?: string;
   completed_at?: string;
@@ -75,7 +59,7 @@ export const jobsApi = {
     const data = response.data as {
       id: string;
       phase: JobPhase;
-      status: JobStatus;
+      status: string;
       attempt_number?: number;
       created_at: string;
       updated_at: string;
@@ -91,7 +75,7 @@ export const jobsApi = {
       job_id: data.id,
       project_id: request.project_id,
       phase: data.phase,
-      status: normalizeJobStatus(data.status),
+      status: data.status,
       created_at: data.created_at,
       started_at: undefined,
       completed_at: undefined,
@@ -110,7 +94,7 @@ export const jobsApi = {
     const data = response.data as {
       id: string;
       phase: JobPhase;
-      status: JobStatus;
+      status: string;
       attempt_number?: number;
       created_at: string;
       updated_at: string;
@@ -125,7 +109,7 @@ export const jobsApi = {
     return {
       job_id: data.id,
       phase: data.phase,
-      status: normalizeJobStatus(data.status),
+      status: data.status,
       created_at: data.created_at,
       attempt_number: data.attempt_number,
       current_phase: data.current_phase,

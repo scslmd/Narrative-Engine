@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.persistence import ProjectProjection, ProjectRepository
@@ -206,7 +206,7 @@ class ProjectService:
 
 
 def _file_timestamp(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
 
 
 def _canonical_artifact_type(artifact_type: str) -> str:

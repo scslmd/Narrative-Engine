@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..schemas.manifest import Manifest
@@ -11,7 +11,7 @@ from .sqlite import connect, ensure_operations_db, ensure_project_db
 
 
 def _utc_timestamp(path: Path) -> datetime:
-    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
 
 
 def _parse_timestamp(value: str) -> datetime:

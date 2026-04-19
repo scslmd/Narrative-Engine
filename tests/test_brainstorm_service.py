@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from app.persistence.sqlite import connect
 from app.persistence.story_development import StoryDevelopmentRepository
@@ -13,7 +13,7 @@ def _make_service(tmp_path):
 
 
 def _register_project(repository: StoryDevelopmentRepository, project_id: str) -> None:
-    timestamp = datetime.now(UTC).isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
     with connect(repository.db_path) as connection:
         connection.execute(
             """
