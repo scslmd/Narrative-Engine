@@ -31,9 +31,9 @@ class StepRecordService:
         critic_profile: str | None,
         backend_name: str | None,
         backend_version: str | None,
-        input_payload: object | None,
-        output_payload: object | None,
-        prompt_payload: object | None,
+        input_hash: str | None,
+        output_hash: str | None,
+        prompt_hash: str | None,
         input_artifact_refs: list[str],
         output_artifact_refs: list[str],
         started_at: datetime | None,
@@ -46,11 +46,15 @@ class StepRecordService:
         prompt_tokens: int | None = None,
         completion_tokens: int | None = None,
         total_tokens: int | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
     ) -> int:
         now = finished_at or started_at or datetime.now(timezone.utc)
         duration_seconds = None
         if started_at is not None and finished_at is not None:
             duration_seconds = round((finished_at - started_at).total_seconds(), 3)
+        target_created_at = created_at or now
+        target_updated_at = updated_at or now
         return self._steps.create_step_record(
             logical_run_id=logical_run_id,
             run_id=str(run_id),
@@ -64,9 +68,9 @@ class StepRecordService:
             critic_profile=critic_profile,
             backend_name=backend_name,
             backend_version=backend_version,
-            input_hash=stable_hash_payload(input_payload) if input_payload is not None else None,
-            output_hash=stable_hash_payload(output_payload) if output_payload is not None else None,
-            prompt_hash=stable_hash_payload(prompt_payload) if prompt_payload is not None else None,
+            input_hash=input_hash,
+            output_hash=output_hash,
+            prompt_hash=prompt_hash,
             input_artifact_refs=input_artifact_refs,
             output_artifact_refs=output_artifact_refs,
             started_at=started_at,
@@ -80,8 +84,8 @@ class StepRecordService:
             error_category=error_category,
             executor_id=executor_id,
             lease_owner=lease_owner,
-            created_at=now,
-            updated_at=now,
+            created_at=target_created_at,
+            updated_at=target_updated_at,
         )
 
     def create_lineage_record(
@@ -96,7 +100,7 @@ class StepRecordService:
         artifact_role: str,
         artifact_kind: str,
         path: str,
-        content_hash_source: str | bytes | None,
+        content_hash: str | None,
         status: str,
         validation_state: str,
         produced_at: datetime,
@@ -106,11 +110,6 @@ class StepRecordService:
         source_content_hashes: list[str],
         output_of_step_record_id: int,
     ) -> int:
-        content_hash = None
-        if isinstance(content_hash_source, bytes):
-            content_hash = stable_hash_text(content_hash_source.decode("utf-8", errors="replace"))
-        elif isinstance(content_hash_source, str):
-            content_hash = stable_hash_text(content_hash_source)
         return self._lineage.create_lineage_record(
             logical_run_id=logical_run_id,
             run_id=str(run_id),
@@ -235,4 +234,39 @@ class StepRecordService:
             run_kind=run_kind,
             attempt_number=attempt_number,
             step_name=step_name,
+        )
+
+    def list_artifact_lineage_by_project(
+        self,
+        *,
+        project_id: str,
+        status: str | None = None,
+        artifact_role: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        return self._lineage.list_for_project(
+            project_id=project_id,
+            status=status,
+            artifact_role=artifact_role,
+            limit=limit,
+            offset=offset,
+        )
+
+    def list_latest_canonical_artifact(
+        self,
+        *,
+        project_id: str,
+    ) -> dict[str, object] | None:
+        return self._lineage.latest_canonical_for_project(project_id=project_id)
+
+    def list_runtime_artifact_selections_by_project(
+        self,
+        *,
+        project_id: str,
+        artifact_role: str | None = None,
+    ) -> list[dict[str, object]]:
+        return self._selections.list_selections_by_project(
+            project_id=project_id,
+            artifact_role=artifact_role,
         )
