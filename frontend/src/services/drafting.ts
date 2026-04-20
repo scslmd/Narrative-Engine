@@ -107,3 +107,38 @@ export async function createRevisionSuggestion(request: RevisionSuggestion): Pro
   
   return response.data;
 }
+
+export async function updateManuscriptContent(
+  documentId: string,
+  projectId: string,
+  content: string,
+): Promise<ManuscriptDocument> {
+  const response = await api.patch(
+    `/story-development/drafting/manuscript-documents/${documentId}`,
+    { content },
+    { params: { project_id: projectId } },
+  );
+  
+  if (response.status !== 200) {
+    throw new Error(`Failed to update manuscript content: ${response.status}`);
+  }
+  
+  return response.data;
+}
+
+export async function triggerManuscriptReview(
+  documentId: string,
+  projectId: string,
+): Promise<RevisionSuggestion[]> {
+  const response = await api.post(
+    `/story-development/drafting/manuscript-documents/${documentId}/review`,
+    null,
+    { params: { project_id: projectId } },
+  );
+  
+  if (response.status !== 202) {
+    throw new Error(`Failed to trigger manuscript review: ${response.status}`);
+  }
+  
+  return response.data.findings ?? [];
+}

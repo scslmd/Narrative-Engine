@@ -733,6 +733,17 @@ class ManuscriptDocument(StrictSchemaModel):
         return payload
 
 
+class ManuscriptDocumentUpdateRequest(StrictSchemaModel):
+    content: str | None = Field(None, max_length=1_000_000)
+    title: str | None = Field(None, max_length=500)
+
+
+class ManuscriptReviewResponse(StrictSchemaModel):
+    document_id: str
+    project_id: str
+    findings: list[RevisionSuggestion] = Field(default_factory=list)
+
+
 class RevisionSuggestion(StrictSchemaModel):
     suggestion_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)

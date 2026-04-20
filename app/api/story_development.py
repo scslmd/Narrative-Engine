@@ -23,6 +23,8 @@ from app.schemas import (
     FoundationRevision,
     InspectRunLink,
     ManuscriptDocument,
+    ManuscriptDocumentUpdateRequest,
+    ManuscriptReviewResponse,
     PlanningDependency,
     ReviewDecision,
     RevisionSuggestion,
@@ -42,6 +44,7 @@ from app.schemas.base import StrictModel
 from app.services.braindump import BrainDumpNotFoundError, BrainDumpService, BrainDumpValidationError
 from app.services.brainstorm import BrainstormNotFoundError, BrainstormService, BrainstormValidationError
 from app.services.drafting import DraftingNotFoundError, DraftingService
+from app.services.manuscript_review import ManuscriptReviewError, ManuscriptReviewService
 from app.services.editable_flow import (
     EditableFlowNotFoundError,
     EditableFlowService,
@@ -529,6 +532,7 @@ def build_story_development_router(
     router = APIRouter(prefix=prefix.rstrip("/") if prefix else "", tags=["story-development"])
     decision_service = StoryDecisionReviewService(repository)
     drafting_service = DraftingService(repository)
+    manuscript_review_service = ManuscriptReviewService(repository)
     planning_service = PlanningService(repository)
     branching_service = StoryBranchingService(repository)
     review_service = ReviewRoutingService(repository, drafting_service=drafting_service, planning_service=planning_service)
@@ -1008,6 +1012,99 @@ def build_story_development_router(
             )
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Referenced draft artifact not found.") from exc
+
+    @router.patch("/drafting/manuscript-documents/{document_id}", response_model=ManuscriptDocument)
+    def update_manuscript_document(
+        document_id: str,
+        project_id: str,
+        payload: ManuscriptDocumentUpdateRequest,
+    ) -> ManuscriptDocument:
+        """Partially update a manuscript document's content or title.
+
+        Updates only the fields that are provided in the request body.
+        Version is automatically incremented.
+
+        Args:
+            document_id: The manuscript document identifier.
+            project_id: The project identifier.
+            payload: Partial update with optional 'content' and 'title' fields.
+
+        Returns:
+            The updated ManuscriptDocument object.
+
+        Raises:
+            HTTPException 400: If no fields are provided.
+            HTTPException 404: If the document or project does not exist.
+        """
+        if payload.content is None and payload.title is None:
+            raise HTTPException(status_code=400, detail="At least one of 'content' or 'title' must be provided.")
+        try:
+            existing = drafting_service.get_manuscript_document(project_id, document_id=document_id)
+        except DraftingNotFoundError:
+            raise HTTPException(status_code=404, detail="Manuscript document not found.")
+        update_content = payload.content if payload.content is not None else existing.content
+        update_title = payload.title if payload.title is not None else existing.title
+        try:
+            return drafting_service.save_manuscript_document(
+                project_id,
+                document_id=document_id,
+                content=update_content,
+                title=update_title,
+                chapter_id=existing.chapter_id,
+                scene_id=existing.scene_id,
+                current_draft_artifact_id=existing.current_draft_artifact_id,
+            )
+        except DraftingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Manuscript document not found.") from exc
+
+    @router.post(
+        "/drafting/manuscript-documents/{document_id}/review",
+        response_model=ManuscriptReviewResponse,
+        status_code=202,
+    )
+    def trigger_manuscript_review(
+        document_id: str,
+        project_id: str,
+    ) -> ManuscriptReviewResponse:
+        """Trigger an AI review of the manuscript document.
+
+        Analyzes the manuscript content for repetition, blank paragraph gaps,
+        and potential new characters not yet listed in the project's character records.
+
+        Args:
+            document_id: The manuscript document identifier.
+            project_id: The project identifier.
+
+        Returns:
+            A response containing any generated revision suggestions.
+
+        Raises:
+            HTTPException 404: If the document or project does not exist.
+        """
+        try:
+            findings = manuscript_review_service.analyze_manuscript(
+                project_id, document_id=document_id
+            )
+        except ManuscriptReviewError:
+            raise HTTPException(status_code=404, detail="Manuscript document not found.")
+
+        def _to_dict(finding):
+            return {
+                "suggestion_id": finding.suggestion_id,
+                "project_id": finding.project_id,
+                "target_document_id": finding.target_document_id,
+                "source_text": finding.source_text,
+                "proposed_text": finding.proposed_text,
+                "rationale": finding.rationale,
+                "source_context": finding.source_context,
+                "status": finding.status,
+            }
+
+        return ManuscriptReviewResponse(
+            document_id=document_id,
+            project_id=project_id,
+            findings=[_to_dict(finding) for finding in findings],
+        )
 
     @router.post("/drafting/promote-draft", response_model=ManuscriptDocument, status_code=201)
     def promote_draft_to_manuscript(payload: PromoteDraftToManuscriptRequest) -> ManuscriptDocument:
