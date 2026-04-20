@@ -16,7 +16,13 @@ from app.services.projects import ProjectService
 logger = logging.getLogger(__name__)
 
 
-def build_projects_router(project_service: ProjectService) -> APIRouter:
+def build_projects_router(
+    project_service: ProjectService,
+    import_service: Any = None,
+) -> APIRouter:
+    from ..schemas.story_import import StoryImportRequest, StoryImportResponse
+    from ..services.story_import import StoryImportError
+
     router = APIRouter(prefix="/projects", tags=["projects"])
 
     @router.post("/create", response_model=ProjectDetailResponse, status_code=201)
@@ -57,5 +63,15 @@ def build_projects_router(project_service: ProjectService) -> APIRouter:
             return project_service.read_artifact(project_id, "chapter-1")
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if import_service is not None:
+        @router.post("/import-story", response_model=StoryImportResponse, status_code=201)
+        def import_story(request: StoryImportRequest) -> StoryImportResponse:
+            try:
+                return import_service.import_story(request)
+            except StoryImportError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return router

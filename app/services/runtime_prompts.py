@@ -181,6 +181,72 @@ def build_p400_compiler_request(
     )
 
 
+def build_import_analysis_request(
+    *,
+    story_text: str,
+    genre_hint: str | None = None,
+    tone_hint: str | None = None,
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for story analysis/structure extraction.
+
+    The LLM should return a JSON object matching StoryImportAnalysis structure.
+    Uses temperature=0.1 for deterministic output.
+    max_tokens=16000 to fit full JSON output.
+    Truncates story_text to 24,000 chars for single-pass analysis.
+    """
+    truncated_text = story_text[:24_000]
+    context_parts = []
+    if genre_hint:
+        context_parts.append(f"Genre hint: {genre_hint}")
+    if tone_hint:
+        context_parts.append(f"Tone hint: {tone_hint}")
+    context = "\n".join(context_parts)
+
+    system_prompt = (
+        "You are a story analysis AI for Narrative-Engine. You analyze completed stories "
+        "and extract structured metadata that fills out all project elements.\n\n"
+        "Your output MUST be valid JSON with these exact top-level keys:\n"
+        "- project_name (string, required)\n"
+        "- genre (string, required)\n"
+        "- tone (string, required)\n"
+        "- pov (string: FIRST, SECOND, THIRD_LIMITED, THIRD_OMNI, THIRD_OBJECTIVE, THIRD_MULTIPLE, OTHER)\n"
+        "- story_structure (string: SAVE_THE_CAT, THREE_ACT, HERO_JOURNEY, FREYTAGS_PYRAMID, KISHOTENKETSU, FICHTEAN_CURVE, SEVEN_POINT_STRUCTURE, SEVEN_KEY_STEPS, SNOWFLAKE_METHOD, BRAINDUMP, OTHER)\n"
+        "- premise (string, required)\n"
+        "- logline (string, required)\n"
+        "- thematic_spine (string, required)\n"
+        "- emotional_promise (string, required)\n"
+        "- target_audience (string, required)\n"
+        "- complexity_level (string, required: LOW, MEDIUM, HIGH)\n"
+        "- characters (array of objects: each with name, role, archetype, external_goal, internal_need, core_fear, primary_strength, fatal_flaw, backstory, voice_notes, change_axis, contradictions, secrets, values, taboos, continuity_facts)\n"
+        "- world_bible (array of objects: each with entry_type, title, summary, canonical_facts, related_character_ids)\n"
+        "- story_arcs (array of objects: each with name, summary, stage_map, tags)\n"
+        "- sequences (array of objects: each with title, summary, chapters)\n"
+        "- narrative_constraints (array of strings)\n"
+        "- success_definition (string)\n"
+        "- raw_story_text (string)\n\n"
+        "CRITICAL: Return ONLY the JSON object. No markdown, no explanation, no code blocks."
+    )
+
+    user_content = f"Analyze this completed story and extract all structured metadata:\n\n{truncated_text}"
+    if context:
+        user_content += f"\n\nAdditional context:\n{context}"
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=16000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "story_import",
+            "role": "import_analyzer",
+        },
+    )
+
+
 def architect_output_path(project_dir: Path) -> Path:
     return project_dir / "exports" / "p100_architect_output.md"
 
