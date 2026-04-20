@@ -84,13 +84,13 @@ Still being built:
 
 Current verified baseline:
 
-- see [docs/Validation Notes v0.1.md](F:/Dev/Narrative-Engine/docs/Validation%20Notes%20v0.1.md) for the latest checked command and scope
+- see [docs/Validation Notes v0.1.md](docs/Validation%20Notes%20v0.1.md) for the latest checked command and scope
 
 ### Frontend
 
 1. Navigate to `frontend/`
 2. Install dependencies: `npm install`
-3. Copy environment: `cp .env.example .env.local`
+3. Copy environment: `copy .env.example .env.local` (Windows) or `cp .env.example .env.local` (Unix)
 4. Start dev server: `npm run dev`
 5. Open [http://localhost:5173](http://localhost:5173)
 
@@ -111,12 +111,12 @@ See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for
 - Workflow command:
   - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
 
-Latest local full-suite verification (March 29, 2026):
+Latest local full-suite verification (April 19, 2026):
 
-- `python -m pytest -q -p no:cacheprovider` -> `485 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `529 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
-- `cd frontend && npm run build` -> passed (390KB JS + 31KB CSS, gzipped: ~112KB + 5KB)
+- `cd frontend && npm run build` -> passed
 
 **Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance.
 
