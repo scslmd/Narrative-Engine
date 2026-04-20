@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `514 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `554 passed, 9 skipped` (20 new tests from manuscript word processor feature)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -76,7 +76,7 @@ python scripts/qc.py --verbose         # show review steps and analyzer results
 python scripts/qc.py --allow-directories app   # expand coding files under a directory target
 ```
 
-- `scripts/qc.py` is the portable implementation. The repo root `qc.py` remains a thin compatibility wrapper.
+- `scripts/qc.py` is the portable implementation (compatibility wrapper).
 - `scripts/qc.py` defaults to branch-diff review against `codex/main`, then falls back to `HEAD`, then to recent modified coding files if no git-derived targets are found.
 - Direct file targets override auto-detection and only review the files you pass.
 - Directory targets require `--allow-directories`; otherwise `scripts/qc.py` fails clearly instead of silently skipping them.
@@ -627,3 +627,106 @@ def get_db_connection(db_path: Path | None = None) -> sqlite3.Connection:
     target_path = db_path or settings.operations_db_path
     return _connect(target_path)
 ```
+
+## Story Import Feature
+
+> Full research documented in `docs/Story Import Research & Architecture.md`
+
+### Goal
+
+Allow users to paste/upload an existing completed story, then have the LLM review it, classify it, and "fill out all the blanks" (create the full project structure including foundation, characters, world bible, arcs, planning, and drafts) in one automated workflow.
+
+### Project Creation Flow
+
+**Entry**: `POST /projects/create` -> `app/services/projects.py::ProjectService.create_project()`
+- Creates `data/projects/{project_id}/` with: `manifest.json`, `bible.db`, `sequences.json`, `chapter.md`, `exports/`, `.telemetry`, `.structured_log`
+- Registers in operations DB: `projects` and `project_artifacts` tables
+- Bootstrap via `app/services/project_bootstrap.py::bootstrap_project()`
+
+**Config schemas**: `app/schemas/manifest.py`
+- `ManifestConfig`: genre, tone_profile, pov (enum), primary_language, secondary_language, story_structure (enum)
+- `Manifest`: project_id, project_name, config, constraints, premise_text
+
+**Enums** (`app/schemas/enums.py`):
+- `StoryStructure`: SAVE_THE_CAT, THREE_ACT, HERO_JOURNEY, FREYTAGS_PYRAMID, KISHOTENKETSU, FICHTEAN_CURVE, SEVEN_POINT_STRUCTURE, SEVEN_KEY_STEPS, SNOWFLAKE_METHOD, BRAINDUMP, OTHER
+- `PovMode`: FIRST, SECOND, THIRD_LIMITED, THIRD_OMNI, THIRD_OBJECTIVE, THIRD_MULTIPLE, OTHER
+
+### Key Entity Schemas (via StoryDevelopmentRepository)
+
+**FoundationProfile** (`app/schemas/story_development.py:194`):
+- premise, logline, thematic_spine, emotional_promise, tone_and_voice_direction, target_audience, narrative_constraints, complexity_level, success_definition, version
+
+**CharacterProfile** (`app/schemas/story_development.py:288`):
+- character_id, project_id, display_name, role_in_story, archetype, external_goal, internal_need, misbelief_or_wound, core_fear, primary_strength, fatal_flaw_or_limitation, contradictions, backstory_summary, voice_notes, secrets, values, taboos, change_axis, arc_stage_notes, continuity_facts, writer_notes
+- `relationship_edges` auto-populated from separate table
+
+**WorldBibleEntry** (`app/schemas/story_development.py:344`):
+- entry_id, project_id, entry_type, title, summary, canonical_facts, related_character_ids, visibility_scope, continuity_warnings, writer_notes
+- Unique key: (project_id, entry_type, title)
+
+**Arcs**: Three tables - arc_candidates, arc_stage_maps, arc_selections
+**Planning**: sequence_plans, chapter_plans, scene_plans, beat_plans
+**Drafting**: draft_artifacts, manuscript_documents
+
+### Database Architecture
+
+Two SQLite databases:
+- **Operations DB** (`settings.operations_db_path`): Central registry, 40+ tables, full rebuild migration pattern
+- **Project DB** (`data/projects/{project_id}/bible.db`): Project-local metadata
+
+`app/persistence/story_development.py::StoryDevelopmentRepository` -- all methods are single-row operations. **No bulk insert**. Each call opens its own connection and commits. Creating N entities = N separate calls.
+
+### LLM Inference System
+
+**Architecture**:
+```
+InferenceBackend (ABC) -> app/inference/base.py
+    +-- OpenAICompatibleInferenceBackend -> app/inference/openai_compatible.py (production)
+    +-- StubInferenceBackend -> app/inference/stub.py (testing)
+Factory: app/inference/factory.py::build_inference_backend()
+```
+
+**Supported providers** (all use OpenAICompatibleInferenceBackend):
+- `llama.cpp` (default: `http://127.0.0.1:8080`), `lmstudio` (default: `http://127.0.0.1:1234`), `vllm` (default: `http://127.0.0.1:8000`), `openai_compatible`, `stub`
+
+**Inference contract** (`app/schemas/inference.py`):
+```python
+class InferenceRequest: model, system_prompt, user_prompt, temperature=0.2, max_tokens=1200, metadata
+class InferenceResponse: model, content, backend, finish_reason, usage, metadata
+```
+
+**Executor pattern** (`app/services/local_executor.py`):
+1. Build inference request via `runtime_prompts.py` helpers
+2. Call `self._inferencer.generate_text(inference_request)` (with circuit breaker)
+3. Write response to staged file, atomic replace to output
+4. Create step record + artifact lineage, update job to COMPLETED
+
+**Settings** (`app/settings.py`):
+- `NARRATIVE_INFERENCE_BACKEND`, `NARRATIVE_INFERENCE_BASE_URL`, `NARRATIVE_INFERENCE_API_KEY`, `NARRATIVE_INFERENCE_MODEL`, `NARRATIVE_INFERENCE_TIMEOUT_SECONDS`
+
+**Existing prompt builders** (`app/services/runtime_prompts.py`):
+- P-100 Architect (markdown output), P-200 Sequencer (JSON output), P-300 Drafter (markdown), P-400 Compiler (JSON)
+
+### Job System
+
+**Only P-100 to P-400 phases exist** (`app/schemas/enums.py::JobPhase`). No custom phases allowed.
+- `PENDING -> PROCESSING -> COMPLETED` or `FAILED`
+- Worker: `app/services/local_executor.py` runs two daemon threads (`_job_loop`, `_checker_loop`)
+
+### Story Import Design
+
+**Workflow**: User pastes story -> [LLM] Analyze -> [Service] Parse JSON -> Create project -> Create foundation -> Create characters -> Create world bible -> Create arcs -> Create planning -> Create manuscript
+
+**Key decisions**:
+1. One API call to start, async processing (`POST /projects/import-story` returns 202)
+2. Reuse existing `InferenceBackend` directly (like `ManuscriptReviewService`), no new job phase needed
+3. Single LLM call for stories under ~50K tokens, multi-step for larger texts
+4. Validate LLM output with Pydantic models
+5. **Transaction safety**: Each repo method commits individually. Solution: wrap in manual transaction or allow partial imports with recovery
+6. **Token management**: Need chunking for large stories. Consider first pass for metadata summary, second pass for detailed extraction
+
+**New components needed**:
+- `app/services/story_import.py` - `StoryImportService` class
+- `app/schemas/story_import.py` - request/response schemas
+- `app/api/projects.py` - `POST /projects/import-story` endpoint
+- `runtime_prompts.py` - `build_import_analysis_request()` prompt builder
