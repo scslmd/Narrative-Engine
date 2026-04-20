@@ -3,7 +3,7 @@ import api from './api';
 export interface ManifestConfig {
   genre: string;
   tone_profile: string;
-  pov: 'First' | 'Third_Limited' | 'Third_Omni';
+  pov: 'First' | 'Second' | 'Third_Limited' | 'Third_Omni' | 'Third_Objective' | 'Third_Multiple' | 'Other';
   primary_language: string;
   secondary_language: string;
   story_structure: string;

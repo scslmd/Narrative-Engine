@@ -80,8 +80,12 @@ function ManifestField({ label, value }: ManifestFieldProps): React.ReactElement
 function formatPov(pov: string): string {
   switch (pov) {
     case 'First': return 'First Person';
+    case 'Second': return 'Second Person';
     case 'Third_Limited': return 'Third Person Limited';
     case 'Third_Omni': return 'Third Person Omniscient';
+    case 'Third_Objective': return 'Third Person Objective';
+    case 'Third_Multiple': return 'Third Person Multiple';
+    case 'Other': return 'Other';
     default: return pov;
   }
 }

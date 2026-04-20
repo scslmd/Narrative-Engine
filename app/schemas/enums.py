@@ -5,8 +5,12 @@ from enum import Enum
 
 class PovMode(str, Enum):
     FIRST = "First"
+    SECOND = "Second"
     THIRD_LIMITED = "Third_Limited"
     THIRD_OMNI = "Third_Omni"
+    THIRD_OBJECTIVE = "Third_Objective"
+    THIRD_MULTIPLE = "Third_Multiple"
+    OTHER = "Other"
 
 
 class StoryStructure(str, Enum):

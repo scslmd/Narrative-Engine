@@ -48,6 +48,20 @@ const STRUCTURE_LABELS: Record<StoryStructureType, string> = {
   OTHER: 'Other',
 };
 
+const STRUCTURE_DESCRIPTIONS: Record<StoryStructureType, string> = {
+  THREE_ACT: 'Setup, Confrontation, Resolution — the classic three-act dramatic arc',
+  SAVE_THE_CAT: "Blake Snyder's 15-beat sheet for screenwriting and prose",
+  HERO_JOURNEY: "Campbell's monomyth: Departure, Initiation, Return with 17 stages",
+  FREYTAGS_PYRAMID: 'Five-act arc: Introduction, Rising Action, Climax, Falling Action, Catastrophe',
+  KISHOTENKETSU: 'Four-act East Asian structure: Intro, Development, Twist, Conclusion',
+  FICHTEAN_CURVE: 'Series of escalating crises building to a single climax, no exposition',
+  SEVEN_POINT_STRUCTURE: 'Beginning, Plot Turn 1, Pinch 1, Midpoint, Pinch 2, Plot Turn 2, Resolution',
+  SEVEN_KEY_STEPS: 'Want, Need, Plan, Opponent, Self-Assertion, Revelation, New Equilibrium',
+  SNOWFLAKE_METHOD: 'Iterative expansion from one sentence to full chapter summaries',
+  BRAINDUMP: 'Free-form writing — no fixed structure required',
+  OTHER: 'Custom structure not listed above',
+};
+
 export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreateFormProps) {
   const [projectType, setProjectType] = useState<ProjectType>('standard');
   const [projectName, setProjectName] = useState('');
@@ -247,6 +261,9 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {STRUCTURE_DESCRIPTIONS[structureType]}
+            </p>
           </div>
         </>
       )}

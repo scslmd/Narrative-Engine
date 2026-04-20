@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
@@ -9,6 +10,31 @@ export function ProjectList(): React.ReactElement {
   const createMutation = useCreateProject();
   const { mode } = useThemeStore();
   const isDark = mode === 'dark';
+  const [selectedPov, setSelectedPov] = useState<string>('Third_Limited');
+  const [selectedStructure, setSelectedStructure] = useState<string>('THREE_ACT');
+
+  const POV_DESCRIPTIONS: Record<string, string> = {
+    First: '"I" — narrator is a character in the story',
+    Second: '"You" — narrator addresses the reader as a character',
+    Third_Limited: '"He/She" — follows one character\'s thoughts and perceptions',
+    Third_Omni: '"He/She" — narrator knows all characters\' thoughts and feelings',
+    Third_Objective: '"He/She" — camera-like, reports only observable actions and dialogue',
+    Third_Multiple: '"He/She" — alternates limited POV across multiple characters',
+    Other: 'Custom point of view not listed above',
+  };
+
+  const STRUCTURE_DESCRIPTIONS: Record<string, string> = {
+    THREE_ACT: 'Setup, Confrontation, Resolution — the classic three-act dramatic arc',
+    SAVE_THE_CAT: "Blake Snyder's 15-beat sheet for screenwriting and prose",
+    HERO_JOURNEY: "Campbell's monomyth: Departure, Initiation, Return with 17 stages",
+    FREYTAGS_PYRAMID: 'Five-act arc: Introduction, Rising Action, Climax, Falling Action, Catastrophe',
+    KISHOTENKETSU: 'Four-act East Asian structure: Intro, Development, Twist, Conclusion',
+    FICHTEAN_CURVE: 'Series of escalating crises building to a single climax, no exposition',
+    SEVEN_POINT_STRUCTURE: 'Beginning, Plot Turn 1, Pinch 1, Midpoint, Pinch 2, Plot Turn 2, Resolution',
+    SEVEN_KEY_STEPS: 'Want, Need, Plan, Opponent, Self-Assertion, Revelation, New Equilibrium',
+    SNOWFLAKE_METHOD: 'Iterative expansion from one sentence to full chapter summaries',
+    OTHER: 'Custom structure not listed above',
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -17,7 +43,7 @@ export function ProjectList(): React.ReactElement {
     const config: ManifestConfig = {
       genre: formData.get('genre') as string,
       tone_profile: formData.get('tone_profile') as string,
-      pov: formData.get('pov') as 'First' | 'Third_Limited' | 'Third_Omni',
+      pov: formData.get('pov') as 'First' | 'Second' | 'Third_Limited' | 'Third_Omni' | 'Third_Objective' | 'Third_Multiple' | 'Other',
       primary_language: formData.get('primary_language') as string,
       secondary_language: formData.get('secondary_language') as string,
       story_structure: formData.get('story_structure') as string,
@@ -100,6 +126,8 @@ export function ProjectList(): React.ReactElement {
               id="story_structure"
               name="story_structure"
               required
+              value={selectedStructure}
+              onChange={(e) => setSelectedStructure(e.target.value)}
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 hover:border-slate-400'
               }`}
@@ -115,6 +143,9 @@ export function ProjectList(): React.ReactElement {
               <option value="SNOWFLAKE_METHOD">Snowflake Method</option>
               <option value="OTHER">Other</option>
             </select>
+            <p className={`mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              {STRUCTURE_DESCRIPTIONS[selectedStructure]}
+            </p>
           </Field>
 
           <Field label="Point of View" icon={Eye} isDark={isDark}>
@@ -122,14 +153,23 @@ export function ProjectList(): React.ReactElement {
               id="pov"
               name="pov"
               required
+              value={selectedPov}
+              onChange={(e) => setSelectedPov(e.target.value)}
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 hover:border-slate-400'
               }`}
             >
+              <option value="First">First Person</option>
+              <option value="Second">Second Person</option>
               <option value="Third_Limited">Third Person Limited</option>
               <option value="Third_Omni">Third Person Omniscient</option>
-              <option value="First">First Person</option>
+              <option value="Third_Objective">Third Person Objective</option>
+              <option value="Third_Multiple">Third Person Multiple</option>
+              <option value="Other">Other</option>
             </select>
+            <p className={`mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              {POV_DESCRIPTIONS[selectedPov]}
+            </p>
           </Field>
 
           <Field label="Primary Language" icon={Languages} isDark={isDark}>
