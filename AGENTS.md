@@ -754,3 +754,37 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `app/services/runtime_prompts.py` — `build_import_analysis_request()` prompt builder
 - `app/main.py` — imports StoryImportService, wires into router, includes `/projects/import-story` in auth gate
 - `tests/test_story_import_service.py` — 18 test functions
+
+## Implementation Workflow for Next Phases/Tasks
+
+When asked to implement the next phases or tasks from the backlog, follow this workflow:
+
+1. **PRE-FLIGHT**: Run `python scripts/qc.py --adverse-only` on current branch state to establish a clean baseline. Any new regression introduced during the session is immediately visible.
+
+2. **REVIEW**: Research the target scope — read existing contracts, schemas, persistence tables, service boundaries, and related tests. Understand the full call chain from API endpoint down to database queries. Identify blocking dependencies before writing any code.
+
+3. **PLAN**: Generate atomic, deterministic tasks with detailed instructions. Each task card must include:
+   - One bounded scope (one feature, one service slice, one API endpoint)
+   - Schema definitions (Pydantic models, DB columns, JSON shapes)
+   - Expected file paths and function signatures
+   - Acceptance criteria and verification commands
+   - Explicit dependencies on other tasks
+
+4. **BRANCH**: Create a feature branch (e.g., `codex/<feature-name>`). Never work directly on `codex/main`.
+
+5. **TEST-DRIVEN**: Write failing unit tests first, generate test fixtures and mocks. Tests must be written before implementation code. Use `tmp_path` for isolated runtime paths. Test names follow `test_<component>_<action>_<expected_result>`.
+
+6. **IMPLEMENT**: Execute tasks one at a time. Run tests after each task to verify incremental progress. Do not batch multiple tasks without intermediate verification.
+
+7. **VALIDATE**: After completing each task group, run the full suite:
+   - `python -m pytest -q -p no:cacheprovider`
+   - `cd frontend && npm run lint`
+   - `cd frontend && npm run typecheck`
+   - `cd frontend && npm run build`
+   Do not proceed to the next task group until all four pass.
+
+8. **ADVERSARIAL**: Run `python scripts/qc.py --adverse-only` on changed files. Address all Critical and High severity findings before continuing. Do not ship known defects.
+
+9. **DOCUMENT**: Update `AGENTS.md` test baseline (pytest count and frontend commands). Update `TODO.md` with completion status. Write or update docs for any new APIs, patterns, or contracts.
+
+10. **MERGE**: Squash-merge the feature branch into `codex/main` with a comprehensive commit message that documents what changed, why, and what the new validation baseline is.
