@@ -7,6 +7,7 @@ from pydantic import Field
 
 from app.schemas.base import StrictSchemaModel
 from app.schemas.manifest import Manifest, ManifestConfig
+from app.schemas.enums import StoryStructure
 
 
 def default_project_id() -> str:
@@ -19,7 +20,7 @@ class ProjectCreateRequest(StrictSchemaModel):
     config: ManifestConfig | None = None
     constraints: list[str] = Field(default_factory=list)
     premise_text: str | None = None
-    idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)
+    idempotency_key: str | None = Field(default=None, max_length=256)
     project_kind: str = Field(default="standard", max_length=20)
     # Direct fields (legacy/simple format)
     genre: str | None = None
@@ -36,14 +37,24 @@ class ProjectCreateRequest(StrictSchemaModel):
                 premise_text=self.premise_text,
             )
         # Build config from direct fields (simple format)
+        story_struct = StoryStructure(self.story_structure) if self.story_structure else StoryStructure.THREE_ACT
+        project_kind = self.project_kind or "standard"
+        if project_kind == "brain_dump":
+            story_struct = StoryStructure.BRAINDUMP
+
+        genre = self.genre
+        if project_kind == "brain_dump" and not genre:
+            genre = "Brain Dump"
+        if not genre:
+            genre = "Unknown"
+
         config = ManifestConfig(
-            genre=self.genre or "Unknown",
+            genre=genre,
             tone_profile=self.tone_profile or "Neutral",
             primary_language="English",
             secondary_language="None",
+            story_structure=story_struct,
         )
-        if self.story_structure:
-            config.story_structure = StoryStructure(self.story_structure)
         return Manifest(
             project_id=self.project_id,
             project_name=self.project_name,
