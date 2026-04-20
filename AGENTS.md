@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `566 passed, 9 skipped` (12 new tests from story import feature)
+  - `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped` (18 new tests from story import feature + bug fixes)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -727,7 +727,15 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `_parse_llm_json(content)` — robust extraction: direct JSON, markdown fences, trailing/leading text
 - `_transactional_import(project_id, analysis)` — single raw SQLite connection with `BEGIN`, direct parameterized SQL (NOT repo wrapper methods)
 
-**Transaction Safety**: Uses a single `sqlite3.connect()` with `BEGIN` (not `BEGIN IMMEDIATE`), executes raw SQL directly without repo methods. All inserts use `ON CONFLICT DO UPDATE` for idempotent retries.
+**Transaction Safety**: Uses a single `sqlite3.connect()` with `BEGIN` (not `BEGIN IMMEDIATE`), executes raw SQL directly without repo methods. All inserts use `ON CONFLICT DO UPDATE` for idempotent retries. Foundation revisions also use `ON CONFLICT(project_id, revision_number) DO UPDATE`.
+
+**Entity ID Generation**: Characters and arcs use SHA-256 hash-based IDs (`import-{prefix}-{hash[:12]}`) for stable, order-independent identity. Same input always produces the same ID regardless of list ordering, enabling deduplication.
+
+**Manifest Update**: After successful entity creation, `_update_manifest()` writes LLM-extracted `genre`, `tone`, `pov`, `story_structure`, `premise_text`, and `constraints` to `manifest.json`. Invalid enum values are silently skipped with a warning log.
+
+**API Key Protection**: The `/projects/import-story` endpoint is included in the `versioned_api_key_gate` middleware (gate applies to both `/v1/*` and `/projects/import-story` paths).
+
+**Error Handling**: `_create_project` catches `FileNotFoundError` specifically (not bare `Exception`) to distinguish missing projects from database errors.
 
 **LLM Request**: `build_import_analysis_request()` in `app/services/runtime_prompts.py`
 - `temperature=0.1`, `max_tokens=16000` for deterministic JSON output
@@ -740,8 +748,9 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `pydantic.ValidationError` — caught, wrapped as `StoryImportError`
 
 **Components**:
-- `app/services/story_import.py` — `StoryImportService` class
+- `app/services/story_import.py` — `StoryImportService` class (with `_update_manifest()`, `_hash_id()`, `_to_none()`)
 - `app/schemas/story_import.py` — `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis` (with POV/structure validators)
-- `app/api/projects.py` — `POST /projects/import-story` endpoint
+- `app/api/projects.py` — `POST /projects/import-story` endpoint (guarded by API key middleware)
 - `app/services/runtime_prompts.py` — `build_import_analysis_request()` prompt builder
-- `tests/test_story_import_service.py` — 12 test functions
+- `app/main.py` — imports StoryImportService, wires into router, includes `/projects/import-story` in auth gate
+- `tests/test_story_import_service.py` — 18 test functions
