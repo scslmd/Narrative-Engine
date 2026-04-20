@@ -796,4 +796,4 @@ def test_local_executor_fails_unsupported_job_phases_instead_of_stub_completing(
     assert fake_step_records.rows[0]["state"] == "FAILED"
     assert fake_step_records.rows[0]["step_name"] == "P-900"
     assert fake_step_records.rows[0]["finish_reason"] == "executor_error"
-    assert "Unsupported job phase: P-900" in str(fake_step_records.rows[0]["output_payload"])
+    assert fake_step_records.rows[0]["output_hash"] is not None

@@ -55,6 +55,7 @@ from .story_development import (
     StoryDecisionNode,
     StoryDecisionNodeLink,
     StoryBranch,
+    StoryboardCard,
     WorkspaceNote,
     WorldBibleEntry,
 )
