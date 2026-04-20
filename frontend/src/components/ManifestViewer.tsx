@@ -90,6 +90,15 @@ function formatStructure(structure: string): string {
   switch (structure) {
     case 'THREE_ACT': return 'Three Act Structure';
     case 'SAVE_THE_CAT': return 'Save the Cat';
+    case 'HERO_JOURNEY': return "Hero's Journey";
+    case 'FREYTAGS_PYRAMID': return "Freytag's Pyramid";
+    case 'KISHOTENKETSU': return 'Kishōtenketsu';
+    case 'FICHTEAN_CURVE': return 'Fichtean Curve';
+    case 'SEVEN_POINT_STRUCTURE': return 'Seven-Point Structure';
+    case 'SEVEN_KEY_STEPS': return 'Seven Key Steps';
+    case 'SNOWFLAKE_METHOD': return 'Snowflake Method';
+    case 'BRAINDUMP': return 'Brain Dump';
+    case 'OTHER': return 'Other';
     default: return structure;
   }
 }

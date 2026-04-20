@@ -6,7 +6,7 @@ export interface ManifestConfig {
   pov: 'First' | 'Third_Limited' | 'Third_Omni';
   primary_language: string;
   secondary_language: string;
-  story_structure: 'SAVE_THE_CAT' | 'THREE_ACT';
+  story_structure: string;
 }
 
 export interface ProjectCreateRequest {

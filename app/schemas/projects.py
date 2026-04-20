@@ -16,17 +16,38 @@ def default_project_id() -> str:
 class ProjectCreateRequest(StrictSchemaModel):
     project_id: str = Field(default_factory=default_project_id, min_length=1)
     project_name: str = Field(min_length=1)
-    config: ManifestConfig
+    config: ManifestConfig | None = None
     constraints: list[str] = Field(default_factory=list)
     premise_text: str | None = None
-    idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)  # REL-02
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=256)
     project_kind: str = Field(default="standard", max_length=20)
-    
+    # Direct fields (legacy/simple format)
+    genre: str | None = None
+    tone_profile: str | None = None
+    story_structure: str | None = None
+
     def to_manifest(self) -> Manifest:
+        if self.config is not None:
+            return Manifest(
+                project_id=self.project_id,
+                project_name=self.project_name,
+                config=self.config,
+                constraints=self.constraints,
+                premise_text=self.premise_text,
+            )
+        # Build config from direct fields (simple format)
+        config = ManifestConfig(
+            genre=self.genre or "Unknown",
+            tone_profile=self.tone_profile or "Neutral",
+            primary_language="English",
+            secondary_language="None",
+        )
+        if self.story_structure:
+            config.story_structure = StoryStructure(self.story_structure)
         return Manifest(
             project_id=self.project_id,
             project_name=self.project_name,
-            config=self.config,
+            config=config,
             constraints=self.constraints,
             premise_text=self.premise_text,
         )

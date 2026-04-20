@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { StoryStructure, ProjectCreateRequest } from '../../types/project';
+import type { StoryStructureType, ProjectCreateRequest } from '../../types/project';
 import { createProject } from '../../services/projects';
 import { toast } from '../../lib/toast';
 
@@ -21,12 +21,32 @@ const GENRES = [
   'Literary Fiction',
 ];
 
-const STRUCTURE_TYPES: StoryStructure['structure_type'][] = [
-  'three_act',
-  'hero_journey',
-  'fichtean_curve',
-  'seven_point',
+const STRUCTURE_TYPES: StoryStructureType[] = [
+  'THREE_ACT',
+  'SAVE_THE_CAT',
+  'HERO_JOURNEY',
+  'FREYTAGS_PYRAMID',
+  'KISHOTENKETSU',
+  'FICHTEAN_CURVE',
+  'SEVEN_POINT_STRUCTURE',
+  'SEVEN_KEY_STEPS',
+  'SNOWFLAKE_METHOD',
+  'OTHER',
 ];
+
+const STRUCTURE_LABELS: Record<StoryStructureType, string> = {
+  THREE_ACT: 'Three Act Structure',
+  SAVE_THE_CAT: 'Save the Cat',
+  HERO_JOURNEY: "Hero's Journey",
+  FREYTAGS_PYRAMID: "Freytag's Pyramid",
+  KISHOTENKETSU: 'Kishōtenketsu',
+  FICHTEAN_CURVE: 'Fichtean Curve',
+  SEVEN_POINT_STRUCTURE: 'Seven-Point Structure',
+  SEVEN_KEY_STEPS: 'Seven Key Steps',
+  SNOWFLAKE_METHOD: 'Snowflake Method',
+  BRAINDUMP: 'Brain Dump',
+  OTHER: 'Other',
+};
 
 export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreateFormProps) {
   const [projectType, setProjectType] = useState<ProjectType>('standard');
@@ -34,7 +54,7 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
   const [genre, setGenre] = useState(GENRES[0]);
   const [primaryTone, setPrimaryTone] = useState('');
   const [secondaryTones, setSecondaryTones] = useState<string[]>([]);
-  const [structureType, setStructureType] = useState<StoryStructure['structure_type']>('three_act');
+  const [structureType, setStructureType] = useState<StoryStructureType>('THREE_ACT');
   const [loading, setLoading] = useState(false);
 
   const TONES = [
@@ -80,20 +100,15 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
 
     try {
       const data: ProjectCreateRequest = {
-        project_name: projectName.trim(),
-        project_kind: projectType === 'brain_dump' ? 'brain_dump' : 'standard',
-        story_structure: {
-          structure_type: projectType === 'brain_dump' ? 'BRAINDUMP' : structureType,
-        },
-      };
+         project_name: projectName.trim(),
+         project_kind: projectType === 'brain_dump' ? 'brain_dump' : 'standard',
+       };
 
-      if (projectType === 'standard') {
-        data.genre = genre;
-        data.tone_profile = {
-          primary_tone: primaryTone,
-          secondary_tones: secondaryTones,
-        };
-      }
+       if (projectType === 'standard') {
+         data.genre = genre;
+         data.tone_profile = `${primaryTone}${secondaryTones.length > 0 ? ', ' + secondaryTones.join(', ') : ''}`;
+         data.story_structure = structureType;
+       }
 
       const result = await createProject(data);
       toast.success('Project created successfully');
@@ -223,12 +238,12 @@ export default function ProjectCreateForm({ onSuccess, onCancel }: ProjectCreate
             <select
               id="structureType"
               value={structureType}
-              onChange={(e) => setStructureType(e.target.value as StoryStructure['structure_type'])}
+              onChange={(e) => setStructureType(e.target.value as StoryStructureType)}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {STRUCTURE_TYPES.map((s) => (
                 <option key={s} value={s}>
-                  {s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  {STRUCTURE_LABELS[s]}
                 </option>
               ))}
             </select>

@@ -3,8 +3,21 @@ export interface ToneProfile {
   secondary_tones: string[];
 }
 
+export type StoryStructureType =
+  | 'THREE_ACT'
+  | 'SAVE_THE_CAT'
+  | 'HERO_JOURNEY'
+  | 'FREYTAGS_PYRAMID'
+  | 'KISHOTENKETSU'
+  | 'FICHTEAN_CURVE'
+  | 'SEVEN_POINT_STRUCTURE'
+  | 'SEVEN_KEY_STEPS'
+  | 'SNOWFLAKE_METHOD'
+  | 'BRAINDUMP'
+  | 'OTHER';
+
 export interface StoryStructure {
-  structure_type: 'three_act' | 'hero_journey' | 'fichtean_curve' | 'seven_point' | 'BRAINDUMP';
+  structure_type: StoryStructureType;
   act_breakdown?: string[];
 }
 
@@ -30,6 +43,7 @@ export interface ProjectCreateRequest {
   project_name: string;
   project_kind?: string;
   genre?: string;
-  tone_profile?: ToneProfile;
-  story_structure: StoryStructure;
+  tone_profile?: string;
+  story_structure?: string;
+  story_structure_obj?: StoryStructure;
 }

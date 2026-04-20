@@ -20,7 +20,7 @@ export function ProjectList(): React.ReactElement {
       pov: formData.get('pov') as 'First' | 'Third_Limited' | 'Third_Omni',
       primary_language: formData.get('primary_language') as string,
       secondary_language: formData.get('secondary_language') as string,
-      story_structure: formData.get('story_structure') as 'SAVE_THE_CAT' | 'THREE_ACT',
+      story_structure: formData.get('story_structure') as string,
     };
 
     createMutation.mutate({
@@ -104,8 +104,16 @@ export function ProjectList(): React.ReactElement {
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 hover:border-slate-400'
               }`}
             >
-              <option value="THREE_ACT">Three Act</option>
+              <option value="THREE_ACT">Three Act Structure</option>
               <option value="SAVE_THE_CAT">Save the Cat</option>
+              <option value="HERO_JOURNEY">Hero's Journey</option>
+              <option value="FREYTAGS_PYRAMID">Freytag's Pyramid</option>
+              <option value="KISHOTENKETSU">Kishōtenketsu</option>
+              <option value="FICHTEAN_CURVE">Fichtean Curve</option>
+              <option value="SEVEN_POINT_STRUCTURE">Seven-Point Structure</option>
+              <option value="SEVEN_KEY_STEPS">Seven Key Steps</option>
+              <option value="SNOWFLAKE_METHOD">Snowflake Method</option>
+              <option value="OTHER">Other</option>
             </select>
           </Field>
 
