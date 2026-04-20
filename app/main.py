@@ -25,7 +25,6 @@ from .api.health import router as health_router
 from .schemas.models import ModelCatalogResponse
 from .schemas.projects import (
     ProjectArtifactResponse,
-    ProjectCreateRequest,
     ProjectDetailResponse,
     ProjectSummaryResponse,
 )
@@ -411,13 +410,6 @@ def build_app() -> FastAPI:
     @app.get('/projects', response_model=list[ProjectSummaryResponse])
     def list_projects() -> list[ProjectSummaryResponse]:
         return project_service.list_projects()
-
-    @app.post('/projects/create', response_model=ProjectDetailResponse)
-    def create_project(request: ProjectCreateRequest) -> ProjectDetailResponse:
-        try:
-            return project_service.create_project(request)
-        except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get('/projects/{project_id}', response_model=ProjectDetailResponse)
     def get_project(project_id: str) -> ProjectDetailResponse:
