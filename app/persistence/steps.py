@@ -431,6 +431,103 @@ class ArtifactLineageRepository:
             for row in rows
         ]
 
+    def list_for_project(
+        self,
+        *,
+        project_id: str,
+        status: str | None = None,
+        artifact_role: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[dict[str, object]]:
+        where_clauses: list[str] = ["project_id = ?"]
+        params: list[object] = [project_id]
+        if status is not None:
+            where_clauses.append("status = ?")
+            params.append(status)
+        if artifact_role is not None:
+            where_clauses.append("artifact_role = ?")
+            params.append(artifact_role)
+        limit_clause = ""
+        if limit is not None:
+            limit_clause = " LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+        where_clause = " AND ".join(where_clauses)
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM artifact_lineage
+                WHERE """ + where_clause + """
+                ORDER BY artifact_lineage_id ASC
+                """ + limit_clause,
+                tuple(params),
+            ).fetchall()
+        return [
+            {
+                "artifact_lineage_id": row["artifact_lineage_id"],
+                "logical_run_id": row["logical_run_id"],
+                "run_id": row["run_id"],
+                "run_kind": row["run_kind"],
+                "attempt_number": row["attempt_number"],
+                "step_name": row["step_name"],
+                "project_id": row["project_id"],
+                "artifact_role": row["artifact_role"],
+                "artifact_kind": row["artifact_kind"],
+                "path": row["path"],
+                "content_hash": row["content_hash"],
+                "status": row["status"],
+                "validation_state": row["validation_state"],
+                "produced_at": row["produced_at"],
+                "registered_at": row["registered_at"],
+                "supersedes_artifact_lineage_id": row["supersedes_artifact_lineage_id"],
+                "source_artifact_refs": _parse_json_list(row["source_artifact_refs_json"]),
+                "source_content_hashes": _parse_json_list(row["source_content_hashes_json"]),
+                "output_of_step_record_id": row["output_of_step_record_id"],
+            }
+            for row in rows
+        ]
+
+    def latest_canonical_for_project(
+        self,
+        *,
+        project_id: str,
+    ) -> dict[str, object] | None:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM artifact_lineage
+                WHERE project_id = ? AND status = 'CANONICAL'
+                ORDER BY artifact_lineage_id DESC
+                LIMIT 1
+                """,
+                (project_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "artifact_lineage_id": row["artifact_lineage_id"],
+            "logical_run_id": row["logical_run_id"],
+            "run_id": row["run_id"],
+            "run_kind": row["run_kind"],
+            "attempt_number": row["attempt_number"],
+            "step_name": row["step_name"],
+            "project_id": row["project_id"],
+            "artifact_role": row["artifact_role"],
+            "artifact_kind": row["artifact_kind"],
+            "path": row["path"],
+            "content_hash": row["content_hash"],
+            "status": row["status"],
+            "validation_state": row["validation_state"],
+            "produced_at": row["produced_at"],
+            "registered_at": row["registered_at"],
+            "supersedes_artifact_lineage_id": row["supersedes_artifact_lineage_id"],
+            "source_artifact_refs": _parse_json_list(row["source_artifact_refs_json"]),
+            "source_content_hashes": _parse_json_list(row["source_content_hashes_json"]),
+            "output_of_step_record_id": row["output_of_step_record_id"],
+        }
+
 
 class RuntimeArtifactSelectionRepository:
     def __init__(self, db_path: Path) -> None:
@@ -511,6 +608,47 @@ class RuntimeArtifactSelectionRepository:
                 ORDER BY selection_id ASC
                 """,
                 (run_id, run_kind, attempt_number, step_name),
+            ).fetchall()
+        return [
+            {
+                "selection_id": row["selection_id"],
+                "logical_run_id": row["logical_run_id"],
+                "run_id": row["run_id"],
+                "run_kind": row["run_kind"],
+                "attempt_number": row["attempt_number"],
+                "step_name": row["step_name"],
+                "project_id": row["project_id"],
+                "artifact_role": row["artifact_role"],
+                "selected_artifact_lineage_id": row["selected_artifact_lineage_id"],
+                "selected_path": row["selected_path"],
+                "selected_content_hash": row["selected_content_hash"],
+                "selected_content": row["selected_content"],
+                "selected_at": row["selected_at"],
+            }
+            for row in rows
+        ]
+
+    def list_selections_by_project(
+        self,
+        *,
+        project_id: str,
+        artifact_role: str | None = None,
+    ) -> list[dict[str, object]]:
+        where_clauses: list[str] = ["project_id = ?"]
+        params: list[object] = [project_id]
+        if artifact_role is not None:
+            where_clauses.append("artifact_role = ?")
+            params.append(artifact_role)
+        where_clause = " AND ".join(where_clauses)
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM runtime_artifact_selections
+                WHERE """ + where_clause + """
+                ORDER BY selection_id ASC
+                """,
+                tuple(params),
             ).fetchall()
         return [
             {

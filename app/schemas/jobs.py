@@ -108,3 +108,125 @@ class JobLogEntry(StrictModel):
 class JobLogsResponse(StrictModel):
     id: UUID
     entries: list[JobLogEntry] = Field(default_factory=list)
+
+
+class JobAttempt(StrictModel):
+    """Pydantic model for a single job attempt record."""
+    logical_run_id: str
+    attempt_number: int
+    status: str
+    executor_name: str | None = None
+    executor_instance_id: str | None = None
+    queue_delay_ms: float | None = None
+    lease_owner: str | None = None
+    lease_expires_at: datetime | None = None
+    claimed_at: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    last_heartbeat_at: datetime | None = None
+    finish_reason: str | None = None
+    failure_stage: str | None = None
+    retryable: bool | None = None
+    retry_reason: str | None = None
+    error_code: str | None = None
+    error_category: str | None = None
+    duration_seconds: float | None = None
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    parent_attempt_number: int | None = None
+
+
+class JobEvent(StrictModel):
+    """Pydantic model for a job event record."""
+    event_type: str
+    from_state: str | None = None
+    to_state: str | None = None
+    occurred_at: datetime
+    attempt_number: int
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class JobAttemptHistoryResponse(StrictModel):
+    """Response for enriched attempt history with metadata."""
+    id: UUID
+    phase: JobPhase
+    status: JobStatus
+    attempts: list[JobAttempt] = Field(default_factory=list)
+    summary: dict[str, Any] = Field(default_factory=dict)
+
+
+class JobAttemptSummaryStats(StrictModel):
+    """Summary statistics for job attempt history."""
+    total_attempts: int
+    successful_attempts: int
+    failed_attempts: int
+    total_duration_seconds: float
+    last_attempt_number: int
+    last_attempt_status: str
+
+
+class StepRecord(StrictModel):
+    """Pydantic model for a step record."""
+    step_record_id: int
+    logical_run_id: str
+    run_id: str
+    run_kind: str
+    attempt_number: int
+    step_name: str
+    step_index: int
+    state: str
+    project_id: str | None = None
+    model_id: str | None = None
+    critic_profile: str | None = None
+    backend_name: str | None = None
+    backend_version: str | None = None
+    input_hash: str | None = None
+    output_hash: str | None = None
+    prompt_hash: str | None = None
+    input_artifact_refs: list[str] = Field(default_factory=list)
+    output_artifact_refs: list[str] = Field(default_factory=list)
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    duration_seconds: float | None = None
+    finish_reason: str | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+    error_code: str | None = None
+    error_category: str | None = None
+    executor_id: str | None = None
+    lease_owner: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class ArtifactLineageRecord(StrictModel):
+    """Pydantic model for an artifact lineage record."""
+    artifact_lineage_id: int
+    logical_run_id: str
+    run_id: str
+    run_kind: str
+    attempt_number: int
+    step_name: str
+    project_id: str | None = None
+    artifact_role: str
+    artifact_kind: str
+    path: str
+    content_hash: str | None = None
+    status: str
+    validation_state: str | None = None
+    produced_at: datetime | None = None
+    registered_at: datetime | None = None
+    supersedes_artifact_lineage_id: int | None = None
+    source_artifact_refs: list[str] = Field(default_factory=list)
+    source_content_hashes: list[str] = Field(default_factory=list)
+    output_of_step_record_id: int | None = None
+
+
+class StepRecordsResponse(StrictModel):
+    """Response for step record listing."""
+    records: list[StepRecord] = Field(default_factory=list)
+
+
+class ArtifactLineageResponse(StrictModel):
+    """Response for artifact lineage listing."""
+    records: list[ArtifactLineageRecord] = Field(default_factory=list)
