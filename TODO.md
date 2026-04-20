@@ -4,7 +4,7 @@
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped` (18 new tests from story import feature + bug fixes)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed

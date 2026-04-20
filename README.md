@@ -84,7 +84,7 @@ Still being built:
 
 Current verified baseline:
 
-- see [docs/Validation Notes v0.1.md](docs/Validation%20Notes%20v0.1.md) for the latest checked command and scope
+- `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped` (18 new tests from story import feature + bug fixes)
 
 ### Frontend
 
@@ -100,7 +100,7 @@ Current verified frontend baseline:
 - `npm run typecheck`
 - `npm run build`
 
-See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for the current active doc set.
+See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 ## Continuous Testing
 
@@ -108,12 +108,15 @@ See [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md) for
 - Matrix:
   - `ubuntu-latest` with Python `3.12`
   - `windows-latest` with Python `3.12`
-- Workflow command:
-  - `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`
+- Local full-suite verification:
+  - `python -m pytest -q -p no:cacheprovider`
+  - `cd frontend && npm run lint`
+  - `cd frontend && npm run typecheck`
+  - `cd frontend && npm run build`
 
-Latest local full-suite verification (April 19, 2026):
+Latest local full-suite verification:
 
-- `python -m pytest -q -p no:cacheprovider` -> `529 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped`
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed
@@ -122,25 +125,18 @@ Latest local full-suite verification (April 19, 2026):
 
 ## Core Docs
 
-- [docs/Documentation Guide v0.1.md](docs/Documentation%20Guide%20v0.1.md)
-- [docs/Project Index v0.1.md](docs/Project%20Index%20v0.1.md)
-- [docs/Validation Notes v0.1.md](docs/Validation%20Notes%20v0.1.md)
-- [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md)
-- [docs/BACKEND_API_REFERENCE.md](docs/BACKEND_API_REFERENCE.md)
-- [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md)
-- [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md)
-- [docs/Async Protocol Blueprint v0.1.md](docs/Async%20Protocol%20Blueprint%20v0.1.md)
-- [docs/Inference Runtime Blueprint v0.1.md](docs/Inference%20Runtime%20Blueprint%20v0.1.md)
-- [docs/Step Record Blueprint v0.1.md](docs/Step%20Record%20Blueprint%20v0.1.md)
-- [docs/Step and Lineage API Projection Blueprint v0.1.md](docs/Step%20and%20Lineage%20API%20Projection%20Blueprint%20v0.1.md)
-- [docs/Story Arc Paradigm Blueprint v0.1.md](docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md)
-- [docs/Failure Mode Test Matrix v0.1.md](docs/Failure%20Mode%20Test%20Matrix%20v0.1.md)
-- [docs/Runtime Error Mapping Blueprint v0.1.md](docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
-- [docs/Runtime Telemetry Contract v0.1.md](docs/Runtime%20Telemetry%20Contract%20v0.1.md)
-- [docs/Step and Lineage API Test Matrix v0.1.md](docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)
+- [AGENTS.md](AGENTS.md) - development guidelines, API patterns, and merge readiness checks
+- [docs/STRUCTURE.md](docs/STRUCTURE.md) - project structure overview
+- [docs/BACKEND_API_REFERENCE.md](docs/BACKEND_API_REFERENCE.md) - backend API reference
+- [docs/User Guide.md](docs/User%20Guide.md) - user-facing guide
+- [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md) - product spec
+- [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md) - frontend design spec
+- [docs/Feature Reference.md](docs/Feature%20Reference.md) - feature reference
 
 ## Planning Docs
 
 - [TODO.md](TODO.md) - active backlog and implementation notes
-- [docs/Frontend API Alignment Issues.md](docs/Frontend%20API%20Alignment%20Issues.md) - detailed frontend/backend alignment analysis
-- [docs/archive/](docs/archive) - superseded readiness checklists, review dumps, and temporary task materials
+
+## Archive
+
+- [docs/archive/](docs/archive) - superseded docs, review dumps, and historical task materials

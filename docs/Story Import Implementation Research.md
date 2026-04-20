@@ -120,8 +120,9 @@ class StoryImportService:
         2. Create project (if project_id not provided, create new)
         3. Call LLM to analyze and extract structured data
         4. Validate LLM output against StoryImportAnalysis schema
-        5. Create all entities (foundation, characters, world bible, arcs)
-        6. Return response
+        5. Create all entities (foundation, characters, world bible, arcs) in single transaction
+        6. Update manifest.json with LLM-extracted metadata (genre, tone, pov, structure)
+        7. Return response
         """
         project_id = ""
         try:
@@ -312,8 +313,8 @@ def _transactional_import(self, project_id: str, analysis: StoryImportAnalysis) 
         conn.execute("UPDATE foundation_profiles SET current_revision_id = ?, updated_at = ? WHERE project_id = ?", (revision_id, now.isoformat(), project_id))
 
         # 2. Character profiles
-        for i, char in enumerate(analysis.characters):
-            char_id = f"char-{char.name.lower().replace(' ', '-')}-{i:03d}"
+        for char in analysis.characters:
+            char_id = _hash_id("character", char.name)
             conn.execute(
                 "INSERT INTO character_profiles (character_id, project_id, display_name, role_in_story, archetype, external_goal, internal_need, misbelief_or_wound, core_fear, primary_strength, fatal_flaw_or_limitation, contradictions_json, backstory_summary, voice_notes, relationship_map_json, secrets_json, values_json, taboos_json, change_axis, arc_stage_notes, continuity_facts_json, writer_notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (char_id, project_id, char.name, char.role, char.archetype, char.external_goal, char.internal_need, None, char.core_fear, char.primary_strength, char.fatal_flaw, json.dumps(char.contradictions), char.backstory, char.voice_notes, json.dumps([]), json.dumps(char.secrets), json.dumps(char.values), json.dumps(char.taboos), char.change_axis, None, json.dumps(char.continuity_facts), None, now.isoformat(), now.isoformat()),
@@ -347,7 +348,7 @@ def _transactional_import(self, project_id: str, analysis: StoryImportAnalysis) 
 
 - **Column names must match exactly**: Every column name must be verified against the actual repository INSERT statements in `app/persistence/story_development.py`. Characterize the columns from `upsert_character_profile`, `upsert_world_bible_entry`, `upsert_arc_candidate`, and `upsert_foundation_profile`.
 - **JSON helpers**: Use inline `json.dumps(values or [], ensure_ascii=True, sort_keys=True)` since `_json_list()` is not importable from the persistence module.
-- **ID generation**: Deterministic IDs based on content name + index for uniqueness. `ON CONFLICT DO UPDATE` makes retries safe.
+- **ID generation**: SHA-256 hash-based IDs (`import-{prefix}-{hash[:12]}`) for stable, order-independent, deduplicated identity. `ON CONFLICT DO UPDATE` makes retries safe.
 
 ## 7. Error Handling & Retry Pattern
 
@@ -549,10 +550,10 @@ def build_import_analysis_request(
 - `conn = sqlite3.connect(db_path, timeout=30)`
 - `conn.execute("BEGIN")` (NOT `BEGIN IMMEDIATE`)
 - Execute direct INSERT statements for:
-  1. `foundation_profiles` + `foundation_revisions` (use inline `json.dumps()`)
-  2. `character_profiles` (loop, generate IDs as `char-{name.lower().replace(' ','-')}-{index:03d}`)
-  3. `world_bible_entries` (loop, generate IDs as `bible-{type}-{title.lower().replace(' ','-')}`)
-  4. `arc_candidates` (loop, generate IDs as `arc-{name.lower().replace(' ','-')}-{index:03d}`)
+  1. `foundation_profiles` + `foundation_revisions` (use inline `json.dumps()`, `ON CONFLICT(project_id, revision_number)`)
+  2. `character_profiles` (loop, generate IDs as `_hash_id("character", name)`)
+  3. `world_bible_entries` (loop, generate IDs using `ON CONFLICT(project_id, entry_type, title)`)
+  4. `arc_candidates` (loop, generate IDs as `_hash_id("arc", name)`)
 - `conn.commit()` on success, `conn.rollback()` on failure
 - `conn.close()` in `finally`
 

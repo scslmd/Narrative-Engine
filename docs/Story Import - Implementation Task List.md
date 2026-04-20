@@ -79,8 +79,9 @@ class StoryImportService:
         2. Create project (if project_id not provided, create new)
         3. Call LLM to analyze and extract structured data
         4. Validate LLM output against StoryImportAnalysis schema
-        5. Create all entities (foundation, characters, world bible, arcs)
-        6. Return response
+        5. Create all entities (foundation, characters, world bible, arcs) in single transaction
+        6. Update manifest.json with LLM-extracted metadata (genre, tone, pov, structure)
+        7. Return response
         """
         project_id = ""
         try:
@@ -293,10 +294,10 @@ conn.execute(
 )
 ```
 
-**2. Characters** (using ON CONFLICT for idempotency):
+**2. Characters** (using ON CONFLICT for idempotency, hash-based IDs):
 ```python
-for idx, char_data in enumerate(analysis.characters):
-    char_id = f"char-{char_data.name.lower().replace(' ', '-')}-{idx:03d}"
+for char_data in analysis.characters:
+    char_id = _hash_id("character", char_data.name)
     contradictions_json = json.dumps(char_data.contradictions or [], ensure_ascii=True, sort_keys=True)
     secrets_json = json.dumps(char_data.secrets or [], ensure_ascii=True, sort_keys=True)
     values_json = json.dumps(char_data.values or [], ensure_ascii=True, sort_keys=True)
@@ -408,10 +409,10 @@ for entry in analysis.world_bible:
     )
 ```
 
-**4. Arc candidates** (using ON CONFLICT on arc_id):
+**4. Arc candidates** (using ON CONFLICT on arc_id, hash-based IDs):
 ```python
-for idx, arc_data in enumerate(analysis.story_arcs):
-    arc_id = f"arc-{arc_data.name.lower().replace(' ', '-')}-{idx:03d}"
+for arc_data in analysis.story_arcs:
+    arc_id = _hash_id("arc", arc_data.name)
     stage_map_json = json.dumps(arc_data.stage_map or [], ensure_ascii=True, sort_keys=True)
     fit_notes_json = json.dumps([], ensure_ascii=True, sort_keys=True)
     tags_json = json.dumps(arc_data.tags or [], ensure_ascii=True, sort_keys=True)
