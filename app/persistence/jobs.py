@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import UUID
 
 from ..request_identity import canonical_request_json
+from ..schemas.enums import JobPhase
 from ..schemas.jobs import JobLogEntry, JobLogsResponse, JobStatusResponse
 from .sqlite import connect, ensure_operations_db
 
@@ -16,6 +17,14 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if value is None:
         return None
     return datetime.fromisoformat(value)
+
+
+def _normalize_phase(value: str | None) -> str | None:
+    if value is None:
+        return None
+    if "." in value:
+        value = value.split(".", 1)[1]
+    return value.replace("_", "-")
 
 
 class JobRepository:
@@ -251,7 +260,7 @@ class JobRepository:
             raise KeyError(str(job_id))
         return JobStatusResponse(
             id=UUID(row["job_id"]),
-            phase=row["phase"],
+            phase=_normalize_phase(row["phase"]),
             status=row["status"],
             attempt_number=int(row["attempt_number"]),
             created_at=datetime.fromisoformat(row["created_at"]),

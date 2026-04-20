@@ -455,6 +455,37 @@ def build_app() -> FastAPI:
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
 
+    @app.post('/projects/create/debug', include_in_schema=False)
+    async def debug_create_project(request: Request) -> dict:
+        body = await request.body()
+        return {
+            'path': str(request.url.path),
+            'method': request.method,
+            'body_len': len(body),
+            'body': body.decode('utf-8')[:1000],
+        }
+
+    # Global 422 logger
+    from fastapi.exceptions import RequestValidationError
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        import json as _json
+        import logging
+        logger = logging.getLogger(__name__)
+        try:
+            body = await request.body()
+            logger.error(f"422 on {request.method} {request.url.path}: body={body.decode('utf-8')[:500]}")
+        except Exception:
+            logger.error(f"422 on {request.method} {request.url.path}")
+        errors = exc.errors()
+        for error in errors:
+            ctx = error.get("ctx")
+            if ctx and isinstance(ctx, dict):
+                for k, v in list(ctx.items()):
+                    if not isinstance(v, (str, int, float, bool, type(None))):
+                        ctx[k] = str(v)
+        return JSONResponse(status_code=422, content={"detail": errors})
+
     if frontend_index.exists():
         if frontend_asset_root and frontend_asset_root.exists():
             app.mount('/assets', StaticFiles(directory=frontend_asset_root), name='assets')

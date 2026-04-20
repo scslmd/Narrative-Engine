@@ -11,16 +11,23 @@ class ManifestConfig(StrictSchemaModel):
     tone_profile: str = Field(min_length=1)
     pov: PovMode = PovMode.THIRD_LIMITED
     primary_language: str = Field(default="English", min_length=1)
-    secondary_language: str = Field(default="None", min_length=1)
+    secondary_language: str | None = Field(default=None, min_length=0)
     story_structure: StoryStructure
 
-    @field_validator("genre", "tone_profile", "primary_language", "secondary_language")
+    @field_validator("genre", "tone_profile", "primary_language")
     @classmethod
     def validate_non_blank_text(cls, value: str) -> str:
         normalized = value.strip()
         if not normalized:
             raise ValueError("value must not be blank")
         return normalized
+
+    @field_validator("secondary_language")
+    @classmethod
+    def validate_secondary_language(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return value.strip() or None
 
 
 class Manifest(StrictSchemaModel):
@@ -45,7 +52,7 @@ class Manifest(StrictSchemaModel):
                 "tone_profile": payload.get("tone_profile") or payload.get("tone", ""),
                 "pov": payload.get("pov", PovMode.THIRD_LIMITED.value),
                 "primary_language": payload.get("primary_language", "English"),
-                "secondary_language": payload.get("secondary_language", "None"),
+                "secondary_language": payload.get("secondary_language") or "None",
                 "story_structure": payload.get("story_structure", StoryStructure.THREE_ACT.value),
             }
 

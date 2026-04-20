@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException
+from fastapi.exceptions import RequestValidationError
 
 from app.schemas.projects import (
     ProjectArtifactResponse,
@@ -9,6 +12,8 @@ from app.schemas.projects import (
     ProjectSummaryResponse,
 )
 from app.services.projects import ProjectService
+
+logger = logging.getLogger(__name__)
 
 
 def build_projects_router(project_service: ProjectService) -> APIRouter:

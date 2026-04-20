@@ -40,7 +40,7 @@ class JobManager:
     def accept_job(self, request: JobCreateRequest, *, idempotency_key: str | None = None) -> JobAcceptance:
         now = _utcnow()
         request_payload = request.model_dump(mode="json")
-        phase = str(request.phase)
+        phase = request.phase
         project_id = str(request.payload.get("project_id", "")).strip() or None
         request_scope = job_request_scope(phase=phase, project_id=project_id)
         request_payload_hash = request_hash(request_payload)
