@@ -51,7 +51,7 @@ def test_get_branch_diff_files_filters_to_existing_coding_files(monkeypatch, tmp
 
 def test_detect_files_to_check_defaults_to_branch_diff(monkeypatch) -> None:
     monkeypatch.setattr(qc, "get_branch_diff_files", lambda: ["frontend/src/App.tsx"])
-    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["qc.py"])
+    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["scripts/qc.py"])
     monkeypatch.setattr(qc, "get_recent_files", lambda: ["tests/test_qc.py"])
 
     mode, files = qc.detect_files_to_check(_make_args())
@@ -61,24 +61,24 @@ def test_detect_files_to_check_defaults_to_branch_diff(monkeypatch) -> None:
 
 
 def test_detect_files_to_check_uses_latest_commit_flag(monkeypatch) -> None:
-    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["qc.py"])
+    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["scripts/qc.py"])
     monkeypatch.setattr(qc, "get_recent_files", lambda: ["tests/test_qc.py"])
 
     mode, files = qc.detect_files_to_check(_make_args(latest_commit=True))
 
     assert mode == "latest commit files"
-    assert files == ["qc.py"]
+    assert files == ["scripts/qc.py"]
 
 
 def test_detect_files_to_check_falls_back_to_latest_commit_before_recent(monkeypatch) -> None:
     monkeypatch.setattr(qc, "get_branch_diff_files", lambda: [])
-    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["qc.py"])
+    monkeypatch.setattr(qc, "get_latest_commit_files", lambda: ["scripts/qc.py"])
     monkeypatch.setattr(qc, "get_recent_files", lambda: ["tests/test_qc.py"])
 
     mode, files = qc.detect_files_to_check(_make_args())
 
     assert mode == "latest commit files (fallback)"
-    assert files == ["qc.py"]
+    assert files == ["scripts/qc.py"]
 
 
 def test_detect_files_to_check_falls_back_to_recent_when_git_sources_are_empty(monkeypatch) -> None:

@@ -43,7 +43,7 @@ python scripts/qc.py --adverse-only     # Only run adverse review
 
 Primary implementation path: `scripts/qc.py`
 
-- The repo root `qc.py` file is now a thin compatibility shim that forwards to `scripts/qc.py`.
+- `scripts/qc.py` is the portable implementation.
 
 ## `scripts/qc.py` Target Selection
 

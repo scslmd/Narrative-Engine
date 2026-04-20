@@ -126,7 +126,7 @@ Latest local full-suite verification (April 19, 2026):
 - [docs/Project Index v0.1.md](docs/Project%20Index%20v0.1.md)
 - [docs/Validation Notes v0.1.md](docs/Validation%20Notes%20v0.1.md)
 - [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md)
-- [BACKEND_API_REFERENCE.md](BACKEND_API_REFERENCE.md)
+- [docs/BACKEND_API_REFERENCE.md](docs/BACKEND_API_REFERENCE.md)
 - [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md)
 - [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md)
 - [docs/Async Protocol Blueprint v0.1.md](docs/Async%20Protocol%20Blueprint%20v0.1.md)

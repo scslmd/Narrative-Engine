@@ -2,7 +2,7 @@
 
 ## Current Truth
 
-- The active documentation surface is `README.md`, `AGENTS.md`, `BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
+- The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
   - `python -m pytest -q -p no:cacheprovider` -> `455 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
