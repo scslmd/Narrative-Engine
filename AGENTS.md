@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing stub inference / test isolation issues documented in `docs/Test Failure Analysis v0.1.md`)
+  - `python -m pytest -q -p no:cacheprovider` -> `677 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed

@@ -99,6 +99,7 @@ class ChapterPacketService:
         produced_at: datetime | None = None,
         source_artifact_refs: list[str] | None = None,
         source_content_hashes: list[str] | None = None,
+        output_of_step_record_id: int = 0,
     ) -> int | None:
         if step_record_service is None:
             return None
@@ -120,7 +121,7 @@ class ChapterPacketService:
                 artifact_role=artifact_role,
                 artifact_kind="json",
                 path=f"/data/projects/{project_id}/chapters/{packet_id}",
-                content_hash_source=packet_id,
+                content_hash=packet_id,
                 status=StoryArtifactLifecycleState.CANONICAL,
                 validation_state="validated",
                 produced_at=produced,
@@ -128,7 +129,7 @@ class ChapterPacketService:
                 supersedes_artifact_lineage_id=None,
                 source_artifact_refs=packet_refs,
                 source_content_hashes=packet_hashes,
-                output_of_step_record_id=0,
+                output_of_step_record_id=output_of_step_record_id,
             )
             return lineage_id
         except Exception as exc:

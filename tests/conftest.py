@@ -24,12 +24,22 @@ def set_api_key_header():
     original_request = OriginalTestClient.request
     
     def patched_request(self, *args, **kwargs):
-        # Only add API key if headers not explicitly set to empty dict
-        if 'headers' not in kwargs or kwargs['headers'] is None:
+        # Check if headers was originally absent or None
+        headers_was_none = 'headers' not in kwargs or kwargs.get('headers') is None
+        # Check if headers was explicitly set to empty dict (no-auth test)
+        headers_explicitly_empty = 'headers' in kwargs and kwargs.get('headers') == {}
+        
+        if headers_was_none:
             kwargs['headers'] = {}
-        # Don't override if headers is already an empty dict (explicit no-auth test)
-        if kwargs['headers'] and 'X-API-Key' not in kwargs['headers']:
+        
+        # Don't inject if explicitly no-auth (empty dict passed by caller)
+        if headers_explicitly_empty:
+            return original_request(self, *args, **kwargs)
+        
+        # Inject API key if not already present
+        if 'X-API-Key' not in kwargs.get('headers', {}):
             kwargs['headers']['X-API-Key'] = os.environ.get('API_KEY', 'test-secret-key-123')
+        
         return original_request(self, *args, **kwargs)
     
     OriginalTestClient.request = patched_request
