@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `554 passed, 9 skipped` (20 new tests from manuscript word processor feature)
+  - `python -m pytest -q -p no:cacheprovider` -> `566 passed, 9 skipped` (12 new tests from story import feature)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -357,6 +357,7 @@ Do not call the repo merge-ready unless all four of these are green:
 - `POST /projects/create`
 - `GET /projects/{project_id}`
 - `DELETE /projects/{project_id}`
+- `POST /projects/import-story` (201 Created, synchronous)
 
 #### Story Development - Branching
 - `GET /v1/story-development/branches?project_id={id}`
@@ -713,20 +714,34 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `PENDING -> PROCESSING -> COMPLETED` or `FAILED`
 - Worker: `app/services/local_executor.py` runs two daemon threads (`_job_loop`, `_checker_loop`)
 
-### Story Import Design
+### Story Import Feature
 
-**Workflow**: User pastes story -> [LLM] Analyze -> [Service] Parse JSON -> Create project -> Create foundation -> Create characters -> Create world bible -> Create arcs -> Create planning -> Create manuscript
+**Workflow**: User pastes story -> LLM analyzes and extracts structured JSON -> Service validates -> Creates project + all entities in single transaction.
 
-**Key decisions**:
-1. One API call to start, async processing (`POST /projects/import-story` returns 202)
-2. Reuse existing `InferenceBackend` directly (like `ManuscriptReviewService`), no new job phase needed
-3. Single LLM call for stories under ~50K tokens, multi-step for larger texts
-4. Validate LLM output with Pydantic models
-5. **Transaction safety**: Each repo method commits individually. Solution: wrap in manual transaction or allow partial imports with recovery
-6. **Token management**: Need chunking for large stories. Consider first pass for metadata summary, second pass for detailed extraction
+**Entry**: `POST /projects/import-story` returns **201 Created** with `status: "completed"` or `status: "failed"`. Synchronous — HTTP request blocks.
 
-**New components needed**:
-- `app/services/story_import.py` - `StoryImportService` class
-- `app/schemas/story_import.py` - request/response schemas
-- `app/api/projects.py` - `POST /projects/import-story` endpoint
-- `runtime_prompts.py` - `build_import_analysis_request()` prompt builder
+**Service**: `StoryImportService` in `app/services/story_import.py`
+- `import_story(request)` — main entry point
+- `_create_project(request)` — creates new project or validates existing `project_id`
+- `_analyze_story(text, genre_hint, tone_hint)` — calls LLM via `InferenceBackend` directly
+- `_parse_llm_json(content)` — robust extraction: direct JSON, markdown fences, trailing/leading text
+- `_transactional_import(project_id, analysis)` — single raw SQLite connection with `BEGIN`, direct parameterized SQL (NOT repo wrapper methods)
+
+**Transaction Safety**: Uses a single `sqlite3.connect()` with `BEGIN` (not `BEGIN IMMEDIATE`), executes raw SQL directly without repo methods. All inserts use `ON CONFLICT DO UPDATE` for idempotent retries.
+
+**LLM Request**: `build_import_analysis_request()` in `app/services/runtime_prompts.py`
+- `temperature=0.1`, `max_tokens=16000` for deterministic JSON output
+- Story text truncated to 24,000 chars for single-pass analysis
+- Returns JSON matching `StoryImportAnalysis` schema
+
+**Error Handling**:
+- `StoryImportError(ValueError)` — caught, returns `status="failed"` response
+- `InferenceBackendError` — caught, returns `status="failed"` with error code
+- `pydantic.ValidationError` — caught, wrapped as `StoryImportError`
+
+**Components**:
+- `app/services/story_import.py` — `StoryImportService` class
+- `app/schemas/story_import.py` — `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis` (with POV/structure validators)
+- `app/api/projects.py` — `POST /projects/import-story` endpoint
+- `app/services/runtime_prompts.py` — `build_import_analysis_request()` prompt builder
+- `tests/test_story_import_service.py` — 12 test functions
