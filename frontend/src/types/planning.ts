@@ -89,3 +89,88 @@ export type ChapterPlanListResponse = PlanningListResponse<ChapterPlan>;
 export type ScenePlanListResponse = PlanningListResponse<ScenePlan>;
 export type ChapterPacketListResponse = PlanningListResponse<ChapterPacket>;
 export type PlanningDependencyListResponse = PlanningListResponse<PlanningDependency>;
+
+// Storyboard Card types
+
+export interface StoryboardCard {
+  card_id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  card_type: string;
+  column_id: string | null;
+  position: number;
+  tags: string[];
+  character_ids: string[];
+  dependencies: string[];
+  metadata: Record<string, unknown>;
+}
+
+// Create/Update request types
+
+export interface SequencePlanCreateRequest {
+  project_id: string;
+  sequence_id: string;
+  title: string;
+  summary?: string;
+  beat_ids?: string[];
+  chapter_ids?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface SequencePlanUpdateRequest {
+  title?: string;
+  summary?: string;
+  beat_ids?: string[];
+  chapter_ids?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface ChapterPacketCreateRequest {
+  project_id: string;
+  packet_id: string;
+  chapter_id: string;
+  included_reference_ids?: string[];
+  constraints?: string[];
+  scene_goals?: string[];
+  status?: string;
+}
+
+export interface ChapterPacketUpdateRequest {
+  included_reference_ids?: string[];
+  constraints?: string[];
+  scene_goals?: string[];
+  status?: string;
+}
+
+export interface StoryboardCardCreateRequest {
+  project_id: string;
+  card_id: string;
+  title: string;
+  content: string;
+  card_type?: string;
+  column_id?: string | null;
+  position?: number;
+  tags?: string[];
+  character_ids?: string[];
+  dependencies?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface StoryboardCardUpdateRequest {
+  title?: string;
+  content?: string;
+  card_type?: string;
+  column_id?: string | null;
+  position?: number;
+  tags?: string[];
+  character_ids?: string[];
+  dependencies?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface StoryboardCardReindexRequest {
+  card_ids: string[];
+}

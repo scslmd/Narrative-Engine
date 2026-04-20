@@ -24,7 +24,13 @@ import {
   getScenePlans,
   getPlanningDependencies,
   getChapterPackets,
+  createSequencePlan,
+  createChapterPacket,
 } from '../services/planning';
+import {
+  getStoryboardCards,
+  createStoryboardCard,
+} from '../services/storyboard';
 import {
   getArcCandidates,
   getArcSelections,
@@ -161,6 +167,12 @@ export function PlanningView() {
     enabled: Boolean(projectId) && activeTab === 'planning',
   });
 
+  const storyboardCardsQuery = useQuery({
+    queryKey: ['planning-storyboard-cards', projectId],
+    queryFn: () => getStoryboardCards(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
   const arcCandidatesQuery = useQuery({
     queryKey: ['arc-candidates', projectId],
     queryFn: () => getArcCandidates(projectId || ''),
@@ -274,6 +286,40 @@ export function PlanningView() {
     },
   });
 
+  const sequencePlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createSequencePlan>[1]) =>
+      createSequencePlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'sequence-plans', projectId] });
+    },
+  });
+
+  const chapterPacketCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createChapterPacket>[1]) =>
+      createChapterPacket(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-packets', projectId] });
+    },
+  });
+
+  const storyboardCardCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createStoryboardCard>[1]) =>
+      createStoryboardCard(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'storyboard-cards', projectId] });
+    },
+  });
+
+  const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
+  const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
+  const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
+  const [packetCreateOpen, setPacketCreateOpen] = useState(false);
+  const [packetCreateChapterId, setPacketCreateChapterId] = useState('');
+  const [cardCreateOpen, setCardCreateOpen] = useState(false);
+  const [cardCreateTitle, setCardCreateTitle] = useState('');
+  const [cardCreateContent, setCardCreateContent] = useState('');
+  const [cardCreateType, setCardCreateType] = useState('idea');
+
   if (!projectId) {
     return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
   }
@@ -291,6 +337,7 @@ export function PlanningView() {
   const scenePlans = scenePlansQuery.data ?? [];
   const dependencies = dependenciesQuery.data ?? [];
   const chapterPackets = chapterPacketsQuery.data ?? [];
+  const storyboardCards = storyboardCardsQuery.data ?? [];
 
   const arcCandidates = arcCandidatesQuery.data ?? [];
   const arcSelections = arcSelectionsQuery.data ?? [];
@@ -341,6 +388,56 @@ export function PlanningView() {
         {activeTab === 'planning' && (
           <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
             <Section title="Sequences" count={sequencePlans.length}>
+              <div className="flex justify-end mb-2">
+                {!sequenceCreateOpen ? (
+                  <button
+                    onClick={() => { setSequenceCreateOpen(true); setSequenceCreateTitle(''); setSequenceCreateSummary(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                    + New Sequence
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Sequence title"
+                      value={sequenceCreateTitle}
+                      onChange={(e) => setSequenceCreateTitle(e.target.value)}
+                      className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Summary (optional)"
+                      value={sequenceCreateSummary}
+                      onChange={(e) => setSequenceCreateSummary(e.target.value)}
+                      className={`text-sm px-2 py-1 rounded border w-48 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    />
+                    <button
+                      onClick={() => {
+                        if (!sequenceCreateTitle.trim()) return;
+                        const id = `seq-${Date.now()}`;
+                        void sequencePlanCreateMutation.mutateAsync({
+                          project_id: projectId || '',
+                          sequence_id: id,
+                          title: sequenceCreateTitle.trim(),
+                          summary: sequenceCreateSummary.trim() || undefined,
+                        }).then(() => {
+                          setSequenceCreateOpen(false);
+                          setSequenceCreateTitle('');
+                          setSequenceCreateSummary('');
+                        });
+                      }}
+                      disabled={!sequenceCreateTitle.trim()}
+                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+                    >
+                      Create
+                    </button>
+                    <button onClick={() => setSequenceCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
               {sequencePlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." isDark={isDark} />
               ) : sequencePlans.length === 0 ? (
@@ -413,6 +510,47 @@ export function PlanningView() {
             </Section>
 
             <Section title="Chapter Packets" count={chapterPackets.length}>
+              <div className="flex justify-end mb-2">
+                {!packetCreateOpen ? (
+                  <button
+                    onClick={() => { setPacketCreateOpen(true); setPacketCreateChapterId(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                    + New Packet
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Chapter ID"
+                      value={packetCreateChapterId}
+                      onChange={(e) => setPacketCreateChapterId(e.target.value)}
+                      className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    />
+                    <button
+                      onClick={() => {
+                        if (!packetCreateChapterId.trim()) return;
+                        const id = `pkt-${Date.now()}`;
+                        void chapterPacketCreateMutation.mutateAsync({
+                          project_id: projectId || '',
+                          packet_id: id,
+                          chapter_id: packetCreateChapterId.trim(),
+                        }).then(() => {
+                          setPacketCreateOpen(false);
+                          setPacketCreateChapterId('');
+                        });
+                      }}
+                      disabled={!packetCreateChapterId.trim()}
+                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+                    >
+                      Create
+                    </button>
+                    <button onClick={() => setPacketCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
               {chapterPacketsQuery.isLoading ? (
                 <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." isDark={isDark} />
               ) : chapterPackets.length === 0 ? (
@@ -423,6 +561,102 @@ export function PlanningView() {
                     <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                       <div className="font-medium">{packet.chapter_id}</div>
                       <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            <Section title="Storyboard Cards" count={storyboardCards.length}>
+              <div className="flex justify-end mb-2">
+                {!cardCreateOpen ? (
+                  <button
+                    onClick={() => { setCardCreateOpen(true); setCardCreateTitle(''); setCardCreateContent(''); setCardCreateType('idea'); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-purple-950 text-purple-300 hover:bg-purple-900' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
+                  >
+                    + New Card
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Card title"
+                        value={cardCreateTitle}
+                        onChange={(e) => setCardCreateTitle(e.target.value)}
+                        className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                      />
+                      <select
+                        value={cardCreateType}
+                        onChange={(e) => setCardCreateType(e.target.value)}
+                        className={`text-sm px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                      >
+                        <option value="idea">Idea</option>
+                        <option value="scene">Scene</option>
+                        <option value="character">Character</option>
+                        <option value="location">Location</option>
+                        <option value="plot">Plot Point</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          if (!cardCreateTitle.trim()) return;
+                          const id = `card-${Date.now()}`;
+                          void storyboardCardCreateMutation.mutateAsync({
+                            project_id: projectId || '',
+                            card_id: id,
+                            title: cardCreateTitle.trim(),
+                            content: cardCreateContent.trim(),
+                            card_type: cardCreateType,
+                          }).then(() => {
+                            setCardCreateOpen(false);
+                            setCardCreateTitle('');
+                            setCardCreateContent('');
+                            setCardCreateType('idea');
+                          });
+                        }}
+                        disabled={!cardCreateTitle.trim()}
+                        className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                      <button onClick={() => setCardCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                        Cancel
+                      </button>
+                    </div>
+                    <textarea
+                      placeholder="Card content (optional)"
+                      value={cardCreateContent}
+                      onChange={(e) => setCardCreateContent(e.target.value)}
+                      rows={2}
+                      className={`text-sm px-2 py-1 rounded border resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    />
+                  </div>
+                )}
+              </div>
+              {storyboardCardsQuery.isLoading ? (
+                <WorkspaceStatus title="Loading storyboard cards" detail="Fetching storyboard cards..." isDark={isDark} />
+              ) : storyboardCards.length === 0 ? (
+                <EmptyState text="No storyboard cards yet. Create cards to capture ideas, scenes, and plot points." />
+              ) : (
+                <div className="space-y-2">
+                  {storyboardCards.map((card) => (
+                    <div key={card.card_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium">{card.title}</div>
+                          {card.content && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{card.content}</p>}
+                          {card.tags.length > 0 && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {card.tags.map((tag) => (
+                                <span key={tag} className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${isDark ? 'bg-purple-950 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
+                          {card.card_type}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>

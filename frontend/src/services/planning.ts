@@ -15,6 +15,10 @@ import type {
   ScenePlan,
   ChapterPacket,
   PlanningDependency,
+  SequencePlanCreateRequest,
+  SequencePlanUpdateRequest,
+  ChapterPacketCreateRequest,
+  ChapterPacketUpdateRequest,
 } from '../types/planning';
 import api from '../lib/api';
 
@@ -217,4 +221,90 @@ export function getDownstreamDependencies(
   objectId: string,
 ): PlanningDependency[] {
   return dependencies.filter((dep) => dep.upstream_id === objectId);
+}
+
+// ============================================================================
+// Sequence Plan mutations
+// ============================================================================
+
+/**
+ * Create a new sequence plan
+ */
+export async function createSequencePlan(
+  projectId: string,
+  data: SequencePlanCreateRequest,
+): Promise<SequencePlan> {
+  const response = await api.post('/story-development/planning/sequence-plans', data, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create sequence plan: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing sequence plan
+ */
+export async function updateSequencePlan(
+  sequenceId: string,
+  projectId: string,
+  data: SequencePlanUpdateRequest,
+): Promise<SequencePlan> {
+  const response = await api.patch(
+    `/story-development/planning/sequence-plans/${sequenceId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update sequence plan ${sequenceId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+// ============================================================================
+// Chapter Packet mutations
+// ============================================================================
+
+/**
+ * Create a new chapter packet
+ */
+export async function createChapterPacket(
+  projectId: string,
+  data: ChapterPacketCreateRequest,
+): Promise<ChapterPacket> {
+  const response = await api.post('/story-development/planning/chapter-packets', data, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create chapter packet: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing chapter packet
+ */
+export async function updateChapterPacket(
+  packetId: string,
+  projectId: string,
+  data: ChapterPacketUpdateRequest,
+): Promise<ChapterPacket> {
+  const response = await api.patch(
+    `/story-development/planning/chapter-packets/${packetId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update chapter packet ${packetId}: ${response.status}`);
+  }
+
+  return response.data;
 }
