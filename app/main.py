@@ -395,7 +395,7 @@ def build_app() -> FastAPI:
     if settings.api_key:
         @app.middleware("http")
         async def versioned_api_key_gate(request: Request, call_next):
-            if request.url.path.startswith('/v1'):
+            if request.url.path.startswith('/v1') or request.url.path == '/projects/import-story':
                 api_key = request.headers.get('X-API-Key')
                 if api_key is None:
                     return JSONResponse(

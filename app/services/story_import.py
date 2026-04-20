@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -12,7 +13,9 @@ from pydantic import ValidationError
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
+from ..schemas.enums import PovMode, StoryStructure
 from ..schemas.inference import InferenceRequest
+from ..schemas.manifest import Manifest, ManifestConfig
 from ..schemas.story_import import (
     StoryImportAnalysis,
     StoryImportArc,
@@ -56,13 +59,15 @@ class StoryImportService:
         3. Call LLM to analyze and extract structured data
         4. Validate LLM output against StoryImportAnalysis schema
         5. Create all entities (foundation, characters, world bible, arcs)
-        6. Return response
+        6. Update manifest with LLM metadata
+        7. Return response
         """
         project_id = ""
         try:
             project_id = self._create_project(request)
             analysis = self._analyze_story(request.story_text, request.genre, request.tone)
             self._transactional_import(project_id, analysis)
+            self._update_manifest(project_id, analysis)
             return StoryImportResponse(
                 project_id=project_id,
                 status="completed",
@@ -86,18 +91,88 @@ class StoryImportService:
 
     def _create_project(self, request: StoryImportRequest) -> str:
         """Create project if needed, return project_id."""
+        import sqlite3
+
         from ..schemas.projects import ProjectCreateRequest
 
         if request.project_id:
             try:
                 self._project_service.get_project(request.project_id)
-            except Exception:
+            except sqlite3.Error as exc:
+                logger.error("DB error checking project %s: %s", request.project_id, exc)
+                raise StoryImportError(f"Database error while verifying project: {exc}") from exc
+            except FileNotFoundError:
                 raise StoryImportError(f"Project not found: {request.project_id}")
             return request.project_id
 
         create_request = ProjectCreateRequest(project_name=request.project_name)
         response = self._project_service.create_project(create_request)
         return response.project_id
+
+    def _update_manifest(self, project_id: str, analysis: StoryImportAnalysis) -> None:
+        """Update manifest.json with LLM-extracted metadata (B4/M3)."""
+        project_dir = self._project_service.root_dir / "data" / "projects" / project_id
+        manifest_path = project_dir / "manifest.json"
+        if not manifest_path.exists():
+            logger.warning("Manifest not found for project %s, skipping LLM metadata update", project_id)
+            return
+
+        try:
+            manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("Failed to read manifest for project %s: %s", project_id, exc)
+            return
+
+        # Normalize genre from LLM to title case (e.g., "fantasy" -> "Fantasy")
+        genre = analysis.genre.strip().title() if analysis.genre else None
+        tone = analysis.tone.strip() if analysis.tone else None
+
+        if "config" not in manifest_data:
+            manifest_data["config"] = {}
+
+        if genre:
+            manifest_data["config"]["genre"] = genre
+        if tone:
+            manifest_data["config"]["tone_profile"] = tone
+
+        # Validate and set POV
+        try:
+            pov_value = analysis.pov.strip() if analysis.pov else None
+            if pov_value:
+                # Try to match against known PovMode values
+                for mode in PovMode:
+                    if mode.value == pov_value or mode.name == pov_value:
+                        manifest_data["config"]["pov"] = mode.value
+                        break
+        except Exception:
+            logger.warning("Invalid POV value in analysis, skipping")
+
+        # Validate and set story structure
+        try:
+            structure_value = analysis.story_structure.strip() if analysis.story_structure else None
+            if structure_value:
+                for structure in StoryStructure:
+                    if structure.value == structure_value or structure.name == structure_value:
+                        manifest_data["config"]["story_structure"] = structure.value
+                        break
+        except Exception:
+            logger.warning("Invalid story structure value in analysis, skipping")
+
+        # Set premise text
+        if analysis.premise:
+            manifest_data["premise_text"] = analysis.premise
+
+        # Set constraints from analysis
+        if analysis.narrative_constraints:
+            manifest_data["constraints"] = [c.strip() for c in analysis.narrative_constraints if c.strip()]
+
+        try:
+            manifest_path.write_text(
+                json.dumps(manifest_data, ensure_ascii=True, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            logger.warning("Failed to write manifest for project %s: %s", project_id, exc)
 
     def _analyze_story(self, story_text: str, genre_hint: str | None, tone_hint: str | None) -> StoryImportAnalysis:
         """Call LLM to analyze story and extract structured data."""
@@ -226,6 +301,17 @@ class StoryImportService:
                 tone_direction, target_audience, narrative_constraints_json, complexity_level,
                 success_definition, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(project_id, revision_number) DO UPDATE SET
+                premise = excluded.premise,
+                logline = excluded.logline,
+                thematic_spine = excluded.thematic_spine,
+                emotional_promise = excluded.emotional_promise,
+                tone_direction = excluded.tone_direction,
+                target_audience = excluded.target_audience,
+                narrative_constraints_json = excluded.narrative_constraints_json,
+                complexity_level = excluded.complexity_level,
+                success_definition = excluded.success_definition,
+                updated_at = excluded.updated_at
             """,
             (
                 project_id,
@@ -259,8 +345,8 @@ class StoryImportService:
         now: str,
     ) -> None:
         """Insert all characters with ON CONFLICT for idempotency."""
-        for idx, char_data in enumerate(analysis.characters):
-            char_id = f"char-{char_data.name.lower().replace(' ', '-')}-{idx:03d}"
+        for char_data in analysis.characters:
+            char_id = _hash_id("character", char_data.name)
             contradictions_json = json.dumps(char_data.contradictions or [], ensure_ascii=True, sort_keys=True)
             secrets_json = json.dumps(char_data.secrets or [], ensure_ascii=True, sort_keys=True)
             values_json = json.dumps(char_data.values or [], ensure_ascii=True, sort_keys=True)
@@ -384,8 +470,8 @@ class StoryImportService:
         now: str,
     ) -> None:
         """Insert all arc candidates with ON CONFLICT for idempotency."""
-        for idx, arc_data in enumerate(analysis.story_arcs):
-            arc_id = f"arc-{arc_data.name.lower().replace(' ', '-')}-{idx:03d}"
+        for arc_data in analysis.story_arcs:
+            arc_id = _hash_id("arc", arc_data.name)
             stage_map_json = json.dumps(arc_data.stage_map or [], ensure_ascii=True, sort_keys=True)
             fit_notes_json = json.dumps([], ensure_ascii=True, sort_keys=True)
             tags_json = json.dumps(arc_data.tags or [], ensure_ascii=True, sort_keys=True)
@@ -417,6 +503,17 @@ class StoryImportService:
                     now,
                 ),
             )
+
+
+def _hash_id(prefix: str, value: str) -> str:
+    """Generate a stable, order-independent ID from a string value.
+
+    Uses SHA-256 to produce a deterministic ID regardless of input ordering.
+    Prefix format: import-{prefix}-{hash}
+    """
+    raw = f"import-{prefix}-{value.strip().lower()}"
+    short_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+    return f"import-{prefix}-{short_hash}"
 
 
 def _to_none(value: str | None) -> str | None:

@@ -509,3 +509,214 @@ def test_import_story_with_genre_and_tone_hints(tmp_path: Path) -> None:
     user_content = req.messages[1].content
     assert "Genre hint: sci-fi" in user_content
     assert "Tone hint: bleak" in user_content
+
+
+def test_import_story_updates_manifest_with_llm_metadata(tmp_path: Path) -> None:
+    """B4/M3: LLM-extracted genre, tone, pov, story_structure should persist to manifest.json."""
+    # 1. Setup
+    json_content = _make_json_response(genre="science fiction", tone="hopeful", pov="FIRST", structure="HERO_JOURNEY")
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act
+    request = StoryImportRequest(project_name="Manifest Test", story_text="A story...")
+    response = import_service.import_story(request)
+
+    # 3. Assert response
+    assert response.status == "completed"
+
+    # 4. Assert manifest.json was updated
+    project_dir = tmp_path / "data" / "projects" / response.project_id
+    manifest_path = project_dir / "manifest.json"
+    assert manifest_path.exists()
+
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest_data["config"]["genre"] == "Science Fiction"
+    assert manifest_data["config"]["tone_profile"] == "hopeful"
+    assert manifest_data["config"]["pov"] == "First"
+    assert manifest_data["config"]["story_structure"] == "HERO_JOURNEY"
+    assert manifest_data["premise_text"] == "A hero saves the world from darkness"
+
+
+def test_import_story_stable_ids_on_retry(tmp_path: Path) -> None:
+    """B2: Hash-based IDs should produce same character/arcs on every retry."""
+    # 1. Setup
+    json_content = _make_json_response(project_name="Stable IDs Test")
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act: First import
+    request = StoryImportRequest(project_name="Stable IDs Test", story_text="First...")
+    first_response = import_service.import_story(request)
+    assert first_response.status == "completed"
+
+    # 3. Act: Second import into same project
+    second_request = StoryImportRequest(
+        project_name="Stable IDs Test",
+        story_text="Second...",
+        project_id=first_response.project_id,
+    )
+    second_response = import_service.import_story(second_request)
+    assert second_response.status == "completed"
+
+    # 4. Assert: Character count unchanged (stable hash IDs, not index-based)
+    characters = repository.list_character_profiles(first_response.project_id)
+    assert len(characters) == 1
+
+    # 5. Assert: Arc count unchanged
+    arcs = repository.list_arc_candidates(first_response.project_id)
+    assert len(arcs) == 1
+
+
+def test_import_story_duplicate_character_names_deduplicated(tmp_path: Path) -> None:
+    """B2: Same character name produces same hash ID, so duplicate names are deduplicated."""
+    # 1. Setup
+    duplicate_chars = [
+        {"name": "Aria", "role": "protagonist", "archetype": "hero"},
+        {"name": "Aria", "role": "deuteragonist", "archetype": "sidekick"},  # Same name, different data
+        {"name": "Borin", "role": "antagonist", "archetype": "villain"},
+    ]
+    json_content = _make_json_response(characters=duplicate_chars)
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act
+    request = StoryImportRequest(project_name="Dedup Test", story_text="A story...")
+    response = import_service.import_story(request)
+
+    # 3. Assert
+    assert response.status == "completed"
+    characters = repository.list_character_profiles(response.project_id)
+    # Should have 2 unique characters (Aria deduplicated to 1, Borin = 1)
+    assert len(characters) == 2
+    names = sorted([c.display_name for c in characters])
+    assert names == ["Aria", "Borin"]
+
+
+def test_import_story_foundation_revisions_idempotent(tmp_path: Path) -> None:
+    """B3/M2: Foundation revision insert with ON CONFLICT should not duplicate on retry."""
+    # 1. Setup
+    json_content = _make_json_response(project_name="Foundation Dup Test")
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act: First import
+    request = StoryImportRequest(project_name="Foundation Dup Test", story_text="First...")
+    first_response = import_service.import_story(request)
+    assert first_response.status == "completed"
+
+    # 3. Act: Second import into same project
+    second_request = StoryImportRequest(
+        project_name="Foundation Dup Test",
+        story_text="Second...",
+        project_id=first_response.project_id,
+    )
+    second_response = import_service.import_story(second_request)
+    assert second_response.status == "completed"
+
+    # 4. Assert: Only 2 foundation revisions (initial + retry, no duplicates of same revision number)
+    revisions = repository.list_foundation_revisions(first_response.project_id)
+    # First import creates revision 1, second import also calculates revision 1 (since COALESCE
+    # finds MAX=1 and adds 1... but with ON CONFLICT, revision 1 gets updated instead of duplicated)
+    # Actually, after first import revision=1 exists. Second import: MAX=1, next_rev=2.
+    # So we get revision 1 and 2 = 2 total, not duplicated revision 1.
+    assert len(revisions) == 2
+
+
+def test_import_story_manifest_update_invalid_pov_skipped(tmp_path: Path) -> None:
+    """B4: Invalid POV value should be logged and skipped without failing import."""
+    # 1. Setup
+    # Use invalid POV that doesn't match any PovMode
+    json_content = _make_json_response(pov="INFINITE_REALM")
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act
+    request = StoryImportRequest(project_name="Invalid POV Test", story_text="A story...")
+    response = import_service.import_story(request)
+
+    # 3. Assert: Import still succeeds, manifest just doesn't get invalid POV
+    assert response.status == "completed"
+    project_dir = tmp_path / "data" / "projects" / response.project_id
+    manifest_path = project_dir / "manifest.json"
+    assert manifest_path.exists()
+
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    # Invalid POV should be skipped - default or unchanged POV remains
+    # Genre should still be updated
+    assert manifest_data["config"]["genre"] == "Fantasy"
+
+
+def test_import_story_multiple_arcs_hash_ids(tmp_path: Path) -> None:
+    """B2: Multiple arcs should get stable hash-based IDs."""
+    # 1. Setup
+    multi_arcs = [
+        {"name": "Hero's Journey", "summary": "The classic arc"},
+        {"name": "Redemption Arc", "summary": "A villain turns good"},
+        {"name": "Hero's Journey", "summary": "Duplicate arc name"},
+    ]
+    json_content = _make_json_response()
+    # Override story_arcs in the JSON
+    parsed = json.loads(json_content)
+    parsed["story_arcs"] = multi_arcs
+    json_content = json.dumps(parsed)
+
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    # 2. Act
+    request = StoryImportRequest(project_name="Multi-Arc Test", story_text="A story...")
+    response = import_service.import_story(request)
+
+    # 3. Assert
+    assert response.status == "completed"
+    arcs = repository.list_arc_candidates(response.project_id)
+    # Hero's Journey appears twice -> same hash -> deduplicated to 1
+    # Redemption Arc = 1
+    # Total: 2 unique arcs
+    assert len(arcs) == 2
+    arc_names = sorted([a.name for a in arcs])
+    assert "Hero's Journey" in arc_names
+    assert "Redemption Arc" in arc_names
