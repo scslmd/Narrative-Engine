@@ -84,7 +84,7 @@ Still being built:
 
 Current verified baseline:
 
-- `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped` (18 new tests from story import feature + bug fixes)
+- `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing stub inference / test isolation issues)
 
 ### Frontend
 
@@ -116,7 +116,7 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped`
+- `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed

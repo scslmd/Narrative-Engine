@@ -15,6 +15,7 @@ from app.services.job_manager import JobManager
 from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
 from app.services.step_records import StepRecordService
+from app.persistence.steps import stable_hash_payload
 
 
 def _build_test_app(*, job_manager: JobManager, checker_manager: RoleModelCheckManager, reports_root: Path) -> FastAPI:
@@ -95,9 +96,9 @@ def test_checker_lineage_and_steps_endpoints_return_persisted_rows_in_ascending_
         critic_profile="minimal_context",
         backend_name="test-runtime",
         backend_version="v1",
-        input_payload={"role": "critic"},
-        output_payload={"ok": True},
-        prompt_payload={"step": "critic"},
+        input_hash=stable_hash_payload({"role": "critic"}) if {"role": "critic"} else None,
+        output_hash=stable_hash_payload({"ok": True}) if {"ok": True} else None,
+        prompt_hash=stable_hash_payload({"step": "critic"}) if {"step": "critic"} else None,
         input_artifact_refs=[],
         output_artifact_refs=["checker_result:critic"],
         started_at=now,
@@ -121,9 +122,9 @@ def test_checker_lineage_and_steps_endpoints_return_persisted_rows_in_ascending_
         critic_profile=None,
         backend_name="test-runtime",
         backend_version="v1",
-        input_payload={"role": "architect"},
-        output_payload={"ok": True},
-        prompt_payload={"step": "architect"},
+        input_hash=stable_hash_payload({"role": "architect"}) if {"role": "architect"} else None,
+        output_hash=stable_hash_payload({"ok": True}) if {"ok": True} else None,
+        prompt_hash=stable_hash_payload({"step": "architect"}) if {"step": "architect"} else None,
         input_artifact_refs=[],
         output_artifact_refs=["checker_result:architect"],
         started_at=now,
@@ -144,7 +145,7 @@ def test_checker_lineage_and_steps_endpoints_return_persisted_rows_in_ascending_
         artifact_role="checker_result",
         artifact_kind="json",
         path="reports/a.json",
-        content_hash_source="a",
+        content_hash="a",
         status="CANONICAL",
         validation_state="PASSED",
         produced_at=now,
@@ -164,7 +165,7 @@ def test_checker_lineage_and_steps_endpoints_return_persisted_rows_in_ascending_
         artifact_role="checker_result",
         artifact_kind="json",
         path="reports/b.json",
-        content_hash_source="b",
+        content_hash="b",
         status="CANONICAL",
         validation_state="PASSED",
         produced_at=now,

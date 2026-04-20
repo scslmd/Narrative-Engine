@@ -126,8 +126,13 @@ class StoryboardCardService:
         self,
         card_id: str,
         position: int,
+        column_id: str | None = None,
     ) -> StoryboardCardRecord:
-        self.repository.update_storyboard_card_position(card_id, position)
+        self.repository.update_storyboard_card_position(
+            card_id=card_id,
+            column_id=column_id,
+            position=position,
+        )
         return self.get_card(card_id)
 
     def update_card_content(
@@ -161,7 +166,7 @@ class StoryboardCardService:
     ) -> list[StoryboardCardRecord]:
         results: list[StoryboardCardRecord] = []
         for idx, cid in enumerate(card_ids):
-            results.append(self.update_card_position(cid, idx))
+            results.append(self.update_card_position(cid, idx, column_id=column_id))
         return results
 
     def _validate_card_input(

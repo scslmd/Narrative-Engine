@@ -36,6 +36,7 @@ from app.schemas import (
     StoryFlowDefinition,
     StoryFlowStage,
     StorySuggestionLifecycleState,
+    StoryboardCard,
     CharacterProfile,
     RelationshipEdge,
     WorldBibleEntry,
@@ -71,6 +72,21 @@ from app.services.story_knowledge import (
     StoryKnowledgeNotFoundError,
     StoryKnowledgeService,
     StoryKnowledgeValidationError,
+)
+from app.services.chapter_packets import (
+    ChapterPacketNotFoundError,
+    ChapterPacketService,
+    ChapterPacketValidationError,
+)
+from app.services.sequence_plans import (
+    SequencePlanNotFoundError,
+    SequencePlanService,
+    SequencePlanValidationError,
+)
+from app.services.storyboard_cards import (
+    StoryboardCardNotFoundError,
+    StoryboardCardService,
+    StoryboardCardValidationError,
 )
 
 
@@ -404,6 +420,91 @@ class FoundationWriteResponse(FoundationReadResponse):
     created_revision: FoundationRevision
 
 
+# ============================================================================
+# Storyboard Card schemas
+# ============================================================================
+
+class StoryboardCardListResponse(StrictModel):
+    project_id: str
+    items: list[StoryboardCard] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class StoryboardCardCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    card_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=50000)
+    card_type: str = Field(default="idea", min_length=1, max_length=20)
+    column_id: str | None = Field(None, max_length=100, pattern=r'^[a-zA-Z0-9_-]+$')
+    position: int = Field(default=0, ge=0)
+    tags: list[str] = Field(default_factory=list)
+    character_ids: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class StoryboardCardUpdateRequest(StrictModel):
+    title: str | None = Field(None, min_length=1, max_length=500)
+    content: str | None = Field(None, min_length=1, max_length=50000)
+    card_type: str | None = Field(None, min_length=1, max_length=20)
+    column_id: str | None = Field(None, max_length=100, pattern=r'^[a-zA-Z0-9_-]+$')
+    position: int | None = Field(None, ge=0)
+    tags: list[str] | None = None
+    character_ids: list[str] | None = None
+    dependencies: list[str] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class StoryboardCardReindexRequest(StrictModel):
+    card_ids: list[str] = Field(..., min_length=1)
+
+
+# ============================================================================
+# Chapter Packet schemas (write/update)
+# ============================================================================
+
+class ChapterPacketCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    packet_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    chapter_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    included_reference_ids: list[str] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+    scene_goals: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", max_length=30)
+
+
+class ChapterPacketUpdateRequest(StrictModel):
+    included_reference_ids: list[str] | None = None
+    constraints: list[str] | None = None
+    scene_goals: list[str] | None = None
+    status: str | None = Field(None, max_length=30)
+
+
+# ============================================================================
+# Sequence Plan schemas (write/update)
+# ============================================================================
+
+class SequencePlanCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    sequence_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    beat_ids: list[str] = Field(default_factory=list)
+    chapter_ids: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+class SequencePlanUpdateRequest(StrictModel):
+    title: str | None = Field(None, min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    beat_ids: list[str] | None = None
+    chapter_ids: list[str] | None = None
+    status: str | None = Field(None, max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
 # Character schemas
 class CharacterProfileCreateRequest(StrictModel):
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
@@ -541,6 +642,9 @@ def build_story_development_router(
     braindump_service = BrainDumpService(repository)
     foundation_service = FoundationService(repository)
     story_knowledge_service = StoryKnowledgeService(repository)
+    chapter_packet_service = ChapterPacketService(repository)
+    sequence_plan_service = SequencePlanService(repository)
+    storyboard_card_service = StoryboardCardService(repository)
 
     @router.get("/branches", response_model=StoryBranchListResponse)
     def list_story_branches(project_id: str) -> StoryBranchListResponse:
@@ -1787,12 +1891,371 @@ def build_story_development_router(
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    # ============================================================================
+    # Storyboard Card Endpoints
+    # ============================================================================
+
+    @router.get("/storyboard/cards", response_model=StoryboardCardListResponse)
+    def list_storyboard_cards(
+        project_id: str,
+        card_type: str | None = None,
+        column_id: str | None = None,
+        tag: str | None = None,
+    ) -> StoryboardCardListResponse:
+        """List storyboard cards for a project with optional filters."""
+        try:
+            from app.services.storyboard_cards import CardFilterOptions
+            filter_opts = None
+            if card_type or column_id or tag:
+                filter_opts = CardFilterOptions(
+                    card_type=card_type,
+                    column_id=column_id,
+                    tag=tag,
+                )
+            items = storyboard_card_service.list_cards(project_id, filter_options=filter_opts)
+        except StoryboardCardValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return StoryboardCardListResponse(
+            project_id=project_id,
+            items=[_card_to_schema(c) for c in items],
+            meta={"ordered_by": "position_asc"},
+        )
+
+    @router.get("/storyboard/cards/{card_id}", response_model=StoryboardCard)
+    def get_storyboard_card(card_id: str, project_id: str) -> StoryboardCard:
+        """Get a specific storyboard card."""
+        try:
+            card = storyboard_card_service.get_card(card_id)
+            return _card_to_schema(card)
+        except StoryboardCardNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Storyboard card not found.") from exc
+
+    @router.post("/storyboard/cards", response_model=StoryboardCard, status_code=201)
+    def create_storyboard_card(payload: StoryboardCardCreateRequest) -> StoryboardCard:
+        """Create a new storyboard card."""
+        try:
+            card = storyboard_card_service.create_card(
+                project_id=payload.project_id,
+                card_id=payload.card_id,
+                title=payload.title,
+                content=payload.content,
+                card_type=payload.card_type,
+                column_id=payload.column_id,
+                position=payload.position,
+                tags=payload.tags,
+                character_ids=payload.character_ids,
+                dependencies=payload.dependencies,
+                metadata=payload.metadata,
+            )
+            return _card_to_schema(card)
+        except StoryboardCardValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/storyboard/cards/{card_id}", response_model=StoryboardCard)
+    def update_storyboard_card(
+        card_id: str,
+        project_id: str,
+        payload: StoryboardCardUpdateRequest,
+    ) -> StoryboardCard:
+        """Update a storyboard card."""
+        try:
+            existing = storyboard_card_service.get_card(card_id)
+            if existing.project_id != project_id:
+                raise StoryboardCardNotFoundError(card_id)
+            card = storyboard_card_service.update_card_content(
+                card_id=card_id,
+                title=payload.title,
+                content=payload.content,
+                card_type=payload.card_type,
+                tags=payload.tags,
+                character_ids=payload.character_ids,
+                dependencies=payload.dependencies,
+                metadata=payload.metadata,
+            )
+            return _card_to_schema(card)
+        except StoryboardCardNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Storyboard card not found.") from exc
+        except StoryboardCardValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.put("/storyboard/cards/{card_id}", response_model=StoryboardCard)
+    def upsert_storyboard_card(
+        card_id: str,
+        project_id: str,
+        payload: StoryboardCardCreateRequest,
+    ) -> StoryboardCard:
+        """Create or update a storyboard card."""
+        try:
+            card = storyboard_card_service.upsert_card(
+                project_id=payload.project_id,
+                card_id=card_id,
+                title=payload.title,
+                content=payload.content,
+                card_type=payload.card_type,
+                column_id=payload.column_id,
+                position=payload.position,
+                tags=payload.tags,
+                character_ids=payload.character_ids,
+                dependencies=payload.dependencies,
+                metadata=payload.metadata,
+            )
+            return _card_to_schema(card)
+        except StoryboardCardValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.delete("/storyboard/cards/{card_id}", status_code=204)
+    def delete_storyboard_card(card_id: str, project_id: str) -> None:
+        """Delete a storyboard card."""
+        try:
+            card = storyboard_card_service.get_card(card_id)
+            if card.project_id != project_id:
+                raise StoryboardCardNotFoundError(card_id)
+            storyboard_card_service.delete_card(card_id)
+        except StoryboardCardNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Storyboard card not found.") from exc
+
+    @router.put("/storyboard/cards/{column_id}/reindex", response_model=StoryboardCardListResponse)
+    def reindex_storyboard_column(
+        column_id: str,
+        project_id: str,
+        payload: StoryboardCardReindexRequest,
+    ) -> StoryboardCardListResponse:
+        """Reindex cards within a column."""
+        try:
+            results = storyboard_card_service.reindex_column(
+                project_id=project_id,
+                column_id=column_id,
+                card_ids=payload.card_ids,
+            )
+        except StoryboardCardNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Storyboard card not found.") from exc
+        except StoryboardCardValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return StoryboardCardListResponse(
+            project_id=project_id,
+            items=[_card_to_schema(c) for c in results],
+            meta={"ordered_by": "position_asc"},
+        )
+
+    # ============================================================================
+    # Chapter Packet Write Endpoints
+    # ============================================================================
+
+    @router.post("/planning/chapter-packets", response_model=ChapterPacket, status_code=201)
+    def create_chapter_packet(payload: ChapterPacketCreateRequest) -> ChapterPacket:
+        """Create a new chapter packet."""
+        try:
+            packet = chapter_packet_service.register_packet(
+                project_id=payload.project_id,
+                packet_id=payload.packet_id,
+                chapter_id=payload.chapter_id,
+                included_reference_ids=payload.included_reference_ids,
+                constraints=payload.constraints,
+                scene_goals=payload.scene_goals,
+                status=payload.status,
+            )
+            return _packet_to_schema(packet)
+        except ChapterPacketValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/planning/chapter-packets/{packet_id}", response_model=ChapterPacket)
+    def update_chapter_packet(
+        packet_id: str,
+        project_id: str,
+        payload: ChapterPacketUpdateRequest,
+    ) -> ChapterPacket:
+        """Update a chapter packet."""
+        try:
+            try:
+                existing = chapter_packet_service.get_packet(packet_id)
+            except ChapterPacketNotFoundError:
+                raise HTTPException(status_code=404, detail="Chapter packet not found.")
+            except KeyError:
+                raise HTTPException(status_code=404, detail="Chapter packet not found.")
+            if existing.project_id != project_id:
+                raise ChapterPacketNotFoundError(packet_id)
+            
+            included_reference_ids = (
+                payload.included_reference_ids
+                if payload.included_reference_ids is not None
+                else list(existing.included_reference_ids)
+            )
+            constraints = (
+                payload.constraints
+                if payload.constraints is not None
+                else list(existing.constraints)
+            )
+            scene_goals = (
+                payload.scene_goals
+                if payload.scene_goals is not None
+                else list(existing.scene_goals)
+            )
+            status = payload.status if payload.status is not None else existing.status
+            
+            packet = chapter_packet_service.register_packet(
+                project_id=existing.project_id,
+                packet_id=existing.packet_id,
+                chapter_id=existing.chapter_id,
+                included_reference_ids=included_reference_ids,
+                constraints=constraints,
+                scene_goals=scene_goals,
+                status=status,
+            )
+            return _packet_to_schema(packet)
+        except ChapterPacketNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Chapter packet not found.") from exc
+        except ChapterPacketValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # ============================================================================
+    # Sequence Plan Write Endpoints
+    # ============================================================================
+
+    @router.post("/planning/sequence-plans", response_model=SequencePlan, status_code=201)
+    def create_sequence_plan(payload: SequencePlanCreateRequest) -> SequencePlan:
+        """Create a new sequence plan."""
+        try:
+            plan = sequence_plan_service.register_plan(
+                project_id=payload.project_id,
+                sequence_id=payload.sequence_id,
+                title=payload.title,
+                summary=payload.summary,
+                beat_ids=payload.beat_ids,
+                chapter_ids=payload.chapter_ids,
+                status=payload.status,
+                position=payload.position,
+            )
+            return _sequence_to_schema(plan)
+        except SequencePlanValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/planning/sequence-plans/{sequence_id}", response_model=SequencePlan)
+    def update_sequence_plan(
+        sequence_id: str,
+        project_id: str,
+        payload: SequencePlanUpdateRequest,
+    ) -> SequencePlan:
+        """Update a sequence plan."""
+        try:
+            try:
+                existing = sequence_plan_service.get_plan(sequence_id)
+            except SequencePlanNotFoundError:
+                raise HTTPException(status_code=404, detail="Sequence plan not found.")
+            except KeyError:
+                raise HTTPException(status_code=404, detail="Sequence plan not found.")
+            if existing.project_id != project_id:
+                raise SequencePlanNotFoundError(sequence_id)
+            
+            beat_ids = payload.beat_ids if payload.beat_ids is not None else list(existing.beat_ids)
+            chapter_ids = payload.chapter_ids if payload.chapter_ids is not None else list(existing.chapter_ids)
+            title = payload.title if payload.title is not None else existing.title
+            summary = payload.summary if payload.summary is not None else existing.summary
+            status = payload.status if payload.status is not None else existing.status
+            position = payload.position if payload.position is not None else existing.position
+            
+            plan = sequence_plan_service.register_plan(
+                project_id=existing.project_id,
+                sequence_id=existing.sequence_id,
+                title=title,
+                summary=summary,
+                beat_ids=beat_ids,
+                chapter_ids=chapter_ids,
+                status=status,
+                position=position,
+            )
+            return _sequence_to_schema(plan)
+        except SequencePlanNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Sequence plan not found.") from exc
+        except SequencePlanValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     return router
 
 
 # ============================================================================
 # Brain Dump Helper Functions (module-level for route access)
 # ============================================================================
+
+# ============================================================================
+# Storyboard Card, Chapter Packet, and Sequence Plan Helper Functions
+# ============================================================================
+
+def _card_to_schema(card) -> StoryboardCard:
+    from app.persistence.story_development import StoryboardCardRecord as _Record
+    if isinstance(card, _Record):
+        return StoryboardCard(
+            card_id=card.card_id,
+            project_id=card.project_id,
+            title=card.title,
+            content=card.content,
+            card_type=card.card_type,
+            column_id=card.column_id,
+            position=card.position,
+            tags=list(card.tags) if card.tags else [],
+            character_ids=list(card.character_ids) if card.character_ids else [],
+            dependencies=list(card.dependencies) if card.dependencies else [],
+            metadata=card.metadata or {},
+        )
+    return StoryboardCard(
+        card_id=card.card_id,
+        project_id=card.project_id,
+        title=card.title,
+        content=card.content,
+        card_type=card.card_type,
+        column_id=card.column_id,
+        position=card.position,
+        tags=list(card.tags) if card.tags else [],
+        character_ids=list(card.character_ids) if card.character_ids else [],
+        dependencies=list(card.dependencies) if card.dependencies else [],
+        metadata=card.metadata or {},
+    )
+
+
+def _packet_to_schema(packet) -> ChapterPacket:
+    from app.persistence.story_development import ChapterPacketRecord as _Record
+    if isinstance(packet, _Record):
+        return ChapterPacket(
+            packet_id=packet.packet_id,
+            project_id=packet.project_id,
+            chapter_id=packet.chapter_id,
+            included_reference_ids=list(packet.included_reference_ids) if packet.included_reference_ids else [],
+            constraints=list(packet.constraints) if packet.constraints else [],
+            scene_goals=list(packet.scene_goals) if packet.scene_goals else [],
+            status=packet.status,
+        )
+    return ChapterPacket(
+        packet_id=packet.packet_id,
+        project_id=packet.project_id,
+        chapter_id=packet.chapter_id,
+        included_reference_ids=list(packet.included_reference_ids) if packet.included_reference_ids else [],
+        constraints=list(packet.constraints) if packet.constraints else [],
+        scene_goals=list(packet.scene_goals) if packet.scene_goals else [],
+        status=packet.status,
+    )
+
+
+def _sequence_to_schema(plan) -> SequencePlan:
+    from app.persistence.story_development import SequencePlanRecord as _Record
+    if isinstance(plan, _Record):
+        return SequencePlan(
+            sequence_id=plan.sequence_id,
+            project_id=plan.project_id,
+            title=plan.title,
+            summary=plan.summary,
+            beat_ids=list(plan.beat_ids) if plan.beat_ids else [],
+            chapter_ids=list(plan.chapter_ids) if plan.chapter_ids else [],
+            status=plan.status,
+        )
+    return SequencePlan(
+        sequence_id=plan.sequence_id,
+        project_id=plan.project_id,
+        title=plan.title,
+        summary=plan.summary,
+        beat_ids=list(plan.beat_ids) if plan.beat_ids else [],
+        chapter_ids=list(plan.chapter_ids) if plan.chapter_ids else [],
+        status=plan.status,
+    )
+
 
 # TODO: Replace with real LLM-based categorization when AI pipeline is available.
 # Current implementation splits raw text by double-newlines and round-robins

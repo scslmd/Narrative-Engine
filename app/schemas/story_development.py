@@ -1165,3 +1165,38 @@ class WorkspaceNote(StrictSchemaModel):
                 payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
         payload["pinned_object_ids"] = _normalize_text_list(payload.get("pinned_object_ids", []), field_name="pinned_object_ids")
         return payload
+
+
+class StoryboardCard(StrictSchemaModel):
+    card_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    card_type: str = Field(default="idea", min_length=1)
+    column_id: str | None = None
+    position: int = Field(default=0, ge=0)
+    tags: list[str] = Field(default_factory=list)
+    character_ids: list[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("card_id", "project_id", "title", "content", "card_type"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "column_id" in payload:
+            payload["column_id"] = _normalize_optional_text(payload["column_id"], field_name="column_id")
+        payload["tags"] = _normalize_text_list(payload.get("tags", []), field_name="tags")
+        payload["character_ids"] = _normalize_text_list(payload.get("character_ids", []), field_name="character_ids")
+        payload["dependencies"] = _normalize_text_list(payload.get("dependencies", []), field_name="dependencies")
+        if "metadata" in payload and payload["metadata"] is not None:
+            payload["metadata"] = payload["metadata"] if isinstance(payload["metadata"], dict) else {}
+        else:
+            payload["metadata"] = {}
+        return payload

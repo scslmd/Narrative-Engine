@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `572 passed, 9 skipped` (18 new tests from story import feature + bug fixes)
+  - `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing stub inference / test isolation issues documented in `docs/Test Failure Analysis v0.1.md`)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -341,6 +341,7 @@ Do not call the repo merge-ready unless all four of these are green:
 | `node_modules` in git | Add to `.gitignore` and unstage before commit |
 | Idempotency conflicts | Same key must have the same payload; otherwise create a new key |
 | Backup restore failures | Verify disk space and backup existence before restore |
+| `input_payload` vs `input_hash` parameter drift | `StepRecordService.create_step_record()` uses `input_hash`/`output_hash`/`prompt_hash`, not `input_payload`/`output_payload`/`prompt_payload` |
 
 ## API Patterns
 
@@ -582,6 +583,15 @@ These repo-level guardrails apply to merged frontend work:
 ### 10. Merge-Ready Means Validated, Not Just Plausible
 
 - The four core validation commands are the final gate.
+
+### 11. Service-Executor Signature Alignment Is Critical
+
+- When modifying executor call sites, update service layer signatures simultaneously.
+- `StepRecordService.create_step_record()` uses pre-computed `input_hash`, `output_hash`, `prompt_hash` (not `input_payload`).
+- `StepRecordService.create_lineage_record()` uses `content_hash` (not `content_hash_source`).
+- Parameter name mismatches cause silent `TypeError` failures that pass individual test runs but fail in the full suite due to test ordering.
+- Always verify the full call chain: `local_executor.py` → `StepRecordService` → repository layer.
+- See `docs/Test Failure Analysis v0.1.md` for the full catalog of known test failures (29 pre-existing).
 
 ## API Parameter Alignment Guidelines
 
