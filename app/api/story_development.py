@@ -8,6 +8,7 @@ from pydantic import Field
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import (
     ArcCandidate,
+    ArcComparisonRecord,
     ArcSelection,
     ArcStageMap,
     BranchComparisonRecord,
@@ -773,6 +774,12 @@ class ArcSelectionListResponse(StrictModel):
 class ArcStageMapListResponse(StrictModel):
     project_id: str
     items: list[ArcStageMap] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class ArcComparisonListResponse(StrictModel):
+    project_id: str
+    items: list[ArcComparisonRecord] = Field(default_factory=list)
     meta: dict[str, str] = Field(default_factory=dict)
 
 
@@ -2293,6 +2300,24 @@ def build_story_development_router(
                 project_id=project_id,
                 items=stage_maps,
                 meta={"ordered_by": "stage_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.get("/arcs/comparisons", response_model=ArcComparisonListResponse)
+    def list_arc_comparisons(project_id: str) -> ArcComparisonListResponse:
+        """List all arc comparisons for a project."""
+        try:
+            comparisons = list(story_knowledge_service.list_arc_comparisons(project_id))
+            flat: list[ArcComparisonRecord] = []
+            for comparison_tuple in comparisons:
+                for record in comparison_tuple:
+                    if isinstance(record, ArcComparisonRecord):
+                        flat.append(record)
+            return ArcComparisonListResponse(
+                project_id=project_id,
+                items=flat,
+                meta={"ordered_by": "created_at_desc"},
             )
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

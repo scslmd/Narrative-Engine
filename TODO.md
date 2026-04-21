@@ -68,6 +68,14 @@ with real API backing.
 - Character name map integration for readable node labels
 - Dark mode support throughout
 
+### Arc Stage Map Flow -- All Complete
+- New `ArcStageMapFlow` component: SVG-based sequential flow visualization for arc stage maps
+- Horizontal node layout with directional arrows between stages
+- Color-coded narrative stage types (exposition, rising action, climax, resolution, etc.)
+- Multi-stage-map support with selector dropdown for projects with multiple arc candidates
+- Active arc indicator badge, stage timeline footer, dark mode support
+- Replaces plain text comma-separated stage map display in PlanningView arcs tab
+
 ### Deferred Mutations -- All Complete
 - Arc selection mutations: POST /arcs/candidates, POST /arcs/comparisons, POST /arcs/selections, PATCH /arcs/selections/{id}, DELETE /arcs/selections/{id}, POST /arcs/stage-maps
 - Character relationship mutations: GET /relationships (list-all), PATCH /relationships/{id}, DELETE /relationships/{id}

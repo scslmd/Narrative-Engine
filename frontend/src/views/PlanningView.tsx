@@ -14,6 +14,8 @@ import { FoundationEditor } from '../components/foundation/FoundationEditor';
 import { CharacterBuilder } from '../components/characters/CharacterBuilder';
 import { RelationshipMapGraph } from '../components/characters/RelationshipMapGraph';
 import { RelationshipList } from '../components/characters/RelationshipList';
+import { ArcComparisonGraph } from '../components/arcs/ArcComparisonGraph';
+import { ArcStageMapFlow } from '../components/arcs/ArcStageMapFlow';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from '../services/brainstorm';
@@ -38,8 +40,8 @@ import {
   getArcCandidates,
   getArcSelections,
   getArcStageMaps,
+  getArcComparisons,
   getSelectedArc,
-  getStageMapForArc,
 } from '../services/arcs';
 import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
@@ -195,6 +197,12 @@ export function PlanningView() {
   const arcStageMapsQuery = useQuery({
     queryKey: ['arc-stage-maps', projectId],
     queryFn: () => getArcStageMaps(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'arcs',
+  });
+
+  const arcComparisonsQuery = useQuery({
+    queryKey: ['arc-comparisons', projectId],
+    queryFn: () => getArcComparisons(projectId || ''),
     enabled: Boolean(projectId) && activeTab === 'arcs',
   });
 
@@ -374,7 +382,8 @@ export function PlanningView() {
   const arcSelections = arcSelectionsQuery.data ?? [];
   const arcStageMaps = arcStageMapsQuery.data ?? [];
   const selectedArc = arcSelections.length > 0 ? getSelectedArc(arcSelections, projectId) : null;
-  const selectedArcStageMap = selectedArc ? getStageMapForArc(arcStageMaps, selectedArc.arc_id) : undefined;
+
+  const arcComparisons = arcComparisonsQuery.data ?? [];
 
   const renderTabButton = (tab: { key: PlanningTab; label: string }, isCore: boolean) => {
     const isActive = activeTab === tab.key;
@@ -717,18 +726,31 @@ export function PlanningView() {
               )}
             </Section>
 
-            {selectedArc && selectedArcStageMap && (
+            {arcStageMapsQuery.isLoading ? (
               <Section title="Stage Map">
-                <div className={`p-4 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                  <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    <div>Stage Kinds: {selectedArcStageMap.stage_kinds.join(', ')}</div>
-                    {selectedArcStageMap.notes && (
-                      <div className={`mt-2 italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{selectedArcStageMap.notes}</div>
-                    )}
-                  </div>
-                </div>
+                <WorkspaceStatus title="Loading stage maps" detail="Fetching arc stage progression..." isDark={isDark} />
               </Section>
-            )}
+            ) : arcStageMaps.length > 0 ? (
+              <ArcStageMapFlow
+                stageMaps={arcStageMaps}
+                candidates={arcCandidates}
+                selectedArcId={selectedArc?.arc_id ?? null}
+                className="h-[260px]"
+              />
+            ) : null}
+
+            {arcComparisonsQuery.isLoading ? (
+              <Section title="Arc Comparisons">
+                <WorkspaceStatus title="Loading arc comparisons" detail="Fetching comparison history..." isDark={isDark} />
+              </Section>
+            ) : arcComparisons.length > 0 ? (
+              <Section title="Arc Comparisons">
+                <ArcComparisonGraph
+                  comparisons={arcComparisons}
+                  className="h-[420px]"
+                />
+              </Section>
+            ) : null}
 
             <Section title="Arc Candidates" count={arcCandidates.length}>
               {arcCandidatesQuery.isLoading ? (

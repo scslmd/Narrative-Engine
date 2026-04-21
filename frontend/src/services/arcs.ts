@@ -11,6 +11,7 @@ import type {
   ArcCandidate,
   ArcSelection,
   ArcStageMap,
+  ArcComparisonRecord,
 } from '../types/arcs';
 import api from '../lib/api';
 
@@ -33,6 +34,22 @@ export async function getArcCandidates(projectId: string): Promise<ArcCandidate[
   }
 
   const data: ArcsListResponse<ArcCandidate> = response.data;
+  return data.items;
+}
+
+/**
+ * Get all arc comparisons for a project
+ */
+export async function getArcComparisons(projectId: string): Promise<ArcComparisonRecord[]> {
+  const response = await api.get('/story-development/arcs/comparisons', {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch arc comparisons: ${response.status}`);
+  }
+
+  const data: ArcsListResponse<ArcComparisonRecord> = response.data;
   return data.items;
 }
 

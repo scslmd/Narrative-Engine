@@ -58,3 +58,4 @@ interface ArcsListResponse<T> {
 export type ArcCandidateListResponse = ArcsListResponse<ArcCandidate>;
 export type ArcSelectionListResponse = ArcsListResponse<ArcSelection>;
 export type ArcStageMapListResponse = ArcsListResponse<ArcStageMap>;
+export type ArcComparisonListResponse = ArcsListResponse<ArcComparisonRecord>;
