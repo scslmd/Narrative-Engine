@@ -51,12 +51,22 @@ with real API backing.
   decisions, review, planning, drafting, characters, world bible, arcs, and brainstorm
 - 801 tests passing across the full suite (22 new: 12 lineage-aware artifact tests + 15 manuscript aid integration tests + 14 executor/story-bible E2E tests - 19 original + 22 fixed = 801 total. Bugfix: `create_inspect_link` incorrectly normalized `object_kind` to `StoryObjectType`, rejecting free-form strings like "job", "checker", "manuscript". Rewrote `test_review_routing_post.py` with proper `tmp_path` DB isolation.)
 
-### Frontend -- All Complete
-- React + TypeScript frontend (FE-001 through FE-032)
-- Routed workspace: Plan, Write, Review, Inspect
-- Real API backing for all shipped surfaces
-- Manuscript editor with aids, diff viewer, selection lifecycle
-- Branch UI, decision tree, inspect run links
+### FlowEditor Stage Editing -- All Complete
+- Add stage: dialog with kind selector and name input
+- Rename stage: inline dialog with save/cancel
+- Disable/Enable toggle button on each stage
+- Archive button (hidden for archived stages)
+- Delete with confirmation guard (custom stages only, default stages hidden)
+- Type drift fixed: ACTIVE->ENABLED, added OPTIONAL state, writer_notes field
+- Fix: uppercase enum values (ENABLED/DISABLED/ARCHIVED) in frontend service
+
+### Relationship Map Graph -- All Complete
+- New `relationships` tab in PlanningView with graph visualization
+- `RelationshipMapGraph` component: SVG-based graph with circular layout, curved edges, hover/click interactions, relation_kind color coding, delete button on edges, legend
+- `RelationshipList` component: panel view showing relationships as a list with relation_kind badges, tension indicators, and delete actions
+- Full CRUD service: `getRelationships`, `createRelationship`, `updateRelationship`, `deleteRelationship`
+- Character name map integration for readable node labels
+- Dark mode support throughout
 
 ### Deferred Mutations -- All Complete
 - Arc selection mutations: POST /arcs/candidates, POST /arcs/comparisons, POST /arcs/selections, PATCH /arcs/selections/{id}, DELETE /arcs/selections/{id}, POST /arcs/stage-maps

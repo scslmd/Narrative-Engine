@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import {
   LayoutList, Map, GitBranch, Network, FileCheck,
-  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight
+  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon
 } from 'lucide-react';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { RoleModelChecker } from '../components/checker';
@@ -12,11 +12,14 @@ import { DecisionTree } from '../components/decisions';
 import { BrainstormWorkspace } from '../components/brainstorm/BrainstormWorkspace';
 import { FoundationEditor } from '../components/foundation/FoundationEditor';
 import { CharacterBuilder } from '../components/characters/CharacterBuilder';
+import { RelationshipMapGraph } from '../components/characters/RelationshipMapGraph';
+import { RelationshipList } from '../components/characters/RelationshipList';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from '../services/brainstorm';
 import { getFoundation, createFoundation, updateFoundation } from '../services/foundation';
 import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
+import { getRelationships, deleteRelationship } from '../services/relationships';
 import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
 import {
   getSequencePlans,
@@ -55,7 +58,8 @@ type PlanningTab =
   | 'brainstorm'
   | 'foundation'
   | 'characters'
-  | 'world-bible';
+  | 'world-bible'
+  | 'relationships';
 
 type CharacterEditorMode = 'list' | 'create' | 'edit';
 
@@ -74,6 +78,7 @@ const contentTabs: { key: PlanningTab; label: string; icon: typeof Lightbulb }[]
   { key: 'foundation', label: 'Foundation', icon: Anchor },
   { key: 'characters', label: 'Characters', icon: User },
   { key: 'world-bible', label: 'World Bible', icon: Book },
+  { key: 'relationships', label: 'Relationships', icon: NetworkIcon },
 ];
 
 const tabActiveBgMap: Record<PlanningTab, string> = {
@@ -88,6 +93,7 @@ const tabActiveBgMap: Record<PlanningTab, string> = {
   foundation: 'bg-emerald-600',
   characters: 'bg-pink-600',
   'world-bible': 'bg-indigo-600',
+  relationships: 'bg-cyan-600',
 };
 
 const tabActiveBgDarkMap: Record<PlanningTab, string> = {
@@ -102,6 +108,7 @@ const tabActiveBgDarkMap: Record<PlanningTab, string> = {
   foundation: 'bg-emerald-500',
   characters: 'bg-pink-500',
   'world-bible': 'bg-indigo-500',
+  relationships: 'bg-cyan-500',
 };
 
 export function PlanningView() {
@@ -189,6 +196,19 @@ export function PlanningView() {
     queryKey: ['arc-stage-maps', projectId],
     queryFn: () => getArcStageMaps(projectId || ''),
     enabled: Boolean(projectId) && activeTab === 'arcs',
+  });
+
+  const relationshipsQuery = useQuery({
+    queryKey: ['planning', 'relationships', projectId],
+    queryFn: () => getRelationships(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'relationships',
+  });
+
+  const relationshipDeleteMutation = useMutation({
+    mutationFn: (edgeId: string) => deleteRelationship(edgeId, projectId || ''),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'relationships', projectId] });
+    },
   });
 
   const brainstormCreateMutation = useMutation({
@@ -320,13 +340,24 @@ export function PlanningView() {
   const [cardCreateContent, setCardCreateContent] = useState('');
   const [cardCreateType, setCardCreateType] = useState('idea');
 
+  const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
+
+  const characterNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const char of characters) {
+      map[char.character_id] = char.display_name;
+    }
+    return map;
+  }, [characters]);
+
+  const relationships = relationshipsQuery.data ?? [];
+
   if (!projectId) {
     return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
   }
 
   const brainstormItems = brainstormQuery.data ?? [];
   const foundation = foundationQuery.data?.active_profile ?? undefined;
-  const characters = charactersQuery.data ?? [];
   const selectedCharacter = selectedCharacterId
     ? characters.find((character) => character.character_id === selectedCharacterId)
     : null;
@@ -854,6 +885,49 @@ export function PlanningView() {
                 tone="error"
                 isDark={isDark}
               />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'relationships' && (
+          <div className="h-full flex flex-col">
+            {relationshipsQuery.isLoading ? (
+              <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." isDark={isDark} />
+            ) : relationshipsQuery.error ? (
+              <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" isDark={isDark} />
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
+                  <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    Relationship Map
+                  </h2>
+                  <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {relationships.length} relationships
+                  </span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  <RelationshipMapGraph
+                    characters={characters}
+                    relationships={relationships}
+                    onDeleteRelationship={(edgeId) => {
+                      void relationshipDeleteMutation.mutate(edgeId);
+                    }}
+                    className="h-[350px]"
+                  />
+                </div>
+
+                <div className="shrink-0 px-4 pb-4">
+                  <RelationshipList
+                    relationships={relationships}
+                    characterNames={characterNameMap}
+                    onDeleteRelationship={(edgeId) => {
+                      void relationshipDeleteMutation.mutate(edgeId);
+                    }}
+                    className="h-[250px]"
+                  />
+                </div>
+              </div>
             )}
           </div>
         )}
