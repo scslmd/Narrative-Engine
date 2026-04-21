@@ -13,6 +13,7 @@ import type {
   SequencePlan,
   ChapterPlan,
   ScenePlan,
+  BeatPlan,
   ChapterPacket,
   PlanningDependency,
   SequencePlanCreateRequest,
@@ -23,6 +24,8 @@ import type {
   ChapterPlanUpdateRequest,
   ScenePlanCreateRequest,
   ScenePlanUpdateRequest,
+  BeatPlanCreateRequest,
+  BeatPlanUpdateRequest,
 } from '../types/planning';
 import api from '../lib/api';
 
@@ -394,6 +397,81 @@ export async function updateScenePlan(
 
   if (response.status !== 200) {
     throw new Error(`Failed to update scene plan ${sceneId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+// ============================================================================
+// Beat Plan queries and mutations
+// ============================================================================
+
+/**
+ * Get all beat plans for a project
+ */
+export async function getBeatPlans(projectId: string): Promise<BeatPlan[]> {
+  const response = await api.get('/story-development/planning/beat-plans', {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch beat plans: ${response.status}`);
+  }
+
+  const data: PlanningListResponse<BeatPlan> = response.data;
+  return data.items;
+}
+
+/**
+ * Get a specific beat plan by ID
+ */
+export async function getBeatPlan(beatId: string, projectId: string): Promise<BeatPlan> {
+  const response = await api.get(
+    `/story-development/planning/beat-plans/${beatId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch beat plan ${beatId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Create a new beat plan
+ */
+export async function createBeatPlan(
+  projectId: string,
+  data: BeatPlanCreateRequest,
+): Promise<BeatPlan> {
+  const response = await api.post('/story-development/planning/beat-plans', data, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create beat plan: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing beat plan
+ */
+export async function updateBeatPlan(
+  beatId: string,
+  projectId: string,
+  data: BeatPlanUpdateRequest,
+): Promise<BeatPlan> {
+  const response = await api.patch(
+    `/story-development/planning/beat-plans/${beatId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update beat plan ${beatId}: ${response.status}`);
   }
 
   return response.data;

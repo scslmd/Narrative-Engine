@@ -11,6 +11,7 @@ from app.schemas import (
     ArcComparisonRecord,
     ArcSelection,
     ArcStageMap,
+    BeatPlan,
     BranchComparisonRecord,
     BranchMergeDecision,
     BranchStateRef,
@@ -140,6 +141,12 @@ class ChapterPlanListResponse(StrictModel):
 class ScenePlanListResponse(StrictModel):
     project_id: str
     items: list[ScenePlan] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+class BeatPlanListResponse(StrictModel):
+    project_id: str
+    items: list[BeatPlan] = Field(default_factory=list)
     meta: dict[str, str] = Field(default_factory=dict)
 
 
@@ -839,6 +846,64 @@ def build_story_development_router(
     sequence_plan_service = SequencePlanService(repository)
     storyboard_card_service = StoryboardCardService(repository)
 
+    # --- Beat plan helpers ---
+
+    def _get_beat_plan_record(beat_id: str) -> "app.persistence.story_development.BeatPlanRecord":
+        from app.persistence.story_development import BeatPlanRecord
+        return repository.get_beat_plan(beat_id)
+
+    def _list_beat_plans_for_project(project_id: str) -> list["app.persistence.story_development.BeatPlanRecord"]:
+        return repository.list_beat_plans(project_id)
+
+    def _upsert_beat_plan(
+        *,
+        beat_id: str,
+        project_id: str,
+        objective: str,
+        conflict: str,
+        stakes: str,
+        arc_stage: str,
+        active_character_ids: list[str] | None = None,
+        continuity_requirements: list[str] | None = None,
+        unresolved_questions: list[str] | None = None,
+        status: str = "draft",
+        position: int | None = None,
+    ) -> "app.persistence.story_development.BeatPlanRecord":
+        pos = position if position is not None else len(repository.list_beat_plans(project_id))
+        return repository.upsert_beat_plan(
+            beat_id=beat_id,
+            project_id=project_id,
+            objective=objective,
+            conflict=conflict,
+            stakes=stakes,
+            dependency_ids=None,
+            arc_stage=arc_stage,
+            active_character_ids=active_character_ids or [],
+            continuity_requirements=continuity_requirements or [],
+            unresolved_questions=unresolved_questions or [],
+            status=status,
+            position=pos,
+        )
+
+    def _beat_plan_to_schema(record: "app.persistence.story_development.BeatPlanRecord") -> BeatPlan:
+        return BeatPlan(
+            beat_id=record.beat_id,
+            project_id=record.project_id,
+            objective=record.objective,
+            conflict=record.conflict,
+            stakes=record.stakes,
+            dependency_ids=list(record.dependency_ids),
+            arc_stage=record.arc_stage,
+            active_character_ids=list(record.active_character_ids),
+            continuity_requirements=list(record.continuity_requirements),
+            unresolved_questions=list(record.unresolved_questions),
+            status=record.status,
+        )
+
+    def _get_beat_plan_schema(beat_id: str) -> BeatPlan:
+        record = _get_beat_plan_record(beat_id)
+        return _beat_plan_to_schema(record)
+
     @router.get("/branches", response_model=StoryBranchListResponse)
     def list_story_branches(project_id: str) -> StoryBranchListResponse:
         try:
@@ -1375,6 +1440,79 @@ def build_story_development_router(
             position=position,
         )
         return plan
+
+    @router.get("/planning/beat-plans", response_model=BeatPlanListResponse)
+    def list_beat_plans(project_id: str) -> BeatPlanListResponse:
+        return BeatPlanListResponse(
+            project_id=project_id,
+            items=list(_list_beat_plans_for_project(project_id)),
+            meta={"ordered_by": "position_asc"},
+        )
+
+    @router.get("/planning/beat-plans/{beat_id}", response_model=BeatPlan)
+    def get_beat_plan(beat_id: str, project_id: str) -> BeatPlan:
+        try:
+            return _get_beat_plan_schema(beat_id)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="Beat plan not found.")
+
+    @router.post("/planning/beat-plans", response_model=BeatPlan, status_code=201)
+    def create_beat_plan(payload: BeatPlanCreateRequest) -> BeatPlan:
+        """Create a new beat plan."""
+        try:
+            plan = _upsert_beat_plan(
+                beat_id=payload.beat_id,
+                project_id=payload.project_id,
+                objective=payload.objective,
+                conflict=payload.conflict,
+                stakes=payload.stakes,
+                arc_stage=payload.arc_stage or "unspecified",
+                active_character_ids=payload.active_character_ids,
+                continuity_requirements=payload.continuity_requirements,
+                unresolved_questions=payload.unresolved_questions,
+                status=payload.status,
+                position=payload.position if payload.position is not None else None,
+            )
+            return _beat_plan_to_schema(plan)
+        except PlanningValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/planning/beat-plans/{beat_id}", response_model=BeatPlan)
+    def update_beat_plan(
+        beat_id: str,
+        project_id: str,
+        payload: BeatPlanUpdateRequest,
+    ) -> BeatPlan:
+        """Update an existing beat plan."""
+        try:
+            existing = _get_beat_plan_record(beat_id)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="Beat plan not found.")
+        
+        objective = payload.objective if payload.objective is not None else existing.objective
+        conflict = payload.conflict if payload.conflict is not None else existing.conflict
+        stakes = payload.stakes if payload.stakes is not None else existing.stakes
+        arc_stage = payload.arc_stage if payload.arc_stage is not None else existing.arc_stage
+        active_character_ids = payload.active_character_ids if payload.active_character_ids is not None else list(existing.active_character_ids)
+        continuity_requirements = payload.continuity_requirements if payload.continuity_requirements is not None else list(existing.continuity_requirements)
+        unresolved_questions = payload.unresolved_questions if payload.unresolved_questions is not None else list(existing.unresolved_questions)
+        status = payload.status if payload.status is not None else existing.status
+        position = payload.position if payload.position is not None else existing.position
+        
+        plan = _upsert_beat_plan(
+            beat_id=beat_id,
+            project_id=existing.project_id,
+            objective=objective,
+            conflict=conflict,
+            stakes=stakes,
+            arc_stage=arc_stage,
+            active_character_ids=active_character_ids,
+            continuity_requirements=continuity_requirements,
+            unresolved_questions=unresolved_questions,
+            status=status,
+            position=position,
+        )
+        return _beat_plan_to_schema(plan)
 
     @router.get("/planning/dependencies", response_model=PlanningDependencyListResponse)
     def list_planning_dependencies(project_id: str) -> PlanningDependencyListResponse:

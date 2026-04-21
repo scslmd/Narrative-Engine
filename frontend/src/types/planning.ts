@@ -18,6 +18,32 @@ export interface BeatPlan {
   status: string;
 }
 
+export interface BeatPlanCreateRequest {
+  project_id: string;
+  beat_id: string;
+  objective: string;
+  conflict: string;
+  stakes: string;
+  arc_stage?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface BeatPlanUpdateRequest {
+  objective?: string;
+  conflict?: string;
+  stakes?: string;
+  arc_stage?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
 export interface SequencePlan {
   sequence_id: string;
   project_id: string;
@@ -87,6 +113,7 @@ interface PlanningListResponse<T> {
 export type SequencePlanListResponse = PlanningListResponse<SequencePlan>;
 export type ChapterPlanListResponse = PlanningListResponse<ChapterPlan>;
 export type ScenePlanListResponse = PlanningListResponse<ScenePlan>;
+export type BeatPlanListResponse = PlanningListResponse<BeatPlan>;
 export type ChapterPacketListResponse = PlanningListResponse<ChapterPacket>;
 export type PlanningDependencyListResponse = PlanningListResponse<PlanningDependency>;
 
