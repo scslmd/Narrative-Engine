@@ -1,4 +1,4 @@
-import type { DraftArtifact, ManuscriptDocument, PromoteDraftToManuscriptRequest } from '../types/drafting';
+import type { DraftArtifact, ManuscriptDocument, PromoteDraftToManuscriptRequest, DraftArtifactCreateRequest, DraftContinuationRequest, AlternateVariantRequest } from '../types/drafting';
 import type { RevisionSuggestion } from '../types/aids';
 import api from '../lib/api';
 
@@ -141,4 +141,34 @@ export async function triggerManuscriptReview(
   }
   
   return response.data.findings ?? [];
+}
+
+export async function createDraftArtifact(request: DraftArtifactCreateRequest): Promise<DraftArtifact> {
+  const response = await api.post('/story-development/drafting/draft-artifacts', request);
+  
+  if (response.status !== 201) {
+    throw new Error(`Failed to create draft artifact: ${response.status}`);
+  }
+  
+  return response.data;
+}
+
+export async function continueDraft(request: DraftContinuationRequest): Promise<DraftArtifact> {
+  const response = await api.post('/story-development/drafting/draft-artifacts/continue', request);
+  
+  if (response.status !== 201) {
+    throw new Error(`Failed to continue draft: ${response.status}`);
+  }
+  
+  return response.data;
+}
+
+export async function createAlternateVariant(request: AlternateVariantRequest): Promise<DraftArtifact> {
+  const response = await api.post('/story-development/drafting/draft-artifacts/alternate-variant', request);
+  
+  if (response.status !== 201) {
+    throw new Error(`Failed to create alternate variant: ${response.status}`);
+  }
+  
+  return response.data;
 }

@@ -30,5 +30,40 @@ export interface PromoteDraftToManuscriptRequest {
   version?: number;
 }
 
+export interface DraftArtifactCreateRequest {
+  artifact_id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  source_plan_ids?: string[];
+  source_context?: string[];
+  provenance_note?: string | null;
+  status?: string;
+}
+
+export interface DraftContinuationRequest {
+  artifact_id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  prior_draft_artifact_id?: string | null;
+  prior_manuscript_document_id?: string | null;
+  source_plan_ids?: string[];
+  source_context?: string[];
+  provenance_note?: string | null;
+}
+
+export interface AlternateVariantRequest {
+  artifact_id: string;
+  project_id: string;
+  title: string;
+  content: string;
+  base_draft_artifact_id?: string | null;
+  base_manuscript_document_id?: string | null;
+  source_plan_ids?: string[];
+  source_context?: string[];
+  provenance_note?: string | null;
+}
+
 
 export type RevisionSuggestion = import('../types/aids').RevisionSuggestion;
