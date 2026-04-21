@@ -5,8 +5,11 @@ import StageActions from './StageActions';
 interface StageListProps {
   stages: StoryFlowStage[];
   updatingStageId: string | null;
-  onEdit?: (stageId: string) => void;
+  onEdit?: (stageId: string, currentName: string) => void;
   onDelete?: (stageId: string) => void;
+  onToggleState?: (stageId: string, currentState: string) => void;
+  onArchive?: (stageId: string) => Promise<unknown>;
+  isDefaultKind?: (kind: string) => boolean;
   onAddStage?: (stageKind: StoryFlowStage['stage_kind']) => void;
 }
 
@@ -15,6 +18,9 @@ export default function StageList({
   updatingStageId,
   onEdit,
   onDelete,
+  onToggleState,
+  onArchive,
+  isDefaultKind,
   onAddStage,
 }: StageListProps) {
   if (!stages || stages.length === 0) {
@@ -43,12 +49,15 @@ export default function StageList({
             isUpdating={updatingStageId === stage.stage_id}
           />
 
-          {(onEdit || onDelete) && (
+          {(onEdit || onDelete || onToggleState || onArchive) && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
               <StageActions
                 stage={stage}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onToggleState={onToggleState}
+                onArchive={onArchive}
+                isDefaultKind={isDefaultKind}
                 isUpdating={updatingStageId === stage.stage_id}
               />
             </div>

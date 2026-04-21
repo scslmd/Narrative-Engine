@@ -12,8 +12,10 @@ const KIND_COLORS: Record<string, string> = {
 };
 
 const STATE_COLORS: Record<string, string> = {
+  ENABLED: 'bg-green-50 text-green-600 border-green-200',
   ACTIVE: 'bg-green-50 text-green-600 border-green-200',
   DISABLED: 'bg-gray-50 text-gray-400 border-gray-200',
+  OPTIONAL: 'bg-yellow-50 text-yellow-600 border-yellow-200',
   ARCHIVED: 'bg-red-50 text-red-400 border-red-200',
 };
 
@@ -46,18 +48,6 @@ export default function StageCard({ stage, position, isUpdating }: StageCardProp
             <span className={`px-2 py-0.5 rounded text-xs border ${stateColor}`}>
               {stage.stage_configuration_state}
             </span>
-
-            {stage.progress_percentage !== undefined && (
-              <div className="flex items-center gap-1">
-                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all"
-                    style={{ width: `${stage.progress_percentage}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500">{stage.progress_percentage}%</span>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -16,6 +16,13 @@ interface FlowStageUpdateRequest {
   stage_configuration_state?: string;
 }
 
+interface FlowStageCreateRequest {
+  project_id: string;
+  stage_kind: StoryFlowStage['stage_kind'];
+  display_name?: string;
+  description?: string;
+}
+
 export const flowService = {
   async getStages(projectId: string): Promise<StoryFlowStage[]> {
     const response = await api.get('/story-development/flow/stages', { params: { project_id: projectId } });
@@ -28,11 +35,19 @@ export const flowService = {
     return data.items;
   },
 
-  async addStage(projectId: string, stageKind: StoryFlowStage['stage_kind']): Promise<StoryFlowStage> {
-    const response = await api.post('/story-development/flow/stages', {
+  async addStage(
+    projectId: string,
+    stageKind: StoryFlowStage['stage_kind'],
+    displayName?: string,
+  ): Promise<StoryFlowStage> {
+    const payload: FlowStageCreateRequest = {
       project_id: projectId,
       stage_kind: stageKind,
-    });
+    };
+    
+    if (displayName) payload.display_name = displayName;
+
+    const response = await api.post('/story-development/flow/stages', payload);
 
     if (response.status !== 201) {
       throw new Error(`Failed to create flow stage for ${projectId}: ${response.status}`);
@@ -91,11 +106,11 @@ export const flowService = {
   },
 
   async disableStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
-    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'disabled' });
+    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'DISABLED' });
   },
 
   async archiveStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
-    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'archived' });
+    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'ARCHIVED' });
   },
 
   async renameStage(projectId: string, stageId: string, displayName: string): Promise<StoryFlowStage> {
