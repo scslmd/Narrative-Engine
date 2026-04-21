@@ -12,6 +12,11 @@ import type {
   ArcSelection,
   ArcStageMap,
   ArcComparisonRecord,
+  ArcCandidateCreateRequest,
+  ArcComparisonCreateRequest,
+  ArcSelectionCreateRequest,
+  ArcSelectionUpdateRequest,
+  ArcStageMapCreateRequest,
 } from '../types/arcs';
 import api from '../lib/api';
 
@@ -148,4 +153,104 @@ export function groupArcsByStatus(
       (c) => !selectedArcIds.has(c.arc_id) && !rejectedArcIds.has(c.arc_id),
     ),
   };
+}
+
+// ============================================================================
+// Arc mutation functions
+// ============================================================================
+
+/**
+ * Create a new arc candidate
+ */
+export async function createArcCandidate(data: ArcCandidateCreateRequest): Promise<ArcCandidate> {
+  const response = await api.post('/story-development/arcs/candidates', data, {
+    params: { project_id: data.project_id },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create arc candidate: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Create an arc comparison
+ */
+export async function createArcComparison(data: ArcComparisonCreateRequest): Promise<ArcCandidate[]> {
+  const response = await api.post('/story-development/arcs/comparisons', data, {
+    params: { project_id: data.project_id },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create arc comparison: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Create an arc selection
+ */
+export async function createArcSelection(data: ArcSelectionCreateRequest): Promise<ArcSelection> {
+  const response = await api.post('/story-development/arcs/selections', data, {
+    params: { project_id: data.project_id },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create arc selection: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing arc selection
+ */
+export async function updateArcSelection(
+  selectionId: string,
+  data: ArcSelectionUpdateRequest,
+): Promise<ArcSelection> {
+  const response = await api.patch(
+    `/story-development/arcs/selections/${selectionId}`,
+    data,
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update arc selection ${selectionId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Delete an arc selection
+ */
+export async function deleteArcSelection(
+  selectionId: string,
+  projectId: string,
+): Promise<void> {
+  const response = await api.delete(
+    `/story-development/arcs/selections/${selectionId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to delete arc selection ${selectionId}: ${response.status}`);
+  }
+}
+
+/**
+ * Create an arc stage map
+ */
+export async function createArcStageMap(data: ArcStageMapCreateRequest): Promise<ArcStageMap> {
+  const response = await api.post('/story-development/arcs/stage-maps', data, {
+    params: { project_id: data.project_id },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create arc stage map: ${response.status}`);
+  }
+
+  return response.data;
 }

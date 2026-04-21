@@ -82,6 +82,31 @@ with real API backing.
 - Planning board reorder: POST /planning/reorder (supports sequence, chapter, scene plan kinds)
 - 23 new integration tests across test_deferred_mutations.py
 
+### Planning Inline Edit UI -- All Complete
+- Added inline update/edit forms for sequence plans, chapter plans, scene plans, and beat plans
+- Edit button on each card opens inline form pre-populated with current values
+- Save/Cancel inline actions with optimistic invalidation
+- Editable fields match backend update request schemas (no sequence_id/chapter_id on update - those are create-only)
+- Dark mode support throughout
+
+### ArcComparisonGraph Hook Fix -- All Complete
+- Fixed pre-existing lint errors (React Hooks rules-of-hooks violations at lines 206, 219)
+- Moved useMemo hooks before early return guard
+- Converted early return to conditional render for empty state
+- Uses useMemo with null guard for selectedComparison
+
+### Arc Mutation Service Layer -- All Complete
+- Added createArcCandidate, createArcComparison to frontend service layer
+- Added createArcSelection, updateArcSelection, deleteArcSelection to frontend service layer
+- Added createArcStageMap to frontend service layer
+- Added corresponding request type definitions: ArcCandidateCreateRequest, ArcComparisonCreateRequest, ArcSelectionCreateRequest, ArcSelectionUpdateRequest, ArcStageMapCreateRequest
+- Backend endpoints existed (deferred mutations milestone) but frontend service functions were missing
+
+### Planning Reorder Service -- All Complete
+- Added reorderPlanObjects service function to frontend planning service layer
+- Added PlanningReorderRequest type: project_id, plan_kind ('sequence'|'chapter'|'scene'), ordered_plan_ids
+- Backend endpoint POST /planning/reorder now has frontend service support
+
 ### Testing
 - Smoke coverage, persistence coverage, contract coverage, failure-mode coverage
 - CI runs full suite on push and pull request

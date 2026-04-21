@@ -59,3 +59,59 @@ export type ArcCandidateListResponse = ArcsListResponse<ArcCandidate>;
 export type ArcSelectionListResponse = ArcsListResponse<ArcSelection>;
 export type ArcStageMapListResponse = ArcsListResponse<ArcStageMap>;
 export type ArcComparisonListResponse = ArcsListResponse<ArcComparisonRecord>;
+
+// ============================================================================
+// Request types for mutations
+// ============================================================================
+
+export interface ArcCandidateCreateRequest {
+  arc_id: string;
+  project_id: string;
+  name: string;
+  summary: string;
+  stage_map_notes?: string[];
+  fit_notes?: string[];
+  tags?: string[];
+}
+
+export interface ArcComparisonCreateRequest {
+  project_id: string;
+  candidate_ids: string[];
+  review_notes?: string[];
+}
+
+export interface ArcSelectionCreateRequest {
+  project_id: string;
+  selected_arc: string | {
+    arc_id: string;
+    name: string;
+    summary: string;
+    stage_map_notes: string[];
+    fit_notes: string[];
+    tags: string[];
+  };
+  rejected_arc_ids?: string[];
+  comparison_notes?: string[];
+  comparison_record_ids?: string[];
+}
+
+export interface ArcSelectionUpdateRequest {
+  selected_arc?: {
+    arc_id: string;
+    name: string;
+    summary: string;
+    stage_map_notes: string[];
+    fit_notes: string[];
+    tags: string[];
+  };
+  rejected_arc_ids?: string[];
+  comparison_notes?: string[];
+  comparison_record_ids?: string[];
+}
+
+export interface ArcStageMapCreateRequest {
+  project_id: string;
+  arc_id: string;
+  stage_kinds: string[];
+  notes?: string | null;
+}

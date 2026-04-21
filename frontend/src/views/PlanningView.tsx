@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import {
   LayoutList, Map, GitBranch, Network, FileCheck,
-  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon
+  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, ChevronUp, ChevronDown, Network as NetworkIcon
 } from 'lucide-react';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { RoleModelChecker } from '../components/checker';
@@ -29,12 +29,17 @@ import {
   getScenePlans,
   getBeatPlans,
   createSequencePlan,
+  updateSequencePlan,
   createChapterPlan,
+  updateChapterPlan,
   createScenePlan,
+  updateScenePlan,
   createBeatPlan,
+  updateBeatPlan,
   getPlanningDependencies,
   getChapterPackets,
   createChapterPacket,
+  reorderPlanObjects,
 } from '../services/planning';
 import {
   getStoryboardCards,
@@ -45,7 +50,10 @@ import {
   getArcSelections,
   getArcStageMaps,
   getArcComparisons,
-  getSelectedArc,
+  createArcCandidate,
+  createArcSelection,
+  deleteArcSelection,
+  createArcStageMap,
 } from '../services/arcs';
 import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
@@ -216,6 +224,93 @@ export function PlanningView() {
     enabled: Boolean(projectId) && activeTab === 'arcs',
   });
 
+  const selectArcMutation = useMutation({
+    mutationFn: (arcId: string) =>
+      createArcSelection({
+        project_id: projectId || '',
+        selected_arc: arcId,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+    },
+  });
+
+  const deselectArcMutation = useMutation({
+    mutationFn: () => {
+      const selection = arcSelections[0];
+      if (!selection) return Promise.resolve();
+      return deleteArcSelection(selection.selection_id, projectId || '');
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+    },
+  });
+
+  const arcCandidateCreateMutation = useMutation({
+    mutationFn: (data: { arc_id: string; project_id: string; name: string; summary: string }) =>
+      createArcCandidate({
+        arc_id: data.arc_id,
+        project_id: data.project_id,
+        name: data.name,
+        summary: data.summary,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+    },
+  });
+
+  const stageMapCreateMutation = useMutation({
+    mutationFn: (data: { arc_id: string; project_id: string; stage_kinds: string[]; notes?: string | null }) =>
+      createArcStageMap({
+        project_id: data.project_id,
+        arc_id: data.arc_id,
+        stage_kinds: data.stage_kinds,
+        notes: data.notes || undefined,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arc-stage-maps', projectId] });
+    },
+  });
+
+  const sequenceReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'sequence',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-sequence-plans', projectId] });
+    },
+  });
+
+  const chapterReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'chapter',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-plans', projectId] });
+    },
+  });
+
+  const sceneReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'scene',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-scene-plans', projectId] });
+    },
+  });
+
   const relationshipsQuery = useQuery({
     queryKey: ['planning', 'relationships', projectId],
     queryFn: () => getRelationships(projectId || ''),
@@ -332,6 +427,14 @@ export function PlanningView() {
     },
   });
 
+  const sequencePlanUpdateMutation = useMutation({
+    mutationFn: (data: { sequenceId: string; projectId: string; title: string; summary?: string }) =>
+      updateSequencePlan(data.sequenceId, data.projectId, { title: data.title, summary: data.summary }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'sequence-plans', projectId] });
+    },
+  });
+
   const chapterPacketCreateMutation = useMutation({
     mutationFn: (data: Parameters<typeof createChapterPacket>[1]) =>
       createChapterPacket(projectId || '', data),
@@ -356,9 +459,25 @@ export function PlanningView() {
     },
   });
 
+  const chapterPlanUpdateMutation = useMutation({
+    mutationFn: (data: { chapterId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
+      updateChapterPlan(data.chapterId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-plans', projectId] });
+    },
+  });
+
   const scenePlanCreateMutation = useMutation({
     mutationFn: (data: Parameters<typeof createScenePlan>[1]) =>
       createScenePlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'scene-plans', projectId] });
+    },
+  });
+
+  const scenePlanUpdateMutation = useMutation({
+    mutationFn: (data: { sceneId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
+      updateScenePlan(data.sceneId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['planning', 'scene-plans', projectId] });
     },
@@ -372,9 +491,20 @@ export function PlanningView() {
     },
   });
 
+  const beatPlanUpdateMutation = useMutation({
+    mutationFn: (data: { beatId: string; projectId: string; objective: string; conflict?: string; stakes?: string; arc_stage?: string }) =>
+      updateBeatPlan(data.beatId, data.projectId, { objective: data.objective, conflict: data.conflict, stakes: data.stakes, arc_stage: data.arc_stage }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'beat-plans', projectId] });
+    },
+  });
+
   const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
   const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
   const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
+  const [sequenceEditOpenId, setSequenceEditOpenId] = useState<string | null>(null);
+  const [sequenceEditTitle, setSequenceEditTitle] = useState('');
+  const [sequenceEditSummary, setSequenceEditSummary] = useState('');
   const [packetCreateOpen, setPacketCreateOpen] = useState(false);
   const [packetCreateChapterId, setPacketCreateChapterId] = useState('');
   const [cardCreateOpen, setCardCreateOpen] = useState(false);
@@ -388,6 +518,11 @@ export function PlanningView() {
   const [chapterCreateConflict, setChapterCreateConflict] = useState('');
   const [chapterCreateStakes, setChapterCreateStakes] = useState('');
   const [chapterCreateSequenceId, setChapterCreateSequenceId] = useState('');
+  const [chapterEditOpenId, setChapterEditOpenId] = useState<string | null>(null);
+  const [chapterEditTitle, setChapterEditTitle] = useState('');
+  const [chapterEditObjective, setChapterEditObjective] = useState('');
+  const [chapterEditConflict, setChapterEditConflict] = useState('');
+  const [chapterEditStakes, setChapterEditStakes] = useState('');
 
   const [sceneCreateOpen, setSceneCreateOpen] = useState(false);
   const [sceneCreateTitle, setSceneCreateTitle] = useState('');
@@ -395,11 +530,31 @@ export function PlanningView() {
   const [sceneCreateConflict, setSceneCreateConflict] = useState('');
   const [sceneCreateStakes, setSceneCreateStakes] = useState('');
   const [sceneCreateChapterId, setSceneCreateChapterId] = useState('');
+  const [sceneEditOpenId, setSceneEditOpenId] = useState<string | null>(null);
+  const [sceneEditTitle, setSceneEditTitle] = useState('');
+  const [sceneEditObjective, setSceneEditObjective] = useState('');
+  const [sceneEditConflict, setSceneEditConflict] = useState('');
+  const [sceneEditStakes, setSceneEditStakes] = useState('');
 
   const [beatCreateOpen, setBeatCreateOpen] = useState(false);
   const [beatCreateObjective, setBeatCreateObjective] = useState('');
   const [beatCreateConflict, setBeatCreateConflict] = useState('');
   const [beatCreateStakes, setBeatCreateStakes] = useState('');
+  const [beatEditOpenId, setBeatEditOpenId] = useState<string | null>(null);
+  const [beatEditObjective, setBeatEditObjective] = useState('');
+  const [beatEditConflict, setBeatEditConflict] = useState('');
+  const [beatEditStakes, setBeatEditStakes] = useState('');
+  const [beatEditArcStage, setBeatEditArcStage] = useState('');
+
+  const [arcCandidateCreateOpen, setArcCandidateCreateOpen] = useState(false);
+  const [arcCandidateCreateId, setArcCandidateCreateId] = useState('');
+  const [arcCandidateCreateName, setArcCandidateCreateName] = useState('');
+  const [arcCandidateCreateSummary, setArcCandidateCreateSummary] = useState('');
+
+  const [stageMapCreateOpen, setStageMapCreateOpen] = useState(false);
+  const [stageMapCreateArcId, setStageMapCreateArcId] = useState('');
+  const [stageMapCreateNotes, setStageMapCreateNotes] = useState('');
+  const [stageMapCreateKinds, setStageMapCreateKinds] = useState<string[]>([]);
 
   const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
 
@@ -435,7 +590,9 @@ export function PlanningView() {
   const arcCandidates = arcCandidatesQuery.data ?? [];
   const arcSelections = arcSelectionsQuery.data ?? [];
   const arcStageMaps = arcStageMapsQuery.data ?? [];
-  const selectedArc = arcSelections.length > 0 ? getSelectedArc(arcSelections, projectId) : null;
+  const selectedArc = arcSelections.length > 0
+    ? (arcSelections.find((s) => s.project_id === projectId)?.selected_arc || null)
+    : null;
 
   const arcComparisons = arcComparisonsQuery.data ?? [];
 
@@ -538,10 +695,52 @@ export function PlanningView() {
                 <EmptyState text="No sequence plans configured. Create a sequence to define the high-level story structure." />
               ) : (
                 <div className="space-y-2">
-                  {sequencePlans.map((seq) => (
+                  {sequencePlans.map((seq, index) => (
                     <div key={seq.sequence_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="font-medium">{seq.title}</div>
-                      {seq.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{seq.summary}</p>}
+                      {sequenceEditOpenId === seq.sequence_id ? (
+                        <div className="flex flex-col gap-2">
+                          <input type="text" value={sequenceEditTitle} onChange={(e) => setSequenceEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                          <input type="text" value={sequenceEditSummary} onChange={(e) => setSequenceEditSummary(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                          <div className="flex gap-2">
+                            <button onClick={() => { void sequencePlanUpdateMutation.mutateAsync({ sequenceId: seq.sequence_id, projectId: projectId || '', title: sequenceEditTitle, summary: sequenceEditSummary || undefined }).then(() => { setSequenceEditOpenId(null); setSequenceEditTitle(''); setSequenceEditSummary(''); }); }} disabled={!sequenceEditTitle.trim() || sequencePlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
+                            <button onClick={() => { setSequenceEditOpenId(null); setSequenceEditTitle(''); setSequenceEditSummary(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{seq.title}</div>
+                            {seq.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{seq.summary}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                const newOrder = [...sequencePlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index - 1, 0, removed);
+                                void sequenceReorderMutation.mutateAsync(newOrder.map((s) => s.sequence_id));
+                              }}
+                              disabled={index === 0 || sequenceReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newOrder = [...sequencePlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index + 1, 0, removed);
+                                void sequenceReorderMutation.mutateAsync(newOrder.map((s) => s.sequence_id));
+                              }}
+                              disabled={index === sequencePlans.length - 1 || sequenceReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === sequencePlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => { setSequenceEditOpenId(seq.sequence_id); setSequenceEditTitle(seq.title); setSequenceEditSummary(seq.summary || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -577,10 +776,55 @@ export function PlanningView() {
                 <EmptyState text="No chapter plans configured. Create a chapter to define story structure." />
               ) : (
                 <div className="space-y-2">
-                  {chapterPlans.map((chap) => (
+                  {chapterPlans.map((chap, index) => (
                     <div key={chap.chapter_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="font-medium">{chap.title}</div>
-                      {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
+                      {chapterEditOpenId === chap.chapter_id ? (
+                        <div className="flex flex-col gap-2">
+                          <input type="text" value={chapterEditTitle} onChange={(e) => setChapterEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Title" />
+                          <input type="text" value={chapterEditObjective} onChange={(e) => setChapterEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
+                          <input type="text" value={chapterEditConflict} onChange={(e) => setChapterEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
+                          <input type="text" value={chapterEditStakes} onChange={(e) => setChapterEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
+                          {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
+                          <div className="flex gap-2">
+                            <button onClick={() => { void chapterPlanUpdateMutation.mutateAsync({ chapterId: chap.chapter_id, projectId: projectId || '', title: chapterEditTitle, objective: chapterEditObjective, conflict: chapterEditConflict || undefined, stakes: chapterEditStakes || undefined }).then(() => { setChapterEditOpenId(null); setChapterEditTitle(''); setChapterEditObjective(''); setChapterEditConflict(''); setChapterEditStakes(''); }); }} disabled={!chapterEditTitle.trim() || !chapterEditObjective.trim() || chapterPlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
+                            <button onClick={() => { setChapterEditOpenId(null); setChapterEditTitle(''); setChapterEditObjective(''); setChapterEditConflict(''); setChapterEditStakes(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{chap.title}</div>
+                            {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                const newOrder = [...chapterPlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index - 1, 0, removed);
+                                void chapterReorderMutation.mutateAsync(newOrder.map((c) => c.chapter_id));
+                              }}
+                              disabled={index === 0 || chapterReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newOrder = [...chapterPlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index + 1, 0, removed);
+                                void chapterReorderMutation.mutateAsync(newOrder.map((c) => c.chapter_id));
+                              }}
+                              disabled={index === chapterPlans.length - 1 || chapterReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === chapterPlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => { setChapterEditOpenId(chap.chapter_id); setChapterEditTitle(chap.title); setChapterEditObjective(chap.objective); setChapterEditConflict(chap.conflict || ''); setChapterEditStakes(chap.stakes || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -616,10 +860,55 @@ export function PlanningView() {
                 <EmptyState text="No scene plans configured. Create a scene to define granular story beats." />
               ) : (
                 <div className="space-y-2">
-                  {scenePlans.map((scene) => (
+                  {scenePlans.map((scene, index) => (
                     <div key={scene.scene_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="font-medium">{scene.title}</div>
-                      {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+                      {sceneEditOpenId === scene.scene_id ? (
+                        <div className="flex flex-col gap-2">
+                          <input type="text" value={sceneEditTitle} onChange={(e) => setSceneEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Title" />
+                          <input type="text" value={sceneEditObjective} onChange={(e) => setSceneEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
+                          <input type="text" value={sceneEditConflict} onChange={(e) => setSceneEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
+                          <input type="text" value={sceneEditStakes} onChange={(e) => setSceneEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
+                          {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+                          <div className="flex gap-2">
+                            <button onClick={() => { void scenePlanUpdateMutation.mutateAsync({ sceneId: scene.scene_id, projectId: projectId || '', title: sceneEditTitle, objective: sceneEditObjective, conflict: sceneEditConflict || undefined, stakes: sceneEditStakes || undefined }).then(() => { setSceneEditOpenId(null); setSceneEditTitle(''); setSceneEditObjective(''); setSceneEditConflict(''); setSceneEditStakes(''); }); }} disabled={!sceneEditTitle.trim() || !sceneEditObjective.trim() || scenePlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
+                            <button onClick={() => { setSceneEditOpenId(null); setSceneEditTitle(''); setSceneEditObjective(''); setSceneEditConflict(''); setSceneEditStakes(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{scene.title}</div>
+                            {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                const newOrder = [...scenePlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index - 1, 0, removed);
+                                void sceneReorderMutation.mutateAsync(newOrder.map((s) => s.scene_id));
+                              }}
+                              disabled={index === 0 || sceneReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newOrder = [...scenePlans];
+                                const [removed] = newOrder.splice(index, 1);
+                                newOrder.splice(index + 1, 0, removed);
+                                void sceneReorderMutation.mutateAsync(newOrder.map((s) => s.scene_id));
+                              }}
+                              disabled={index === scenePlans.length - 1 || sceneReorderMutation.isPending}
+                              className={`p-0.5 rounded transition-colors ${index === scenePlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => { setSceneEditOpenId(scene.scene_id); setSceneEditTitle(scene.title); setSceneEditObjective(scene.objective); setSceneEditConflict(scene.conflict || ''); setSceneEditStakes(scene.stakes || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -655,10 +944,30 @@ export function PlanningView() {
                 <div className="space-y-2">
                   {beatPlans.map((beat) => (
                     <div key={beat.beat_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="font-medium">{beat.objective}</div>
-                      <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Conflict: {beat.conflict}</div>
-                      <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Stakes: {beat.stakes}</div>
-                      {beat.arc_stage && <span className={`text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>{beat.arc_stage}</span>}
+                      {beatEditOpenId === beat.beat_id ? (
+                        <div className="flex flex-col gap-2">
+                          <input type="text" value={beatEditObjective} onChange={(e) => setBeatEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
+                          <input type="text" value={beatEditConflict} onChange={(e) => setBeatEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
+                          <input type="text" value={beatEditStakes} onChange={(e) => setBeatEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
+                          <input type="text" value={beatEditArcStage} onChange={(e) => setBeatEditArcStage(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Arc Stage (optional)" />
+                          <div className="flex gap-2">
+                            <button onClick={() => { void beatPlanUpdateMutation.mutateAsync({ beatId: beat.beat_id, projectId: projectId || '', objective: beatEditObjective, conflict: beatEditConflict || undefined, stakes: beatEditStakes || undefined, arc_stage: beatEditArcStage || undefined }).then(() => { setBeatEditOpenId(null); setBeatEditObjective(''); setBeatEditConflict(''); setBeatEditStakes(''); setBeatEditArcStage(''); }); }} disabled={!beatEditObjective.trim() || beatPlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
+                            <button onClick={() => { setBeatEditOpenId(null); setBeatEditObjective(''); setBeatEditConflict(''); setBeatEditStakes(''); setBeatEditArcStage(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{beat.objective}</div>
+                              <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Conflict: {beat.conflict}</div>
+                              <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Stakes: {beat.stakes}</div>
+                              {beat.arc_stage && <span className={`text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>{beat.arc_stage}</span>}
+                            </div>
+                            <button onClick={() => { setBeatEditOpenId(beat.beat_id); setBeatEditObjective(beat.objective); setBeatEditConflict(beat.conflict || ''); setBeatEditStakes(beat.stakes || ''); setBeatEditArcStage(beat.arc_stage || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -867,14 +1176,109 @@ export function PlanningView() {
               <Section title="Stage Map">
                 <WorkspaceStatus title="Loading stage maps" detail="Fetching arc stage progression..." isDark={isDark} />
               </Section>
+            ) : stageMapCreateOpen ? (
+              <Section title="Stage Map">
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Arc</label>
+                    <select
+                      value={stageMapCreateArcId}
+                      onChange={(e) => setStageMapCreateArcId(e.target.value)}
+                      className={`text-xs px-2 py-1.5 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    >
+                      <option value="">Select an arc candidate...</option>
+                      {arcCandidates.map((c) => (
+                        <option key={c.arc_id} value={c.arc_id}>{c.name} ({c.arc_id})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Stages</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['exposition', 'inciting_incident', 'rising_action', 'complication', 'crisis', 'climax', 'falling_action', 'resolution'].map((stage) => (
+                        <button
+                          key={stage}
+                          type="button"
+                          onClick={() => {
+                            setStageMapCreateKinds((prev) =>
+                              prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
+                            );
+                          }}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            stageMapCreateKinds.includes(stage)
+                              ? isDark ? 'bg-violet-900 text-violet-200 border border-violet-700' : 'bg-violet-100 text-violet-800 border border-violet-300'
+                              : isDark ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {stage.replace(/_/g, ' ')}
+                        </button>
+                      ))}
+                    </div>
+                    {stageMapCreateKinds.length > 0 && (
+                      <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Order: {stageMapCreateKinds.map((k) => k.replace(/_/g, ' ')).join(' → ')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Notes (optional)</label>
+                    <textarea
+                      value={stageMapCreateNotes}
+                      onChange={(e) => setStageMapCreateNotes(e.target.value)}
+                      rows={2}
+                      placeholder="Stage map notes..."
+                      className={`text-xs px-2 py-1.5 rounded border resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (!stageMapCreateArcId || stageMapCreateKinds.length === 0) return;
+                        void stageMapCreateMutation.mutateAsync({
+                          arc_id: stageMapCreateArcId,
+                          project_id: projectId || '',
+                          stage_kinds: stageMapCreateKinds,
+                          notes: stageMapCreateNotes.trim() || undefined,
+                        }).then(() => {
+                          setStageMapCreateOpen(false);
+                          setStageMapCreateArcId('');
+                          setStageMapCreateKinds([]);
+                          setStageMapCreateNotes('');
+                        });
+                      }}
+                      disabled={!stageMapCreateArcId || stageMapCreateKinds.length === 0 || stageMapCreateMutation.isPending}
+                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+                    >
+                      {stageMapCreateMutation.isPending ? '...' : 'Save Stage Map'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setStageMapCreateOpen(false);
+                        setStageMapCreateArcId('');
+                        setStageMapCreateKinds([]);
+                        setStageMapCreateNotes('');
+                      }}
+                      className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </Section>
             ) : arcStageMaps.length > 0 ? (
-              <ArcStageMapFlow
-                stageMaps={arcStageMaps}
-                candidates={arcCandidates}
-                selectedArcId={selectedArc?.arc_id ?? null}
-                className="h-[260px]"
-              />
-            ) : null}
+              <Section title="Stage Map">
+                <ArcStageMapFlow
+                  stageMaps={arcStageMaps}
+                  candidates={arcCandidates}
+                  selectedArcId={selectedArc?.arc_id ?? null}
+                  className="h-[260px]"
+                />
+              </Section>
+            ) : (
+              <Section title="Stage Map">
+                <EmptyState text="No stage maps yet. Create one to define the narrative progression for an arc candidate." />
+              </Section>
+            )}
 
             {arcComparisonsQuery.isLoading ? (
               <Section title="Arc Comparisons">
@@ -890,10 +1294,51 @@ export function PlanningView() {
             ) : null}
 
             <Section title="Arc Candidates" count={arcCandidates.length}>
+              <div className="flex justify-end mb-2">
+                {!arcCandidateCreateOpen ? (
+                  <button
+                    onClick={() => { setArcCandidateCreateOpen(true); setArcCandidateCreateId(`arc-${Date.now()}`); setArcCandidateCreateName(''); setArcCandidateCreateSummary(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-violet-950 text-violet-300 hover:bg-violet-900' : 'bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+                  >
+                    + New Arc
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <input type="text" placeholder="Arc ID (e.g. arc-hero)" value={arcCandidateCreateId} onChange={(e) => setArcCandidateCreateId(e.target.value)} className={`text-xs px-2 py-1 rounded border w-48 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
+                    <input type="text" placeholder="Arc name" value={arcCandidateCreateName} onChange={(e) => setArcCandidateCreateName(e.target.value)} className={`text-xs px-2 py-1 rounded border w-56 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
+                    <input type="text" placeholder="Summary (optional)" value={arcCandidateCreateSummary} onChange={(e) => setArcCandidateCreateSummary(e.target.value)} className={`text-xs px-2 py-1 rounded border w-64 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (!arcCandidateCreateId.trim() || !arcCandidateCreateName.trim()) return;
+                          void arcCandidateCreateMutation.mutateAsync({
+                            arc_id: arcCandidateCreateId.trim(),
+                            project_id: projectId || '',
+                            name: arcCandidateCreateName.trim(),
+                            summary: arcCandidateCreateSummary.trim() || 'No summary provided.',
+                          }).then(() => {
+                            setArcCandidateCreateOpen(false);
+                            setArcCandidateCreateId('');
+                            setArcCandidateCreateName('');
+                            setArcCandidateCreateSummary('');
+                          });
+                        }}
+                        disabled={!arcCandidateCreateId.trim() || !arcCandidateCreateName.trim() || arcCandidateCreateMutation.isPending}
+                        className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
+                      >
+                        {arcCandidateCreateMutation.isPending ? '...' : 'Create'}
+                      </button>
+                      <button onClick={() => setArcCandidateCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               {arcCandidatesQuery.isLoading ? (
                 <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." isDark={isDark} />
               ) : arcCandidates.length === 0 ? (
-                <EmptyState text="No arc candidates available. Arcs will appear once foundation and character work is complete." />
+                <EmptyState text="No arc candidates available. Create one manually or import from foundation/character work." />
               ) : (
                 <div className="space-y-2">
                   {arcCandidates.map((candidate) => {
@@ -903,13 +1348,36 @@ export function PlanningView() {
                         ? isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-300'
                         : isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
                       }`}>
-                        <div className="font-medium">{candidate.name}</div>
-                        {candidate.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{candidate.summary}</p>}
-                        {isSelected && (
-                          <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
-                            Selected
-                          </span>
-                        )}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{candidate.name}</div>
+                            {candidate.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{candidate.summary}</p>}
+                            {isSelected && (
+                              <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-1.5 flex-shrink-0">
+                            {isSelected ? (
+                              <button
+                                onClick={() => void deselectArcMutation.mutateAsync()}
+                                disabled={deselectArcMutation.isPending}
+                                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-rose-950 text-rose-300 hover:bg-rose-900 disabled:opacity-40' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40'}`}
+                              >
+                                {deselectArcMutation.isPending ? '...' : 'Deselect'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => void selectArcMutation.mutateAsync(candidate.arc_id)}
+                                disabled={selectArcMutation.isPending || deselectArcMutation.isPending}
+                                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-emerald-950 text-emerald-300 hover:bg-emerald-900 disabled:opacity-40' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40'}`}
+                              >
+                                {selectArcMutation.isPending ? '...' : 'Select'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}

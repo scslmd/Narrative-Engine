@@ -26,6 +26,7 @@ import type {
   ScenePlanUpdateRequest,
   BeatPlanCreateRequest,
   BeatPlanUpdateRequest,
+  PlanningReorderRequest,
 } from '../types/planning';
 import api from '../lib/api';
 
@@ -475,4 +476,21 @@ export async function updateBeatPlan(
   }
 
   return response.data;
+}
+
+// ============================================================================
+// Planning reorder
+// ============================================================================
+
+/**
+ * Reorder sequence, chapter, or scene plans
+ */
+export async function reorderPlanObjects(
+  data: PlanningReorderRequest,
+): Promise<void> {
+  const response = await api.post('/story-development/planning/reorder', data);
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to reorder ${data.plan_kind} plans: ${response.status}`);
+  }
 }

@@ -259,3 +259,13 @@ export interface StoryboardCardUpdateRequest {
 export interface StoryboardCardReindexRequest {
   card_ids: string[];
 }
+
+// ============================================================================
+// Planning reorder types
+// ============================================================================
+
+export interface PlanningReorderRequest {
+  project_id: string;
+  plan_kind: 'sequence' | 'chapter' | 'scene';
+  ordered_plan_ids: string[];
+}
