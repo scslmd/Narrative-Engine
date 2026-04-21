@@ -27,9 +27,13 @@ import {
   getSequencePlans,
   getChapterPlans,
   getScenePlans,
+  getBeatPlans,
+  createSequencePlan,
+  createChapterPlan,
+  createScenePlan,
+  createBeatPlan,
   getPlanningDependencies,
   getChapterPackets,
-  createSequencePlan,
   createChapterPacket,
 } from '../services/planning';
 import {
@@ -161,6 +165,12 @@ export function PlanningView() {
   const scenePlansQuery = useQuery({
     queryKey: ['planning-scene-plans', projectId],
     queryFn: () => getScenePlans(projectId || ''),
+    enabled: Boolean(projectId) && activeTab === 'planning',
+  });
+
+  const beatPlansQuery = useQuery({
+    queryKey: ['planning-beat-plans', projectId],
+    queryFn: () => getBeatPlans(projectId || ''),
     enabled: Boolean(projectId) && activeTab === 'planning',
   });
 
@@ -338,6 +348,30 @@ export function PlanningView() {
     },
   });
 
+  const chapterPlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createChapterPlan>[1]) =>
+      createChapterPlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-plans', projectId] });
+    },
+  });
+
+  const scenePlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createScenePlan>[1]) =>
+      createScenePlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'scene-plans', projectId] });
+    },
+  });
+
+  const beatPlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createBeatPlan>[1]) =>
+      createBeatPlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning', 'beat-plans', projectId] });
+    },
+  });
+
   const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
   const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
   const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
@@ -347,6 +381,25 @@ export function PlanningView() {
   const [cardCreateTitle, setCardCreateTitle] = useState('');
   const [cardCreateContent, setCardCreateContent] = useState('');
   const [cardCreateType, setCardCreateType] = useState('idea');
+
+  const [chapterCreateOpen, setChapterCreateOpen] = useState(false);
+  const [chapterCreateTitle, setChapterCreateTitle] = useState('');
+  const [chapterCreateObjective, setChapterCreateObjective] = useState('');
+  const [chapterCreateConflict, setChapterCreateConflict] = useState('');
+  const [chapterCreateStakes, setChapterCreateStakes] = useState('');
+  const [chapterCreateSequenceId, setChapterCreateSequenceId] = useState('');
+
+  const [sceneCreateOpen, setSceneCreateOpen] = useState(false);
+  const [sceneCreateTitle, setSceneCreateTitle] = useState('');
+  const [sceneCreateObjective, setSceneCreateObjective] = useState('');
+  const [sceneCreateConflict, setSceneCreateConflict] = useState('');
+  const [sceneCreateStakes, setSceneCreateStakes] = useState('');
+  const [sceneCreateChapterId, setSceneCreateChapterId] = useState('');
+
+  const [beatCreateOpen, setBeatCreateOpen] = useState(false);
+  const [beatCreateObjective, setBeatCreateObjective] = useState('');
+  const [beatCreateConflict, setBeatCreateConflict] = useState('');
+  const [beatCreateStakes, setBeatCreateStakes] = useState('');
 
   const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
 
@@ -374,6 +427,7 @@ export function PlanningView() {
   const sequencePlans = sequencePlansQuery.data ?? [];
   const chapterPlans = chapterPlansQuery.data ?? [];
   const scenePlans = scenePlansQuery.data ?? [];
+  const beatPlans = beatPlansQuery.data ?? [];
   const dependencies = dependenciesQuery.data ?? [];
   const chapterPackets = chapterPacketsQuery.data ?? [];
   const storyboardCards = storyboardCardsQuery.data ?? [];
@@ -495,10 +549,32 @@ export function PlanningView() {
             </Section>
 
             <Section title="Chapters" count={chapterPlans.length}>
+              <div className="flex justify-end mb-2">
+                {!chapterCreateOpen ? (
+                  <button
+                    onClick={() => { setChapterCreateOpen(true); setChapterCreateTitle(''); setChapterCreateObjective(''); setChapterCreateConflict(''); setChapterCreateStakes(''); setChapterCreateSequenceId(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                    + New Chapter
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 w-80">
+                    <input type="text" placeholder="Chapter title" value={chapterCreateTitle} onChange={(e) => setChapterCreateTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Objective" value={chapterCreateObjective} onChange={(e) => setChapterCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Conflict" value={chapterCreateConflict} onChange={(e) => setChapterCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Stakes" value={chapterCreateStakes} onChange={(e) => setChapterCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Sequence ID (optional)" value={chapterCreateSequenceId} onChange={(e) => setChapterCreateSequenceId(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <div className="flex gap-2">
+                      <button onClick={() => { const id = `chapter-${Date.now()}`; void chapterPlanCreateMutation.mutateAsync({ project_id: projectId || '', chapter_id: id, title: chapterCreateTitle, objective: chapterCreateObjective, conflict: chapterCreateConflict, stakes: chapterCreateStakes, sequence_id: chapterCreateSequenceId || undefined }); setChapterCreateOpen(false); }} disabled={!chapterCreateTitle.trim() || !chapterCreateObjective.trim() || chapterPlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
+                      <button onClick={() => setChapterCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
               {chapterPlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." isDark={isDark} />
               ) : chapterPlans.length === 0 ? (
-                <EmptyState text="No chapter plans configured. Chapters will appear once sequence planning is complete." />
+                <EmptyState text="No chapter plans configured. Create a chapter to define story structure." />
               ) : (
                 <div className="space-y-2">
                   {chapterPlans.map((chap) => (
@@ -512,16 +588,77 @@ export function PlanningView() {
             </Section>
 
             <Section title="Scenes" count={scenePlans.length}>
+              <div className="flex justify-end mb-2">
+                {!sceneCreateOpen ? (
+                  <button
+                    onClick={() => { setSceneCreateOpen(true); setSceneCreateTitle(''); setSceneCreateObjective(''); setSceneCreateConflict(''); setSceneCreateStakes(''); setSceneCreateChapterId(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                    + New Scene
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 w-80">
+                    <input type="text" placeholder="Scene title" value={sceneCreateTitle} onChange={(e) => setSceneCreateTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Objective" value={sceneCreateObjective} onChange={(e) => setSceneCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Conflict" value={sceneCreateConflict} onChange={(e) => setSceneCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Stakes" value={sceneCreateStakes} onChange={(e) => setSceneCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Chapter ID (optional)" value={sceneCreateChapterId} onChange={(e) => setSceneCreateChapterId(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <div className="flex gap-2">
+                      <button onClick={() => { const id = `scene-${Date.now()}`; void scenePlanCreateMutation.mutateAsync({ project_id: projectId || '', scene_id: id, title: sceneCreateTitle, objective: sceneCreateObjective, conflict: sceneCreateConflict, stakes: sceneCreateStakes, chapter_id: sceneCreateChapterId || undefined }); setSceneCreateOpen(false); }} disabled={!sceneCreateTitle.trim() || !sceneCreateObjective.trim() || scenePlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
+                      <button onClick={() => setSceneCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
               {scenePlansQuery.isLoading ? (
                 <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." isDark={isDark} />
               ) : scenePlans.length === 0 ? (
-                <EmptyState text="No scene plans configured. Scenes will appear once chapter planning is complete." />
+                <EmptyState text="No scene plans configured. Create a scene to define granular story beats." />
               ) : (
                 <div className="space-y-2">
                   {scenePlans.map((scene) => (
                     <div key={scene.scene_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                       <div className="font-medium">{scene.title}</div>
                       {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+
+            <Section title="Beats" count={beatPlans.length}>
+              <div className="flex justify-end mb-2">
+                {!beatCreateOpen ? (
+                  <button
+                    onClick={() => { setBeatCreateOpen(true); setBeatCreateObjective(''); setBeatCreateConflict(''); setBeatCreateStakes(''); }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+                  >
+                    + New Beat
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 w-80">
+                    <input type="text" placeholder="Objective" value={beatCreateObjective} onChange={(e) => setBeatCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Conflict" value={beatCreateConflict} onChange={(e) => setBeatCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <input type="text" placeholder="Stakes" value={beatCreateStakes} onChange={(e) => setBeatCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
+                    <div className="flex gap-2">
+                      <button onClick={() => { const id = `beat-${Date.now()}`; void beatPlanCreateMutation.mutateAsync({ project_id: projectId || '', beat_id: id, objective: beatCreateObjective, conflict: beatCreateConflict, stakes: beatCreateStakes }); setBeatCreateOpen(false); }} disabled={!beatCreateObjective.trim() || !beatCreateConflict.trim() || beatPlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
+                      <button onClick={() => setBeatCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {beatPlansQuery.isLoading ? (
+                <WorkspaceStatus title="Loading beats" detail="Fetching beat plans..." isDark={isDark} />
+              ) : beatPlans.length === 0 ? (
+                <EmptyState text="No beat plans configured. Create beats to define granular story moments." />
+              ) : (
+                <div className="space-y-2">
+                  {beatPlans.map((beat) => (
+                    <div key={beat.beat_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div className="font-medium">{beat.objective}</div>
+                      <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Conflict: {beat.conflict}</div>
+                      <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Stakes: {beat.stakes}</div>
+                      {beat.arc_stage && <span className={`text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>{beat.arc_stage}</span>}
                     </div>
                   ))}
                 </div>
