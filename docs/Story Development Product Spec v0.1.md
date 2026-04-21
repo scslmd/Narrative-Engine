@@ -6,6 +6,7 @@
 - Updated Section 10.2 to clarify that current v1.0 provides read-only arc projections via getArcCandidates, getArcSelections, and getArcStageMaps; arc selection mutations and comparison mutations are deferred to a future release wave
 - Updated Section 14.2 screens list to note v1.0 scope for Character Builder (profile editing only) and Arc Selection (read-only projections)
 - Added explicit documentation that planning is read-heavy for v1.0 via existing GET planning endpoints; create, update, reorder, and packet-edit mutations are deferred
+- Updated April 2026: Deferred mutations are now implemented. Section 4.1 flow mutations (add, rename, redefine, reorder, disable, archive, delete stages) are available via `POST /v1/story-development/flow/stages/init` and `PATCH /v1/story-development/flow/stages/{stage_id}`. Section 10.2 arc mutations (POST/PUT/DELETE on candidates, selections, stage-maps, and comparisons) are now available. Section 11.3 planning mutations (POST/GET/PUT/PATCH on sequence, chapter, scene plans; POST on chapter packets; POST /planning/reorder) are available. Character relationship mutations (GET /relationships, PATCH /relationships/{id}, DELETE /relationships/{id}) are available.
 
 ## 1. Purpose
 
@@ -81,7 +82,7 @@ This flow should be project-configurable.
 
 This section describes the target product requirement for editable flow management. 
 
-**Current v1.0 scope**: The routed PlanningView provides read projections of flow stages via existing backend services. Full mutation support for adding, reordering, renaming, and deleting stages is deferred to a future release wave.
+**Current v1.0 scope**: The routed PlanningView provides read projections of flow stages via existing backend services. Full mutation support is now implemented via `POST /v1/story-development/flow/stages/init` (initialize or restore flow from counter table), `PATCH /v1/story-development/flow/stages/{stage_id}` (rename, redefine, update display_name/description/notes/depends_on/stage_configuration_state), `POST /v1/story-development/flow/stages` (create initial stages), `POST /v1/story-development/flow/stages/reorder` (reorder stages), and `DELETE /v1/story-development/flow/stages/{stage_id}` (delete custom stages when no dependent stages exist).
 
 Each `StoryFlowStage` should support:
 
@@ -230,7 +231,7 @@ Each major character should support:
 
 ### 8.3 Character Tools (Target Product Requirement)
 
-**Current v1.0 scope**: The CharacterBuilder component in PlanningView provides character profile editing via GET|POST|PATCH /v1/story-development/characters endpoints. Relationship-map workflows and advanced analysis tools described below are deferred to a future release wave.
+**Current v1.0 scope**: The CharacterBuilder component in PlanningView provides character profile editing via GET|POST|PATCH /v1/story-development/characters endpoints. Character relationship mutations (GET /v1/story-development/relationships, PATCH /v1/story-development/relationships/{edge_id}, DELETE /v1/story-development/relationships/{edge_id}) are now implemented. Relationship-map graph UI and advanced analysis tools described below are deferred to a future release wave.
 
 - generate or refine character backstory
 - compare character arcs
@@ -288,7 +289,7 @@ The user should be able to choose an arc deliberately, compare alternatives, and
 
 ### 10.2 Arc Support Requirements (Target Product Requirement)
 
-**Current v1.0 scope**: The PlanningView arcs tab provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` which consume GET /v1/story-development/arcs/candidates, GET /v1/story-development/arcs/selections, and GET /v1/story-development/arcs/stage-maps. Arc selection mutations, comparison mutations, and arc-driven guidance features described below are deferred to a future release wave.
+**Current v1.0 scope**: The PlanningView arcs tab provides arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps` which consume GET /v1/story-development/arcs/candidates, GET /v1/story-development/arcs/selections, and GET /v1/story-development/arcs/stage-maps. Arc selection mutations and comparison mutations are now implemented via POST /v1/story-development/arcs/candidates, POST /v1/story-development/arcs/comparisons, POST /v1/story-development/arcs/selections, PATCH /v1/story-development/arcs/selections/{selection_id}, DELETE /v1/story-development/arcs/selections/{selection_id}, and POST /v1/story-development/arcs/stage-maps. Arc-driven guidance features described below remain deferred.
 
 The system should support:
 
@@ -388,7 +389,7 @@ Planning objects should support:
 - status
 - writer notes
 
-**Current v1.0 scope**: The PlanningView planning tab provides read-heavy planning visibility via `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets` which consume GET /v1/story-development/planning/sequence-plans, GET /v1/story-development/planning/chapter-plans, GET /v1/story-development/planning/scene-plans, GET /v1/story-development/planning/dependencies, and GET /v1/story-development/planning/chapter-packets. Create, update, reorder, and packet-edit mutations are deferred to a future release wave.
+**Current v1.0 scope**: The PlanningView planning tab provides read-heavy planning visibility via `getSequencePlans`, `getChapterPlans`, `getScenePlans`, `getPlanningDependencies`, and `getChapterPackets` which consume GET /v1/story-development/planning/sequence-plans, GET /v1/story-development/planning/chapter-plans, GET /v1/story-development/planning/scene-plans, GET /v1/story-development/planning/dependencies, and GET /v1/story-development/planning/chapter-packets. Create and update mutations for sequence plans (`POST /v1/story-development/planning/sequence-plans`, `PATCH /v1/story-development/planning/sequence-plans/{sequence_id}`), chapter plans (`GET /v1/story-development/planning/chapter-plans`, `GET /v1/story-development/planning/chapter-plans/{chapter_id}`), and chapter packets (`POST /v1/story-development/planning/chapter-packets`, `PATCH /v1/story-development/planning/chapter-packets/{packet_id}`) are now available. Planning reorder is available via `POST /v1/story-development/planning/reorder`.
 
 ### 11.4 Planner Capabilities
 
@@ -496,9 +497,9 @@ The main workspace should stay aligned with the current three-pane direction.
 - promises
 - constraints
 
-4. Character Builder (Current v1.0: character profile editing via routed state using GET|POST|PATCH /v1/story-development/characters)
+4. Character Builder (Current v1.0: character profile editing via routed state using GET|POST|PATCH /v1/story-development/characters; relationship CRUD via GET|PATCH|DELETE /v1/story-development/relationships)
 - character cards
-- relationship map (deferred to future release; current v1.0 provides profile fields only)
+- relationship map (graph UI deferred to future release; CRUD mutations available via API)
 - arc-change fields
 - contradictions and secrets panel
 
@@ -507,17 +508,17 @@ The main workspace should stay aligned with the current three-pane direction.
 - locations, factions, rules, history
 - continuity warning panel
 
-6. Arc Selection and Comparison (Current v1.0: read-only projections via getArcCandidates, getArcSelections, getArcStageMaps consuming GET /v1/story-development/arcs/*)
+6. Arc Selection and Comparison (Current v1.0: projections via getArcCandidates, getArcSelections, getArcStageMaps consuming GET /v1/story-development/arcs/*; mutations via POST/DELETE /v1/story-development/arcs/candidates, POST /v1/story-development/arcs/comparisons, POST/DELETE /v1/story-development/arcs/selections, PATCH /v1/story-development/arcs/selections/{id}, POST /v1/story-development/arcs/stage-maps)
 - recommended arcs
-- arc comparison table (deferred to future release; mutations not yet available in v1.0)
+- arc comparison table (mutations available; graph UI for comparison deferred to future release)
 - stage-map preview
 - "stay" versus "pivot" suggestion panel (deferred to future release)
 
-7. Planning Board (Current v1.0: read-heavy planning via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, getChapterPackets consuming GET /v1/story-development/planning/*)
+7. Planning Board (Current v1.0: read projections via GET /v1/story-development/planning/*; mutations via POST/PATCH /v1/story-development/planning/sequence-plans, GET /v1/story-development/planning/chapter-plans, POST/PATCH /v1/story-development/planning/chapter-packets, POST /v1/story-development/planning/reorder)
 - sequence view
 - chapter cards
 - scene cards
-- drag reorder (deferred to future release; mutations not yet available in v1.0)
+- drag reorder (mutations available via POST /v1/story-development/planning/reorder)
 - dependency and arc-stage badges
 
 8. Drafting Workspace

@@ -650,7 +650,7 @@ Current backend milestone now implemented:
 - public API wiring for story-development routes is still intentionally not implemented
 - branch identity, branch state, branch comparison, merge behavior, and story-development route surfaces remain separate upcoming slices
 
-**v1.0 scope clarification**: The current routed app provides read-only arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; character profile editing via CharacterBuilder; and planning reads where API endpoints exist. Interactive decision workflows (arc selection mutations, relationship mapping) are deferred to future releases while remaining supported backend concepts.
+**v1.0 scope clarification**: The current routed app provides arc projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; character profile editing via CharacterBuilder; and planning reads where API endpoints exist. Arc selection mutations (`POST/DELETE /v1/story-development/arcs/candidates`, `POST /v1/story-development/arcs/comparisons`, `POST/DELETE /v1/story-development/arcs/selections`, `PATCH /v1/story-development/arcs/selections/{id}`, `POST /v1/story-development/arcs/stage-maps`) and character relationship mutations (`GET/PATCH/DELETE /v1/story-development/relationships`) are now implemented. Planning mutations (sequence CRUD, chapter packets, reorder) are available. Interactive arc-decision and relationship-map graph UI workflows remain deferred to future releases while supported by backend contracts.
 
 ### 17.1 Editable Core Flow
 
@@ -784,7 +784,7 @@ Required character data:
 - fear
 - strength
 - flaw or limitation
-- relationship map (deferred to future release; current v1.0 provides profile fields only)
+- relationship map (CRUD mutations available via `GET|PATCH|DELETE /v1/story-development/relationships`; graph UI deferred to future release)
 - secrets
 - continuity facts
 - change axis
@@ -860,7 +860,7 @@ Required task functions:
 
 Story arc selection is the planning layer that lets the user choose a story shape, compare alternatives, and change course without losing prior work.
 
-**v1.0 scope clarification**: Current routed app provides read-only arc projections (`getArcCandidates`, `getArcSelections`, `getArcStageMaps`); interactive arc-decision workflows (comparison mutations, selection changes) are deferred to future releases.
+**v1.0 scope clarification**: Current routed app provides arc projections (`getArcCandidates`, `getArcSelections`, `getArcStageMaps`); interactive arc-decision workflows are partially implemented: comparison mutations (`POST /v1/story-development/arcs/comparisons`), selection mutations (`POST /v1/story-development/arcs/selections`, `PATCH /v1/story-development/arcs/selections/{id}`, `DELETE /v1/story-development/arcs/selections/{id}`), and stage-map mutations (`POST /v1/story-development/arcs/stage-maps`) are available. Arc candidate creation (`POST /v1/story-development/arcs/candidates`) is also available. Graph UI and "stay versus pivot" suggestion panels remain deferred to future releases.
 
 What it solves:
 

@@ -9,6 +9,7 @@ Document version: `v0.5`
 - Updated Section 19 (Deterministic Orchestrator Tasks) with React + Vite + Zustand tech stack
 - Added Section 21 (Technology Stack Decisions) documenting framework choices
 - Clarified manuscript aids mock service pattern for incomplete backend endpoints
+- Updated April 2026: Deferred mutations are now implemented. Flow editor mutations (add, rename, reorder, redefine, disable, archive, delete) via `POST/PATCH/DELETE /v1/story-development/flow/stages`. Arc mutations (candidates, comparisons, selections, stage-maps). Character relationship CRUD via `/v1/story-development/relationships`. Planning mutations (sequence plans, chapter packets, reorder). Backend APIs are now available; frontend UI integration is pending.
 
 **Change log from v0.5 (API Alignment Update - March 24, 2026)**:
 - Updated Section 12A with complete 58-endpoint inventory (jobs, role-model-checker, branches, decisions, planning, drafting, review)
@@ -141,12 +142,12 @@ Story-development refinement:
 
 - the default journey above is a recommended scaffold, not a locked workflow
 - brainstorm, foundation, character, world-bible, arc, planning, drafting, and review surfaces should all support re-entry after downstream artifacts already exist
-- **v1.0 scope note**: The FlowEditor component exists in the frontend but editable flow stages are deferred beyond v1.0; current implementation provides read-only stage visibility with a target capability for full stage editing (add, rename, reorder, redefine, disable, archive, delete) documented below as future work
-- **deferred: editable flow editor**: when implemented, the flow editor should make stage definitions visible and editable as first-class project data, including stage name, purpose, dependencies, ordering, enabled state, and stage-specific notes
-- **deferred: adding custom stages**: a custom stage should create a new flow stage that can be inserted before, between, or after existing stages without breaking the rest of the workspace
-- **deferred: disabling/archiving stages**: disabling or archiving a stage should only remove it from active future guidance; it should not delete prior artifacts or erase provenance
-- **deferred: deleting custom stages**: deleting a custom stage should be allowed only when the canonical editable-flow deletion rules are satisfied
-- **deferred: redefining stages**: redefining a stage should update future suggestions and screen labels while preserving the old meaning in historical artifacts and inspect views
+- **v1.0 scope note**: The FlowEditor component exists in the frontend; editable flow stages are now implemented via backend APIs (`POST /v1/story-development/flow/stages/init`, `PATCH /v1/story-development/flow/stages/{stage_id}`, `POST /v1/story-development/flow/stages`, `POST /v1/story-development/flow/stages/reorder`, `DELETE /v1/story-development/flow/stages/{stage_id}`). Frontend UI integration for full stage editing (add, rename, reorder, redefine, disable, archive, delete) is documented below as a target capability.
+- **implementing: editable flow editor**: the flow editor should make stage definitions visible and editable as first-class project data, including stage name, purpose, dependencies, ordering, enabled state, and stage-specific notes
+- **implementing: adding custom stages**: a custom stage should create a new flow stage that can be inserted before, between, or after existing stages without breaking the rest of the workspace
+- **implementing: disabling/archiving stages**: disabling or archiving a stage should only remove it from active future guidance; it should not delete prior artifacts or erase provenance
+- **implementing: deleting custom stages**: deleting a custom stage should be allowed only when the canonical editable-flow deletion rules are satisfied
+- **implementing: redefining stages**: redefining a stage should update future suggestions and screen labels while preserving the old meaning in historical artifacts and inspect views
 - **deferred: downstream review cues**: when a stage changes, the UI should identify the downstream artifacts, planning cards, or draft segments that may need review
 - **deferred: pause/optional/re-enable stages**: the user should be able to pause a stage, mark it optional, or re-enable it at any point in the project
 - for the detailed product contract covering editable flow, screens, backend objects, and workflow states, see `docs/Story Development Product Spec v0.1.md`
@@ -447,12 +448,12 @@ Planned inspect-endpoint support:
 
 Highest-priority frontend features to carry forward into the final spec:
 
-- story-development flow editor (v1.0: FlowEditor component exists; editable stages deferred)
+- story-development flow editor (v1.0: FlowEditor component exists; editable stages available via backend APIs, frontend integration pending)
 - brainstorm and idea capture workspace
 - story foundation screen
-- character builder (v1.0: profile editing via mock service; relationship map deferred)
+- character builder (v1.0: profile editing via API; relationship CRUD via API, graph UI deferred)
 - world bible or codex rail
-- arc comparison (v1.0: read-only projections; comparative analysis workflows deferred)
+- arc comparison (v1.0: projections available; mutations via API, graph UI deferred)
 - chapter and scene planning board
 - story bible or codex side rail
 - storyboard-driven left rail for live story progression
@@ -581,13 +582,14 @@ The following features have **no backend implementation yet**:
 
 ### 12.4 Frontend Implementation Strategy
 
-**API-backed approach**: The frontend uses real backend APIs for all story-development features where endpoints exist in `app/api/story_development.py`. Mock services are only used for deferred capabilities (editable flow stages, relationship mapping UI, arc comparison mutations).
+**API-backed approach**: The frontend uses real backend APIs for all story-development features where endpoints exist in `app/api/story_development.py`. Mock services are only used for deferred capabilities (editable flow stage UI, relationship mapping graph UI, arc comparison graph UI).
 
 **v1.0 scope clarification**: 
-- Planning is read-heavy via getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, and getChapterPackets
-- Arcs are documented as read-only projections via getArcCandidates, getArcSelections, and getArcStageMaps
+- Planning is API-backed with read projections (getSequencePlans, getChapterPlans, getScenePlans, getPlanningDependencies, getChapterPackets) and mutations (POST/PATCH on sequence plans and chapter packets, POST /planning/reorder)
+- Arcs provide projections (getArcCandidates, getArcSelections, getArcStageMaps) and mutations (POST/DELETE on candidates and selections, POST comparisons, POST stage-maps, PATCH selections/{id})
+- Character profiles (GET/POST/PATCH) and relationships (GET/PATCH/DELETE /relationships) are API-backed
 - AidsPanel (FE-025), BrainstormWorkspace (FE-029), FoundationEditor (FE-030), CharacterBuilder (FE-031), and WorldBibleWorkspace (FE-032) are routed surfaces backed by existing GET/POST/PATCH contracts
-- Decision workflows (review decisions, merge decisions), editable flow stages, relationship mapping UI, and arc comparison mutations remain deferred beyond v1.0
+- Decision workflows (review decisions, merge decisions), editable flow stage UI, relationship mapping graph UI, and arc comparison graph UI remain deferred beyond v1.0
 
 **Existing backend contracts**:
 - `GET /v1/story-development/drafting/revision-suggestions` - AidsPanel revision suggestions
@@ -631,12 +633,12 @@ The following features have **no backend implementation yet**:
 | Review (read) | ✅ Complete | Use real API |
 | Branching | ✅ Complete | Use real API |
 | Story Decisions | ✅ Complete | Use real API |
-| Flow Editor | ⚠️ Services only; FlowEditor component exists | Mock service; editable stages deferred beyond v1.0 |
+| Flow Editor | ✅ Services implemented | Backend APIs for full stage CRUD and mutations exist; frontend FlowEditor integration with add, rename, reorder, redefine, disable, archive, delete pending |
 | Brainstorm | ✅ GET/POST/PATCH endpoints exist | Routed surface via POST /v1/story-development/brainstorm/items, POST /v1/story-development/brainstorm/items/cluster, GET /v1/story-development/brainstorm/promotions |
 | Foundation | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/foundation |
-| Character Builder | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/characters; relationship map deferred beyond v1.0 |
+| Character Builder | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/characters and GET|PATCH|DELETE /v1/story-development/relationships; graph UI deferred beyond v1.0 |
 | World Bible | ✅ GET/POST/PATCH endpoints exist | Routed surface via GET|POST|PATCH /v1/story-development/world-bible |
-| Arc Comparison | ⚠️ Services only; read-only projections available | Read-only projections via getArcCandidates, getArcSelections, getArcStageMaps; comparative analysis workflows deferred beyond v1.0 |
+| Arc Comparison | ✅ Services and mutations implemented | Projections via getArcCandidates, getArcSelections, getArcStageMaps; mutations via POST/DELETE /arcs/candidates, POST /arcs/comparisons, POST/DELETE /arcs/selections, PATCH /arcs/selections/{id}, POST /arcs/stage-maps; graph UI deferred beyond v1.0 |
 | Manuscript Aids | ✅ GET endpoint exists | Routed surface via GET /v1/story-development/drafting/revision-suggestions (AidsPanel) |
 
 ## 13. Feature Responsibilities And Task Contracts
@@ -660,19 +662,19 @@ This section makes the frontend feature set actionable for implementation.
   - consumes: brainstorm material, selected arc, project constraints, existing draft context
   - produces: foundation profile, logline, tone direction, and downstream change warnings
 - character builder:
-   - responsibility: build characters as active story forces with goals, flaws, relationships, and change arcs
-   - consumes: foundation, world context, arc choice, manuscript references
-   - produces: character profiles, relationship map updates (deferred beyond v1.0), contradiction warnings, and arc notes
-   - v1.0 scope: profile editing is implemented via mock service; relationship mapping is a deferred target capability
+    - responsibility: build characters as active story forces with goals, flaws, relationships, and change arcs
+    - consumes: foundation, world context, arc choice, manuscript references
+    - produces: character profiles, relationship edge updates (available via API), contradiction warnings, and arc notes
+    - v1.0 scope: profile editing and relationship CRUD are implemented via backend APIs; graph UI for relationship mapping is a deferred target capability
 - world bible workspace:
   - responsibility: store canon, rules, and continuity facts for planning and drafting
   - consumes: character context, foundation, manuscript excerpts, sequence context
   - produces: bible entries, pinned references, continuity warnings, and extractable canon notes
 - arc comparison view:
-   - responsibility: compare story arc options and show how each one changes the planning shape
-   - consumes: premise, genre, theme, character intent, selected story direction
-   - produces: arc candidates, stage-map previews, drift warnings, and chosen-arc notes
-   - v1.0 scope: read-only arc projections are available; comparative analysis workflows are deferred beyond v1.0
+    - responsibility: compare story arc options and show how each one changes the planning shape
+    - consumes: premise, genre, theme, character intent, selected story direction
+    - produces: arc candidates, stage-map previews, drift warnings, and chosen-arc notes
+    - v1.0 scope: arc projections and mutations (comparison, selection, stage-map, candidate creation) are available via backend APIs; graph UI for comparative analysis workflows is deferred beyond v1.0
 - planning board:
   - responsibility: move from story intent to beat, sequence, chapter, and scene cards
   - consumes: foundation, arc selection, character and bible context, current stage ordering
@@ -725,11 +727,11 @@ Each screen should be concrete about what it takes in and what it gives back.
 
 ### 14.4 Character Builder
 
-- user can add characters, edit biographies, define wants and needs, map relationships (deferred), and track arc changes
+- user can add characters, edit biographies, define wants and needs, manage relationships (API-backed via `GET|PATCH|DELETE /v1/story-development/relationships`; graph UI deferred), and track arc changes
 - consumes: foundation profile, world bible entries, selected arc, chapter or scene references
-- produces: character profiles, relationship edges (deferred beyond v1.0), contradiction flags, and character-specific writing notes
+- produces: character profiles, relationship edges (available via API), contradiction flags, and character-specific writing notes
 - implementation cue: treat each character as an evolving story object, not a static contact card
-- v1.0 scope: profile editing is implemented via mock service; relationship mapping is a deferred target capability
+- v1.0 scope: profile editing and relationship CRUD are implemented via backend APIs; graph UI for relationship mapping is a deferred target capability
 
 ### 14.5 World Bible Workspace
 
@@ -740,11 +742,11 @@ Each screen should be concrete about what it takes in and what it gives back.
 
 ### 14.6 Arc Comparison
 
-- user can compare candidate arcs (deferred), inspect the stage map for each one, and choose or replace the current arc
+- user can compare candidate arcs (mutations available via `POST /v1/story-development/arcs/comparisons`), inspect the stage map for each one, and choose or replace the current arc (mutations via `POST/DELETE /v1/story-development/arcs/selections`, `PATCH /v1/story-development/arcs/selections/{id}`, `POST /v1/story-development/arcs/stage-maps`)
 - consumes: premise, genre, tone, themes, character direction, current planning context
-- produces: selected arc, comparison notes (deferred beyond v1.0), arc fit rationale, and stage-map preview
+- produces: selected arc, comparison notes (available via API), arc fit rationale, and stage-map preview
 - implementation cue: the screen should show how the story would feel if the writer stays in one arc versus pivots to another
-- v1.0 scope: read-only arc projections are available; comparative analysis workflows are deferred beyond v1.0
+- v1.0 scope: arc projections and mutations are available via backend APIs; graph UI for comparative analysis workflows is deferred beyond v1.0
 
 ### 14.6A Story Branching
 
@@ -755,7 +757,7 @@ Each screen should be concrete about what it takes in and what it gives back.
 
 ### 14.7 Planning Board
 
-- user can arrange beats, sequences, chapters, and scenes; drag to reorder; mark status; and attach references
+- user can arrange beats, sequences, chapters, and scenes; drag to reorder (mutations available via `POST /v1/story-development/planning/reorder`); mark status; and attach references
 - consumes: arc choice, foundation, character context, bible entries, current stage definitions
 - produces: planning cards, chapter packets, reorder actions, blocked or missing-beat cues, and draft-ready plan states
 - implementation cue: the board should support both high-level structure and chapter-level execution without changing screens
@@ -907,7 +909,7 @@ The implementation order should stay deterministic so the workspace grows in a s
 - ⏳ FE-005B: Story bible rail section (pinned references) - NOT YET IMPLEMENTED
 
 **Phase 3: Flow Editor (Week 4)**
-- ⏳ FE-006: FlowEditor component (mock service) - v1.0 scope: read-only stage visibility; editable stages deferred beyond v1.0
+- ⏳ FE-006: FlowEditor component (backend APIs implemented) - v1.0 scope: backend APIs available for full stage editing; frontend integration pending
 
 **Phase 4: Planning Board (Week 5) - COMPLETED ✅**
 - ✅ FE-007: Planning board view (real API)
@@ -949,7 +951,7 @@ The implementation order should stay deterministic so the workspace grows in a s
 **Phase 10: Story Development Features (Week 13+)**
 - ⏳ FE-029: Brainstorm workspace (mock service) - BLOCKED: Backend not available
 - ⏳ FE-030: Foundation screen (mock service) - BLOCKED: Backend not available
-- ⏳ FE-031: Character builder (mock service) - v1.0 scope: profile editing; relationship map deferred beyond v1.0
+- ⏳ FE-031: Character builder (backend APIs available) - v1.0 scope: profile editing and relationship CRUD available via backend APIs; graph UI deferred beyond v1.0
 - ⏳ FE-032: World bible workspace (mock service) - BLOCKED: Backend not available
 
 **Infrastructure Tasks (Throughout)**
@@ -1014,10 +1016,10 @@ The orchestrator should be able to assign the frontend work as deterministic, bo
   - acceptance cue: Pinned items persist, are visible while writing, can be unpinned
 
 - task FE-006, Flow Editor:
-   - write scope: Flow editor shell, stage list, stage detail panel, stage actions (read-only in v1.0)
-   - expected outcome: Users can view stages; editable stages deferred beyond v1.0
-   - acceptance cue: Stage visibility works; edit actions are disabled or noted as deferred
-   - note: Uses mock service until backend API endpoints are added; v1.0 scope is read-only stage visibility
+    - write scope: Flow editor shell, stage list, stage detail panel, stage actions (backend APIs available for full CRUD)
+    - expected outcome: Users can view and edit stages via backend APIs (add, rename, reorder, redefine, disable, archive, delete)
+    - acceptance cue: Stage visibility works; edit actions use real backend APIs; counter table preserves next_stage_index across deletions
+    - note: Backend APIs are implemented; frontend integration pending
 
 - task FE-007, Planning Board:
   - write scope: Board views over `ChapterPlan` and `ScenePlan` from backend
@@ -1144,10 +1146,10 @@ The orchestrator should be able to assign the frontend work as deterministic, bo
   - note: Uses mock service until backend API endpoints are added
 
 - task FE-031, Character Builder:
-   - write scope: Character profiles (v1.0), relationship map (deferred beyond v1.0), contradiction warnings
-   - expected outcome: Characters are structured story objects; profile editing works via mock service
-   - acceptance cue: Goals, flaws visible together; relationship mapping noted as deferred; contradictions flagged where available
-   - note: Uses mock service until backend API endpoints are added; v1.0 scope is profile editing only
+    - write scope: Character profiles (v1.0), relationship CRUD via API (`GET|PATCH|DELETE /v1/story-development/relationships`), contradiction warnings
+    - expected outcome: Characters are structured story objects; profile editing and relationship management work via backend APIs
+    - acceptance cue: Goals, flaws visible together; relationship CRUD works via API; graph UI for relationship mapping deferred; contradictions flagged where available
+    - note: Backend APIs are implemented; frontend integration pending; v1.0 scope includes profile editing and relationship CRUD via API
 
 - task FE-032, World Bible Workspace:
   - write scope: Bible entries, search, pinning, continuity warnings
@@ -1266,9 +1268,9 @@ narrative-engine/
 - Decommission vanilla JS after validation
 
 **Backend API Integration**:
-- Use real APIs where available (projects, jobs, models, checker, planning reads, drafting reads, review reads, branching)
-- Use mock services where incomplete (flow editor editable stages, brainstorm, foundation, world bible, manuscript aids)
-- v1.0 scope: planning and character profile editing are API-backed; decision workflows, editable flow stages, relationship mapping, and arc comparison remain deferred
+- Use real APIs where available (projects, jobs, models, checker, planning reads, planning mutations, drafting reads, review reads, branching, arc mutations, relationship CRUD, foundation, brainstorm, world bible)
+- Use mock services where incomplete (flow editor UI, manuscript aids)
+- v1.0 scope: planning (read + mutations), character profile editing, relationship CRUD, arc mutations, foundation, brainstorm, world bible are API-backed; decision workflows, editable flow stage UI, and relationship/arc graph UI remain deferred
 - Feature flag allows testing with mocks even when real APIs exist
 
 ## 23. Verification Criteria
@@ -1284,9 +1286,9 @@ narrative-engine/
 - Story bible rail supports pinning
 
 **Phase 3 Complete When**:
-- FlowEditor component displays stages (read-only in v1.0)
-- Edit actions are disabled or noted as deferred beyond v1.0
-- Mock service returns realistic flow data for read operations
+- FlowEditor component displays stages and connects to real backend APIs
+- Edit actions (add, rename, reorder, redefine, disable, archive, delete) use real API endpoints
+- Backend counter table preserves next_stage_index across stage deletions
 
 **Phase 4 Complete When**:
 - Planning board displays chapter/scene cards

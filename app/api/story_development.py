@@ -18,7 +18,10 @@ from app.schemas import (
     ChapterPacket,
     ChapterPlan,
     CheckerFinding,
+    AlternateVariantRequest,
     DraftArtifact,
+    DraftArtifactCreateRequest,
+    DraftContinuationRequest,
     FoundationProfile,
     FoundationRevision,
     InspectRunLink,
@@ -44,7 +47,7 @@ from app.schemas import (
 from app.schemas.base import StrictModel
 from app.services.braindump import BrainDumpNotFoundError, BrainDumpService, BrainDumpValidationError
 from app.services.brainstorm import BrainstormNotFoundError, BrainstormService, BrainstormValidationError
-from app.services.drafting import DraftingNotFoundError, DraftingService
+from app.services.drafting import DraftingNotFoundError, DraftingService, DraftingValidationError
 from app.services.manuscript_review import ManuscriptReviewError, ManuscriptReviewService
 from app.services.editable_flow import (
     EditableFlowNotFoundError,
@@ -198,6 +201,18 @@ class ReviewDecisionCreateRequest(StrictModel):
     decision: str = Field(..., min_length=1, max_length=50)
     notes: str | None = Field(None, max_length=5000)
     source_context: list[str] = Field(default_factory=list)
+
+
+class InspectRunLinkCreateRequest(StrictModel):
+    link_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    object_kind: str = Field(..., min_length=1, max_length=100)
+    object_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    logical_run_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    run_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    run_kind: str = Field(..., min_length=1, max_length=100)
+    attempt_number: int | None = Field(None, ge=1)
+    label: str | None = Field(None, max_length=2000)
 
 
 class RevisionSuggestionCreateRequest(StrictModel):
@@ -1148,6 +1163,37 @@ def build_story_development_router(
         except ReviewRoutingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Inspect link not found.") from exc
 
+    @router.post("/review/inspect-links", response_model=InspectRunLink, status_code=201)
+    def create_inspect_link(payload: InspectRunLinkCreateRequest) -> InspectRunLink:
+        """Create an inspect run link pointing to a review or execution run.
+
+        Creates a bidirectional link between a story object and a run inspection
+        target, enabling "Jump to Source" navigation from review findings.
+
+        Args:
+            payload: Inspect link creation request with target object and run identifiers.
+
+        Returns:
+            The created InspectRunLink object.
+
+        Raises:
+            HTTPException 404: If the target object does not exist.
+        """
+        try:
+            return review_service.create_inspect_link(
+                payload.project_id,
+                link_id=payload.link_id,
+                object_kind=payload.object_kind,
+                object_id=payload.object_id,
+                logical_run_id=payload.logical_run_id,
+                run_id=payload.run_id,
+                run_kind=payload.run_kind,
+                attempt_number=payload.attempt_number,
+                label=payload.label,
+            )
+        except ReviewRoutingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Target object not found.") from exc
+
     @router.get("/planning/sequence-plans", response_model=SequencePlanListResponse)
     def list_sequence_plans(project_id: str) -> SequencePlanListResponse:
         return SequencePlanListResponse(
@@ -1262,6 +1308,104 @@ def build_story_development_router(
             return drafting_service.get_draft_artifact(project_id, artifact_id=artifact_id)
         except DraftingNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Draft artifact not found.") from exc
+
+    @router.post("/drafting/draft-artifacts", response_model=DraftArtifact, status_code=201)
+    def create_draft_artifact(payload: DraftArtifactCreateRequest) -> DraftArtifact:
+        """Create a new draft artifact for a project.
+
+        Registers a draft artifact with content and provenance metadata.
+        Optionally links to planning artifacts via source_plan_ids.
+
+        Args:
+            payload: Draft artifact creation request with ID, title, content, and optional metadata.
+
+        Returns:
+            The created DraftArtifact object.
+
+        Raises:
+            HTTPException 400: If the status value is invalid.
+        """
+        try:
+            return drafting_service.register_draft_artifact(
+                payload.project_id,
+                artifact_id=payload.artifact_id,
+                title=payload.title,
+                content=payload.content,
+                source_plan_ids=payload.source_plan_ids,
+                source_context=payload.source_context,
+                provenance_note=payload.provenance_note,
+                status=payload.status,
+            )
+        except DraftingValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/drafting/draft-artifacts/continue", response_model=DraftArtifact, status_code=201)
+    def continue_draft_artifact(payload: DraftContinuationRequest) -> DraftArtifact:
+        """Continue a draft from a prior draft or manuscript document.
+
+        Creates a new draft artifact that extends an existing one, inheriting
+        source plan IDs and context provenance from the base artifact.
+
+        Args:
+            payload: Continuation request with target artifact ID, content, and prior source reference.
+
+        Returns:
+            The created DraftArtifact object with merged provenance.
+
+        Raises:
+            HTTPException 400: If both or neither prior_draft/prior_manuscript IDs are provided.
+            HTTPException 404: If the referenced prior artifact or manuscript does not exist.
+        """
+        try:
+            return drafting_service.continue_draft(
+                payload.project_id,
+                artifact_id=payload.artifact_id,
+                title=payload.title,
+                content=payload.content,
+                prior_draft_artifact_id=payload.prior_draft_artifact_id,
+                prior_manuscript_document_id=payload.prior_manuscript_document_id,
+                source_plan_ids=payload.source_plan_ids,
+                source_context=payload.source_context,
+                provenance_note=payload.provenance_note,
+            )
+        except DraftingValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except DraftingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Prior draft or manuscript not found.") from exc
+
+    @router.post("/drafting/draft-artifacts/alternate-variant", response_model=DraftArtifact, status_code=201)
+    def create_alternate_variant(payload: AlternateVariantRequest) -> DraftArtifact:
+        """Create an alternate variant of an existing draft or manuscript document.
+
+        Creates a new draft artifact in PROPOSED status that branches from an
+        existing draft artifact or manuscript document, inheriting provenance.
+
+        Args:
+            payload: Alternate variant request with target artifact ID, content, and base source reference.
+
+        Returns:
+            The created DraftArtifact object with PROPOSED status and merged provenance.
+
+        Raises:
+            HTTPException 400: If both or neither base_draft/base_manuscript IDs are provided.
+            HTTPException 404: If the referenced base artifact or manuscript does not exist.
+        """
+        try:
+            return drafting_service.create_alternate_variant(
+                payload.project_id,
+                artifact_id=payload.artifact_id,
+                title=payload.title,
+                content=payload.content,
+                base_draft_artifact_id=payload.base_draft_artifact_id,
+                base_manuscript_document_id=payload.base_manuscript_document_id,
+                source_plan_ids=payload.source_plan_ids,
+                source_context=payload.source_context,
+                provenance_note=payload.provenance_note,
+            )
+        except DraftingValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except DraftingNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Base draft or manuscript not found.") from exc
 
     @router.get("/drafting/manuscript-documents", response_model=ManuscriptDocumentListResponse)
     def list_manuscript_documents(project_id: str) -> ManuscriptDocumentListResponse:

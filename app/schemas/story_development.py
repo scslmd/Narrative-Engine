@@ -738,6 +738,41 @@ class ManuscriptDocumentUpdateRequest(StrictSchemaModel):
     title: str | None = Field(None, max_length=500)
 
 
+class DraftArtifactCreateRequest(StrictSchemaModel):
+    artifact_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=1_000_000)
+    source_plan_ids: list[str] = Field(default_factory=list)
+    source_context: list[str] = Field(default_factory=list)
+    provenance_note: str | None = Field(None, max_length=2000)
+    status: str = Field(default=StoryArtifactLifecycleState.DRAFT.value)
+
+
+class DraftContinuationRequest(StrictSchemaModel):
+    artifact_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=1_000_000)
+    prior_draft_artifact_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    prior_manuscript_document_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    source_plan_ids: list[str] = Field(default_factory=list)
+    source_context: list[str] = Field(default_factory=list)
+    provenance_note: str | None = Field(None, max_length=2000)
+
+
+class AlternateVariantRequest(StrictSchemaModel):
+    artifact_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=1_000_000)
+    base_draft_artifact_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    base_manuscript_document_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    source_plan_ids: list[str] = Field(default_factory=list)
+    source_context: list[str] = Field(default_factory=list)
+    provenance_note: str | None = Field(None, max_length=2000)
+
+
 class ManuscriptReviewResponse(StrictSchemaModel):
     document_id: str
     project_id: str

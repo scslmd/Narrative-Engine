@@ -103,14 +103,14 @@ class ChapterPacketService:
     ) -> int | None:
         if step_record_service is None:
             return None
-        produced = produced_at or datetime.now(timezone.utc)
-        registered_at = datetime.now(timezone.utc)
-        reference_ids = list(source_artifact_refs or [])
-        content_hashes = list(source_content_hashes or [])
-        packet = self.get_packet(packet_id)
-        packet_refs = self._build_packet_lineage_refs(packet, reference_ids)
-        packet_hashes = self._build_packet_lineage_hashes(packet, content_hashes)
         try:
+            packet = self.get_packet(packet_id)
+            produced = produced_at or datetime.now(timezone.utc)
+            registered_at = datetime.now(timezone.utc)
+            reference_ids = list(source_artifact_refs or [])
+            content_hashes = list(source_content_hashes or [])
+            packet_refs = self._build_packet_lineage_refs(packet, reference_ids)
+            packet_hashes = self._build_packet_lineage_hashes(packet, content_hashes)
             lineage_id = step_record_service.create_lineage_record(
                 logical_run_id=logical_run_id,
                 run_id=run_id,

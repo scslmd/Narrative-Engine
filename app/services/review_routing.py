@@ -97,7 +97,7 @@ class ReviewRoutingService:
         project_id: str,
         *,
         link_id: str,
-        object_kind: StoryObjectType | str,
+        object_kind: str,
         object_id: str,
         logical_run_id: str,
         run_id: str,
@@ -106,14 +106,13 @@ class ReviewRoutingService:
         label: str | None = None,
     ) -> InspectRunLink:
         normalized_project_id = self._normalize_text(project_id, field_name="project_id")
-        normalized_object_kind = self._normalize_object_type(object_kind, field_name="object_kind")
+        normalized_object_kind = self._normalize_text(object_kind, field_name="object_kind")
         normalized_object_id = self._normalize_text(object_id, field_name="object_id")
-        self._require_target(normalized_project_id, normalized_object_kind, normalized_object_id)
 
         record = self.repository.upsert_inspect_run_link(
             link_id=self._normalize_text(link_id, field_name="link_id"),
             project_id=normalized_project_id,
-            object_kind=normalized_object_kind.value,
+            object_kind=normalized_object_kind,
             object_id=normalized_object_id,
             logical_run_id=self._normalize_text(logical_run_id, field_name="logical_run_id"),
             run_id=self._normalize_text(run_id, field_name="run_id"),

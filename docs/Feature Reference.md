@@ -270,10 +270,27 @@ Tags: ["mystery", "character-driven", "revelation"]
 
 **Backend APIs**
 ```
-GET /v1/story-development/arcs/candidates?project_id={id}
-GET /v1/story-development/arcs/selections?project_id={id}
-GET /v1/story-development/arcs/stage-maps?project_id={id}
+GET  /v1/story-development/arcs/candidates?project_id={id}
+POST /v1/story-development/arcs/candidates
+GET  /v1/story-development/arcs/selections?project_id={id}
+POST /v1/story-development/arcs/selections
+PATCH /v1/story-development/arcs/selections/{selection_id}?project_id={id}
+DELETE /v1/story-development/arcs/selections/{selection_id}?project_id={id}
+GET  /v1/story-development/arcs/stage-maps?project_id={id}
+POST /v1/story-development/arcs/stage-maps?project_id={id}
+POST /v1/story-development/arcs/comparisons
 ```
+
+**How to Use Arc Selections:**
+
+1. Navigate to the Arcs tab
+2. Review **Arc Candidates** -- AI-proposed narrative trajectories based on your foundation and characters
+3. Optionally **Compare** multiple candidates using the comparison endpoint (requires minimum 2 candidates)
+4. **Select** an arc to make it active, optionally rejecting other candidates
+5. **Update** selection notes or stage map via PATCH
+6. **Delete** a selection if it was made in error
+7. Review **Arc Stage Maps** -- stage-by-stage breakdown for selected arcs
+8. **Create** or update stage maps for any arc candidate
 
 ---
 

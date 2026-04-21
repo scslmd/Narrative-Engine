@@ -8,7 +8,7 @@ The server currently exposes a mixed surface:
 
 - Versioned routes under `/v1` for jobs, models, story-development, and role-model-checker APIs.
 - Unversioned routes for projects, auth, backup, and health.
-- Some legacy unversioned aliases still exist for jobs and checker flows, but frontend-facing work should verify the exact route family before assuming a versioned or unversioned path.
+- Story Development router is mounted at both `/story-development` and `/v1/story-development`.
 
 ## Unversioned Routes
 
@@ -22,6 +22,7 @@ The server currently exposes a mixed surface:
 | `GET` | `/projects/{project_id}/manifest` |
 | `GET` | `/projects/{project_id}/sequence` |
 | `GET` | `/projects/{project_id}/chapter-1` |
+| `POST` | `/projects/import-story` |
 
 ### Authentication
 
@@ -104,6 +105,7 @@ The server currently exposes a mixed surface:
 
 | Method | Endpoint |
 |--------|----------|
+| `POST` | `/v1/story-development/flow/stages/init` |
 | `GET` | `/v1/story-development/flow/stages` |
 | `POST` | `/v1/story-development/flow/stages` |
 | `PATCH` | `/v1/story-development/flow/stages/{stage_id}` |
@@ -131,6 +133,8 @@ The server currently exposes a mixed surface:
 |--------|----------|
 | `GET` | `/v1/story-development/planning/sequence-plans` |
 | `GET` | `/v1/story-development/planning/sequence-plans/{sequence_id}` |
+| `POST` | `/v1/story-development/planning/sequence-plans` |
+| `PATCH` | `/v1/story-development/planning/sequence-plans/{sequence_id}` |
 | `GET` | `/v1/story-development/planning/chapter-plans` |
 | `GET` | `/v1/story-development/planning/chapter-plans/{chapter_id}` |
 | `GET` | `/v1/story-development/planning/scene-plans` |
@@ -139,6 +143,9 @@ The server currently exposes a mixed surface:
 | `GET` | `/v1/story-development/planning/dependencies/{dependency_id}` |
 | `GET` | `/v1/story-development/planning/chapter-packets` |
 | `GET` | `/v1/story-development/planning/chapter-packets/{packet_id}` |
+| `POST` | `/v1/story-development/planning/chapter-packets` |
+| `PATCH` | `/v1/story-development/planning/chapter-packets/{packet_id}` |
+| `POST` | `/v1/story-development/planning/reorder` |
 
 #### Drafting
 
@@ -148,11 +155,12 @@ The server currently exposes a mixed surface:
 | `GET` | `/v1/story-development/drafting/draft-artifacts/{artifact_id}` |
 | `GET` | `/v1/story-development/drafting/manuscript-documents` |
 | `GET` | `/v1/story-development/drafting/manuscript-documents/{document_id}` |
+| `POST` | `/v1/story-development/drafting/manuscript-documents` |
+| `PATCH` | `/v1/story-development/drafting/manuscript-documents/{document_id}` |
 | `GET` | `/v1/story-development/drafting/revision-suggestions` |
 | `GET` | `/v1/story-development/drafting/revision-suggestions/{suggestion_id}` |
-| `POST` | `/v1/story-development/drafting/manuscript-documents` |
-| `POST` | `/v1/story-development/drafting/promote-draft` |
 | `POST` | `/v1/story-development/drafting/revision-suggestions` |
+| `POST` | `/v1/story-development/drafting/promote-draft` |
 
 #### Brainstorm
 
@@ -163,6 +171,17 @@ The server currently exposes a mixed surface:
 | `POST` | `/v1/story-development/brainstorm/items/cluster` |
 | `POST` | `/v1/story-development/brainstorm/items/promote` |
 | `GET` | `/v1/story-development/brainstorm/promotions` |
+
+#### Braindump
+
+| Method | Endpoint |
+|--------|----------|
+| `POST` | `/v1/story-development/braindump/sessions` |
+| `GET` | `/v1/story-development/braindump/sessions` |
+| `GET` | `/v1/story-development/braindump/sessions/{session_id}` |
+| `PATCH` | `/v1/story-development/braindump/sessions/{session_id}` |
+| `DELETE` | `/v1/story-development/braindump/sessions/{session_id}` |
+| `POST` | `/v1/story-development/braindump/sessions/{session_id}/organize` |
 
 #### Foundation
 
@@ -184,6 +203,9 @@ The server currently exposes a mixed surface:
 | `PATCH` | `/v1/story-development/characters/{character_id}` |
 | `GET` | `/v1/story-development/characters/{character_id}/relationships` |
 | `POST` | `/v1/story-development/relationships` |
+| `GET` | `/v1/story-development/relationships` |
+| `PATCH` | `/v1/story-development/relationships/{edge_id}` |
+| `DELETE` | `/v1/story-development/relationships/{edge_id}` |
 
 #### World Bible And Arcs
 
@@ -194,8 +216,26 @@ The server currently exposes a mixed surface:
 | `POST` | `/v1/story-development/world-bible` |
 | `PATCH` | `/v1/story-development/world-bible/{entry_type}/{title}` |
 | `GET` | `/v1/story-development/arcs/candidates` |
+| `POST` | `/v1/story-development/arcs/candidates` |
 | `GET` | `/v1/story-development/arcs/selections` |
+| `POST` | `/v1/story-development/arcs/selections` |
+| `PATCH` | `/v1/story-development/arcs/selections/{selection_id}` |
+| `DELETE` | `/v1/story-development/arcs/selections/{selection_id}` |
 | `GET` | `/v1/story-development/arcs/stage-maps` |
+| `POST` | `/v1/story-development/arcs/stage-maps` |
+| `POST` | `/v1/story-development/arcs/comparisons` |
+
+#### Storyboard Cards
+
+| Method | Endpoint |
+|--------|----------|
+| `GET` | `/v1/story-development/storyboard/cards` |
+| `GET` | `/v1/story-development/storyboard/cards/{card_id}` |
+| `POST` | `/v1/story-development/storyboard/cards` |
+| `PATCH` | `/v1/story-development/storyboard/cards/{card_id}` |
+| `PUT` | `/v1/story-development/storyboard/cards/{card_id}` |
+| `DELETE` | `/v1/story-development/storyboard/cards/{card_id}` |
+| `PUT` | `/v1/story-development/storyboard/cards/{column_id}/reindex` |
 
 ## Source Of Truth
 

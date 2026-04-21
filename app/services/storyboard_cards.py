@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Sequence
 
 from app.persistence.story_development import (
+    StoryArtifactLifecycleState,
     StoryboardCardRecord,
     StoryDevelopmentRepository,
 )
