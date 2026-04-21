@@ -145,6 +145,64 @@ export interface ChapterPacketUpdateRequest {
   status?: string;
 }
 
+export interface ChapterPlanCreateRequest {
+  project_id: string;
+  chapter_id: string;
+  title: string;
+  summary?: string;
+  objective: string;
+  conflict: string;
+  stakes: string;
+  sequence_id?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface ChapterPlanUpdateRequest {
+  title?: string;
+  summary?: string;
+  objective?: string;
+  conflict?: string;
+  stakes?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface ScenePlanCreateRequest {
+  project_id: string;
+  scene_id: string;
+  title: string;
+  summary?: string;
+  objective: string;
+  conflict: string;
+  stakes: string;
+  chapter_id?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
+export interface ScenePlanUpdateRequest {
+  title?: string;
+  summary?: string;
+  objective?: string;
+  conflict?: string;
+  stakes?: string;
+  active_character_ids?: string[];
+  continuity_requirements?: string[];
+  unresolved_questions?: string[];
+  status?: string;
+  position?: number;
+}
+
 export interface StoryboardCardCreateRequest {
   project_id: string;
   card_id: string;

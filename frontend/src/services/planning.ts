@@ -19,6 +19,10 @@ import type {
   SequencePlanUpdateRequest,
   ChapterPacketCreateRequest,
   ChapterPacketUpdateRequest,
+  ChapterPlanCreateRequest,
+  ChapterPlanUpdateRequest,
+  ScenePlanCreateRequest,
+  ScenePlanUpdateRequest,
 } from '../types/planning';
 import api from '../lib/api';
 
@@ -304,6 +308,92 @@ export async function updateChapterPacket(
 
   if (response.status !== 200) {
     throw new Error(`Failed to update chapter packet ${packetId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+// ============================================================================
+// Chapter Plan mutations
+// ============================================================================
+
+/**
+ * Create a new chapter plan
+ */
+export async function createChapterPlan(
+  projectId: string,
+  data: ChapterPlanCreateRequest,
+): Promise<ChapterPlan> {
+  const response = await api.post('/story-development/planning/chapter-plans', data, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create chapter plan: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing chapter plan
+ */
+export async function updateChapterPlan(
+  chapterId: string,
+  projectId: string,
+  data: ChapterPlanUpdateRequest,
+): Promise<ChapterPlan> {
+  const response = await api.patch(
+    `/story-development/planning/chapter-plans/${chapterId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update chapter plan ${chapterId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+// ============================================================================
+// Scene Plan mutations
+// ============================================================================
+
+/**
+ * Create a new scene plan
+ */
+export async function createScenePlan(
+  projectId: string,
+  data: ScenePlanCreateRequest,
+): Promise<ScenePlan> {
+  const response = await api.post('/story-development/planning/scene-plans', data, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create scene plan: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an existing scene plan
+ */
+export async function updateScenePlan(
+  sceneId: string,
+  projectId: string,
+  data: ScenePlanUpdateRequest,
+): Promise<ScenePlan> {
+  const response = await api.patch(
+    `/story-development/planning/scene-plans/${sceneId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update scene plan ${sceneId}: ${response.status}`);
   }
 
   return response.data;

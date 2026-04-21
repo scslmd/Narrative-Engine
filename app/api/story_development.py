@@ -1246,6 +1246,136 @@ def build_story_development_router(
         except PlanningNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Scene plan not found.") from exc
 
+    @router.post("/planning/chapter-plans", response_model=ChapterPlan, status_code=201)
+    def create_chapter_plan(payload: ChapterPlanCreateRequest) -> ChapterPlan:
+        """Create a new chapter plan."""
+        try:
+            plan = planning_service.create_chapter_plan(
+                project_id=payload.project_id,
+                chapter_id=payload.chapter_id,
+                title=payload.title,
+                summary=payload.summary or "",
+                objective=payload.objective,
+                conflict=payload.conflict,
+                stakes=payload.stakes,
+                sequence_id=payload.sequence_id,
+                active_character_ids=payload.active_character_ids,
+                continuity_requirements=payload.continuity_requirements,
+                unresolved_questions=payload.unresolved_questions,
+                status=payload.status,
+                position=payload.position,
+            )
+            return plan
+        except PlanningNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except PlanningValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/planning/chapter-plans/{chapter_id}", response_model=ChapterPlan)
+    def update_chapter_plan(
+        chapter_id: str,
+        project_id: str,
+        payload: ChapterPlanUpdateRequest,
+    ) -> ChapterPlan:
+        """Update an existing chapter plan."""
+        try:
+            existing = planning_service.get_chapter_plan(project_id, chapter_id=chapter_id)
+        except PlanningNotFoundError:
+            raise HTTPException(status_code=404, detail="Chapter plan not found.")
+        
+        title = payload.title if payload.title is not None else existing.title
+        summary = payload.summary if payload.summary is not None else existing.summary
+        objective = payload.objective if payload.objective is not None else existing.objective
+        conflict = payload.conflict if payload.conflict is not None else existing.conflict
+        stakes = payload.stakes if payload.stakes is not None else existing.stakes
+        active_character_ids = payload.active_character_ids if payload.active_character_ids is not None else list(existing.active_character_ids)
+        continuity_requirements = payload.continuity_requirements if payload.continuity_requirements is not None else list(existing.continuity_requirements)
+        unresolved_questions = payload.unresolved_questions if payload.unresolved_questions is not None else list(existing.unresolved_questions)
+        status = payload.status if payload.status is not None else existing.status
+        position = payload.position if payload.position is not None else existing.position
+        
+        plan = planning_service.create_chapter_plan(
+            project_id=project_id,
+            chapter_id=chapter_id,
+            title=title,
+            summary=summary,
+            objective=objective,
+            conflict=conflict,
+            stakes=stakes,
+            sequence_id=existing.sequence_id,
+            active_character_ids=active_character_ids,
+            continuity_requirements=continuity_requirements,
+            unresolved_questions=unresolved_questions,
+            status=status,
+            position=position,
+        )
+        return plan
+
+    @router.post("/planning/scene-plans", response_model=ScenePlan, status_code=201)
+    def create_scene_plan(payload: ScenePlanCreateRequest) -> ScenePlan:
+        """Create a new scene plan."""
+        try:
+            plan = planning_service.create_scene_plan(
+                project_id=payload.project_id,
+                scene_id=payload.scene_id,
+                title=payload.title,
+                summary=payload.summary or "",
+                objective=payload.objective,
+                conflict=payload.conflict,
+                stakes=payload.stakes,
+                chapter_id=payload.chapter_id,
+                active_character_ids=payload.active_character_ids,
+                continuity_requirements=payload.continuity_requirements,
+                unresolved_questions=payload.unresolved_questions,
+                status=payload.status,
+                position=payload.position,
+            )
+            return plan
+        except PlanningNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except PlanningValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/planning/scene-plans/{scene_id}", response_model=ScenePlan)
+    def update_scene_plan(
+        scene_id: str,
+        project_id: str,
+        payload: ScenePlanUpdateRequest,
+    ) -> ScenePlan:
+        """Update an existing scene plan."""
+        try:
+            existing = planning_service.get_scene_plan(project_id, scene_id=scene_id)
+        except PlanningNotFoundError:
+            raise HTTPException(status_code=404, detail="Scene plan not found.")
+        
+        title = payload.title if payload.title is not None else existing.title
+        summary = payload.summary if payload.summary is not None else existing.summary
+        objective = payload.objective if payload.objective is not None else existing.objective
+        conflict = payload.conflict if payload.conflict is not None else existing.conflict
+        stakes = payload.stakes if payload.stakes is not None else existing.stakes
+        active_character_ids = payload.active_character_ids if payload.active_character_ids is not None else list(existing.active_character_ids)
+        continuity_requirements = payload.continuity_requirements if payload.continuity_requirements is not None else list(existing.continuity_requirements)
+        unresolved_questions = payload.unresolved_questions if payload.unresolved_questions is not None else list(existing.unresolved_questions)
+        status = payload.status if payload.status is not None else existing.status
+        position = payload.position if payload.position is not None else existing.position
+        
+        plan = planning_service.create_scene_plan(
+            project_id=project_id,
+            scene_id=scene_id,
+            title=title,
+            summary=summary,
+            objective=objective,
+            conflict=conflict,
+            stakes=stakes,
+            chapter_id=existing.chapter_id,
+            active_character_ids=active_character_ids,
+            continuity_requirements=continuity_requirements,
+            unresolved_questions=unresolved_questions,
+            status=status,
+            position=position,
+        )
+        return plan
+
     @router.get("/planning/dependencies", response_model=PlanningDependencyListResponse)
     def list_planning_dependencies(project_id: str) -> PlanningDependencyListResponse:
         return PlanningDependencyListResponse(
