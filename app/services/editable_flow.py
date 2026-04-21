@@ -173,11 +173,15 @@ class EditableFlowService:
         writer_notes: str | None = None,
         custom_prompt_guidance: str | None = None,
         stage_kind: str | None = None,
+        stage_configuration_state: str | None = None,
     ) -> StoryFlowStage:
         state = self._require_state(project_id)
         if depends_on is not None:
             candidate_deps = list(depends_on)
             self._validate_dependencies(state.flow, candidate_deps, allow_self=stage_id)
+        config_state = None
+        if stage_configuration_state is not None:
+            config_state = StoryFlowStageConfigurationState(stage_configuration_state)
         return self._update_stage(
             project_id,
             stage_id,
@@ -187,6 +191,7 @@ class EditableFlowService:
             writer_notes=writer_notes,
             custom_prompt_guidance=custom_prompt_guidance,
             stage_kind=stage_kind,
+            stage_configuration_state=config_state,
         )
 
     def reorder_stages(self, *, project_id: str, stage_order: list[str] | tuple[str, ...]) -> StoryFlowDefinition:

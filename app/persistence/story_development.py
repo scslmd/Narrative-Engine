@@ -1320,6 +1320,20 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_relationship_edge_row_to_record(row) for row in rows]
 
+    def delete_relationship_edge(self, project_id: str, *, edge_id: str) -> None:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                "SELECT edge_id FROM relationship_edges WHERE project_id = ? AND edge_id = ?",
+                (project_id, edge_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError((project_id, edge_id))
+            connection.execute(
+                "DELETE FROM relationship_edges WHERE project_id = ? AND edge_id = ?",
+                (project_id, edge_id),
+            )
+            connection.commit()
+
     def get_character_profile(self, character_id: str) -> CharacterProfileRecord:
         with connect(self.db_path) as connection:
             row = connection.execute("SELECT * FROM character_profiles WHERE character_id = ?", (character_id,)).fetchone()
@@ -1734,6 +1748,40 @@ class StoryDevelopmentRepository:
                 (project_id,),
             ).fetchall()
         return [_arc_selection_row_to_record(row, repository=self) for row in rows]
+
+    def delete_arc_selection(self, project_id: str, *, selection_id: str) -> None:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                "SELECT selection_id FROM arc_selections WHERE project_id = ? AND selection_id = ?",
+                (project_id, selection_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError((project_id, selection_id))
+            connection.execute(
+                "DELETE FROM arc_selection_comparisons WHERE selection_id = ?",
+                (selection_id,),
+            )
+            connection.execute(
+                "DELETE FROM arc_selections WHERE project_id = ? AND selection_id = ?",
+                (project_id, selection_id),
+            )
+            connection.commit()
+
+    def update_arc_selection_notes(self, project_id: str, *, selection_id: str, comparison_notes: list[str]) -> ArcSelectionRecord:
+        updated = _now()
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                "SELECT selection_id FROM arc_selections WHERE project_id = ? AND selection_id = ?",
+                (project_id, selection_id),
+            ).fetchone()
+            if row is None:
+                raise KeyError((project_id, selection_id))
+            connection.execute(
+                "UPDATE arc_selections SET comparison_notes_json = ?, updated_at = ? WHERE project_id = ? AND selection_id = ?",
+                (json.dumps(comparison_notes), updated.isoformat(), project_id, selection_id),
+            )
+            connection.commit()
+        return self.get_arc_selection(project_id, selection_id=selection_id)
 
     def _arc_selection_comparison_ids(self, selection_id: str) -> list[str]:
         with connect(self.db_path) as connection:

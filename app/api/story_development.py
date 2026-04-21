@@ -51,12 +51,13 @@ from app.services.editable_flow import (
     EditableFlowService,
     EditableFlowValidationError,
 )
+from app.services.editable_flow_persistence import SQLiteEditableFlowRepository
 from app.services.foundation import (
     FoundationNotFoundError,
     FoundationService,
     FoundationValidationError,
 )
-from app.services.planning import PlanningNotFoundError, PlanningService
+from app.services.planning import PlanningNotFoundError, PlanningService, PlanningValidationError
 from app.services.review_routing import ReviewRoutingNotFoundError, ReviewRoutingService, ReviewRoutingValidationError
 from app.services.story_branching import (
     StoryBranchingNotFoundError,
@@ -285,10 +286,16 @@ class FlowStageUpdateRequest(StrictModel):
     depends_on: list[str] | None = None
     writer_notes: str | None = Field(None, max_length=5000)
     custom_prompt_guidance: str | None = Field(None, max_length=10000)
+    stage_configuration_state: str | None = Field(None, max_length=20)
 
 
 class FlowStageReorderRequest(StrictModel):
     stage_order: list[str] = Field(..., min_length=1)
+
+
+class FlowInitRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_name: str = Field(..., min_length=1, max_length=255)
 
 
 # Brainstorm schemas
@@ -505,6 +512,125 @@ class SequencePlanUpdateRequest(StrictModel):
     position: int | None = Field(None, ge=0)
 
 
+# ============================================================================
+# Chapter Plan schemas (write/update)
+# ============================================================================
+
+class ChapterPlanCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    chapter_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    objective: str = Field(..., min_length=1, max_length=5000)
+    conflict: str = Field(..., min_length=1, max_length=5000)
+    stakes: str = Field(..., min_length=1, max_length=5000)
+    sequence_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+class ChapterPlanUpdateRequest(StrictModel):
+    title: str | None = Field(None, min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    objective: str | None = Field(None, max_length=5000)
+    conflict: str | None = Field(None, max_length=5000)
+    stakes: str | None = Field(None, max_length=5000)
+    active_character_ids: list[str] | None = None
+    continuity_requirements: list[str] | None = None
+    unresolved_questions: list[str] | None = None
+    status: str | None = Field(None, max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+# ============================================================================
+# Scene Plan schemas (write/update)
+# ============================================================================
+
+class ScenePlanCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    scene_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    title: str = Field(..., min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    objective: str = Field(..., min_length=1, max_length=5000)
+    conflict: str = Field(..., min_length=1, max_length=5000)
+    stakes: str = Field(..., min_length=1, max_length=5000)
+    chapter_id: str | None = Field(None, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+class ScenePlanUpdateRequest(StrictModel):
+    title: str | None = Field(None, min_length=1, max_length=500)
+    summary: str | None = Field(None, max_length=10000)
+    objective: str | None = Field(None, max_length=5000)
+    conflict: str | None = Field(None, max_length=5000)
+    stakes: str | None = Field(None, max_length=5000)
+    active_character_ids: list[str] | None = None
+    continuity_requirements: list[str] | None = None
+    unresolved_questions: list[str] | None = None
+    status: str | None = Field(None, max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+# ============================================================================
+# Planning Dependency schemas
+# ============================================================================
+
+class PlanningDependencyCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    dependency_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    upstream_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    downstream_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    dependency_kind: str = Field(..., min_length=1, max_length=100)
+    reason: str | None = Field(None, max_length=5000)
+
+
+# ============================================================================
+# Beat Plan schemas
+# ============================================================================
+
+class BeatPlanCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    beat_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    objective: str = Field(..., min_length=1, max_length=5000)
+    conflict: str = Field(..., min_length=1, max_length=5000)
+    stakes: str = Field(..., min_length=1, max_length=5000)
+    arc_stage: str | None = Field(None, max_length=100)
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    status: str = Field(default="draft", max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+class BeatPlanUpdateRequest(StrictModel):
+    objective: str | None = Field(None, max_length=5000)
+    conflict: str | None = Field(None, max_length=5000)
+    stakes: str | None = Field(None, max_length=5000)
+    arc_stage: str | None = Field(None, max_length=100)
+    active_character_ids: list[str] | None = None
+    continuity_requirements: list[str] | None = None
+    unresolved_questions: list[str] | None = None
+    status: str | None = Field(None, max_length=30)
+    position: int | None = Field(None, ge=0)
+
+
+# ============================================================================
+# Planning Reorder schema
+# ============================================================================
+
+class PlanningReorderRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    plan_kind: str = Field(..., min_length=1, max_length=20)
+    ordered_plan_ids: list[str] = Field(..., min_length=1)
+
+
 # Character schemas
 class CharacterProfileCreateRequest(StrictModel):
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
@@ -570,6 +696,15 @@ class RelationshipEdgeCreateRequest(StrictModel):
     notes: str | None = Field(None, max_length=2000)
 
 
+class RelationshipEdgeUpdateRequest(StrictModel):
+    source_character_id: str | None = None
+    target_character_id: str | None = None
+    relation_kind: str | None = None
+    summary: str | None = Field(None, min_length=1, max_length=2000)
+    tension: str | None = Field(None, max_length=1000)
+    notes: str | None = Field(None, max_length=2000)
+
+
 class RelationshipEdgeListResponse(StrictModel):
     project_id: str
     items: list[RelationshipEdge] = Field(default_factory=list)
@@ -626,6 +761,40 @@ class ArcStageMapListResponse(StrictModel):
     meta: dict[str, str] = Field(default_factory=dict)
 
 
+class ArcCandidateCreateRequest(StrictModel):
+    arc_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    name: str = Field(..., min_length=1, max_length=500)
+    summary: str = Field(..., min_length=1, max_length=5000)
+    stage_map_notes: list[str] = Field(default_factory=list)
+    fit_notes: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+
+
+class ArcSelectionCreateRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    selected_arc: ArcCandidateCreateRequest | str = Field(...)
+    rejected_arc_ids: list[str] = Field(default_factory=list)
+    comparison_notes: list[str] = Field(default_factory=list)
+    stage_map: ArcStageMapCreateRequest | None = None
+
+
+class ArcSelectionUpdateRequest(StrictModel):
+    comparison_notes: list[str] | None = None
+    stage_map: ArcStageMapCreateRequest | None = None
+
+
+class ArcStageMapCreateRequest(StrictModel):
+    arc_id: str = Field(..., min_length=1, max_length=255)
+    stage_kinds: list[str] = Field(..., min_length=1)
+    notes: str | None = None
+
+
+class ArcComparisonRequest(StrictModel):
+    project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
+    candidates: list[str | ArcCandidateCreateRequest] = Field(..., min_length=2)
+
+
 def build_story_development_router(
     repository: StoryDevelopmentRepository,
     prefix: str = "/story-development",
@@ -637,7 +806,9 @@ def build_story_development_router(
     planning_service = PlanningService(repository)
     branching_service = StoryBranchingService(repository)
     review_service = ReviewRoutingService(repository, drafting_service=drafting_service, planning_service=planning_service)
-    flow_service = EditableFlowService()
+    flow_service = EditableFlowService(
+        SQLiteEditableFlowRepository(str(repository.db_path)),
+    )
     brainstorm_service = BrainstormService(repository)
     braindump_service = BrainDumpService(repository)
     foundation_service = FoundationService(repository)
@@ -775,6 +946,19 @@ def build_story_development_router(
             raise HTTPException(status_code=404, detail="Story branch not found.") from exc
 
     # Flow stage endpoints
+    @router.post("/flow/stages/init", response_model=FlowStageListResponse, status_code=201)
+    def init_flow_stages(payload: FlowInitRequest) -> FlowStageListResponse:
+        """Initialize a default flow for a project."""
+        try:
+            flow = flow_service.create_default_flow(
+                project_id=payload.project_id,
+                project_name=payload.project_name,
+            )
+            items = flow_service.list_stages(payload.project_id)
+            return FlowStageListResponse(project_id=payload.project_id, items=items, meta={"source": "default"})
+        except EditableFlowValidationError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
     @router.get("/flow/stages", response_model=FlowStageListResponse)
     def list_flow_stages(project_id: str) -> FlowStageListResponse:
         try:
@@ -813,7 +997,9 @@ def build_story_development_router(
                 updates["writer_notes"] = payload.writer_notes
             if payload.custom_prompt_guidance is not None:
                 updates["custom_prompt_guidance"] = payload.custom_prompt_guidance
-            
+            if payload.stage_configuration_state is not None:
+                updates["stage_configuration_state"] = payload.stage_configuration_state
+
             return flow_service.redefine_stage(project_id=project_id, stage_id=stage_id, **updates)
         except EditableFlowNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Stage not found.") from exc
@@ -1036,6 +1222,31 @@ def build_story_development_router(
             return planning_service.get_chapter_packet(project_id, packet_id=packet_id)
         except PlanningNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Chapter packet not found.") from exc
+
+    @router.post("/planning/reorder", response_model=PlanningDependencyListResponse)
+    def reorder_plan_objects(payload: PlanningReorderRequest) -> PlanningDependencyListResponse:
+        """Reorder sequences, chapters, or scene plans."""
+        try:
+            if payload.plan_kind not in ("sequence", "chapter", "scene"):
+                raise HTTPException(status_code=400, detail="plan_kind must be 'sequence', 'chapter', or 'scene'.")
+            if payload.plan_kind == "sequence":
+                planning_service.reorder_plan_objects(payload.project_id, plan_kind="sequence", ordered_plan_ids=payload.ordered_plan_ids)
+                items = list(planning_service.list_sequence_plans(payload.project_id))
+            elif payload.plan_kind == "chapter":
+                planning_service.reorder_plan_objects(payload.project_id, plan_kind="chapter", ordered_plan_ids=payload.ordered_plan_ids)
+                items = list(planning_service.list_chapter_plans(payload.project_id))
+            else:
+                planning_service.reorder_plan_objects(payload.project_id, plan_kind="scene", ordered_plan_ids=payload.ordered_plan_ids)
+                items = list(planning_service.list_scene_plans(payload.project_id))
+            return PlanningDependencyListResponse(
+                project_id=payload.project_id,
+                items=[],
+                meta={"reordered_kind": payload.plan_kind, "ordered_count": str(len(payload.ordered_plan_ids))},
+            )
+        except PlanningValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except PlanningNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"{payload.plan_kind} plan not found.") from exc
 
     @router.get("/drafting/draft-artifacts", response_model=DraftArtifactListResponse)
     def list_draft_artifacts(project_id: str) -> DraftArtifactListResponse:
@@ -1756,6 +1967,57 @@ def build_story_development_router(
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.get("/relationships", response_model=RelationshipEdgeListResponse)
+    def list_all_relationships(project_id: str) -> RelationshipEdgeListResponse:
+        """List all relationship edges for a project."""
+        try:
+            relationships = list(story_knowledge_service.list_all_relationship_edges(project_id))
+            return RelationshipEdgeListResponse(
+                project_id=project_id,
+                items=relationships,
+                meta={"ordered_by": "edge_id_asc"},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/relationships/{edge_id}", response_model=RelationshipEdge)
+    def update_relationship(edge_id: str, project_id: str, payload: RelationshipEdgeUpdateRequest) -> RelationshipEdge:
+        """Update an existing relationship."""
+        try:
+            source = payload.source_character_id if payload.source_character_id is not None else None
+            target = payload.target_character_id if payload.target_character_id is not None else None
+            kind = payload.relation_kind if payload.relation_kind is not None else None
+            summary = payload.summary if payload.summary is not None else None
+            tension = payload.tension
+            notes = payload.notes
+            if not any(v is not None for v in [source, target, kind, summary, tension, notes]):
+                raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
+            return story_knowledge_service.upsert_relationship_edge(
+                project_id,
+                edge_id=edge_id,
+                source_character_id=source if source else "",
+                target_character_id=target if target else "",
+                relation_kind=kind if kind else "",
+                summary=summary if summary else "",
+                tension=tension,
+                notes=notes,
+            )
+        except HTTPException:
+            raise
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.delete("/relationships/{edge_id}", status_code=200)
+    def delete_relationship(edge_id: str, project_id: str) -> dict[str, str]:
+        """Delete a relationship edge."""
+        try:
+            story_knowledge_service.delete_relationship_edge(project_id, edge_id)
+            return {"status": "deleted", "edge_id": edge_id}
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Relationship not found.") from exc
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     # ============================================================================
     # World Bible Endpoints
     # ============================================================================
@@ -1888,6 +2150,144 @@ def build_story_development_router(
                 items=stage_maps,
                 meta={"ordered_by": "stage_id_asc"},
             )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/arcs/candidates", response_model=ArcCandidate, status_code=201)
+    def create_arc_candidate(payload: ArcCandidateCreateRequest) -> ArcCandidate:
+        """Create a new arc candidate for a project."""
+        try:
+            candidate = story_knowledge_service.upsert_arc_candidate(
+                project_id=payload.project_id,
+                arc_id=payload.arc_id,
+                name=payload.name,
+                summary=payload.summary,
+                stage_map_notes=payload.stage_map_notes,
+                fit_notes=payload.fit_notes,
+                tags=payload.tags,
+            )
+            return candidate
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/arcs/comparisons", response_model=ArcCandidateListResponse)
+    def compare_arc_candidates_endpoint(payload: ArcComparisonRequest) -> ArcCandidateListResponse:
+        """Score and rank arc candidates for a project."""
+        try:
+            normalized_candidates: list = []
+            for candidate in payload.candidates:
+                if isinstance(candidate, ArcCandidateCreateRequest):
+                    normalized_candidates.append({
+                        "arc_id": candidate.arc_id,
+                        "project_id": candidate.project_id,
+                        "name": candidate.name,
+                        "summary": candidate.summary,
+                        "stage_map_notes": candidate.stage_map_notes,
+                        "fit_notes": candidate.fit_notes,
+                        "tags": candidate.tags,
+                    })
+                else:
+                    normalized_candidates.append(candidate)
+            comparisons = story_knowledge_service.compare_arc_candidates(
+                project_id=payload.project_id,
+                candidates=normalized_candidates,
+            )
+            ranked_candidates = sorted(comparisons, key=lambda c: c.rank)
+            return ArcCandidateListResponse(
+                project_id=payload.project_id,
+                items=[c.candidate for c in ranked_candidates],
+                meta={"comparison_count": str(len(comparisons))},
+            )
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/arcs/selections", response_model=ArcSelection, status_code=201)
+    def select_arc_candidate_endpoint(payload: ArcSelectionCreateRequest) -> ArcSelection:
+        """Select an arc candidate, rejecting the others."""
+        try:
+            selected_arc: ArcCandidate | str = payload.selected_arc
+            if isinstance(selected_arc, ArcCandidateCreateRequest):
+                selected_arc = ArcCandidate(
+                    arc_id=selected_arc.arc_id,
+                    project_id=selected_arc.project_id,
+                    name=selected_arc.name,
+                    summary=selected_arc.summary,
+                    stage_map_notes=selected_arc.stage_map_notes,
+                    fit_notes=selected_arc.fit_notes,
+                    tags=selected_arc.tags,
+                )
+            rejected_ids = list(payload.rejected_arc_ids) if payload.rejected_arc_ids else None
+            comparison_notes = list(payload.comparison_notes) if payload.comparison_notes else None
+            stage_map = None
+            if payload.stage_map:
+                stage_map = ArcStageMap(
+                    arc_id=payload.stage_map.arc_id,
+                    stage_kinds=payload.stage_map.stage_kinds,
+                    notes=payload.stage_map.notes,
+                )
+            selection = story_knowledge_service.select_arc_candidate(
+                project_id=payload.project_id,
+                selected_arc=selected_arc,
+                rejected_arc_ids=rejected_ids,
+                comparison_notes=comparison_notes,
+                stage_map=stage_map,
+            )
+            return selection
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.patch("/arcs/selections/{selection_id}", response_model=ArcSelection)
+    def update_arc_selection(
+        selection_id: str,
+        project_id: str,
+        payload: ArcSelectionUpdateRequest,
+    ) -> ArcSelection:
+        """Update an arc selection's notes or stage map."""
+        try:
+            selection = story_knowledge_service.get_arc_selection(project_id, selection_id)
+            if selection is None:
+                raise StoryKnowledgeNotFoundError(selection_id)
+            if payload.stage_map is not None:
+                story_knowledge_service.update_arc_stage_map(
+                    project_id=project_id,
+                    arc_id=payload.stage_map.arc_id,
+                    stage_kinds=payload.stage_map.stage_kinds,
+                    notes=payload.stage_map.notes,
+                )
+            comparison_notes = payload.comparison_notes if payload.comparison_notes is not None else list(selection.comparison_notes)
+            updated = story_knowledge_service._update_selection_notes(
+                project_id,
+                selection_id,
+                comparison_notes,
+            )
+            return updated
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Arc selection not found.") from exc
+        except StoryKnowledgeValidationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.delete("/arcs/selections/{selection_id}", status_code=200)
+    def delete_arc_selection(selection_id: str, project_id: str) -> dict[str, str]:
+        """Remove an arc selection."""
+        try:
+            story_knowledge_service.delete_arc_selection(project_id, selection_id)
+            return {"status": "deleted", "selection_id": selection_id}
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Arc selection not found.") from exc
+
+    @router.post("/arcs/stage-maps", response_model=ArcStageMap, status_code=201)
+    def create_arc_stage_map(project_id: str, payload: ArcStageMapCreateRequest) -> ArcStageMap:
+        """Create or update a stage map for an arc candidate."""
+        try:
+            stage_map = story_knowledge_service.update_arc_stage_map(
+                project_id=project_id,
+                arc_id=payload.arc_id,
+                stage_kinds=payload.stage_kinds,
+                notes=payload.notes,
+            )
+            return stage_map
+        except StoryKnowledgeNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Arc candidate not found for stage map.") from exc
         except StoryKnowledgeValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

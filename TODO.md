@@ -4,7 +4,7 @@
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `641 passed, 0 failed, 9 skipped` (0 pre-existing failures. Remaining 9 skips are platform-specific.)
+  - `python -m pytest -q -p no:cacheprovider` -> `738 passed, 9 skipped` (0 pre-existing failures. Remaining 9 skips are platform-specific.)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -39,9 +39,7 @@ Full details archived in `docs/archive/TODO_Completed_Milestones_Archive.md`.
 ### v1.0 Release -- All Complete
 All 14 v1.0 release items (V1-001 through V1-015) completed and scope-verified.
 The product surface includes routed planning, writing, review, and inspect workspaces
-with real API backing. Read-only planning, flow stage visibility, and character profile editing
-are shipped; editable planning mutations, relationship mapping, and arc-decision workflows
-are deferred beyond v1.0.
+with real API backing.
 
 ### Backend Security & Reliability -- All Complete
 - SEC-01 through SEC-05: Input validation, CORS, request size limits, path traversal, rate limiting
@@ -58,7 +56,7 @@ are deferred beyond v1.0.
 ### Story Development Backend -- All Complete
 - BE-01 through BE-11E: Schemas, persistence, services, and API surface for branching,
   decisions, review, planning, drafting, characters, world bible, arcs, and brainstorm
-- 641 tests passing across the full suite
+- 738 tests passing across the full suite
 
 ### Frontend -- All Complete
 - React + TypeScript frontend (FE-001 through FE-032)
@@ -66,6 +64,12 @@ are deferred beyond v1.0.
 - Real API backing for all shipped surfaces
 - Manuscript editor with aids, diff viewer, selection lifecycle
 - Branch UI, decision tree, inspect run links
+
+### Deferred Mutations -- All Complete
+- Arc selection mutations: POST /arcs/candidates, POST /arcs/comparisons, POST /arcs/selections, PATCH /arcs/selections/{id}, DELETE /arcs/selections/{id}, POST /arcs/stage-maps
+- Character relationship mutations: GET /relationships (list-all), PATCH /relationships/{id}, DELETE /relationships/{id}
+- Planning board reorder: POST /planning/reorder (supports sequence, chapter, scene plan kinds)
+- 23 new integration tests across test_deferred_mutations.py
 
 ### Testing
 - Smoke coverage, persistence coverage, contract coverage, failure-mode coverage

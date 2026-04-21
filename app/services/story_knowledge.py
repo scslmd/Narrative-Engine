@@ -400,6 +400,66 @@ class StoryKnowledgeService:
         ]
         return tuple(sorted(edges, key=lambda edge: edge.edge_id))
 
+    def list_all_relationship_edges(self, project_id: str) -> tuple[RelationshipEdge, ...]:
+        """List all relationship edges for a project.
+        
+        Args:
+            project_id: The project identifier.
+            
+        Returns:
+            A tuple of RelationshipEdge objects sorted by edge_id.
+        """
+        if not project_id or not project_id.strip():
+            raise StoryKnowledgeValidationError("project_id cannot be empty.")
+        
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        edges = [
+            self._relationship_edge_from_record(record)
+            for record in self.repository.list_relationship_edges(normalized_project_id)
+        ]
+        return tuple(sorted(edges, key=lambda edge: edge.edge_id))
+
+    def delete_relationship_edge(self, project_id: str, edge_id: str) -> None:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_edge_id = self._normalize_text(edge_id, field_name="edge_id")
+        try:
+            self.repository.delete_relationship_edge(normalized_project_id, edge_id=normalized_edge_id)
+        except KeyError:
+            raise StoryKnowledgeNotFoundError(normalized_edge_id)
+
+    def upsert_arc_candidate(
+        self,
+        project_id: str,
+        *,
+        arc_id: str,
+        name: str,
+        summary: str,
+        stage_map_notes: Sequence[str] = (),
+        fit_notes: Sequence[str] = (),
+        tags: Sequence[str] = (),
+    ) -> ArcCandidate:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_arc_id = self._normalize_text(arc_id, field_name="arc_id")
+        candidate = ArcCandidate(
+            arc_id=normalized_arc_id,
+            project_id=normalized_project_id,
+            name=name,
+            summary=summary,
+            stage_map_notes=list(stage_map_notes),
+            fit_notes=list(fit_notes),
+            tags=list(tags),
+        )
+        record = self.repository.upsert_arc_candidate(
+            project_id=normalized_project_id,
+            arc_id=normalized_arc_id,
+            name=candidate.name,
+            summary=candidate.summary,
+            stage_map_notes=list(candidate.stage_map_notes),
+            fit_notes=list(candidate.fit_notes),
+            tags=list(candidate.tags),
+        )
+        return self._arc_candidate_from_record(record)
+
     def list_arc_candidates(self, project_id: str) -> tuple[ArcCandidate, ...]:
         """List all arc candidates for a project.
         
@@ -452,6 +512,34 @@ class StoryKnowledgeService:
         except KeyError:
             return None
         return self._arc_stage_map_from_record(record)
+
+    def get_arc_selection(self, project_id: str, selection_id: str) -> ArcSelection | None:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_selection_id = self._normalize_text(selection_id, field_name="selection_id")
+        try:
+            record = self.repository.get_arc_selection(normalized_project_id, selection_id=normalized_selection_id)
+        except KeyError:
+            return None
+        return self._selection_from_record(record)
+
+    def delete_arc_selection(self, project_id: str, selection_id: str) -> None:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_selection_id = self._normalize_text(selection_id, field_name="selection_id")
+        try:
+            self.repository.delete_arc_selection(normalized_project_id, selection_id=normalized_selection_id)
+        except KeyError:
+            raise StoryKnowledgeNotFoundError(normalized_selection_id)
+
+    def _update_selection_notes(self, project_id: str, selection_id: str, comparison_notes: list[str]) -> ArcSelection:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_selection_id = self._normalize_text(selection_id, field_name="selection_id")
+        record = self.repository.get_arc_selection(normalized_project_id, selection_id=normalized_selection_id)
+        updated = self.repository.update_arc_selection_notes(
+            project_id=normalized_project_id,
+            selection_id=normalized_selection_id,
+            comparison_notes=comparison_notes,
+        )
+        return self._selection_from_record(updated)
 
     def _resolve_and_persist_arc_candidate(
         self,
