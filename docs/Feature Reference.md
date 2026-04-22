@@ -793,9 +793,27 @@ A three-panel workspace for reading and reviewing generated manuscript content. 
 
 **View Draft Artifacts:**
 ```
-1. In the left sidebar, expand "Draft Artifacts"
-2. Select a draft version
-3. Compare it with the manuscript using the diff viewer
+1. In the left sidebar, under "Drafts", find draft artifacts
+2. Click a draft to expand and see actions
+3. Each draft shows:
+   - Title
+   - Status badge (DRAFT, PROPOSED, CANONICAL, etc.)
+   - Truncated content preview (when expanded)
+```
+
+**Create a Draft:**
+```
+1. In the Drafts section, click "+ New Draft"
+2. Enter a title (required) and optional content
+3. Click "Create" to save the draft artifact
+4. The draft appears in the list with its status
+```
+
+**Promote a Draft to Manuscript:**
+```
+1. In the Drafts section, click a draft to expand
+2. Click "Promote" to promote the draft to a manuscript document
+3. The draft becomes a new manuscript version
 ```
 
 **Use Revision Suggestions:**
@@ -808,13 +826,6 @@ A three-panel workspace for reading and reviewing generated manuscript content. 
    - Suggested Text: The recommended revision
 3. Accept a suggestion to incorporate it
 4. Dismiss a suggestion to ignore it
-```
-
-**Promote a Draft:**
-```
-1. Select a draft artifact
-2. Click "Promote to Manuscript"
-3. The draft becomes the new manuscript version
 ```
 
 **View Diff Comparisons:**
@@ -924,18 +935,24 @@ POST /v1/story-development/review/decisions
 
 **What It Does**
 
-Lists connections between review findings and the inspection jobs that generated them. Clicking a link navigates to the Inspect view for deep debugging.
+Lists connections between review findings and the inspection jobs that generated them. Clicking a link navigates to the Inspect view for deep debugging. You can also create new inspect run links to connect story objects to pipeline runs.
 
 **How to Use**
 
 ```
 1. Navigate to Review mode → Inspect Run Links tab
-2. Filter by:
-   - Object kind
-   - Object ID
-   - Run ID
-3. Click a link to navigate to the Inspect view
-4. The Inspect view shows:
+2. Click "+ New Link" to create a new inspect run link
+3. Fill in the form:
+   - Link ID: Unique identifier for this link
+   - Object Kind: Type of story object (e.g., "chapter-plan")
+   - Object ID: ID of the story object
+   - Logical Run ID: Logical run identifier
+   - Run ID: Pipeline job ID
+   - Run Kind: Type of run (e.g., "pipeline_job")
+4. Click "Create" to save
+5. Filter existing links by object kind, object ID, or run ID
+6. Click a link to navigate to the Inspect view
+7. The Inspect view shows:
    - Step timeline
    - Artifact lineage
    - Attempt history
