@@ -51,26 +51,21 @@ Implemented and working now:
 - route-driven inspect deep links that render directly from `/workspace/:projectId/inspect/:jobId`
 - "Jump to Source" actions that open a renderable inspect route instead of a dead-end shell view
 - routed planning workspace at `/workspace/:projectId/plan` with read-heavy tabs for sequence plans, chapter plans, scene plans, dependencies, and chapter packets
-- routed flow stage visibility via `FlowEditor` showing current `StoryFlowStage[]` without shipped editable-flow mutations for v1.0
-- character profile editing through `CharacterBuilder` with create/update workflows; relationship-map workflows deferred beyond v1.0
-- arc support as read-only projections via `getArcCandidates`, `getArcSelections`, and `getArcStageMaps`; interactive arc-decision mutations deferred beyond v1.0
+- routed flow stage visibility via `FlowEditor` with full editable-flow mutations (add/rename/disable/archive/delete stages)
+- character profile editing through `CharacterBuilder` with create/update workflows; relationship-map graph visualization with full CRUD and inline edge actions
+- arc candidate management with create/select/deselect actions, stage map creation with narrative progression chips, and arc comparison graph visualization
 - routed write workspace at `/workspace/:projectId/write` with API-backed reads for `ManuscriptDocument`, `DraftArtifact`, and `RevisionSuggestion` records via existing GET routes (`getManuscriptDocuments`, `getDraftArtifacts`, `getRevisionSuggestions`)
-- Brain Dump project type with distraction-free canvas, auto-save, and AI-powered text categorization into structured brainstorm items
-- review-driven aids rail as a surface for viewing revision suggestions without backend-backed accept/reject workflow
+- Brain Dump project type with distraction-free canvas, auto-save, and LLM-powered text categorization into structured brainstorm items via configured inference backend
+- review-driven findings list with accept/reject/defer/escalate/refine decision recording backed by `POST /review/decisions`
+- draft mutation service layer with `createDraftArtifact`, `continueDraft`, `createAlternateVariant`, and `promoteDraftToManuscript` API functions
 - latency telemetry in `/health/metrics` endpoint with average, min, and max latency fields for both jobs and role-model-checker runs (REL-05)
 - operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
 - file permission validation with world-writable directory rejection and directory-safety checks (REL-09)
 
 Still being built:
 
-- runtime-backed generation for phases beyond the current `architect`, `sequencer`, and `drafter` slices
-- full orchestrator/compiler flow
-- runtime-backed job phases beyond `P-100`
-- richer runtime telemetry
-- broader production-grade tests
-- editable-flow stage mutations (add/update/delete) via `FlowEditor`
-- relationship-map workflows for character relationships
-- interactive arc-decision mutation workflows
+- richer runtime telemetry and latency diagnostics
+- broader production-grade test coverage
 
 ## Quickstart
 
@@ -84,7 +79,7 @@ Still being built:
 
 Current verified baseline:
 
-- `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing stub inference / test isolation issues)
+- `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures)
 
 ### Frontend
 
@@ -116,7 +111,7 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- `python -m pytest -q -p no:cacheprovider` -> `583 passed, 29 failed, 9 skipped` (29 failures are pre-existing)
+- `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed

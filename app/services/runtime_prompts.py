@@ -247,6 +247,51 @@ def build_import_analysis_request(
     )
 
 
+def build_brain_dump_organize_request(
+    *,
+    raw_text: str,
+    default_model: str | None,
+) -> InferenceRequest:
+    truncated_text = raw_text[:50_000]
+
+    system_prompt = (
+        "You are a story development assistant for Narrative-Engine. "
+        "Your job is to organize a writer's brain dump into structured categories.\n\n"
+        "Read the raw text carefully and categorize each distinct idea/segment into one "
+        "of these categories:\n"
+        "- character: character names, personalities, backstories, motivations\n"
+        "- location: settings, places, environments, worlds\n"
+        "- plot_point: plot events, twists, story beats, turning points\n"
+        "- theme: themes, motifs, symbolism, underlying messages\n"
+        "- conflict: conflicts, tensions, antagonistic forces\n"
+        "- world_building: lore, magic systems, technology, cultures, history\n"
+        "- dialogue: memorable quotes, conversations, speech patterns\n"
+        "- relationship: character relationships, dynamics, connections\n"
+        "- object: important items, artifacts, symbols, props\n"
+        "- rule: world rules, constraints, laws, limitations\n\n"
+        "Return ONLY valid JSON with these exact keys (all arrays must be present even if empty):\n"
+        "character, location, plot_point, theme, conflict, world_building, dialogue, "
+        "relationship, object, rule\n\n"
+        "CRITICAL: Return ONLY the JSON object. No markdown, no explanation, no code blocks. "
+        "Each array should contain the distinct text segments that belong in that category. "
+        "Preserve the original text as much as possible -- do not rewrite the ideas."
+    )
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=4096,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=truncated_text),
+        ],
+        metadata={
+            "mode": "brain_dump_organize",
+            "role": "brain_dump_organizer",
+        },
+    )
+
+
 def architect_output_path(project_dir: Path) -> Path:
     return project_dir / "exports" / "p100_architect_output.md"
 

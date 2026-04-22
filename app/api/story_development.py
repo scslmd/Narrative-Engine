@@ -47,7 +47,12 @@ from app.schemas import (
     WorldBibleEntry,
 )
 from app.schemas.base import StrictModel
-from app.services.braindump import BrainDumpNotFoundError, BrainDumpService, BrainDumpValidationError
+from app.services.braindump import (
+    BrainDumpNotFoundError,
+    BrainDumpOrganizeError,
+    BrainDumpService,
+    BrainDumpValidationError,
+)
 from app.services.brainstorm import BrainstormNotFoundError, BrainstormService, BrainstormValidationError
 from app.services.drafting import DraftingNotFoundError, DraftingService, DraftingValidationError
 from app.services.manuscript_review import ManuscriptReviewError, ManuscriptReviewService
@@ -827,6 +832,7 @@ class ArcComparisonRequest(StrictModel):
 def build_story_development_router(
     repository: StoryDevelopmentRepository,
     prefix: str = "/story-development",
+    inferencer: object | None = None,
 ) -> APIRouter:
     router = APIRouter(prefix=prefix.rstrip("/") if prefix else "", tags=["story-development"])
     decision_service = StoryDecisionReviewService(repository)
@@ -839,7 +845,7 @@ def build_story_development_router(
         SQLiteEditableFlowRepository(str(repository.db_path)),
     )
     brainstorm_service = BrainstormService(repository)
-    braindump_service = BrainDumpService(repository)
+    braindump_service = BrainDumpService(repository, inferencer=inferencer)
     foundation_service = FoundationService(repository)
     story_knowledge_service = StoryKnowledgeService(repository)
     chapter_packet_service = ChapterPacketService(repository)
@@ -2076,50 +2082,42 @@ def build_story_development_router(
     ) -> BrainDumpOrganizeResponse:
         """Organize a brain dump session by categorizing raw text into brainstorm items."""
         try:
-            session = braindump_service.get_session(session_id)
-            if session.project_id != project_id:
-                raise BrainDumpNotFoundError(session_id)
-            if session.state != "active":
-                raise BrainDumpValidationError("Only active sessions can be organized.")
+            categorized_items = braindump_service.organize(
+                session_id,
+                project_id,
+                brainstorm_service=brainstorm_service,
+            )
 
-            items = _mock_organize_raw_text(session.raw_text)
-            created_items: list[BrainstormItem] = []
-            for item_type, text_blocks in items.items():
-                for idx, text in enumerate(text_blocks):
-                    brainstorm_item = brainstorm_service.capture_brainstorm_item(
-                        project_id=project_id,
-                        content=text,
-                        status="keep",
-                        tags=[item_type.lower()],
-                    )
-                    # Attach item_type to the response schema
-                    braindump_item = BrainstormItem(
-                        item_id=brainstorm_item.item_id,
-                        project_id=brainstorm_item.project_id,
-                        content=brainstorm_item.content,
-                        status=brainstorm_item.status,
-                        tags=brainstorm_item.tags,
-                        source_notes=brainstorm_item.source_notes,
-                        item_type=item_type,
-                    )
-                    created_items.append(braindump_item)
-
-            braindump_service.update_session(session_id, state="organized")
-
-            categorized: dict[str, list[BrainstormItem]] = {}
-            for item in created_items:
-                if item.item_type:
-                    categorized.setdefault(item.item_type, []).append(item)
+            # Wrap items with item_type for response schema
+            response_items: dict[str, list[BrainstormItem]] = {}
+            total = 0
+            for category, items in categorized_items.items():
+                wrapped: list[BrainstormItem] = []
+                for item in items:
+                    wrapped.append(BrainstormItem(
+                        item_id=item.item_id,
+                        project_id=item.project_id,
+                        content=item.content,
+                        status=item.status,
+                        tags=item.tags,
+                        source_notes=item.source_notes,
+                        item_type=category,
+                    ))
+                    total += 1
+                if wrapped:
+                    response_items[category] = wrapped
 
             return BrainDumpOrganizeResponse(
                 session_id=session_id,
-                categorized_items=categorized,
-                total_items=len(created_items),
+                categorized_items=response_items,
+                total_items=total,
             )
         except BrainDumpValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except BrainDumpNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Brain dump session not found.") from exc
+        except BrainDumpOrganizeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     # ============================================================================
     # Foundation Endpoints
@@ -3094,14 +3092,6 @@ def _sequence_to_schema(plan) -> SequencePlan:
     )
 
 
-# TODO: Replace with real LLM-based categorization when AI pipeline is available.
-# Current implementation splits raw text by double-newlines and round-robins
-# across categories. This provides a structural placeholder for the organize
-# endpoint so the frontend workflow can be tested end-to-end.
-_CATEGORY_KEYS = ["CHARACTER", "LOCATION", "PLOT_POINT", "THEME", "CONFLICT",
-                  "WORLD_BUILDING", "DIALOGUE", "RELATIONSHIP", "OBJECT", "RULE"]
-
-
 def _session_to_response(session) -> BrainDumpSessionResponse:
     return BrainDumpSessionResponse(
         session_id=session.session_id,
@@ -3112,20 +3102,3 @@ def _session_to_response(session) -> BrainDumpSessionResponse:
         created_at=session.created_at.isoformat() if session.created_at else None,
         updated_at=session.updated_at.isoformat() if session.updated_at else None,
     )
-
-
-def _mock_organize_raw_text(raw_text: str) -> dict[str, list[str]]:
-    """Organize raw brain dump text into categories.
-
-    TODO: Replace with LLM-based NLP pipeline.
-    Current logic: split by double-newlines, round-robin assign to categories.
-    """
-    blocks = [b.strip() for b in raw_text.split("\n\n") if b.strip()]
-    if not blocks:
-        blocks = [raw_text.strip()] if raw_text.strip() else []
-
-    result: dict[str, list[str]] = {}
-    for i, block in enumerate(blocks):
-        category = _CATEGORY_KEYS[i % len(_CATEGORY_KEYS)]
-        result.setdefault(category, []).append(block)
-    return result

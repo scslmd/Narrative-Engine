@@ -238,50 +238,247 @@ def test_delete_session_raises_not_found(tmp_path) -> None:
 
 
 # =============================================================================
-# Organize tests
+# Organize tests (LLM-based)
 # =============================================================================
 
 
-def test_organize_creates_brainstorm_items(tmp_path) -> None:
-    from app.api.story_development import (
-        BrainDumpService as _BDS,
-        BrainstormService,
-    )
+def _make_mock_inferencer(json_response: str) -> object:
+    class MockDescriptor:
+        default_model = "test-model"
+    class MockInferencer:
+        descriptor = MockDescriptor()
+        def generate_text(self, request: object) -> object:
+            return type('Resp', (), {'content': json_response})()
+    return MockInferencer()
+
+
+class _MockBrainstormService:
+    def __init__(self, repository: object) -> None:
+        self.repository = repository
+        self._counter = 0
+        self._items: list[object] = []
+
+    def capture_brainstorm_item(self, project_id: str, content: str, status: str, tags: list[str]) -> object:
+        self._counter += 1
+        item = type('BrainstormItem', (), {
+            'item_id': f'brain-{self._counter}',
+            'project_id': project_id,
+            'content': content,
+            'status': status,
+            'tags': tags,
+            'source_notes': None,
+        })()
+        self._items.append(item)
+        return item
+
+
+def test_organize_with_llm_returns_categorized_items(tmp_path) -> None:
     from app.services.braindump import BrainDumpService as BDService
 
-    repository = StoryDevelopmentRepository(tmp_path / "story-organize.sqlite")
-    _register_project(repository, "project-15")
-    brainstorm_service = BrainstormService(repository)
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-llm.sqlite")
+    _register_project(repository, "project-20")
+    brainstorm_svc = _MockBrainstormService(repository)
 
-    bd_service = BDService(repository)
-    session = bd_service.create_session(
-        project_id="project-15",
-        title="Organize test",
-        raw_text="First idea\n\nSecond idea\n\nThird idea",
+    mock_inferencer = _make_mock_inferencer(
+        '{"character": ["Alice is brave"], "location": ["The castle"], '
+        '"plot_point": [], "theme": [], "conflict": [], "world_building": [], '
+        '"dialogue": [], "relationship": [], "object": [], "rule": []}'
     )
 
-    from app.api.story_development import _mock_organize_raw_text
-    items = _mock_organize_raw_text(session.raw_text)
+    bd_service = BDService(repository, inferencer=mock_inferencer)
+    session = bd_service.create_session(
+        project_id="project-20",
+        raw_text="Alice is brave and lives in the castle.",
+    )
 
-    assert len(items) >= 1
-    assert any(len(blocks) > 0 for blocks in items.values())
+    result = bd_service.organize(
+        session.session_id,
+        "project-20",
+        brainstorm_service=brainstorm_svc,
+    )
+
+    assert len(result) >= 2
+    assert "character" in result
+    assert len(result["character"]) >= 1
+    assert result["character"][0].content == "Alice is brave"
+
+
+def test_organize_with_llm_parses_json_response(tmp_path) -> None:
+    from app.services.braindump import BrainDumpService as BDService
+
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-json.sqlite")
+    _register_project(repository, "project-21")
+    brainstorm_svc = _MockBrainstormService(repository)
+
+    mock_inferencer = _make_mock_inferencer(
+        'Here is your result:\n```json\n{"theme": ["honor"], "conflict": ["internal struggle"], '
+        '"character": ["Bob"], "location": [], "plot_point": [], "world_building": [], '
+        '"dialogue": [], "relationship": [], "object": [], "rule": []}\n```'
+    )
+
+    bd_service = BDService(repository, inferencer=mock_inferencer)
+    session = bd_service.create_session(
+        project_id="project-21",
+        raw_text="Some ideas about honor and conflict.",
+    )
+
+    result = bd_service.organize(
+        session.session_id,
+        "project-21",
+        brainstorm_service=brainstorm_svc,
+    )
+
+    assert "theme" in result
+    assert "conflict" in result
+    assert "character" in result
+
+
+def test_organize_creates_brainstorm_items(tmp_path) -> None:
+    from app.services.braindump import BrainDumpService as BDService
+
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-items.sqlite")
+    _register_project(repository, "project-22")
+    brainstorm_svc = _MockBrainstormService(repository)
+
+    mock_inferencer = _make_mock_inferencer(
+        '{"character": ["Alice", "Bob"], "location": ["The castle"], '
+        '"plot_point": ["The betrayal"], "theme": [], "conflict": [], "world_building": [], '
+        '"dialogue": [], "relationship": [], "object": [], "rule": []}'
+    )
+
+    bd_service = BDService(repository, inferencer=mock_inferencer)
+    session = bd_service.create_session(
+        project_id="project-22",
+        raw_text="Alice, Bob, the castle, the betrayal.",
+    )
+
+    result = bd_service.organize(
+        session.session_id,
+        "project-22",
+        brainstorm_service=brainstorm_svc,
+    )
+
+    total_items = sum(len(items) for items in result.values())
+    assert total_items == 4
+    for items in result.values():
+        for item in items:
+            assert item.project_id == "project-22"
+            assert len(item.tags) == 1
 
 
 def test_organize_updates_session_state(tmp_path) -> None:
-    repository = StoryDevelopmentRepository(tmp_path / "story-organize-state.sqlite")
-    _register_project(repository, "project-16")
-    bd_service = BrainDumpService(repository)
+    from app.services.braindump import BrainDumpService as BDService
 
-    session = bd_service.create_session(
-        project_id="project-16",
-        raw_text="Some text\n\nMore text",
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-state2.sqlite")
+    _register_project(repository, "project-23")
+    brainstorm_svc = _MockBrainstormService(repository)
+
+    mock_inferencer = _make_mock_inferencer(
+        '{"character": ["Test"], "location": [], "plot_point": [], "theme": [], '
+        '"conflict": [], "world_building": [], "dialogue": [], "relationship": [], '
+        '"object": [], "rule": []}'
     )
 
-    from app.api.story_development import _mock_organize_raw_text
-    _mock_organize_raw_text(session.raw_text)
+    bd_service = BDService(repository, inferencer=mock_inferencer)
+    session = bd_service.create_session(
+        project_id="project-23",
+        raw_text="Test text",
+    )
 
-    updated = bd_service.update_session(session.session_id, state="organized")
+    assert session.state == "active"
+
+    bd_service.organize(
+        session.session_id,
+        "project-23",
+        brainstorm_service=brainstorm_svc,
+    )
+
+    updated = bd_service.get_session(session.session_id)
     assert updated.state == "organized"
+
+
+def test_organize_raises_when_no_inferencer(tmp_path) -> None:
+    from app.services.braindump import BrainDumpService as BDService, BrainDumpOrganizeError
+
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-no-inferencer.sqlite")
+    _register_project(repository, "project-24")
+
+    bd_service = BDService(repository, inferencer=None)
+    session = bd_service.create_session(
+        project_id="project-24",
+        raw_text="Some text",
+    )
+
+    try:
+        bd_service.organize(
+            session.session_id,
+            "project-24",
+            brainstorm_service=_MockBrainstormService(repository),
+        )
+    except BrainDumpOrganizeError as exc:
+        assert "LLM inference is not configured" in str(exc)
+    else:
+        raise AssertionError("Should raise BrainDumpOrganizeError without inferencer")
+
+
+def test_organize_rejects_non_active_session(tmp_path) -> None:
+    from app.services.braindump import BrainDumpService as BDService
+
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-inactive.sqlite")
+    _register_project(repository, "project-25")
+
+    bd_service = BDService(repository)
+    session = bd_service.create_session(
+        project_id="project-25",
+        raw_text="Text",
+    )
+
+    bd_service.update_session(session.session_id, state="organized")
+
+    mock_inferencer = _make_mock_inferencer(
+        '{"character": [], "location": [], "plot_point": [], "theme": [], '
+        '"conflict": [], "world_building": [], "dialogue": [], "relationship": [], '
+        '"object": [], "rule": []}'
+    )
+    bd_service._inferencer = mock_inferencer
+
+    try:
+        bd_service.organize(
+            session.session_id,
+            "project-25",
+            brainstorm_service=_MockBrainstormService(repository),
+        )
+    except BrainDumpValidationError:
+        pass
+    else:
+        raise AssertionError("Non-active sessions should not be organized")
+
+
+def test_organize_validates_missing_keys(tmp_path) -> None:
+    from app.services.braindump import BrainDumpService as BDService, BrainDumpOrganizeError
+
+    repository = StoryDevelopmentRepository(tmp_path / "story-organize-validate.sqlite")
+    _register_project(repository, "project-26")
+    brainstorm_svc = _MockBrainstormService(repository)
+
+    mock_inferencer = _make_mock_inferencer('{"character": ["Test"]}')
+
+    bd_service = BDService(repository, inferencer=mock_inferencer)
+    session = bd_service.create_session(
+        project_id="project-26",
+        raw_text="Incomplete JSON",
+    )
+
+    try:
+        bd_service.organize(
+            session.session_id,
+            "project-26",
+            brainstorm_service=brainstorm_svc,
+        )
+    except BrainDumpOrganizeError as exc:
+        assert "missing required keys" in str(exc)
+    else:
+        raise AssertionError("Should raise BrainDumpOrganizeError for invalid JSON")
 
 
 def test_organize_rejects_non_active_session(tmp_path) -> None:
@@ -297,44 +494,3 @@ def test_organize_rejects_non_active_session(tmp_path) -> None:
         pass
     else:
         raise AssertionError("Non-active sessions should not be re-activated")
-
-
-def test_mock_organize_distributes_across_categories(tmp_path) -> None:
-    from app.api.story_development import _mock_organize_raw_text
-
-    raw = "Idea one\n\nIdea two\n\nIdea three\n\nIdea four\n\nIdea five\n\nIdea six\n\nIdea seven\n\nIdea eight\n\nIdea nine\n\nIdea ten"
-    result = _mock_organize_raw_text(raw)
-
-    categories = list(result.keys())
-    total_blocks = sum(len(blocks) for blocks in result.values())
-
-    assert total_blocks == 10
-    assert len(categories) == 10
-    assert "CHARACTER" in categories
-    assert "LOCATION" in categories
-    assert "PLOT_POINT" in categories
-    assert "THEME" in categories
-    assert "CONFLICT" in categories
-    assert "WORLD_BUILDING" in categories
-    assert "DIALOGUE" in categories
-    assert "RELATIONSHIP" in categories
-    assert "OBJECT" in categories
-    assert "RULE" in categories
-
-
-def test_mock_organize_handles_empty_text(tmp_path) -> None:
-    from app.api.story_development import _mock_organize_raw_text
-
-    result = _mock_organize_raw_text("")
-    assert all(len(blocks) == 0 for blocks in result.values())
-
-    result = _mock_organize_raw_text("   ")
-    assert all(len(blocks) == 0 for blocks in result.values())
-
-
-def test_mock_organize_handles_single_paragraph(tmp_path) -> None:
-    from app.api.story_development import _mock_organize_raw_text
-
-    result = _mock_organize_raw_text("Single paragraph")
-    assert "CHARACTER" in result
-    assert result["CHARACTER"] == ["Single paragraph"]

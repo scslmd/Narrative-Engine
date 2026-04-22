@@ -1,4 +1,4 @@
-import type { InspectRunLink } from '../types/inspectLinks';
+import type { InspectRunLink, InspectRunLinkCreateRequest } from '../types/inspectLinks';
 import api from '../lib/api';
 
 interface InspectLinkListResponse {
@@ -38,6 +38,18 @@ export async function getInspectLink(linkId: string, projectId?: string): Promis
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch inspect link: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function createInspectLink(data: InspectRunLinkCreateRequest): Promise<InspectRunLink> {
+  const response = await api.post('/story-development/review/inspect-links', data, {
+    params: { project_id: data.project_id },
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to create inspect link: ${response.status}`);
   }
 
   return response.data;

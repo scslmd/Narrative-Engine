@@ -18,12 +18,11 @@ export interface ReviewDecision {
   project_id: string;
   target_kind: string;
   target_id: string;
-  decision_action: DecisionAction;
-  rationale?: string;
-  routed_to_stage?: string;
+  decision: DecisionAction;
   notes: string | null;
   source_context: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface ReviewDecisionCreateRequest {

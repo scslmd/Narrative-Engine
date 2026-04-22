@@ -75,20 +75,16 @@ export function DecisionHistory({ findingId }: DecisionHistoryProps) {
         {decisions.map((decision) => (
           <div key={decision.decision_id} className="border rounded p-3 bg-gray-50">
             <div className="flex items-center justify-between mb-2">
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(decision.decision_action)}`}>
-                {decision.decision_action.toUpperCase()}
+              <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(decision.decision)}`}>
+                {decision.decision.toUpperCase()}
               </span>
               <span className="text-xs text-gray-500">
                 {new Date(decision.created_at).toLocaleString()}
               </span>
             </div>
             
-            <p className="text-sm text-gray-700">{decision.rationale}</p>
-            
-            {decision.routed_to_stage && (
-              <p className="text-xs text-blue-600 mt-1">
-                Routed to: {decision.routed_to_stage}
-              </p>
+            {decision.notes && (
+              <p className="text-sm text-gray-700">{decision.notes}</p>
             )}
           </div>
         ))}

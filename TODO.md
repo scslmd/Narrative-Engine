@@ -107,6 +107,14 @@ with real API backing.
 - Added PlanningReorderRequest type: project_id, plan_kind ('sequence'|'chapter'|'scene'), ordered_plan_ids
 - Backend endpoint POST /planning/reorder now has frontend service support
 
+### Arc Management + Planning Reorder UI -- All Complete
+- Arc candidates: + New Arc create form (arc_id, name, summary), Select/Deselect buttons on each card
+- Stage Maps: create form with arc dropdown, stage kind chips (exposition, inciting_incident, rising_action, complication, crisis, climax, falling_action, resolution), optional notes
+- Planning reordering: Chevron up/down buttons on sequence, chapter, and scene cards
+- Bug fixes: arc_id required in ArcCandidateCreateRequest frontend type, deleteArcSelection project_id query param, ArcSelectionCreateRequest.selected_arc accepts string or object
+- Removed unused getSelectedArc import, inlined logic in PlanningView
+- Validation: 801 passed, 9 skipped, typecheck passed, build passed, lint passed
+
 ### Testing
 - Smoke coverage, persistence coverage, contract coverage, failure-mode coverage
 - CI runs full suite on push and pull request
