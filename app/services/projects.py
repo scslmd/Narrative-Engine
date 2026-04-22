@@ -36,6 +36,8 @@ class ProjectService:
     def list_projects(self) -> list[ProjectSummaryResponse]:
         results: list[ProjectSummaryResponse] = []
         for projection in self.repository.list_project_projections():
+            if not projection.manifest_path.exists() or projection.manifest_path.stat().st_size == 0:
+                continue
             manifest = ManifestValidationService.validate_file(projection.manifest_path)
             results.append(
                 ProjectSummaryResponse(
