@@ -52,82 +52,104 @@ export function JobLaunchPanel({ projectId }: Props): React.ReactElement {
   const [selectedPhase, setSelectedPhase] = useState<'P-100' | 'P-200' | 'P-300' | 'P-400'>('P-100');
   const { mode } = useThemeStore();
   const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode);
-
-  const handleLaunch = (): void => {
-    createJob.mutate(selectedPhase);
-  };
-
   const hasProcessingJob = jobs?.some(
-    (job) => job.status === 'PROCESSING' || job.status === 'PENDING'
+    (j) => j.status === 'PROCESSING' || j.status === 'PENDING'
   );
-
-  const selectedPhaseOption = phases.find(p => p.value === selectedPhase);
-
-  const cardClass = isDark
-    ? 'bg-slate-900 border-slate-800'
-    : 'bg-white border-slate-200'
-  const headerClass = isDark
-    ? 'border-slate-800'
-    : 'border-slate-200'
-  const headerTextColor = isDark
-    ? 'text-indigo-400'
-    : 'text-indigo-500'
-  const headingColor = isDark
-    ? 'text-slate-200'
-    : 'text-slate-800'
-  const labelColor = 'text-slate-500'
-  const phaseDescColor = isDark
-    ? 'text-slate-500'
-    : 'text-slate-400'
+  const selectedPhaseOption = phases.find((p) => p.value === selectedPhase);
+  const styles = useJobLaunchPanelStyles(isDark);
 
   return (
-    <div className={`rounded-xl border ${cardClass} shadow-card flex flex-col h-full`}>
-      <div className={`flex items-center gap-2 px-4 py-3 border-b ${headerClass}`}>
-        <Rocket className={`w-4 h-4 ${headerTextColor}`} />
-        <h3 className={`text-sm font-semibold ${headingColor}`}>
-          Launch Job
-        </h3>
-      </div>
-
+    <div className={`rounded-xl border ${styles.cardClass} shadow-card flex flex-col h-full`}>
+      <PanelHeader
+        headerTextColor={styles.headerTextColor}
+        headingColor={styles.headingColor}
+        headerBg={styles.headerBg}
+      />
       <div className="p-3 space-y-3">
-        <div>
-          <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${labelColor}`}>
-            Phase
-          </label>
-          <div className="grid grid-cols-2 gap-1.5">
-            {phases.map((phase) => (
-              <PhaseButton
-                key={phase.value}
-                phase={phase}
-                isSelected={selectedPhase === phase.value}
-                onSelect={() => setSelectedPhase(phase.value)}
-                disabled={createJob.isPending || Boolean(hasProcessingJob)}
-                isDark={isDark}
-              />
-            ))}
-          </div>
-        </div>
-
-        {selectedPhaseOption && (
-          <p className={`text-xs ${phaseDescColor}`}>
-            {selectedPhaseOption.description}
-          </p>
-        )}
-
-        <LaunchButton
-          onClick={handleLaunch}
+        <PhaseSelector
+          phases={phases}
+          selectedPhase={selectedPhase}
+          onSelect={(phase: string) => setSelectedPhase(phase as 'P-100' | 'P-200' | 'P-300' | 'P-400')}
           disabled={createJob.isPending || Boolean(hasProcessingJob)}
-          selectedPhase={selectedPhaseOption?.label}
+          selectedOption={selectedPhaseOption}
+          isDark={isDark}
+          styles={styles}
+        />
+        <LaunchButton
+          onClick={() => createJob.mutate(selectedPhase)}
+          disabled={createJob.isPending || Boolean(hasProcessingJob)}
           isLaunching={createJob.isPending}
           hasProcessingJob={Boolean(hasProcessingJob)}
           isDark={isDark}
         />
-
         {jobs && jobs.length > 0 && (
           <RecentJobsList jobs={jobs.slice(0, 4)} isDark={isDark} />
         )}
       </div>
     </div>
+  );
+}
+
+function useJobLaunchPanelStyles(isDark: boolean) {
+  const cardClass = isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200';
+  const headerBg = isDark ? 'border-slate-800' : 'border-slate-200';
+  const headerTextColor = isDark ? 'text-indigo-400' : 'text-indigo-500';
+  const headingColor = isDark ? 'text-slate-200' : 'text-slate-800';
+  const labelColor = 'text-slate-500';
+  const phaseDescColor = isDark ? 'text-slate-500' : 'text-slate-400';
+  return { cardClass, headerBg, headerTextColor, headingColor, labelColor, phaseDescColor };
+}
+
+interface PanelHeaderProps {
+  headerTextColor: string;
+  headingColor: string;
+  headerBg: string;
+}
+
+function PanelHeader({ headerTextColor, headingColor, headerBg }: PanelHeaderProps): React.ReactElement {
+  return (
+    <div className={`flex items-center gap-2 px-4 py-3 border-b ${headerBg}`}>
+      <Rocket className={`w-4 h-4 ${headerTextColor}`} />
+      <h3 className={`text-sm font-semibold ${headingColor}`}>Launch Job</h3>
+    </div>
+  );
+}
+
+interface PhaseSelectorProps {
+  phases: PhaseOption[];
+  selectedPhase: string;
+  onSelect: (phase: string) => void;
+  disabled: boolean;
+  selectedOption?: { description: string };
+  isDark: boolean;
+  styles: { labelColor: string; phaseDescColor: string };
+}
+
+function PhaseSelector({
+  phases, selectedPhase, onSelect, disabled,
+  selectedOption, isDark, styles,
+}: PhaseSelectorProps): React.ReactElement {
+  return (
+    <>
+      <div>
+        <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${styles.labelColor}`}>Phase</label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {phases.map((phase) => (
+            <PhaseButton
+              key={phase.value}
+              phase={phase}
+              isSelected={selectedPhase === phase.value}
+              onSelect={() => onSelect(phase.value)}
+              disabled={disabled}
+              isDark={isDark}
+            />
+          ))}
+        </div>
+      </div>
+      {selectedOption && (
+        <p className={`text-xs ${styles.phaseDescColor}`}>{selectedOption.description}</p>
+      )}
+    </>
   );
 }
 
@@ -139,22 +161,20 @@ interface PhaseButtonProps {
   isDark: boolean;
 }
 
-function PhaseButton({
-  phase, isSelected, onSelect, disabled, isDark,
-}: PhaseButtonProps): React.ReactElement {
+function PhaseButton({ phase, isSelected, onSelect, disabled, isDark }: PhaseButtonProps): React.ReactElement {
   const Icon = phase.icon;
-  const selectedClass = `bg-gradient-to-r ${phase.gradient} text-white shadow-sm`
+  const selectedClass = `bg-gradient-to-r ${phase.gradient} text-white shadow-sm`;
   const unselectedClass = isDark
     ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-slate-300'
-    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800';
+  const commonClass = 'flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all duration-150 text-xs';
+  const disabledClass = 'disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <button
       onClick={onSelect}
       disabled={disabled}
-      className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-left transition-all duration-150 text-xs ${
-        isSelected ? selectedClass : unselectedClass
-      } disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`${commonClass} ${isSelected ? selectedClass : unselectedClass} ${disabledClass}`}
     >
       <Icon className="w-3.5 h-3.5 flex-shrink-0" />
       <span className="font-medium">{phase.label}</span>
@@ -165,89 +185,58 @@ function PhaseButton({
 interface LaunchButtonProps {
   onClick: () => void;
   disabled: boolean;
-  selectedPhase?: string;
   isLaunching: boolean;
   hasProcessingJob: boolean;
   isDark: boolean;
 }
 
 function LaunchButton({
-  onClick, disabled, selectedPhase,
+  onClick, disabled,
   isLaunching, hasProcessingJob, isDark,
 }: LaunchButtonProps): React.ReactElement {
-  const baseClass = [
-    'w-full flex items-center justify-center gap-2',
-    'px-4 py-2.5 text-sm font-medium',
-    'rounded-lg transition-all duration-150',
-    'disabled:opacity-60',
-  ].join(' ')
-
-  const processingClass = isDark
-    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-  const normalClass = [
-    'bg-gradient-to-r from-indigo-500 to-violet-600',
-    'text-white hover:from-indigo-600 hover:to-violet-700',
-    'shadow-sm hover:shadow-md',
-  ].join(' ')
+  const baseClass = 'w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 disabled:opacity-60';
+  const processingClass = isDark ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-slate-100 text-slate-400 cursor-not-allowed';
+  const normalClass = 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-sm hover:shadow-md';
 
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClass} ${
-        hasProcessingJob ? processingClass : normalClass
-      }`}
-    >
-      {isLaunching ? (
-        <>
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          Launching...
-        </>
-      ) : hasProcessingJob ? (
-        <>
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-          Job Running
-        </>
-      ) : (
-        <>
-          <Play className="w-3.5 h-3.5" />
-          Launch {selectedPhase}
-        </>
-      )}
+    <button onClick={onClick} disabled={disabled} className={`${baseClass} ${hasProcessingJob ? processingClass : normalClass}`}>
+      {getLaunchButtonContent(isLaunching, hasProcessingJob)}
     </button>
   );
 }
 
+function getLaunchButtonContent(isLaunching: boolean, hasProcessingJob: boolean): React.ReactNode {
+  if (isLaunching) {
+    return (
+      <>
+        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        Launching...
+      </>
+    );
+  }
+  if (hasProcessingJob) {
+    return (
+      <>
+        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        Job Running
+      </>
+    );
+  }
+  return <Play className="w-3.5 h-3.5" />;
+}
+
 interface RecentJobsListProps {
-  jobs: Array<{
-    job_id: string;
-    phase: string;
-    status: string;
-  }>;
+  jobs: Array<{ job_id: string; phase: string; status: string }>;
   isDark: boolean;
 }
 
 function RecentJobsList({ jobs, isDark }: RecentJobsListProps): React.ReactElement {
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'COMPLETED': return isDark ? 'text-emerald-400' : 'text-emerald-600';
-      case 'FAILED': return isDark ? 'text-red-400' : 'text-red-600';
-      case 'PROCESSING': return isDark ? 'text-blue-400' : 'text-blue-600';
-      default: return 'text-slate-500';
-    }
-  };
-
   return (
     <div className={`border-t pt-3 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-      <h4 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
-        'text-slate-500'
-      }`}>
-        Recent Jobs
-      </h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wider mb-2 text-slate-500">Recent Jobs</h4>
       <ul className="space-y-1.5">
         {jobs.map((job) => (
-          <JobItem key={job.job_id} job={job} isDark={isDark} getStatusColor={getStatusColor} />
+          <JobItem key={job.job_id} job={job} isDark={isDark} />
         ))}
       </ul>
     </div>
@@ -255,25 +244,19 @@ function RecentJobsList({ jobs, isDark }: RecentJobsListProps): React.ReactEleme
 }
 
 interface JobItemProps {
-  job: {
-    job_id: string;
-    phase: string;
-    status: string;
-  };
+  job: { job_id: string; phase: string; status: string };
   isDark: boolean;
-  getStatusColor: (status: string) => string;
 }
 
-function JobItem({ job, isDark, getStatusColor }: JobItemProps): React.ReactElement {
+function JobItem({ job, isDark }: JobItemProps): React.ReactElement {
+  const statusColor = getStatusColor(job.status, isDark);
+  const isProcessing = job.status === 'PROCESSING';
+
   return (
-    <li className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-md ${
-      isDark ? 'bg-slate-800/40' : 'bg-slate-50'
-    }`}>
-      <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-        {job.phase}
-      </span>
-      <span className={`font-medium ${getStatusColor(job.status)}`}>
-        {job.status === 'PROCESSING' ? (
+    <li className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-md ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
+      <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{job.phase}</span>
+      <span className={`font-medium ${statusColor}`}>
+        {isProcessing ? (
           <span className="flex items-center gap-1">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             {job.status}
@@ -284,4 +267,13 @@ function JobItem({ job, isDark, getStatusColor }: JobItemProps): React.ReactElem
       </span>
     </li>
   );
+}
+
+function getStatusColor(status: string, isDark: boolean): string {
+  switch (status) {
+    case 'COMPLETED': return isDark ? 'text-emerald-400' : 'text-emerald-600';
+    case 'FAILED': return isDark ? 'text-red-400' : 'text-red-600';
+    case 'PROCESSING': return isDark ? 'text-blue-400' : 'text-blue-600';
+    default: return 'text-slate-500';
+  }
 }
