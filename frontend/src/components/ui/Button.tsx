@@ -1,5 +1,6 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
+import { useThemeStore } from '../../stores/themeStore'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'soft'
@@ -19,7 +20,8 @@ export function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const { mode } = useThemeStore()
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
   
   const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100'
   

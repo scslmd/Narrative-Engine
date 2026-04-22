@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import {
   LayoutList, Map, GitBranch, Network, FileCheck,
-  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, ChevronUp, ChevronDown, Network as NetworkIcon
+  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon
 } from 'lucide-react';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { RoleModelChecker } from '../components/checker';
@@ -14,52 +14,24 @@ import { FoundationEditor } from '../components/foundation/FoundationEditor';
 import { CharacterBuilder } from '../components/characters/CharacterBuilder';
 import { RelationshipMapGraph } from '../components/characters/RelationshipMapGraph';
 import { RelationshipList } from '../components/characters/RelationshipList';
-import { ArcComparisonGraph } from '../components/arcs/ArcComparisonGraph';
-import { ArcStageMapFlow } from '../components/arcs/ArcStageMapFlow';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
+import { PlanningTab } from '../components/planning/PlanningTab';
+import { usePlanningTab } from '../hooks/usePlanningTab';
 import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from '../services/brainstorm';
 import { getFoundation, createFoundation, updateFoundation } from '../services/foundation';
 import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
 import { getRelationships, deleteRelationship } from '../services/relationships';
 import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
-import {
-  getSequencePlans,
-  getChapterPlans,
-  getScenePlans,
-  getBeatPlans,
-  createSequencePlan,
-  updateSequencePlan,
-  createChapterPlan,
-  updateChapterPlan,
-  createScenePlan,
-  updateScenePlan,
-  createBeatPlan,
-  updateBeatPlan,
-  getPlanningDependencies,
-  getChapterPackets,
-  createChapterPacket,
-  reorderPlanObjects,
-} from '../services/planning';
-import {
-  getStoryboardCards,
-  createStoryboardCard,
-} from '../services/storyboard';
-import {
-  getArcCandidates,
-  getArcSelections,
-  getArcStageMaps,
-  getArcComparisons,
-  createArcCandidate,
-  createArcSelection,
-  deleteArcSelection,
-  createArcStageMap,
-} from '../services/arcs';
+
 import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
+
 import { useThemeStore } from '../stores/themeStore';
+import { EmptyState, WorkspaceStatus } from '../components/planning/ui';
+import { getErrorMessage } from '../components/planning/utils';
 
 type PlanningTab =
   | 'manifest'
@@ -158,158 +130,7 @@ export function PlanningView() {
     enabled: Boolean(projectId) && activeTab === 'world-bible',
   });
 
-  const sequencePlansQuery = useQuery({
-    queryKey: ['planning-sequence-plans', projectId],
-    queryFn: () => getSequencePlans(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const chapterPlansQuery = useQuery({
-    queryKey: ['planning-chapter-plans', projectId],
-    queryFn: () => getChapterPlans(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const scenePlansQuery = useQuery({
-    queryKey: ['planning-scene-plans', projectId],
-    queryFn: () => getScenePlans(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const beatPlansQuery = useQuery({
-    queryKey: ['planning-beat-plans', projectId],
-    queryFn: () => getBeatPlans(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const dependenciesQuery = useQuery({
-    queryKey: ['planning-dependencies', projectId],
-    queryFn: () => getPlanningDependencies(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const chapterPacketsQuery = useQuery({
-    queryKey: ['planning-chapter-packets', projectId],
-    queryFn: () => getChapterPackets(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const storyboardCardsQuery = useQuery({
-    queryKey: ['planning-storyboard-cards', projectId],
-    queryFn: () => getStoryboardCards(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'planning',
-  });
-
-  const arcCandidatesQuery = useQuery({
-    queryKey: ['arc-candidates', projectId],
-    queryFn: () => getArcCandidates(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'arcs',
-  });
-
-  const arcSelectionsQuery = useQuery({
-    queryKey: ['arc-selections', projectId],
-    queryFn: () => getArcSelections(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'arcs',
-  });
-
-  const arcStageMapsQuery = useQuery({
-    queryKey: ['arc-stage-maps', projectId],
-    queryFn: () => getArcStageMaps(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'arcs',
-  });
-
-  const arcComparisonsQuery = useQuery({
-    queryKey: ['arc-comparisons', projectId],
-    queryFn: () => getArcComparisons(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'arcs',
-  });
-
-  const selectArcMutation = useMutation({
-    mutationFn: (arcId: string) =>
-      createArcSelection({
-        project_id: projectId || '',
-        selected_arc: arcId,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-    },
-  });
-
-  const deselectArcMutation = useMutation({
-    mutationFn: () => {
-      const selection = arcSelections[0];
-      if (!selection) return Promise.resolve();
-      return deleteArcSelection(selection.selection_id, projectId || '');
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-    },
-  });
-
-  const arcCandidateCreateMutation = useMutation({
-    mutationFn: (data: { arc_id: string; project_id: string; name: string; summary: string }) =>
-      createArcCandidate({
-        arc_id: data.arc_id,
-        project_id: data.project_id,
-        name: data.name,
-        summary: data.summary,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-    },
-  });
-
-  const stageMapCreateMutation = useMutation({
-    mutationFn: (data: { arc_id: string; project_id: string; stage_kinds: string[]; notes?: string | null }) =>
-      createArcStageMap({
-        project_id: data.project_id,
-        arc_id: data.arc_id,
-        stage_kinds: data.stage_kinds,
-        notes: data.notes || undefined,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arc-stage-maps', projectId] });
-    },
-  });
-
-  const sequenceReorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) =>
-      reorderPlanObjects({
-        project_id: projectId || '',
-        plan_kind: 'sequence',
-        ordered_plan_ids: orderedIds,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-sequence-plans', projectId] });
-    },
-  });
-
-  const chapterReorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) =>
-      reorderPlanObjects({
-        project_id: projectId || '',
-        plan_kind: 'chapter',
-        ordered_plan_ids: orderedIds,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-plans', projectId] });
-    },
-  });
-
-  const sceneReorderMutation = useMutation({
-    mutationFn: (orderedIds: string[]) =>
-      reorderPlanObjects({
-        project_id: projectId || '',
-        plan_kind: 'scene',
-        ordered_plan_ids: orderedIds,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-scene-plans', projectId] });
-    },
-  });
+  const planning = usePlanningTab(activeTab);
 
   const relationshipsQuery = useQuery({
     queryKey: ['planning', 'relationships', projectId],
@@ -419,144 +240,7 @@ export function PlanningView() {
     },
   });
 
-  const sequencePlanCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createSequencePlan>[1]) =>
-      createSequencePlan(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'sequence-plans', projectId] });
-    },
-  });
-
-  const sequencePlanUpdateMutation = useMutation({
-    mutationFn: (data: { sequenceId: string; projectId: string; title: string; summary?: string }) =>
-      updateSequencePlan(data.sequenceId, data.projectId, { title: data.title, summary: data.summary }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'sequence-plans', projectId] });
-    },
-  });
-
-  const chapterPacketCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createChapterPacket>[1]) =>
-      createChapterPacket(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-packets', projectId] });
-    },
-  });
-
-  const storyboardCardCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createStoryboardCard>[1]) =>
-      createStoryboardCard(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'storyboard-cards', projectId] });
-    },
-  });
-
-  const chapterPlanCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createChapterPlan>[1]) =>
-      createChapterPlan(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-plans', projectId] });
-    },
-  });
-
-  const chapterPlanUpdateMutation = useMutation({
-    mutationFn: (data: { chapterId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
-      updateChapterPlan(data.chapterId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'chapter-plans', projectId] });
-    },
-  });
-
-  const scenePlanCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createScenePlan>[1]) =>
-      createScenePlan(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'scene-plans', projectId] });
-    },
-  });
-
-  const scenePlanUpdateMutation = useMutation({
-    mutationFn: (data: { sceneId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
-      updateScenePlan(data.sceneId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'scene-plans', projectId] });
-    },
-  });
-
-  const beatPlanCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createBeatPlan>[1]) =>
-      createBeatPlan(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'beat-plans', projectId] });
-    },
-  });
-
-  const beatPlanUpdateMutation = useMutation({
-    mutationFn: (data: { beatId: string; projectId: string; objective: string; conflict?: string; stakes?: string; arc_stage?: string }) =>
-      updateBeatPlan(data.beatId, data.projectId, { objective: data.objective, conflict: data.conflict, stakes: data.stakes, arc_stage: data.arc_stage }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'beat-plans', projectId] });
-    },
-  });
-
-  const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
-  const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
-  const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
-  const [sequenceEditOpenId, setSequenceEditOpenId] = useState<string | null>(null);
-  const [sequenceEditTitle, setSequenceEditTitle] = useState('');
-  const [sequenceEditSummary, setSequenceEditSummary] = useState('');
-  const [packetCreateOpen, setPacketCreateOpen] = useState(false);
-  const [packetCreateChapterId, setPacketCreateChapterId] = useState('');
-  const [cardCreateOpen, setCardCreateOpen] = useState(false);
-  const [cardCreateTitle, setCardCreateTitle] = useState('');
-  const [cardCreateContent, setCardCreateContent] = useState('');
-  const [cardCreateType, setCardCreateType] = useState('idea');
-
-  const [chapterCreateOpen, setChapterCreateOpen] = useState(false);
-  const [chapterCreateTitle, setChapterCreateTitle] = useState('');
-  const [chapterCreateObjective, setChapterCreateObjective] = useState('');
-  const [chapterCreateConflict, setChapterCreateConflict] = useState('');
-  const [chapterCreateStakes, setChapterCreateStakes] = useState('');
-  const [chapterCreateSequenceId, setChapterCreateSequenceId] = useState('');
-  const [chapterEditOpenId, setChapterEditOpenId] = useState<string | null>(null);
-  const [chapterEditTitle, setChapterEditTitle] = useState('');
-  const [chapterEditObjective, setChapterEditObjective] = useState('');
-  const [chapterEditConflict, setChapterEditConflict] = useState('');
-  const [chapterEditStakes, setChapterEditStakes] = useState('');
-
-  const [sceneCreateOpen, setSceneCreateOpen] = useState(false);
-  const [sceneCreateTitle, setSceneCreateTitle] = useState('');
-  const [sceneCreateObjective, setSceneCreateObjective] = useState('');
-  const [sceneCreateConflict, setSceneCreateConflict] = useState('');
-  const [sceneCreateStakes, setSceneCreateStakes] = useState('');
-  const [sceneCreateChapterId, setSceneCreateChapterId] = useState('');
-  const [sceneEditOpenId, setSceneEditOpenId] = useState<string | null>(null);
-  const [sceneEditTitle, setSceneEditTitle] = useState('');
-  const [sceneEditObjective, setSceneEditObjective] = useState('');
-  const [sceneEditConflict, setSceneEditConflict] = useState('');
-  const [sceneEditStakes, setSceneEditStakes] = useState('');
-
-  const [beatCreateOpen, setBeatCreateOpen] = useState(false);
-  const [beatCreateObjective, setBeatCreateObjective] = useState('');
-  const [beatCreateConflict, setBeatCreateConflict] = useState('');
-  const [beatCreateStakes, setBeatCreateStakes] = useState('');
-  const [beatEditOpenId, setBeatEditOpenId] = useState<string | null>(null);
-  const [beatEditObjective, setBeatEditObjective] = useState('');
-  const [beatEditConflict, setBeatEditConflict] = useState('');
-  const [beatEditStakes, setBeatEditStakes] = useState('');
-  const [beatEditArcStage, setBeatEditArcStage] = useState('');
-
-  const [arcCandidateCreateOpen, setArcCandidateCreateOpen] = useState(false);
-  const [arcCandidateCreateId, setArcCandidateCreateId] = useState('');
-  const [arcCandidateCreateName, setArcCandidateCreateName] = useState('');
-  const [arcCandidateCreateSummary, setArcCandidateCreateSummary] = useState('');
-
-  const [stageMapCreateOpen, setStageMapCreateOpen] = useState(false);
-  const [stageMapCreateArcId, setStageMapCreateArcId] = useState('');
-  const [stageMapCreateNotes, setStageMapCreateNotes] = useState('');
-  const [stageMapCreateKinds, setStageMapCreateKinds] = useState<string[]>([]);
-
-  const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
+   const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
 
   const characterNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -578,23 +262,6 @@ export function PlanningView() {
     ? characters.find((character) => character.character_id === selectedCharacterId)
     : null;
   const worldBibleEntries = worldBibleQuery.data ?? [];
-
-  const sequencePlans = sequencePlansQuery.data ?? [];
-  const chapterPlans = chapterPlansQuery.data ?? [];
-  const scenePlans = scenePlansQuery.data ?? [];
-  const beatPlans = beatPlansQuery.data ?? [];
-  const dependencies = dependenciesQuery.data ?? [];
-  const chapterPackets = chapterPacketsQuery.data ?? [];
-  const storyboardCards = storyboardCardsQuery.data ?? [];
-
-  const arcCandidates = arcCandidatesQuery.data ?? [];
-  const arcSelections = arcSelectionsQuery.data ?? [];
-  const arcStageMaps = arcStageMapsQuery.data ?? [];
-  const selectedArc = arcSelections.length > 0
-    ? (arcSelections.find((s) => s.project_id === projectId)?.selected_arc || null)
-    : null;
-
-  const arcComparisons = arcComparisonsQuery.data ?? [];
 
   const renderTabButton = (tab: { key: PlanningTab; label: string }, isCore: boolean) => {
     const isActive = activeTab === tab.key;
@@ -637,518 +304,7 @@ export function PlanningView() {
         {activeTab === 'manifest' && <ManifestViewer projectId={projectId} />}
         
         {activeTab === 'planning' && (
-          <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-            <Section title="Sequences" count={sequencePlans.length}>
-              <div className="flex justify-end mb-2">
-                {!sequenceCreateOpen ? (
-                  <button
-                    onClick={() => { setSequenceCreateOpen(true); setSequenceCreateTitle(''); setSequenceCreateSummary(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                  >
-                    + New Sequence
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Sequence title"
-                      value={sequenceCreateTitle}
-                      onChange={(e) => setSequenceCreateTitle(e.target.value)}
-                      className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Summary (optional)"
-                      value={sequenceCreateSummary}
-                      onChange={(e) => setSequenceCreateSummary(e.target.value)}
-                      className={`text-sm px-2 py-1 rounded border w-48 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    />
-                    <button
-                      onClick={() => {
-                        if (!sequenceCreateTitle.trim()) return;
-                        const id = `seq-${Date.now()}`;
-                        void sequencePlanCreateMutation.mutateAsync({
-                          project_id: projectId || '',
-                          sequence_id: id,
-                          title: sequenceCreateTitle.trim(),
-                          summary: sequenceCreateSummary.trim() || undefined,
-                        }).then(() => {
-                          setSequenceCreateOpen(false);
-                          setSequenceCreateTitle('');
-                          setSequenceCreateSummary('');
-                        });
-                      }}
-                      disabled={!sequenceCreateTitle.trim()}
-                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
-                    >
-                      Create
-                    </button>
-                    <button onClick={() => setSequenceCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-              {sequencePlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading sequences" detail="Fetching sequence plans..." isDark={isDark} />
-              ) : sequencePlans.length === 0 ? (
-                <EmptyState text="No sequence plans configured. Create a sequence to define the high-level story structure." />
-              ) : (
-                <div className="space-y-2">
-                  {sequencePlans.map((seq, index) => (
-                    <div key={seq.sequence_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      {sequenceEditOpenId === seq.sequence_id ? (
-                        <div className="flex flex-col gap-2">
-                          <input type="text" value={sequenceEditTitle} onChange={(e) => setSequenceEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                          <input type="text" value={sequenceEditSummary} onChange={(e) => setSequenceEditSummary(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                          <div className="flex gap-2">
-                            <button onClick={() => { void sequencePlanUpdateMutation.mutateAsync({ sequenceId: seq.sequence_id, projectId: projectId || '', title: sequenceEditTitle, summary: sequenceEditSummary || undefined }).then(() => { setSequenceEditOpenId(null); setSequenceEditTitle(''); setSequenceEditSummary(''); }); }} disabled={!sequenceEditTitle.trim() || sequencePlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
-                            <button onClick={() => { setSequenceEditOpenId(null); setSequenceEditTitle(''); setSequenceEditSummary(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{seq.title}</div>
-                            {seq.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{seq.summary}</p>}
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                const newOrder = [...sequencePlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index - 1, 0, removed);
-                                void sequenceReorderMutation.mutateAsync(newOrder.map((s) => s.sequence_id));
-                              }}
-                              disabled={index === 0 || sequenceReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronUp className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newOrder = [...sequencePlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index + 1, 0, removed);
-                                void sequenceReorderMutation.mutateAsync(newOrder.map((s) => s.sequence_id));
-                              }}
-                              disabled={index === sequencePlans.length - 1 || sequenceReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === sequencePlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => { setSequenceEditOpenId(seq.sequence_id); setSequenceEditTitle(seq.title); setSequenceEditSummary(seq.summary || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Chapters" count={chapterPlans.length}>
-              <div className="flex justify-end mb-2">
-                {!chapterCreateOpen ? (
-                  <button
-                    onClick={() => { setChapterCreateOpen(true); setChapterCreateTitle(''); setChapterCreateObjective(''); setChapterCreateConflict(''); setChapterCreateStakes(''); setChapterCreateSequenceId(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                  >
-                    + New Chapter
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2 w-80">
-                    <input type="text" placeholder="Chapter title" value={chapterCreateTitle} onChange={(e) => setChapterCreateTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Objective" value={chapterCreateObjective} onChange={(e) => setChapterCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Conflict" value={chapterCreateConflict} onChange={(e) => setChapterCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Stakes" value={chapterCreateStakes} onChange={(e) => setChapterCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Sequence ID (optional)" value={chapterCreateSequenceId} onChange={(e) => setChapterCreateSequenceId(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <div className="flex gap-2">
-                      <button onClick={() => { const id = `chapter-${Date.now()}`; void chapterPlanCreateMutation.mutateAsync({ project_id: projectId || '', chapter_id: id, title: chapterCreateTitle, objective: chapterCreateObjective, conflict: chapterCreateConflict, stakes: chapterCreateStakes, sequence_id: chapterCreateSequenceId || undefined }); setChapterCreateOpen(false); }} disabled={!chapterCreateTitle.trim() || !chapterCreateObjective.trim() || chapterPlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
-                      <button onClick={() => setChapterCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {chapterPlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading chapters" detail="Fetching chapter plans..." isDark={isDark} />
-              ) : chapterPlans.length === 0 ? (
-                <EmptyState text="No chapter plans configured. Create a chapter to define story structure." />
-              ) : (
-                <div className="space-y-2">
-                  {chapterPlans.map((chap, index) => (
-                    <div key={chap.chapter_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      {chapterEditOpenId === chap.chapter_id ? (
-                        <div className="flex flex-col gap-2">
-                          <input type="text" value={chapterEditTitle} onChange={(e) => setChapterEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Title" />
-                          <input type="text" value={chapterEditObjective} onChange={(e) => setChapterEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
-                          <input type="text" value={chapterEditConflict} onChange={(e) => setChapterEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
-                          <input type="text" value={chapterEditStakes} onChange={(e) => setChapterEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
-                          {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
-                          <div className="flex gap-2">
-                            <button onClick={() => { void chapterPlanUpdateMutation.mutateAsync({ chapterId: chap.chapter_id, projectId: projectId || '', title: chapterEditTitle, objective: chapterEditObjective, conflict: chapterEditConflict || undefined, stakes: chapterEditStakes || undefined }).then(() => { setChapterEditOpenId(null); setChapterEditTitle(''); setChapterEditObjective(''); setChapterEditConflict(''); setChapterEditStakes(''); }); }} disabled={!chapterEditTitle.trim() || !chapterEditObjective.trim() || chapterPlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
-                            <button onClick={() => { setChapterEditOpenId(null); setChapterEditTitle(''); setChapterEditObjective(''); setChapterEditConflict(''); setChapterEditStakes(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{chap.title}</div>
-                            {chap.sequence_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Sequence: {chap.sequence_id}</span>}
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                const newOrder = [...chapterPlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index - 1, 0, removed);
-                                void chapterReorderMutation.mutateAsync(newOrder.map((c) => c.chapter_id));
-                              }}
-                              disabled={index === 0 || chapterReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronUp className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newOrder = [...chapterPlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index + 1, 0, removed);
-                                void chapterReorderMutation.mutateAsync(newOrder.map((c) => c.chapter_id));
-                              }}
-                              disabled={index === chapterPlans.length - 1 || chapterReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === chapterPlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => { setChapterEditOpenId(chap.chapter_id); setChapterEditTitle(chap.title); setChapterEditObjective(chap.objective); setChapterEditConflict(chap.conflict || ''); setChapterEditStakes(chap.stakes || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Scenes" count={scenePlans.length}>
-              <div className="flex justify-end mb-2">
-                {!sceneCreateOpen ? (
-                  <button
-                    onClick={() => { setSceneCreateOpen(true); setSceneCreateTitle(''); setSceneCreateObjective(''); setSceneCreateConflict(''); setSceneCreateStakes(''); setSceneCreateChapterId(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                  >
-                    + New Scene
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2 w-80">
-                    <input type="text" placeholder="Scene title" value={sceneCreateTitle} onChange={(e) => setSceneCreateTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Objective" value={sceneCreateObjective} onChange={(e) => setSceneCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Conflict" value={sceneCreateConflict} onChange={(e) => setSceneCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Stakes" value={sceneCreateStakes} onChange={(e) => setSceneCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Chapter ID (optional)" value={sceneCreateChapterId} onChange={(e) => setSceneCreateChapterId(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <div className="flex gap-2">
-                      <button onClick={() => { const id = `scene-${Date.now()}`; void scenePlanCreateMutation.mutateAsync({ project_id: projectId || '', scene_id: id, title: sceneCreateTitle, objective: sceneCreateObjective, conflict: sceneCreateConflict, stakes: sceneCreateStakes, chapter_id: sceneCreateChapterId || undefined }); setSceneCreateOpen(false); }} disabled={!sceneCreateTitle.trim() || !sceneCreateObjective.trim() || scenePlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
-                      <button onClick={() => setSceneCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {scenePlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading scenes" detail="Fetching scene plans..." isDark={isDark} />
-              ) : scenePlans.length === 0 ? (
-                <EmptyState text="No scene plans configured. Create a scene to define granular story beats." />
-              ) : (
-                <div className="space-y-2">
-                  {scenePlans.map((scene, index) => (
-                    <div key={scene.scene_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      {sceneEditOpenId === scene.scene_id ? (
-                        <div className="flex flex-col gap-2">
-                          <input type="text" value={sceneEditTitle} onChange={(e) => setSceneEditTitle(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Title" />
-                          <input type="text" value={sceneEditObjective} onChange={(e) => setSceneEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
-                          <input type="text" value={sceneEditConflict} onChange={(e) => setSceneEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
-                          <input type="text" value={sceneEditStakes} onChange={(e) => setSceneEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
-                          {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
-                          <div className="flex gap-2">
-                            <button onClick={() => { void scenePlanUpdateMutation.mutateAsync({ sceneId: scene.scene_id, projectId: projectId || '', title: sceneEditTitle, objective: sceneEditObjective, conflict: sceneEditConflict || undefined, stakes: sceneEditStakes || undefined }).then(() => { setSceneEditOpenId(null); setSceneEditTitle(''); setSceneEditObjective(''); setSceneEditConflict(''); setSceneEditStakes(''); }); }} disabled={!sceneEditTitle.trim() || !sceneEditObjective.trim() || scenePlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
-                            <button onClick={() => { setSceneEditOpenId(null); setSceneEditTitle(''); setSceneEditObjective(''); setSceneEditConflict(''); setSceneEditStakes(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{scene.title}</div>
-                            {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => {
-                                const newOrder = [...scenePlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index - 1, 0, removed);
-                                void sceneReorderMutation.mutateAsync(newOrder.map((s) => s.scene_id));
-                              }}
-                              disabled={index === 0 || sceneReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === 0 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronUp className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const newOrder = [...scenePlans];
-                                const [removed] = newOrder.splice(index, 1);
-                                newOrder.splice(index + 1, 0, removed);
-                                void sceneReorderMutation.mutateAsync(newOrder.map((s) => s.scene_id));
-                              }}
-                              disabled={index === scenePlans.length - 1 || sceneReorderMutation.isPending}
-                              className={`p-0.5 rounded transition-colors ${index === scenePlans.length - 1 ? 'opacity-20 cursor-not-allowed' : isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => { setSceneEditOpenId(scene.scene_id); setSceneEditTitle(scene.title); setSceneEditObjective(scene.objective); setSceneEditConflict(scene.conflict || ''); setSceneEditStakes(scene.stakes || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Beats" count={beatPlans.length}>
-              <div className="flex justify-end mb-2">
-                {!beatCreateOpen ? (
-                  <button
-                    onClick={() => { setBeatCreateOpen(true); setBeatCreateObjective(''); setBeatCreateConflict(''); setBeatCreateStakes(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                  >
-                    + New Beat
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2 w-80">
-                    <input type="text" placeholder="Objective" value={beatCreateObjective} onChange={(e) => setBeatCreateObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Conflict" value={beatCreateConflict} onChange={(e) => setBeatCreateConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <input type="text" placeholder="Stakes" value={beatCreateStakes} onChange={(e) => setBeatCreateStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} />
-                    <div className="flex gap-2">
-                      <button onClick={() => { const id = `beat-${Date.now()}`; void beatPlanCreateMutation.mutateAsync({ project_id: projectId || '', beat_id: id, objective: beatCreateObjective, conflict: beatCreateConflict, stakes: beatCreateStakes }); setBeatCreateOpen(false); }} disabled={!beatCreateObjective.trim() || !beatCreateConflict.trim() || beatPlanCreateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Create</button>
-                      <button onClick={() => setBeatCreateOpen(false)} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {beatPlansQuery.isLoading ? (
-                <WorkspaceStatus title="Loading beats" detail="Fetching beat plans..." isDark={isDark} />
-              ) : beatPlans.length === 0 ? (
-                <EmptyState text="No beat plans configured. Create beats to define granular story moments." />
-              ) : (
-                <div className="space-y-2">
-                  {beatPlans.map((beat) => (
-                    <div key={beat.beat_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      {beatEditOpenId === beat.beat_id ? (
-                        <div className="flex flex-col gap-2">
-                          <input type="text" value={beatEditObjective} onChange={(e) => setBeatEditObjective(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Objective" />
-                          <input type="text" value={beatEditConflict} onChange={(e) => setBeatEditConflict(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Conflict" />
-                          <input type="text" value={beatEditStakes} onChange={(e) => setBeatEditStakes(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Stakes" />
-                          <input type="text" value={beatEditArcStage} onChange={(e) => setBeatEditArcStage(e.target.value)} className={`text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`} placeholder="Arc Stage (optional)" />
-                          <div className="flex gap-2">
-                            <button onClick={() => { void beatPlanUpdateMutation.mutateAsync({ beatId: beat.beat_id, projectId: projectId || '', objective: beatEditObjective, conflict: beatEditConflict || undefined, stakes: beatEditStakes || undefined, arc_stage: beatEditArcStage || undefined }).then(() => { setBeatEditOpenId(null); setBeatEditObjective(''); setBeatEditConflict(''); setBeatEditStakes(''); setBeatEditArcStage(''); }); }} disabled={!beatEditObjective.trim() || beatPlanUpdateMutation.isPending} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
-                            <button onClick={() => { setBeatEditOpenId(null); setBeatEditObjective(''); setBeatEditConflict(''); setBeatEditStakes(''); setBeatEditArcStage(''); }} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex justify-between items-start gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{beat.objective}</div>
-                              <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Conflict: {beat.conflict}</div>
-                              <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Stakes: {beat.stakes}</div>
-                              {beat.arc_stage && <span className={`text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>{beat.arc_stage}</span>}
-                            </div>
-                            <button onClick={() => { setBeatEditOpenId(beat.beat_id); setBeatEditObjective(beat.objective); setBeatEditConflict(beat.conflict || ''); setBeatEditStakes(beat.stakes || ''); setBeatEditArcStage(beat.arc_stage || ''); }} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Dependencies" count={dependencies.length}>
-              {dependenciesQuery.isLoading ? (
-                <WorkspaceStatus title="Loading dependencies" detail="Fetching planning dependencies..." isDark={isDark} />
-              ) : dependencies.length === 0 ? (
-                <EmptyState text="No dependencies defined. Dependencies track relationships between planning artifacts." />
-              ) : (
-                <div className="space-y-2">
-                  {dependencies.map((dep) => (
-                    <div key={dep.dependency_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} text-sm`}>
-                      <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.upstream_id}</span>
-                      <span className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>→</span>
-                      <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.downstream_id}</span>
-                      {dep.reason && (
-                        <div className={`mt-1 text-xs italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{dep.reason}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Chapter Packets" count={chapterPackets.length}>
-              <div className="flex justify-end mb-2">
-                {!packetCreateOpen ? (
-                  <button
-                    onClick={() => { setPacketCreateOpen(true); setPacketCreateChapterId(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                  >
-                    + New Packet
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Chapter ID"
-                      value={packetCreateChapterId}
-                      onChange={(e) => setPacketCreateChapterId(e.target.value)}
-                      className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    />
-                    <button
-                      onClick={() => {
-                        if (!packetCreateChapterId.trim()) return;
-                        const id = `pkt-${Date.now()}`;
-                        void chapterPacketCreateMutation.mutateAsync({
-                          project_id: projectId || '',
-                          packet_id: id,
-                          chapter_id: packetCreateChapterId.trim(),
-                        }).then(() => {
-                          setPacketCreateOpen(false);
-                          setPacketCreateChapterId('');
-                        });
-                      }}
-                      disabled={!packetCreateChapterId.trim()}
-                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
-                    >
-                      Create
-                    </button>
-                    <button onClick={() => setPacketCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-              {chapterPacketsQuery.isLoading ? (
-                <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." isDark={isDark} />
-              ) : chapterPackets.length === 0 ? (
-                <EmptyState text="No chapter packets configured. Packets will appear once chapters are ready for drafting." />
-              ) : (
-                <div className="space-y-2">
-                  {chapterPackets.map((packet) => (
-                    <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="font-medium">{packet.chapter_id}</div>
-                      <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-
-            <Section title="Storyboard Cards" count={storyboardCards.length}>
-              <div className="flex justify-end mb-2">
-                {!cardCreateOpen ? (
-                  <button
-                    onClick={() => { setCardCreateOpen(true); setCardCreateTitle(''); setCardCreateContent(''); setCardCreateType('idea'); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-purple-950 text-purple-300 hover:bg-purple-900' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'}`}
-                  >
-                    + New Card
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Card title"
-                        value={cardCreateTitle}
-                        onChange={(e) => setCardCreateTitle(e.target.value)}
-                        className={`text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                      <select
-                        value={cardCreateType}
-                        onChange={(e) => setCardCreateType(e.target.value)}
-                        className={`text-sm px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      >
-                        <option value="idea">Idea</option>
-                        <option value="scene">Scene</option>
-                        <option value="character">Character</option>
-                        <option value="location">Location</option>
-                        <option value="plot">Plot Point</option>
-                      </select>
-                      <button
-                        onClick={() => {
-                          if (!cardCreateTitle.trim()) return;
-                          const id = `card-${Date.now()}`;
-                          void storyboardCardCreateMutation.mutateAsync({
-                            project_id: projectId || '',
-                            card_id: id,
-                            title: cardCreateTitle.trim(),
-                            content: cardCreateContent.trim(),
-                            card_type: cardCreateType,
-                          }).then(() => {
-                            setCardCreateOpen(false);
-                            setCardCreateTitle('');
-                            setCardCreateContent('');
-                            setCardCreateType('idea');
-                          });
-                        }}
-                        disabled={!cardCreateTitle.trim()}
-                        className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
-                      >
-                        Create
-                      </button>
-                      <button onClick={() => setCardCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                        Cancel
-                      </button>
-                    </div>
-                    <textarea
-                      placeholder="Card content (optional)"
-                      value={cardCreateContent}
-                      onChange={(e) => setCardCreateContent(e.target.value)}
-                      rows={2}
-                      className={`text-sm px-2 py-1 rounded border resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    />
-                  </div>
-                )}
-              </div>
-              {storyboardCardsQuery.isLoading ? (
-                <WorkspaceStatus title="Loading storyboard cards" detail="Fetching storyboard cards..." isDark={isDark} />
-              ) : storyboardCards.length === 0 ? (
-                <EmptyState text="No storyboard cards yet. Create cards to capture ideas, scenes, and plot points." />
-              ) : (
-                <div className="space-y-2">
-                  {storyboardCards.map((card) => (
-                    <div key={card.card_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{card.title}</div>
-                          {card.content && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{card.content}</p>}
-                          {card.tags.length > 0 && (
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              {card.tags.map((tag) => (
-                                <span key={tag} className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>{tag}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${isDark ? 'bg-purple-950 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                          {card.card_type}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Section>
-          </div>
+          <PlanningTab isDark={isDark} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
         )}
 
         {activeTab === 'flow' && (
@@ -1158,233 +314,7 @@ export function PlanningView() {
         )}
 
         {activeTab === 'arcs' && (
-          <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-            <Section title="Selected Arc">
-              {arcSelectionsQuery.isLoading ? (
-                <WorkspaceStatus title="Loading arc selections" detail="Fetching selected arcs..." isDark={isDark} />
-              ) : selectedArc ? (
-                <div className={`p-4 rounded-lg border ${isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200'}`}>
-                  <div className="font-medium">{selectedArc.arc_id}</div>
-                  {selectedArc.summary && <p className={`text-sm mt-1 ${isDark ? 'text-emerald-300/70' : 'text-emerald-700'}`}>{selectedArc.summary}</p>}
-                </div>
-              ) : (
-                <EmptyState text="No arc selected. Arc selections define the narrative trajectory for this project." />
-              )}
-            </Section>
-
-            {arcStageMapsQuery.isLoading ? (
-              <Section title="Stage Map">
-                <WorkspaceStatus title="Loading stage maps" detail="Fetching arc stage progression..." isDark={isDark} />
-              </Section>
-            ) : stageMapCreateOpen ? (
-              <Section title="Stage Map">
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-1.5">
-                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Arc</label>
-                    <select
-                      value={stageMapCreateArcId}
-                      onChange={(e) => setStageMapCreateArcId(e.target.value)}
-                      className={`text-xs px-2 py-1.5 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    >
-                      <option value="">Select an arc candidate...</option>
-                      {arcCandidates.map((c) => (
-                        <option key={c.arc_id} value={c.arc_id}>{c.name} ({c.arc_id})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Stages</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['exposition', 'inciting_incident', 'rising_action', 'complication', 'crisis', 'climax', 'falling_action', 'resolution'].map((stage) => (
-                        <button
-                          key={stage}
-                          type="button"
-                          onClick={() => {
-                            setStageMapCreateKinds((prev) =>
-                              prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
-                            );
-                          }}
-                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                            stageMapCreateKinds.includes(stage)
-                              ? isDark ? 'bg-violet-900 text-violet-200 border border-violet-700' : 'bg-violet-100 text-violet-800 border border-violet-300'
-                              : isDark ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700' : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {stage.replace(/_/g, ' ')}
-                        </button>
-                      ))}
-                    </div>
-                    {stageMapCreateKinds.length > 0 && (
-                      <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Order: {stageMapCreateKinds.map((k) => k.replace(/_/g, ' ')).join(' → ')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Notes (optional)</label>
-                    <textarea
-                      value={stageMapCreateNotes}
-                      onChange={(e) => setStageMapCreateNotes(e.target.value)}
-                      rows={2}
-                      placeholder="Stage map notes..."
-                      className={`text-xs px-2 py-1.5 rounded border resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (!stageMapCreateArcId || stageMapCreateKinds.length === 0) return;
-                        void stageMapCreateMutation.mutateAsync({
-                          arc_id: stageMapCreateArcId,
-                          project_id: projectId || '',
-                          stage_kinds: stageMapCreateKinds,
-                          notes: stageMapCreateNotes.trim() || undefined,
-                        }).then(() => {
-                          setStageMapCreateOpen(false);
-                          setStageMapCreateArcId('');
-                          setStageMapCreateKinds([]);
-                          setStageMapCreateNotes('');
-                        });
-                      }}
-                      disabled={!stageMapCreateArcId || stageMapCreateKinds.length === 0 || stageMapCreateMutation.isPending}
-                      className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
-                    >
-                      {stageMapCreateMutation.isPending ? '...' : 'Save Stage Map'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStageMapCreateOpen(false);
-                        setStageMapCreateArcId('');
-                        setStageMapCreateKinds([]);
-                        setStageMapCreateNotes('');
-                      }}
-                      className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </Section>
-            ) : arcStageMaps.length > 0 ? (
-              <Section title="Stage Map">
-                <ArcStageMapFlow
-                  stageMaps={arcStageMaps}
-                  candidates={arcCandidates}
-                  selectedArcId={selectedArc?.arc_id ?? null}
-                  className="h-[260px]"
-                />
-              </Section>
-            ) : (
-              <Section title="Stage Map">
-                <EmptyState text="No stage maps yet. Create one to define the narrative progression for an arc candidate." />
-              </Section>
-            )}
-
-            {arcComparisonsQuery.isLoading ? (
-              <Section title="Arc Comparisons">
-                <WorkspaceStatus title="Loading arc comparisons" detail="Fetching comparison history..." isDark={isDark} />
-              </Section>
-            ) : arcComparisons.length > 0 ? (
-              <Section title="Arc Comparisons">
-                <ArcComparisonGraph
-                  comparisons={arcComparisons}
-                  className="h-[420px]"
-                />
-              </Section>
-            ) : null}
-
-            <Section title="Arc Candidates" count={arcCandidates.length}>
-              <div className="flex justify-end mb-2">
-                {!arcCandidateCreateOpen ? (
-                  <button
-                    onClick={() => { setArcCandidateCreateOpen(true); setArcCandidateCreateId(`arc-${Date.now()}`); setArcCandidateCreateName(''); setArcCandidateCreateSummary(''); }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-violet-950 text-violet-300 hover:bg-violet-900' : 'bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
-                  >
-                    + New Arc
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-1.5">
-                    <input type="text" placeholder="Arc ID (e.g. arc-hero)" value={arcCandidateCreateId} onChange={(e) => setArcCandidateCreateId(e.target.value)} className={`text-xs px-2 py-1 rounded border w-48 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
-                    <input type="text" placeholder="Arc name" value={arcCandidateCreateName} onChange={(e) => setArcCandidateCreateName(e.target.value)} className={`text-xs px-2 py-1 rounded border w-56 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
-                    <input type="text" placeholder="Summary (optional)" value={arcCandidateCreateSummary} onChange={(e) => setArcCandidateCreateSummary(e.target.value)} className={`text-xs px-2 py-1 rounded border w-64 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`} />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          if (!arcCandidateCreateId.trim() || !arcCandidateCreateName.trim()) return;
-                          void arcCandidateCreateMutation.mutateAsync({
-                            arc_id: arcCandidateCreateId.trim(),
-                            project_id: projectId || '',
-                            name: arcCandidateCreateName.trim(),
-                            summary: arcCandidateCreateSummary.trim() || 'No summary provided.',
-                          }).then(() => {
-                            setArcCandidateCreateOpen(false);
-                            setArcCandidateCreateId('');
-                            setArcCandidateCreateName('');
-                            setArcCandidateCreateSummary('');
-                          });
-                        }}
-                        disabled={!arcCandidateCreateId.trim() || !arcCandidateCreateName.trim() || arcCandidateCreateMutation.isPending}
-                        className="text-xs px-2.5 py-1 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40"
-                      >
-                        {arcCandidateCreateMutation.isPending ? '...' : 'Create'}
-                      </button>
-                      <button onClick={() => setArcCandidateCreateOpen(false)} className={`text-xs px-2 py-1 rounded-md ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {arcCandidatesQuery.isLoading ? (
-                <WorkspaceStatus title="Loading arc candidates" detail="Fetching all arc candidates..." isDark={isDark} />
-              ) : arcCandidates.length === 0 ? (
-                <EmptyState text="No arc candidates available. Create one manually or import from foundation/character work." />
-              ) : (
-                <div className="space-y-2">
-                  {arcCandidates.map((candidate) => {
-                    const isSelected = selectedArc?.arc_id === candidate.arc_id;
-                    return (
-                      <div key={candidate.arc_id} className={`p-3 rounded-lg border ${isSelected
-                        ? isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-300'
-                        : isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-                      }`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium">{candidate.name}</div>
-                            {candidate.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{candidate.summary}</p>}
-                            {isSelected && (
-                              <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-1.5 flex-shrink-0">
-                            {isSelected ? (
-                              <button
-                                onClick={() => void deselectArcMutation.mutateAsync()}
-                                disabled={deselectArcMutation.isPending}
-                                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-rose-950 text-rose-300 hover:bg-rose-900 disabled:opacity-40' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 disabled:opacity-40'}`}
-                              >
-                                {deselectArcMutation.isPending ? '...' : 'Deselect'}
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => void selectArcMutation.mutateAsync(candidate.arc_id)}
-                                disabled={selectArcMutation.isPending || deselectArcMutation.isPending}
-                                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-emerald-950 text-emerald-300 hover:bg-emerald-900 disabled:opacity-40' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40'}`}
-                              >
-                                {selectArcMutation.isPending ? '...' : 'Select'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Section>
-          </div>
+          <PlanningTab isDark={isDark} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
         )}
 
         {activeTab === 'branches' && (
@@ -1406,9 +336,9 @@ export function PlanningView() {
         {activeTab === 'brainstorm' && (
           <div className="h-full">
             {brainstormQuery.isLoading ? (
-              <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." isDark={isDark} />
+              <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." />
             ) : brainstormQuery.error ? (
-              <WorkspaceStatus title="Could not load brainstorm" detail={getErrorMessage(brainstormQuery.error)} tone="error" isDark={isDark} />
+              <WorkspaceStatus title="Could not load brainstorm" detail={getErrorMessage(brainstormQuery.error)} tone="error" />
             ) : (
               <BrainstormWorkspace
                 projectId={projectId}
@@ -1423,9 +353,9 @@ export function PlanningView() {
         {activeTab === 'foundation' && (
           <div className="h-full">
             {foundationQuery.isLoading ? (
-              <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." isDark={isDark} />
+              <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." />
             ) : foundationQuery.error ? (
-              <WorkspaceStatus title="Could not load foundation" detail={getErrorMessage(foundationQuery.error)} tone="error" isDark={isDark} />
+              <WorkspaceStatus title="Could not load foundation" detail={getErrorMessage(foundationQuery.error)} tone="error" />
             ) : (
               <FoundationEditor
                 projectId={projectId}
@@ -1439,9 +369,9 @@ export function PlanningView() {
         {activeTab === 'characters' && (
           <div className="h-full">
             {charactersQuery.isLoading ? (
-              <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." isDark={isDark} />
+              <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." />
             ) : charactersQuery.error ? (
-              <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" isDark={isDark} />
+              <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" />
             ) : characterEditorMode === 'list' ? (
               <div className="p-5">
                 <div className="flex items-center justify-between mb-5">
@@ -1510,7 +440,6 @@ export function PlanningView() {
                 title="Character not found"
                 detail="The selected character is no longer available. Return to the list and pick another profile."
                 tone="error"
-                isDark={isDark}
               />
             )}
           </div>
@@ -1519,9 +448,9 @@ export function PlanningView() {
         {activeTab === 'relationships' && (
           <div className="h-full flex flex-col">
             {relationshipsQuery.isLoading ? (
-              <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." isDark={isDark} />
+              <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." />
             ) : relationshipsQuery.error ? (
-              <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" isDark={isDark} />
+              <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" />
             ) : (
               <div className="flex flex-col h-full">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
@@ -1562,9 +491,9 @@ export function PlanningView() {
         {activeTab === 'world-bible' && (
           <div className="h-full">
             {worldBibleQuery.isLoading ? (
-              <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." isDark={isDark} />
+              <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." />
             ) : worldBibleQuery.error ? (
-              <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" isDark={isDark} />
+              <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" />
             ) : (
               <WorldBibleWorkspace
                 projectId={projectId}
@@ -1580,60 +509,6 @@ export function PlanningView() {
       </main>
     </div>
   );
-}
-
-function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  return (
-    <div>
-      <h3 className={`font-semibold text-sm uppercase tracking-wider mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-        {title}
-        {count !== undefined && (
-          <span className={`ml-2 font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>({count})</span>
-        )}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  return (
-    <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{text}</p>
-  );
-}
-
-function WorkspaceStatus({
-  title,
-  detail,
-  tone = 'neutral',
-  isDark,
-}: {
-  title: string;
-  detail: string;
-  tone?: 'neutral' | 'error';
-  isDark: boolean;
-}) {
-  return (
-    <div className="flex h-48 items-center justify-center">
-      <div className={`max-w-sm rounded-lg border p-5 text-center ${
-        tone === 'error'
-          ? isDark ? 'border-red-900/50 bg-red-950/30 text-red-300' : 'border-red-200 bg-red-50 text-red-800'
-          : isDark ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-700'
-      }`}>
-        <p className="text-sm font-semibold">{title}</p>
-        <p className={`mt-1.5 text-xs ${tone === 'error' ? (isDark ? 'text-red-400/80' : 'text-red-600') : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{detail}</p>
-      </div>
-    </div>
-  );
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'An unexpected error occurred.';
 }
 
 function omitKeys<T extends object>(value: T, keys: string[]): Partial<T> {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNotesStore, WorkspaceNote } from '../stores/notesStore';
+import { useThemeStore } from '../stores/themeStore';
 import { Plus, Pencil, Trash2, Clock, StickyNote } from 'lucide-react';
 
 interface Props {
@@ -10,7 +11,8 @@ export function NotesPanel({ projectId }: Props): React.ReactElement {
   const { addNote, updateNote, deleteNote, getNotesForProject } = useNotesStore();
   const projectNotes = getNotesForProject(projectId);
   const [newNoteContent, setNewNoteContent] = useState('');
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const { mode } = useThemeStore();
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode);
 
   const handleAddNote = (): void => {
     if (newNoteContent.trim()) {
@@ -85,7 +87,8 @@ interface NoteItemProps {
 function NoteItem({ note, onUpdate, onDelete, formatDate }: NoteItemProps): React.ReactElement {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(note.content);
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const { mode } = useThemeStore();
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode);
 
   const handleSave = (): void => {
     if (editContent.trim()) {

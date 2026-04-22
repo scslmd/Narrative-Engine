@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCreateJob, useJobs } from '../hooks/useJobs';
+import { useThemeStore } from '../stores/themeStore';
 import { Rocket, Code, Cpu, Layers, Play } from 'lucide-react';
 
 interface Props {
@@ -25,7 +26,8 @@ export function JobLaunchPanel({ projectId }: Props): React.ReactElement {
   const createJob = useCreateJob(projectId);
   const { data: jobs } = useJobs(projectId);
   const [selectedPhase, setSelectedPhase] = useState<'P-100' | 'P-200' | 'P-300' | 'P-400'>('P-100');
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const { mode } = useThemeStore();
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode);
 
   const handleLaunch = (): void => {
     createJob.mutate(selectedPhase);

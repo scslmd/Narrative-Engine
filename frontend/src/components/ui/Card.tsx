@@ -1,4 +1,5 @@
 import { HTMLAttributes, ReactNode } from 'react'
+import { useThemeStore } from '../../stores/themeStore'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -19,7 +20,8 @@ export function Card({
   className = '',
   ...props
 }: CardProps) {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const { mode } = useThemeStore()
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
   
   const baseBorder = isDark ? 'border-slate-800' : 'border-slate-200'
   const baseBg = isDark ? 'bg-slate-900' : 'bg-white'

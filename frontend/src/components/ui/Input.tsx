@@ -1,4 +1,5 @@
 import { InputHTMLAttributes } from 'react'
+import { useThemeStore } from '../../stores/themeStore'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -6,7 +7,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ label, error, className = '', ...props }: InputProps) {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+  const { mode } = useThemeStore()
+  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
   
   const baseStyles = `w-full px-3 py-2 rounded-lg border text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 ${isDark ? 'focus:ring-offset-slate-900' : 'focus:ring-offset-white'}`
   

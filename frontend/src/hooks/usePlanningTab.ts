@@ -1,0 +1,928 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import {
+  getSequencePlans,
+  getChapterPlans,
+  getScenePlans,
+  getBeatPlans,
+  createSequencePlan,
+  updateSequencePlan,
+  createChapterPlan,
+  updateChapterPlan,
+  createScenePlan,
+  updateScenePlan,
+  createBeatPlan,
+  updateBeatPlan,
+  getPlanningDependencies,
+  getChapterPackets,
+  createChapterPacket,
+  reorderPlanObjects,
+} from '../services/planning';
+import {
+  getStoryboardCards,
+  createStoryboardCard,
+} from '../services/storyboard';
+import {
+  getArcCandidates,
+  getArcSelections,
+  getArcStageMaps,
+  getArcComparisons,
+  createArcCandidate,
+  createArcSelection,
+  deleteArcSelection,
+  createArcStageMap,
+} from '../services/arcs';
+import type { SequencePlan, ChapterPlan, ScenePlan, BeatPlan, PlanningDependency, ChapterPacket, StoryboardCard } from '../types/planning';
+import type { ArcCandidate, ArcSelection, ArcStageMap, ArcComparisonRecord } from '../types/arcs';
+
+export interface PlanningTabState {
+  // Data
+  sequencePlans: SequencePlan[];
+  chapterPlans: ChapterPlan[];
+  scenePlans: ScenePlan[];
+  beatPlans: BeatPlan[];
+  dependencies: PlanningDependency[];
+  chapterPackets: ChapterPacket[];
+  storyboardCards: StoryboardCard[];
+  arcCandidates: ArcCandidate[];
+  arcSelections: ArcSelection[];
+  arcStageMaps: ArcStageMap[];
+  arcComparisons: ArcComparisonRecord[];
+  selectedArcId: string | null;
+
+  // Loading states
+  sequencesLoading: boolean;
+  chaptersLoading: boolean;
+  scenesLoading: boolean;
+  beatsLoading: boolean;
+  dependenciesLoading: boolean;
+  packetsLoading: boolean;
+  cardsLoading: boolean;
+  candidatesLoading: boolean;
+  selectionsLoading: boolean;
+  stageMapsLoading: boolean;
+  comparisonsLoading: boolean;
+
+  // Form state
+  sequenceCreateOpen: boolean;
+  sequenceCreateTitle: string;
+  sequenceCreateSummary: string;
+  sequenceEditOpenId: string | null;
+  sequenceEditTitle: string;
+  sequenceEditSummary: string;
+
+  chapterCreateOpen: boolean;
+  chapterCreateTitle: string;
+  chapterCreateObjective: string;
+  chapterCreateConflict: string;
+  chapterCreateStakes: string;
+  chapterCreateSequenceId: string;
+  chapterEditOpenId: string | null;
+  chapterEditTitle: string;
+  chapterEditObjective: string;
+  chapterEditConflict: string;
+  chapterEditStakes: string;
+
+  sceneCreateOpen: boolean;
+  sceneCreateTitle: string;
+  sceneCreateObjective: string;
+  sceneCreateConflict: string;
+  sceneCreateStakes: string;
+  sceneCreateChapterId: string;
+  sceneEditOpenId: string | null;
+  sceneEditTitle: string;
+  sceneEditObjective: string;
+  sceneEditConflict: string;
+  sceneEditStakes: string;
+
+  beatCreateOpen: boolean;
+  beatCreateObjective: string;
+  beatCreateConflict: string;
+  beatCreateStakes: string;
+  beatEditOpenId: string | null;
+  beatEditObjective: string;
+  beatEditConflict: string;
+  beatEditStakes: string;
+  beatEditArcStage: string;
+
+  packetCreateOpen: boolean;
+  packetCreateChapterId: string;
+
+  cardCreateOpen: boolean;
+  cardCreateTitle: string;
+  cardCreateContent: string;
+  cardCreateType: string;
+
+  arcCandidateCreateOpen: boolean;
+  arcCandidateCreateId: string;
+  arcCandidateCreateName: string;
+  arcCandidateCreateSummary: string;
+
+  stageMapCreateOpen: boolean;
+  stageMapCreateArcId: string;
+  stageMapCreateNotes: string;
+  stageMapCreateKinds: string[];
+}
+
+export interface PlanningTabCallbacks {
+  // Sequences
+  setSequenceCreateOpen: (open: boolean) => void;
+  setSequenceCreateTitle: (value: string) => void;
+  setSequenceCreateSummary: (value: string) => void;
+  sequenceCreateSubmit: () => void;
+  setSequenceEditOpenId: (id: string | null) => void;
+  setSequenceEditTitle: (value: string) => void;
+  setSequenceEditSummary: (value: string) => void;
+  sequenceUpdateSubmit: (sequenceId: string) => void;
+  sequenceReorder: (direction: 'up' | 'down', index: number) => void;
+  openEditSequence: (plan: SequencePlan) => void;
+
+  // Chapters
+  setChapterCreateOpen: (open: boolean) => void;
+  setChapterCreateTitle: (value: string) => void;
+  setChapterCreateObjective: (value: string) => void;
+  setChapterCreateConflict: (value: string) => void;
+  setChapterCreateStakes: (value: string) => void;
+  setChapterCreateSequenceId: (value: string) => void;
+  chapterCreateSubmit: () => void;
+  setChapterEditOpenId: (id: string | null) => void;
+  setChapterEditTitle: (value: string) => void;
+  setChapterEditObjective: (value: string) => void;
+  setChapterEditConflict: (value: string) => void;
+  setChapterEditStakes: (value: string) => void;
+  chapterUpdateSubmit: (chapterId: string) => void;
+  chapterReorder: (direction: 'up' | 'down', index: number) => void;
+  openEditChapter: (plan: ChapterPlan) => void;
+
+  // Scenes
+  setSceneCreateOpen: (open: boolean) => void;
+  setSceneCreateTitle: (value: string) => void;
+  setSceneCreateObjective: (value: string) => void;
+  setSceneCreateConflict: (value: string) => void;
+  setSceneCreateStakes: (value: string) => void;
+  setSceneCreateChapterId: (value: string) => void;
+  sceneCreateSubmit: () => void;
+  setSceneEditOpenId: (id: string | null) => void;
+  setSceneEditTitle: (value: string) => void;
+  setSceneEditObjective: (value: string) => void;
+  setSceneEditConflict: (value: string) => void;
+  setSceneEditStakes: (value: string) => void;
+  sceneUpdateSubmit: (sceneId: string) => void;
+  sceneReorder: (direction: 'up' | 'down', index: number) => void;
+  openEditScene: (plan: ScenePlan) => void;
+
+  // Beats
+  setBeatCreateOpen: (open: boolean) => void;
+  setBeatCreateObjective: (value: string) => void;
+  setBeatCreateConflict: (value: string) => void;
+  setBeatCreateStakes: (value: string) => void;
+  beatCreateSubmit: () => void;
+  setBeatEditOpenId: (id: string | null) => void;
+  setBeatEditObjective: (value: string) => void;
+  setBeatEditConflict: (value: string) => void;
+  setBeatEditStakes: (value: string) => void;
+  setBeatEditArcStage: (value: string) => void;
+  beatUpdateSubmit: (beatId: string) => void;
+  openEditBeat: (plan: BeatPlan) => void;
+
+  // Chapter Packets
+  setPacketCreateOpen: (open: boolean) => void;
+  setPacketCreateChapterId: (value: string) => void;
+  packetCreateSubmit: () => void;
+
+  // Storyboard Cards
+  setCardCreateOpen: (open: boolean) => void;
+  setCardCreateTitle: (value: string) => void;
+  setCardCreateContent: (value: string) => void;
+  setCardCreateType: (value: string) => void;
+  cardCreateSubmit: () => void;
+
+  // Arc Candidates
+  setArcCandidateCreateOpen: (open: boolean) => void;
+  setArcCandidateCreateId: (value: string) => void;
+  setArcCandidateCreateName: (value: string) => void;
+  setArcCandidateCreateSummary: (value: string) => void;
+  arcCandidateCreateSubmit: () => void;
+
+  // Stage Map
+  setStageMapCreateOpen: (open: boolean) => void;
+  setStageMapCreateArcId: (value: string) => void;
+  setStageMapCreateNotes: (value: string) => void;
+  setStageMapCreateKinds: (kinds: string[]) => void;
+  stageMapCreateSubmit: () => void;
+  toggleStageKind: (stage: string) => void;
+
+  // Arc Selection
+  selectArc: (arcId: string) => void;
+  deselectArc: () => void;
+}
+
+export function usePlanningTab(tab: string): {
+  state: PlanningTabState;
+  callbacks: PlanningTabCallbacks;
+} {
+  const { projectId } = useParams<{ projectId: string }>();
+  const queryClient = useQueryClient();
+
+  // Queries
+  const sequencePlansQuery = useQuery({
+    queryKey: ['planning-sequence-plans', projectId],
+    queryFn: () => getSequencePlans(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const chapterPlansQuery = useQuery({
+    queryKey: ['planning-chapter-plans', projectId],
+    queryFn: () => getChapterPlans(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const scenePlansQuery = useQuery({
+    queryKey: ['planning-scene-plans', projectId],
+    queryFn: () => getScenePlans(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const beatPlansQuery = useQuery({
+    queryKey: ['planning-beat-plans', projectId],
+    queryFn: () => getBeatPlans(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const dependenciesQuery = useQuery({
+    queryKey: ['planning-dependencies', projectId],
+    queryFn: () => getPlanningDependencies(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const chapterPacketsQuery = useQuery({
+    queryKey: ['planning-chapter-packets', projectId],
+    queryFn: () => getChapterPackets(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const storyboardCardsQuery = useQuery({
+    queryKey: ['planning-storyboard-cards', projectId],
+    queryFn: () => getStoryboardCards(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'planning',
+  });
+
+  const arcCandidatesQuery = useQuery({
+    queryKey: ['arc-candidates', projectId],
+    queryFn: () => getArcCandidates(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'arcs',
+  });
+
+  const arcSelectionsQuery = useQuery({
+    queryKey: ['arc-selections', projectId],
+    queryFn: () => getArcSelections(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'arcs',
+  });
+
+  const arcStageMapsQuery = useQuery({
+    queryKey: ['arc-stage-maps', projectId],
+    queryFn: () => getArcStageMaps(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'arcs',
+  });
+
+  const arcComparisonsQuery = useQuery({
+    queryKey: ['arc-comparisons', projectId],
+    queryFn: () => getArcComparisons(projectId || ''),
+    enabled: Boolean(projectId) && tab === 'arcs',
+  });
+
+  // Mutations
+  const sequencePlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createSequencePlan>[1]) =>
+      createSequencePlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-sequence-plans', projectId] });
+    },
+  });
+
+  const sequencePlanUpdateMutation = useMutation({
+    mutationFn: (data: { sequenceId: string; projectId: string; title: string; summary?: string }) =>
+      updateSequencePlan(data.sequenceId, data.projectId, { title: data.title, summary: data.summary }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-sequence-plans', projectId] });
+    },
+  });
+
+  const chapterPlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createChapterPlan>[1]) =>
+      createChapterPlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-plans', projectId] });
+    },
+  });
+
+  const chapterPlanUpdateMutation = useMutation({
+    mutationFn: (data: { chapterId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
+      updateChapterPlan(data.chapterId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-plans', projectId] });
+    },
+  });
+
+  const scenePlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createScenePlan>[1]) =>
+      createScenePlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-scene-plans', projectId] });
+    },
+  });
+
+  const scenePlanUpdateMutation = useMutation({
+    mutationFn: (data: { sceneId: string; projectId: string; title: string; objective: string; conflict?: string; stakes?: string }) =>
+      updateScenePlan(data.sceneId, data.projectId, { title: data.title, objective: data.objective, conflict: data.conflict, stakes: data.stakes }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-scene-plans', projectId] });
+    },
+  });
+
+  const beatPlanCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createBeatPlan>[1]) =>
+      createBeatPlan(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-beat-plans', projectId] });
+    },
+  });
+
+  const beatPlanUpdateMutation = useMutation({
+    mutationFn: (data: { beatId: string; projectId: string; objective: string; conflict?: string; stakes?: string; arc_stage?: string }) =>
+      updateBeatPlan(data.beatId, data.projectId, { objective: data.objective, conflict: data.conflict, stakes: data.stakes, arc_stage: data.arc_stage }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-beat-plans', projectId] });
+    },
+  });
+
+  const chapterPacketCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createChapterPacket>[1]) =>
+      createChapterPacket(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-packets', projectId] });
+    },
+  });
+
+  const storyboardCardCreateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof createStoryboardCard>[1]) =>
+      createStoryboardCard(projectId || '', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
+    },
+  });
+
+  const selectArcMutation = useMutation({
+    mutationFn: (arcId: string) =>
+      createArcSelection({
+        project_id: projectId || '',
+        selected_arc: arcId,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+    },
+  });
+
+  const deselectArcMutation = useMutation({
+    mutationFn: () => {
+      const selections = arcSelectionsQuery.data;
+      const selection = selections?.[0];
+      if (!selection) return Promise.resolve();
+      return deleteArcSelection(selection.selection_id, projectId || '');
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+    },
+  });
+
+  const arcCandidateCreateMutation = useMutation({
+    mutationFn: (data: { arc_id: string; project_id: string; name: string; summary: string }) =>
+      createArcCandidate({
+        arc_id: data.arc_id,
+        project_id: data.project_id,
+        name: data.name,
+        summary: data.summary,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
+    },
+  });
+
+  const stageMapCreateMutation = useMutation({
+    mutationFn: (data: { arc_id: string; project_id: string; stage_kinds: string[]; notes?: string | null }) =>
+      createArcStageMap({
+        project_id: data.project_id,
+        arc_id: data.arc_id,
+        stage_kinds: data.stage_kinds,
+        notes: data.notes || undefined,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arc-stage-maps', projectId] });
+    },
+  });
+
+  const sequenceReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'sequence',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-sequence-plans', projectId] });
+    },
+  });
+
+  const chapterReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'chapter',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-chapter-plans', projectId] });
+    },
+  });
+
+  const sceneReorderMutation = useMutation({
+    mutationFn: (orderedIds: string[]) =>
+      reorderPlanObjects({
+        project_id: projectId || '',
+        plan_kind: 'scene',
+        ordered_plan_ids: orderedIds,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-scene-plans', projectId] });
+    },
+  });
+
+  // Form state
+  const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
+  const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
+  const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
+  const [sequenceEditOpenId, setSequenceEditOpenId] = useState<string | null>(null);
+  const [sequenceEditTitle, setSequenceEditTitle] = useState('');
+  const [sequenceEditSummary, setSequenceEditSummary] = useState('');
+
+  const [chapterCreateOpen, setChapterCreateOpen] = useState(false);
+  const [chapterCreateTitle, setChapterCreateTitle] = useState('');
+  const [chapterCreateObjective, setChapterCreateObjective] = useState('');
+  const [chapterCreateConflict, setChapterCreateConflict] = useState('');
+  const [chapterCreateStakes, setChapterCreateStakes] = useState('');
+  const [chapterCreateSequenceId, setChapterCreateSequenceId] = useState('');
+  const [chapterEditOpenId, setChapterEditOpenId] = useState<string | null>(null);
+  const [chapterEditTitle, setChapterEditTitle] = useState('');
+  const [chapterEditObjective, setChapterEditObjective] = useState('');
+  const [chapterEditConflict, setChapterEditConflict] = useState('');
+  const [chapterEditStakes, setChapterEditStakes] = useState('');
+
+  const [sceneCreateOpen, setSceneCreateOpen] = useState(false);
+  const [sceneCreateTitle, setSceneCreateTitle] = useState('');
+  const [sceneCreateObjective, setSceneCreateObjective] = useState('');
+  const [sceneCreateConflict, setSceneCreateConflict] = useState('');
+  const [sceneCreateStakes, setSceneCreateStakes] = useState('');
+  const [sceneCreateChapterId, setSceneCreateChapterId] = useState('');
+  const [sceneEditOpenId, setSceneEditOpenId] = useState<string | null>(null);
+  const [sceneEditTitle, setSceneEditTitle] = useState('');
+  const [sceneEditObjective, setSceneEditObjective] = useState('');
+  const [sceneEditConflict, setSceneEditConflict] = useState('');
+  const [sceneEditStakes, setSceneEditStakes] = useState('');
+
+  const [beatCreateOpen, setBeatCreateOpen] = useState(false);
+  const [beatCreateObjective, setBeatCreateObjective] = useState('');
+  const [beatCreateConflict, setBeatCreateConflict] = useState('');
+  const [beatCreateStakes, setBeatCreateStakes] = useState('');
+  const [beatEditOpenId, setBeatEditOpenId] = useState<string | null>(null);
+  const [beatEditObjective, setBeatEditObjective] = useState('');
+  const [beatEditConflict, setBeatEditConflict] = useState('');
+  const [beatEditStakes, setBeatEditStakes] = useState('');
+  const [beatEditArcStage, setBeatEditArcStage] = useState('');
+
+  const [packetCreateOpen, setPacketCreateOpen] = useState(false);
+  const [packetCreateChapterId, setPacketCreateChapterId] = useState('');
+
+  const [cardCreateOpen, setCardCreateOpen] = useState(false);
+  const [cardCreateTitle, setCardCreateTitle] = useState('');
+  const [cardCreateContent, setCardCreateContent] = useState('');
+  const [cardCreateType, setCardCreateType] = useState('idea');
+
+  const [arcCandidateCreateOpen, setArcCandidateCreateOpen] = useState(false);
+  const [arcCandidateCreateId, setArcCandidateCreateId] = useState('');
+  const [arcCandidateCreateName, setArcCandidateCreateName] = useState('');
+  const [arcCandidateCreateSummary, setArcCandidateCreateSummary] = useState('');
+
+  const [stageMapCreateOpen, setStageMapCreateOpen] = useState(false);
+  const [stageMapCreateArcId, setStageMapCreateArcId] = useState('');
+  const [stageMapCreateNotes, setStageMapCreateNotes] = useState('');
+  const [stageMapCreateKinds, setStageMapCreateKinds] = useState<string[]>([]);
+
+  const sequencePlans = sequencePlansQuery.data ?? [];
+  const chapterPlans = chapterPlansQuery.data ?? [];
+  const scenePlans = scenePlansQuery.data ?? [];
+  const beatPlans = beatPlansQuery.data ?? [];
+  const dependencies = dependenciesQuery.data ?? [];
+  const chapterPackets = chapterPacketsQuery.data ?? [];
+  const storyboardCards = storyboardCardsQuery.data ?? [];
+
+  const arcCandidates = arcCandidatesQuery.data ?? [];
+  const arcSelections = arcSelectionsQuery.data ?? [];
+  const selectedArc = arcSelections.length > 0
+    ? (arcSelections.find((s) => s.project_id === projectId)?.selected_arc || null)
+    : null;
+
+  const arcComparisons = arcComparisonsQuery.data ?? [];
+  const arcStageMaps = arcStageMapsQuery.data ?? [];
+
+  // Callbacks
+  const callbacks: PlanningTabCallbacks = {
+    // Sequences
+    setSequenceCreateOpen,
+    setSequenceCreateTitle,
+    setSequenceCreateSummary,
+    sequenceCreateSubmit: () => {
+      if (!sequenceCreateTitle.trim()) return;
+      const id = `seq-${Date.now()}`;
+      void sequencePlanCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        sequence_id: id,
+        title: sequenceCreateTitle.trim(),
+        summary: sequenceCreateSummary.trim() || undefined,
+      }).then(() => {
+        setSequenceCreateOpen(false);
+        setSequenceCreateTitle('');
+        setSequenceCreateSummary('');
+      });
+    },
+    setSequenceEditOpenId,
+    setSequenceEditTitle,
+    setSequenceEditSummary,
+    sequenceUpdateSubmit: (sequenceId) => {
+      void sequencePlanUpdateMutation.mutateAsync({
+        sequenceId,
+        projectId: projectId || '',
+        title: sequenceEditTitle,
+        summary: sequenceEditSummary || undefined,
+      }).then(() => {
+        setSequenceEditOpenId(null);
+        setSequenceEditTitle('');
+        setSequenceEditSummary('');
+      });
+    },
+    sequenceReorder: (direction, index) => {
+      const newOrder = [...sequencePlans];
+      const [removed] = newOrder.splice(index, 1);
+      if (direction === 'up') {
+        newOrder.splice(index - 1, 0, removed);
+      } else {
+        newOrder.splice(index + 1, 0, removed);
+      }
+      void sequenceReorderMutation.mutateAsync(newOrder.map((s) => s.sequence_id));
+    },
+    openEditSequence: (plan) => {
+      setSequenceEditOpenId(plan.sequence_id);
+      setSequenceEditTitle(plan.title);
+      setSequenceEditSummary(plan.summary || '');
+    },
+
+    // Chapters
+    setChapterCreateOpen,
+    setChapterCreateTitle,
+    setChapterCreateObjective,
+    setChapterCreateConflict,
+    setChapterCreateStakes,
+    setChapterCreateSequenceId,
+    chapterCreateSubmit: () => {
+      const id = `chapter-${Date.now()}`;
+      void chapterPlanCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        chapter_id: id,
+        title: chapterCreateTitle,
+        objective: chapterCreateObjective,
+        conflict: chapterCreateConflict,
+        stakes: chapterCreateStakes,
+        sequence_id: chapterCreateSequenceId || undefined,
+      }).then(() => {
+        setChapterCreateOpen(false);
+      });
+    },
+    setChapterEditOpenId,
+    setChapterEditTitle,
+    setChapterEditObjective,
+    setChapterEditConflict,
+    setChapterEditStakes,
+    chapterUpdateSubmit: (chapterId) => {
+      void chapterPlanUpdateMutation.mutateAsync({
+        chapterId,
+        projectId: projectId || '',
+        title: chapterEditTitle,
+        objective: chapterEditObjective,
+        conflict: chapterEditConflict || undefined,
+        stakes: chapterEditStakes || undefined,
+      }).then(() => {
+        setChapterEditOpenId(null);
+        setChapterEditTitle('');
+        setChapterEditObjective('');
+        setChapterEditConflict('');
+        setChapterEditStakes('');
+      });
+    },
+    chapterReorder: (direction, index) => {
+      const newOrder = [...chapterPlans];
+      const [removed] = newOrder.splice(index, 1);
+      if (direction === 'up') {
+        newOrder.splice(index - 1, 0, removed);
+      } else {
+        newOrder.splice(index + 1, 0, removed);
+      }
+      void chapterReorderMutation.mutateAsync(newOrder.map((c) => c.chapter_id));
+    },
+    openEditChapter: (plan) => {
+      setChapterEditOpenId(plan.chapter_id);
+      setChapterEditTitle(plan.title);
+      setChapterEditObjective(plan.objective);
+      setChapterEditConflict(plan.conflict || '');
+      setChapterEditStakes(plan.stakes || '');
+    },
+
+    // Scenes
+    setSceneCreateOpen,
+    setSceneCreateTitle,
+    setSceneCreateObjective,
+    setSceneCreateConflict,
+    setSceneCreateStakes,
+    setSceneCreateChapterId,
+    sceneCreateSubmit: () => {
+      const id = `scene-${Date.now()}`;
+      void scenePlanCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        scene_id: id,
+        title: sceneCreateTitle,
+        objective: sceneCreateObjective,
+        conflict: sceneCreateConflict,
+        stakes: sceneCreateStakes,
+        chapter_id: sceneCreateChapterId || undefined,
+      }).then(() => {
+        setSceneCreateOpen(false);
+      });
+    },
+    setSceneEditOpenId,
+    setSceneEditTitle,
+    setSceneEditObjective,
+    setSceneEditConflict,
+    setSceneEditStakes,
+    sceneUpdateSubmit: (sceneId) => {
+      void scenePlanUpdateMutation.mutateAsync({
+        sceneId,
+        projectId: projectId || '',
+        title: sceneEditTitle,
+        objective: sceneEditObjective,
+        conflict: sceneEditConflict || undefined,
+        stakes: sceneEditStakes || undefined,
+      }).then(() => {
+        setSceneEditOpenId(null);
+        setSceneEditTitle('');
+        setSceneEditObjective('');
+        setSceneEditConflict('');
+        setSceneEditStakes('');
+      });
+    },
+    sceneReorder: (direction, index) => {
+      const newOrder = [...scenePlans];
+      const [removed] = newOrder.splice(index, 1);
+      if (direction === 'up') {
+        newOrder.splice(index - 1, 0, removed);
+      } else {
+        newOrder.splice(index + 1, 0, removed);
+      }
+      void sceneReorderMutation.mutateAsync(newOrder.map((s) => s.scene_id));
+    },
+    openEditScene: (plan) => {
+      setSceneEditOpenId(plan.scene_id);
+      setSceneEditTitle(plan.title);
+      setSceneEditObjective(plan.objective);
+      setSceneEditConflict(plan.conflict || '');
+      setSceneEditStakes(plan.stakes || '');
+    },
+
+    // Beats
+    setBeatCreateOpen,
+    setBeatCreateObjective,
+    setBeatCreateConflict,
+    setBeatCreateStakes,
+    beatCreateSubmit: () => {
+      const id = `beat-${Date.now()}`;
+      void beatPlanCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        beat_id: id,
+        objective: beatCreateObjective,
+        conflict: beatCreateConflict,
+        stakes: beatCreateStakes,
+      }).then(() => {
+        setBeatCreateOpen(false);
+      });
+    },
+    setBeatEditOpenId,
+    setBeatEditObjective,
+    setBeatEditConflict,
+    setBeatEditStakes,
+    setBeatEditArcStage,
+    beatUpdateSubmit: (beatId) => {
+      void beatPlanUpdateMutation.mutateAsync({
+        beatId,
+        projectId: projectId || '',
+        objective: beatEditObjective,
+        conflict: beatEditConflict || undefined,
+        stakes: beatEditStakes || undefined,
+        arc_stage: beatEditArcStage || undefined,
+      }).then(() => {
+        setBeatEditOpenId(null);
+        setBeatEditObjective('');
+        setBeatEditConflict('');
+        setBeatEditStakes('');
+        setBeatEditArcStage('');
+      });
+    },
+    openEditBeat: (plan) => {
+      setBeatEditOpenId(plan.beat_id);
+      setBeatEditObjective(plan.objective);
+      setBeatEditConflict(plan.conflict || '');
+      setBeatEditStakes(plan.stakes || '');
+      setBeatEditArcStage(plan.arc_stage || '');
+    },
+
+    // Chapter Packets
+    setPacketCreateOpen,
+    setPacketCreateChapterId,
+    packetCreateSubmit: () => {
+      if (!packetCreateChapterId.trim()) return;
+      const id = `pkt-${Date.now()}`;
+      void chapterPacketCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        packet_id: id,
+        chapter_id: packetCreateChapterId.trim(),
+      }).then(() => {
+        setPacketCreateOpen(false);
+        setPacketCreateChapterId('');
+      });
+    },
+
+    // Storyboard Cards
+    setCardCreateOpen,
+    setCardCreateTitle,
+    setCardCreateContent,
+    setCardCreateType,
+    cardCreateSubmit: () => {
+      if (!cardCreateTitle.trim()) return;
+      const id = `card-${Date.now()}`;
+      void storyboardCardCreateMutation.mutateAsync({
+        project_id: projectId || '',
+        card_id: id,
+        title: cardCreateTitle.trim(),
+        content: cardCreateContent.trim(),
+        card_type: cardCreateType,
+      }).then(() => {
+        setCardCreateOpen(false);
+        setCardCreateTitle('');
+        setCardCreateContent('');
+        setCardCreateType('idea');
+      });
+    },
+
+    // Arc Candidates
+    setArcCandidateCreateOpen,
+    setArcCandidateCreateId,
+    setArcCandidateCreateName,
+    setArcCandidateCreateSummary,
+    arcCandidateCreateSubmit: () => {
+      if (!arcCandidateCreateId.trim() || !arcCandidateCreateName.trim()) return;
+      void arcCandidateCreateMutation.mutateAsync({
+        arc_id: arcCandidateCreateId.trim(),
+        project_id: projectId || '',
+        name: arcCandidateCreateName.trim(),
+        summary: arcCandidateCreateSummary.trim() || 'No summary provided.',
+      }).then(() => {
+        setArcCandidateCreateOpen(false);
+        setArcCandidateCreateId('');
+        setArcCandidateCreateName('');
+        setArcCandidateCreateSummary('');
+      });
+    },
+
+    // Stage Map
+    setStageMapCreateOpen,
+    setStageMapCreateArcId,
+    setStageMapCreateNotes,
+    setStageMapCreateKinds,
+    stageMapCreateSubmit: () => {
+      if (!stageMapCreateArcId || stageMapCreateKinds.length === 0) return;
+      void stageMapCreateMutation.mutateAsync({
+        arc_id: stageMapCreateArcId,
+        project_id: projectId || '',
+        stage_kinds: stageMapCreateKinds,
+        notes: stageMapCreateNotes.trim() || undefined,
+      }).then(() => {
+        setStageMapCreateOpen(false);
+        setStageMapCreateArcId('');
+        setStageMapCreateKinds([]);
+        setStageMapCreateNotes('');
+      });
+    },
+    toggleStageKind: (stage) => {
+      setStageMapCreateKinds((prev) =>
+        prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
+      );
+    },
+
+    // Arc Selection
+    selectArc: (arcId) => {
+      void selectArcMutation.mutateAsync(arcId);
+    },
+    deselectArc: () => {
+      void deselectArcMutation.mutateAsync();
+    },
+  };
+
+  const state: PlanningTabState = {
+    sequencePlans,
+    chapterPlans,
+    scenePlans,
+    beatPlans,
+    dependencies,
+    chapterPackets,
+    storyboardCards,
+    arcCandidates,
+    arcSelections,
+    arcStageMaps,
+    arcComparisons,
+    selectedArcId: selectedArc?.arc_id ?? null,
+    sequencesLoading: sequencePlansQuery.isLoading,
+    chaptersLoading: chapterPlansQuery.isLoading,
+    scenesLoading: scenePlansQuery.isLoading,
+    beatsLoading: beatPlansQuery.isLoading,
+    dependenciesLoading: dependenciesQuery.isLoading,
+    packetsLoading: chapterPacketsQuery.isLoading,
+    cardsLoading: storyboardCardsQuery.isLoading,
+    candidatesLoading: arcCandidatesQuery.isLoading,
+    selectionsLoading: arcSelectionsQuery.isLoading,
+    stageMapsLoading: arcStageMapsQuery.isLoading,
+    comparisonsLoading: arcComparisonsQuery.isLoading,
+    sequenceCreateOpen,
+    sequenceCreateTitle,
+    sequenceCreateSummary,
+    sequenceEditOpenId,
+    sequenceEditTitle,
+    sequenceEditSummary,
+    chapterCreateOpen,
+    chapterCreateTitle,
+    chapterCreateObjective,
+    chapterCreateConflict,
+    chapterCreateStakes,
+    chapterCreateSequenceId,
+    chapterEditOpenId,
+    chapterEditTitle,
+    chapterEditObjective,
+    chapterEditConflict,
+    chapterEditStakes,
+    sceneCreateOpen,
+    sceneCreateTitle,
+    sceneCreateObjective,
+    sceneCreateConflict,
+    sceneCreateStakes,
+    sceneCreateChapterId,
+    sceneEditOpenId,
+    sceneEditTitle,
+    sceneEditObjective,
+    sceneEditConflict,
+    sceneEditStakes,
+    beatCreateOpen,
+    beatCreateObjective,
+    beatCreateConflict,
+    beatCreateStakes,
+    beatEditOpenId,
+    beatEditObjective,
+    beatEditConflict,
+    beatEditStakes,
+    beatEditArcStage,
+    packetCreateOpen,
+    packetCreateChapterId,
+    cardCreateOpen,
+    cardCreateTitle,
+    cardCreateContent,
+    cardCreateType,
+    arcCandidateCreateOpen,
+    arcCandidateCreateId,
+    arcCandidateCreateName,
+    arcCandidateCreateSummary,
+    stageMapCreateOpen,
+    stageMapCreateArcId,
+    stageMapCreateNotes,
+    stageMapCreateKinds,
+  };
+
+  return { state, callbacks };
+}
