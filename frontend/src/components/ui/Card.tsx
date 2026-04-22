@@ -26,14 +26,29 @@ export function Card({
   const baseBorder = isDark ? 'border-slate-800' : 'border-slate-200'
   const baseBg = isDark ? 'bg-slate-900' : 'bg-white'
   
+  const outlinedBorder = isDark
+    ? 'border-slate-700'
+    : 'border-slate-300'
   const variantStyles: Record<string, string> = {
     default: `${baseBg} border ${baseBorder}`,
     elevated: `${baseBg} border ${baseBorder} shadow-card`,
-    outlined: `${baseBg} border ${isDark ? 'border-slate-700' : 'border-slate-300'}`,
+    outlined: `${baseBg} border ${outlinedBorder}`,
   }
   
-  const hoverStyle = hover ? `transition-all duration-150 ${isDark ? 'hover:shadow-card-hover hover:border-slate-700' : 'hover:shadow-card-hover hover:border-slate-300'}` : ''
-  
+  const hoverShadow = isDark
+    ? 'hover:shadow-card-hover hover:border-slate-700'
+    : 'hover:shadow-card-hover hover:border-slate-300'
+  const hoverStyle = hover
+    ? `transition-all duration-150 ${hoverShadow}`
+    : ''
+
+  const titleColor = isDark
+    ? 'text-slate-100'
+    : 'text-slate-900'
+  const subtitleColor = isDark
+    ? 'text-slate-400'
+    : 'text-slate-500'
+
   return (
     <div
       className={`rounded-xl p-5 ${variantStyles[variant]} ${hoverStyle} ${className}`}
@@ -42,8 +57,16 @@ export function Card({
       {(title || actions) && (
         <div className="flex items-start justify-between mb-4 gap-4">
           <div>
-            {title && <h3 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h3>}
-            {subtitle && <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{subtitle}</p>}
+            {title && (
+              <h3 className={`text-base font-semibold ${titleColor}`}>
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className={`text-sm mt-0.5 ${subtitleColor}`}>
+                {subtitle}
+              </p>
+            )}
           </div>
           {actions && <div className="flex-shrink-0">{actions}</div>}
         </div>
