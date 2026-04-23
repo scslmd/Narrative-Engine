@@ -1,7 +1,7 @@
-import type { JobCreateRequest, JobStatusResponse, JobRetryRequest } from '../types/job';
+import type { JobCreateRequest, JobStatusResponse } from '../types/job';
 import api from '../lib/api';
 
-export interface AttemptHistoryItem {
+export interface JobAttemptHistoryItem {
   attempt_number: number;
   status: string;
   executor_name: string | null;
@@ -19,12 +19,6 @@ export interface AttemptHistoryItem {
   retry_reason: string | null;
   error_code: string | null;
   error_category: string | null;
-}
-
-export interface JobAttemptHistoryResponse {
-  job_id: string;
-  items: AttemptHistoryItem[];
-  meta: Record<string, string>;
 }
 
 export const jobsService = {
@@ -63,16 +57,6 @@ export const jobsService = {
     return response.data;
   },
 
-  async retryJob(jobId: string, request: JobRetryRequest): Promise<JobStatusResponse> {
-    const response = await api.post(`/jobs/${jobId}/retry`, request);
-
-    if (response.status !== 202) {
-      throw new Error(`Failed to retry job: ${response.status}`);
-    }
-
-    return response.data;
-  },
-
   async getLogs(jobId: string): Promise<{ id: string; entries: Array<{ timestamp: string; level: 'INFO' | 'WARNING' | 'ERROR'; message: string }> }> {
     const response = await api.get(`/jobs/${jobId}/logs`);
     
@@ -83,7 +67,7 @@ export const jobsService = {
     return response.data;
   },
 
-  async getAttempts(jobId: string): Promise<JobAttemptHistoryResponse> {
+  async getAttempts(jobId: string): Promise<{ job_id: string; items: JobAttemptHistoryItem[]; meta: Record<string, string> }> {
     const response = await api.get(`/jobs/${jobId}/attempts`);
     
     if (response.status !== 200) {

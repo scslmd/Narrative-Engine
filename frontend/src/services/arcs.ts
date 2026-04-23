@@ -13,9 +13,7 @@ import type {
   ArcStageMap,
   ArcComparisonRecord,
   ArcCandidateCreateRequest,
-  ArcComparisonCreateRequest,
   ArcSelectionCreateRequest,
-  ArcSelectionUpdateRequest,
   ArcStageMapCreateRequest,
 } from '../types/arcs';
 import api from '../lib/api';
@@ -90,71 +88,6 @@ export async function getArcStageMaps(projectId: string): Promise<ArcStageMap[]>
   return data.items;
 }
 
-/**
- * Get arc stage map for a specific arc
- */
-export function getStageMapForArc(
-  stageMaps: ArcStageMap[],
-  arcId: string,
-): ArcStageMap | undefined {
-  return stageMaps.find((map) => map.arc_id === arcId);
-}
-
-/**
- * Get selected arc for a project
- */
-export function getSelectedArc(selections: ArcSelection[], projectId: string): ArcCandidate | null {
-  const projectSelection = selections.find((s) => s.project_id === projectId);
-  return projectSelection?.selected_arc || null;
-}
-
-/**
- * Check if an arc candidate has been selected
- */
-export function isArcSelected(
-  selections: ArcSelection[],
-  arcId: string,
-): boolean {
-  return selections.some((s) => s.selected_arc.arc_id === arcId);
-}
-
-/**
- * Check if an arc candidate has been rejected
- */
-export function isArcRejected(
-  selections: ArcSelection[],
-  arcId: string,
-): boolean {
-  return selections.some((s) => s.rejected_arc_ids.includes(arcId));
-}
-
-/**
- * Get arc candidates grouped by selection status
- */
-export function groupArcsByStatus(
-  candidates: ArcCandidate[],
-  selections: ArcSelection[],
-): {
-  selected: ArcCandidate[];
-  rejected: ArcCandidate[];
-  pending: ArcCandidate[];
-} {
-  const selectedArcIds = new Set(
-    selections.map((s) => s.selected_arc.arc_id),
-  );
-  const rejectedArcIds = new Set(
-    selections.flatMap((s) => s.rejected_arc_ids),
-  );
-
-  return {
-    selected: candidates.filter((c) => selectedArcIds.has(c.arc_id)),
-    rejected: candidates.filter((c) => rejectedArcIds.has(c.arc_id)),
-    pending: candidates.filter(
-      (c) => !selectedArcIds.has(c.arc_id) && !rejectedArcIds.has(c.arc_id),
-    ),
-  };
-}
-
 // ============================================================================
 // Arc mutation functions
 // ============================================================================
@@ -175,21 +108,6 @@ export async function createArcCandidate(data: ArcCandidateCreateRequest): Promi
 }
 
 /**
- * Create an arc comparison
- */
-export async function createArcComparison(data: ArcComparisonCreateRequest): Promise<ArcCandidate[]> {
-  const response = await api.post('/story-development/arcs/comparisons', data, {
-    params: { project_id: data.project_id },
-  });
-
-  if (response.status !== 201) {
-    throw new Error(`Failed to create arc comparison: ${response.status}`);
-  }
-
-  return response.data;
-}
-
-/**
  * Create an arc selection
  */
 export async function createArcSelection(data: ArcSelectionCreateRequest): Promise<ArcSelection> {
@@ -199,25 +117,6 @@ export async function createArcSelection(data: ArcSelectionCreateRequest): Promi
 
   if (response.status !== 201) {
     throw new Error(`Failed to create arc selection: ${response.status}`);
-  }
-
-  return response.data;
-}
-
-/**
- * Update an existing arc selection
- */
-export async function updateArcSelection(
-  selectionId: string,
-  data: ArcSelectionUpdateRequest,
-): Promise<ArcSelection> {
-  const response = await api.patch(
-    `/story-development/arcs/selections/${selectionId}`,
-    data,
-  );
-
-  if (response.status !== 200) {
-    throw new Error(`Failed to update arc selection ${selectionId}: ${response.status}`);
   }
 
   return response.data;

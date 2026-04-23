@@ -18,16 +18,6 @@ export async function getDecisions(projectId: string): Promise<StoryDecisionNode
   return data.items;
 }
 
-export async function getDecision(nodeId: string): Promise<StoryDecisionNode> {
-  const response = await api.get(`/story-development/decisions/${nodeId}`);
-  
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch decision: ${response.status}`);
-  }
-
-  return response.data;
-}
-
 interface DecisionPathResponse {
   project_id: string;
   node: StoryDecisionNode;

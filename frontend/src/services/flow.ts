@@ -56,13 +56,6 @@ export const flowService = {
     return response.data;
   },
 
-  // Legacy method - kept for compatibility but throws error directing users to use updateStageWithProject
-  async updateStage(stageId: string, updates: Partial<StoryFlowStage>): Promise<StoryFlowStage> {
-    void stageId; // Parameter kept for API compatibility
-    void updates; // Parameter kept for API compatibility
-    throw new Error(`updateStage requires project_id parameter. Use updateStageWithProject(projectId, stageId, updates) instead.`);
-  },
-
   async updateStageWithProject(projectId: string, stageId: string, updates: FlowStageUpdateRequest): Promise<StoryFlowStage> {
     const payload: FlowStageUpdateRequest = {};
     
@@ -82,19 +75,6 @@ export const flowService = {
     return response.data;
   },
 
-  async reorderStages(projectId: string, newOrder: string[]): Promise<StoryFlowStage[]> {
-    const response = await api.post('/story-development/flow/stages/reorder', 
-      { stage_order: newOrder },
-      { params: { project_id: projectId } }
-    );
-
-    if (response.status !== 200) {
-      throw new Error(`Failed to reorder flow stages for ${projectId}: ${response.status}`);
-    }
-
-    return response.data.stages;
-  },
-
   async deleteStage(projectId: string, stageId: string): Promise<void> {
     const response = await api.delete(`/story-development/flow/stages/${stageId}?project_id=${projectId}`);
 
@@ -103,10 +83,6 @@ export const flowService = {
     }
 
     return undefined;
-  },
-
-  async disableStage(projectId: string, stageId: string): Promise<StoryFlowStage> {
-    return this.updateStageWithProject(projectId, stageId, { stage_configuration_state: 'DISABLED' });
   },
 
   async archiveStage(projectId: string, stageId: string): Promise<StoryFlowStage> {

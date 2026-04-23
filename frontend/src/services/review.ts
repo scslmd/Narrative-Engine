@@ -30,16 +30,6 @@ export async function getFindings(filter: FindingsFilter): Promise<CheckerFindin
   return data.items;
 }
 
-export async function getFindingById(findingId: string): Promise<CheckerFinding> {
-  const response = await api.get(`/story-development/review/findings/${findingId}`);
-  
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch finding: ${response.status}`);
-  }
-
-  return response.data;
-}
-
 interface DecisionListResponse {
   project_id: string;
   items: ReviewDecision[];

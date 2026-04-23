@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
-import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
+import { StoryImportModal } from '../components/projects/StoryImportModal';
 
 export function ProjectList(): React.ReactElement {
   const { data: projects, isLoading } = useProjects();
@@ -12,6 +13,7 @@ export function ProjectList(): React.ReactElement {
   const isDark = mode === 'dark';
   const [selectedPov, setSelectedPov] = useState<string>('Third_Limited');
   const [selectedStructure, setSelectedStructure] = useState<string>('THREE_ACT');
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const POV_DESCRIPTIONS: Record<string, string> = {
     First: '"I" — narrator is a character in the story',
@@ -227,6 +229,16 @@ export function ProjectList(): React.ReactElement {
             </>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setShowImportModal(true)}
+          disabled={createMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-teal-700 shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <Upload className="w-4 h-4" />
+          Import Existing Story
+        </button>
       </form>
 
       <div>
@@ -269,6 +281,8 @@ export function ProjectList(): React.ReactElement {
           </div>
         )}
       </div>
+
+      <StoryImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
     </div>
   );
 }

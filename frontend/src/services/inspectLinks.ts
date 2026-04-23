@@ -30,19 +30,6 @@ export async function getInspectLinks(
   return data.items;
 }
 
-export async function getInspectLink(linkId: string, projectId?: string): Promise<InspectRunLink> {
-  const params: Record<string, string> = {};
-  if (projectId) params.project_id = projectId;
-  
-  const response = await api.get(`/story-development/review/inspect-links/${linkId}`, { params });
-  
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch inspect link: ${response.status}`);
-  }
-
-  return response.data;
-}
-
 export async function createInspectLink(data: InspectRunLinkCreateRequest): Promise<InspectRunLink> {
   const response = await api.post('/story-development/review/inspect-links', data, {
     params: { project_id: data.project_id },
