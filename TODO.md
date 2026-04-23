@@ -4,7 +4,7 @@
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `801 passed, 9 skipped` (0 pre-existing failures. Remaining 9 skips are platform-specific.)
+  - `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures. Remaining 9 skips are platform-specific.)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -24,6 +24,15 @@
   - Completed: 15 integration tests in `tests/test_manuscript_aid_integration.py` covering manuscript document CRUD, revision suggestion CRUD, cross-project isolation, and document filtering.
 - [x] Add broader integration coverage for orchestration and runtime behavior.
    - Completed: 14 new E2E tests across `tests/test_executor_e2e_runtime.py` and `tests/test_story_bible_lineage.py` covering: checker report persistence, deterministic critic, P-400 missing upstream artifacts, staged/backup file cleanup, project isolation, job status transitions, job retry attempts, P-400 empty output, full pipeline order guarantee, story-bible content hash stability, fallback file read, and supersession chain verification.
+
+### Frontend-Backend Integration Audit -- All Complete
+- Comprehensive audit of all 18 frontend service files, 67+ components, 7 views, 8 backend routers
+- Identified and removed 37 dead service functions (42% of exports) across 14 files
+- Removed 7 duplicate relationship helper functions from both characters.ts and relationships.ts
+- Added Story Import UI: StoryImportModal component with form, validation, loading/error states, integration into ProjectList
+- Verified all 13/13 feature areas backend-to-frontend linked
+- Validation: 802 passed, 9 skipped, typecheck passed, build passed, lint passed, qc.py adverse review passed with 0 findings
+- Dead code cleanup reduced exports from 112 to 75 across all service files
 
 ## Completed Milestones (Summary)
 
@@ -49,7 +58,7 @@ with real API backing.
 ### Story Development Backend -- All Complete
 - BE-01 through BE-11E: Schemas, persistence, services, and API surface for branching,
   decisions, review, planning, drafting, characters, world bible, arcs, and brainstorm
-- 801 tests passing across the full suite (22 new: 12 lineage-aware artifact tests + 15 manuscript aid integration tests + 14 executor/story-bible E2E tests - 19 original + 22 fixed = 801 total. Bugfix: `create_inspect_link` incorrectly normalized `object_kind` to `StoryObjectType`, rejecting free-form strings like "job", "checker", "manuscript". Rewrote `test_review_routing_post.py` with proper `tmp_path` DB isolation.)
+- 802 tests passing across the full suite. Bugfix: `create_inspect_link` incorrectly normalized `object_kind` to `StoryObjectType`, rejecting free-form strings like "job", "checker", "manuscript". Rewrote `test_review_routing_post.py` with proper `tmp_path` DB isolation.
 
 ### FlowEditor Stage Editing -- All Complete
 - Add stage: dialog with kind selector and name input
@@ -113,7 +122,7 @@ with real API backing.
 - Planning reordering: Chevron up/down buttons on sequence, chapter, and scene cards
 - Bug fixes: arc_id required in ArcCandidateCreateRequest frontend type, deleteArcSelection project_id query param, ArcSelectionCreateRequest.selected_arc accepts string or object
 - Removed unused getSelectedArc import, inlined logic in PlanningView
-- Validation: 801 passed, 9 skipped, typecheck passed, build passed, lint passed
+- Validation: 802 passed, 9 skipped, typecheck passed, build passed, lint passed
 
 ### Testing
 - Smoke coverage, persistence coverage, contract coverage, failure-mode coverage

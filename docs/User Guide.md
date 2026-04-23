@@ -7,10 +7,11 @@ This guide walks you through using Narrative Engine from first project to a full
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
-3. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
-4. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
-5. [Tips and Best Practices](#tips-and-best-practices)
+2. [Importing an Existing Story](#importing-an-existing-story)
+3. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+4. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+5. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+6. [Tips and Best Practices](#tips-and-best-practices)
 
 ---
 
@@ -56,6 +57,21 @@ INFERENCE_URL=http://localhost:8081      (llama.cpp)
 ```
 
 If no inference URL is set, the app uses a stub backend for testing (jobs complete with placeholder content).
+
+### Alternative: Import an Existing Story
+
+If you already have a completed story, you can import it and have the AI analyze and structure it automatically:
+
+1. Navigate to the home page (`/`)
+2. Click **"Import Story"**
+3. Paste your story text into the editor
+4. Optionally specify genre and tone hints to guide the analysis
+5. Click **"Import"**
+
+The system will:
+- Analyze the story with an LLM to extract characters, world details, and structure
+- Create a new project with all structured data
+- Generate foundation profiles, character profiles, world bible entries, and planning artifacts
 
 ---
 

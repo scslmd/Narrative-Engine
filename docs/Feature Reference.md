@@ -7,6 +7,7 @@ Complete reference for every feature in Narrative Engine, with descriptions, bac
 ## Table of Contents
 
 - [Project Management](#project-management)
+  - [Story Import](#story-import)
 - [Planning Workspace](#planning-workspace)
   - [Manifest Viewer](#manifest-viewer)
   - [Planning (Sequences, Chapters, Scenes)](#planning-sequences-chapters-scenes)
@@ -20,6 +21,9 @@ Complete reference for every feature in Narrative Engine, with descriptions, bac
   - [Character Builder](#character-builder)
   - [World Bible](#world-bible)
 - [Writing Workspace](#writing-workspace)
+  - [Draft Management](#draft-management)
+  - [Manuscript Review](#manuscript-review)
+- [Storyboard Workspace](#storyboard-workspace)
 - [Review Workspace](#review-workspace)
 - [Inspect Mode](#inspect-mode)
 - [Brain Dump Mode](#brain-dump-mode)
@@ -67,6 +71,27 @@ Project management is the entry point of Narrative Engine. Each project is an in
 | `GET` | `/projects/{project_id}` | Get project details |
 | `DELETE` | `/projects/{project_id}` | Delete a project |
 | `GET` | `/v1/projects/{project_id}/manifest` | Get project manifest |
+
+### Story Import
+
+**Import an Existing Story:**
+```
+1. Navigate to Project Management
+2. Click "Import Story"
+3. Paste the story text (or upload a file)
+4. Optionally specify genre hint and tone hint for analysis
+5. The LLM analyzes the story and extracts:
+   - Premise, logline, thematic spine
+   - Characters with goals, motivations, arcs
+   - World bible entries
+   - Structural breakdown (acts, sequences, chapters)
+6. A new project is created with all extracted data
+```
+
+**Backend APIs**
+```
+POST /projects/import-story (201 Created, synchronous)
+```
 
 ### Story Structures Reference
 
@@ -858,6 +883,73 @@ GET /v1/story-development/drafting/draft-artifacts/{artifact_id}?project_id={id}
 POST /v1/story-development/drafting/promote-draft
 GET /v1/story-development/drafting/revision-suggestions?project_id={id}
 POST /v1/story-development/drafting/revision-suggestions
+```
+
+### Draft Management
+
+**Continue a Draft:**
+```
+1. In the left sidebar, expand a draft artifact
+2. Click "Continue" to extend the draft with LLM-generated content
+3. The LLM appends content from the last written position
+4. A new draft version is created with the extended content
+```
+
+**Create an Alternate Variant:**
+```
+1. In the left sidebar, expand a draft artifact
+2. Click "Alternate Variant" to generate a different version
+3. The LLM rewrites the draft with a different approach while preserving structure
+4. The original draft remains unchanged; the variant appears as a sibling
+```
+
+### Manuscript Review
+
+**Score and Review Manuscripts:**
+```
+1. Select a manuscript document in the Writing workspace
+2. Trigger a manuscript review to evaluate quality
+3. Review receives scores for: prose quality, pacing, consistency, voice, dialogue
+4. Scores appear in the Aids Panel alongside revision suggestions
+5. Use review results to guide further revisions or promotions
+```
+
+---
+
+## Storyboard Workspace
+
+Route: `/workspace/:projectId/storyboard`
+
+### What It Does
+
+Kanban-style board for organizing scenes and story beats across columns. Each card represents a scene or beat with metadata, content preview, and status tracking. Supports drag-to-reorder and column-based organization.
+
+### How to Use
+
+**Create Storyboard Cards:**
+```
+1. Navigate to the storyboard view
+2. Click "Add Card" in the desired column
+3. Enter a title and optional summary for the scene/beat
+4. The card appears in the column with its status
+```
+
+**Reorder Cards:**
+```
+1. Drag cards between columns to change status/phase
+2. Use the reindex endpoint to save column ordering
+3. Cards maintain their identity across moves
+```
+
+**Backend APIs**
+```
+GET /v1/story-development/storyboard/cards?project_id={id}
+GET /v1/story-development/storyboard/cards/{card_id}?project_id={id}
+POST /v1/story-development/storyboard/cards
+PATCH /v1/story-development/storyboard/cards/{card_id}?project_id={id}
+PUT /v1/story-development/storyboard/cards/{card_id}?project_id={id}
+DELETE /v1/story-development/storyboard/cards/{card_id}?project_id={id}
+PUT /v1/story-development/storyboard/cards/{column_id}/reindex?project_id={id}
 ```
 
 ---

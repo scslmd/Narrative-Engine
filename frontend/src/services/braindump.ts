@@ -4,17 +4,13 @@
  * Service for interacting with brain dump session API endpoints:
  * - Create brain dump session
  * - List brain dump sessions
- * - Get brain dump session
  * - Update brain dump session
- * - Delete brain dump session
  * - Organize brain dump session (AI categorization)
  *
  * Backend endpoints:
  * - POST /v1/story-development/braindump/sessions
  * - GET /v1/story-development/braindump/sessions
- * - GET /v1/story-development/braindump/sessions/{session_id}
  * - PATCH /v1/story-development/braindump/sessions/{session_id}
- * - DELETE /v1/story-development/braindump/sessions/{session_id}
  * - POST /v1/story-development/braindump/sessions/{session_id}/organize
  */
 
@@ -59,25 +55,6 @@ export async function getBrainDumpSessions(projectId: string): Promise<BrainDump
 }
 
 /**
- * Get a specific brain dump session
- */
-export async function getBrainDumpSession(
-  sessionId: string,
-  projectId: string,
-): Promise<BrainDumpSession> {
-  const response = await api.get(
-    `/v1/story-development/braindump/sessions/${sessionId}`,
-    { params: { project_id: projectId } },
-  );
-
-  if (response.status !== 200) {
-    throw new Error(`Failed to fetch brain dump session: ${response.status}`);
-  }
-
-  return response.data;
-}
-
-/**
  * Update a brain dump session
  */
 export async function updateBrainDumpSession(
@@ -96,23 +73,6 @@ export async function updateBrainDumpSession(
   }
 
   return response.data;
-}
-
-/**
- * Delete a brain dump session
- */
-export async function deleteBrainDumpSession(
-  sessionId: string,
-  projectId: string,
-): Promise<void> {
-  const response = await api.delete(
-    `/v1/story-development/braindump/sessions/${sessionId}`,
-    { params: { project_id: projectId } },
-  );
-
-  if (response.status !== 204) {
-    throw new Error(`Failed to delete brain dump session: ${response.status}`);
-  }
 }
 
 /**

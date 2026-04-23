@@ -137,8 +137,16 @@ The server currently exposes a mixed surface:
 | `PATCH` | `/v1/story-development/planning/sequence-plans/{sequence_id}` |
 | `GET` | `/v1/story-development/planning/chapter-plans` |
 | `GET` | `/v1/story-development/planning/chapter-plans/{chapter_id}` |
+| `POST` | `/v1/story-development/planning/chapter-plans` |
+| `PATCH` | `/v1/story-development/planning/chapter-plans/{chapter_id}` |
 | `GET` | `/v1/story-development/planning/scene-plans` |
 | `GET` | `/v1/story-development/planning/scene-plans/{scene_id}` |
+| `POST` | `/v1/story-development/planning/scene-plans` |
+| `PATCH` | `/v1/story-development/planning/scene-plans/{scene_id}` |
+| `GET` | `/v1/story-development/planning/beat-plans` |
+| `GET` | `/v1/story-development/planning/beat-plans/{beat_id}` |
+| `POST` | `/v1/story-development/planning/beat-plans` |
+| `PATCH` | `/v1/story-development/planning/beat-plans/{beat_id}` |
 | `GET` | `/v1/story-development/planning/dependencies` |
 | `GET` | `/v1/story-development/planning/dependencies/{dependency_id}` |
 | `GET` | `/v1/story-development/planning/chapter-packets` |
@@ -153,10 +161,13 @@ The server currently exposes a mixed surface:
 |--------|----------|
 | `GET` | `/v1/story-development/drafting/draft-artifacts` |
 | `GET` | `/v1/story-development/drafting/draft-artifacts/{artifact_id}` |
+| `POST` | `/v1/story-development/drafting/draft-artifacts/continue` |
+| `POST` | `/v1/story-development/drafting/draft-artifacts/alternate-variant` |
 | `GET` | `/v1/story-development/drafting/manuscript-documents` |
 | `GET` | `/v1/story-development/drafting/manuscript-documents/{document_id}` |
 | `POST` | `/v1/story-development/drafting/manuscript-documents` |
 | `PATCH` | `/v1/story-development/drafting/manuscript-documents/{document_id}` |
+| `POST` | `/v1/story-development/drafting/manuscript-documents/{document_id}/review` |
 | `GET` | `/v1/story-development/drafting/revision-suggestions` |
 | `GET` | `/v1/story-development/drafting/revision-suggestions/{suggestion_id}` |
 | `POST` | `/v1/story-development/drafting/revision-suggestions` |

@@ -9,6 +9,9 @@
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1971 modules in production bundle.
+- Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
+- Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23.
 - Route-driven workspace state is the current frontend architecture:
   - `/workspace/:projectId/plan`
   - `/workspace/:projectId/write`
@@ -16,6 +19,7 @@
   - `/workspace/:projectId/review`
   - `/workspace/:projectId/inspect`
   - `/workspace/:projectId/inspect/:jobId`
+  - `/workspace/:projectId/braindump`
 - Inspect deep links are expected to render from the route, and review-driven "Jump to Source" should resolve an inspect run before navigation.
 
 ## Agent Guardrails
@@ -358,7 +362,31 @@ Do not call the repo merge-ready unless all four of these are green:
 - `POST /projects/create`
 - `GET /projects/{project_id}`
 - `DELETE /projects/{project_id}`
-- `POST /projects/import-story` (201 Created, synchronous)
+- `POST /projects/import-story` (201 Created, synchronous - parses existing stories and creates full project structure)
+- `GET /projects/{project_id}/manifest`
+- `GET /projects/{project_id}/sequence`
+- `GET /projects/{project_id}/chapter-1`
+
+#### Authentication
+- `POST /auth/keys`
+- `GET /auth/keys`
+- `DELETE /auth/keys/{prefix}`
+
+#### Backup
+- `POST /backup/create`
+- `POST /backup/restore/{backup_id}`
+- `GET /backup/list`
+- `GET /backup/latest`
+- `DELETE /backup/{backup_id}`
+
+#### Role Model Checker
+- `POST /v1/role-model-checker/run`
+- `POST /v1/role-model-checker/start`
+- `GET /v1/role-model-checker/{run_id}/status`
+- `GET /v1/role-model-checker/{run_id}/steps`
+- `GET /v1/role-model-checker/{run_id}/lineage`
+- `GET /v1/role-model-checker/{run_id}/attempts`
+- `POST /v1/role-model-checker/{run_id}/retry`
 
 #### Story Development - Branching
 - `GET /v1/story-development/branches?project_id={id}`
@@ -386,18 +414,37 @@ Do not call the repo merge-ready unless all four of these are green:
 
 #### Story Development - Planning
 - `GET /v1/story-development/planning/sequence-plans?project_id={id}`
+- `POST /v1/story-development/planning/sequence-plans`
+- `PATCH /v1/story-development/planning/sequence-plans/{sequence_id}?project_id={id}`
 - `GET /v1/story-development/planning/chapter-plans?project_id={id}`
+- `POST /v1/story-development/planning/chapter-plans`
+- `PATCH /v1/story-development/planning/chapter-plans/{chapter_id}?project_id={id}`
 - `GET /v1/story-development/planning/scene-plans?project_id={id}`
+- `POST /v1/story-development/planning/scene-plans`
+- `PATCH /v1/story-development/planning/scene-plans/{scene_id}?project_id={id}`
+- `GET /v1/story-development/planning/beat-plans?project_id={id}`
+- `POST /v1/story-development/planning/beat-plans`
+- `PATCH /v1/story-development/planning/beat-plans/{beat_id}?project_id={id}`
 - `GET /v1/story-development/planning/dependencies?project_id={id}`
 - `GET /v1/story-development/planning/chapter-packets?project_id={id}`
+- `POST /v1/story-development/planning/chapter-packets`
+- `PATCH /v1/story-development/planning/chapter-packets/{packet_id}?project_id={id}`
+- `POST /v1/story-development/planning/reorder?project_id={id}`
 
 #### Story Development - Drafting
 - `GET /v1/story-development/drafting/draft-artifacts?project_id={id}`
+- `GET /v1/story-development/drafting/draft-artifacts/{artifact_id}?project_id={id}`
+- `POST /v1/story-development/drafting/draft-artifacts/continue`
+- `POST /v1/story-development/drafting/draft-artifacts/alternate-variant`
 - `GET /v1/story-development/drafting/manuscript-documents?project_id={id}`
+- `GET /v1/story-development/drafting/manuscript-documents/{document_id}?project_id={id}`
 - `POST /v1/story-development/drafting/manuscript-documents`
-- `POST /v1/story-development/drafting/promote-draft`
+- `PATCH /v1/story-development/drafting/manuscript-documents/{document_id}?project_id={id}`
+- `POST /v1/story-development/drafting/manuscript-documents/{document_id}/review?project_id={id}`
 - `GET /v1/story-development/drafting/revision-suggestions?project_id={id}`
+- `GET /v1/story-development/drafting/revision-suggestions/{suggestion_id}?project_id={id}`
 - `POST /v1/story-development/drafting/revision-suggestions`
+- `POST /v1/story-development/drafting/promote-draft`
 
 #### Story Development - Brainstorm
 - `GET /v1/story-development/brainstorm/items?project_id={id}`
@@ -405,6 +452,14 @@ Do not call the repo merge-ready unless all four of these are green:
 - `POST /v1/story-development/brainstorm/items/cluster`
 - `POST /v1/story-development/brainstorm/items/promote`
 - `GET /v1/story-development/brainstorm/promotions?project_id={id}`
+
+#### Story Development - Braindump
+- `POST /v1/story-development/braindump/sessions`
+- `GET /v1/story-development/braindump/sessions?project_id={id}`
+- `GET /v1/story-development/braindump/sessions/{session_id}?project_id={id}`
+- `PATCH /v1/story-development/braindump/sessions/{session_id}?project_id={id}`
+- `DELETE /v1/story-development/braindump/sessions/{session_id}?project_id={id}`
+- `POST /v1/story-development/braindump/sessions/{session_id}/organize?project_id={id}`
 
 #### Story Development - Foundation
 - `GET /v1/story-development/foundation?project_id={id}`
@@ -429,8 +484,27 @@ Do not call the repo merge-ready unless all four of these are green:
 
 #### Story Development - Arcs
 - `GET /v1/story-development/arcs/candidates?project_id={id}`
+- `POST /v1/story-development/arcs/candidates`
 - `GET /v1/story-development/arcs/selections?project_id={id}`
+- `POST /v1/story-development/arcs/selections`
+- `PATCH /v1/story-development/arcs/selections/{selection_id}?project_id={id}`
+- `DELETE /v1/story-development/arcs/selections/{selection_id}?project_id={id}`
 - `GET /v1/story-development/arcs/stage-maps?project_id={id}`
+- `POST /v1/story-development/arcs/stage-maps`
+- `POST /v1/story-development/arcs/comparisons`
+
+#### Story Development - Storyboard Cards
+- `GET /v1/story-development/storyboard/cards?project_id={id}`
+- `GET /v1/story-development/storyboard/cards/{card_id}?project_id={id}`
+- `POST /v1/story-development/storyboard/cards`
+- `PATCH /v1/story-development/storyboard/cards/{card_id}?project_id={id}`
+- `DELETE /v1/story-development/storyboard/cards/{card_id}?project_id={id}`
+- `PUT /v1/story-development/storyboard/cards/{column_id}/reindex?project_id={id}`
+
+#### Story Development - Relationships
+- `GET /v1/story-development/relationships?project_id={id}`
+- `PATCH /v1/story-development/relationships/{edge_id}?project_id={id}`
+- `DELETE /v1/story-development/relationships/{edge_id}?project_id={id}`
 
 #### Jobs
 - `POST /v1/jobs/create`
@@ -475,6 +549,21 @@ safe_text = sanitize_string(user_input)
 validate_filename(filename, max_length=255)
 limit_size(payload_dict, max_bytes=5_242_880)
 ```
+
+### SEC-04: Path Traversal Protection
+`app/middleware/path_traversal.py`
+```python
+from app.middleware.path_traversal import PathTraversalMiddleware
+```
+
+### SEC-05: Rate Limiting
+`app/middleware/rate_limit.py`
+```python
+from app.middleware.rate_limit import RateLimitMiddleware
+```
+
+### REL-03: Thread Safety
+All service layer operations are thread-safe through SQLite's built-in journaling and the lease-claim mechanism.
 
 ### SEC-02: Authentication
 `app/services/authentication.py`
@@ -527,6 +616,24 @@ from app.services.backup import get_backup_service
 
 backup = get_backup_service()
 ```
+
+### REL-05: Latency Telemetry
+`app/api/health.py` -- `/health/metrics` endpoint provides average, min, and max latency for jobs and role-model-checker runs.
+
+### REL-06: CORS
+CORS middleware configured for `localhost:5173` and `localhost:3000` in `app/main.py`.
+
+### REL-07: Config Validation
+`app/services/config_validator.py::validate_config_at_startup()` validates all settings at application startup (database paths, inference URLs, API keys).
+
+### REL-08: Request Size Limits
+`MAX_BODY_SIZE` constant in `app/utils/constants.py` limits request body size to prevent oversized payloads.
+
+### REL-09: File Permission Validation
+`app/services/file_permissions.py::FilePermissionValidator` validates directory permissions, rejects world-writable directories, and performs directory-safety checks.
+
+### REL-10: Audit Logging
+Operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read`. Key fingerprinting via `fingerprint_api_key()` in `app/services/authentication.py`.
 
 ## Frontend Quality Gate Notes
 

@@ -41,9 +41,19 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/api/models.py`](app/api/models.py): model and provider availability endpoints
 - [`app/api/role_model_checker.py`](app/api/role_model_checker.py): checker execution and inspect endpoints
 - [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, drafting reads, and branching reads or mutations
+- [`app/api/health.py`](app/api/health.py): liveness, readiness, and metrics endpoints
+- [`app/api/auth.py`](app/api/auth.py): API key management endpoints
+- [`app/api/backup.py`](app/api/backup.py): database backup and restore endpoints
 
 ### Service Layer
 
+- [`app/services/authentication.py`](app/services/authentication.py): API key authentication and key management
+- [`app/services/authorization.py`](app/services/authorization.py): permission checking and resource access control
+- [`app/services/circuit_breaker.py`](app/services/circuit_breaker.py): circuit breaker pattern for external service calls
+- [`app/services/idempotency.py`](app/services/idempotency.py): idempotency key checking and response caching
+- [`app/services/backup.py`](app/services/backup.py): operations database backup and restore
+- [`app/services/file_permissions.py`](app/services/file_permissions.py): file permission validation and directory safety checks
+- [`app/services/config_validator.py`](app/services/config_validator.py): configuration validation and health checks
 - [`app/services/projects.py`](app/services/projects.py): project-level read and artifact services
 - [`app/services/project_bootstrap.py`](app/services/project_bootstrap.py): project initialization and seed setup
 - [`app/services/job_manager.py`](app/services/job_manager.py): accepted-and-polled job orchestration
@@ -56,14 +66,21 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/step_records.py`](app/services/step_records.py): step record and lineage shaping for inspect surfaces
 - [`app/services/validation.py`](app/services/validation.py): validation helpers for backend contracts
 - [`app/services/editable_flow.py`](app/services/editable_flow.py): story-development editable stage flow operations
+- [`app/services/editable_flow_persistence.py`](app/services/editable_flow_persistence.py): editable flow persistence operations
 - [`app/services/brainstorm.py`](app/services/brainstorm.py): brainstorming service slice and promotion behavior
+- [`app/services/braindump.py`](app/services/braindump.py): brain-dump session management and LLM-powered text categorization
 - [`app/services/foundation.py`](app/services/foundation.py): foundation profile revision/history service and downstream review-cue generation
 - [`app/services/story_knowledge.py`](app/services/story_knowledge.py): character, world-bible, arc-selection, and story-decision-aware knowledge services
 - [`app/services/planning.py`](app/services/planning.py): canonical planning-object and chapter-packet service layer
+- [`app/services/sequence_plans.py`](app/services/sequence_plans.py): sequence plan service and lineage registration
+- [`app/services/chapter_packets.py`](app/services/chapter_packets.py): chapter packet service and lineage registration
+- [`app/services/storyboard_cards.py`](app/services/storyboard_cards.py): storyboard card management and lineage registration
 - [`app/services/drafting.py`](app/services/drafting.py): draft-artifact, manuscript, continuation, variant, and revision-suggestion service layer
+- [`app/services/manuscript_review.py`](app/services/manuscript_review.py): manuscript document review and scoring service
 - [`app/services/story_decision_review.py`](app/services/story_decision_review.py): decision-node timeline and parent-path review helpers
 - [`app/services/review_routing.py`](app/services/review_routing.py): review finding routing, review-decision recording, and inspect-link service layer
 - [`app/services/story_branching.py`](app/services/story_branching.py): story-branch creation, branch comparison, active-branch selection, and merge-decision service layer
+- [`app/services/story_import.py`](app/services/story_import.py): story import service for parsing and importing existing stories
 
 ### Persistence Layer
 
@@ -85,6 +102,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/schemas/inference.py`](app/schemas/inference.py): inference request/response contracts
 - [`app/schemas/inspect.py`](app/schemas/inspect.py): inspect and projection response contracts
 - [`app/schemas/role_model_checker.py`](app/schemas/role_model_checker.py): checker-specific request/response models
+- [`app/schemas/story_import.py`](app/schemas/story_import.py): story import request/response schemas
 - [`app/schemas/story_development.py`](app/schemas/story_development.py): canonical story-development objects and typed contracts
 
 ### Inference Layer
@@ -93,6 +111,21 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/inference/factory.py`](app/inference/factory.py): provider selection and runtime construction
 - [`app/inference/openai_compatible.py`](app/inference/openai_compatible.py): OpenAI-compatible inference implementation
 - [`app/inference/stub.py`](app/inference/stub.py): stub provider for deterministic tests and fallback paths
+
+### Middleware
+
+- [`app/middleware/auth.py`](app/middleware/auth.py): API key authentication middleware
+- [`app/middleware/rate_limit.py`](app/middleware/rate_limit.py): per-client rate limiting middleware
+- [`app/middleware/path_traversal.py`](app/middleware/path_traversal.py): path traversal protection middleware
+
+### Utils
+
+- [`app/settings.py`](app/settings.py): environment-driven app settings and path configuration
+- [`app/request_identity.py`](app/request_identity.py): request identity helpers for deterministic tracing
+- [`app/workflow_preferences.py`](app/workflow_preferences.py): workflow-level preference helpers
+- [`app/database.py`](app/database.py): shared raw SQLite connection utility
+- [`app/utils/input_validation.py`](app/utils/input_validation.py): input sanitization and validation helpers
+- [`app/utils/constants.py`](app/utils/constants.py): shared constants (MAX_BODY_SIZE, etc.)
 
 ## Frontend
 
@@ -128,39 +161,97 @@ npm run lint     # ESLint check
 The automated tests live under [`tests/`](tests/). They are organized mostly by behavior slice rather than by package mirror.
 
 - [`tests/conftest.py`](tests/conftest.py): shared pytest fixtures and helpers
+
 - Runtime and provider tests:
   - [`tests/test_inference_runtime.py`](tests/test_inference_runtime.py)
   - [`tests/test_inference_backend_failures.py`](tests/test_inference_backend_failures.py)
   - [`tests/test_runtime_error_mapping_failures.py`](tests/test_runtime_error_mapping_failures.py)
+
 - Executor and checker tests:
   - [`tests/test_local_executor_architect_runtime.py`](tests/test_local_executor_architect_runtime.py)
   - [`tests/test_local_executor_sequencer_runtime.py`](tests/test_local_executor_sequencer_runtime.py)
   - [`tests/test_local_executor_drafter_runtime.py`](tests/test_local_executor_drafter_runtime.py)
+  - [`tests/test_local_executor_compiler_runtime.py`](tests/test_local_executor_compiler_runtime.py)
+  - [`tests/test_executor_integration.py`](tests/test_executor_integration.py)
+  - [`tests/test_executor_e2e_runtime.py`](tests/test_executor_e2e_runtime.py)
   - [`tests/test_role_model_checker_runtime.py`](tests/test_role_model_checker_runtime.py)
+  - [`tests/test_orchestration_integration.py`](tests/test_orchestration_integration.py)
+
 - Persistence and inspect tests:
   - [`tests/test_persistence.py`](tests/test_persistence.py)
+  - [`tests/test_persistence_runtime_expansion.py`](tests/test_persistence_runtime_expansion.py)
   - [`tests/test_step_record_spec.py`](tests/test_step_record_spec.py)
   - [`tests/test_step_record_persistence.py`](tests/test_step_record_persistence.py)
   - [`tests/test_projection_endpoints.py`](tests/test_projection_endpoints.py)
   - [`tests/test_projection_endpoints_impl.py`](tests/test_projection_endpoints_impl.py)
   - [`tests/test_projection_runtime_failure_modes.py`](tests/test_projection_runtime_failure_modes.py)
   - [`tests/test_attempt_lineage.py`](tests/test_attempt_lineage.py)
+  - [`tests/test_attempt_persistence.py`](tests/test_attempt_persistence.py)
+  - [`tests/test_attempt_history_endpoints.py`](tests/test_attempt_history_endpoints.py)
+  - [`tests/test_lineage_artifact_reads.py`](tests/test_lineage_artifact_reads.py)
+  - [`tests/test_story_bible_lineage.py`](tests/test_story_bible_lineage.py)
+  - [`tests/test_lineage_aware_artifacts.py`](tests/test_lineage_aware_artifacts.py)
+
 - Story-development backend tests:
   - [`tests/test_story_development_schemas.py`](tests/test_story_development_schemas.py)
   - [`tests/test_story_development_persistence.py`](tests/test_story_development_persistence.py)
+  - [`tests/test_story_development_api.py`](tests/test_story_development_api.py)
+  - [`tests/test_story_development_integration_flow.py`](tests/test_story_development_integration_flow.py)
   - [`tests/test_editable_flow_service.py`](tests/test_editable_flow_service.py)
+  - [`tests/test_editable_flow_persistence.py`](tests/test_editable_flow_persistence.py)
+  - [`tests/test_editable_flow_api.py`](tests/test_editable_flow_api.py)
   - [`tests/test_brainstorm_service.py`](tests/test_brainstorm_service.py)
+  - [`tests/test_braindump_service.py`](tests/test_braindump_service.py)
   - [`tests/test_foundation_service.py`](tests/test_foundation_service.py)
   - [`tests/test_story_knowledge_service.py`](tests/test_story_knowledge_service.py)
   - [`tests/test_planning_service.py`](tests/test_planning_service.py)
   - [`tests/test_drafting_service.py`](tests/test_drafting_service.py)
   - [`tests/test_story_decision_review_service.py`](tests/test_story_decision_review_service.py)
   - [`tests/test_review_routing_service.py`](tests/test_review_routing_service.py)
+  - [`tests/test_review_routing_post.py`](tests/test_review_routing_post.py)
   - [`tests/test_story_branching_service.py`](tests/test_story_branching_service.py)
-  - [`tests/test_story_development_api.py`](tests/test_story_development_api.py)
-- Smoke and failure coverage:
+  - [`tests/test_story_branching_lifecycle_integration.py`](tests/test_story_branching_lifecycle_integration.py)
+  - [`tests/test_storyboard_cards.py`](tests/test_storyboard_cards.py)
+  - [`tests/test_story_import_service.py`](tests/test_story_import_service.py)
+
+- Drafting and manuscript tests:
+  - [`tests/test_drafter_post_endpoints.py`](tests/test_drafter_post_endpoints.py)
+  - [`tests/test_manuscript_aid_integration.py`](tests/test_manuscript_aid_integration.py)
+  - [`tests/test_manuscript_aid_endpoints.py`](tests/test_manuscript_aid_endpoints.py)
+  - [`tests/test_manuscript_aid_contracts.py`](tests/test_manuscript_aid_contracts.py)
+  - [`tests/test_manuscript_review_service.py`](tests/test_manuscript_review_service.py)
+  - [`tests/test_manuscript_review_api.py`](tests/test_manuscript_review_api.py)
+  - [`tests/test_manuscript_update_api.py`](tests/test_manuscript_update_api.py)
+
+- Security and reliability tests:
+  - [`tests/test_input_validation.py`](tests/test_input_validation.py)
+  - [`tests/test_authentication.py`](tests/test_authentication.py)
+  - [`tests/test_auth_middleware.py`](tests/test_auth_middleware.py)
+  - [`tests/test_authorization.py`](tests/test_authorization.py)
+  - [`tests/test_circuit_breaker.py`](tests/test_circuit_breaker.py)
+  - [`tests/test_idempotency.py`](tests/test_idempotency.py)
+  - [`tests/test_backup.py`](tests/test_backup.py)
+  - [`tests/test_file_permissions.py`](tests/test_file_permissions.py)
+  - [`tests/test_config_validator.py`](tests/test_config_validator.py)
+  - [`tests/test_rate_limiting.py`](tests/test_rate_limiting.py)
+  - [`tests/test_path_traversal.py`](tests/test_path_traversal.py)
+  - [`tests/test_request_size_limits.py`](tests/test_request_size_limits.py)
+  - [`tests/test_audit_logging.py`](tests/test_audit_logging.py)
+  - [`tests/test_thread_safety.py`](tests/test_thread_safety.py)
+  - [`tests/test_exception_hierarchy.py`](tests/test_exception_hierarchy.py)
+  - [`tests/test_job_payload_validation.py`](tests/test_job_payload_validation.py)
+
+- Deferred mutations and integration:
+  - [`tests/test_deferred_mutations.py`](tests/test_deferred_mutations.py)
+
+- Health and quality:
   - [`tests/test_smoke.py`](tests/test_smoke.py)
   - [`tests/test_failure_modes.py`](tests/test_failure_modes.py)
+  - [`tests/test_health_api.py`](tests/test_health_api.py)
+  - [`tests/test_jobs_schemas.py`](tests/test_jobs_schemas.py)
+  - [`tests/test_qc.py`](tests/test_qc.py)
+  - [`tests/test_quality_check_skill.py`](tests/test_quality_check_skill.py)
+
 - [`tests/fixtures/step_record_contract_v0_1.json`](tests/fixtures/step_record_contract_v0_1.json): locked contract fixture for step-record shape
 
 ## Documentation

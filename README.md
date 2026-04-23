@@ -14,18 +14,24 @@ Narrative-Engine supports:
 - role-based drafting and review workflows
 - critic and checker feedback loops
 - exact backend progress and status monitoring for long-running work
+- story import from existing completed stories
+- beat-level planning and storyboard card management
+- brain dump with LLM-powered text categorization
+- manuscript review and scoring
 
 ## Current Architecture
 
 The current codebase includes:
 
-- a FastAPI backend for projects, jobs, models, and role-model checking
-- SQLite-backed persistence for operational state and project artifact indexing
+- a FastAPI backend for projects, jobs, models, role-model checking, auth, backup, and health
+- SQLite-backed persistence for operational state, project artifacts, and story development entities
 - a React + TypeScript frontend rooted at `frontend/` with application code in `frontend/src/`
-- a mixed HTTP surface: versioned `/v1/...` routes for jobs, models, story-development, and checker flows, plus unversioned routes that still exist for projects, auth, backup, and health
+- a mixed HTTP surface: versioned `/v1/...` routes for jobs, models, story-development, and checker flows, plus unversioned routes for projects, auth, backup, and health
 - accepted-and-polled job and checker APIs backed by a local lease-claim executor
 - runtime-backed role-model checker execution with inspectable step and lineage projections
 - CORS middleware configured for localhost:5173 and localhost:3000
+- middleware layer: API key auth, rate limiting, and path traversal protection
+- security/reliability features: circuit breaker, idempotency, config validation, file permission checks, audit logging
 
 ## Current Status
 
@@ -58,6 +64,11 @@ Implemented and working now:
 - Brain Dump project type with distraction-free canvas, auto-save, and LLM-powered text categorization into structured brainstorm items via configured inference backend
 - review-driven findings list with accept/reject/defer/escalate/refine decision recording backed by `POST /review/decisions`
 - draft mutation service layer with `createDraftArtifact`, `continueDraft`, `createAlternateVariant`, and `promoteDraftToManuscript` API functions
+- story import workflow (`POST /projects/import-story`) that parses existing stories and creates full project structure with foundation, characters, world bible, arcs, planning, and drafts
+- beat plan management endpoints for detailed scene-level planning
+- storyboard card management with Kanban-style column reindexing
+- manuscript review and scoring service
+- braindump session management with LLM-powered content organization
 - latency telemetry in `/health/metrics` endpoint with average, min, and max latency fields for both jobs and role-model-checker runs (REL-05)
 - operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
 - file permission validation with world-writable directory rejection and directory-safety checks (REL-09)
@@ -75,7 +86,7 @@ Still being built:
 2. Install dependencies with `pip install -e .[dev]`.
 3. Start the app with `start_narrative_core.cmd` or `start_narrative_core.ps1`.
 4. Open [http://127.0.0.1:8000/role-model-checker-ui](http://127.0.0.1:8000/role-model-checker-ui).
-5. Validate the current baseline with `python -m pytest tests/test_inference_runtime.py tests/test_inference_backend_failures.py tests/test_smoke.py tests/test_local_executor_architect_runtime.py tests/test_local_executor_sequencer_runtime.py tests/test_local_executor_drafter_runtime.py tests/test_persistence.py tests/test_failure_modes.py tests/test_attempt_lineage.py tests/test_projection_endpoints.py tests/test_projection_endpoints_impl.py tests/test_projection_runtime_failure_modes.py tests/test_runtime_error_mapping_failures.py tests/test_role_model_checker_runtime.py tests/test_step_record_spec.py tests/test_step_record_persistence.py -q -p no:cacheprovider`.
+5. Validate the current baseline with `python -m pytest -q -p no:cacheprovider` or run targeted subsets such as `tests/test_story_import_service.py`, `tests/test_story_branching_service.py`, `tests/test_input_validation.py`, `tests/test_authentication.py`, `tests/test_circuit_breaker.py`.
 
 Current verified baseline:
 
@@ -116,7 +127,7 @@ Latest local full-suite verification:
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed
 
-**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance.
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI, verified all 13/13 feature areas linked.
 
 ## Core Docs
 
