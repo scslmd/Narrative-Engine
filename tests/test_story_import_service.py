@@ -720,3 +720,358 @@ def test_import_story_multiple_arcs_hash_ids(tmp_path: Path) -> None:
     arc_names = sorted([a.name for a in arcs])
     assert "Hero's Journey" in arc_names
     assert "Redemption Arc" in arc_names
+
+
+class TestLLMFieldMapper:
+    """Test the _map_llm_fields post-processing mapper."""
+
+    def test_mapper_fixes_world_bibble_wrong_keys(self):
+        """LLM uses name/description/significance instead of entry_type/title/summary."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_bible": [
+                {
+                    "name": "The Kingdom",
+                    "description": "A magical kingdom",
+                    "significance": "It is the setting of the story",
+                }
+            ],
+            "story_arcs": [],
+            "sequences": [],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+        wb = mapped["world_bible"][0]
+        assert "title" in wb and wb["title"] == "The Kingdom"
+        assert "entry_type" in wb
+        assert "summary" in wb
+        assert "magical kingdom" in wb["summary"].lower()
+        assert "setting" in wb["summary"].lower()
+
+    def test_mapper_fixes_world_bibble_missing_entry_type(self):
+        """LLM omits entry_type entirely."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_bible": [
+                {"name": "Railway System", "description": "A transport network"}
+            ],
+            "story_arcs": [],
+            "sequences": [],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+        wb = mapped["world_bible"][0]
+        assert wb["entry_type"] == "technology"
+
+    def test_mapper_fixes_arcs_wrong_keys(self):
+        """LLM uses description/type instead of summary/stage_map/tags."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_bible": [],
+            "story_arcs": [
+                {"name": "Hero's Journey", "description": "Classic arc", "type": "character"}
+            ],
+            "sequences": [],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+        arc = mapped["story_arcs"][0]
+        assert arc["summary"] == "Classic arc"
+        assert arc["tags"] == ["character"]
+        assert arc["stage_map"] == []
+
+    def test_mapper_fixes_sequences_wrong_keys(self):
+        """LLM uses name/description instead of title/summary."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_bible": [],
+            "story_arcs": [],
+            "sequences": [
+                {"name": "Act One", "description": "The beginning"}
+            ],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+        seq = mapped["sequences"][0]
+        assert seq["title"] == "Act One"
+        assert seq["summary"] == "The beginning"
+        assert seq["chapters"] == []
+
+    def test_mapper_fixes_character_array_fields(self):
+        """LLM returns array fields as strings instead of lists."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [
+                {
+                    "name": "Hero",
+                    "role": "protagonist",
+                    "contradictions": "brave but cautious",
+                    "secrets": "orphaned child",
+                    "values": "honor",
+                    "taboos": "betrayal",
+                    "continuity_facts": "scar on left cheek",
+                }
+            ],
+            "world_bible": [],
+            "story_arcs": [],
+            "sequences": [],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+        char = mapped["characters"][0]
+        assert char["contradictions"] == ["brave but cautious"]
+        assert char["secrets"] == ["orphaned child"]
+        assert char["values"] == ["honor"]
+        assert char["taboos"] == ["betrayal"]
+        assert char["continuity_facts"] == ["scar on left cheek"]
+
+    def test_mapper_fixes_narrative_constraints_string(self):
+        """LLM returns narrative_constraints as a string instead of list."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_bible": [],
+            "story_arcs": [],
+            "sequences": [],
+            "narrative_constraints": "First-person perspective",
+        }
+        mapped = _map_llm_fields(llm_data)
+        assert mapped["narrative_constraints"] == ["First-person perspective"]
+
+    def test_mapper_preserves_correct_fields(self):
+        """Mapper should not corrupt data that already uses correct field names."""
+        from app.services.story_import import _map_llm_fields
+
+        llm_data = {
+            "project_name": "Test",
+            "genre": "Fantasy",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A test",
+            "logline": "A test",
+            "thematic_spine": "A test",
+            "emotional_promise": "A test",
+            "target_audience": "Adults",
+            "complexity_level": "MEDIUM",
+            "characters": [
+                {
+                    "name": "Hero",
+                    "role": "protagonist",
+                    "contradictions": ["brave, cautious"],
+                    "secrets": [],
+                    "values": ["honor"],
+                    "taboos": [],
+                    "continuity_facts": ["scar"],
+                }
+            ],
+            "world_bible": [
+                {
+                    "entry_type": "location",
+                    "title": "The Kingdom",
+                    "summary": "A magical place",
+                    "canonical_facts": ["has a castle"],
+                    "related_character_ids": [],
+                }
+            ],
+            "story_arcs": [
+                {
+                    "name": "Hero's Journey",
+                    "summary": "Classic arc",
+                    "stage_map": ["start", "end"],
+                    "tags": ["character"],
+                }
+            ],
+            "sequences": [
+                {"title": "Act 1", "summary": "Beginning", "chapters": ["ch1"]},
+            ],
+            "narrative_constraints": [],
+        }
+        mapped = _map_llm_fields(llm_data)
+
+        # World bible should be unchanged
+        wb = mapped["world_bible"][0]
+        assert wb["entry_type"] == "location"
+        assert wb["title"] == "The Kingdom"
+        assert wb["summary"] == "A magical place"
+
+        # Arcs should be unchanged
+        arc = mapped["story_arcs"][0]
+        assert arc["name"] == "Hero's Journey"
+        assert arc["summary"] == "Classic arc"
+        assert arc["stage_map"] == ["start", "end"]
+        assert arc["tags"] == ["character"]
+
+        # Sequences should be unchanged
+        seq = mapped["sequences"][0]
+        assert seq["title"] == "Act 1"
+        assert seq["summary"] == "Beginning"
+        assert seq["chapters"] == ["ch1"]
+
+        # Characters should be unchanged
+        char = mapped["characters"][0]
+        assert char["contradictions"] == ["brave, cautious"]
+        assert char["secrets"] == []
+
+
+class TestMapperIntegration:
+    """Test that the mapper integrates correctly with the full import pipeline."""
+
+    def test_import_with_llm_wrong_field_names_succeeds(self, tmp_path: Path) -> None:
+        """Import with LLM output using wrong field names should succeed after mapping."""
+        # This is the exact output pattern we saw from the LLM
+        wrong_field_output = json.dumps({
+            "project_name": "Test Story",
+            "genre": "Adventure",
+            "tone": "dark",
+            "pov": "FIRST",
+            "story_structure": "THREE_ACT",
+            "premise": "A hero's journey",
+            "logline": "One hero against all odds",
+            "thematic_spine": "Courage over fear",
+            "emotional_promise": "Satisfying victory",
+            "target_audience": "Young adults",
+            "complexity_level": "MEDIUM",
+            "characters": [
+                {
+                    "name": "Aria",
+                    "role": "protagonist",
+                    "archetype": "hero",
+                    "external_goal": "Save the kingdom",
+                    "internal_need": "Find belonging",
+                    "core_fear": "Being forgotten",
+                    "primary_strength": "Courage",
+                    "fatal_flaw": "Recklessness",
+                    "backstory": "A peasant raised by knights",
+                    "voice_notes": "Direct, earnest",
+                    "change_axis": "From naive to wise leader",
+                    "contradictions": "brave but impulsive",
+                    "secrets": "royal bloodline",
+                    "values": "honor, loyalty",
+                    "taboos": "betrayal",
+                    "continuity_facts": "scar on left cheek",
+                }
+            ],
+            "world_bible": [
+                {
+                    "name": "The Kingdom",
+                    "description": "A magical kingdom in peril",
+                    "significance": "Central setting where the story takes place",
+                }
+            ],
+            "story_arcs": [
+                {"name": "Hero's Journey", "description": "Classic hero arc", "type": "character"},
+            ],
+            "sequences": [
+                {"name": "Act 1", "description": "The beginning"},
+            ],
+            "narrative_constraints": "No magic system defined",
+        })
+        inferencer = FakeImportInferenceBackend(content=wrong_field_output)
+        project_service = ProjectService(tmp_path)
+        db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+        repository = StoryDevelopmentRepository(db_path)
+        import_service = StoryImportService(
+            project_service=project_service,
+            repository=repository,
+            inferencer=inferencer,
+        )
+
+        request = StoryImportRequest(project_name="Test Story", story_text="A story...")
+        response = import_service.import_story(request)
+
+        assert response.status == "completed", f"Import failed: {response.message}"
+
+        # Verify world bible was correctly mapped
+        bible_entries = repository.list_world_bible_entries(response.project_id)
+        assert len(bible_entries) == 1
+        assert bible_entries[0].title == "The Kingdom"
+        assert bible_entries[0].entry_type == "location"  # inferred
+        assert "magical kingdom" in bible_entries[0].summary.lower()
+        assert "setting" in bible_entries[0].summary.lower()
+
+        # Verify arcs were correctly mapped
+        arcs = repository.list_arc_candidates(response.project_id)
+        assert len(arcs) == 1
+        assert arcs[0].name == "Hero's Journey"
+        assert arcs[0].summary == "Classic hero arc"
+
+        # Verify character was created with array fields
+        characters = repository.list_character_profiles(response.project_id)
+        assert len(characters) == 1

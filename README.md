@@ -90,7 +90,7 @@ Still being built:
 
 Current verified baseline:
 
-- `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures)
+- `python -m pytest -q -p no:cacheprovider` -> `840 passed, 9 skipped` (0 pre-existing failures)
 
 ### Frontend
 
@@ -122,7 +122,7 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures)
+- `python -m pytest -q -p no:cacheprovider` -> `840 passed, 9 skipped` (0 pre-existing failures)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed
@@ -138,6 +138,7 @@ Latest local full-suite verification:
 - [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md) - product spec
 - [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md) - frontend design spec
 - [docs/Feature Reference.md](docs/Feature%20Reference.md) - feature reference
+- [docs/Narrative Engine User Walkthrough.md](docs/Narrative%20Engine%20User%20Walkthrough.md) - complete step-by-step walkthrough of all features
 
 ## Planning Docs
 

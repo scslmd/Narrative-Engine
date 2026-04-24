@@ -190,8 +190,9 @@ class StoryImportService:
             raise
 
         parsed = self._parse_llm_json(response.content)
+        mapped = _map_llm_fields(parsed)
         try:
-            analysis = StoryImportAnalysis.model_validate(parsed)
+            analysis = StoryImportAnalysis.model_validate(mapped)
         except ValidationError as exc:
             raise StoryImportError(f"Invalid LLM response structure: {exc.errors()[0]['msg']}") from exc
 
@@ -201,42 +202,8 @@ class StoryImportService:
         return analysis
 
     def _parse_llm_json(self, content: str) -> dict[str, Any]:
-        """Extract JSON from LLM response.
-
-        Handles:
-        - Raw JSON object
-        - JSON inside ```json code fences
-        - JSON with trailing text/garbage
-        - JSON with leading text/garbage
-        """
-        stripped = content.strip()
-
-        # Try direct parse first
-        try:
-            return json.loads(stripped)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Strip markdown code fences
-        fenced = re.sub(r'^```(?:json)?\s*|\s*```$', '', stripped, flags=re.MULTILINE)
-        fenced = fenced.strip()
-        if fenced:
-            try:
-                return json.loads(fenced)
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-        # Find first { and last } in content
-        first_brace = stripped.find('{')
-        last_brace = stripped.rfind('}')
-        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-            candidate = stripped[first_brace : last_brace + 1]
-            try:
-                return json.loads(candidate)
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-        raise StoryImportError("Failed to parse LLM response as JSON")
+        """Extract JSON from LLM response (delegates to module-level _extract_json)."""
+        return _extract_json(content)
 
     def _transactional_import(
         self,
@@ -522,3 +489,298 @@ def _to_none(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped if stripped else None
+
+
+def _map_llm_fields(data: dict[str, Any]) -> dict[str, Any]:
+    """Post-process LLM JSON to translate common wrong field names to expected ones.
+
+    The LLM frequently uses natural-language synonyms instead of the exact schema keys.
+    This mapper corrects those before Pydantic validation.
+
+    Known LLM substitutions:
+    - world_bible: name->title, description->summary, significance->append to summary
+    - story_arcs: description->summary, type->tags (if single value), missing stage_map/tags
+    - sequences: name->title, description->summary, missing chapters
+    - character arrays: strings instead of lists for contradictions, secrets, values, taboos, continuity_facts
+    """
+    result = dict(data)
+
+    # Process world_bible entries
+    wb = result.get("world_bible", [])
+    if isinstance(wb, list):
+        mapped_wb = []
+        for entry in wb:
+            if not isinstance(entry, dict):
+                continue
+            mapped = {}
+
+            # title: use 'title' if present, otherwise 'name'
+            if "title" in entry:
+                mapped["title"] = entry["title"]
+            elif "name" in entry:
+                mapped["title"] = entry["name"]
+
+            # entry_type: try 'entry_type', fall back to deriving from title
+            if "entry_type" in entry:
+                raw_type = str(entry["entry_type"]).strip().lower()
+                # Normalize common LLM synonyms to valid enum values
+                type_map = {
+                    "setting": "location",
+                    "place": "location",
+                    "region": "location",
+                    "city": "location",
+                    "country": "location",
+                    "area": "location",
+                    "town": "location",
+                    "kingdom": "location",
+                    "culture": "culture",
+                    "society": "culture",
+                    "custom": "culture",
+                    "magic": "magic_system",
+                    "power": "magic_system",
+                    "spell": "magic_system",
+                    "technology": "technology",
+                    "device": "technology",
+                    "tool": "technology",
+                    "organization": "organization",
+                    "faction": "organization",
+                    "group": "organization",
+                    "institution": "organization",
+                    "history": "history",
+                    "event": "history",
+                    "war": "history",
+                    "creature": "creature",
+                    "species": "creature",
+                    "being": "creature",
+                    "animal": "creature",
+                    "concept": "concept",
+                    "idea": "concept",
+                    "rule": "concept",
+                    "law": "concept",
+                    "principle": "concept",
+                    "contract": "concept",
+                    "pact": "concept",
+                    "agreement": "concept",
+                    "code": "concept",
+                    "oath": "concept",
+                }
+                mapped["entry_type"] = type_map.get(raw_type, raw_type)
+            else:
+                # Try to infer from title context or default to 'other'
+                title = str(mapped.get("title", "")).lower()
+                if any(w in title for w in ["kingdom", "city", "land", "region", "mountain", "place", "location", "india", "afghanistan"]):
+                    mapped["entry_type"] = "location"
+                elif any(w in title for w in ["track", "contract", "agreement", "pact", "rule"]):
+                    mapped["entry_type"] = "concept"
+                elif any(w in title for w in ["railway", "train", "transport"]):
+                    mapped["entry_type"] = "technology"
+                elif any(w in title for w in ["empire", "state", "state"]):
+                    mapped["entry_type"] = "culture"
+                else:
+                    mapped["entry_type"] = "other"
+
+            # summary: use 'summary' if present, otherwise 'description',
+            # optionally append 'significance'
+            if "summary" in entry:
+                summary = str(entry["summary"])
+            elif "description" in entry:
+                summary = str(entry["description"])
+            else:
+                summary = ""
+
+            if "significance" in entry and entry["significance"]:
+                sig = str(entry["significance"]).strip()
+                if sig and not summary.endswith(sig):
+                    summary = f"{summary}. {sig}" if summary else sig
+
+            mapped["summary"] = summary
+            mapped["canonical_facts"] = entry.get("canonical_facts", [])
+            if not isinstance(mapped["canonical_facts"], list):
+                mapped["canonical_facts"] = []
+            mapped["related_character_ids"] = entry.get("related_character_ids", [])
+            if not isinstance(mapped["related_character_ids"], list):
+                mapped["related_character_ids"] = []
+            mapped_wb.append(mapped)
+        result["world_bible"] = mapped_wb
+
+    # Process story_arcs entries
+    arcs = result.get("story_arcs", [])
+    if isinstance(arcs, list):
+        mapped_arcs = []
+        for arc in arcs:
+            if not isinstance(arc, dict):
+                continue
+            mapped = {}
+
+            mapped["name"] = arc.get("name", "")
+            if not isinstance(mapped["name"], str):
+                mapped["name"] = str(mapped["name"])
+
+            # summary: use 'summary' if present, otherwise 'description'
+            if "summary" in arc:
+                mapped["summary"] = str(arc["summary"])
+            elif "description" in arc:
+                mapped["summary"] = str(arc["description"])
+            else:
+                mapped["summary"] = ""
+
+            # stage_map: default list if missing
+            if "stage_map" in arc and arc["stage_map"]:
+                mapped["stage_map"] = arc["stage_map"]
+                if not isinstance(mapped["stage_map"], list):
+                    mapped["stage_map"] = [str(mapped["stage_map"])]
+            else:
+                mapped["stage_map"] = []
+
+            # tags: use 'tags' if present, otherwise derive from 'type' field
+            if "tags" in arc:
+                mapped["tags"] = arc["tags"]
+                if not isinstance(mapped["tags"], list):
+                    mapped["tags"] = [str(mapped["tags"])] if mapped["tags"] else []
+            elif "type" in arc and arc["type"]:
+                mapped["tags"] = [str(arc["type"])]
+            else:
+                mapped["tags"] = []
+
+            mapped_arcs.append(mapped)
+        result["story_arcs"] = mapped_arcs
+
+    # Process sequences entries
+    seqs = result.get("sequences", [])
+    if isinstance(seqs, list):
+        mapped_seqs = []
+        for seq in seqs:
+            if not isinstance(seq, dict):
+                continue
+            mapped = {}
+
+            # title: use 'title' if present, otherwise 'name'
+            if "title" in seq:
+                mapped["title"] = str(seq["title"])
+            elif "name" in seq:
+                mapped["title"] = str(seq["name"])
+            else:
+                mapped["title"] = ""
+
+            # summary: use 'summary' if present, otherwise 'description'
+            if "summary" in seq:
+                mapped["summary"] = str(seq["summary"])
+            elif "description" in seq:
+                mapped["summary"] = str(seq["description"])
+            else:
+                mapped["summary"] = ""
+
+            # chapters: default empty list
+            mapped["chapters"] = seq.get("chapters", [])
+            if not isinstance(mapped["chapters"], list):
+                mapped["chapters"] = []
+
+            mapped_seqs.append(mapped)
+        result["sequences"] = mapped_seqs
+
+    # Process character list fields: ensure array fields are actually lists
+    chars = result.get("characters", [])
+    if isinstance(chars, list):
+        array_fields = ["contradictions", "secrets", "values", "taboos", "continuity_facts"]
+        mapped_chars = []
+        for char in chars:
+            if not isinstance(char, dict):
+                continue
+            mapped = dict(char)
+            for field in array_fields:
+                val = mapped.get(field)
+                if isinstance(val, str) and val.strip():
+                    # Convert single string to list
+                    mapped[field] = [val.strip()]
+                elif isinstance(val, list):
+                    # Ensure all items are strings
+                    mapped[field] = [str(v) for v in val if v]
+                else:
+                    mapped[field] = []
+            mapped_chars.append(mapped)
+        result["characters"] = mapped_chars
+
+    # Ensure narrative_constraints is a list
+    nc = result.get("narrative_constraints")
+    if isinstance(nc, str):
+        result["narrative_constraints"] = [nc.strip()] if nc.strip() else []
+    elif not isinstance(nc, list):
+        result["narrative_constraints"] = []
+
+    return result
+
+
+def _extract_json(content: str) -> dict[str, Any]:
+    """Extract JSON object from LLM response text.
+
+    Handles:
+    - Raw JSON object
+    - JSON inside ```json code fences
+    - JSON with trailing/leading text
+    - Truncated JSON (unbalanced braces from story text embedded in fields)
+    """
+    stripped = content.strip()
+
+    # Try direct parse first
+    try:
+        return json.loads(stripped)
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    # Strip markdown code fences
+    fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", stripped, flags=re.MULTILINE)
+    fenced = fenced.strip()
+    if fenced:
+        try:
+            return json.loads(fenced)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # Find first { in content
+    first_brace = stripped.find("{")
+    if first_brace == -1:
+        raise StoryImportError("Failed to parse LLM response as JSON")
+
+    # Strategy 1: Find balanced brace depth from first {
+    depth = 0
+    in_string = False
+    escape = False
+    json_end = -1
+    for i in range(first_brace, len(stripped)):
+        ch = stripped[i]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"' and not escape:
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                json_end = i
+                break
+
+    if json_end != -1:
+        candidate = stripped[first_brace : json_end + 1]
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    # Strategy 2: fallback to rfind approach
+    last_brace = stripped.rfind("}")
+    if last_brace > first_brace:
+        candidate = stripped[first_brace : last_brace + 1]
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    raise StoryImportError("Failed to parse LLM response as JSON")

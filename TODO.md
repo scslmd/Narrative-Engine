@@ -25,6 +25,19 @@
 - [x] Add broader integration coverage for orchestration and runtime behavior.
    - Completed: 14 new E2E tests across `tests/test_executor_e2e_runtime.py` and `tests/test_story_bible_lineage.py` covering: checker report persistence, deterministic critic, P-400 missing upstream artifacts, staged/backup file cleanup, project isolation, job status transitions, job retry attempts, P-400 empty output, full pipeline order guarantee, story-bible content hash stability, fallback file read, and supersession chain verification.
 
+### Story Import LLM Prompt Robustness -- All Complete
+- Rewrote `build_import_analysis_request()` system prompt with clean JSON template, POV identification guide, story structure guide, exact enum constraints, and 7-point validation checklist
+- Implemented `_map_llm_fields()` post-processing mapper in `story_import.py` for known LLM field name substitutions:
+  - `world_bible`: name->title, description->summary, significance->append to summary, missing entry_type inference from title keywords (40+ synonym mappings)
+  - `story_arcs`: description->summary, type->tags, missing stage_map defaults
+  - `sequences`: name->title, description->summary, missing chapters defaults
+  - `characters`: string-to-array coercion for contradictions, secrets, values, taboos, continuity_facts
+  - `narrative_constraints`: string-to-array coercion
+- Integrated mapper into `_analyze_story()` pipeline before Pydantic validation
+- Added 8 unit/integration tests (`TestLLMFieldMapper`, `TestMapperIntegration`) and 30 prompt content completeness tests
+- LLM validation against real test story ("The Man Who Would Be King"): produces valid schema-compliant output with 3 characters, 3 world bible entries, 2 arcs, 3 sequences
+- Updated test baseline: 802 -> 840 passed (+38 new tests)
+
 ### Frontend-Backend Integration Audit -- All Complete
 - Comprehensive audit of all 18 frontend service files, 67+ components, 7 views, 8 backend routers
 - Identified and removed 37 dead service functions (42% of exports) across 14 files
