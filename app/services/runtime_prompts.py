@@ -470,3 +470,36 @@ def build_critic_check_request(
         ],
         metadata={"mode": "consistency_critic", "role": "critic"},
     )
+
+
+def build_entity_intake_request(
+    *,
+    candidate_name: str,
+    draft_excerpt: str,
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for entity intake extraction."""
+    system_prompt = (
+        "You are an entity extraction AI for Narrative-Engine. "
+        "From the draft passage below, extract a character profile for the named character.\n\n"
+        "Return ONLY a JSON object with these keys:\n"
+        '{\n'
+        '  "name": "<string>",\n'
+        '  "archetype": "<string>",\n'
+        '  "goal": "<string>"\n'
+        '}\n\n'
+        "Infer archetype and goal from the character's dialogue, actions, and behavior in the passage."
+    )
+
+    user_content = f"Character: {candidate_name}\n\nPassage:\n{draft_excerpt}"
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.2,
+        max_tokens=512,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={"mode": "entity_intake", "role": "intake_extractor"},
+    )
