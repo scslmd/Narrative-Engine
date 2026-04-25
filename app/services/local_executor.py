@@ -16,6 +16,7 @@ from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..services.file_permissions import FilePermissionValidator
 from ..settings import settings
+from ..utils.input_validation import ValidationError, sanitize_filename
 from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
@@ -778,6 +779,12 @@ class LocalExecutor:
         project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
         chapter_id = str(payload.get("chapter_id") or "").strip() or None
+        if chapter_id:
+            try:
+                chapter_id = sanitize_filename(chapter_id)
+            except ValidationError:
+                logger.warning("Invalid chapter_id, falling back to default output path: %r", chapter_id)
+                chapter_id = None
         selected_inputs = self._resolve_runtime_artifact_inputs(
             job_id=job_id,
             attempt=attempt,

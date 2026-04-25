@@ -530,3 +530,45 @@ def test_local_executor_p300_backward_compat_no_chapter_id(tmp_path: Path) -> No
     lineage = job_manager.list_artifact_lineage(p300.id)
     assert steps[0]["output_artifact_refs"] == ["chapter_1"]
     assert lineage[0]["artifact_role"] == "chapter_1"
+
+
+def test_local_executor_p300_sanitizes_malicious_chapter_id(tmp_path: Path) -> None:
+    """P-300 should sanitize chapter_id to prevent path traversal."""
+    project_id = "sanitize-chapter-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nTest.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening", "depends_on": []}]}),
+            "P-300": "# Sanitized Chapter\nContent.\n",
+        },
+    )
+
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        # Try path traversal attack
+        p300 = _run_phase(
+            job_manager, phase="P-300", project_id=project_id, payload={"chapter_id": "../../evil"}
+        )
+        final_status = _wait_for_terminal_status(job_manager, p300.id)
+    finally:
+        executor.stop()
+
+    assert final_status == "COMPLETED"
+
+    # Verify the chapter was NOT written outside the chapters/ directory
+    evil_path = tmp_path / "data" / "projects" / project_id / ".." / "evil.md"
+    assert not evil_path.exists(), "Path traversal should have been sanitized"
+
+    # The sanitized chapter should fall back to default chapter.md (backward compat)
+    fallback_path = tmp_path / "data" / "projects" / project_id / "chapter.md"
+    assert fallback_path.exists(), f"Expected fallback chapter at {fallback_path}"
