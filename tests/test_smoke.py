@@ -1,9 +1,12 @@
 from pathlib import Path
 from time import sleep
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import build_app
+
+pytestmark = pytest.mark.integration
 
 
 def _poll_json(client: TestClient, path: str, *, terminal_statuses: set[str], attempts: int = 12, delay_seconds: float = 0.2) -> dict:

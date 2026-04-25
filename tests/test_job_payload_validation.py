@@ -135,6 +135,7 @@ class TestJobCreateRequestValidation:
         assert message_fragment in exc_info.value.errors()[0]['msg']
 
 
+@pytest.mark.integration
 class TestJobCreateEndpointValidation:
     """Test HTTP endpoint validation for /jobs/create."""
 

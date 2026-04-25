@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from starlette.testclient import TestClient
+import pytest
 
 from app.api.story_development import build_story_development_router
 from app.persistence.sqlite import connect, ensure_operations_db
@@ -11,6 +12,8 @@ from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import StorySuggestionLifecycleState
 from app.services.drafting import DraftingService
 from fastapi import FastAPI
+
+pytestmark = pytest.mark.integration
 
 
 _STAMP = datetime(2026, 3, 20, 12, 0, tzinfo=timezone.utc)

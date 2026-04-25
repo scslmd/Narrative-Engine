@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from app.api.jobs import build_jobs_router
 from app.api.role_model_checker import build_role_model_checker_router
@@ -16,6 +17,8 @@ from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
 from app.services.step_records import StepRecordService
 from app.persistence.steps import stable_hash_payload
+
+pytestmark = pytest.mark.integration
 
 
 def _build_test_app(*, job_manager: JobManager, checker_manager: RoleModelCheckManager, reports_root: Path) -> FastAPI:

@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 
 from app.main import build_app
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def client_with_auth():

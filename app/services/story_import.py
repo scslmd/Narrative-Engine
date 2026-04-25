@@ -30,6 +30,48 @@ from .runtime_prompts import build_import_analysis_request
 
 logger = logging.getLogger(__name__)
 
+# Normalization map for world_bible entry_type synonyms from LLM output.
+_ENTRY_TYPE_SYNONYMS: dict[str, str] = {
+    "setting": "location",
+    "place": "location",
+    "region": "location",
+    "city": "location",
+    "country": "location",
+    "area": "location",
+    "town": "location",
+    "kingdom": "location",
+    "culture": "culture",
+    "society": "culture",
+    "custom": "culture",
+    "magic": "magic_system",
+    "power": "magic_system",
+    "spell": "magic_system",
+    "technology": "technology",
+    "device": "technology",
+    "tool": "technology",
+    "organization": "organization",
+    "faction": "organization",
+    "group": "organization",
+    "institution": "organization",
+    "history": "history",
+    "event": "history",
+    "war": "history",
+    "creature": "creature",
+    "species": "creature",
+    "being": "creature",
+    "animal": "creature",
+    "concept": "concept",
+    "idea": "concept",
+    "rule": "concept",
+    "law": "concept",
+    "principle": "concept",
+    "contract": "concept",
+    "pact": "concept",
+    "agreement": "concept",
+    "code": "concept",
+    "oath": "concept",
+}
+
 
 class StoryImportError(ValueError):
     """Base error for story import failures."""
@@ -523,58 +565,17 @@ def _map_llm_fields(data: dict[str, Any]) -> dict[str, Any]:
             # entry_type: try 'entry_type', fall back to deriving from title
             if "entry_type" in entry:
                 raw_type = str(entry["entry_type"]).strip().lower()
-                # Normalize common LLM synonyms to valid enum values
-                type_map = {
-                    "setting": "location",
-                    "place": "location",
-                    "region": "location",
-                    "city": "location",
-                    "country": "location",
-                    "area": "location",
-                    "town": "location",
-                    "kingdom": "location",
-                    "culture": "culture",
-                    "society": "culture",
-                    "custom": "culture",
-                    "magic": "magic_system",
-                    "power": "magic_system",
-                    "spell": "magic_system",
-                    "technology": "technology",
-                    "device": "technology",
-                    "tool": "technology",
-                    "organization": "organization",
-                    "faction": "organization",
-                    "group": "organization",
-                    "institution": "organization",
-                    "history": "history",
-                    "event": "history",
-                    "war": "history",
-                    "creature": "creature",
-                    "species": "creature",
-                    "being": "creature",
-                    "animal": "creature",
-                    "concept": "concept",
-                    "idea": "concept",
-                    "rule": "concept",
-                    "law": "concept",
-                    "principle": "concept",
-                    "contract": "concept",
-                    "pact": "concept",
-                    "agreement": "concept",
-                    "code": "concept",
-                    "oath": "concept",
-                }
-                mapped["entry_type"] = type_map.get(raw_type, raw_type)
+                mapped["entry_type"] = _ENTRY_TYPE_SYNONYMS.get(raw_type, raw_type)
             else:
                 # Try to infer from title context or default to 'other'
                 title = str(mapped.get("title", "")).lower()
-                if any(w in title for w in ["kingdom", "city", "land", "region", "mountain", "place", "location", "india", "afghanistan"]):
+                if any(w in title for w in ["kingdom", "city", "land", "region", "mountain", "place", "location"]):
                     mapped["entry_type"] = "location"
                 elif any(w in title for w in ["track", "contract", "agreement", "pact", "rule"]):
                     mapped["entry_type"] = "concept"
                 elif any(w in title for w in ["railway", "train", "transport"]):
                     mapped["entry_type"] = "technology"
-                elif any(w in title for w in ["empire", "state", "state"]):
+                elif any(w in title for w in ["empire", "state"]):
                     mapped["entry_type"] = "culture"
                 else:
                     mapped["entry_type"] = "other"
@@ -594,11 +595,19 @@ def _map_llm_fields(data: dict[str, Any]) -> dict[str, Any]:
                     summary = f"{summary}. {sig}" if summary else sig
 
             mapped["summary"] = summary
-            mapped["canonical_facts"] = entry.get("canonical_facts", [])
-            if not isinstance(mapped["canonical_facts"], list):
+            cf = entry.get("canonical_facts", [])
+            if isinstance(cf, str) and cf.strip():
+                mapped["canonical_facts"] = [cf.strip()]
+            elif isinstance(cf, list):
+                mapped["canonical_facts"] = [str(v) for v in cf if v]
+            else:
                 mapped["canonical_facts"] = []
-            mapped["related_character_ids"] = entry.get("related_character_ids", [])
-            if not isinstance(mapped["related_character_ids"], list):
+            rc = entry.get("related_character_ids", [])
+            if isinstance(rc, str) and rc.strip():
+                mapped["related_character_ids"] = [rc.strip()]
+            elif isinstance(rc, list):
+                mapped["related_character_ids"] = [str(v) for v in rc if v]
+            else:
                 mapped["related_character_ids"] = []
             mapped_wb.append(mapped)
         result["world_bible"] = mapped_wb

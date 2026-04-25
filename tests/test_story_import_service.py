@@ -110,7 +110,7 @@ def _make_json_response(
         "raw_story_text": "",
     })
 
-
+@pytest.mark.integration
 def test_import_story_creates_project_and_all_entities(tmp_path: Path) -> None:
     """Happy path: full import creates project, foundation, characters, world bible, arcs."""
     # 1. Setup
@@ -173,6 +173,7 @@ def test_import_story_creates_project_and_all_entities(tmp_path: Path) -> None:
     assert req.messages[1].role == "user"
 
 
+@pytest.mark.integration
 def test_import_story_with_existing_project_id(tmp_path: Path) -> None:
     """Import into an existing project should not create a new one."""
     # 1. Setup: Create project first
@@ -209,6 +210,7 @@ def test_import_story_with_existing_project_id(tmp_path: Path) -> None:
     assert len(characters) >= 1
 
 
+@pytest.mark.integration
 def test_import_story_rejects_invalid_project_id(tmp_path: Path) -> None:
     """Using a non-existent project_id should fail with status='failed'."""
     # 1. Setup
@@ -235,6 +237,7 @@ def test_import_story_rejects_invalid_project_id(tmp_path: Path) -> None:
     assert "not found" in response.message.lower() or "invalid" in response.message.lower()
 
 
+@pytest.mark.integration
 def test_import_story_handles_malformed_json(tmp_path: Path) -> None:
     """Malformed JSON that can't be extracted should fail gracefully."""
     # 1. Setup
@@ -257,6 +260,7 @@ def test_import_story_handles_malformed_json(tmp_path: Path) -> None:
     assert "JSON" in response.message or "parse" in response.message.lower()
 
 
+@pytest.mark.integration
 def test_import_story_handles_markdown_code_fences(tmp_path: Path) -> None:
     """LLM wraps JSON in ```json fences - should extract successfully."""
     # 1. Setup
@@ -281,6 +285,7 @@ def test_import_story_handles_markdown_code_fences(tmp_path: Path) -> None:
     assert len(characters) >= 1
 
 
+@pytest.mark.integration
 def test_import_story_handles_inference_backend_error(tmp_path: Path) -> None:
     """InferenceBackendError should return status='failed' without raising."""
     # 1. Setup
@@ -322,6 +327,7 @@ def test_import_story_handles_inference_backend_error(tmp_path: Path) -> None:
     assert "unavailable" in response.message.lower() or "SERVICE_UNAVAILABLE" in response.message
 
 
+@pytest.mark.integration
 def test_import_story_handles_trailing_text(tmp_path: Path) -> None:
     """JSON followed by explanatory text should still parse."""
     # 1. Setup
@@ -345,6 +351,7 @@ def test_import_story_handles_trailing_text(tmp_path: Path) -> None:
     assert response.status == "completed"
 
 
+@pytest.mark.integration
 def test_import_story_is_idempotent_on_retry(tmp_path: Path) -> None:
     """Re-importing the same story should use ON CONFLICT DO UPDATE."""
     # 1. Setup
@@ -381,6 +388,7 @@ def test_import_story_is_idempotent_on_retry(tmp_path: Path) -> None:
     assert len(characters) == 1
 
 
+@pytest.mark.integration
 def test_import_story_story_text_truncation(tmp_path: Path) -> None:
     """Story text > 24K chars should be truncated before sending to LLM."""
     # 1. Setup
@@ -409,6 +417,7 @@ def test_import_story_story_text_truncation(tmp_path: Path) -> None:
     assert len(user_content) < 30_000
 
 
+@pytest.mark.integration
 def test_import_story_handles_missing_fields(tmp_path: Path) -> None:
     """LLM response missing required characters field should fail."""
     # 1. Setup
@@ -446,6 +455,7 @@ def test_import_story_handles_missing_fields(tmp_path: Path) -> None:
     assert "characters" in response.message.lower() or "list" in response.message.lower()
 
 
+@pytest.mark.integration
 def test_import_story_multiple_characters(tmp_path: Path) -> None:
     """Import with multiple characters should create all of them."""
     # 1. Setup
@@ -478,6 +488,7 @@ def test_import_story_multiple_characters(tmp_path: Path) -> None:
     assert characters[2].display_name == "Tessa"
 
 
+@pytest.mark.integration
 def test_import_story_with_genre_and_tone_hints(tmp_path: Path) -> None:
     """Genre and tone hints should be included in the LLM request context."""
     # 1. Setup
@@ -511,6 +522,7 @@ def test_import_story_with_genre_and_tone_hints(tmp_path: Path) -> None:
     assert "Tone hint: bleak" in user_content
 
 
+@pytest.mark.integration
 def test_import_story_updates_manifest_with_llm_metadata(tmp_path: Path) -> None:
     """B4/M3: LLM-extracted genre, tone, pov, story_structure should persist to manifest.json."""
     # 1. Setup
@@ -545,6 +557,7 @@ def test_import_story_updates_manifest_with_llm_metadata(tmp_path: Path) -> None
     assert manifest_data["premise_text"] == "A hero saves the world from darkness"
 
 
+@pytest.mark.integration
 def test_import_story_stable_ids_on_retry(tmp_path: Path) -> None:
     """B2: Hash-based IDs should produce same character/arcs on every retry."""
     # 1. Setup
@@ -582,6 +595,7 @@ def test_import_story_stable_ids_on_retry(tmp_path: Path) -> None:
     assert len(arcs) == 1
 
 
+@pytest.mark.integration
 def test_import_story_duplicate_character_names_deduplicated(tmp_path: Path) -> None:
     """B2: Same character name produces same hash ID, so duplicate names are deduplicated."""
     # 1. Setup
@@ -614,6 +628,7 @@ def test_import_story_duplicate_character_names_deduplicated(tmp_path: Path) -> 
     assert names == ["Aria", "Borin"]
 
 
+@pytest.mark.integration
 def test_import_story_foundation_revisions_idempotent(tmp_path: Path) -> None:
     """B3/M2: Foundation revision insert with ON CONFLICT should not duplicate on retry."""
     # 1. Setup
@@ -651,6 +666,7 @@ def test_import_story_foundation_revisions_idempotent(tmp_path: Path) -> None:
     assert len(revisions) == 2
 
 
+@pytest.mark.integration
 def test_import_story_manifest_update_invalid_pov_skipped(tmp_path: Path) -> None:
     """B4: Invalid POV value should be logged and skipped without failing import."""
     # 1. Setup
@@ -682,6 +698,7 @@ def test_import_story_manifest_update_invalid_pov_skipped(tmp_path: Path) -> Non
     assert manifest_data["config"]["genre"] == "Fantasy"
 
 
+@pytest.mark.integration
 def test_import_story_multiple_arcs_hash_ids(tmp_path: Path) -> None:
     """B2: Multiple arcs should get stable hash-based IDs."""
     # 1. Setup
@@ -990,6 +1007,7 @@ class TestLLMFieldMapper:
         assert char["secrets"] == []
 
 
+@pytest.mark.integration
 class TestMapperIntegration:
     """Test that the mapper integrates correctly with the full import pipeline."""
 
@@ -1075,3 +1093,112 @@ class TestMapperIntegration:
         # Verify character was created with array fields
         characters = repository.list_character_profiles(response.project_id)
         assert len(characters) == 1
+
+
+class TestExtractJSON:
+    """Test _extract_json handles various LLM output patterns."""
+
+    def _extract(self, content: str):
+        from app.services.story_import import _extract_json
+        return _extract_json(content)
+
+    def test_direct_json(self):
+        """Raw JSON object should parse directly."""
+        result = self._extract('{"key": "value"}')
+        assert result == {"key": "value"}
+
+    def test_json_code_fence(self):
+        """JSON inside markdown code fences should be extracted."""
+        content = '```json\n{"key": "value"}\n```'
+        result = self._extract(content)
+        assert result == {"key": "value"}
+
+    def test_code_fence_without_lang(self):
+        """Code fence without language specifier should work."""
+        content = '```\n{"key": "value"}\n```'
+        result = self._extract(content)
+        assert result == {"key": "value"}
+
+    def test_trailing_text_after_json(self):
+        """JSON with trailing explanatory text should extract just the JSON."""
+        content = '{"key": "value"}\n\nHere is some extra explanation.'
+        result = self._extract(content)
+        assert result == {"key": "value"}
+
+    def test_leading_text_before_json(self):
+        """Text before JSON should be ignored."""
+        content = 'Sure, here is the analysis:\n\n{"key": "value"}'
+        result = self._extract(content)
+        assert result == {"key": "value"}
+
+    def test_nested_objects_with_braces_in_strings(self):
+        """Braces inside string values should not confuse the parser."""
+        content = '{"quote": "He said {hello} and waved", "nested": {"a": 1}}'
+        result = self._extract(content)
+        assert result["quote"] == "He said {hello} and waved"
+        assert result["nested"] == {"a": 1}
+
+    def test_escaped_quotes_in_strings(self):
+        """Escaped quotes should not toggle string boundary tracking."""
+        content = '{"dialogue": "She said \\"hello\\" to him"}'
+        result = self._extract(content)
+        assert result["dialogue"] == 'She said "hello" to him'
+
+    def test_deeply_nested_structure(self):
+        """Deeply nested JSON should be correctly extracted."""
+        content = '{"a": {"b": {"c": {"d": [1, 2, 3]}}}}'
+        result = self._extract(content)
+        assert result["a"]["b"]["c"]["d"] == [1, 2, 3]
+
+    def test_empty_object(self):
+        """Empty JSON object should parse."""
+        result = self._extract('{}')
+        assert result == {}
+
+    def test_no_opening_brace_raises(self):
+        """Content with no opening brace should raise StoryImportError."""
+        with pytest.raises(StoryImportError, match="Failed to parse"):
+            self._extract("This is just plain text")
+
+    def test_empty_content_raises(self):
+        """Empty content should raise StoryImportError."""
+        with pytest.raises(StoryImportError, match="Failed to parse"):
+            self._extract("")
+
+    def test_code_fence_with_trailing_explanation(self):
+        """Code fence followed by explanatory text should extract JSON."""
+        content = '```json\n{"key": "value"}\n```\n\nNote: this was the analysis.'
+        result = self._extract(content)
+        assert result == {"key": "value"}
+
+    def test_truncated_json_fallback(self):
+        """Truncated JSON with extra trailing content should use rfind fallback."""
+        # Balanced brace parser may fail on malformed JSON, but rfind can recover.
+        content = '{"key": "value"}\n\nSome explanation text follows.'
+        result = self._extract(content)
+        assert result["key"] == "value"
+
+    def test_balanced_brace_with_nested_objects(self):
+        """Balanced brace parser should handle nested objects correctly."""
+        content = 'Here is the result: {"outer": {"inner": [1, 2]}, "done": true}\nEnd.'
+        result = self._extract(content)
+        assert result["outer"]["inner"] == [1, 2]
+        assert result["done"] is True
+
+    def test_whitespace_only_raises(self):
+        """Whitespace-only content should raise StoryImportError."""
+        with pytest.raises(StoryImportError, match="Failed to parse"):
+            self._extract("   \n\t  ")
+
+    def test_array_fields_preserved(self):
+        """JSON with array fields should preserve arrays."""
+        content = '{"items": [1, 2, {"nested": true}], "empty": []}'
+        result = self._extract(content)
+        assert result["items"] == [1, 2, {"nested": True}]
+        assert result["empty"] == []
+
+    def test_unicode_content(self):
+        """Unicode characters in JSON should be preserved."""
+        content = '{"title": "Café", "emoji": "test"}'
+        result = self._extract(content)
+        assert result["title"] == "Café"

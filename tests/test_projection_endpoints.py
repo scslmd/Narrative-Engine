@@ -16,6 +16,8 @@ from app.services.role_model_checker import RoleModelCheckerService
 from app.persistence.steps import stable_hash_payload
 from app.services.step_records import StepRecordService
 
+pytestmark = pytest.mark.integration
+
 
 def _utc(iso_value: str) -> datetime:
     return datetime.fromisoformat(iso_value).astimezone(timezone.utc)

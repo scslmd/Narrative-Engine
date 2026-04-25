@@ -6,10 +6,14 @@ from pathlib import Path
 from time import sleep
 from uuid import uuid4
 
+import pytest
+
 from app.inference.base import InferenceBackend
 from app.persistence.steps import stable_hash_payload
 from app.schemas.jobs import JobCreateRequest
 from app.schemas.manifest import Manifest
+
+pytestmark = pytest.mark.integration
 from app.schemas.role_model_checker import RoleModelCheckStartRequest
 from app.services.job_manager import JobManager
 from app.services.local_executor import LocalExecutor

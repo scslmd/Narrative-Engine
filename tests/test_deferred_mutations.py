@@ -8,11 +8,14 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from app.api.story_development import build_story_development_router
 from app.persistence.sqlite import connect, ensure_operations_db
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.settings import settings
+
+pytestmark = pytest.mark.integration
 
 _TEST_TIMESTAMP = datetime.now(timezone.utc).isoformat()
 

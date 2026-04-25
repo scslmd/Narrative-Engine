@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.inference.base import InferenceBackend
@@ -72,6 +73,7 @@ def test_model_registry_merges_local_and_runtime_models(tmp_path: Path) -> None:
     assert catalog.inference_provider.display_name == "Fake OpenAI Runtime"
 
 
+@pytest.mark.integration
 def test_models_endpoint_reports_inference_provider() -> None:
     client = TestClient(build_app())
     response = client.get("/models")

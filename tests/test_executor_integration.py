@@ -7,6 +7,8 @@ from threading import Thread
 from time import sleep
 from uuid import uuid4
 
+import pytest
+
 from app.inference.base import InferenceBackend, InferenceBackendError
 from app.persistence.steps import stable_hash_payload
 from app.schemas.inference import (
@@ -25,6 +27,8 @@ from app.services.projects import ProjectService
 from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
 from app.services.step_records import StepRecordService
+
+pytestmark = pytest.mark.integration
 
 
 # ---------------------------------------------------------------------------

@@ -3,12 +3,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from app.services.job_manager import JobManager
 from app.services.local_executor import LocalExecutor
 from app.services.project_bootstrap import initialize_project_artifacts
 from app.services.projects import ProjectService
 from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.step_records import StepRecordService
+
+pytestmark = pytest.mark.integration
 
 from .test_executor_integration import FakeInferenceBackend, _wait_for_terminal_status
 

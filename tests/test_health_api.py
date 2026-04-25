@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import pathlib
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import build_app
+
+pytestmark = pytest.mark.integration
 
 
 def test_health_endpoint_returns_ok() -> None:

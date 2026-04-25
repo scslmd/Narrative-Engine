@@ -7,11 +7,14 @@ from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
 from app.api import build_story_development_router
 from app.persistence.sqlite import connect, ensure_operations_db
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import StoryArtifactLifecycleState, StorySuggestionLifecycleState
+
+pytestmark = pytest.mark.integration
 
 
 def _build_client(tmp_path: Path, project_id: str) -> tuple[TestClient, str, Path]:

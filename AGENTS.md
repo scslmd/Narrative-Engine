@@ -70,6 +70,16 @@ cd frontend && npm run typecheck
 cd frontend && npm run build
 ```
 
+### Test Subsets (by marker)
+```bash
+python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~28s, 467 tests)
+python -m pytest -q -p no:cacheprovider -m integration          # integration only (~120s, 390 tests)
+python -m pytest -q -p no:cacheprovider                        # full suite (~150s, 857 tests)
+```
+
+- Use `-m "not integration"` for fast feedback during development.
+- Use the unmarked full suite for merge-readiness validation (unchanged).
+
 ### Quality Review Helper
 ```bash
 python scripts/qc.py                   # review branch diff vs codex/main

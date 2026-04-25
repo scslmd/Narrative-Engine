@@ -16,6 +16,7 @@ from app.services.authentication import fingerprint_api_key
 from tests.conftest import read_last_audit_record, count_audit_records
 
 
+@pytest.mark.integration
 class TestAuditLogging:
     """Test REL-10: Request audit logging."""
 

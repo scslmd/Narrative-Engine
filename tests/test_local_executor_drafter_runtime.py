@@ -23,6 +23,8 @@ from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
 from app.services.step_records import StepRecordService
 
+pytestmark = pytest.mark.integration
+
 
 class FakePipelineInferenceBackend(InferenceBackend):
     def __init__(

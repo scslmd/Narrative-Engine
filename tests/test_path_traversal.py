@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import build_app
 
-
+pytestmark = pytest.mark.integration
 API_KEY = "test-secret-key-123"
 
 

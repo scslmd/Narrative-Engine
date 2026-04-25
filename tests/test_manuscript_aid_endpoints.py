@@ -10,6 +10,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import build_app
+
+pytestmark = pytest.mark.integration
 from app.persistence.sqlite import connect, ensure_operations_db
 from app.settings import settings
 

@@ -10,6 +10,8 @@ from app.main import build_app
 from app.persistence import sqlite as sqlite_module
 from app.persistence.sqlite import connect
 from app.schemas.jobs import JobCreateRequest
+
+pytestmark = pytest.mark.integration
 from app.schemas.role_model_checker import RoleModelCheckStartRequest
 from app.services.job_manager import JobManager
 from app.services.local_executor import LocalExecutor

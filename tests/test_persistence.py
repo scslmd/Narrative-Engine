@@ -15,6 +15,8 @@ from app.persistence.sqlite import (
     ensure_project_db,
 )
 from app.persistence.steps import stable_hash_payload
+
+pytestmark = pytest.mark.integration
 from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
 from app.schemas.jobs import JobCreateRequest
 from app.schemas.manifest import Manifest

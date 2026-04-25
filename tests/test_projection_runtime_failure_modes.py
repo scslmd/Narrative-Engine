@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api import build_jobs_router, build_role_model_checker_router
+
+pytestmark = pytest.mark.integration
 from app.inference.base import InferenceBackend
 from app.persistence import sqlite as sqlite_module
 from app.persistence.sqlite import connect

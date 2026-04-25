@@ -6,10 +6,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import build_app
 from app.persistence.sqlite import connect, ensure_operations_db
+
+pytestmark = pytest.mark.integration
 from app.settings import settings
 
 _TEST_PROJECT_ID = "test-project-drafting"

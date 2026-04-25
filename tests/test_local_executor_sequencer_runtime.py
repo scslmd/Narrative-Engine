@@ -24,6 +24,8 @@ from app.services.role_model_checker import RoleModelCheckerService
 from app.services.runtime_prompts import build_p200_sequencer_request, sequence_output_path
 from app.services.step_records import StepRecordService
 
+pytestmark = pytest.mark.integration
+
 
 class FakeSequencerInferenceBackend(InferenceBackend):
     def __init__(self, *, content: str, model: str = "sequencer-fake-model") -> None:

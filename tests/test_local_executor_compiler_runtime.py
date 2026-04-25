@@ -6,9 +6,11 @@ from time import sleep
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
+
+pytestmark = pytest.mark.integration
 
 from app.api import build_jobs_router
 from app.inference.base import InferenceBackend, InferenceBackendError
