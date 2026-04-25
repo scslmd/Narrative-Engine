@@ -804,7 +804,21 @@ class LocalExecutor:
         # Context injection: assemble character anchors and world constraints
         if self._scene_context:
             try:
-                ctx = self._scene_context.assemble_context(project_id=project_id)
+                # Try to get active_character_ids from the chapter plan
+                active_chars: list[str] | None = None
+                if chapter_id:
+                    try:
+                        _repo = StoryDevelopmentRepository(settings.operations_db_path)
+                        chapter_plan = _repo.get_chapter_plan(chapter_id)
+                        active_chars = chapter_plan.active_character_ids if chapter_plan else None
+                    except KeyError:
+                        pass  # No chapter plan found, use all characters
+
+                ctx = self._scene_context.assemble_context(
+                    project_id=project_id,
+                    active_character_ids=active_chars,
+                    prior_chapters=None,  # Will be populated by orchestrator in Task 6
+                )
                 context_prompt = ctx.to_prompt_string()
                 if context_prompt:
                     existing_content = inference_request.messages[1].content
