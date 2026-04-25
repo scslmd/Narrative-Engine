@@ -90,3 +90,30 @@ def test_assemble_context_fallback_to_all_characters():
     ctx = service.assemble_context(project_id="proj-1")
     # Should fallback to all characters (empty in this case)
     assert isinstance(ctx.characters, list)
+
+
+def test_to_prompt_string_formats_anchors():
+    ctx = SceneContext(
+        characters=[CharacterAnchor(
+            character_id="c1", display_name="Khal",
+            archetype="reluctant hero", voice_notes="Direct, terse",
+            external_goal="Survive", internal_need="Trust", core_fear="Abandonment",
+        )],
+        world_facts=[],
+    )
+    prompt = ctx.to_prompt_string()
+    assert "Khal" in prompt
+    assert "reluctant hero" in prompt
+
+
+def test_to_prompt_string_includes_world_facts():
+    ctx = SceneContext(
+        characters=[],
+        world_facts=[WorldConstraint(
+            entry_type="location", title="The Bazaar",
+            facts=["crowded", "noisy", "smells of spices"],
+        )],
+    )
+    prompt = ctx.to_prompt_string()
+    assert "The Bazaar" in prompt
+    assert "crowded" in prompt

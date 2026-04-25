@@ -30,6 +30,32 @@ class SceneContext:
     characters: list[CharacterAnchor]
     world_facts: list[WorldConstraint]
 
+    def to_prompt_string(self) -> str:
+        lines = []
+        if self.characters:
+            lines.append("CHARACTER CONTEXT:")
+            for c in self.characters:
+                parts = [f"- {c.display_name} [{c.archetype}]"]
+                if c.external_goal:
+                    parts[-1] += f" — goal: {c.external_goal}"
+                if c.internal_need:
+                    parts.append(f"  internal need: {c.internal_need}")
+                if c.core_fear:
+                    parts.append(f"  core fear: {c.core_fear}")
+                if c.voice_notes:
+                    parts.append(f"  voice: {c.voice_notes}")
+                lines.extend(parts)
+
+        if self.world_facts:
+            lines.append("")
+            lines.append("WORLD CONSTRAINTS:")
+            for w in self.world_facts:
+                lines.append(f"- {w.title} ({w.entry_type}):")
+                for fact in w.facts[:5]:
+                    lines.append(f"  * {fact}")
+
+        return "\n".join(lines) if lines else ""
+
 
 class SceneContextService:
     MAX_FALLBACK_CHARACTERS = 5
