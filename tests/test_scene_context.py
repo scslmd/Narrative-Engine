@@ -117,3 +117,61 @@ def test_to_prompt_string_includes_world_facts():
     prompt = ctx.to_prompt_string()
     assert "The Bazaar" in prompt
     assert "crowded" in prompt
+
+
+class MultiCharRepository:
+    """Repository that returns different characters for different IDs."""
+
+    def list_character_profiles(self, project_id: str):
+        return []  # Empty to force no fallback
+
+    def get_character_profile(self, character_id: str):
+        names = {"char-001": "Kael", "char-002": "Soraya", "char-003": "Joss"}
+        if character_id not in names:
+            raise KeyError(character_id)
+        return CharacterProfile(
+            character_id=character_id,
+            project_id="proj-1",
+            display_name=names[character_id],
+            role_in_story="supporting",
+            archetype="hero",
+            external_goal="Survive",
+            internal_need="Trust",
+            misbelief_or_wound="Distrust",
+            core_fear="Loss",
+            primary_strength="Resilience",
+            fatal_flaw_or_limitation="Stubbornness",
+            backstory_summary="Unknown origin",
+            voice_notes="Normal",
+            change_axis="Learns to trust",
+        )
+
+    def list_world_bible_entries(self, project_id: str):
+        return []
+
+
+def test_assemble_context_respects_active_character_ids():
+    """SceneContextService should filter characters by active_character_ids from ChapterPlan."""
+    repo = MultiCharRepository()
+    service = SceneContextService(repository=repo)
+    ctx = service.assemble_context(
+        project_id="proj-1",
+        active_character_ids=["char-001", "char-002"],  # Only Kael and Soraya
+    )
+    assert len(ctx.characters) == 2
+    names = {c.display_name for c in ctx.characters}
+    assert "Kael" in names
+    assert "Soraya" in names
+    assert "Joss" not in names  # Not in active list
+
+
+def test_assemble_context_skips_missing_character_ids():
+    """Missing character IDs should be skipped gracefully."""
+    repo = MultiCharRepository()
+    service = SceneContextService(repository=repo)
+    ctx = service.assemble_context(
+        project_id="proj-1",
+        active_character_ids=["char-001", "char-nonexistent"],
+    )
+    assert len(ctx.characters) == 1
+    assert ctx.characters[0].display_name == "Kael"
