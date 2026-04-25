@@ -431,3 +431,42 @@ def _coerce_int(value: Any, *, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def build_critic_check_request(
+    *,
+    draft_text: str,
+    character_bios: dict[str, str],
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for consistency critic check."""
+    bio_lines = []
+    for name, bio in character_bios.items():
+        bio_lines.append(f"  {name}: {bio}")
+    bios_block = "\n".join(bio_lines) if bio_lines else "  (no character profiles)"
+
+    system_prompt = (
+        "You are a consistency critic for Narrative-Engine. "
+        "Check whether each character's dialogue and actions match their profile.\n\n"
+        "Return ONLY a JSON object with these keys:\n"
+        '{\n'
+        '  "passed": true or false,\n'
+        '  "violations": [\n'
+        '    {"character": "<name>", "issue": "<what is wrong>", "suggestion": "<how to fix>"}\n'
+        '  ]\n\n'
+        "If the character behaves consistently with their profile, set passed=true and violations=[].\n"
+        "Check: voice (word choice, sentence style), behavior (goals, fears, traits), knowledge (what they should know)."
+    )
+
+    user_content = f"CHARACTER PROFILES:\n{bios_block}\n\nDRAFT TO CHECK:\n{draft_text}"
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=2048,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={"mode": "consistency_critic", "role": "critic"},
+    )
