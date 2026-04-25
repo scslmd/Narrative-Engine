@@ -105,7 +105,7 @@ def build_p300_drafter_request(
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=0.2),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=8000),
         messages=[
             InferenceMessage(
                 role="system",
