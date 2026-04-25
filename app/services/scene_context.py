@@ -87,7 +87,7 @@ class SceneContextService:
             all_chars = self._repository.list_character_profiles(project_id)
             target_ids = [c.character_id for c in all_chars[:self.MAX_FALLBACK_CHARACTERS]]
             if not target_ids:
-                return SceneContext(characters=[], world_facts=[])
+                return SceneContext(characters=[], world_facts=[], prior_chapters=prior_chapters)
 
         anchors = []
         for cid in target_ids:

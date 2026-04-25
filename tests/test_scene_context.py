@@ -177,3 +177,23 @@ def test_to_prompt_string_caps_prior_chapters_at_3():
     assert "Chapter 5" in prompt
     assert "Chapter 1" not in prompt
     assert "Chapter 2" not in prompt
+
+
+def test_assemble_context_preserves_prior_chapters_with_no_characters():
+    """prior_chapters should be preserved even when no characters exist (early return path)."""
+    repo = FakeRepository()
+    service = SceneContextService(repository=repo)
+    prior = [PriorChapterSummary(
+        chapter_id="ch-001",
+        title="The Departure",
+        key_events=["Kael leaves"],
+        character_states={},
+        unresolved_threads=["Where next?"],
+    )]
+    ctx = service.assemble_context(
+        project_id="proj-1",
+        active_character_ids=[],
+        prior_chapters=prior,
+    )
+    assert len(ctx.prior_chapters) == 1
+    assert ctx.prior_chapters[0].title == "The Departure"
