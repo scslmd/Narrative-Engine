@@ -808,7 +808,7 @@ class LocalExecutor:
                 active_chars: list[str] | None = None
                 if chapter_id:
                     try:
-                        _repo = StoryDevelopmentRepository(settings.operations_db_path)
+                        _repo = self._scene_context._repository
                         chapter_plan = _repo.get_chapter_plan(chapter_id)
                         active_chars = chapter_plan.active_character_ids if chapter_plan else None
                     except KeyError:
