@@ -1,0 +1,128 @@
+{
+  "project_name": "The Man Who Would Be King",
+  "genre": "Adventure",
+  "tone": "Reflective, Atmospheric, Ambitious",
+  "pov": "FIRST",
+  "story_structure": "THREE_ACT",
+  "premise": "Two seasoned vagabonds and former soldiers, weary of the constraints of British India, devise an audacious plan to travel to the uncharted region of Kafiristan and establish themselves as kings. A weary newspaperman, initially just a messenger, becomes their reluctant guide and chronicler as they prepare for their impossible quest.",
+  "logline": "After a chance encounter on a train, two ambitious vagabonds recruit a cynical newspaperman to help them map and conquer the uncharted mountains of Kafiristan, setting in motion a tale of imperial ambition and brotherhood.",
+  "thematic_spine": "The pursuit of grand ambition and self-invention inevitably collides with the harsh realities of human nature and the unforgiving world.",
+  "emotional_promise": "A thrilling, atmospheric adventure exploring the heights of human ambition, the bonds of brotherhood, and the seductive danger of dreaming beyond one's station.",
+  "target_audience": "Fans of classic adventure literature, historical fiction, and colonial-era tales",
+  "complexity_level": "MEDIUM",
+  "characters": [
+    {
+      "name": "The Narrator",
+      "role": "protagonist",
+      "archetype": "everyman",
+      "external_goal": "Deliver a message for a stranger and fulfill his duties at the newspaper office.",
+      "internal_need": "To find purpose and escape the monotony of colonial bureaucracy.",
+      "core_fear": "Irrelevance and being trapped in a mundane existence.",
+      "primary_strength": "Observant, dutiful, and adaptable to harsh conditions.",
+      "fatal_flaw": "Passive and easily swept along by others' schemes.",
+      "backstory": "Travels extensively through Central India and the desert, eventually taking a job at a newspaper office.",
+      "voice_notes": "Reflective, slightly cynical, descriptive, and measured.",
+      "change_axis": "Transitions from a weary, passive observer to an active participant and reluctant enabler of grand ambition.",
+      "contradictions": "Cynical about empire yet fascinated by adventure; claims to want rest but engages in dangerous travel.",
+      "secrets": "",
+      "values": "Duty, honesty, and personal integrity.",
+      "taboos": "",
+      "continuity_facts": "Travels Intermediate class, works at a newspaper, met the men on the Mhow train, delivers the message at Marwar Junction."
+    },
+    {
+      "name": "Daniel Dravot",
+      "role": "deuteragonist",
+      "archetype": "ruler",
+      "external_goal": "Conquer Kafiristan and establish himself as a king.",
+      "internal_need": "Recognition, power, and escape from obscurity.",
+      "core_fear": "Being ordinary or ignored.",
+      "primary_strength": "Charismatic, strategic, and experienced in military drilling.",
+      "fatal_flaw": "Hubris and overconfidence in his own abilities.",
+      "backstory": "Served with Roberts's Army, traveled extensively across India as a vagabond and correspondent.",
+      "voice_notes": "Confident, commanding, uses 'Dan', speaks with authority and conviction.",
+      "change_axis": "Evolves from a wandering vagabond to a determined, self-proclaimed monarch-in-waiting.",
+      "contradictions": "Claims strict discipline (Contrack) but pursues an insane, high-risk dream.",
+      "secrets": "Full strategic plan for subverting local kings and establishing a dynasty.",
+      "values": "Brotherhood, ambition, discipline, and loyalty to the Contrack.",
+      "taboos": "Drink and women (strictly forbidden by the Contrack).",
+      "continuity_facts": "Has a great red beard, described as a 'great swell', served in the army, travels with Carnehan."
+    },
+    {
+      "name": "Peachey Carnehan",
+      "role": "deuteragonist",
+      "archetype": "rebel",
+      "external_goal": "Accompany Dravot to Kafiristan and share in the glory of kingship.",
+      "internal_need": "Purpose, brotherhood, and escape from poverty.",
+      "core_fear": "Poverty and obscurity.",
+      "primary_strength": "Loyal, practical, and physically capable.",
+      "fatal_flaw": "Gullibility and lack of strategic foresight compared to Dravot.",
+      "backstory": "Served in the army, traveled India with Dravot, worked various odd jobs.",
+      "voice_notes": "Pragmatic, slightly less eloquent, uses 'Peachey', speaks plainly.",
+      "change_axis": "Follows Dravot's lead, transitioning from a fellow vagabond to a committed conspirator.",
+      "contradictions": "Claims sobriety and discipline but lives a rough, itinerant life.",
+      "secrets": "",
+      "values": "Loyalty to Dravot, adherence to the Contrack, and brotherhood.",
+      "taboos": "Drink and women (per the Contrack).",
+      "continuity_facts": "Has distinctive eyebrows and a moustache, travels with Dravot, referred to as 'Brother Peachey Carnehan'."
+    }
+  ],
+  "world_bible": [
+    {
+      "name": "British India & Native States",
+      "description": "A colonial landscape divided between British administrative zones and semi-autonomous Native States ruled by local princes.",
+      "significance": "Provides the backdrop of bureaucratic constraint and political intrigue that drives the protagonists to seek freedom elsewhere."
+    },
+    {
+      "name": "Railway System",
+      "description": "A hierarchical transportation network with distinct classes (First, Second, Intermediate) reflecting social and economic status.",
+      "significance": "Facilitates the chance meeting of characters and symbolizes the rigid social order the protagonists wish to escape."
+    },
+    {
+      "name": "Kafiristan",
+      "description": "An uncharted, mountainous region in the far northeast of Afghanistan, inhabited by heathen tribes and considered impassable by Englishmen.",
+      "significance": "The ultimate goal and testing ground for the protagonists' ambition, representing the unknown and the frontier of empire."
+    },
+    {
+      "name": "The Contrack",
+      "description": "A strict personal agreement between Dravot and Carnehan forbidding alcohol and women, designed to maintain discipline and focus.",
+      "significance": "Establishes the brothers' code of conduct and foreshadows the challenges of maintaining order in an untamed land."
+    }
+  ],
+  "story_arcs": [
+    {
+      "name": "Ambition vs. Reality",
+      "description": "The protagonists' grandiose dream of kingship clashes with the harsh, uncharted realities of Kafiristan and human limitations.",
+      "type": "thematic"
+    },
+    {
+      "name": "Brotherhood & Loyalty",
+      "description": "The bond between Dravot and Carnehan is tested by their shared ambition and the strict rules of their Contrack.",
+      "type": "character"
+    },
+    {
+      "name": "Observer to Participant",
+      "description": "The narrator shifts from a passive traveler and newspaperman to an active enabler of the quest, providing maps and knowledge.",
+      "type": "character"
+    }
+  ],
+  "sequences": [
+    {
+      "name": "The Train Encounter",
+      "description": "The narrator meets Dravot and Carnehan on an Intermediate class train; they request a message delivery."
+    },
+    {
+      "name": "The Journey & Message",
+      "description": "The narrator travels through Central India and the desert, delivering the coded message at Marwar Junction."
+    },
+    {
+      "name": "The Newspaper Office",
+      "description": "The narrator settles into a stifling newspaper job, reflecting on colonial life and the pressures of the press."
+    },
+    {
+      "name": "The Return & The Plan",
+      "description": "Dravot and Carnehan return to the office, reveal their plan to conquer Kafiristan, and request maps and books, setting the stage for the adventure."
+    }
+  ],
+  "narrative_constraints": "First-person limited perspective restricts knowledge to the narrator's experiences and observations. The story is set in a specific historical colonial context, requiring accurate period-appropriate details and attitudes. The narrative ends on a preparatory note, focusing on setup and character motivation rather than the adventure itself.",
+  "success_definition": "The story successfully establishes the characters' motivations, the historical setting, and the central quest, leaving the reader eager to see if their audacious plan will succeed or fail."
+}

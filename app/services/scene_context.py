@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
+
+if TYPE_CHECKING:
+    from ..persistence.story_development import StoryDevelopmentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,7 @@ class SceneContext:
 class SceneContextService:
     MAX_FALLBACK_CHARACTERS = 5
 
-    def __init__(self, repository) -> None:
+    def __init__(self, repository: StoryDevelopmentRepository) -> None:
         self._repository = repository
 
     def assemble_context(

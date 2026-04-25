@@ -10,9 +10,12 @@ from typing import Any
 from uuid import UUID
 
 from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
+from ..persistence.story_development import StoryDevelopmentRepository
 from ..persistence.steps import stable_hash_payload, stable_hash_text
+from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..services.file_permissions import FilePermissionValidator
+from ..settings import settings
 from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
@@ -797,17 +800,12 @@ class LocalExecutor:
                 if context_prompt:
                     existing_content = inference_request.messages[1].content
                     new_messages = list(inference_request.messages)
-                    from app.schemas.inference import InferenceMessage
                     new_messages[1] = InferenceMessage(
                         role=new_messages[1].role,
                         content=f"{existing_content}\n\n{context_prompt}",
                     )
-                    inference_request = type(inference_request)(
-                        messages=new_messages,
-                        model=inference_request.model,
-                        temperature=inference_request.temperature,
-                        max_tokens=inference_request.max_tokens,
-                        metadata=dict(inference_request.metadata),
+                    inference_request = inference_request.model_copy(
+                        update={"messages": new_messages},
                     )
             except Exception as exc:
                 logger.warning("Context assembly failed, proceeding without: %s", exc)
@@ -875,16 +873,16 @@ class LocalExecutor:
         if output_text:
             output_text += "\n"
 
+        # Shared repository for critic check and entity intake
+        _repo = StoryDevelopmentRepository(settings.operations_db_path) if project_id else None
+        _chars = _repo.list_character_profiles(project_id) if _repo else []
+
         # Consistency critic check
         rewrite_needed = False
         critic_result = None
         if self._consistency_critic and project_id:
             try:
-                from ..persistence.story_development import StoryDevelopmentRepository
-                from ..settings import settings as _settings
-                repo = StoryDevelopmentRepository(_settings.operations_db_path)
-                chars = repo.list_character_profiles(project_id)
-                bios = {c.display_name: f"archetype: {c.archetype}; voice: {c.voice_notes}" for c in chars if c.display_name}
+                bios = {c.display_name: f"archetype: {c.archetype}; voice: {c.voice_notes}" for c in _chars if c.display_name}
                 critic_result = self._consistency_critic.check(output_text, bios)
 
                 if not critic_result.passed and critic_result.violations:
@@ -898,14 +896,13 @@ class LocalExecutor:
             try:
                 violation_summary = "\n".join(f"- {v.character}: {v.issue} -> {v.suggestion}" for v in critic_result.violations[:3])
                 rewrite_prompt = f"The following issues were found in the draft:\n{violation_summary}\n\nPlease rewrite the problematic passages while preserving the overall story flow."
-                from ..schemas.inference import InferenceMessage as _IM, InferenceRequest as _IR
-                rewrite_request = _IR(
+                rewrite_request = InferenceRequest(
                     model=inference_request.model,
                     temperature=0.1,
                     max_tokens=inference_request.max_tokens,
                     messages=[
-                        _IM(role="system", content="You are a narrative editor. Rewrite only the flagged passages to fix consistency issues while preserving story flow."),
-                        _IM(role="user", content=f"Original draft:\n{output_text}\n\n{rewrite_prompt}"),
+                        InferenceMessage(role="system", content="You are a narrative editor. Rewrite only the flagged passages to fix consistency issues while preserving story flow."),
+                        InferenceMessage(role="user", content=f"Original draft:\n{output_text}\n\n{rewrite_prompt}"),
                     ],
                 )
                 rewrite_response = self._inferencer.generate_text(rewrite_request)
@@ -916,17 +913,26 @@ class LocalExecutor:
             except Exception as exc:
                 logger.warning("Rewrite failed, keeping original draft: %s", exc)
 
-        # Entity intake: detect new characters in the draft
+        # Entity intake: detect and persist new characters in the draft
         if self._entity_intake and project_id:
             try:
-                from ..persistence.story_development import StoryDevelopmentRepository
-                from ..settings import settings as _settings
-                repo = StoryDevelopmentRepository(_settings.operations_db_path)
-                chars = repo.list_character_profiles(project_id)
-                known = {c.display_name: c.character_id for c in chars if c.display_name}
+                known = {c.display_name: c.character_id for c in _chars if c.display_name}
                 new_entities = self._entity_intake.intake_new_entities(output_text, known)
+                for entity in new_entities:
+                    entity_id = f"auto-{entity.name.lower().replace(' ', '-')}"
+                    _repo.upsert_character_profile(
+                        project_id=project_id,
+                        character_id=entity_id,
+                        display_name=entity.name,
+                        role_in_story="supporting",
+                        archetype=entity.inferred_archetype or "unknown",
+                        external_goal=entity.inferred_goal or "",
+                        internal_need="",
+                        core_fear="",
+                        writer_notes=f"Auto-detected from draft: {entity.raw_evidence[:200]}",
+                    )
                 if new_entities:
-                    logger.info("Detected %d new entities in draft", len(new_entities))
+                    logger.info("Detected and persisted %d new entities in draft", len(new_entities))
             except Exception as exc:
                 logger.warning("Entity intake failed: %s", exc)
 

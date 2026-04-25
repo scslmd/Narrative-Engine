@@ -23,11 +23,17 @@ class NewEntity:
 def extract_proper_noun_candidates(text: str) -> list[str]:
     """Extract potential character names from text (capitalized words that look like names)."""
     # Match capitalized words at start of sentences or after quotes
+    STOP_WORDS = {
+        "the", "this", "that", "with", "from", "after", "before", "chapter",
+        "then", "when", "where", "what", "which", "while", "who", "how",
+        "upon", "within", "without", "against", "among", "between",
+        "during", "since", "until", "toward", "through", "along",
+        "also", "only", "even", "just", "very", "much", "more", "most",
+    }
     candidates: set[str] = set()
     for match in re.finditer(r'(?:^|(?<=[\s,"\'\-\n]))([A-Z][a-z]{2,})(?=\s)', text):
         word = match.group(1)
-        # Filter out common non-name capitalized words
-        if word.lower() not in {"the", "this", "that", "with", "from", "after", "before"}:
+        if word.lower() not in STOP_WORDS:
             candidates.add(word)
     return sorted(candidates)
 
