@@ -236,6 +236,9 @@ def build_app() -> FastAPI:
     from .services.config_validator import validate_config_at_startup
     from .services.job_manager import JobManager
     from .services.local_executor import LocalExecutor
+    from .services.scene_context import SceneContextService
+    from .services.consistency_critic import ConsistencyCriticService
+    from .services.entity_intake import EntityIntakeService
     from .services.model_registry import ModelRegistry
     from .services.projects import ProjectService
     from .services.role_model_check_manager import RoleModelCheckManager
@@ -277,6 +280,9 @@ def build_app() -> FastAPI:
         role_check_service=role_check_service,
         inferencer=inferencer,
         project_service=project_service,
+        scene_context_service=SceneContextService(repository=story_development_repository),
+        consistency_critic_service=ConsistencyCriticService(inferencer=inferencer),
+        entity_intake_service=EntityIntakeService(inferencer=inferencer),
     )
 
     @asynccontextmanager

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,9 +10,12 @@ from typing import Any
 from uuid import UUID
 
 from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
+from ..persistence.story_development import StoryDevelopmentRepository
 from ..persistence.steps import stable_hash_payload, stable_hash_text
+from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..services.file_permissions import FilePermissionValidator
+from ..settings import settings
 from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
@@ -27,6 +31,11 @@ from .runtime_prompts import (
     story_bible_output_path,
 )
 from .step_records import StepRecordService
+from .scene_context import SceneContextService
+from .consistency_critic import ConsistencyCriticService
+from .entity_intake import EntityIntakeService
+
+logger = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
@@ -92,6 +101,9 @@ class LocalExecutor:
         inferencer: InferenceBackend | None = None,
         project_service: ProjectService | None = None,
         step_record_service: StepRecordService | None = None,
+        scene_context_service: SceneContextService | None = None,
+        consistency_critic_service: ConsistencyCriticService | None = None,
+        entity_intake_service: EntityIntakeService | None = None,
         poll_interval_seconds: float = 0.25,
     ) -> None:
         self._job_manager = job_manager
@@ -100,6 +112,9 @@ class LocalExecutor:
         self._inferencer = inferencer or StubInferenceBackend()
         self._project_service = project_service or ProjectService()
         self._step_records = step_record_service or StepRecordService()
+        self._scene_context = scene_context_service
+        self._consistency_critic = consistency_critic_service
+        self._entity_intake = entity_intake_service
         self._poll_interval_seconds = poll_interval_seconds
         self._stop_event = Event()
         self._threads: list[Thread] = []
@@ -777,6 +792,23 @@ class LocalExecutor:
             architect_output=architect_output,
             default_model=self._inferencer.descriptor.default_model,
         )
+        # Context injection: assemble character anchors and world constraints
+        if self._scene_context:
+            try:
+                ctx = self._scene_context.assemble_context(project_id=project_id)
+                context_prompt = ctx.to_prompt_string()
+                if context_prompt:
+                    existing_content = inference_request.messages[1].content
+                    new_messages = list(inference_request.messages)
+                    new_messages[1] = InferenceMessage(
+                        role=new_messages[1].role,
+                        content=f"{existing_content}\n\n{context_prompt}",
+                    )
+                    inference_request = inference_request.model_copy(
+                        update={"messages": new_messages},
+                    )
+            except Exception as exc:
+                logger.warning("Context assembly failed, proceeding without: %s", exc)
         self._job_manager.update_job(
             job_id,
             current_phase=current_phase,
@@ -840,6 +872,70 @@ class LocalExecutor:
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
+
+        # Shared repository for critic check and entity intake
+        _repo = StoryDevelopmentRepository(settings.operations_db_path) if project_id else None
+        _chars = _repo.list_character_profiles(project_id) if _repo else []
+
+        # Consistency critic check
+        rewrite_needed = False
+        critic_result = None
+        if self._consistency_critic and project_id:
+            try:
+                bios = {c.display_name: f"archetype: {c.archetype}; voice: {c.voice_notes}" for c in _chars if c.display_name}
+                critic_result = self._consistency_critic.check(output_text, bios)
+
+                if not critic_result.passed and critic_result.violations:
+                    rewrite_needed = True
+                    logger.info("Critic flagged %d violations, triggering rewrite", len(critic_result.violations))
+            except Exception as exc:
+                logger.warning("Critic check failed, proceeding with draft: %s", exc)
+
+        if rewrite_needed and critic_result:
+            # Build rewrite prompt and execute single retry
+            try:
+                violation_summary = "\n".join(f"- {v.character}: {v.issue} -> {v.suggestion}" for v in critic_result.violations[:3])
+                rewrite_prompt = f"The following issues were found in the draft:\n{violation_summary}\n\nPlease rewrite the problematic passages while preserving the overall story flow."
+                rewrite_request = InferenceRequest(
+                    model=inference_request.model,
+                    temperature=0.1,
+                    max_tokens=inference_request.max_tokens,
+                    messages=[
+                        InferenceMessage(role="system", content="You are a narrative editor. Rewrite only the flagged passages to fix consistency issues while preserving story flow."),
+                        InferenceMessage(role="user", content=f"Original draft:\n{output_text}\n\n{rewrite_prompt}"),
+                    ],
+                )
+                rewrite_response = self._inferencer.generate_text(rewrite_request)
+                rewritten = rewrite_response.content.strip()
+                if rewritten:
+                    output_text = rewritten + "\n"
+                    logger.info("Rewrite applied")
+            except Exception as exc:
+                logger.warning("Rewrite failed, keeping original draft: %s", exc)
+
+        # Entity intake: detect and persist new characters in the draft
+        if self._entity_intake and project_id:
+            try:
+                known = {c.display_name: c.character_id for c in _chars if c.display_name}
+                new_entities = self._entity_intake.intake_new_entities(output_text, known)
+                for entity in new_entities:
+                    entity_id = f"auto-{entity.name.lower().replace(' ', '-')}"
+                    _repo.upsert_character_profile(
+                        project_id=project_id,
+                        character_id=entity_id,
+                        display_name=entity.name,
+                        role_in_story="supporting",
+                        archetype=entity.inferred_archetype or "unknown",
+                        external_goal=entity.inferred_goal or "",
+                        internal_need="",
+                        core_fear="",
+                        writer_notes=f"Auto-detected from draft: {entity.raw_evidence[:200]}",
+                    )
+                if new_entities:
+                    logger.info("Detected and persisted %d new entities in draft", len(new_entities))
+            except Exception as exc:
+                logger.warning("Entity intake failed: %s", exc)
+
         staged_output_path = self._write_staged_output(output_path=output_path, output_text=output_text)
         normalized_finish_reason = inference_response.finish_reason or "completed"
         backend_version = _provider_backend_version(inference_response.raw_response)
