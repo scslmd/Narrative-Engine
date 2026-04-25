@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from pydantic import Field, model_validator
@@ -189,6 +190,38 @@ class BrainstormPromotion(StrictSchemaModel):
         if "notes" in payload:
             payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
         return payload
+
+
+@dataclass(slots=True)
+class PriorChapterSummary:
+    """Summary of a prior chapter for cross-chapter continuity context.
+
+    Forward-compatible: same structure used for book summaries in multi-book mode.
+    """
+    chapter_id: str
+    title: str
+    key_events: list[str]
+    character_states: dict[str, str]
+    unresolved_threads: list[str]
+
+    def to_context_string(self) -> str:
+        lines = [f"PRIOR CHAPTER: {self.title}", ""]
+        if self.key_events:
+            lines.append("Key events:")
+            for event in self.key_events[:10]:
+                lines.append(f"  - {event}")
+            lines.append("")
+        if self.character_states:
+            lines.append("Character states at chapter end:")
+            for name, state in list(self.character_states.items())[:10]:
+                lines.append(f"  - {name}: {state}")
+            lines.append("")
+        if self.unresolved_threads:
+            lines.append("Unresolved threads:")
+            for thread in self.unresolved_threads[:5]:
+                lines.append(f"  ? {thread}")
+            lines.append("")
+        return "\n".join(lines).rstrip()
 
 
 class FoundationProfile(StrictSchemaModel):
