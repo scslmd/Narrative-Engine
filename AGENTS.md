@@ -5,7 +5,7 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `840 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `878 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -72,9 +72,12 @@ cd frontend && npm run build
 
 ### Test Subsets (by marker)
 ```bash
-python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~28s, 467 tests)
-python -m pytest -q -p no:cacheprovider -m integration          # integration only (~120s, 390 tests)
-python -m pytest -q -p no:cacheprovider                        # full suite (~150s, 857 tests)
+python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s, 487 tests)
+
+  python -m pytest -q -p no:cacheprovider -m integration          # integration only (~120s, 391 tests)
+
+  python -m pytest -q -p no:cacheprovider                        # full suite (~150s, 878 tests)
+
 ```
 
 - Use `-m "not integration"` for fast feedback during development.
