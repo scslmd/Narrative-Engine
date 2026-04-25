@@ -4,6 +4,9 @@ import logging
 from dataclasses import dataclass
 from time import sleep
 from typing import Any
+from uuid import UUID
+
+from app.schemas.jobs import JobCreateRequest
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +41,8 @@ class ChapterOrchestrator:
         """Run P-300 jobs sequentially for each chapter.
 
         Each chapter waits for the prior to complete before starting.
-        Prior chapter summaries are built from completed chapters and
-        passed as context to subsequent chapters.
         """
         results: list[ChapterResult] = []
-        prior_summaries: list[Any] = []  # PriorChapterSummary instances
 
         for i, chapter_id in enumerate(self._chapter_ids):
             logger.info(
@@ -58,8 +58,6 @@ class ChapterOrchestrator:
             }
 
             try:
-                from app.schemas.jobs import JobCreateRequest
-
                 job = self._job_manager.create_job(
                     JobCreateRequest(phase="P-300", payload=payload)
                 )
@@ -95,7 +93,7 @@ class ChapterOrchestrator:
 
         return results
 
-    def _wait_for_completion(self, job_id: str, attempts: int = 200) -> str:
+    def _wait_for_completion(self, job_id: UUID | str, attempts: int = 200) -> str:
         """Poll job status until terminal state."""
         for _ in range(attempts):
             status = self._job_manager.get_status(job_id)
