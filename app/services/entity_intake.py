@@ -38,6 +38,22 @@ def extract_proper_noun_candidates(text: str) -> list[str]:
     return sorted(candidates)
 
 
+def truncate_at_sentence(text: str, max_chars: int = 500) -> str:
+    """Truncate text at a sentence boundary to avoid cutting mid-sentence."""
+    if len(text) <= max_chars:
+        return text
+    # Try to find sentence end within budget
+    for delim in (". ", "!\n", "?\n", ".\n", "!\t", "?\t"):
+        last = text.rfind(delim, 0, max_chars)
+        if last >= 0:
+            return text[: last + len(delim)].rstrip()
+    # Fallback: truncate at last space
+    last_space = text.rfind(" ", 0, max_chars)
+    if last_space >= 0:
+        return text[:last_space]
+    return text[:max_chars]
+
+
 class EntityIntakeService:
     MAX_ENTITIES_PER_DRAFT = 3
 
@@ -72,7 +88,7 @@ class EntityIntakeService:
                         entity_type="character",
                         inferred_archetype=result.get("archetype", "unknown"),
                         inferred_goal=result.get("goal", ""),
-                        raw_evidence=draft_text[:500],
+                        raw_evidence=truncate_at_sentence(draft_text, max_chars=500),
                     )
                 )
             except (InferenceBackendError, json.JSONDecodeError) as exc:

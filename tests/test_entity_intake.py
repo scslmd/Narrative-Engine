@@ -135,3 +135,29 @@ def test_intake_handles_invalid_json_gracefully():
         known_character_ids={},
     )
     assert entities == []
+
+
+def test_truncate_at_sentence_stops_at_period():
+    from app.services.entity_intake import truncate_at_sentence
+
+    text = "First sentence. Second sentence. Third sentence."
+    result = truncate_at_sentence(text, max_chars=30)
+    assert result.endswith("sentence.")
+    assert len(result) <= 30 or result == text
+
+
+def test_truncate_at_sentence_short_text_unchanged():
+    from app.services.entity_intake import truncate_at_sentence
+
+    text = "Short."
+    result = truncate_at_sentence(text, max_chars=500)
+    assert result == text
+
+
+def test_truncate_at_sentence_fallback_to_space():
+    from app.services.entity_intake import truncate_at_sentence
+
+    text = "No periods here just words. More words follow."
+    result = truncate_at_sentence(text, max_chars=20)
+    # Should stop at a sentence boundary or space
+    assert "\t" not in result and "\n" not in result
