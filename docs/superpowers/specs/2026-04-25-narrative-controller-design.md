@@ -58,6 +58,20 @@ Checks drafted prose against character profiles and returns pass/fail with viola
 
 **Dependencies:** `InferenceBackend` (existing), no new DB tables
 
+### EntityIntakeService
+
+When the draft introduces characters or world elements not yet in the database, extract skeletal profiles from their behavior in the prose.
+
+**Method:** `intake_new_entities(draft_text, known_character_ids)` → `list[NewEntity]`
+
+1. Extract proper nouns and character-like references from draft text (rule-based: capitalized names, pronouns with context)
+2. Compare against `known_character_ids` — any unknown references are candidates
+3. For each candidate, build LLM extraction request: "From this draft passage, extract a character profile for [NAME]. Infer archetype, voice, apparent goal from their dialogue and actions."
+4. Parse JSON response into skeletal `CharacterProfile` with `auto_generated=true`
+5. Upsert into `character_profiles` table via repository
+
+**Dependencies:** `StoryDevelopmentRepository`, `InferenceBackend`
+
 ### Integration Point
 
 In `local_executor.py`, `_run_drafter_phase()`:
@@ -101,6 +115,10 @@ In `local_executor.py`, `_run_drafter_phase()`:
 | `test_critic_rewrite_targets_flagged_passages` | Unit | Rewrite prompt includes only flagged content |
 | `test_drafter_phase_injects_context` | Integration | Full P-300 phase with fake inferencer → context in prompt |
 | `test_drafter_phase_runs_critic_check` | Integration | Critic runs after draft, rewrite triggers on failure |
+| `test_intake_detects_new_character_from_draft` | Unit | New character reference extracted from prose |
+| `test_intake_creates_skeletal_profile` | Unit | LLM extraction creates valid CharacterProfile |
+| `test_intake_skips_known_characters` | Unit | Known character IDs are excluded from intake |
+| `test_intake_upserts_to_repository` | Integration | Full intake pipeline persists to DB |
 
 ## Schema Changes
 
@@ -116,8 +134,10 @@ None. All required data already exists:
 |------|---------|
 | `app/services/scene_context.py` | SceneContextService class |
 | `app/services/consistency_critic.py` | ConsistencyCriticService class |
+| `app/services/entity_intake.py` | EntityIntakeService class |
 | `tests/test_scene_context.py` | Unit tests for context assembly |
 | `tests/test_consistency_critic.py` | Unit + integration tests for critic |
+| `tests/test_entity_intake.py` | Unit + integration tests for intake |
 
 ## Modified Files
 
