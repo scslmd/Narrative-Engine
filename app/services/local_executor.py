@@ -796,7 +796,19 @@ class LocalExecutor:
                 context_prompt = ctx.to_prompt_string()
                 if context_prompt:
                     existing_content = inference_request.messages[1].content
-                    inference_request.messages[1].content = f"{existing_content}\n\n{context_prompt}"
+                    new_messages = list(inference_request.messages)
+                    from app.schemas.inference import InferenceMessage
+                    new_messages[1] = InferenceMessage(
+                        role=new_messages[1].role,
+                        content=f"{existing_content}\n\n{context_prompt}",
+                    )
+                    inference_request = type(inference_request)(
+                        messages=new_messages,
+                        model=inference_request.model,
+                        temperature=inference_request.temperature,
+                        max_tokens=inference_request.max_tokens,
+                        metadata=dict(inference_request.metadata),
+                    )
             except Exception as exc:
                 logger.warning("Context assembly failed, proceeding without: %s", exc)
         self._job_manager.update_job(

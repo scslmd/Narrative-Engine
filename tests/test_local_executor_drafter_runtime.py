@@ -331,3 +331,96 @@ def test_local_executor_persists_mapped_runtime_error_for_p300_failures(tmp_path
     assert chapter_response.json()["detail"] == "Artifact not found: chapter-1"
     with pytest.raises(FileNotFoundError):
         project_service.read_artifact(project_id, "chapter-1")
+
+
+def test_local_executor_p300_injects_scene_context(tmp_path: Path) -> None:
+    """P-300 drafter should inject character anchors when SceneContextService is available."""
+    from app.persistence.story_development import StoryDevelopmentRepository
+    from app.services.scene_context import SceneContextService
+    from app.services.consistency_critic import ConsistencyCriticService
+    from app.services.entity_intake import EntityIntakeService
+
+    project_id = "context-injection-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    # Setup inferencer that captures requests
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    models_root = tmp_path / "data" / "models"
+    reports_root = tmp_path / "data" / "role_model_checker_runs"
+    models_root.mkdir(parents=True, exist_ok=True)
+    project_service = ProjectService(tmp_path)
+    job_manager = JobManager(db_path)
+    checker_manager = RoleModelCheckManager(db_path)
+    step_records = StepRecordService(db_path)
+
+    # Register project in operations DB (required for FK constraints)
+    project_service.reconcile_projects()
+
+    # Create character profile in DB
+    repo = StoryDevelopmentRepository(db_path)
+    repo.upsert_character_profile(
+        project_id=project_id,
+        character_id="char-test-001",
+        display_name="Kael",
+        role_in_story="protagonist",
+        archetype="reluctant hero",
+        external_goal="Save the city",
+        internal_need="Trust allies",
+        core_fear="Abandonment",
+        voice_notes="Terse, avoids metaphors",
+    )
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({
+                "beats": [
+                    {"id": "beat-1", "title": "Opening", "depends_on": []},
+                ]
+            }),
+            "P-300": "# Chapter 1\nKael marched through the shifting streets.\n",
+        },
+    )
+
+    # Build executor with narrative controller services
+    scene_context = SceneContextService(repository=repo)
+    consistency_critic = ConsistencyCriticService(inferencer=inferencer)
+    entity_intake = EntityIntakeService(inferencer=inferencer)
+
+    executor = LocalExecutor(
+        job_manager=job_manager,
+        role_check_manager=checker_manager,
+        role_check_service=RoleModelCheckerService(models_root, reports_root, inferencer=inferencer),
+        inferencer=inferencer,
+        project_service=project_service,
+        step_record_service=step_records,
+        scene_context_service=scene_context,
+        consistency_critic_service=consistency_critic,
+        entity_intake_service=entity_intake,
+        poll_interval_seconds=0.05,
+    )
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        final_status = _wait_for_terminal_status(job_manager, p300.id)
+    finally:
+        executor.stop()
+
+    assert final_status == "COMPLETED"
+
+    # Verify the P-300 drafter inference request contains character context
+    p300_requests = [r for r in inferencer.requests if r.metadata.get("phase") == "P-300"]
+    assert len(p300_requests) >= 1, f"No P-300 requests found. Phases: {[r.metadata.get('phase') for r in inferencer.requests]}"
+    p300_request = p300_requests[-1]
+    user_message = p300_request.messages[1].content if len(p300_request.messages) > 1 else ""
+    assert "CHARACTER CONTEXT:" in user_message, (
+        f"Expected character context in P-300 request. Got: {user_message[:500]}"
+    )
+    assert "Kael" in user_message, f"Expected character name 'Kael' in context. Got: {user_message[:500]}"
+    assert "reluctant hero" in user_message, f"Expected archetype in context. Got: {user_message[:500]}"
