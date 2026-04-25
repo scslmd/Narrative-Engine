@@ -138,6 +138,18 @@ The Drafter writes actual prose. When complete:
 
 You now have a simple story drafted end-to-end.
 
+#### What Happens Behind the Scenes (Narrative Controller)
+
+When you launch P-300, the **State-Aware Narrative Controller** runs three quality checks automatically:
+
+1. **Scene Context Injection** — Before drafting begins, the system queries your character profiles and world bible entries, then injects them into the LLM prompt as structured constraints (character archetypes, voice notes, goals, canonical facts). This ensures the drafter knows who your characters are and what your world rules are.
+
+2. **Consistency Critic** — After the draft is generated, a separate LLM pass checks whether each character's dialogue and actions match their profile. If Khal (archetype: "reluctant hero", voice: "terse, avoids metaphors") starts speaking in flowery poetry, the critic flags it and triggers an automatic rewrite to fix the inconsistency.
+
+3. **Entity Intake** — If a new character appears in the draft that isn't yet in your character profiles (e.g., "Soraya watched from the shadows"), the system detects the unknown name, extracts a skeletal profile (name, inferred archetype, inferred goal) from the character's behavior in the prose, and saves it to your project for review.
+
+These checks run on every P-300 draft automatically. They never block or fail the pipeline — if any check encounters an error, the system logs a warning and proceeds with the original draft.
+
 ---
 
 ## Level 2: Medium Complexity with Branching and Review
@@ -359,9 +371,11 @@ Execute jobs in sequence:
 - Maps character arcs to specific scenes
 
 **P-300 Drafter:**
-- Writes actual manuscript chapters
-- Creates draft artifacts
-- Generates revision suggestions
+- Injects character anchors and world constraints into the LLM prompt (Scene Context)
+- Writes actual manuscript chapters using your character profiles and world bible as grounding
+- Runs a consistency critic after generation to catch character voice drift or behavior that contradicts profiles, triggering automatic rewrites when needed
+- Detects new characters appearing in the draft prose and auto-extracts skeletal profiles for your review (Entity Intake)
+- Creates draft artifacts with revision suggestions
 
 **P-400 Compiler:**
 - Compiles the final manuscript
@@ -439,6 +453,15 @@ You can run these in order by clicking "Launch" for each phase in the Job Launch
 6. **Review findings actively.** Don't just auto-accept. Each finding represents a creative decision.
 7. **Inspect when confused.** If AI output seems off, use Inspect to trace the execution path.
 
+### Narrative Controller Tips
+
+The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity Intake) runs automatically on every P-300 draft. To get the most out of it:
+
+1. **Fill out voice notes for your characters.** The Consistency Critic uses voice notes to detect when a character's dialogue doesn't match their established speech patterns. Vague or empty voice notes = fewer useful critic flags.
+2. **Set canonical facts in your world bible.** Scene Context injection pulls canonical facts from world bible entries and feeds them to the drafter. The more facts you define, the more grounded your drafts will be.
+3. **Review auto-detected characters after drafting.** Entity Intake creates skeletal profiles for new characters that appear in draft prose. Check the Characters tab after each P-300 run -- you may find auto-generated profiles with inferred archetypes and goals that need fleshing out.
+4. **Don't worry about critic rewrites adding latency.** The consistency critic adds one extra LLM call per draft (plus a rewrite call if violations are found). This is intentional for quality. If you need faster iteration during early exploration, you can still run the stub backend.
+
 ### Common Pitfalls
 
 - **Don't skip the manifest.** The AI uses manifest settings to guide generation. Wrong settings = wrong tone.
@@ -477,3 +500,6 @@ You can run these in order by clicking "Launch" for each phase in the Job Launch
 | **Inspect** | Deep debug view showing step execution, artifacts, and lineage |
 | **World Bible** | Encyclopedic reference for story world facts, lore, and rules |
 | **Chapter Packet** | A bundle of reference materials prepared for drafting a chapter |
+| **Scene Context Injection** | Automatic injection of character profiles and world bible constraints into the P-300 drafter prompt before generation begins |
+| **Consistency Critic** | Post-draft LLM check that verifies character dialogue and actions match their profiles; triggers automatic rewrite on violations |
+| **Entity Intake** | Automatic detection of new characters in draft prose; extracts skeletal profiles (name, archetype, goal) and persists them for review |

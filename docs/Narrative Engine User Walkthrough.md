@@ -23,6 +23,7 @@ The Narrative Engine is a narrative compilation system for long-form fiction dev
 - **Character Profiles** -- detailed character management with relationship graph
 - **Arc Management** -- character arc candidates, selections, and stage maps
 - **Flow Editor** -- customizable story development pipeline
+- **State-Aware Narrative Controller** -- automatic quality checks during P-300 drafting (context injection, consistency critic, entity intake)
 
 ---
 
@@ -499,7 +500,63 @@ The right panel shows revision suggestions for the active manuscript:
    - Affected text range
 3. **Accept** a suggestion to apply it (in-place text replacement)
 4. **Reject** a suggestion to dismiss it
-5. Suggestions can be filtered by status (REQUESTED, PENDING, ACCEPTED, REJECTED)
+  5. Suggestions can be filtered by status (REQUESTED, PENDING, ACCEPTED, REJECTED)
+
+---
+
+## Phase 5g: State-Aware Narrative Controller (Automatic)
+
+When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller runs three automatic quality checks. These run in the background and never block or fail your pipeline.
+
+### Scene Context Injection
+
+**What it does:** Before the drafter sends its prompt to the LLM, the system queries your character profiles and world bible entries and injects them as structured constraints into the prompt.
+
+**What you see:** The generated prose is more consistent with your established characters and world rules because the LLM receives explicit context about:
+- Character archetypes (e.g., "reluctant hero")
+- Voice notes (e.g., "terse, avoids metaphors")
+- External goals and internal needs
+- Core fears
+- World canonical facts (e.g., "The Athenaeum has seven sub-levels")
+
+**How to prepare:** The more detail you fill in your character profiles (especially voice notes, goals, fears) and world bible entries (canonical facts), the better the injected context will be. Empty fields are silently skipped.
+
+### Consistency Critic
+
+**What it does:** After the draft is generated, a separate LLM pass checks whether each character's dialogue and actions match their profile. If violations are found, the system triggers an automatic rewrite to fix them.
+
+**What you see:** Your final draft has fewer instances of characters speaking out of character or behaving inconsistently with their established traits. The rewrite happens automatically — you don't need to trigger it manually.
+
+**How it works:**
+1. The critic receives the draft text and character bios (archetype + voice notes)
+2. It checks: voice (word choice, sentence style), behavior (goals, fears, traits), knowledge (what characters should know)
+3. If violations are found (up to 3), a rewrite prompt is sent to fix them
+4. If the rewrite fails or encounters an error, the original draft is kept
+
+**How to prepare:** Fill in voice notes for your characters. The critic relies on voice notes to detect when dialogue doesn't match established speech patterns. Characters with empty voice notes will produce fewer useful critic flags.
+
+### Entity Intake
+
+**What it does:** Detects new characters that appear in the draft prose but aren't yet in your character profiles. Extracts skeletal profiles (name, inferred archetype, inferred goal) from the character's behavior in the text and saves them to your project.
+
+**What you see:** After a P-300 run, check your **Characters** tab. You may find auto-generated character profiles with:
+- **Display Name** -- extracted from the prose
+- **Role in Story** -- set to "supporting" (default)
+- **Archetype** -- inferred from behavior (e.g., "mysterious ally")
+- **External Goal** -- inferred from actions in the scene
+- **Writer Notes** -- includes a snippet of the draft where the character appeared
+
+**How it works:**
+1. The system extracts proper noun candidates from the draft text
+2. It filters out known characters (those already in your profiles) and common non-name words
+3. For unknown names (up to 3 per draft), it sends an LLM request to extract archetype and goal from behavior
+4. Detected entities are saved as new character profiles with a generated ID (`auto-{name}`)
+
+**How to prepare:** No setup needed. After each P-300 run, review the Characters tab for any auto-detected profiles that need fleshing out (backstory, relationships, arc stages, etc.).
+
+### Error Handling Guarantee
+
+All three checks follow the same rule: **never fail the pipeline**. If any check encounters an error (LLM timeout, database issue, malformed response), the system logs a warning and proceeds with the original draft. Your P-300 job will always complete, even if one or more quality checks fail silently.
 
 ---
 
@@ -688,14 +745,18 @@ View the story decision hierarchy:
 
 ### Workflow A: Full Story Pipeline (Automated Generation)
 
-After setting up foundation and world bible:
+After setting up foundation, characters, and world bible:
 
 1. **Run P-100 Architect** -- generates the story architecture foundation (markdown)
 2. **Run P-200 Sequencer** -- generates the sequence plan (JSON) using P-100 output
-3. **Run P-300 Drafter** -- generates chapter drafts (markdown) using P-100 + P-200 output
-4. **Run P-400 Compiler** -- generates the story bible snapshot (JSON) using all prior outputs
-5. **Review findings** from P-400 and make decisions
-6. **Iterate** -- update foundation or world bible, re-run phases as needed
+3. **Run P-300 Drafter** -- generates chapter drafts with automatic quality checks:
+   - Scene Context Injection feeds character profiles and world facts into the prompt
+   - Consistency Critic verifies character voice and behavior, triggers rewrite on violations
+   - Entity Intake detects new characters in draft prose and auto-extracts skeletal profiles
+4. **Check Characters tab** -- review any auto-detected character profiles from Entity Intake
+5. **Run P-400 Compiler** -- generates the story bible snapshot (JSON) using all prior outputs
+6. **Review findings** from P-400 and make decisions
+7. **Iterate** -- update foundation or world bible, re-run phases as needed
 
 Each phase is triggered via the Job Launch panel (right sidebar) by selecting the phase and clicking "Launch".
 
@@ -809,6 +870,13 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 - Failed jobs can be retried via the Inspect view's "Retry" button
 - Retries use the same input but may use a different inference provider
 - Step records and lineage are preserved for inspection
+
+### Narrative Controller Issues
+
+- **Drafts don't seem to use character context.** Check that your character profiles have filled-in fields (archetype, voice notes, goals, fears). Empty fields are not injected. The system falls back to the first 5 characters if no active character IDs are specified for a scene.
+- **Consistency critic isn't catching out-of-character dialogue.** Ensure voice notes are specific (e.g., "terse, avoids metaphors" rather than "normal"). Vague voice notes produce vague critic checks.
+- **Too many auto-detected characters.** The entity intake stop-word list filters common non-name words, but some false positives may slip through (e.g., "Morning", "Shadow"). Review the Characters tab after each P-300 run and delete any spurious entries.
+- **Drafts take longer to generate.** The narrative controller adds 1-5 extra LLM calls per draft (critic check + optional rewrite + up to 3 entity intake calls). This is intentional for quality. Use the stub backend for faster iteration during early exploration.
 
 ### Branch State Management
 
