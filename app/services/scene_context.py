@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Iterable
 if TYPE_CHECKING:
     from ..persistence.story_development import StoryDevelopmentRepository
 
+from ..schemas.story_development import PriorChapterSummary
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +34,7 @@ class WorldConstraint:
 class SceneContext:
     characters: list[CharacterAnchor]
     world_facts: list[WorldConstraint]
+    prior_chapters: list[PriorChapterSummary] | None = None
 
     def to_prompt_string(self) -> str:
         lines = []
@@ -57,6 +60,12 @@ class SceneContext:
                 for fact in w.facts[:5]:
                     lines.append(f"  * {fact}")
 
+        if self.prior_chapters:
+            lines.append("")
+            lines.append("PRIOR CHAPTER CONTEXT:")
+            for ch in self.prior_chapters[-3:]:
+                lines.append(ch.to_context_string())
+
         return "\n".join(lines) if lines else ""
 
 
@@ -70,6 +79,7 @@ class SceneContextService:
         self,
         project_id: str,
         active_character_ids: Iterable[str] | None = None,
+        prior_chapters: list[PriorChapterSummary] | None = None,
     ) -> SceneContext:
         target_ids = list(active_character_ids) if active_character_ids else None
 
@@ -107,4 +117,4 @@ class SceneContextService:
                 facts=facts,
             ))
 
-        return SceneContext(characters=anchors, world_facts=world_facts)
+        return SceneContext(characters=anchors, world_facts=world_facts, prior_chapters=prior_chapters)

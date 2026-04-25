@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from app.schemas.story_development import CharacterProfile
+from app.schemas.story_development import CharacterProfile, PriorChapterSummary
 from app.services.scene_context import SceneContext, SceneContextService, CharacterAnchor, WorldConstraint
 
 
@@ -117,3 +117,63 @@ def test_to_prompt_string_includes_world_facts():
     prompt = ctx.to_prompt_string()
     assert "The Bazaar" in prompt
     assert "crowded" in prompt
+
+
+def test_assemble_context_with_prior_chapters():
+    repo = FakeRepository()
+    service = SceneContextService(repository=repo)
+    prior = [PriorChapterSummary(
+        chapter_id="ch-001",
+        title="The Departure",
+        key_events=["Kael leaves the village"],
+        character_states={"Kael": "restless"},
+        unresolved_threads=["Who is waiting at the crossroads?"],
+    )]
+    ctx = service.assemble_context(
+        project_id="proj-1",
+        active_character_ids=["char-001"],
+        prior_chapters=prior,
+    )
+    assert len(ctx.prior_chapters) == 1
+    assert ctx.prior_chapters[0].title == "The Departure"
+
+
+def test_to_prompt_string_includes_prior_chapters():
+    ctx = SceneContext(
+        characters=[],
+        world_facts=[],
+        prior_chapters=[PriorChapterSummary(
+            chapter_id="ch-001",
+            title="The Departure",
+            key_events=["Kael leaves"],
+            character_states={},
+            unresolved_threads=["Where next?"],
+        )],
+    )
+    prompt = ctx.to_prompt_string()
+    assert "PRIOR CHAPTER CONTEXT:" in prompt
+    assert "PRIOR CHAPTER: The Departure" in prompt
+    assert "Kael leaves" in prompt
+
+
+def test_to_prompt_string_caps_prior_chapters_at_3():
+    """SceneContext should only include the last 3 prior chapters to avoid bloated prompts."""
+    prior = [PriorChapterSummary(
+        chapter_id=f"ch-{i:03d}",
+        title=f"Chapter {i}",
+        key_events=[f"Event in chapter {i}"],
+        character_states={},
+        unresolved_threads=[],
+    ) for i in range(1, 6)]  # 5 chapters
+    ctx = SceneContext(
+        characters=[],
+        world_facts=[],
+        prior_chapters=prior,
+    )
+    prompt = ctx.to_prompt_string()
+    # Should only include last 3 (chapters 3, 4, 5)
+    assert "Chapter 3" in prompt
+    assert "Chapter 4" in prompt
+    assert "Chapter 5" in prompt
+    assert "Chapter 1" not in prompt
+    assert "Chapter 2" not in prompt
