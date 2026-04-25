@@ -37,3 +37,6 @@ executor_atomic_todo_tasks.json
 quality-check-portable.zip
 20260328_Code_Review
 nul
+
+# Worktrees (isolated development branches)
+.worktrees/
