@@ -1,4 +1,4 @@
-# Narrative Engine - Complete User Walkthrough
+# Narrative Engine - Complete User Walkthrough v1.0
 
 > Purpose: Step-by-step guide to using all features of the Narrative Engine application, starting simple and incrementally building to advanced workflows.
 >
@@ -557,6 +557,62 @@ When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller ru
 ### Error Handling Guarantee
 
 All three checks follow the same rule: **never fail the pipeline**. If any check encounters an error (LLM timeout, database issue, malformed response), the system logs a warning and proceeds with the original draft. Your P-300 job will always complete, even if one or more quality checks fail silently.
+
+---
+
+## Phase 5h: Multi-Chapter Generation
+
+When your story has multiple chapters, you can draft them sequentially with cross-chapter continuity. Each chapter build on what came before.
+
+### Drafting Chapter by Chapter
+
+**What it does:** When you launch a P-300 job with a `chapter_id` (e.g., `"ch-002"`), the system writes that chapter to a separate file (`chapters/ch-002.md`) and injects context from prior chapters into the LLM prompt.
+
+**What you see:** Each chapter is saved independently, making it easy to review, edit, or regenerate individual chapters without affecting others.
+
+**How it works:**
+1. You launch P-300 with `chapter_id: "ch-002"` in the job payload
+2. The system queries your ChapterPlan for `active_character_ids` (characters who appear in this chapter)
+3. Scene Context Injection includes: active character profiles + world constraints + **prior chapter summaries** (last 3 chapters max)
+4. Prior chapter summaries include: key events (max 10), character states at chapter end (max 10), unresolved threads (max 5)
+5. The draft is written to `chapters/{chapter_id}.md`
+
+**How to prepare:**
+- Create ChapterPlan entries with `active_character_ids` for each chapter (keeps prompts focused and reduces token usage)
+- Fill in character voice notes and world bible facts — the richer your reference data, the better the cross-chapter continuity
+- For sequential drafting, run chapters in order (ch-001, then ch-002, etc.) so prior context is available
+
+### ChapterOrchestrator (Sequential Multi-Chapter)
+
+**What it does:** Runs P-300 jobs sequentially for all chapters in your project. Each chapter waits for the prior to complete before starting.
+
+**What you see:** A series of P-300 jobs, one per chapter, each producing a completed chapter file. Failed chapters are logged but don't stop subsequent chapters from running.
+
+**How it works:**
+1. Orchestrator receives a list of chapter IDs (e.g., `["ch-001", "ch-002", "ch-003"]`)
+2. For each chapter, it creates a P-300 job with the chapter_id in the payload
+3. The job runs through the full pipeline (context injection → draft → critic → entity intake)
+4. When complete, the next chapter begins — now with access to the prior chapter's context
+
+**How to use:** Currently available as a programmatic service. Launch individual P-300 jobs with `chapter_id` in the payload for now. Future UI integration will expose orchestrator controls.
+
+#### Batch Mode Alternative
+
+Instead of creating separate jobs per chapter, you can draft multiple chapters in a single job using the `chapter_ids` list:
+
+```bash
+curl -X POST http://localhost:8000/v1/jobs/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phase": "P-300",
+    "payload": {
+      "project_id": "<your-project-id>",
+      "chapter_ids": ["ch-001", "ch-002", "ch-003"]
+    }
+  }'
+```
+
+This runs chapters sequentially within one job, with automatic LLM-based summarization between chapters. Each chapter's summary (key events, character states, unresolved threads) is injected into the next chapter's prompt for continuity. ManuscriptDocument records are auto-created for each completed chapter.
 
 ---
 

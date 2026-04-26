@@ -49,6 +49,7 @@ Implemented and working now:
 - a real `P-100` `architect` execution path that builds an inference request, calls the configured inferencer, and persists canonical markdown output plus artifact lineage
 - a real `P-200` `sequencer` execution path that builds an inference request, writes the canonical `sequence` artifact, and persists canonical artifact lineage
 - a real `P-300` `drafter` execution path that builds an inference request, writes the canonical `chapter-1` artifact, and persists canonical artifact lineage
+- **Multi-chapter book generation**: P-300 accepts `chapter_ids` list in job payload to draft multiple chapters sequentially within a single job. Each chapter gets its own output file (`chapters/{chapter_id}.md`), step record, and auto-created ManuscriptDocument. Prior chapter summaries (LLM-extracted key events, character states, unresolved threads) are injected into subsequent chapters for continuity (capped at last 3 chapters).
 - persisted `P-100` runtime step telemetry for backend or model identity, prompt or input or output hashes, finish reason, and inspectable lineage linkage
 - structured runtime error mapping for real `P-100` failures, including persisted error category and retryability
 - runtime-backed checker execution for `architect`, `sequencer`, `drafter`, and `critic`, with deterministic fallback preserved when runtime is unavailable or intentionally skipped

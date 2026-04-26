@@ -81,6 +81,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/review_routing.py`](app/services/review_routing.py): review finding routing, review-decision recording, and inspect-link service layer
 - [`app/services/story_branching.py`](app/services/story_branching.py): story-branch creation, branch comparison, active-branch selection, and merge-decision service layer
 - [`app/services/story_import.py`](app/services/story_import.py): story import service for parsing and importing existing stories
+- [`app/services/chapter_summarizer.py`](app/services/chapter_summarizer.py): LLM-based chapter summarization, extracts PriorChapterSummary from completed chapters
 
 ### Persistence Layer
 
@@ -264,10 +265,10 @@ The specification and planning docs live under [`docs/`](docs/).
   - [`docs/Validation Notes v0.1.md`](docs/Validation%20Notes%20v0.1.md)
   - [`docs/QUALITY_GUIDELINES.md`](docs/QUALITY_GUIDELINES.md)
 - Product and system contracts:
-  - [`docs/Narrative SRS v0.3.md`](docs/Narrative%20SRS%20v0.3.md)
+  - [`docs/Narrative SRS v1.0.md`](docs/Narrative%20SRS%20v1.0.md)
   - [`docs/Frontend Design SRS v0.5.md`](docs/Frontend%20Design%20SRS%20v0.5.md)
-  - [`docs/Story Development Product Spec v0.1.md`](docs/Story%20Development%20Product%20Spec%20v0.1.md)
-  - [`docs/Story Development Canonical Contract v0.1.md`](docs/Story%20Development%20Canonical%20Contract%20v0.1.md)
+  - [`docs/Story Development Product Spec v1.0.md`](docs/Story%20Development%20Product%20Spec%20v1.0.md)
+  - [`docs/Story Development Canonical Contract v1.0.md`](docs/Story%20Development%20Canonical%20Contract%20v1.0.md)
   - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md)
 - Runtime and inspect contracts:
   - [`docs/Async Protocol Blueprint v0.1.md`](docs/Async%20Protocol%20Blueprint%20v0.1.md)

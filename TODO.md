@@ -51,6 +51,14 @@
 
 Full details archived in `docs/archive/TODO_Completed_Milestones_Archive.md`.
 
+### Multi-Chapter Generation Completion (2026-04-26)
+
+- ChapterSummarizerService: LLM-based chapter summarization with error tolerance
+- Batch multi-chapter mode: `chapter_ids` list payload triggers sequential drafting in single job
+- Prior context propagation: summaries injected into subsequent chapters (capped at 3)
+- ManuscriptDocument auto-creation: persisted after each chapter draft
+- Test coverage: 907 passed, 9 skipped (+7 tests for summarizer + prompt builder)
+
 ### v1.0 Release -- All Complete
 All 14 v1.0 release items (V1-001 through V1-015) completed and scope-verified.
 The product surface includes routed planning, writing, review, and inspect workspaces

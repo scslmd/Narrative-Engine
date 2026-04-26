@@ -1,4 +1,4 @@
-# Story Development Canonical Contract v0.1
+# Story Development Canonical Contract v1.0
 
 ## 1. Purpose
 
@@ -214,6 +214,8 @@ Rules:
 | `ArtifactLineage` | Persisted artifact provenance row | backend, frontend, docs | replaces `ArtifactLineageRecord` as the canonical name |
 | `InspectRunLink` | Pointer from a user-facing object to related inspectable run identifiers | backend, frontend, docs | none |
 | `WorkspaceNote` | Browser-local or user-local working note that is non-canonical | frontend, docs | none |
+| `PriorChapterSummary` | Structured context from completed chapters for cross-chapter continuity (key events, character states, unresolved threads) | backend, docs | none |
+| **ChapterSummarizerService** | LLM-based service that extracts PriorChapterSummary from completed chapter markdown. Error-tolerant, never blocks pipeline. | `app/services/chapter_summarizer.py` |
 
 Drafting rules:
 
@@ -224,6 +226,17 @@ Drafting rules:
 - accepting a suggestion updates manuscript state through an explicit decision and must not erase the originating `DraftArtifact`
 - broader story-shaping user choices are captured in `StoryDecisionNode`
 - those nodes must support timeline views, branch reconstruction, and "why did this change?" review flows without inference from current state alone
+
+Multi-chapter drafting rules:
+
+- `chapter_id` in P-300 job payload triggers parameterized output path (`chapters/{chapter_id}.md`)
+- prior chapter context is injected as `PriorChapterSummary` objects (last 3 chapters max)
+- active character filtering uses ChapterPlan's `active_character_ids` to limit prompt injection
+- default token budget for P-300: 8000 tokens (~2000 words per chapter), overridable via payload
+- ChapterOrchestrator runs sequential P-300 jobs with graceful per-chapter error handling
+- **Batch mode**: P-300 accepts `chapter_ids` list in job payload for sequential multi-chapter drafting within a single job. Per-chapter step records created as `drafter-{chapter_id}`.
+- **ChapterSummarizerService**: After each chapter draft in batch mode, the service extracts PriorChapterSummary via LLM (key_events max 10, character_states max 10, unresolved_threads max 5). Error-tolerant: returns None on failure, never blocks pipeline.
+- **ManuscriptDocument auto-creation**: DraftingService.save_manuscript_document() called after each successful chapter draft with document_id `ms-{chapter_id}`, title from ChapterPlan (or "Chapter {id}"), and chapter content.
 
 ## 6. Canonical State Families
 

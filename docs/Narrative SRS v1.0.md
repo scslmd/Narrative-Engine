@@ -1,6 +1,6 @@
-# Narrative SRS v0.3
+# Narrative SRS v1.0
 
-Document version: `v0.3`
+Document version: `v1.0`
 
 ## 1. Purpose
 
@@ -19,8 +19,8 @@ The system is intended to help a writer:
 
 Product-planning reference:
 
-- the detailed story-development feature contract now lives in `docs/Story Development Product Spec v0.1.md`
-- `docs/Story Development Canonical Contract v0.1.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for those features
+- the detailed story-development feature contract now lives in `docs/Story Development Product Spec v1.0.md`
+- `docs/Story Development Canonical Contract v1.0.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for those features
 - this SRS carries the backend-facing contract for story-development services, inspect state, lineage, and retry behavior
 
 ## 2. Core Principles
@@ -457,7 +457,7 @@ Implemented now:
 - `P-100` persists a canonical artifact-lineage row for the generated output
 - `P-100` registers the generated artifact as canonical project artifact `architect_p100`
 - `P-200` builds a sequencer inference request from manifest plus upstream architect context and registers canonical `sequence`
-- `P-300` builds a drafter inference request from manifest plus upstream architect and sequence context and registers canonical `chapter_1`
+- `P-300` builds a drafter inference request from manifest plus upstream architect, sequence, character anchors, world constraints, and prior chapter context (last 3 chapters) and registers canonical `chapter_{chapter_id}` (or `chapter_1` for backward-compatible single-chapter mode)
 - `P-400` builds a compiler inference request from manifest plus architect, sequence, and chapter context and registers canonical `story_bible`
 
 Required prompt-construction rules:
@@ -486,10 +486,20 @@ Current artifact rules for later implemented phases:
   - artifact role: `sequence`
   - artifact kind: `json`
   - canonical project artifact registration name: `sequence`
-- `P-300`
+- `P-300` (Single Chapter / Backward-Compatible)
   - artifact role: `chapter_1`
   - artifact kind: `markdown`
   - canonical project artifact registration name: `chapter_1`
+  - output path: `chapter.md`
+  - default max_tokens: 8000 (~2000 words per chapter)
+
+- `P-300` (Multi-Chapter Mode — with `chapter_id` in payload)
+  - artifact role: `chapter_{chapter_id}`
+  - artifact kind: `markdown`
+  - canonical project artifact registration name: `chapter_{chapter_id}`
+  - output path: `chapters/{chapter_id}.md` (chapter_id sanitized via `sanitize_filename()`)
+  - prior chapter context injection: last 3 completed chapters as `PriorChapterSummary` objects
+  - active character filtering: queries ChapterPlan for `active_character_ids`, only injects those characters
 - `P-400`
   - artifact role: `story_bible`
   - artifact kind: `json`
@@ -498,6 +508,61 @@ Current artifact rules for later implemented phases:
 Intentionally not yet implemented:
 
 - equivalent real-runtime execution for phases beyond `P-400`
+
+## 11a. Multi-Chapter Generation
+
+P-300 supports multi-chapter generation with cross-chapter continuity:
+
+**Prior Chapter Context:**
+- `PriorChapterSummary` dataclass carries structured context from completed chapters
+- Each summary includes: key events (max 10), character states (max 10), unresolved threads (max 5)
+- Last 3 completed chapters are injected into subsequent drafts to maintain continuity
+- `to_context_string()` renders summaries as formatted markdown blocks for LLM consumption
+
+**Scene Context Service Extension:**
+- `SceneContextService.assemble_context()` now accepts `prior_chapters` parameter
+- `to_prompt_string()` appends PRIOR CHAPTER CONTEXT section when prior chapters exist
+- Early-return path (no manifest) still preserves prior chapter context
+
+**Active Character Filtering:**
+- P-300 queries ChapterPlan for `active_character_ids` when `chapter_id` is provided
+- Only active characters are injected into the prompt (reduces token usage, keeps focus)
+- Falls back to all characters if no ChapterPlan exists for the chapter_id
+
+**ChapterOrchestrator:**
+- Sequential runner that executes P-300 jobs one per chapter plan
+- Each job waits for prior chapter to complete before starting
+- Graceful per-chapter error handling: one failure doesn't abort entire run
+- `ChapterResult` dataclass tracks success/failure per chapter
+
+**Security:**
+- `chapter_id` is sanitized via `sanitize_filename()` before use in file paths
+- Prevents path traversal attacks through malicious chapter_id values
+
+#### 11a.6 ChapterSummarizerService
+
+The system SHALL provide a ChapterSummarizerService that:
+- Accepts chapter text and character names, returns PriorChapterSummary via LLM
+- Extracts key_events (max 10), character_states (max 10), unresolved_threads (max 5)
+- Is error-tolerant: returns None on any failure, never blocks the drafting pipeline
+- Follows the ConsistencyCriticService pattern
+
+#### 11a.7 Batch Multi-Chapter Mode
+
+The P-300 drafter SHALL accept `chapter_ids` list in job payload for sequential multi-chapter drafting:
+- Chapters drafted sequentially within a single job
+- After each chapter: summarize via ChapterSummarizerService, create ManuscriptDocument, propagate summary to next chapter
+- Prior chapters capped at last 3 to avoid prompt bloat
+- Per-chapter step records created as `drafter-{chapter_id}`
+- Failed chapters logged but don't abort the job
+
+#### 11a.8 ManuscriptDocument Auto-Creation
+
+The system SHALL automatically create ManuscriptDocument records after each successful chapter draft in batch mode:
+- document_id: `ms-{chapter_id}`
+- title: from ChapterPlan (or "Chapter {id}")
+- content: chapter markdown text
+- chapter_id: linked to the source chapter plan
 
 ## 12. Role-Model Checker
 
@@ -1334,7 +1399,7 @@ The current backend lessons that must remain true are:
 
 ### 17.14 Workflow States
 
-The story-development feature set should use the canonical state families in `docs/Story Development Canonical Contract v0.1.md`.
+The story-development feature set should use the canonical state families in `docs/Story Development Canonical Contract v1.0.md`.
 
 Core stage kinds may include:
 

@@ -1,4 +1,4 @@
-# Story Development Product Spec v0.1
+# Story Development Product Spec v1.0
 
 **Change log from v0.1 (v1.0 Scope Clarification - March 29, 2026)**:
 - Updated Section 4.1 to clarify that current v1.0 provides read projections of flow stages; full mutation support for adding, reordering, and deleting stages is deferred to a future release wave
@@ -29,7 +29,7 @@ This spec assumes one critical product rule:
 
 Canonical contract reference:
 
-- `docs/Story Development Canonical Contract v0.1.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for this feature family
+- `docs/Story Development Canonical Contract v1.0.md` defines the approved object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology for this feature family
 
 The system should guide strongly without behaving like a rigid template engine.
 
@@ -421,11 +421,38 @@ The drafting system should be able to consume:
 
 - manifest and project foundation
 - selected arc and stage context
-- character backgrounds
+- character backgrounds (filtered by ChapterPlan.active_character_ids when chapter_id is provided)
 - world bible entries
 - sequence or chapter plan
 - prior draft text
+- **prior chapter summaries** (last 3 completed chapters: key events, character states, unresolved threads)
 - user instructions
+
+### 12.4 Multi-Chapter Generation
+
+P-300 supports multi-chapter drafting with cross-chapter continuity:
+
+- `chapter_id` in job payload triggers parameterized output path (`chapters/{chapter_id}.md`)
+- Prior chapter context injection: last 3 completed chapters summarized and included in LLM prompt
+- Active character filtering: only characters marked as active in ChapterPlan are injected into prompt
+- Default token budget: 8000 tokens (~2000 words per chapter), overridable via payload
+- ChapterOrchestrator: sequential runner for multi-chapter generation with graceful per-chapter error handling
+
+#### 12.4.1 Batch Multi-Chapter Mode
+
+P-300 accepts `chapter_ids` list in job payload for sequential drafting within a single job:
+- Chapters drafted one at a time, each with own output file and step record
+- ChapterSummarizerService extracts PriorChapterSummary after each draft (key events, character states, unresolved threads)
+- Summaries injected into subsequent chapters via SceneContextService (capped at last 3)
+- ManuscriptDocument records auto-created for Writing workspace integration
+
+#### 12.4.2 ChapterSummarizerService
+
+LLM-based service that reads completed chapter markdown and extracts structured context:
+- key_events: significant plot points (max 10)
+- character_states: character conditions/goals at chapter end (max 10)
+- unresolved_threads: open questions, cliffhangers (max 5)
+- Error-tolerant: returns None on failure, never blocks pipeline
 
 ## 13. Suggestions and Revision Tools
 
@@ -541,7 +568,7 @@ The main workspace should stay aligned with the current three-pane direction.
 
 ## 15. Backend Objects Needed
 
-The eventual backend model should use the canonical names in `docs/Story Development Canonical Contract v0.1.md`.
+The eventual backend model should use the canonical names in `docs/Story Development Canonical Contract v1.0.md`.
 
 Required canonical objects for this feature family:
 
@@ -654,7 +681,7 @@ Planning note:
 
 ## 16. Workflow States
 
-The canonical state families for story-development features live in `docs/Story Development Canonical Contract v0.1.md`.
+The canonical state families for story-development features live in `docs/Story Development Canonical Contract v1.0.md`.
 
 ### 16.1 Stage Configuration State
 

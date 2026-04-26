@@ -1,4 +1,4 @@
-# Narrative Engine - Feature Reference
+# Narrative Engine - Feature Reference v1.0
 
 Complete reference for every feature in Narrative Engine, with descriptions, backend APIs, and usage examples.
 
@@ -1257,8 +1257,70 @@ The Job Launch Panel (right sidebar, available in all workspace modes) allows la
 |-------|------|-------------|-------------|
 | `P-100` | Architect | Generates story architecture, sequences, beats, chapter outlines | First run for a new project, or after foundation/character changes |
 | `P-200` | Sequencer | Plans detailed event sequences, assigns chapters to sequences | After P-100, or when revising the plot structure |
-| `P-300` | Drafter | Writes actual manuscript prose chapter by chapter | After planning is complete, or when rewriting chapters |
+| `P-300` | Drafter | Writes actual manuscript prose; supports single-chapter or multi-chapter generation with cross-chapter continuity (default: 8000 tokens/~2000 words per chapter) | After planning is complete, or when rewriting chapters |
 | `P-400` | Compiler | Compiles final manuscript, performs consistency checks | After all chapters are drafted |
+
+### Multi-Chapter Generation (P-300)
+
+P-300 supports drafting multiple chapters with automatic cross-chapter continuity:
+
+**Single Chapter (Default):**
+```
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "your-project-id"
+  }
+}
+```
+Outputs to `chapter.md` with artifact role `chapter_1`.
+
+**Specific Chapter:**
+```
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "your-project-id",
+    "chapter_id": "ch-002"
+  }
+}
+```
+Outputs to `chapters/ch-002.md` with artifact role `chapter_ch-002`.
+
+**What Happens:**
+1. System queries ChapterPlan for `active_character_ids` (characters appearing in this chapter)
+2. Scene Context Injection includes: active character profiles + world constraints + **prior chapter summaries** (last 3 chapters max)
+3. Prior chapter summaries contain: key events (max 10), character states (max 10), unresolved threads (max 5)
+4. Draft is written to parameterized output path
+
+**ChapterOrchestrator:** For sequential multi-chapter generation, the orchestrator runs P-300 jobs one per chapter plan, each waiting for the prior to complete. Graceful per-chapter error handling: one failure doesn't abort the entire run.
+
+#### Batch Multi-Chapter Mode
+
+Draft multiple chapters sequentially within a single job using the `chapter_ids` list:
+
+```json
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "<your-project-id>",
+    "chapter_ids": ["ch-001", "ch-002", "ch-003"]
+  }
+}
+```
+
+**What happens:**
+1. Chapters are drafted sequentially, one at a time
+2. After each chapter: ChapterSummarizerService extracts PriorChapterSummary via LLM (key events, character states, unresolved threads)
+3. ManuscriptDocument record is auto-created for each completed chapter
+4. Prior chapter summaries are injected into subsequent chapters' prompts (capped at last 3)
+5. Per-chapter step records created: `drafter-ch-001`, `drafter-ch-002`, etc.
+6. Failed chapters are logged but don't abort the job
+
+**Outputs per chapter:**
+- File: `data/projects/{project_id}/chapters/{chapter_id}.md`
+- Artifact role: `chapter_{chapter_id}`
+- ManuscriptDocument: `ms-{chapter_id}` (auto-created)
 
 ### How to Use
 
@@ -1299,12 +1361,32 @@ The Job Launch Panel (right sidebar, available in all workspace modes) allows la
 
 **Job Creation Payload:**
 ```
+# Basic job (any phase)
 {
   "phase": "P-100",
   "payload": {
     "project_id": "your-project-id"
   },
   "idempotency_key": "optional-key-for-safe-retries"
+}
+
+# P-300 with specific chapter (multi-chapter generation)
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "your-project-id",
+    "chapter_id": "ch-002"
+  }
+}
+
+# P-300 with token override (default: 8000)
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "your-project-id",
+    "chapter_id": "ch-002",
+    "max_tokens": 10000
+  }
 }
 ```
 
@@ -1486,8 +1568,19 @@ Multiple toasts stack vertically.
 |-------|----------|-------|-----------|
 | P-100 | New project or foundation changes | 1-5 min | Sequences, beats, chapter plans |
 | P-200 | After P-100 or plot revision | 1-3 min | Detailed event sequences |
-| P-300 | After planning complete | 2-10 min | Manuscript chapters |
+| P-300 | After planning complete | 2-10 min per chapter | Manuscript chapters (single or multi-chapter with continuity) |
 | P-400 | After all chapters drafted | 1-5 min | Compiled manuscript |
+
+### Multi-Chapter Generation Quick Reference
+
+| Feature | Description |
+|---------|-------------|
+| `chapter_id` payload | Pass `"chapter_id": "ch-XXX"` to P-300 to draft a specific chapter |
+| Prior Chapter Context | Last 3 completed chapters automatically injected as summaries (key events, character states, unresolved threads) |
+| Active Character Filtering | ChapterPlan's `active_character_ids` determines which characters are injected into the prompt |
+| Output Path | Chapters written to `chapters/{chapter_id}.md`; backward-compatible fallback to `chapter.md` |
+| Token Budget | Default 8000 tokens (~2000 words per chapter), overridable via `max_tokens` in payload |
+| ChapterOrchestrator | Sequential runner for multi-chapter generation; graceful per-chapter error handling |
 
 ### File/Artifact Types
 
@@ -1509,3 +1602,4 @@ Multiple toasts stack vertically.
 | `ARC_STAGE_MAP` | An arc's progression through flow stages |
 | `BRANCH` | An alternate story version |
 | `STORY_DECISION_NODE` | A recorded creative decision |
+| `PRIOR_CHAPTER_SUMMARY` | Structured context from completed chapters for cross-chapter continuity |

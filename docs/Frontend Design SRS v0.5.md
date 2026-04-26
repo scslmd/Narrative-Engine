@@ -150,7 +150,7 @@ Story-development refinement:
 - **implementing: redefining stages**: redefining a stage should update future suggestions and screen labels while preserving the old meaning in historical artifacts and inspect views
 - **deferred: downstream review cues**: when a stage changes, the UI should identify the downstream artifacts, planning cards, or draft segments that may need review
 - **deferred: pause/optional/re-enable stages**: the user should be able to pause a stage, mark it optional, or re-enable it at any point in the project
-- for the detailed product contract covering editable flow, screens, backend objects, and workflow states, see `docs/Story Development Product Spec v0.1.md`
+- for the detailed product contract covering editable flow, screens, backend objects, and workflow states, see `docs/Story Development Product Spec v1.0.md`
 
 ## 5. Main Surface Areas
 
@@ -792,7 +792,7 @@ Each screen should be concrete about what it takes in and what it gives back.
 
 ## 15. Backend Objects Needed
 
-The frontend should be designed around the canonical story-development contract in `docs/Story Development Canonical Contract v0.1.md`.
+The frontend should be designed around the canonical story-development contract in `docs/Story Development Canonical Contract v1.0.md`.
 
 The frontend should use these user-facing data concepts, even where some are still target-state only:
 
@@ -836,7 +836,7 @@ Object notes:
 
 ## 16. Workflow States
 
-The UI should display the canonical state families from `docs/Story Development Canonical Contract v0.1.md`.
+The UI should display the canonical state families from `docs/Story Development Canonical Contract v1.0.md`.
 
 Friendly labels are allowed, but they must map back to the canonical enum names.
 

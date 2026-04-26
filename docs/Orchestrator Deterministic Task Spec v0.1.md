@@ -7,7 +7,7 @@ This document tells a future orchestrator how to break the story-development pro
 It is meant to be practical, not abstract:
 
 - use the product spec as the feature source of truth
-- use `docs/Story Development Canonical Contract v0.1.md` as the authoritative source for object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology
+- use `docs/Story Development Canonical Contract v1.0.md` as the authoritative source for object names, lifecycle enums, editable-flow semantics, and planning or drafting terminology
 - use the narrative SRS and frontend SRS as system and UX constraints
 - use the async blueprint and failure matrix as implementation guardrails
 - use the documented runtime slices, inspect endpoints, failure handling, and review fixes as lessons about what can go wrong during integration
@@ -76,7 +76,7 @@ failure_result:
 verification:
 ```
 
-Use the canonical operation families from `docs/Story Development Canonical Contract v0.1.md`.
+Use the canonical operation families from `docs/Story Development Canonical Contract v1.0.md`.
 
 ## 4. Bounded Task Rules
 

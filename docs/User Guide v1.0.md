@@ -1,4 +1,4 @@
-# Narrative Engine - User Guide
+# Narrative Engine - User Guide v1.0
 
 This guide walks you through using Narrative Engine from first project to a fully-developed complex story.
 
@@ -149,6 +149,47 @@ When you launch P-300, the **State-Aware Narrative Controller** runs three quali
 3. **Entity Intake** — If a new character appears in the draft that isn't yet in your character profiles (e.g., "Soraya watched from the shadows"), the system detects the unknown name, extracts a skeletal profile (name, inferred archetype, inferred goal) from the character's behavior in the prose, and saves it to your project for review.
 
 These checks run on every P-300 draft automatically. They never block or fail the pipeline — if any check encounters an error, the system logs a warning and proceeds with the original draft.
+
+### Step 5 (continued): Draft Multiple Chapters
+
+Once your first chapter is complete, you can draft additional chapters with cross-chapter continuity:
+
+1. In the Job Launch Panel, select phase **P-300 (Drafter)** again
+2. Add `chapter_id` to the job payload (e.g., `"chapter_id": "ch-002"`)
+3. Click **"Launch"**
+
+Each chapter is written to a separate file (`chapters/ch-001.md`, `chapters/ch-002.md`, etc.). The system automatically:
+
+- **Injects prior chapter context**: The last 3 completed chapters are summarized and included in the LLM prompt, so the drafter knows what happened previously
+- **Filters active characters**: If you have a ChapterPlan with `active_character_ids`, only those characters are injected into the prompt (keeps it focused)
+- **Maintains continuity**: Key events, character states, and unresolved threads from prior chapters guide the new draft
+
+For larger projects, use the **ChapterOrchestrator** to run all chapters sequentially — each chapter waits for the prior to complete before starting.
+
+#### Batch Multi-Chapter Mode
+
+For drafting multiple chapters in a single job, use the `chapter_ids` list:
+
+```bash
+curl -X POST http://localhost:8000/v1/jobs/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phase": "P-300",
+    "payload": {
+      "project_id": "<your-project-id>",
+      "chapter_ids": ["ch-001", "ch-002", "ch-003"]
+    }
+  }'
+```
+
+This triggers sequential drafting with automatic context propagation:
+
+1. **Draft chapter** — P-300 generates the chapter using architect output, sequence, character profiles, world constraints, and prior chapter summaries
+2. **Summarize** — ChapterSummarizerService extracts key events, character states, and unresolved threads via LLM
+3. **Create ManuscriptDocument** — Auto-persisted for Writing workspace integration
+4. **Propagate context** — Summary injected into next chapter (last 3 chapters max)
+
+Each chapter produces: output file (`chapters/{chapter_id}.md`), step record, and ManuscriptDocument. Failed chapters are logged but don't abort the job.
 
 ---
 
@@ -371,11 +412,14 @@ Execute jobs in sequence:
 - Maps character arcs to specific scenes
 
 **P-300 Drafter:**
-- Injects character anchors and world constraints into the LLM prompt (Scene Context)
+- Injects character anchors, world constraints, and prior chapter context into the LLM prompt (Scene Context, last 3 chapters max)
 - Writes actual manuscript chapters using your character profiles and world bible as grounding
+- Supports multi-chapter generation: pass `chapter_id` in job payload to write to `chapters/{chapter_id}.md`
+- Filters active characters from ChapterPlan when `chapter_id` is provided (keeps prompt focused)
 - Runs a consistency critic after generation to catch character voice drift or behavior that contradicts profiles, triggering automatic rewrites when needed
 - Detects new characters appearing in the draft prose and auto-extracts skeletal profiles for your review (Entity Intake)
 - Creates draft artifacts with revision suggestions
+- Default output budget: 8000 tokens (~2000 words per chapter, overridable via payload)
 
 **P-400 Compiler:**
 - Compiles the final manuscript
@@ -500,6 +544,9 @@ The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity 
 | **Inspect** | Deep debug view showing step execution, artifacts, and lineage |
 | **World Bible** | Encyclopedic reference for story world facts, lore, and rules |
 | **Chapter Packet** | A bundle of reference materials prepared for drafting a chapter |
-| **Scene Context Injection** | Automatic injection of character profiles and world bible constraints into the P-300 drafter prompt before generation begins |
+| **Scene Context Injection** | Automatic injection of character profiles, world bible constraints, and prior chapter context into the P-300 drafter prompt before generation begins |
 | **Consistency Critic** | Post-draft LLM check that verifies character dialogue and actions match their profiles; triggers automatic rewrite on violations |
 | **Entity Intake** | Automatic detection of new characters in draft prose; extracts skeletal profiles (name, archetype, goal) and persists them for review |
+| **Prior Chapter Summary** | LLM-extracted context from completed chapters, including key events (max 10), character states (max 10), and unresolved threads (max 5). Automatically generated by ChapterSummarizerService after each chapter draft in batch mode. Injected into subsequent chapters for continuity. |
+| **ChapterSummarizerService** | LLM-based service that reads completed chapter markdown and extracts structured PriorChapterSummary. Follows the ConsistencyCriticService pattern: error-tolerant, never blocks the pipeline. |
+| **ChapterOrchestrator** | Programmatic service for running multiple P-300 jobs sequentially across chapters (one job per chapter). For batch mode within a single job, use the `chapter_ids` payload instead. |
