@@ -35,6 +35,7 @@ from .step_records import StepRecordService
 from .scene_context import SceneContextService
 from .consistency_critic import ConsistencyCriticService
 from .entity_intake import EntityIntakeService
+from .chapter_summarizer import ChapterSummarizerService
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,7 @@ class LocalExecutor:
         scene_context_service: SceneContextService | None = None,
         consistency_critic_service: ConsistencyCriticService | None = None,
         entity_intake_service: EntityIntakeService | None = None,
+        chapter_summarizer_service: ChapterSummarizerService | None = None,
         poll_interval_seconds: float = 0.25,
     ) -> None:
         self._job_manager = job_manager
@@ -116,6 +118,7 @@ class LocalExecutor:
         self._scene_context = scene_context_service
         self._consistency_critic = consistency_critic_service
         self._entity_intake = entity_intake_service
+        self._chapter_summarizer = chapter_summarizer_service
         self._poll_interval_seconds = poll_interval_seconds
         self._stop_event = Event()
         self._threads: list[Thread] = []

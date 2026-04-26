@@ -147,3 +147,12 @@ def test_summarize_skips_on_empty_text():
 
     assert result is None
     mock_inferencer.generate_text.assert_not_called()
+
+
+def test_executor_accepts_chapter_summarizer_parameter():
+    import inspect
+    from app.services.local_executor import LocalExecutor
+
+    sig = inspect.signature(LocalExecutor.__init__)
+    params = list(sig.parameters.keys())
+    assert "chapter_summarizer_service" in params, f"Missing parameter. Got: {params}"
