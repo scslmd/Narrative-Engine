@@ -5,13 +5,13 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `878 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `907 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
 - Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1971 modules in production bundle.
 - Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
-- Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23.
+- Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23. Multi-chapter generation completed in 2026-04-26 (summarization, prior context propagation, ManuscriptDocument auto-creation).
 - Route-driven workspace state is the current frontend architecture:
   - `/workspace/:projectId/plan`
   - `/workspace/:projectId/write`
@@ -837,8 +837,23 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 
 **Existing prompt builders** (`app/services/runtime_prompts.py`):
 - P-100 Architect (markdown output), P-200 Sequencer (JSON output), P-300 Drafter (markdown), P-400 Compiler (JSON)
+- P-300 default max_tokens: 8000 (supports full-chapter drafts, overridable via payload)
 
-### Job System
+### Multi-Chapter Generation
+
+**Architecture**: P-300 drafter accepts `chapter_id` in job payload. Output path becomes `chapters/{chapter_id}.md`. Artifact role becomes `chapter_{chapter_id}`. Backward compatible: without chapter_id, outputs flat `chapter.md` with artifact role `chapter_1`.
+
+**Components**:
+- `app/services/runtime_prompts.py` - `chapter_output_path(project_dir, chapter_id)` parameterized path function
+- `app/services/scene_context.py` - `SceneContext.prior_chapters` injects last 3 prior chapter summaries into LLM prompt
+- `app/services/chapter_orchestrator.py` - `ChapterOrchestrator.run_all()` runs N sequential P-300 jobs, one per chapter plan
+- `app/schemas/story_development.py` - `PriorChapterSummary` dataclass for cross-chapter continuity context
+
+**Context Injection**: SceneContextService assembles character anchors + world constraints + prior chapter summaries. Prior chapters capped at last 3 to avoid prompt bloat. Each summary includes key events (max 10), character states (max 10), unresolved threads (max 5).
+
+**Active Character Filtering**: When `chapter_id` is provided, P-300 queries `ChapterPlan.active_character_ids` and passes to SceneContextService. Only active characters are injected into the prompt. Falls back to all characters if no chapter plan exists.
+
+**Security**: `chapter_id` is sanitized via `sanitize_filename()` before use in file paths to prevent path traversal attacks.
 
 **Only P-100 to P-400 phases exist** (`app/schemas/enums.py::JobPhase`). No custom phases allowed.
 - `PENDING -> PROCESSING -> COMPLETED` or `FAILED`
