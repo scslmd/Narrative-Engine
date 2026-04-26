@@ -238,6 +238,7 @@ def build_app() -> FastAPI:
     from .services.local_executor import LocalExecutor
     from .services.scene_context import SceneContextService
     from .services.consistency_critic import ConsistencyCriticService
+    from .services.chapter_summarizer import ChapterSummarizerService
     from .services.entity_intake import EntityIntakeService
     from .services.model_registry import ModelRegistry
     from .services.projects import ProjectService
@@ -283,6 +284,7 @@ def build_app() -> FastAPI:
         scene_context_service=SceneContextService(repository=story_development_repository),
         consistency_critic_service=ConsistencyCriticService(inferencer=inferencer),
         entity_intake_service=EntityIntakeService(inferencer=inferencer),
+        chapter_summarizer_service=ChapterSummarizerService(inferencer=inferencer),
     )
 
     @asynccontextmanager
