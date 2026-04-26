@@ -191,6 +191,71 @@ This triggers sequential drafting with automatic context propagation:
 
 Each chapter produces: output file (`chapters/{chapter_id}.md`), step record, and ManuscriptDocument. Failed chapters are logged but don't abort the job.
 
+#### Checking Batch Results
+
+After submitting a batch job, verify the results:
+
+**1. Check job status:**
+```bash
+curl http://localhost:8000/v1/jobs/{job_id}/status
+```
+Response shows `"status": "COMPLETED"` and detail like `"Completed 3/3 chapters."` If a chapter failed, the detail reflects partial completion (e.g., `"Completed 2/3 chapters."`).
+
+**2. Inspect per-chapter step records:**
+```bash
+curl http://localhost:8000/v1/jobs/{job_id}/steps
+```
+Each chapter produces a step record with `step_name: "drafter-ch-XXX"`. Check individual steps for failures.
+
+**3. List auto-created ManuscriptDocuments:**
+```bash
+curl "http://localhost:8000/v1/story-development/drafting/manuscript-documents?project_id={your-project-id}"
+```
+Each completed chapter has a ManuscriptDocument with `document_id: "ms-ch-XXX"` and the chapter's content.
+
+**4. Read chapter files directly:**
+```bash
+cat data/projects/{project_id}/chapters/ch-001.md
+cat data/projects/{project_id}/chapters/ch-002.md
+```
+
+**5. Inspect view (frontend):** Navigate to `/workspace/{projectId}/inspect/{jobId}` to see the step timeline and artifact lineage for the batch run.
+
+#### What Prior Context Propagation Means for You
+
+When you use batch mode, each chapter's draft benefits from what happened in previous chapters:
+
+- If Chapter 1 ends with your protagonist discovering a hidden letter, Chapter 2's draft will know about that discovery
+- Character states carry forward (e.g., "injured", "distrustful of allies"), so subsequent drafts maintain consistency
+- Unresolved threads are tracked, increasing the chance later chapters address them
+
+This is why batch mode produces more cohesive multi-chapter stories than launching individual jobs.
+
+#### When a Chapter Fails Mid-Batch
+
+If chapters `[ch-001, ch-002, ch-003]` are submitted and `ch-002` fails:
+- `ch-001` is already completed (file written, ManuscriptDocument created)
+- `ch-002` is logged as failed, step record shows error details
+- `ch-003` still runs but without `ch-002`'s summary in its prior context
+
+To retry a failed chapter, submit a new job with just that chapter's ID:
+```json
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "<your-project-id>",
+    "chapter_ids": ["ch-002"]
+  }
+}
+```
+
+#### Batch Mode vs. Manual Draft Promotion
+
+In single-chapter mode (Phase 5c), you manually promote drafts to ManuscriptDocuments using the drafting API. In batch mode, this happens automatically — you do NOT need to manually promote each chapter's draft. The ManuscriptDocument records are created with:
+- `document_id`: `ms-{chapter_id}`
+- `title`: from your ChapterPlan (or "Chapter {id}")
+- `content`: the generated chapter markdown
+
 ---
 
 ## Level 2: Medium Complexity with Branching and Review

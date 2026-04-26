@@ -614,6 +614,32 @@ curl -X POST http://localhost:8000/v1/jobs/create \
 
 This runs chapters sequentially within one job, with automatic LLM-based summarization between chapters. Each chapter's summary (key events, character states, unresolved threads) is injected into the next chapter's prompt for continuity. ManuscriptDocument records are auto-created for each completed chapter.
 
+#### Checking Results
+
+After the job completes, verify outputs:
+
+1. **Job status**: `GET /v1/jobs/{job_id}/status` — shows completion count
+2. **Step records**: `GET /v1/jobs/{job_id}/steps` — one step per chapter (`drafter-ch-XXX`)
+3. **ManuscriptDocuments**: `GET /v1/story-development/drafting/manuscript-documents?project_id={id}` — auto-created for each completed chapter
+4. **Chapter files**: Check `data/projects/{project_id}/chapters/` directory
+5. **Inspect view**: Navigate to `/workspace/{projectId}/inspect/{jobId}` in the frontend
+
+> **Note:** In batch mode, you do NOT need to manually promote drafts (Phase 5c). ManuscriptDocument records are created automatically for each completed chapter.
+
+#### Failed Chapters
+
+If a chapter fails mid-batch, subsequent chapters continue running (without the failed chapter's summary). To retry:
+```json
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "<your-project-id>",
+    "chapter_ids": ["ch-002"]
+  }
+}
+```
+Check step records or the Inspect view to identify which chapter failed and why.
+
 ---
 
 ## Phase 6: Role Model Checker
