@@ -424,3 +424,211 @@ def test_local_executor_p300_injects_scene_context(tmp_path: Path) -> None:
     )
     assert "Kael" in user_message, f"Expected character name 'Kael' in context. Got: {user_message[:500]}"
     assert "reluctant hero" in user_message, f"Expected archetype in context. Got: {user_message[:500]}"
+
+
+def test_local_executor_p300_writes_parameterized_chapter_path(tmp_path: Path) -> None:
+    """P-300 should write chapter output to chapters/{chapter_id}.md when chapter_id is provided."""
+    project_id = "param-chapter-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening", "depends_on": []}]}),
+            "P-300": "# Chapter 3: The Confrontation\nKael faced the truth at last.\n",
+        },
+    )
+
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    models_root = tmp_path / "data" / "models"
+    reports_root = tmp_path / "data" / "role_model_checker_runs"
+    models_root.mkdir(parents=True, exist_ok=True)
+    project_service = ProjectService(tmp_path)
+    job_manager = JobManager(db_path)
+    checker_manager = RoleModelCheckManager(db_path)
+    step_records = StepRecordService(db_path)
+
+    executor = LocalExecutor(
+        job_manager=job_manager,
+        role_check_manager=checker_manager,
+        role_check_service=RoleModelCheckerService(models_root, reports_root, inferencer=inferencer),
+        inferencer=inferencer,
+        project_service=project_service,
+        step_record_service=step_records,
+        poll_interval_seconds=0.05,
+    )
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id, payload={"chapter_id": "ch-003"})
+        final_status = _wait_for_terminal_status(job_manager, p300.id)
+    finally:
+        executor.stop()
+
+    assert final_status == "COMPLETED"
+
+    # Verify chapter was written to parameterized path
+    chapter_path = tmp_path / "data" / "projects" / project_id / "chapters" / "ch-003.md"
+    assert chapter_path.exists(), f"Expected chapter at {chapter_path}"
+    content = chapter_path.read_text()
+    assert "Chapter 3: The Confrontation" in content
+
+    # Verify artifact role is parameterized
+    steps = job_manager.list_step_records(p300.id)
+    lineage = job_manager.list_artifact_lineage(p300.id)
+    assert len(steps) == 1
+    assert steps[0]["output_artifact_refs"] == ["chapter_ch-003"]
+    assert len(lineage) == 1
+    assert lineage[0]["artifact_role"] == "chapter_ch-003"
+    assert lineage[0]["path"] == str(chapter_path)
+
+
+def test_local_executor_p300_backward_compat_no_chapter_id(tmp_path: Path) -> None:
+    """P-300 without chapter_id should still write to flat chapter.md (backward compat)."""
+    project_id = "backward-compat-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA mapmaker learns her city is alive.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening", "depends_on": []}]}),
+            "P-300": "# Chapter 1\nDefault chapter content.\n",
+        },
+    )
+
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+    output_path = tmp_path / "data" / "projects" / project_id / "chapter.md"
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        p300 = _run_phase(job_manager, phase="P-300", project_id=project_id)
+        final_status = _wait_for_terminal_status(job_manager, p300.id)
+    finally:
+        executor.stop()
+
+    assert final_status == "COMPLETED"
+
+    # Verify chapter was written to flat path (backward compat)
+    assert output_path.exists(), f"Expected chapter at {output_path}"
+    content = output_path.read_text()
+    assert "Chapter 1" in content
+
+    # Verify artifact role remains chapter_1 (backward compat)
+    steps = job_manager.list_step_records(p300.id)
+    lineage = job_manager.list_artifact_lineage(p300.id)
+    assert steps[0]["output_artifact_refs"] == ["chapter_1"]
+    assert lineage[0]["artifact_role"] == "chapter_1"
+
+
+def test_local_executor_p300_sanitizes_malicious_chapter_id(tmp_path: Path) -> None:
+    """P-300 should sanitize chapter_id to prevent path traversal."""
+    project_id = "sanitize-chapter-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nTest.\n",
+            "P-200": json.dumps({"beats": [{"id": "beat-1", "title": "Opening", "depends_on": []}]}),
+            "P-300": "# Sanitized Chapter\nContent.\n",
+        },
+    )
+
+    executor, job_manager, project_service = _build_executor(tmp_path, inferencer=inferencer)
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+        # Try path traversal attack
+        p300 = _run_phase(
+            job_manager, phase="P-300", project_id=project_id, payload={"chapter_id": "../../evil"}
+        )
+        final_status = _wait_for_terminal_status(job_manager, p300.id)
+    finally:
+        executor.stop()
+
+    assert final_status == "COMPLETED"
+
+    # Verify the chapter was NOT written outside the chapters/ directory
+    evil_path = tmp_path / "data" / "projects" / project_id / ".." / "evil.md"
+    assert not evil_path.exists(), "Path traversal should have been sanitized"
+
+    # The sanitized chapter should fall back to default chapter.md (backward compat)
+    fallback_path = tmp_path / "data" / "projects" / project_id / "chapter.md"
+    assert fallback_path.exists(), f"Expected fallback chapter at {fallback_path}"
+
+
+def test_multi_chapter_pipeline_generates_sequential_chapters(tmp_path: Path) -> None:
+    """Full integration: run P-300 for two chapters with parameterized output paths."""
+    project_id = "multi-chapter-test"
+    manifest = _make_manifest(project_id)
+    initialize_project_artifacts(project_id, manifest=manifest, root_dir=tmp_path)
+
+    inferencer = FakePipelineInferenceBackend(
+        content_by_phase={
+            "P-100": "## Logline\nA hero's journey.\n",
+            "P-200": json.dumps({"beats": [
+                {"id": "beat-1", "title": "Opening", "depends_on": []},
+                {"id": "beat-2", "title": "Climax", "depends_on": ["beat-1"]},
+            ]}),
+            "P-300": "# Chapter Content\nDraft prose.\n",
+        },
+    )
+
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    models_root = tmp_path / "data" / "models"
+    reports_root = tmp_path / "data" / "role_model_checker_runs"
+    models_root.mkdir(parents=True, exist_ok=True)
+    project_service = ProjectService(tmp_path)
+    job_manager = JobManager(db_path)
+    checker_manager = RoleModelCheckManager(db_path)
+    step_records = StepRecordService(db_path)
+
+    executor = LocalExecutor(
+        job_manager=job_manager,
+        role_check_manager=checker_manager,
+        role_check_service=RoleModelCheckerService(models_root, reports_root, inferencer=inferencer),
+        inferencer=inferencer,
+        project_service=project_service,
+        step_record_service=step_records,
+        poll_interval_seconds=0.05,
+    )
+    project_service.reconcile_projects()
+
+    executor.start()
+    try:
+        p100 = _run_phase(job_manager, phase="P-100", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p100.id) == "COMPLETED"
+        p200 = _run_phase(job_manager, phase="P-200", project_id=project_id)
+        assert _wait_for_terminal_status(job_manager, p200.id) == "COMPLETED"
+
+        # Run P-300 for two chapters
+        ch1 = _run_phase(job_manager, phase="P-300", project_id=project_id, payload={"chapter_id": "ch-001"})
+        assert _wait_for_terminal_status(job_manager, ch1.id) == "COMPLETED"
+
+        ch2 = _run_phase(job_manager, phase="P-300", project_id=project_id, payload={"chapter_id": "ch-002"})
+        assert _wait_for_terminal_status(job_manager, ch2.id) == "COMPLETED"
+    finally:
+        executor.stop()
+
+    # Verify both chapters exist in parameterized paths
+    ch1_path = tmp_path / "data" / "projects" / project_id / "chapters" / "ch-001.md"
+    ch2_path = tmp_path / "data" / "projects" / project_id / "chapters" / "ch-002.md"
+    assert ch1_path.exists(), f"Expected chapter 1 at {ch1_path}"
+    assert ch2_path.exists(), f"Expected chapter 2 at {ch2_path}"

@@ -96,23 +96,25 @@ def build_p300_drafter_request(
     sequence_output: str | None = None,
     architect_output: str | None = None,
     default_model: str | None,
+    chapter_id: str | None = None,
 ) -> InferenceRequest:
     prompt_context = _runtime_prompt_context(manifest=manifest, payload=payload)
     if sequence_output is not None:
         prompt_context["sequence_output"] = sequence_output
     if architect_output is not None:
         prompt_context["architect_output"] = architect_output
+    chapter_label = f"chapter {chapter_id}" if chapter_id else "chapter-1"
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=0.2),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=8000),
         messages=[
             InferenceMessage(
                 role="system",
                 content=(
-                    "You are the Drafter role for Narrative-Engine. "
-                    "Produce the P-300 chapter-1 draft as deterministic markdown. "
-                    "Preserve chapter flow, continuity, and stable section ordering."
+                    f"You are the Drafter role for Narrative-Engine. "
+                    f"Produce the P-300 {chapter_label} draft as deterministic markdown. "
+                    f"Preserve chapter flow, continuity, and stable section ordering."
                 ),
             ),
             InferenceMessage(
@@ -384,7 +386,16 @@ def sequence_output_path(project_dir: Path) -> Path:
     return project_dir / "sequences.json"
 
 
-def chapter_output_path(project_dir: Path) -> Path:
+def chapter_output_path(project_dir: Path, chapter_id: str | None = None) -> Path:
+    """Return output path for a chapter draft.
+
+    If chapter_id is provided, writes to chapters/{chapter_id}.md.
+    Otherwise falls back to project_dir/chapter.md (backward compat).
+    """
+    if chapter_id:
+        out_dir = project_dir / "chapters"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return out_dir / f"{chapter_id}.md"
     return project_dir / "chapter.md"
 
 

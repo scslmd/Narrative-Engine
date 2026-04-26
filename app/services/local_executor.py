@@ -16,6 +16,7 @@ from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.role_model_checker import RoleModelCheckStartRequest
 from ..services.file_permissions import FilePermissionValidator
 from ..settings import settings
+from ..utils.input_validation import ValidationError, sanitize_filename
 from .job_manager import JobManager
 from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
@@ -777,6 +778,13 @@ class LocalExecutor:
             raise ValueError("P-300 requires payload.project_id.")
         project = self._project_service.get_project(project_id)
         payload = dict(request_payload.get("payload", {}))
+        chapter_id = str(payload.get("chapter_id") or "").strip() or None
+        if chapter_id:
+            try:
+                chapter_id = sanitize_filename(chapter_id)
+            except ValidationError:
+                logger.warning("Invalid chapter_id, falling back to default output path: %r", chapter_id)
+                chapter_id = None
         selected_inputs = self._resolve_runtime_artifact_inputs(
             job_id=job_id,
             attempt=attempt,
@@ -791,23 +799,25 @@ class LocalExecutor:
             sequence_output=sequence_output,
             architect_output=architect_output,
             default_model=self._inferencer.descriptor.default_model,
+            chapter_id=chapter_id,
         )
         # Context injection: assemble character anchors and world constraints
         if self._scene_context:
             try:
+              # Try to get active_character_ids from the chapter plan
                 active_chars: list[str] | None = None
-                chapter_id = str(payload.get("chapter_id") or "").strip() or None
                 if chapter_id:
                     try:
-                        _repo = StoryDevelopmentRepository(settings.operations_db_path)
+                        _repo = self._scene_context._repository
                         chapter_plan = _repo.get_chapter_plan(chapter_id)
                         active_chars = chapter_plan.active_character_ids if chapter_plan else None
-                    except (KeyError, AttributeError):
-                        pass
+                    except KeyError:
+                        pass  # No chapter plan found, use all characters
 
                 ctx = self._scene_context.assemble_context(
                     project_id=project_id,
                     active_character_ids=active_chars,
+                    prior_chapters=None,  # Will be populated by orchestrator
                 )
                 context_prompt = ctx.to_prompt_string()
                 if context_prompt:
@@ -881,7 +891,7 @@ class LocalExecutor:
                 lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
             )
             return
-        output_path = chapter_output_path(Path(project.project_dir))
+        output_path = chapter_output_path(Path(project.project_dir), chapter_id=chapter_id)
         output_text = inference_response.content.strip()
         if output_text:
             output_text += "\n"
@@ -978,6 +988,7 @@ class LocalExecutor:
             "usage": inference_response.usage.model_dump(mode="json"),
             "artifact_path": str(output_path),
         }
+        artifact_role = f"chapter_{chapter_id}" if chapter_id else "chapter_1"
         finished_at = _utcnow()
         self._finalize_generated_job_phase(
             job_id=job_id,
@@ -993,20 +1004,20 @@ class LocalExecutor:
             output_payload=step_output_payload,
             prompt_payload=inference_request.model_dump(mode="json"),
             input_artifact_refs=input_artifact_refs,
-            output_artifact_refs=["chapter_1"],
+            output_artifact_refs=[artifact_role],
             started_at=started_at,
             finished_at=finished_at,
             finish_reason=normalized_finish_reason,
             prompt_tokens=inference_response.usage.prompt_tokens,
             completion_tokens=inference_response.usage.completion_tokens,
             total_tokens=inference_response.usage.total_tokens,
-            artifact_role="chapter_1",
+            artifact_role=artifact_role,
             artifact_kind="markdown",
             output_path=output_path,
             staged_output_path=staged_output_path,
             content_hash_source=output_text,
             source_content_hashes=source_content_hashes,
-            project_artifact_name="chapter_1",
+            project_artifact_name=artifact_role,
         )
 
     def _read_optional_artifact(self, project_id: str, artifact_name: str) -> str | None:
