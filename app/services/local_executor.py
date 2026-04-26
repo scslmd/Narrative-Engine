@@ -1276,6 +1276,27 @@ class LocalExecutor:
                 project_artifact_name=artifact_role,
             )
 
+            # Auto-create ManuscriptDocument for this chapter
+            try:
+                from .drafting import DraftingService
+                _drafting_service = DraftingService(repository=_repo)
+                chapter_title = f"Chapter {safe_chapter_id}"
+                try:
+                    _cp = _repo.get_chapter_plan(safe_chapter_id)
+                    chapter_title = _cp.title or chapter_title
+                except KeyError:
+                    pass
+
+                _drafting_service.save_manuscript_document(
+                    project_id=project_id,
+                    document_id=f"ms-{safe_chapter_id}",
+                    content=output_text,
+                    title=chapter_title,
+                    chapter_id=safe_chapter_id,
+                )
+            except Exception as exc:
+                logger.warning("ManuscriptDocument creation failed for %s: %s", safe_chapter_id, exc)
+
             # Summarize chapter for prior context propagation
             if self._chapter_summarizer:
                 try:
