@@ -26,7 +26,7 @@ def test_prior_chapter_summary_to_context_string():
     )
     ctx = summary.to_context_string()
     assert "The Departure" in ctx
-   assert "Kael leaves" in ctx
+    assert "Kael leaves" in ctx
 
 
 def test_prior_chapter_summary_truncation_respects_limits():

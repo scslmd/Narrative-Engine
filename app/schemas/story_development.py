@@ -219,7 +219,6 @@ class PriorChapterSummary:
         if self.unresolved_threads:
             lines.append("Unresolved threads:")
             for thread in self.unresolved_threads[:5]:
-<<<<<<< HEAD
                 lines.append(f"  ? {thread}")
             lines.append("")
         return "\n".join(lines).rstrip()
