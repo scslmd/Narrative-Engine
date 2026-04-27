@@ -80,10 +80,10 @@ class MythosExtractionAnalysis:
 
 
 class MythosExtractionRequest(StrictSchemaModel):
-    text: str = Field(min_length=1)
-    source_corpus: str | None = None
-    generation_mode: str = Field(min_length=1)
-    project_id: str | None = None
+    text: str = Field(min_length=1, max_length=5_000_000)
+    source_corpus: str | None = Field(default=None, max_length=200)
+    generation_mode: str = Field(min_length=1, max_length=20)
+    project_id: str | None = Field(default=None, max_length=100)
 
     @field_validator("generation_mode")
     @classmethod

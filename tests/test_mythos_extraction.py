@@ -101,6 +101,16 @@ def test_mythos_request_rejects_invalid_mode():
         )
 
 
+def test_mythos_request_rejects_empty_text():
+    from app.schemas.mythos_extraction import MythosExtractionRequest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        MythosExtractionRequest(
+            text="",
+            generation_mode="same_world",
+        )
+
+
 def test_mythos_response_fields():
     from app.schemas.mythos_extraction import MythosExtractionResponse, ExtractionSummary
     summary = ExtractionSummary(
