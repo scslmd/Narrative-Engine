@@ -567,3 +567,111 @@ def build_chapter_summarize_request(
             "chapter_id": chapter_id,
         },
     )
+
+
+def build_mythos_analysis_request(
+    *,
+    mythos_text: str,
+    source_corpus: str | None = None,
+    generation_mode: str = "same_world",
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for mythos pattern extraction.
+
+    The LLM should return a JSON object matching MythosExtractionAnalysis structure.
+    Uses temperature=0.1 for deterministic output.
+    max_tokens=16000 to fit full JSON output with patterns and entities.
+    Truncates mythos_text to 24,000 chars for single-pass analysis.
+    """
+    truncated_text = mythos_text[:24_000]
+    corpus_hint = (
+        f"Source tradition hint: {source_corpus}"
+        if source_corpus
+        else "AI should identify the source tradition from the text."
+    )
+
+    system_prompt = (
+        "You are a mythology analysis AI for Narrative-Engine. You analyze mythological texts "
+        "and extract archetypal patterns, narrative structures, cosmic rules, and symbolic motifs.\n\n"
+        f"{corpus_hint}\n\n"
+        f"Generation mode: {generation_mode}\n\n"
+        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        '{\n'
+        '  "source_corpus": "<string - identified tradition, e.g., Greek Mythology>",\n'
+        '  "generation_mode": "<same_world | transposed | pure_pattern>",\n'
+        '  "archetypal_patterns": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "description": "<string>",\n'
+        '      "character_type": "<string>",\n'
+        '      "narrative_beats": [],\n'
+        '      "examples_from_text": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "narrative_structures": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "phases": [],\n'
+        '      "tension_curve": "<string>",\n'
+        '      "resolution_type": "<string>"\n'
+        '    }\n'
+        '  ],\n'
+        '  "cosmic_rules": [\n'
+        '    {\n'
+        '      "rule": "<string>",\n'
+        '      "enforcement": "<string>",\n'
+        '      "exceptions": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "symbolic_motifs": [\n'
+        '    {\n'
+        '      "symbol": "<string>",\n'
+        '      "meaning": "<string>",\n'
+        '      "narrative_function": "<string>"\n'
+        '    }\n'
+        '  ],\n'
+        '  "thematic_spine": "<string>",\n'
+        '  "emotional_promise": "<string>",\n'
+        '  "tone_and_voice_direction": "<string>",\n'
+        '  "key_entities": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "entity_type": "<deity | location | concept | force>",\n'
+        '      "archetype": "<string>",\n'
+        '      "domain_or_power": "<string>",\n'
+        '      "canonical_facts": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "entity_relationships": [\n'
+        '    {\n'
+        '      "source": "<string>",\n'
+        '      "target": "<string>",\n'
+        '      "relationship_type": "<string>",\n'
+        '      "description": "<string>"\n'
+        '    }\n'
+        '  ]\n'
+        '}\n\n'
+        "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
+        "Extract the storytelling DNA — how stories are told in this tradition, "
+        "what narrative rules govern them, what archetypal journeys characters undertake."
+    )
+
+    user_content = (
+        f"Analyze the following mythological text and extract its archetypal patterns, "
+        f"narrative structures, cosmic rules, and symbolic motifs:\n\n"
+        f"{truncated_text}"
+    )
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=16000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "mythos_extraction",
+            "role": "mythos_analyzer",
+        },
+    )

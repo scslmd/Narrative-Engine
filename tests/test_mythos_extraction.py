@@ -127,3 +127,40 @@ def test_mythos_response_fields():
     )
     assert response.status == "completed"
     assert response.extraction.archetypal_patterns == 4
+
+
+def test_build_mythos_analysis_request_returns_inference_request():
+    from app.services.runtime_prompts import build_mythos_analysis_request
+    request = build_mythos_analysis_request(
+        mythos_text="Zeus threw lightning bolts...",
+        source_corpus="Greek Mythology",
+        generation_mode="same_world",
+        default_model="test-model",
+    )
+    assert request.model == "test-model"
+    system_msg = [m for m in request.messages if m.role == "system"][0]
+    assert "archetypal_patterns" in system_msg.content
+    assert "narrative_structures" in system_msg.content
+    assert request.temperature == 0.1
+
+
+def test_build_mythos_analysis_request_truncates_long_text():
+    from app.services.runtime_prompts import build_mythos_analysis_request
+    long_text = "x" * 30_000
+    request = build_mythos_analysis_request(
+        mythos_text=long_text,
+        default_model="test-model",
+    )
+    user_msg = [m for m in request.messages if m.role == "user"][0]
+    assert len(user_msg.content) <= 30_000
+
+
+def test_build_mythos_analysis_request_includes_generation_mode():
+    from app.services.runtime_prompts import build_mythos_analysis_request
+    request = build_mythos_analysis_request(
+        mythos_text="Test text",
+        generation_mode="transposed",
+        default_model="test-model",
+    )
+    combined = " ".join(m.content for m in request.messages).lower()
+    assert "transposed" in combined
