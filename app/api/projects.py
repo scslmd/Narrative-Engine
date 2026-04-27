@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 def build_projects_router(
     project_service: ProjectService,
     import_service: Any = None,
+    mythos_service: Any = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
@@ -70,6 +72,19 @@ def build_projects_router(
             try:
                 return import_service.import_story(request)
             except StoryImportError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if mythos_service is not None:
+        from ..schemas.mythos_extraction import MythosExtractionRequest, MythosExtractionResponse
+        from ..services.mythos_extraction import MythosExtractionError
+
+        @router.post("/import-mythos", response_model=MythosExtractionResponse, status_code=201)
+        def import_mythos(request: MythosExtractionRequest) -> MythosExtractionResponse:
+            try:
+                return mythos_service.extract(request)
+            except MythosExtractionError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
             except Exception as exc:
                 raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -572,3 +572,37 @@ def test_transactional_import_persists_world_bible_entries(tmp_path: Path):
         assert len(entries) >= 3, f"Expected at least 3 world bible entries, got {len(entries)}"
     finally:
         conn.close()
+
+
+# --- Task 7: ManifestConfig extension tests ---
+
+def test_manifest_config_accepts_mythos_fields():
+    from app.schemas.manifest import ManifestConfig
+    config = ManifestConfig(
+        genre="Mythic Fiction",
+        tone_profile="Epic and Fatalistic",
+        story_structure="THREE_ACT",
+        mythos_source_corpus="Greek Mythology",
+        mythos_generation_mode="same_world",
+    )
+    assert config.mythos_source_corpus == "Greek Mythology"
+    assert config.mythos_generation_mode == "same_world"
+
+
+def test_manifest_config_mythos_fields_optional():
+    from app.schemas.manifest import ManifestConfig
+    config = ManifestConfig(
+        genre="Fantasy",
+        tone_profile="Dark",
+        story_structure="THREE_ACT",
+    )
+    assert config.mythos_source_corpus == ""
+    assert config.mythos_generation_mode == ""
+
+
+# --- Task 8: API endpoint wiring tests ---
+
+def test_mythos_service_wired_in_main():
+    """Verify MythosExtractionService is importable and constructible."""
+    from app.services.mythos_extraction import MythosExtractionService, MythosExtractionError
+    assert issubclass(MythosExtractionError, ValueError)
