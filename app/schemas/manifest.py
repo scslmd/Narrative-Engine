@@ -13,6 +13,8 @@ class ManifestConfig(StrictSchemaModel):
     primary_language: str = Field(default="English", min_length=1)
     secondary_language: str | None = Field(default=None, min_length=0)
     story_structure: StoryStructure
+    mythos_source_corpus: str = ""
+    mythos_generation_mode: str = ""
 
     @field_validator("genre", "tone_profile", "primary_language")
     @classmethod

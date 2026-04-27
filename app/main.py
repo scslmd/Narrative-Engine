@@ -268,6 +268,12 @@ def build_app() -> FastAPI:
         repository=story_development_repository,
         inferencer=inferencer,
     )
+    from .services.mythos_extraction import MythosExtractionService
+    mythos_service = MythosExtractionService(
+        project_service=project_service,
+        repository=story_development_repository,
+        inferencer=inferencer,
+    )
     role_check_manager = RoleModelCheckManager(settings.operations_db_path)
     role_check_service = RoleModelCheckerService(
         models_root,
@@ -460,7 +466,7 @@ def build_app() -> FastAPI:
     app.include_router(auth_router)  # Authentication endpoints (SEC-02)
     app.include_router(backup_router)  # Backup endpoints (REL-04)
     app.include_router(health_router)  # Health endpoints (REL-05, REL-06)
-    app.include_router(build_projects_router(project_service, import_service=import_service))
+    app.include_router(build_projects_router(project_service, import_service=import_service, mythos_service=mythos_service))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_jobs_router(job_manager, prefix='/v1/jobs'))
     app.include_router(build_models_router(model_registry))
