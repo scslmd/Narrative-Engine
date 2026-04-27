@@ -15,6 +15,9 @@ class ManifestConfig(StrictSchemaModel):
     story_structure: StoryStructure
     mythos_source_corpus: str = ""
     mythos_generation_mode: str = ""
+    pattern_source_type: str = ""
+    pattern_generation_mode: str = ""
+    pattern_source_corpus: str = ""
 
     @field_validator("genre", "tone_profile", "primary_language")
     @classmethod

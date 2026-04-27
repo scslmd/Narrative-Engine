@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.manifest import Manifest
+
+if TYPE_CHECKING:
+    from ..schemas.pattern_extraction import PatternExtractionAnalysis
+    from .scene_context import SceneContext
 
 
 def build_p100_architect_request(
@@ -13,8 +17,18 @@ def build_p100_architect_request(
     manifest: Manifest,
     payload: dict[str, Any],
     default_model: str | None,
+    pattern_context: Any = None,
 ) -> InferenceRequest:
     prompt_context = _runtime_prompt_context(manifest=manifest, payload=payload)
+
+    user_parts: list[str] = []
+    if pattern_context is not None:
+        user_parts.append(_build_pattern_context_block(pattern_context))
+    user_parts.append(
+        "Build the P-100 architect foundation from this project context.\n\n"
+        f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
+    )
+
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=0.2),
@@ -32,10 +46,7 @@ def build_p100_architect_request(
             ),
             InferenceMessage(
                 role="user",
-                content=(
-                    "Build the P-100 architect foundation from this project context.\n\n"
-                    f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
-                ),
+                content="\n\n".join(user_parts),
             ),
         ],
         metadata={
@@ -97,6 +108,7 @@ def build_p300_drafter_request(
     architect_output: str | None = None,
     default_model: str | None,
     chapter_id: str | None = None,
+    scene_context: Any = None,
 ) -> InferenceRequest:
     prompt_context = _runtime_prompt_context(manifest=manifest, payload=payload)
     if sequence_output is not None:
@@ -104,6 +116,17 @@ def build_p300_drafter_request(
     if architect_output is not None:
         prompt_context["architect_output"] = architect_output
     chapter_label = f"chapter {chapter_id}" if chapter_id else "chapter-1"
+
+    user_parts: list[str] = []
+    if scene_context is not None:
+        scene_str = scene_context.to_prompt_string()
+        if scene_str:
+            user_parts.append(scene_str)
+    user_parts.append(
+        "Build the P-300 drafter foundation from this project context.\n\n"
+        f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
+    )
+
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=0.2),
@@ -119,10 +142,7 @@ def build_p300_drafter_request(
             ),
             InferenceMessage(
                 role="user",
-                content=(
-                    "Build the P-300 drafter foundation from this project context.\n\n"
-                    f"{json.dumps(prompt_context, ensure_ascii=True, indent=2, sort_keys=True)}"
-                ),
+                content="\n\n".join(user_parts),
             ),
         ],
         metadata={
@@ -403,6 +423,113 @@ def story_bible_output_path(project_dir: Path) -> Path:
     return project_dir / "story_bible.json"
 
 
+def _build_pattern_context_block(pc: Any) -> str:
+    """Build a pattern context block for injection into P-100 architect prompts."""
+    mode = getattr(pc, "generation_mode", "same_world") or "same_world"
+    source_corpus = getattr(pc, "source_corpus", "") or "(unknown source)"
+
+    patterns = getattr(pc, "archetypal_patterns", []) or []
+    rules = getattr(pc, "world_rules", []) or []
+    voice_profile = getattr(pc, "voice_profile", None)
+
+    lines: list[str] = []
+
+    if mode == "same_world":
+        lines.append("PATTERN CONTEXT (Same World Mode):")
+        lines.append(f"Source: {source_corpus}")
+        lines.append("Setting: Use the established world and characters as-is.")
+        lines.append("")
+        lines.append("Archetypal Patterns to Follow:")
+        for p in patterns:
+            name = getattr(p, "name", "")
+            desc = getattr(p, "description", "")
+            lines.append(f"  - {name}: {desc}")
+        lines.append("")
+        lines.append("World Rules (must be obeyed):")
+        for r in rules:
+            rule_text = getattr(r, "rule", "")
+            enforcement = getattr(r, "enforcement", "")
+            if enforcement:
+                lines.append(f"  - {rule_text} ({enforcement})")
+            else:
+                lines.append(f"  - {rule_text}")
+        if voice_profile:
+            lines.append("")
+            lines.append("Voice & Style Guide:")
+            vp_lines = []
+            nv = getattr(voice_profile, "narrative_voice", "")
+            sr = getattr(voice_profile, "sentence_rhythm", "")
+            dd = getattr(voice_profile, "descriptive_density", "")
+            hl = getattr(voice_profile, "humor_level", "")
+            et = getattr(voice_profile, "emotional_temperature", "")
+            if nv:
+                vp_lines.append(f"narrative voice: {nv}")
+            if sr:
+                vp_lines.append(f"sentence rhythm: {sr}")
+            if dd:
+                vp_lines.append(f"descriptive density: {dd}")
+            if hl:
+                vp_lines.append(f"humor level: {hl}")
+            if et:
+                vp_lines.append(f"emotional temperature: {et}")
+            lines.extend(vp_lines)
+
+    elif mode == "new_characters":
+        lines.append("PATTERN CONTEXT (New Characters Mode):")
+        lines.append(f"Source: {source_corpus}")
+        lines.append("Setting: Same world, but create original characters who fulfill these archetypal roles.")
+        lines.append("")
+        lines.append("Archetypal Roles to Fill:")
+        for p in patterns:
+            name = getattr(p, "name", "")
+            desc = getattr(p, "description", "")
+            ct = getattr(p, "character_type", "")
+            parts = [f"  - {name} ({ct}): {desc}"] if ct else [f"  - {name}: {desc}"]
+            lines.extend(parts)
+        lines.append("")
+        lines.append("World Rules (must be obeyed):")
+        for r in rules:
+            rule_text = getattr(r, "rule", "")
+            enforcement = getattr(r, "enforcement", "")
+            if enforcement:
+                lines.append(f"  - {rule_text} ({enforcement})")
+            else:
+                lines.append(f"  - {rule_text}")
+
+    elif mode == "transposed":
+        lines.append("PATTERN CONTEXT (Transposed Mode):")
+        lines.append(f"Source: {source_corpus}")
+        lines.append("Your task: Map these archetypal patterns and narrative structures to a new setting.")
+        lines.append("")
+        lines.append("Patterns to Transpose:")
+        for p in patterns:
+            name = getattr(p, "name", "")
+            desc = getattr(p, "description", "")
+            lines.append(f"  - {name}: {desc}")
+        narrative_structures = getattr(pc, "narrative_structures", []) or []
+        if narrative_structures:
+            lines.append("")
+            lines.append("Narrative Structures:")
+            for ns in narrative_structures:
+                ns_name = getattr(ns, "name", "")
+                ns_phases = getattr(ns, "phases", [])
+                if ns_phases:
+                    lines.append(f"  - {ns_name}: {' -> '.join(ns_phases)}")
+                else:
+                    lines.append(f"  - {ns_name}")
+        lines.append("")
+        lines.append("Structural Rules (adapt to new world):")
+        for r in rules:
+            rule_text = getattr(r, "rule", "")
+            enforcement = getattr(r, "enforcement", "")
+            if enforcement:
+                lines.append(f"  - {rule_text} ({enforcement})")
+            else:
+                lines.append(f"  - {rule_text}")
+
+    return "\n".join(lines)
+
+
 def _runtime_prompt_context(*, manifest: Manifest, payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "project_id": manifest.project_id,
@@ -565,6 +692,141 @@ def build_chapter_summarize_request(
             "mode": "chapter_summarizer",
             "role": "summarizer",
             "chapter_id": chapter_id,
+        },
+    )
+
+
+def build_narrative_analysis_request(
+    *,
+    story_text: str,
+    source_corpus: str | None = None,
+    generation_mode: str = "same_world",
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for narrative pattern extraction.
+
+    The LLM should return a JSON object matching PatternExtractionAnalysis structure.
+    Uses temperature=0.1 for deterministic output.
+    max_tokens=16000 to fit full JSON output with patterns and entities.
+    Truncates story_text to 24,000 chars for single-pass analysis.
+    """
+    truncated_text = story_text[:24_000]
+    corpus_hint = (
+        f"Source tradition hint: {source_corpus}"
+        if source_corpus
+        else "AI should identify the source tradition from the text."
+    )
+
+    system_prompt = (
+        "You are a narrative analysis AI for Narrative-Engine. You analyze narrative texts "
+        "and extract storytelling DNA — archetypal patterns, narrative structure, voice profile, "
+        "thematic constraints, world rules, and symbolic motifs.\n\n"
+        f"{corpus_hint}\n\n"
+        f"Generation mode: {generation_mode}\n\n"
+        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        '{\n'
+        '  "source_type": "narrative",\n'
+        '  "source_corpus": "<string - identified tradition or author>",\n'
+        '  "generation_mode": "<same_world | new_characters | transposed>",\n'
+        '  "archetypal_patterns": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "description": "<string>",\n'
+        '      "character_type": "<string>",\n'
+        '      "narrative_beats": [],\n'
+        '      "examples_from_text": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "narrative_structures": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "phases": [],\n'
+        '      "tension_curve": "<string>",\n'
+        '      "resolution_type": "<string>"\n'
+        '    }\n'
+        '  ],\n'
+        '  "world_rules": [\n'
+        '    {\n'
+        '      "rule": "<string>",\n'
+        '      "enforcement": "<string>",\n'
+        '      "exceptions": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "symbolic_motifs": [\n'
+        '    {\n'
+        '      "symbol": "<string>",\n'
+        '      "meaning": "<string>",\n'
+        '      "narrative_function": "<string>"\n'
+        '    }\n'
+        '  ],\n'
+        '  "thematic_spine": "<string>",\n'
+        '  "emotional_promise": "<string>",\n'
+        '  "tone_and_voice_direction": "<string>",\n'
+        '  "narrative_pattern": {\n'
+        '    "pacing": "<string>",\n'
+        '    "chapter_structure": "<string>",\n'
+        '    "conflict_type": "<string>",\n'
+        '    "dialogue_style": "<string>",\n'
+        '    "scene_transition": "<string>"\n'
+        '  },\n'
+        '  "voice_profile": {\n'
+        '    "narrative_voice": "<string>",\n'
+        '    "sentence_rhythm": "<string>",\n'
+        '    "descriptive_density": "<string>",\n'
+        '    "humor_level": "<string>",\n'
+        '    "emotional_temperature": "<string>"\n'
+        '  },\n'
+        '  "thematic_constraints": [\n'
+        '    {\n'
+        '      "theme": "<string>",\n'
+        '      "moral_stance": "<string>",\n'
+        '      "recurring_questions": [],\n'
+        '      "forbidden_elements": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "key_entities": [\n'
+        '    {\n'
+        '      "name": "<string>",\n'
+        '      "entity_type": "<character | location | concept | force>",\n'
+        '      "archetype": "<string>",\n'
+        '      "domain_or_power": "<string>",\n'
+        '      "canonical_facts": []\n'
+        '    }\n'
+        '  ],\n'
+        '  "entity_relationships": [\n'
+        '    {\n'
+        '      "source": "<string>",\n'
+        '      "target": "<string>",\n'
+        '      "relationship_type": "<string>",\n'
+        '      "description": "<string>"\n'
+        '    }\n'
+        '  ]\n'
+        '}\n\n'
+        "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
+        "Extract the storytelling DNA — how stories are told in this tradition, "
+        "what narrative rules govern them, what archetypal journeys characters undertake.\n\n"
+        "CRITICAL: Return ONLY the JSON object. No markdown, no explanation, no code blocks."
+    )
+
+    user_content = (
+        f"Analyze the following narrative text and extract its storytelling DNA, "
+        f"archetypal patterns, narrative structures, world rules, voice profile, "
+        f"and symbolic motifs:\n\n"
+        f"{truncated_text}"
+    )
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=16000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "narrative_extraction",
+            "role": "narrative_analyzer",
+            "source": "narrative-analysis",
         },
     )
 

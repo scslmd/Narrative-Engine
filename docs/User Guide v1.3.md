@@ -1,0 +1,736 @@
+# Narrative Engine - User Guide v1.3
+
+This guide walks you through using Narrative Engine from first project to a fully-developed complex story.
+
+---
+
+## Table of Contents
+
+1. [Getting Started](#getting-started)
+2. [Importing an Existing Story](#importing-an-existing-story)
+3. [Extracting Mythos for Pattern-Based Story Generation](#extracting-mythos-for-pattern-based-story-generation)
+4. [Extracting Patterns for Story Generation](#extracting-patterns-for-story-generation)
+5. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+5. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+6. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+7. [Tips and Best Practices](#tips-and-best-practices)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12+ for the backend
+- Node.js 18+ for the frontend
+
+### Start the Server
+
+**Windows:**
+```
+start_narrative_core.cmd
+```
+
+**PowerShell:**
+```
+.\start_narrative_core.ps1
+```
+
+The backend starts on `http://127.0.0.1:8000`.
+
+### Start the Frontend
+
+```
+cd frontend
+npm install
+copy .env.example .env.local   (Windows) or cp .env.example .env.local  (Unix)
+npm run dev
+```
+
+The frontend opens at `http://localhost:5173`.
+
+### Configure Your Model
+
+Narrative Engine works with any OpenAI-compatible local model server (llama.cpp, LM Studio, vLLM). Set the `INFERENCE_URL` environment variable to point at your model server:
+
+```
+INFERENCE_URL=http://localhost:1234/v1   (LM Studio)
+INFERENCE_URL=http://localhost:8081      (llama.cpp)
+```
+
+If no inference URL is set, the app uses a stub backend for testing (jobs complete with placeholder content).
+
+### Alternative: Import an Existing Story
+
+If you already have a completed story, you can import it and have the AI analyze and structure it automatically:
+
+1. Navigate to the home page (`/`)
+2. Click **"Import Story"**
+3. Paste your story text into the editor
+4. Optionally specify genre and tone hints to guide the analysis
+5. Click **"Import"**
+
+The system will:
+- Analyze the story with an LLM to extract characters, world details, and structure
+- Create a new project with all structured data
+- Generate foundation profiles, character profiles, world bible entries, and planning artifacts
+
+---
+
+## Extracting Mythos for Pattern-Based Story Generation
+
+Mythos Extraction lets you paste mythology texts and have the system extract their storytelling DNA — archetypal patterns, narrative structures, cosmic rules, and symbolic motifs — then use those patterns to guide original story generation.
+
+### When to Use Mythos Extraction
+
+Use this when you want to write stories that follow the narrative DNA of a mythological tradition, without retelling specific myths. For example:
+- Write an original tragedy following Greek hubris-fall-redemption patterns
+- Create a sci-fi story using Norse cyclical tragedy structure
+- Apply Egyptian cosmic order themes to a modern corporate drama
+
+### Step-by-Step Guide
+
+1. **Open the Story Import modal** from your project dashboard
+2. **Toggle to "Extract Mythos"** mode (next to "Import Story")
+3. **Enter a project name** for the new project
+4. **(Optional) Specify Source Tradition** — e.g., "Greek Mythology", "Norse Sagas". If omitted, the AI identifies it from your text.
+5. **Select Generation Mode:**
+   - **Same World** — Your story will be set in the mythological world with original characters following extracted patterns
+   - **Transposed** — Archetypal patterns map to a new setting (e.g., Greek trickster → cyberpunk hacker)
+   - **Pure Pattern** — Only narrative structures and themes apply; you're free to choose any world and genre
+6. **Paste mythology texts** — Include myths, sagas, or source material. The system analyzes up to 24,000 characters in a single pass.
+7. **Click "Extract Mythos"** — The system analyzes your text and creates a project with:
+   - Foundation profile (thematic spine, emotional promise, tone direction)
+   - World Bible entries for cosmic rules and symbolic motifs
+   - Character archetypes as pattern carriers
+   - Key entities (deities, locations, concepts) in same_world mode
+8. **Proceed to the Planning Workspace** to build your story guided by the extracted patterns
+
+### Example: Greek Tragedy in a Modern Setting
+
+1. Toggle to Extract Mythos mode
+2. Source Tradition: "Greek Mythology"
+3. Generation Mode: Transposed
+4. Paste key Greek myths (Oedipus, Antigone, etc.)
+5. Click Extract Mythos
+6. System extracts: hubris-fall-redemption pattern, cyclical tragedy structure, cosmic rule "fate cannot be escaped"
+7. Navigate to Planning Workspace and create a modern story following these patterns
+
+### Tips
+
+- Include diverse myths from the tradition for richer pattern extraction
+- The system works best with 2,000+ characters of source material
+- In Transposed mode, the extracted archetypes become templates — you create new characters that fulfill those roles
+- Pure Pattern mode gives maximum creative freedom while maintaining mythic narrative structure
+
+---
+
+## Extracting Patterns for Story Generation
+
+Pattern Extraction lets you paste any completed story and have the system extract its storytelling DNA — archetypal patterns, narrative structure, voice profile, thematic constraints, world rules, and entities — then use those patterns to guide original story generation. This generalizes Mythos Extraction: it works with both fiction stories (`source_type: narrative`) and mythology texts (`source_type: mythology`).
+
+### When to Use Pattern Extraction
+
+Use this when you want to write stories that follow the narrative DNA of an existing story, without retelling it. For example:
+- Write a new mystery in the same world as Sherlock Holmes with original characters
+- Apply Dune's voice profile and thematic constraints to a completely different sci-fi setting
+- Extract the storytelling patterns from your favorite novel and apply them to your own ideas
+
+### Step-by-Step Guide
+
+1. **Open the Story Import modal** from your project dashboard
+2. **Toggle to "Extract Patterns"** mode (next to "Import Story" and "Extract Mythos")
+3. **Enter a project name** for the new project
+4. **Select Source Type:**
+   - **Narrative** — for fiction stories; includes voice profile, narrative pattern, and thematic constraints in extraction
+   - **Mythology** — for mythological texts; delegates to Mythos Extraction pipeline
+5. **Select Generation Mode:**
+   - **Same World** — Your story will be set in the source story's world with original characters following extracted patterns
+   - **New Characters** — Same world, but original cast fulfilling extracted archetypes
+   - **Transposed** — Map archetypal patterns and voice to a new setting (e.g., Dune storytelling DNA → cyberpunk)
+6. **(Optional) Specify Source Corpus** — e.g., "The Shining", "Dune". Helps the LLM contextualize the extraction.
+7. **Paste story text** — Include a completed story or significant excerpt. The system analyzes up to 24,000 characters in a single pass.
+8. **Click "Extract Patterns"** — The system analyzes your text and creates a project with:
+   - Foundation profile (thematic spine, emotional promise, tone direction)
+   - World Bible entries for world rules and symbolic motifs
+   - Character archetypes as pattern carriers
+   - Voice profile and narrative patterns (narrative source type only)
+   - Thematic constraints (narrative source type only)
+9. **Proceed to the Planning Workspace** to build your story guided by the extracted patterns
+
+### Example: Applying Dune's Storytelling DNA to a New Setting
+
+1. Toggle to Extract Patterns mode
+2. Source Type: Narrative
+3. Generation Mode: Transposed
+4. Source Corpus: "Dune"
+5. Paste key passages from Dune
+6. Click Extract Patterns
+7. System extracts: political intrigue patterns, ecological world-building voice, thematic constraints about power and environment
+8. Navigate to Planning Workspace and create a cyberpunk story following these patterns
+
+### Difference Between Mythos Extraction and Pattern Extraction
+
+| Aspect | Mythos Extraction | Pattern Extraction |
+|--------|------------------|-------------------|
+| Source material | Mythology texts only | Any story or mythology text |
+| Voice profile | Not extracted | Extracted (narrative source) |
+| Narrative pattern | Not extracted | Extracted (narrative source) |
+| Thematic constraints | Basic thematic spine | Full thematic constraints with forbidden elements |
+| Generation modes | Same World, Transposed, Pure Pattern | Same World, New Characters, Transposed |
+
+### Tips
+
+- For narrative extraction, include diverse scenes from the source story for richer pattern extraction
+- The system works best with 2,000+ characters of source material
+- In Same World mode, you create original characters that follow the extracted archetypes within the source story's world
+- Transposed mode gives maximum creative freedom while maintaining the source story's narrative DNA
+- Voice profile extraction is most accurate when the source text has a distinctive narrative voice
+
+---
+
+## Level 1: Your First Simple Story
+
+In this section, you'll create a simple short story from scratch using just the basic features.
+
+### Step 1: Create a Project
+
+1. Navigate to the home page (`/`)
+2. Click **"Create New Project"**
+3. Fill in the fields:
+   - **Project Name:** "My First Story"
+   - **Genre:** Select a genre (e.g., "Science Fiction")
+   - **Tone Profile:** Select a tone (e.g., "Hopeful")
+   - **Story Structure:** Choose a structure (e.g., "Three Act")
+   - **POV:** Choose point of view (e.g., "Third Limited")
+   - **Primary Language:** "English"
+4. Click **"Create"**
+
+You'll be taken to the project's Planning workspace.
+
+### Step 2: Review Your Manifest
+
+The default tab shows your **Manifest** -- the core metadata for your story. This includes genre, tone, structure, POV, and language settings. These settings influence every AI-generated artifact downstream.
+
+### Step 3: Write a Brain Dump
+
+1. Switch to **Brain Dump** mode from the top navigation bar
+2. In the canvas, free-write your story ideas:
+   ```
+   A young inventor discovers a broken time machine in her grandfather's
+   workshop. When she fixes it, she accidentally sends her cat to last
+   Tuesday. She has to convince her skeptical neighbor to help her
+   retrieve him before the timeline collapses.
+   ```
+3. Click **"Organize"** to let AI categorize your ideas into characters, plot points, conflicts, etc.
+4. Review the organized items in the grid
+
+### Step 4: Launch the Architect (P-100)
+
+1. Go back to **Planning** mode
+2. In the right sidebar, find the **Job Launch Panel**
+3. Select phase **P-100 (Architect)**
+4. Click **"Launch"**
+
+The Architect analyzes your manifest and brain dump, then generates:
+- A project architecture document
+- Story sequences with beats
+- Chapter outlines
+
+Monitor progress in the Job Launch Panel. When complete, switch to the **Planning** tab to see the generated sequences and chapters.
+
+### Step 5: Draft Your First Chapter
+
+1. In the Job Launch Panel, select phase **P-300 (Drafter)**
+2. Click **"Launch"**
+
+The Drafter writes actual prose. When complete:
+1. Switch to **Writing** mode
+2. Select a manuscript document from the left sidebar
+3. Read the generated chapter in the center panel
+4. Check the right sidebar (Aids Panel) for AI-generated revision suggestions
+
+You now have a simple story drafted end-to-end.
+
+#### What Happens Behind the Scenes (Narrative Controller)
+
+When you launch P-300, the **State-Aware Narrative Controller** runs three quality checks automatically:
+
+1. **Scene Context Injection** — Before drafting begins, the system queries your character profiles and world bible entries, then injects them into the LLM prompt as structured constraints (character archetypes, voice notes, goals, canonical facts). If the project was seeded via Pattern Extraction, pattern guidance (voice profile, world rules, thematic constraints) and per-chapter author direction are also injected.
+
+2. **Consistency Critic** — After the draft is generated, a separate LLM pass checks whether each character's dialogue and actions match their profile. If Khal (archetype: "reluctant hero", voice: "terse, avoids metaphors") starts speaking in flowery poetry, the critic flags it and triggers an automatic rewrite to fix the inconsistency.
+
+3. **Entity Intake** — If a new character appears in the draft that isn't yet in your character profiles (e.g., "Soraya watched from the shadows"), the system detects the unknown name, extracts a skeletal profile (name, inferred archetype, inferred goal) from the character's behavior in the prose, and saves it to your project for review.
+
+These checks run on every P-300 draft automatically. They never block or fail the pipeline — if any check encounters an error, the system logs a warning and proceeds with the original draft.
+
+### Step 5 (continued): Draft Multiple Chapters
+
+Once your first chapter is complete, you can draft additional chapters with cross-chapter continuity:
+
+1. In the Job Launch Panel, select phase **P-300 (Drafter)** again
+2. Add `chapter_id` to the job payload (e.g., `"chapter_id": "ch-002"`)
+3. Click **"Launch"**
+
+Each chapter is written to a separate file (`chapters/ch-001.md`, `chapters/ch-002.md`, etc.). The system automatically:
+
+- **Injects prior chapter context**: The last 3 completed chapters are summarized and included in the LLM prompt, so the drafter knows what happened previously
+- **Filters active characters**: If you have a ChapterPlan with `active_character_ids`, only those characters are injected into the prompt (keeps it focused)
+- **Maintains continuity**: Key events, character states, and unresolved threads from prior chapters guide the new draft
+
+For larger projects, use the **ChapterOrchestrator** to run all chapters sequentially — each chapter waits for the prior to complete before starting.
+
+#### Batch Multi-Chapter Mode
+
+For drafting multiple chapters in a single job, use the `chapter_ids` list:
+
+```bash
+curl -X POST http://localhost:8000/v1/jobs/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phase": "P-300",
+    "payload": {
+      "project_id": "<your-project-id>",
+      "chapter_ids": ["ch-001", "ch-002", "ch-003"]
+    }
+  }'
+```
+
+This triggers sequential drafting with automatic context propagation:
+
+1. **Draft chapter** — P-300 generates the chapter using architect output, sequence, character profiles, world constraints, and prior chapter summaries
+2. **Summarize** — ChapterSummarizerService extracts key events, character states, and unresolved threads via LLM
+3. **Create ManuscriptDocument** — Auto-persisted for Writing workspace integration
+4. **Propagate context** — Summary injected into next chapter (last 3 chapters max)
+
+Each chapter produces: output file (`chapters/{chapter_id}.md`), step record, and ManuscriptDocument. Failed chapters are logged but don't abort the job.
+
+#### Checking Batch Results
+
+After submitting a batch job, verify the results:
+
+**1. Check job status:**
+```bash
+curl http://localhost:8000/v1/jobs/{job_id}/status
+```
+Response shows `"status": "COMPLETED"` and detail like `"Completed 3/3 chapters."` If a chapter failed, the detail reflects partial completion (e.g., `"Completed 2/3 chapters."`).
+
+**2. Inspect per-chapter step records:**
+```bash
+curl http://localhost:8000/v1/jobs/{job_id}/steps
+```
+Each chapter produces a step record with `step_name: "drafter-ch-XXX"`. Check individual steps for failures.
+
+**3. List auto-created ManuscriptDocuments:**
+```bash
+curl "http://localhost:8000/v1/story-development/drafting/manuscript-documents?project_id={your-project-id}"
+```
+Each completed chapter has a ManuscriptDocument with `document_id: "ms-ch-XXX"` and the chapter's content.
+
+**4. Read chapter files directly:**
+```bash
+cat data/projects/{project_id}/chapters/ch-001.md
+cat data/projects/{project_id}/chapters/ch-002.md
+```
+
+**5. Inspect view (frontend):** Navigate to `/workspace/{projectId}/inspect/{jobId}` to see the step timeline and artifact lineage for the batch run.
+
+#### What Prior Context Propagation Means for You
+
+When you use batch mode, each chapter's draft benefits from what happened in previous chapters:
+
+- If Chapter 1 ends with your protagonist discovering a hidden letter, Chapter 2's draft will know about that discovery
+- Character states carry forward (e.g., "injured", "distrustful of allies"), so subsequent drafts maintain consistency
+- Unresolved threads are tracked, increasing the chance later chapters address them
+
+This is why batch mode produces more cohesive multi-chapter stories than launching individual jobs.
+
+#### When a Chapter Fails Mid-Batch
+
+If chapters `[ch-001, ch-002, ch-003]` are submitted and `ch-002` fails:
+- `ch-001` is already completed (file written, ManuscriptDocument created)
+- `ch-002` is logged as failed, step record shows error details
+- `ch-003` still runs but without `ch-002`'s summary in its prior context
+
+To retry a failed chapter, submit a new job with just that chapter's ID:
+```json
+{
+  "phase": "P-300",
+  "payload": {
+    "project_id": "<your-project-id>",
+    "chapter_ids": ["ch-002"]
+  }
+}
+```
+
+#### Batch Mode vs. Manual Draft Promotion
+
+In single-chapter mode (Phase 5c), you manually promote drafts to ManuscriptDocuments using the drafting API. In batch mode, this happens automatically — you do NOT need to manually promote each chapter's draft. The ManuscriptDocument records are created with:
+- `document_id`: `ms-{chapter_id}`
+- `title`: from your ChapterPlan (or "Chapter {id}")
+- `content`: the generated chapter markdown
+
+---
+
+## Level 2: Medium Complexity with Branching and Review
+
+This section builds on Level 1 and introduces story branches, the role model checker, and the review workflow.
+
+### Step 1: Define Your Foundation
+
+1. Go to **Planning** mode
+2. Click the **Foundation** tab
+3. Fill in the foundation profile:
+   - **Premise:** "What if a librarian discovered that books were actually portals to parallel worlds?"
+   - **Logline:** "A reclusive librarian must navigate dangerous book-worlds to prevent a catastrophic merger of realities."
+   - **Thematic Spine:** "Knowledge vs. ignorance; the courage to question authority"
+   - **Emotional Promise:** "Wonder and tension; readers should feel the thrill of discovery"
+   - **Narrative Constraints:** "No violence over blood level; all characters must have agency"
+4. Click **"Save"**
+
+The foundation acts as a north star -- all subsequent AI generation references it.
+
+### Step 2: Build Your Characters
+
+1. Click the **Characters** tab
+2. Click **"Add Character"**
+3. Fill in the character profile:
+   - **Name:** "Elara Voss"
+   - **Role:** "Protagonist"
+   - **External Goal:** "Find and seal the rift between worlds"
+   - **Internal Need:** "Overcome her fear of being noticed"
+   - **Misbelief:** "Staying invisible keeps everyone safe"
+   - **Core Fear:** "Being responsible for someone's harm"
+   - **Primary Strength:** "Meticulous research skills"
+   - **Fatal Flaw:** "Paralyzing indecision under pressure"
+4. Click **"Save"**
+5. Add more characters as needed (mentor, antagonist, ally, etc.)
+6. Use the **Relationships** section to define connections between characters
+
+### Step 3: Build Your World Bible
+
+1. Click the **World Bible** tab
+2. Click **"Add Entry"**
+3. Create entries like:
+   - **Type:** "Location" -- **Title:** "The Athenaeum" -- **Content:** "A vast underground library spanning seven sub-levels..."
+   - **Type:** "Concept" -- **Title:** "Book-Worlds" -- **Content:** "Each book contains a fully realized alternate reality. Opening a book transports the reader..."
+   - **Type:** "Rule" -- **Title:** "Crossing Limit" -- **Content:** "A person can only safely traverse 3 book-worlds before reality begins to degrade"
+4. Each entry can reference related characters, mark canonical facts, and track continuity
+
+### Step 4: Explore Story Branches
+
+1. Click the **Branches** tab
+2. Click **"Create Branch"**
+3. Name it "Alternative Ending" with a description like "Elara merges the worlds instead of sealing them"
+4. Click **"Set Active"** to switch to this branch
+5. Now draft this alternate version by launching P-300 again
+
+Branches work like Git branches for your story -- you can explore multiple versions, compare them, and merge the best elements.
+
+### Step 5: Run the Role Model Checker
+
+1. Click the **Checker** tab
+2. Select your model from the catalog (if using stub mode, no selection needed)
+3. Click **"Run Checker"**
+
+The checker analyzes your generated content against multiple narrative roles (plottter, character analyst, consistency checker, tone monitor). It produces findings about potential issues.
+
+### Step 6: Review Findings
+
+1. Switch to **Review** mode
+2. Click the **Findings** tab
+3. Review each finding:
+   - **Accept** the suggested change
+   - **Reject** it if it doesn't fit your vision
+   - **Defer** for later consideration
+4. Check the **Inspect Run Links** tab to see which jobs generated each finding
+5. Click a link to navigate to the Inspect view for deep debugging
+
+---
+
+## Level 3: Complex Story with Full Pipeline
+
+This section demonstrates a complete professional workflow using all features together.
+
+### Step 1: Project Setup with Detailed Manifest
+
+Create a new project with careful attention to the manifest:
+
+1. **Project Name:** "The Last Archive"
+2. **Genre:** "Science Fiction / Literary Fiction"
+3. **Tone Profile:** "Contemplative with moments of tension"
+4. **Story Structure:** "Seven Point Structure"
+5. **POV:** "Third Limited" (rotating between two protagonists)
+6. **Primary Language:** "English"
+7. **Secondary Language:** "None"
+
+The manifest is your story's contract. Get this right and all downstream generation will be coherent.
+
+### Step 2: Foundation with Revision Tracking
+
+1. Go to **Foundation**
+2. Fill in a detailed foundation:
+   - **Premise:** "In a future where human memories can be stored in crystalline archives, a archivist discovers that someone is systematically erasing entire life histories to rewrite history."
+   - **Logline:** "When an archivist uncovers a conspiracy to erase people from existence, she must protect the last surviving memories while questioning whether some truths should stay buried."
+   - **Thematic Spine:** "The weight of memory; who controls the past controls the future; the morality of forgetting"
+   - **Emotional Promise:** "Intellectual mystery with emotional depth; readers should question their own memories"
+   - **Target Audience:** "Adult readers of speculative fiction (Le Guin, Chiang, Chiang)"
+   - **Narrative Constraints:** "No deus ex machina; all solutions must come from established characters; maintain internal consistency of memory technology"
+   - **Complexity Level:** "High"
+   - **Success Definition:** "A story that is both a page-turning mystery and a meditation on memory and identity"
+3. Click **"Save"**
+
+Later, go to **Foundation Revisions** tab to see the revision history. You can roll back to any previous version.
+
+### Step 3: Deep Character Development
+
+Create 5-6 characters with full profiles:
+
+**Character 1: Dr. Miren Kael (Protagonist)**
+- Role: Protagonist
+- Archetype: "The Scholar"
+- External Goal: "Expose the memory erasure conspiracy"
+- Internal Need: "Trust her own judgment over archived records"
+- Misbelief: "If I follow the evidence logically, the truth will protect me"
+- Core Fear: "Being complicit through silence"
+- Primary Strength: "Meticulous pattern recognition"
+- Fatal Flaw: "Emotional detachment as a coping mechanism"
+
+**Character 2: Joss Vallen (Antagonist)**
+- Role: Antagonist
+- Archetype: "The Reformer"
+- External Goal: "Complete the Grand Erasure to prevent future suffering"
+- Internal Need: "Relief from the guilt of past failures"
+- Misbelief: "Forgetting is a form of mercy"
+- Core Fear: "History repeating itself"
+
+**Character 3: Tessa Rowan (Mentor)**
+- Role: Mentor
+- External Goal: "Protect the last unaltered archive"
+- Internal Need: "Atone for her role in creating the system"
+
+For each character, fill in:
+- Backstory summary
+- Voice notes (how they speak)
+- Secrets
+- Values and taboos
+- Change axis (how they transform)
+
+Define relationships between characters (mentor-protagonist, antagonistic, romantic, etc.) with tension levels and notes.
+
+### Step 4: Comprehensive World Bible
+
+Create 15-20 world bible entries across multiple types:
+
+**Technology:**
+- "Memory Crystals" -- storage medium, capacity, limitations
+- "The Extraction Process" -- how memories are removed, side effects
+- "Chronos Interface" -- the software used to query and modify archives
+
+**Locations:**
+- "The Grand Archive" -- main facility, layout, security
+- "The Understack" -- black market for memory trading
+- "Silent Ward" -- where erased people are temporarily held
+
+**Organizations:**
+- "The Archive Authority" -- governing body
+- "The Rememberers" -- underground resistance
+- "The Reclamation Project" -- Joss's organization
+
+**Rules:**
+- "The Three Laws of Memory" -- fundamental constraints of the technology
+- "Erasure Protocol" -- procedure for removing memories
+- "Continuity Requirement" -- why complete erasure requires chain consistency
+
+**Concepts:**
+- "Identity Drift" -- what happens when memories are incomplete
+- "Echo Fragments" -- residual memory traces that resist erasure
+
+Each entry should have:
+- Canonical status (confirmed fact vs. theory)
+- Related characters
+- Source artifacts
+- Visibility scope (who knows this fact)
+- Continuity warnings
+
+### Step 5: Story Flow Configuration
+
+1. Go to the **Flow** tab
+2. Review the default flow stages:
+   - Brainstorm -> Foundation -> Characters -> World Bible -> Arc Selection -> Planning -> Drafting -> Review
+3. Customize if needed:
+   - Add custom stages (e.g., "Beta Reader Review")
+   - Reorder stages to fit your process
+   - Set custom prompt guidance for each stage
+   - Disable stages you don't need
+4. Save the flow
+
+### Step 6: Arc Exploration
+
+1. Go to the **Arcs** tab
+2. The system proposes arc candidates based on your foundation and characters
+3. Review each candidate:
+   - **Summary:** What happens in this arc
+   - **Fit Notes:** How well it matches your foundation
+   - **Stage Map:** How this arc progresses through flow stages
+4. Select the arc that best serves your story
+5. The selected arc guides all subsequent generation
+
+### Step 7: Run the Full Pipeline
+
+Execute jobs in sequence:
+
+**P-100 Architect:**
+- Generates the overall story architecture
+- Creates sequences, chapters, and scene plans
+- Builds the dependency graph
+
+**P-200 Sequencer:**
+- Plans the detailed sequence of events
+- Assigns chapters to sequences
+- Maps character arcs to specific scenes
+
+**P-300 Drafter:**
+- Injects character anchors, world constraints, prior chapter context (last 3 chapters max), and pattern guidance (voice profile, world rules, thematic constraints) into the LLM prompt via SceneContext
+- Applies per-chapter author direction via SceneContext's `author_prompt` field
+- Writes actual manuscript chapters using your character profiles and world bible as grounding
+- Supports multi-chapter generation: pass `chapter_id` in job payload to write to `chapters/{chapter_id}.md`
+- Filters active characters from ChapterPlan when `chapter_id` is provided (keeps prompt focused)
+- Runs a consistency critic after generation to catch character voice drift or behavior that contradicts profiles, triggering automatic rewrites when needed
+- Detects new characters appearing in the draft prose and auto-extracts skeletal profiles for your review (Entity Intake)
+- Creates draft artifacts with revision suggestions
+- Default output budget: 8000 tokens (~2000 words per chapter, overridable via payload)
+
+**P-400 Compiler:**
+- Compiles the final manuscript
+- Performs cross-chapter consistency checks
+- Creates the polished manuscript document
+
+You can run these in order by clicking "Launch" for each phase in the Job Launch Panel. Monitor progress in real-time.
+
+### Step 8: Create Narrative Branches for Plot Exploration
+
+1. Go to the **Branches** tab
+2. Create multiple branches:
+   - "Dark Ending" -- Elara fails, the Archive Authority wins
+   - "Compromise Ending" -- Elara exposes the conspiracy but can't reverse it
+   - "Hopeful Ending" -- Elara succeeds, memories are restored
+3. Set each branch active and run P-300/P-400 for each
+4. Use **Branch Comparisons** to side-by-side compare key chapters across branches
+5. Use **Merge Decisions** to record which elements you're borrowing from each branch
+
+### Step 9: Decision Tree Management
+
+1. Go to the **Decisions** tab
+2. Review the decision tree that captures key creative decisions
+3. Add decision points:
+   - "How does Elara discover the conspiracy?" (options: accident, deliberate search, third party)
+   - "What is the final confrontation?" (options: physical, intellectual, emotional)
+4. Track the path from root to each node
+5. Record your choices and rationale
+
+### Step 10: Run the Role Model Checker
+
+1. Go to the **Checker** tab
+2. Run checks for all roles:
+   - **Planner:** Does the plot make logical sense?
+   - **Character Analyst:** Are characters consistent and well-developed?
+   - **Consistency Checker:** Do facts align across chapters?
+   - **Tone Monitor:** Is the tone consistent?
+   - **Pacing Reviewer:** Is the pacing appropriate?
+3. Review findings in the **Review** workspace
+4. Accept, reject, or defer each finding
+5. Track your review decisions over time
+
+### Step 11: Deep Inspect Any Job Run
+
+1. From the Review workspace, click an **Inspect Run Link** to jump to the source
+2. Or navigate directly to `/workspace/:projectId/inspect/:jobId`
+3. In the Inspect view:
+   - **Step Timeline:** See each step of the job execution with timing
+   - **Artifact Lineage:** Trace how artifacts were created and modified
+   - **Attempt History:** See all retry attempts for failed jobs
+   - **Logs:** Read the raw job logs
+
+### Step 12: Writing and Revision
+
+1. Go to **Writing** mode
+2. Select a manuscript chapter from the left sidebar
+3. Read the full text in the center panel
+4. Use the Aids Panel (right sidebar) to:
+   - View revision suggestions
+   - Compare versions with diff viewer
+   - See text selection history
+5. Promote drafts to manuscript when satisfied
+
+---
+
+## Tips and Best Practices
+
+### Workflow Recommendations
+
+1. **Start with Foundation, not Drafting.** A well-defined foundation makes every subsequent AI generation coherent.
+2. **Use Brain Dump liberally.** Capture raw ideas first, organize them later. Don't self-censor at the ideation stage.
+3. **Build characters before sequences.** Character-driven stories need character depth before plot planning.
+4. **Run the Checker early.** Don't wait until the end -- run checks after each major milestone.
+5. **Use branches for endings.** Explore multiple endings in parallel, then merge the best elements.
+6. **Review findings actively.** Don't just auto-accept. Each finding represents a creative decision.
+7. **Inspect when confused.** If AI output seems off, use Inspect to trace the execution path.
+
+### Narrative Controller Tips
+
+The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity Intake) runs automatically on every P-300 draft. To get the most out of it:
+
+1. **Fill out voice notes for your characters.** The Consistency Critic uses voice notes to detect when a character's dialogue doesn't match their established speech patterns. Vague or empty voice notes = fewer useful critic flags.
+2. **Set canonical facts in your world bible.** Scene Context injection pulls canonical facts from world bible entries and feeds them to the drafter. The more facts you define, the more grounded your drafts will be.
+3. **Review auto-detected characters after drafting.** Entity Intake creates skeletal profiles for new characters that appear in draft prose. Check the Characters tab after each P-300 run -- you may find auto-generated profiles with inferred archetypes and goals that need fleshing out.
+4. **Don't worry about critic rewrites adding latency.** The consistency critic adds one extra LLM call per draft (plus a rewrite call if violations are found). This is intentional for quality. If you need faster iteration during early exploration, you can still run the stub backend.
+
+### Common Pitfalls
+
+- **Don't skip the manifest.** The AI uses manifest settings to guide generation. Wrong settings = wrong tone.
+- **Don't mix branches carelessly.** Only one branch is active at a time. Set the active branch explicitly before launching jobs.
+- **Don't ignore foundation revisions.** If later chapters contradict your foundation, check the revision cues tab.
+- **Don't overwrite character profiles.** If you need variations, create additional characters rather than modifying existing ones.
+
+### Keyboard Shortcuts and Navigation
+
+- Top navigation bar: Switch between Planning, Brain Dump, Writing, Review, Inspect modes
+- Right sidebar: Toggle Job Launch Panel and Notes Panel
+- Settings (top right): Change theme, icon density, tooltip behavior
+- URL deep links: Bookmark any workspace state by copying the full URL
+
+---
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **Project** | A complete story workspace with its own manifest, characters, and generated artifacts |
+| **Manifest** | Core metadata defining genre, tone, structure, POV, and language |
+| **Foundation** | Detailed narrative profile: premise, logline, theme, constraints |
+| **Brain Dump** | Free-form text canvas for unstructured idea capture |
+| **Flow Stage** | A step in the story development pipeline (brainstorm, foundation, drafting, etc.) |
+| **Arc** | A narrative trajectory connecting story events to character development |
+| **Branch** | An alternate version of the story, like Git branches |
+| **Decision** | A recorded creative choice with options and rationale |
+| **P-100 Architect** | Job phase that generates story architecture and planning |
+| **P-200 Sequencer** | Job phase that plans detailed event sequences |
+| **P-300 Drafter** | Job phase that writes actual manuscript prose |
+| **P-400 Compiler** | Job phase that compiles and finalizes the manuscript |
+| **Role Model Checker** | AI analysis tool that reviews content from multiple narrative perspectives |
+| **Finding** | A review insight flagged by the checker (with severity level) |
+| **Job** | An AI execution task with status, logs, and attempt history |
+| **Inspect** | Deep debug view showing step execution, artifacts, and lineage |
+| **World Bible** | Encyclopedic reference for story world facts, lore, and rules |
+| **Chapter Packet** | A bundle of reference materials prepared for drafting a chapter |
+| **Scene Context Injection** | Automatic injection of character profiles, world bible constraints, and prior chapter context into the P-300 drafter prompt before generation begins |
+| **Consistency Critic** | Post-draft LLM check that verifies character dialogue and actions match their profiles; triggers automatic rewrite on violations |
+| **Entity Intake** | Automatic detection of new characters in draft prose; extracts skeletal profiles (name, archetype, goal) and persists them for review |
+| **Prior Chapter Summary** | LLM-extracted context from completed chapters, including key events (max 10), character states (max 10), and unresolved threads (max 5). Automatically generated by ChapterSummarizerService after each chapter draft in batch mode. Injected into subsequent chapters for continuity. |
+| **ChapterSummarizerService** | LLM-based service that reads completed chapter markdown and extracts structured PriorChapterSummary. Follows the ConsistencyCriticService pattern: error-tolerant, never blocks the pipeline. |
+| **ChapterOrchestrator** | Programmatic service for running multiple P-300 jobs sequentially across chapters (one job per chapter). For batch mode within a single job, use the `chapter_ids` payload instead. |
+| **Pattern Extraction** | Generalized service that analyzes any story or mythology text and extracts storytelling DNA — archetypal patterns, narrative structure, voice profile, thematic constraints, world rules, and entities. Supports narrative and mythology source types with three generation modes (same_world, new_characters, transposed). |
+| **Voice Profile** | Extracted narrative characteristics: narrative_voice, sentence_rhythm, descriptive_density, humor_level, emotional_temperature. Injected into P-300 drafter prompts via SceneContext's pattern_guidance field. Available for narrative source type only. |
+| **Narrative Pattern** | Extracted structural characteristics: pacing, chapter_structure, conflict_type, dialogue_style, scene_transition. Guides P-100 architect and P-300 drafter in maintaining the source story's structural DNA. Available for narrative source type only. |
+| **Thematic Constraint** | Extracted thematic boundaries: theme, moral_stance, recurring_questions[], forbidden_elements[]. Enforced as soft constraints during drafting to maintain thematic consistency with the source material. Available for narrative source type only. |

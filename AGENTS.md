@@ -5,11 +5,11 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `931 passed, 9 skipped`
+  - `python -m pytest -q -p no:cacheprovider` -> `1031 passed, 9 skipped`
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1972 modules in production bundle.
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1973 modules in production bundle.
 - Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
 - Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23. Multi-chapter generation completed in 2026-04-26 (summarization, prior context propagation, ManuscriptDocument auto-creation).
 - Route-driven workspace state is the current frontend architecture:
@@ -376,6 +376,8 @@ Do not call the repo merge-ready unless all four of these are green:
 - `GET /projects/{project_id}`
 - `DELETE /projects/{project_id}`
 - `POST /projects/import-story` (201 Created, synchronous - parses existing stories and creates full project structure)
+- `POST /projects/import-patterns` (201 Created, synchronous - extracts narrative patterns from text, creates or updates project)
+- `POST /projects/{project_id}/extract-patterns` (201 Created, synchronous - extracts narrative patterns for an existing project)
 - `GET /projects/{project_id}/manifest`
 - `GET /projects/{project_id}/sequence`
 - `GET /projects/{project_id}/chapter-1`
@@ -843,15 +845,20 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 
 **Architecture**: P-300 drafter accepts `chapter_id` in job payload. Output path becomes `chapters/{chapter_id}.md`. Artifact role becomes `chapter_{chapter_id}`. Backward compatible: without chapter_id, outputs flat `chapter.md` with artifact role `chapter_1`.
 
+**Batch mode**: P-300 also accepts `chapter_ids` list in job payload. `_run_multi_chapter_draft` in local_executor.py enters sequential loop: draft → summarize → create ManuscriptDocument → propagate summary as prior context for next chapter. Single job, per-chapter step records.
+
 **Components**:
-- `app/services/runtime_prompts.py` - `chapter_output_path(project_dir, chapter_id)` parameterized path function
+- `app/services/runtime_prompts.py` - `chapter_output_path(project_dir, chapter_id)` parameterized path; `build_chapter_summarize_request()` prompt builder
 - `app/services/scene_context.py` - `SceneContext.prior_chapters` injects last 3 prior chapter summaries into LLM prompt
-- `app/services/chapter_orchestrator.py` - `ChapterOrchestrator.run_all()` runs N sequential P-300 jobs, one per chapter plan
+- `app/services/chapter_summarizer.py` - `ChapterSummarizerService.summarize()` extracts PriorChapterSummary via LLM (key_events, character_states, unresolved_threads). Error-tolerant: never blocks pipeline.
+- `app/services/local_executor.py` - `_run_multi_chapter_draft` detects `chapter_ids` list, runs sequential loop with prior context propagation and ManuscriptDocument auto-creation
 - `app/schemas/story_development.py` - `PriorChapterSummary` dataclass for cross-chapter continuity context
 
 **Context Injection**: SceneContextService assembles character anchors + world constraints + prior chapter summaries. Prior chapters capped at last 3 to avoid prompt bloat. Each summary includes key events (max 10), character states (max 10), unresolved threads (max 5).
 
 **Active Character Filtering**: When `chapter_id` is provided, P-300 queries `ChapterPlan.active_character_ids` and passes to SceneContextService. Only active characters are injected into the prompt. Falls back to all characters if no chapter plan exists.
+
+**ManuscriptDocument Auto-Creation**: After each successful chapter draft in batch mode, ManuscriptDocument is auto-created via DraftingService.save_manuscript_document() with document_id `ms-{chapter_id}`, title from ChapterPlan (or "Chapter {id}"), and chapter content.
 
 **Security**: `chapter_id` is sanitized via `sanitize_filename()` before use in file paths to prevent path traversal attacks.
 
@@ -899,6 +906,52 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `app/services/runtime_prompts.py` — `build_import_analysis_request()` prompt builder
 - `app/main.py` — imports StoryImportService, wires into router, includes `/projects/import-story` in auth gate
 - `tests/test_story_import_service.py` — 18 test functions
+
+### Pattern Extraction Feature
+
+**Workflow**: User pastes text -> LLM extracts archetypal patterns, narrative structure, voice profile, and entities -> Service persists extracted patterns to project DB -> Patterns can be injected into P-100/P-300 prompts for guided generation.
+
+**Entry Points**:
+- `POST /projects/import-patterns` (201 Created) — standalone: provides text, extracts patterns, creates or updates project with results
+- `POST /projects/{project_id}/extract-patterns` (201 Created) — targeted: extracts patterns for an existing project
+
+**Service**: `PatternExtractionService` in `app/services/pattern_extraction.py`
+- `extract_patterns(request)` — main entry point, dispatches to LLM analysis then persistence
+- `_analyze_text(text, genre_hint, tone_hint)` — calls LLM via `InferenceBackend` directly
+- `_parse_llm_json(content)` — robust JSON extraction: direct JSON, markdown fences, trailing/leading text
+- `_persist_patterns(project_id, analysis)` — persists extracted patterns to project's bible.db
+
+**Generalization of MythosExtractionService**: `PatternExtractionService` is the generalized version of `MythosExtractionService`. Mythos extraction now delegates through `PatternExtractionService` with a `mode="mythos_extraction"` parameter. Shared LLM prompt builder: `build_pattern_extraction_request()` in `runtime_prompts.py`. Mythos-specific builder `build_mythos_analysis_request()` wraps the same infrastructure with mythos-tuned system prompt.
+
+**Schema**: `app/schemas/pattern_extraction.py`
+- `PatternExtractionAnalysis` — LLM output: archetypal_patterns, narrative_structure, voice_profile, world_rules, character_archetypes, symbolic_motifs
+- `PatternExtractionRequest(StrictSchemaModel)` — input: text (required), project_id (optional), genre_hint, tone_hint
+- `PatternExtractionResponse(StrictSchemaModel)` — output: status, extraction (summary), error
+- `PatternExtractionSummary(StrictSchemaModel)` — condensed extraction result
+
+**SceneContext Extension**: `app/services/scene_context.py` — `SceneContext` dataclass extended with:
+- `pattern_guidance: PatternGuidance | None` — injects extracted archetypal patterns into P-100/P-300 prompts
+- `author_prompt: str | None` — freeform author guidance injected before character/world context
+
+**P-100/P-300 Prompt Builders**: `app/services/runtime_prompts.py` — adapted for pattern context injection:
+- `_build_pattern_context_block(pc)` — formats PatternExtractionAnalysis into prompt block
+- P-100 architect prompts accept optional `pattern_context` parameter; when present, appends pattern mapping instructions
+- P-300 drafter prompts accept `pattern_guidance` via SceneContext; patterns influence tone, structure, and character voice
+- `build_pattern_extraction_request()` — LLM request builder: `temperature=0.1`, `max_tokens=16000`
+- `build_mythos_analysis_request()` — mythos-specific variant with cosmic/mythological framing
+
+**Error Handling**:
+- `PatternExtractionError(ValueError)` — caught, returns `status="failed"` response
+- `InferenceBackendError` — caught, returns `status="failed"` with error code
+- `pydantic.ValidationError` — caught, wrapped as `PatternExtractionError`
+
+**Components**:
+- `app/services/pattern_extraction.py` — `PatternExtractionService` class
+- `app/schemas/pattern_extraction.py` — request/response/analysis schemas
+- `app/api/projects.py` — `/import-patterns` and `/{project_id}/extract-patterns` endpoints (guarded by API key middleware)
+- `app/services/runtime_prompts.py` — `build_pattern_extraction_request()`, `_build_pattern_context_block()`
+- `app/services/scene_context.py` — extended `SceneContext` with `pattern_guidance` and `author_prompt`
+- `tests/test_pattern_extraction.py` — 87 test functions
 
 ## Implementation Workflow for Next Phases/Tasks
 

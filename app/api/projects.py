@@ -12,6 +12,17 @@ from app.schemas.projects import (
     ProjectDetailResponse,
     ProjectSummaryResponse,
 )
+from app.schemas.mythos_extraction import (
+    MythosExtractionRequest,
+    MythosExtractionResponse,
+)
+from app.schemas.pattern_extraction import (
+    ExtractPatternsRequest,
+    PatternExtractionRequest,
+    PatternExtractionResponse,
+)
+from app.services.mythos_extraction import MythosExtractionError
+from app.services.pattern_extraction import PatternExtractionError
 from app.services.projects import ProjectService
 
 logger = logging.getLogger(__name__)
@@ -21,6 +32,7 @@ def build_projects_router(
     project_service: ProjectService,
     import_service: Any = None,
     mythos_service: Any = None,
+    pattern_service: Any = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
@@ -77,14 +89,44 @@ def build_projects_router(
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if mythos_service is not None:
-        from ..schemas.mythos_extraction import MythosExtractionRequest, MythosExtractionResponse
-        from ..services.mythos_extraction import MythosExtractionError
-
         @router.post("/import-mythos", response_model=MythosExtractionResponse, status_code=201)
         def import_mythos(request: MythosExtractionRequest) -> MythosExtractionResponse:
             try:
                 return mythos_service.extract(request)
             except MythosExtractionError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if pattern_service is not None:
+        @router.post("/import-patterns", response_model=PatternExtractionResponse, status_code=201)
+        def import_patterns(request: PatternExtractionRequest) -> PatternExtractionResponse:
+            try:
+                return pattern_service.extract(
+                    text=request.text,
+                    source_type=request.source_type,
+                    generation_mode=request.generation_mode,
+                    project_id=request.project_id,
+                    source_corpus=request.source_corpus,
+                )
+            except PatternExtractionError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        @router.post("/{project_id}/extract-patterns", response_model=PatternExtractionResponse, status_code=201)
+        def extract_patterns(
+            project_id: str,
+            request: ExtractPatternsRequest,
+        ) -> PatternExtractionResponse:
+            try:
+                return pattern_service.extract_from_project(
+                    project_id=project_id,
+                    source_type=request.source_type,
+                    generation_mode=request.generation_mode,
+                    source_corpus=request.source_corpus,
+                )
+            except PatternExtractionError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
             except Exception as exc:
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
