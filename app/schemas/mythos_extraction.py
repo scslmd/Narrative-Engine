@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from pydantic import Field, field_validator
+
+from app.schemas.base import StrictSchemaModel
+
+
+GENERATION_MODES = ("same_world", "transposed", "pure_pattern")
+
 
 @dataclass
 class ArchetypalPattern:
@@ -70,3 +77,35 @@ class MythosExtractionAnalysis:
     # Entity layer (light — for same_world mode)
     key_entities: list[MythosEntity] = field(default_factory=list)
     entity_relationships: list[Relationship] = field(default_factory=list)
+
+
+class MythosExtractionRequest(StrictSchemaModel):
+    text: str = Field(min_length=1)
+    source_corpus: str | None = None
+    generation_mode: str = Field(min_length=1)
+    project_id: str | None = None
+
+    @field_validator("generation_mode")
+    @classmethod
+    def validate_generation_mode(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in GENERATION_MODES:
+            raise ValueError(
+                f"generation_mode must be one of {GENERATION_MODES}, got '{value}'"
+            )
+        return normalized
+
+
+class ExtractionSummary(StrictSchemaModel):
+    source_corpus: str
+    archetypal_patterns: int
+    narrative_structures: int
+    cosmic_rules: int
+    symbolic_motifs: int
+
+
+class MythosExtractionResponse(StrictSchemaModel):
+    status: str
+    project_id: str
+    extraction: ExtractionSummary | None = None
+    error: str | None = None

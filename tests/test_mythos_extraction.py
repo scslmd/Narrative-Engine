@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 
 def test_archetypal_pattern_fields():
     from app.schemas.mythos_extraction import ArchetypalPattern
@@ -77,3 +79,41 @@ def test_mythos_extraction_analysis_defaults():
     assert analysis.archetypal_patterns == []
     assert analysis.key_entities == []
     assert analysis.thematic_spine == ""
+
+
+def test_mythos_request_validates_generation_mode():
+    from app.schemas.mythos_extraction import MythosExtractionRequest
+    request = MythosExtractionRequest(
+        text="Once upon a time...",
+        source_corpus="Greek Mythology",
+        generation_mode="same_world",
+    )
+    assert request.generation_mode == "same_world"
+
+
+def test_mythos_request_rejects_invalid_mode():
+    from app.schemas.mythos_extraction import MythosExtractionRequest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        MythosExtractionRequest(
+            text="Once upon a time...",
+            generation_mode="invalid_mode",
+        )
+
+
+def test_mythos_response_fields():
+    from app.schemas.mythos_extraction import MythosExtractionResponse, ExtractionSummary
+    summary = ExtractionSummary(
+        source_corpus="Greek Mythology",
+        archetypal_patterns=4,
+        narrative_structures=2,
+        cosmic_rules=5,
+        symbolic_motifs=3,
+    )
+    response = MythosExtractionResponse(
+        status="completed",
+        project_id="proj-123",
+        extraction=summary,
+    )
+    assert response.status == "completed"
+    assert response.extraction.archetypal_patterns == 4
