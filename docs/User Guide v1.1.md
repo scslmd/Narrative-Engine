@@ -1,4 +1,4 @@
-# Narrative Engine - User Guide v1.0
+# Narrative Engine - User Guide v1.1
 
 This guide walks you through using Narrative Engine from first project to a fully-developed complex story.
 
@@ -8,10 +8,11 @@ This guide walks you through using Narrative Engine from first project to a full
 
 1. [Getting Started](#getting-started)
 2. [Importing an Existing Story](#importing-an-existing-story)
-3. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
-4. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
-5. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
-6. [Tips and Best Practices](#tips-and-best-practices)
+3. [Extracting Mythos for Pattern-Based Story Generation](#extracting-mythos-for-pattern-based-story-generation)
+4. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+5. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+6. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+7. [Tips and Best Practices](#tips-and-best-practices)
 
 ---
 
@@ -72,6 +73,54 @@ The system will:
 - Analyze the story with an LLM to extract characters, world details, and structure
 - Create a new project with all structured data
 - Generate foundation profiles, character profiles, world bible entries, and planning artifacts
+
+---
+
+## Extracting Mythos for Pattern-Based Story Generation
+
+Mythos Extraction lets you paste mythology texts and have the system extract their storytelling DNA — archetypal patterns, narrative structures, cosmic rules, and symbolic motifs — then use those patterns to guide original story generation.
+
+### When to Use Mythos Extraction
+
+Use this when you want to write stories that follow the narrative DNA of a mythological tradition, without retelling specific myths. For example:
+- Write an original tragedy following Greek hubris-fall-redemption patterns
+- Create a sci-fi story using Norse cyclical tragedy structure
+- Apply Egyptian cosmic order themes to a modern corporate drama
+
+### Step-by-Step Guide
+
+1. **Open the Story Import modal** from your project dashboard
+2. **Toggle to "Extract Mythos"** mode (next to "Import Story")
+3. **Enter a project name** for the new project
+4. **(Optional) Specify Source Tradition** — e.g., "Greek Mythology", "Norse Sagas". If omitted, the AI identifies it from your text.
+5. **Select Generation Mode:**
+   - **Same World** — Your story will be set in the mythological world with original characters following extracted patterns
+   - **Transposed** — Archetypal patterns map to a new setting (e.g., Greek trickster → cyberpunk hacker)
+   - **Pure Pattern** — Only narrative structures and themes apply; you're free to choose any world and genre
+6. **Paste mythology texts** — Include myths, sagas, or source material. The system analyzes up to 24,000 characters in a single pass.
+7. **Click "Extract Mythos"** — The system analyzes your text and creates a project with:
+   - Foundation profile (thematic spine, emotional promise, tone direction)
+   - World Bible entries for cosmic rules and symbolic motifs
+   - Character archetypes as pattern carriers
+   - Key entities (deities, locations, concepts) in same_world mode
+8. **Proceed to the Planning Workspace** to build your story guided by the extracted patterns
+
+### Example: Greek Tragedy in a Modern Setting
+
+1. Toggle to Extract Mythos mode
+2. Source Tradition: "Greek Mythology"
+3. Generation Mode: Transposed
+4. Paste key Greek myths (Oedipus, Antigone, etc.)
+5. Click Extract Mythos
+6. System extracts: hubris-fall-redemption pattern, cyclical tragedy structure, cosmic rule "fate cannot be escaped"
+7. Navigate to Planning Workspace and create a modern story following these patterns
+
+### Tips
+
+- Include diverse myths from the tradition for richer pattern extraction
+- The system works best with 2,000+ characters of source material
+- In Transposed mode, the extracted archetypes become templates — you create new characters that fulfill those roles
+- Pure Pattern mode gives maximum creative freedom while maintaining mythic narrative structure
 
 ---
 

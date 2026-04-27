@@ -1,4 +1,4 @@
-# Story Development Canonical Contract v1.0
+# Story Development Canonical Contract v1.1
 
 ## 1. Purpose
 
@@ -166,7 +166,56 @@ Required node enum families:
   - `REVIEW_DECISION`
   - `CHECKER_FINDING`
 
-### 5.3 Planning
+### 5.2A Mythos Extraction Objects
+
+Mythos Extraction analyzes mythology texts and extracts structured patterns that guide story generation.
+
+#### Canonical Objects
+
+**ArchetypalPattern**
+- `name`: string — pattern identifier (e.g., "hubris-fall-redemption")
+- `description`: string — how the pattern manifests in source texts
+- `character_type`: string — archetype carrier type (e.g., "hubristic hero")
+- `narrative_beats[]`: list[string] — ordered beats of the archetypal journey
+- `examples_from_text[]`: list[string] — references from source material
+
+**NarrativeStructure**
+- `name`: string — structure identifier (e.g., "cyclical tragedy")
+- `phases[]`: list[string] — ordered story phases
+- `tension_curve`: string — description of tension progression
+- `resolution_type`: string — how stories in this tradition resolve
+
+**CosmicRule**
+- `rule`: string — the governing rule (e.g., "Fate cannot be escaped")
+- `enforcement`: string — mechanism that enforces the rule
+- `exceptions[]`: list[string] — known exceptions or loopholes
+
+**SymbolicMotif**
+- `symbol`: string — the recurring symbol
+- `meaning`: string — what it represents
+- `narrative_function`: string — its role in narrative structure
+
+**MythosEntity**
+- `name`: string — entity name
+- `entity_type`: enum — deity | location | concept | force
+- `archetype`: string — archetypal role (e.g., "sky father")
+- `domain_or_power`: string — sphere of influence
+- `canonical_facts[]`: list[string] — immutable facts from source texts
+
+**Relationship**
+- `source`: string — source entity name
+- `target`: string — target entity name
+- `relationship_type`: string — type of relationship
+- `description`: string — optional description
+
+#### Canonical Naming
+
+- Pattern names use kebab-case: "hubris-fall-redemption", "trickster-disguise"
+- Entity types are lowercase: "deity", "location", "concept", "force"
+- Generation modes are snake_case: "same_world", "transposed", "pure_pattern"
+- Source corpus labels use title case: "Greek Mythology", "Norse Sagas"
+
+### 5.4 Planning
 
 | Canonical name | Definition | Owning layer | Allowed alias notes |
 | --- | --- | --- | --- |
@@ -183,7 +232,7 @@ Rules:
 - `BeatPlan`, `SequencePlan`, `ChapterPlan`, and `ScenePlan` are canonical persisted planning objects
 - cards are presentation views over those plan objects unless a future spec explicitly promotes a card to a persisted object
 
-### 5.3A Branching
+### 5.4A Branching
 
 | Canonical name | Definition | Owning layer | Allowed alias notes |
 | --- | --- | --- | --- |
@@ -200,7 +249,7 @@ Rules:
 - branch comparisons must remain reviewable records and must not mutate branch state implicitly
 - branching services and branching API routes are now part of the implemented backend baseline
 
-### 5.4 Drafting, Review, And Inspect
+### 5.5 Drafting, Review, And Inspect
 
 | Canonical name | Definition | Owning layer | Allowed alias notes |
 | --- | --- | --- | --- |
@@ -305,6 +354,8 @@ Multi-chapter drafting rules:
 | `route_*` | source finding or artifact id plus destination area | handoff link or task id | create a review or planning handoff record |
 | `decide_*` | suggestion or finding id plus decision | review decision id plus resulting state | apply explicit decision without silent mutation |
 | `record_decision_*` | decision subject ids plus chosen action and rationale | story decision node id plus affected object links | persist a reviewable user decision without erasing prior decisions |
+| `extract_mythos_*` | source mythology text plus corpus label | mythos extraction analysis with patterns, entities, rules, motifs | create structured mythos objects for downstream story generation |
+| `generate_from_mythos_*` | mythos extraction id plus generation mode (same_world, transposed, pure_pattern) | generated story artifacts seeded from mythos patterns | create new story content informed by extracted mythos structure |
 
 ## 8. Deterministic Naming Guidance
 

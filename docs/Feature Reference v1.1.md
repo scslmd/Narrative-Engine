@@ -1,4 +1,4 @@
-# Narrative Engine - Feature Reference v1.0
+# Narrative Engine - Feature Reference v1.1
 
 Complete reference for every feature in Narrative Engine, with descriptions, backend APIs, and usage examples.
 
@@ -20,6 +20,7 @@ Complete reference for every feature in Narrative Engine, with descriptions, bac
   - [Foundation Editor](#foundation-editor)
   - [Character Builder](#character-builder)
   - [World Bible](#world-bible)
+- [Mythos Extraction](#mythos-extraction)
 - [Writing Workspace](#writing-workspace)
   - [Draft Management](#draft-management)
   - [Manuscript Review](#manuscript-review)
@@ -795,6 +796,53 @@ GET /v1/story-development/world-bible/{entry_type}/{title}?project_id={id}
 POST /v1/story-development/world-bible
 PATCH /v1/story-development/world-bible/{entry_type}/{title}?project_id={id}
 ```
+
+---
+
+## Mythos Extraction
+
+Mythos Extraction analyzes mythology texts and extracts archetypal patterns, narrative structures, cosmic rules, and symbolic motifs. These extracted patterns guide original story generation — either in the same mythological world, transposed to a new setting, or as pure pattern application.
+
+### Accessing Mythos Extraction
+
+From the Story Import modal, toggle between "Import Story" and "Extract Mythos" modes. The Extract Mythos mode provides:
+- **Source Tradition** — Optional text field to hint at the mythology (e.g., "Greek Mythology"). If omitted, the LLM identifies it from the text.
+- **Generation Mode** — Three options: Same World, Transposed, or Pure Pattern (see below).
+- **Mythos Text** — Paste mythology texts, mythological accounts, or source material for analysis.
+
+### Generation Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| Same World | Keep the mythological setting; create original characters and plots following extracted patterns | Write new myths in an existing tradition |
+| Transposed | Map archetypal patterns to a new setting | Apply Greek tragedy structure to a sci-fi world |
+| Pure Pattern | Apply narrative structures and thematic constraints only; free-form world and genre | Use mythic storytelling DNA for any genre |
+
+### What Gets Extracted
+
+- **Archetypal Patterns** — Character archetypes and their narrative beats (e.g., hubris-fall-redemption cycle)
+- **Narrative Structures** — Story phases, tension curves, and resolution types from the source tradition
+- **Cosmic Rules** — Immutable rules governing the mythological world and their enforcement mechanisms
+- **Symbolic Motifs** — Recurring symbols, their meanings, and narrative functions
+- **Key Entities** — Deities, locations, concepts, and forces with archetypal roles (same_world mode)
+- **Entity Relationships** — Power dynamics and alliances between key entities
+
+### Persistence Mapping
+
+Extracted data populates existing project structures:
+- Foundation Profile receives thematic spine, emotional promise, tone direction, and narrative constraints (archetypal patterns + narrative structures stored as JSON)
+- World Bible receives cosmic rules and symbolic motifs as "concept" entries
+- Character profiles receive archetypal pattern carriers (role: archetype)
+- Key entities are routed to characters (deities/forces) or world bible (locations/concepts)
+
+### Workflow
+
+1. Paste mythology texts in the Extract Mythos modal
+2. Optionally specify source tradition and select generation mode
+3. System analyzes text via LLM and extracts patterns
+4. New project is created with extracted foundation, world bible entries, archetypes, and entities
+5. Proceed to Planning Workspace to build sequences and chapters guided by extracted patterns
+6. P-100 Architect and P-300 Drafter apply mythos context based on selected generation mode
 
 ---
 

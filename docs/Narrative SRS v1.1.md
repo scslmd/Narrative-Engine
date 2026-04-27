@@ -1,6 +1,6 @@
-# Narrative SRS v1.0
+# Narrative SRS v1.1
 
-Document version: `v1.0`
+Document version: `v1.1`
 
 ## 1. Purpose
 
@@ -170,6 +170,7 @@ Base URL patterns:
 - `GET /projects/{project_id}/manifest` - Get project manifest
 - `GET /projects/{project_id}/sequence` - Get sequence artifact
 - `GET /projects/{project_id}/chapter-1` - Get chapter-1 artifact
+- `POST /projects/import-mythos` - Analyze mythology text and extract archetypal patterns, narrative structures, cosmic rules, symbolic motifs, entities, and relationships into project foundation, world bible, and characters (201 Created)
 
 **Models Service (`/v1/models`):**
 - `GET /v1/models` - Get model catalog with discovered local and runtime models
@@ -921,7 +922,69 @@ Required task functions:
 - detect a setting contradiction
 - promote a repeated detail into canon
 
-### 17.6 Story Arc Selection
+### 17.5A Mythos Extraction
+
+Mythos Extraction analyzes mythology texts via LLM and extracts archetypal patterns, narrative structures, cosmic rules, symbolic motifs, key entities, and entity relationships. Extracted data populates Foundation Profile, World Bible, and Character Profiles through a single transactional import.
+
+### Required Backend Components
+
+- `MythosExtractionService` — main service class with `extract()` method
+- `build_mythos_analysis_request()` — prompt builder in runtime_prompts.py
+- `_parse_mythos_analysis()` — JSON-to-dataclass parser with type coercion
+- `_transactional_import()` — single SQLite transaction for persistence
+
+### API Contract
+
+**Endpoint:** `POST /projects/import-mythos`
+**Status Code:** 201 Created
+**Request Schema (MythosExtractionRequest):**
+- `text`: string, required, min_length=1, max_length=5_000_000
+- `source_corpus`: string | null, optional
+- `generation_mode`: string, required, validated against ("same_world", "transposed", "pure_pattern")
+- `project_id`: string | null, optional
+
+**Response Schema (MythosExtractionResponse):**
+- `status`: "completed" | "failed"
+- `project_id`: string
+- `extraction`: ExtractionSummary | null — { source_corpus, archetypal_patterns: int, narrative_structures: int, cosmic_rules: int, symbolic_motifs: int }
+- `error`: string | null
+
+### Data Models (app/schemas/mythos_extraction.py)
+
+**ArchetypalPattern:** name, description, character_type, narrative_beats[], examples_from_text[]
+**NarrativeStructure:** name, phases[], tension_curve, resolution_type
+**CosmicRule:** rule, enforcement, exceptions[]
+**SymbolicMotif:** symbol, meaning, narrative_function
+**MythosEntity:** name, entity_type (deity|location|concept|force), archetype, domain_or_power, canonical_facts[]
+**Relationship:** source, target, relationship_type, description
+**MythosExtractionAnalysis:** container with all above + thematic_spine, emotional_promise, tone_and_voice_direction
+
+### Persistence Contract
+
+- Foundation Profile: thematic_spine, emotional_promise, tone_direction set from analysis; narrative_constraints_json stores archetypal patterns + narrative structures as JSON
+- World Bible: cosmic rules → "concept" entries titled "Cosmic Rule: {rule}"; symbolic motifs → "concept" entries titled "Motif: {symbol}"
+- Character Profiles: archetypes stored with role_in_story="archetype"; deities/forces stored with role_in_story="mythos_entity"
+- Relationships: entity relationship edges with hash-based edge IDs
+
+### Manifest Extension
+
+ManifestConfig extended with:
+- `mythos_source_corpus`: string, default ""
+- `mythos_generation_mode`: string, default "" (same_world | transposed | pure_pattern)
+
+### Error Handling
+
+- `MythosExtractionError(ValueError)` — caught, returns status="failed"
+- `InferenceBackendError` — caught, returns status="failed" with error code
+- Partial results accepted on LLM extraction failure (warning logged, project created with available data)
+
+### Generation Integration
+
+- P-100 Architect prompt adapted with mythos_context block per generation mode
+- P-300 Drafter enforces cosmic rules as hard constraints during drafting
+- Consistency Critic: future mythos_consistency check for cosmic rule violations
+
+### 17.7 Story Arc Selection
 
 Story arc selection is the planning layer that lets the user choose a story shape, compare alternatives, and change course without losing prior work.
 
@@ -1035,7 +1098,7 @@ Validation rule:
 
 - at least one of `prior_state_ref`, `prior_state_summary`, `new_state_ref`, or `new_state_summary` must be present
 
-### 17.6A Story Branching And Forks
+### 17.7A Story Branching And Forks
 
 Story branching is the feature that lets the user fork the storyline at a meaningful decision point and explore alternate directions without overwriting the active path.
 
@@ -1084,7 +1147,7 @@ Required task functions:
 - select the active branch
 - merge selected branch outcomes back into another branch through explicit decisions
 
-### 17.7 Planning Objects
+### 17.8 Planning Objects
 
 Planning objects are the structured intermediates that turn abstract intent into executable writing work.
 
@@ -1150,7 +1213,7 @@ Required task functions:
 - reorder planning objects while preserving lineage
 - attach unresolved questions to the next planning step
 
-### 17.8 Drafting
+### 17.9 Drafting
 
 Drafting is the prose-generation and prose-revision layer that consumes planning state and produces manuscript text.
 
@@ -1199,7 +1262,7 @@ Required task functions:
 - register the resulting draft artifact and its lineage
 - promote accepted draft content into explicit manuscript state without erasing the originating draft artifact
 
-### 17.9 Suggestions And Revision
+### 17.10 Suggestions And Revision
 
 Suggestions are the guided-assistance layer that improves the manuscript without silently replacing author text.
 
@@ -1243,7 +1306,7 @@ Required task functions:
 - explain the context used for a suggestion
 - convert a suggestion into a user-applied edit without mutating history
 
-### 17.10 Continuity And Review
+### 17.11 Continuity And Review
 
 Continuity and review are the validation layers that keep generated prose aligned with canon, arc intent, and user-defined constraints.
 
@@ -1291,7 +1354,7 @@ Required task functions:
 - record the resulting accept, reject, defer, escalate, or refine decision
 - route a finding back into planning or drafting
 
-### 17.11 Inspect And Provenance
+### 17.12 Inspect And Provenance
 
 Inspect and provenance are core product features, not developer conveniences.
 
@@ -1329,7 +1392,7 @@ Required task functions:
 - link a generated artifact back to the step that produced it
 - show which artifact version is canonical
 
-### 17.12 Orchestrator Expectations
+### 17.13 Orchestrator Expectations
 
 The orchestrator is the coordination layer that turns user actions into durable backend work.
 
@@ -1367,7 +1430,7 @@ Persistence-first routing rule:
 - do not route a service implementation task that would require process-local placeholder state for canonical objects such as `RelationshipEdge`, `ArcSelection`, `ArcStageMap`, `BeatPlan`, `SequencePlan`, `ChapterPlan`, `ScenePlan`, `PlanningDependency`, or `ChapterPacket`
 - when persistence is the blocker, the next deterministic task should name the missing tables, repository methods, verification path, and later endpoint family that the persistence slice unlocks
 
-### 17.13 Failure And Retry Expectations
+### 17.14 Failure And Retry Expectations
 
 Failure handling must preserve both user trust and data integrity.
 
@@ -1397,7 +1460,7 @@ The current backend lessons that must remain true are:
 - canonical story-development objects must not live only in service-local memory once the docs define them as persisted records
 - the correct fix for a missing object family is to add persistence and repository support first, then retry the blocked service slice on top of that storage
 
-### 17.14 Workflow States
+### 17.15 Workflow States
 
 The story-development feature set should use the canonical state families in `docs/Story Development Canonical Contract v1.0.md`.
 
@@ -1421,7 +1484,7 @@ Required state-family split:
 - suggestion lifecycle state: `REQUESTED`, `READY`, `ACCEPTED`, `REJECTED`, `REFINE_REQUESTED`, `EXPIRED`
 - backend execution state: `ACCEPTED`, `PENDING`, `CLAIMED`, `RUNNING`, `VALIDATING`, `PERSISTING`, `COMPLETED`, `FAILED`, `CANCELLED`
 
-### 17.15 Implementation Order
+### 17.16 Implementation Order
 
 The recommended build order for the story-development layer is:
 
@@ -1430,13 +1493,14 @@ The recommended build order for the story-development layer is:
 3. foundation profile
 4. character background and relationship graph
 5. world bible
-6. arc recommendation and stage mapping
-7. planning objects
-8. drafting generation and continuation
-9. suggestions and revision
-10. continuity and review
-11. inspect and provenance polish
-12. orchestrator hardening and retry coverage
+6. mythos extraction
+7. arc recommendation and stage mapping
+8. planning objects
+9. drafting generation and continuation
+10. suggestions and revision
+11. continuity and review
+12. inspect and provenance polish
+13. orchestrator hardening and retry coverage
 
 This order is advisory. The project may interleave implementation as long as step records, lineage, and retry behavior stay correct.
 

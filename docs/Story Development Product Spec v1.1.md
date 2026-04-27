@@ -1,4 +1,7 @@
-# Story Development Product Spec v1.0
+# Story Development Product Spec v1.1
+
+**Change log from v1.0 (v1.1 Mythos Extraction - April 26, 2026)**:
+- Added Section 9A: Mythos Extraction — analyzes mythology texts and extracts archetypal patterns, narrative structures, cosmic rules, and symbolic motifs to guide original story generation via same-world, transposed, or pure-pattern modes
 
 **Change log from v0.1 (v1.0 Scope Clarification - March 29, 2026)**:
 - Updated Section 4.1 to clarify that current v1.0 provides read projections of flow stages; full mutation support for adding, reordering, and deleting stages is deferred to a future release wave
@@ -75,6 +78,8 @@ The default guided flow should be:
 6. Sequence and Chapter Planning
 7. Drafting
 8. Review and Suggestions
+
+Optional pre-step: Mythos Extraction (Section 9A) can seed the entire flow from mythology texts, producing foundation, world bible, archetypes, and entities before entering the core flow above.
 
 This flow should be project-configurable.
 
@@ -280,6 +285,54 @@ Each entry should support:
 - bible content should be extractable from brainstorms, sequences, and manuscript drafts
 - bible entries should be referenceable from planning and drafting surfaces
 - continuity tools should use bible entries as canonical context
+
+## 9A. Mythos Extraction
+
+Mythos Extraction analyzes mythology texts and extracts archetypal patterns, narrative structures, cosmic rules, and symbolic motifs. These patterns guide original story generation through three modes: same-world (mythological setting), transposed (new setting with mythic patterns), or pure-pattern (structures only, free-form world).
+
+### 9A.1 User Workflow
+
+1. User pastes mythology texts in the Extract Mythos modal
+2. User optionally specifies source tradition and selects generation mode
+3. System analyzes text via LLM and extracts structured patterns
+4. New project is created with extracted foundation, world bible, archetypes, and entities
+5. User proceeds to Planning Workspace guided by extracted patterns
+
+### 9A.2 Extraction Schema
+
+- **Archetypal Pattern**: name, description, character_type, narrative_beats[], examples_from_text[]
+- **Narrative Structure**: name, phases[], tension_curve, resolution_type
+- **Cosmic Rule**: rule, enforcement, exceptions[]
+- **Symbolic Motif**: symbol, meaning, narrative_function
+- **Mythos Entity**: name, entity_type (deity|location|concept|force), archetype, domain_or_power, canonical_facts[]
+- **Relationship**: source, target, relationship_type, description
+
+### 9A.3 Generation Modes
+
+| Mode | Constraint Level | Setting | Characters | Patterns |
+|------|-----------------|---------|------------|----------|
+| Same World | High | Mythological world as-is | Original characters following archetypes | All extracted patterns applied |
+| Transposed | Medium | New setting | Archetypes mapped to new roles | Structural rules adapted |
+| Pure Pattern | Low | Free-form | Free-form | Narrative structures and themes only |
+
+### 9A.4 Persistence Mapping
+
+- Foundation Profile: thematic_spine, emotional_promise, tone_direction from analysis; narrative_constraints stores archetypal patterns + narrative structures as JSON
+- World Bible: cosmic rules and symbolic motifs as "concept" entries
+- Character Profiles: archetypal pattern carriers (role_in_story = "archetype"); deities/forces as mythos entities
+- Relationships: entity relationship edges
+
+### 9A.5 Integration with Generation Pipeline
+
+- P-100 Architect receives mythos_context block based on generation mode
+- P-300 Drafter enforces cosmic rules as hard constraints during drafting
+- Consistency Critic verifies story obeys extracted cosmic rules (future: dedicated mythos_consistency check)
+
+### 9A.6 Backend Objects Needed
+
+- `MythosExtractionService` — extraction orchestration, LLM call, transactional persistence
+- `build_mythos_analysis_request()` — prompt builder for pattern extraction
+- `_parse_mythos_analysis()` — JSON-to-dataclass parser with type coercion
 
 ## 10. Story Arc Selection
 

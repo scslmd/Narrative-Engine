@@ -1,4 +1,4 @@
-# Narrative Engine - Complete User Walkthrough v1.0
+# Narrative Engine - Complete User Walkthrough v1.1
 
 > Purpose: Step-by-step guide to using all features of the Narrative Engine application, starting simple and incrementally building to advanced workflows.
 >
@@ -10,6 +10,7 @@
 
 The Narrative Engine is a narrative compilation system for long-form fiction development. It provides:
 
+- **Mythos Extraction** -- paste mythology texts and extract narrative patterns to seed a new project
 - **Story Import** -- paste an existing story and have the LLM auto-extract structured data
 - **Project Creation** -- manual project setup with genre, tone, POV, structure
 - **Planning** -- hierarchical story planning (sequences, chapters, scenes, beats)
@@ -68,6 +69,50 @@ The home screen shows two options:
 5. On success, you are redirected to the project workspace
 
 **Note**: Story Import requires a configured inference backend (llama.cpp, LM Studio, vLLM, etc.). If unavailable, the import will fail with an error message.
+
+#### Option C: Extract Mythos (Pattern-Based Seed)
+
+1. Click the "Import Existing Story" button to open the modal, then toggle to "Extract Mythos" mode
+2. Fill in:
+   - **Project Name** -- required, name for the new project
+   - **Source Tradition** -- optional, e.g., "Greek Mythology", "Norse Sagas". Omit to let AI identify.
+   - **Generation Mode** -- select one:
+     - **Same World** -- keep mythological setting, create original characters following extracted patterns
+     - **Transposed** -- map archetypes to a new setting (e.g., Greek tragedy → corporate drama)
+     - **Pure Pattern** -- apply narrative structures only; free-form world and genre
+   - **Mythology Texts** -- paste mythology texts, sagas, or source material (up to 24,000 characters). Include diverse myths for richer pattern extraction.
+3. Click "Extract Mythos"
+4. The system:
+   - Analyzes your text via LLM
+   - Extracts archetypal patterns, narrative structures, cosmic rules, symbolic motifs
+   - Creates a project with foundation profile, world bible entries, character archetypes, and key entities
+   - Returns a success/failure response
+5. On success, you are redirected to the project workspace
+
+**Note**: Mythos Extraction requires a configured inference backend. Generation modes determine how extracted patterns are applied: Same World for in-universe stories, Transposed for adapted settings, Pure Pattern for maximum creative freedom.
+
+---
+
+## Phase 1b: Mythos Extraction Results (Optional)
+
+If you used Mythos Extraction as your project seed, the following will be pre-populated when you enter the workspace:
+
+- **Foundation Editor** -- thematic spine, emotional promise, tone direction derived from source material
+- **World Bible** -- cosmic rules and symbolic motifs as concept entries
+- **Character Builder** -- archetypal pattern carriers available as templates
+- **P-100 Architect** -- applies mythos context based on your generation mode
+- **P-300 Drafter** -- enforces cosmic rules as hard constraints during drafting
+
+### Troubleshooting Mythos Extraction
+
+| Issue | Solution |
+|-------|----------|
+| Extraction returns no patterns | Ensure text is 2,000+ characters and includes multiple mythological accounts |
+| Wrong source tradition detected | Specify source_corpus manually and retry |
+| Partial results | Retry — the LLM may extract more patterns on a second pass |
+| Generation mode unclear | Same World for in-universe stories, Transposed for adapted settings, Pure Pattern for maximum freedom |
+
+From here, proceed to Phase 2 (Planning Workspace).
 
 ---
 
