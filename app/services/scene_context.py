@@ -111,11 +111,7 @@ class SceneContext:
 
     def _has_pattern_content(self) -> bool:
         pg = self.pattern_guidance
-        return bool(
-            (pg and pg.voice_profile)
-            or (pg and pg.world_rules)
-            or (pg and pg.thematic_constraints)
-        )
+        return bool(pg and (pg.voice_profile or pg.world_rules or pg.thematic_constraints))
 
 
 class SceneContextService:

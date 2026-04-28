@@ -4,6 +4,7 @@ import { extractMythos } from '../../services/mythosExtraction';
 import { importPatterns } from '../../services/patternExtraction';
 import type { StoryImportResponse } from '../../types/storyImport';
 import type { PatternExtractionRequest, PatternExtractionResponse } from '../../types/patternExtraction';
+import type { MythosExtractionResponse } from '../../types/mythosExtraction';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   const [sourceCorpus, setSourceCorpus] = useState('');
   const [generationMode, setGenerationMode] = useState<'same_world' | 'transposed' | 'pure_pattern'>('same_world');
   const [patternSourceType, setPatternSourceType] = useState<'narrative' | 'mythology'>('narrative');
-  const [patternGenMode, setPatternGenMode] = useState<'same_world' | 'new_characters' | 'transposed'>('same_world');
+  const [patternGenMode, setPatternGenMode] = useState<'same_world' | 'new_characters' | 'transposed' | 'pure_pattern'>('same_world');
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -51,7 +52,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
     setIsImporting(true);
 
     try {
-      let response: StoryImportResponse | PatternExtractionResponse | { project_id: string; status: 'completed' | 'failed'; error: string | null };
+      let response: StoryImportResponse | PatternExtractionResponse | MythosExtractionResponse;
 
       if (importMode === 'patterns') {
         const patternRequest: PatternExtractionRequest = {
@@ -301,26 +302,33 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
                   </span>
                   Generation Mode
                 </label>
-                <div className="flex gap-2">
-                  {([
-                    { value: 'same_world' as const, label: 'Same World' },
-                    { value: 'new_characters' as const, label: 'New Characters' },
-                    { value: 'transposed' as const, label: 'Transposed' },
-                  ]).map((mode) => (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => setPatternGenMode(mode.value)}
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                        patternGenMode === mode.value
-                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
-                          : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
-                      }`}
-                    >
-                      {mode.label}
-                    </button>
-                  ))}
-                </div>
+               <div className="flex gap-2">
+                    {(patternSourceType === 'mythology'
+                      ? [
+                          { value: 'same_world' as const, label: 'Same World' },
+                          { value: 'transposed' as const, label: 'Transposed' },
+                          { value: 'pure_pattern' as const, label: 'Pure Pattern' },
+                        ]
+                      : [
+                          { value: 'same_world' as const, label: 'Same World' },
+                          { value: 'new_characters' as const, label: 'New Characters' },
+                          { value: 'transposed' as const, label: 'Transposed' },
+                        ]
+                    ).map((mode) => (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => setPatternGenMode(mode.value)}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                          patternGenMode === mode.value
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
+                            : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
               </div>
 
               <div className="space-y-1.5">

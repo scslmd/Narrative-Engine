@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import re
@@ -11,6 +10,18 @@ from typing import Any
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
+from ..utils.db_inserts import (
+    hash_id,
+    insert_character_profile,
+    insert_foundation_profile,
+    insert_relationship_edge,
+    insert_world_bible_entry,
+    json_safe,
+    next_revision_number,
+    update_foundation_revision_id,
+)
+from ..utils.json_extract import extract_json
+from ..utils.manifest import update_manifest as _update_manifest_util
 from ..schemas.mythos_extraction import (
     ArchetypalPattern,
     CosmicRule,
@@ -127,7 +138,9 @@ class MythosExtractionService:
         except InferenceBackendError:
             raise
 
-        parsed = _extract_json(response.content)
+        parsed = extract_json(response.content)
+        if parsed is None:
+            raise MythosExtractionError("Failed to parse LLM response as JSON")
         analysis = _parse_mythos_analysis(parsed)
         return analysis
 
@@ -140,7 +153,7 @@ class MythosExtractionService:
         now = datetime.now(timezone.utc).isoformat()
         conn = sqlite3.connect(self._repository.db_path, timeout=30)
         try:
-            conn.execute("BEGIN")
+            conn.execute("BEGIN IMMEDIATE")
             self._import_foundation(conn, project_id, analysis, now)
             self._import_world_bible(conn, project_id, analysis, now)
             self._import_archetypes(conn, project_id, analysis, now)
@@ -160,22 +173,9 @@ class MythosExtractionService:
         now: str,
     ) -> None:
         """Insert foundation_profiles header + foundation_revisions."""
-        conn.execute(
-            """
-            INSERT INTO foundation_profiles (project_id, current_revision_id, created_at, updated_at)
-            VALUES (?, NULL, ?, ?)
-            ON CONFLICT(project_id) DO UPDATE SET updated_at = excluded.updated_at
-            """,
-            (project_id, now, now),
-        )
+        next_rev = next_revision_number(conn, project_id)
 
-        rev_row = conn.execute(
-            "SELECT COALESCE(MAX(revision_number), 0) + 1 FROM foundation_revisions WHERE project_id = ?",
-            (project_id,),
-        ).fetchone()
-        next_rev = rev_row[0]
-
-        narrative_constraints_json = json.dumps(
+        narrative_constraints_json = json_safe(
             {
                 "archetypal_patterns": [
                     {"name": p.name, "description": p.description, "character_type": p.character_type}
@@ -185,52 +185,17 @@ class MythosExtractionService:
                     {"name": s.name, "phases": s.phases}
                     for s in analysis.narrative_structures
                 ],
-            },
-            ensure_ascii=True,
-            sort_keys=True,
+            }
         )
 
-        conn.execute(
-            """
-            INSERT INTO foundation_revisions (
-                project_id, revision_number, premise, logline, thematic_spine, emotional_promise,
-                tone_direction, target_audience, narrative_constraints_json, complexity_level,
-                success_definition, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(project_id, revision_number) DO UPDATE SET
-                premise = excluded.premise,
-                logline = excluded.logline,
-                thematic_spine = excluded.thematic_spine,
-                emotional_promise = excluded.emotional_promise,
-                tone_direction = excluded.tone_direction,
-                target_audience = excluded.target_audience,
-                narrative_constraints_json = excluded.narrative_constraints_json,
-                complexity_level = excluded.complexity_level,
-                success_definition = excluded.success_definition,
-                updated_at = excluded.updated_at
-            """,
-            (
-                project_id,
-                next_rev,
-                "",
-                "",
-                analysis.thematic_spine or None,
-                analysis.emotional_promise or None,
-                analysis.tone_and_voice_direction or None,
-                None,
-                narrative_constraints_json,
-                None,
-                None,
-                now,
-                now,
-            ),
+        revision_id = insert_foundation_profile(
+            conn, project_id, now, next_rev,
+            thematic_spine=analysis.thematic_spine or None,
+            emotional_promise=analysis.emotional_promise or None,
+            tone_direction=analysis.tone_and_voice_direction or None,
+            constraints_json=narrative_constraints_json,
         )
-
-        revision_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        conn.execute(
-            "UPDATE foundation_profiles SET current_revision_id = ?, updated_at = ? WHERE project_id = ?",
-            (revision_id, now, project_id),
-        )
+        update_foundation_revision_id(conn, project_id, revision_id, now)
 
     def _import_world_bible(
         self,
@@ -241,38 +206,10 @@ class MythosExtractionService:
     ) -> None:
         """Insert cosmic rules and symbolic motifs as world_bible_entries."""
         for rule in analysis.cosmic_rules:
-            exceptions_json = json.dumps(rule.exceptions or [], ensure_ascii=True, sort_keys=True)
-            conn.execute(
-                """
-                INSERT INTO world_bible_entries (
-                    project_id, entry_type, title, summary, canonical_facts_json,
-                    related_character_ids_json, visibility_scope, source_artifacts_json,
-                    continuity_warnings_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                    summary = excluded.summary,
-                    canonical_facts_json = excluded.canonical_facts_json,
-                    related_character_ids_json = excluded.related_character_ids_json,
-                    visibility_scope = excluded.visibility_scope,
-                    source_artifacts_json = excluded.source_artifacts_json,
-                    continuity_warnings_json = excluded.continuity_warnings_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    project_id,
-                    "concept",
-                    f"Cosmic Rule: {rule.rule}",
-                    rule.enforcement if rule.enforcement else None,
-                    exceptions_json,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    "project",
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    now,
-                    now,
-                ),
+            insert_world_bible_entry(
+                conn, project_id, "concept", f"Cosmic Rule: {rule.rule}",
+                summary=rule.enforcement if rule.enforcement else None,
+                canonical_facts_json=json_safe(rule.exceptions or []),
             )
 
         for motif in analysis.symbolic_motifs:
@@ -280,38 +217,9 @@ class MythosExtractionService:
             if motif.narrative_function:
                 summary_parts.append(f"Narrative function: {motif.narrative_function}")
             summary = ". ".join(summary_parts)
-
-            conn.execute(
-                """
-                INSERT INTO world_bible_entries (
-                    project_id, entry_type, title, summary, canonical_facts_json,
-                    related_character_ids_json, visibility_scope, source_artifacts_json,
-                    continuity_warnings_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                    summary = excluded.summary,
-                    canonical_facts_json = excluded.canonical_facts_json,
-                    related_character_ids_json = excluded.related_character_ids_json,
-                    visibility_scope = excluded.visibility_scope,
-                    source_artifacts_json = excluded.source_artifacts_json,
-                    continuity_warnings_json = excluded.continuity_warnings_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    project_id,
-                    "concept",
-                    f"Motif: {motif.symbol}",
-                    summary if summary else None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    "project",
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    now,
-                    now,
-                ),
+            insert_world_bible_entry(
+                conn, project_id, "concept", f"Motif: {motif.symbol}",
+                summary=summary if summary else None,
             )
 
     def _import_archetypes(
@@ -323,69 +231,13 @@ class MythosExtractionService:
     ) -> None:
         """Insert archetypal patterns as character_profiles."""
         for pattern in analysis.archetypal_patterns:
-            char_id = _hash_id("archetype", pattern.name)
-            narrative_beats_json = json.dumps(pattern.narrative_beats or [], ensure_ascii=True, sort_keys=True)
-
-            conn.execute(
-                """
-                INSERT INTO character_profiles (
-                    character_id, project_id, display_name, role_in_story, archetype,
-                    external_goal, internal_need, misbelief_or_wound, core_fear,
-                    primary_strength, fatal_flaw_or_limitation, contradictions_json,
-                    backstory_summary, voice_notes, relationship_map_json, secrets_json,
-                    values_json, taboos_json, change_axis, arc_stage_notes,
-                    continuity_facts_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(character_id) DO UPDATE SET
-                    project_id = excluded.project_id,
-                    display_name = excluded.display_name,
-                    role_in_story = excluded.role_in_story,
-                    archetype = excluded.archetype,
-                    external_goal = excluded.external_goal,
-                    internal_need = excluded.internal_need,
-                    misbelief_or_wound = excluded.misbelief_or_wound,
-                    core_fear = excluded.core_fear,
-                    primary_strength = excluded.primary_strength,
-                    fatal_flaw_or_limitation = excluded.fatal_flaw_or_limitation,
-                    contradictions_json = excluded.contradictions_json,
-                    backstory_summary = excluded.backstory_summary,
-                    voice_notes = excluded.voice_notes,
-                    relationship_map_json = excluded.relationship_map_json,
-                    secrets_json = excluded.secrets_json,
-                    values_json = excluded.values_json,
-                    taboos_json = excluded.taboos_json,
-                    change_axis = excluded.change_axis,
-                    arc_stage_notes = excluded.arc_stage_notes,
-                    continuity_facts_json = excluded.continuity_facts_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    char_id,
-                    project_id,
-                    pattern.character_type or pattern.name,
-                    "archetype",
-                    pattern.name,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    pattern.description or None,
-                    None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    narrative_beats_json,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    now,
-                    now,
-                ),
+            char_id = hash_id("mythos-archetype", pattern.name)
+            insert_character_profile(
+                conn, char_id, project_id,
+                display_name=pattern.character_type or pattern.name,
+                role_in_story="archetype", archetype=pattern.name,
+                backstory_summary=pattern.description or None,
+                arc_stage_notes=json_safe(pattern.narrative_beats or []),
             )
 
     def _import_entities(
@@ -398,234 +250,40 @@ class MythosExtractionService:
         """Insert key entities: deities/forces as characters, locations/concepts as world bible."""
         for entity in analysis.key_entities:
             if entity.entity_type in ("deity", "force"):
-                char_id = _hash_id("entity", entity.name)
-                canonical_facts_json = json.dumps(entity.canonical_facts or [], ensure_ascii=True, sort_keys=True)
-
-                conn.execute(
-                    """
-                    INSERT INTO character_profiles (
-                        character_id, project_id, display_name, role_in_story, archetype,
-                        external_goal, internal_need, misbelief_or_wound, core_fear,
-                        primary_strength, fatal_flaw_or_limitation, contradictions_json,
-                        backstory_summary, voice_notes, relationship_map_json, secrets_json,
-                        values_json, taboos_json, change_axis, arc_stage_notes,
-                        continuity_facts_json, writer_notes, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(character_id) DO UPDATE SET
-                        project_id = excluded.project_id,
-                        display_name = excluded.display_name,
-                        role_in_story = excluded.role_in_story,
-                        archetype = excluded.archetype,
-                        external_goal = excluded.external_goal,
-                        internal_need = excluded.internal_need,
-                        misbelief_or_wound = excluded.misbelief_or_wound,
-                        core_fear = excluded.core_fear,
-                        primary_strength = excluded.primary_strength,
-                        fatal_flaw_or_limitation = excluded.fatal_flaw_or_limitation,
-                        contradictions_json = excluded.contradictions_json,
-                        backstory_summary = excluded.backstory_summary,
-                        voice_notes = excluded.voice_notes,
-                        relationship_map_json = excluded.relationship_map_json,
-                        secrets_json = excluded.secrets_json,
-                        values_json = excluded.values_json,
-                        taboos_json = excluded.taboos_json,
-                        change_axis = excluded.change_axis,
-                        arc_stage_notes = excluded.arc_stage_notes,
-                        continuity_facts_json = excluded.continuity_facts_json,
-                        writer_notes = excluded.writer_notes,
-                        updated_at = excluded.updated_at
-                    """,
-                    (
-                        char_id,
-                        project_id,
-                        entity.name,
-                        "mythos_entity",
-                        entity.archetype or None,
-                        None,
-                        None,
-                        None,
-                        None,
-                        entity.domain_or_power or None,
-                        None,
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        None,
-                        None,
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        None,
-                        None,
-                        canonical_facts_json,
-                        None,
-                        now,
-                        now,
-                    ),
+                char_id = hash_id("mythos-entity", entity.name)
+                insert_character_profile(
+                    conn, char_id, project_id,
+                    display_name=entity.name, role_in_story="mythos_entity",
+                    archetype=entity.archetype or None,
+                    primary_strength=entity.domain_or_power or None,
+                    continuity_facts_json=json_safe(entity.canonical_facts or []),
                 )
             else:
-                canonical_facts_json = json.dumps(entity.canonical_facts or [], ensure_ascii=True, sort_keys=True)
-                related_chars_json = json.dumps([], ensure_ascii=True, sort_keys=True)
-
-                conn.execute(
-                    """
-                    INSERT INTO world_bible_entries (
-                        project_id, entry_type, title, summary, canonical_facts_json,
-                        related_character_ids_json, visibility_scope, source_artifacts_json,
-                        continuity_warnings_json, writer_notes, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                        summary = excluded.summary,
-                        canonical_facts_json = excluded.canonical_facts_json,
-                        related_character_ids_json = excluded.related_character_ids_json,
-                        visibility_scope = excluded.visibility_scope,
-                        source_artifacts_json = excluded.source_artifacts_json,
-                        continuity_warnings_json = excluded.continuity_warnings_json,
-                        writer_notes = excluded.writer_notes,
-                        updated_at = excluded.updated_at
-                    """,
-                    (
-                        project_id,
-                        entity.entity_type or "concept",
-                        entity.name,
-                        entity.domain_or_power or None,
-                        canonical_facts_json,
-                        related_chars_json,
-                        "project",
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        json.dumps([], ensure_ascii=True, sort_keys=True),
-                        None,
-                        now,
-                        now,
-                    ),
+                insert_world_bible_entry(
+                    conn, project_id, entity.entity_type or "concept", entity.name,
+                    summary=entity.domain_or_power or None,
+                    canonical_facts_json=json_safe(entity.canonical_facts or []),
                 )
 
         for rel in analysis.entity_relationships:
-            edge_id = _hash_id("edge", f"{rel.source}-{rel.target}")
-            conn.execute(
-                """
-                INSERT INTO relationship_edges (
-                    edge_id, project_id, source_character_id, target_character_id,
-                    relation_kind, summary, tension, notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(edge_id) DO UPDATE SET
-                    project_id = excluded.project_id,
-                    source_character_id = excluded.source_character_id,
-                    target_character_id = excluded.target_character_id,
-                    relation_kind = excluded.relation_kind,
-                    summary = excluded.summary,
-                    tension = excluded.tension,
-                    notes = excluded.notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    edge_id,
-                    project_id,
-                    _hash_id("entity", rel.source),
-                    _hash_id("entity", rel.target),
-                    rel.relationship_type or "related",
-                    rel.description or "",
-                    None,
-                    None,
-                    now,
-                    now,
-                ),
+            edge_id = hash_id("mythos-edge", f"{rel.source}-{rel.target}")
+            insert_relationship_edge(
+                conn, edge_id, project_id,
+                source_character_id=hash_id("mythos-entity", rel.source),
+                target_character_id=hash_id("mythos-entity", rel.target),
+                relation_kind=rel.relationship_type or "related",
+                summary=rel.description or "",
             )
 
     def _update_manifest(self, project_id: str, analysis: MythosExtractionAnalysis) -> None:
         """Update manifest.json with mythos source corpus and generation mode."""
         project_dir = self._project_service.root_dir / "data" / "projects" / project_id
-        manifest_path = project_dir / "manifest.json"
-        if not manifest_path.exists():
-            logger.warning("Manifest not found for project %s, skipping mythos metadata update", project_id)
-            return
-
-        try:
-            manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("Failed to read manifest for project %s: %s", project_id, exc)
-            return
-
-        if "config" not in manifest_data:
-            manifest_data["config"] = {}
-
+        config_updates: dict[str, str] = {}
         if analysis.source_corpus:
-            manifest_data["config"]["mythos_source_corpus"] = analysis.source_corpus
+            config_updates["mythos_source_corpus"] = analysis.source_corpus
         if analysis.generation_mode:
-            manifest_data["config"]["mythos_generation_mode"] = analysis.generation_mode
-
-        try:
-            manifest_path.write_text(
-                json.dumps(manifest_data, ensure_ascii=True, indent=2, sort_keys=True),
-                encoding="utf-8",
-            )
-        except OSError as exc:
-            logger.warning("Failed to write manifest for project %s: %s", project_id, exc)
-
-
-def _hash_id(prefix: str, value: str) -> str:
-    """Generate a stable, order-independent ID from a string value."""
-    raw = f"mythos-{prefix}-{value.strip().lower()}"
-    short_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
-    return f"mythos-{prefix}-{short_hash}"
-
-
-def _extract_json(content: str) -> dict[str, Any]:
-    """Extract JSON object from LLM response text."""
-    stripped = content.strip()
-
-    # Try direct parse first
-    try:
-        return json.loads(stripped)
-    except (json.JSONDecodeError, ValueError):
-        pass
-
-    # Strip markdown code fences
-    fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", stripped, flags=re.MULTILINE)
-    fenced = fenced.strip()
-    if fenced:
-        try:
-            return json.loads(fenced)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    # Find first { in content
-    first_brace = stripped.find("{")
-    if first_brace == -1:
-        raise MythosExtractionError("Failed to parse LLM response as JSON")
-
-    # Find balanced brace depth from first {
-    depth = 0
-    in_string = False
-    escape_next = False
-    json_end = -1
-    for i in range(first_brace, len(stripped)):
-        ch = stripped[i]
-        if escape_next:
-            escape_next = False
-            continue
-        if ch == "\\":
-            escape_next = True
-            continue
-        if ch == '"' and not escape_next:
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                json_end = i
-                break
-
-    if json_end != -1:
-        try:
-            return json.loads(stripped[first_brace : json_end + 1])
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    raise MythosExtractionError("Failed to parse LLM response as JSON")
+            config_updates["mythos_generation_mode"] = analysis.generation_mode
+        _update_manifest_util(project_dir, project_id, config_updates)
 
 
 def _parse_mythos_analysis(data: dict[str, Any]) -> MythosExtractionAnalysis:

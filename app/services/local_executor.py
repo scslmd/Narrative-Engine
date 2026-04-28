@@ -1060,6 +1060,9 @@ class LocalExecutor:
         completed_count = 0
         failed_chapters: list[str] = []
 
+        _repo = StoryDevelopmentRepository(settings.operations_db_path)
+        _chars = _repo.list_character_profiles(project_id)
+
         for idx, chapter_id in enumerate(chapter_ids):
             logger.info(
                 "Drafting chapter %d/%d: %s",
@@ -1150,10 +1153,6 @@ class LocalExecutor:
             output_text = inference_response.content.strip()
             if output_text:
                 output_text += "\n"
-
-            # Shared repository for critic and entity intake
-            _repo = StoryDevelopmentRepository(settings.operations_db_path)
-            _chars = _repo.list_character_profiles(project_id)
 
             # Consistency critic check
             rewrite_needed = False

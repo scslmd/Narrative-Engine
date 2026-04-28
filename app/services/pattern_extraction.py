@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import re
@@ -11,6 +10,18 @@ from typing import Any
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
+from ..utils.db_inserts import (
+    hash_id,
+    insert_character_profile,
+    insert_foundation_profile,
+    insert_relationship_edge,
+    insert_world_bible_entry,
+    json_safe,
+    next_revision_number,
+    update_foundation_revision_id,
+)
+from ..utils.json_extract import extract_json
+from ..utils.manifest import update_manifest as _update_manifest_util
 from ..schemas.mythos_extraction import (
     ArchetypalPattern,
     MythosExtractionRequest,
@@ -29,7 +40,7 @@ from ..schemas.pattern_extraction import (
     WorldRule,
 )
 from ..settings import settings
-from .mythos_extraction import MythosExtractionService, MythosExtractionError
+from .mythos_extraction import MythosExtractionService
 from .projects import ProjectService
 from .runtime_prompts import build_narrative_analysis_request
 
@@ -132,6 +143,11 @@ class PatternExtractionService:
 
         Retrieves all manuscript documents for the project, concatenates their
         content as source text, and delegates to extract().
+
+        NOTE: The concatenated text is truncated to 24,000 chars for single-pass
+        LLM analysis. For projects with many chapters, only the earliest content
+        may reach the LLM. Consider using the extraction endpoint per-chapter
+        or in batches for large projects.
         """
         documents = self._repository.list_manuscript_documents(project_id)
         if not documents:
@@ -195,76 +211,10 @@ class PatternExtractionService:
             )
 
     def _parse_llm_json(self, content: str) -> PatternExtractionAnalysis | None:
-        """Extract JSON from LLM response and build analysis.
-
-        Tries direct parse, then markdown fence extraction.
-        Returns None if parsing fails.
-        """
-        stripped = content.strip()
-        if not stripped:
-            return None
-
-        data: dict[str, Any] | None = None
-
-        # Try direct JSON parse
-        try:
-            data = json.loads(stripped)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Try extracting from markdown fences
-        if data is None:
-            fenced = re.sub(
-                r"^```(?:json)?\s*|\s*```$", "", stripped, flags=re.MULTILINE
-            )
-            fenced = fenced.strip()
-            if fenced:
-                try:
-                    data = json.loads(fenced)
-                except (json.JSONDecodeError, ValueError):
-                    pass
-
-        # Try finding balanced JSON object
-        if data is None:
-            first_brace = stripped.find("{")
-            if first_brace != -1:
-                depth = 0
-                in_string = False
-                escape_next = False
-                json_end = -1
-                for i in range(first_brace, len(stripped)):
-                    ch = stripped[i]
-                    if escape_next:
-                        escape_next = False
-                        continue
-                    if ch == "\\":
-                        escape_next = True
-                        continue
-                    if ch == '"' and not escape_next:
-                        in_string = not in_string
-                        continue
-                    if in_string:
-                        continue
-                    if ch == "{":
-                        depth += 1
-                    elif ch == "}":
-                        depth -= 1
-                        if depth == 0:
-                            json_end = i
-                            break
-
-                if json_end != -1:
-                    try:
-                        data = json.loads(stripped[first_brace : json_end + 1])
-                    except (json.JSONDecodeError, ValueError):
-                        pass
-
+        """Extract JSON from LLM response and build analysis."""
+        data = extract_json(content)
         if data is None:
             return None
-
-        if not isinstance(data, dict):
-            return None
-
         return self._build_analysis(data)
 
     def _build_analysis(self, data: dict[str, Any]) -> PatternExtractionAnalysis:
@@ -434,7 +384,7 @@ class PatternExtractionService:
         now = datetime.now(timezone.utc).isoformat()
         conn = sqlite3.connect(self._repository.db_path, timeout=30)
         try:
-            conn.execute("BEGIN")
+            conn.execute("BEGIN IMMEDIATE")
             self._import_foundation(conn, project_id, analysis, now)
             self._import_world_bible(conn, project_id, analysis, now)
             self._import_entities(conn, project_id, analysis, now)
@@ -456,20 +406,7 @@ class PatternExtractionService:
         now: str,
     ) -> None:
         """Insert foundation_profiles header + foundation_revisions with narrative fields."""
-        conn.execute(
-            """
-            INSERT INTO foundation_profiles (project_id, current_revision_id, created_at, updated_at)
-            VALUES (?, NULL, ?, ?)
-            ON CONFLICT(project_id) DO UPDATE SET updated_at = excluded.updated_at
-            """,
-            (project_id, now, now),
-        )
-
-        rev_row = conn.execute(
-            "SELECT COALESCE(MAX(revision_number), 0) + 1 FROM foundation_revisions WHERE project_id = ?",
-            (project_id,),
-        ).fetchone()
-        next_rev = rev_row[0]
+        next_rev = next_revision_number(conn, project_id)
 
         narrative_constraints: dict[str, Any] = {}
 
@@ -502,51 +439,16 @@ class PatternExtractionService:
                 for tc in analysis.thematic_constraints
             ]
 
-        narrative_constraints_json = json.dumps(
-            narrative_constraints, ensure_ascii=True, sort_keys=True
-        )
+        narrative_constraints_json = json_safe(narrative_constraints)
 
-        conn.execute(
-            """
-            INSERT INTO foundation_revisions (
-                project_id, revision_number, premise, logline, thematic_spine, emotional_promise,
-                tone_direction, target_audience, narrative_constraints_json, complexity_level,
-                success_definition, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(project_id, revision_number) DO UPDATE SET
-                premise = excluded.premise,
-                logline = excluded.logline,
-                thematic_spine = excluded.thematic_spine,
-                emotional_promise = excluded.emotional_promise,
-                tone_direction = excluded.tone_direction,
-                target_audience = excluded.target_audience,
-                narrative_constraints_json = excluded.narrative_constraints_json,
-                complexity_level = excluded.complexity_level,
-                success_definition = excluded.success_definition,
-                updated_at = excluded.updated_at
-            """,
-            (
-                project_id,
-                next_rev,
-                "",
-                "",
-                analysis.thematic_spine or None,
-                analysis.emotional_promise or None,
-                analysis.tone_and_voice_direction or None,
-                None,
-                narrative_constraints_json,
-                None,
-                None,
-                now,
-                now,
-            ),
+        revision_id = insert_foundation_profile(
+            conn, project_id, now, next_rev,
+            thematic_spine=analysis.thematic_spine or None,
+            emotional_promise=analysis.emotional_promise or None,
+            tone_direction=analysis.tone_and_voice_direction or None,
+            constraints_json=narrative_constraints_json,
         )
-
-        revision_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        conn.execute(
-            "UPDATE foundation_profiles SET current_revision_id = ?, updated_at = ? WHERE project_id = ?",
-            (revision_id, now, project_id),
-        )
+        update_foundation_revision_id(conn, project_id, revision_id, now)
 
     def _import_world_bible(
         self,
@@ -557,38 +459,10 @@ class PatternExtractionService:
     ) -> None:
         """Insert world rules and symbolic motifs as world_bible_entries."""
         for rule in analysis.world_rules:
-            exceptions_json = json.dumps(rule.exceptions or [], ensure_ascii=True, sort_keys=True)
-            conn.execute(
-                """
-                INSERT INTO world_bible_entries (
-                    project_id, entry_type, title, summary, canonical_facts_json,
-                    related_character_ids_json, visibility_scope, source_artifacts_json,
-                    continuity_warnings_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                    summary = excluded.summary,
-                    canonical_facts_json = excluded.canonical_facts_json,
-                    related_character_ids_json = excluded.related_character_ids_json,
-                    visibility_scope = excluded.visibility_scope,
-                    source_artifacts_json = excluded.source_artifacts_json,
-                    continuity_warnings_json = excluded.continuity_warnings_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    project_id,
-                    "concept",
-                    f"Rule: {rule.rule}",
-                    rule.enforcement if rule.enforcement else None,
-                    exceptions_json,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    "project",
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    now,
-                    now,
-                ),
+            insert_world_bible_entry(
+                conn, project_id, "concept", f"Rule: {rule.rule}",
+                summary=rule.enforcement if rule.enforcement else None,
+                canonical_facts_json=json_safe(rule.exceptions or []),
             )
 
         for motif in analysis.symbolic_motifs:
@@ -596,38 +470,9 @@ class PatternExtractionService:
             if motif.narrative_function:
                 summary_parts.append(f"Narrative function: {motif.narrative_function}")
             summary = ". ".join(summary_parts)
-
-            conn.execute(
-                """
-                INSERT INTO world_bible_entries (
-                    project_id, entry_type, title, summary, canonical_facts_json,
-                    related_character_ids_json, visibility_scope, source_artifacts_json,
-                    continuity_warnings_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                    summary = excluded.summary,
-                    canonical_facts_json = excluded.canonical_facts_json,
-                    related_character_ids_json = excluded.related_character_ids_json,
-                    visibility_scope = excluded.visibility_scope,
-                    source_artifacts_json = excluded.source_artifacts_json,
-                    continuity_warnings_json = excluded.continuity_warnings_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    project_id,
-                    "motif",
-                    f"Motif: {motif.symbol}",
-                    summary if summary else None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    "project",
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    now,
-                    now,
-                ),
+            insert_world_bible_entry(
+                conn, project_id, "motif", f"Motif: {motif.symbol}",
+                summary=summary if summary else None,
             )
 
     def _import_entities(
@@ -639,138 +484,36 @@ class PatternExtractionService:
     ) -> None:
         """Insert key entities as character_profiles and relationships as edges."""
         for entity in analysis.key_entities:
-            char_id = _hash_id("entity", entity.name)
-            canonical_facts_json = json.dumps(entity.canonical_facts or [], ensure_ascii=True, sort_keys=True)
-
-            conn.execute(
-                """
-                INSERT INTO character_profiles (
-                    character_id, project_id, display_name, role_in_story, archetype,
-                    external_goal, internal_need, misbelief_or_wound, core_fear,
-                    primary_strength, fatal_flaw_or_limitation, contradictions_json,
-                    backstory_summary, voice_notes, relationship_map_json, secrets_json,
-                    values_json, taboos_json, change_axis, arc_stage_notes,
-                    continuity_facts_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(character_id) DO UPDATE SET
-                    project_id = excluded.project_id,
-                    display_name = excluded.display_name,
-                    role_in_story = excluded.role_in_story,
-                    archetype = excluded.archetype,
-                    external_goal = excluded.external_goal,
-                    internal_need = excluded.internal_need,
-                    misbelief_or_wound = excluded.misbelief_or_wound,
-                    core_fear = excluded.core_fear,
-                    primary_strength = excluded.primary_strength,
-                    fatal_flaw_or_limitation = excluded.fatal_flaw_or_limitation,
-                    contradictions_json = excluded.contradictions_json,
-                    backstory_summary = excluded.backstory_summary,
-                    voice_notes = excluded.voice_notes,
-                    relationship_map_json = excluded.relationship_map_json,
-                    secrets_json = excluded.secrets_json,
-                    values_json = excluded.values_json,
-                    taboos_json = excluded.taboos_json,
-                    change_axis = excluded.change_axis,
-                    arc_stage_notes = excluded.arc_stage_notes,
-                    continuity_facts_json = excluded.continuity_facts_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    char_id,
-                    project_id,
-                    entity.name,
-                    "narrative_entity",
-                    entity.archetype or None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    entity.domain_or_power or None,
-                    None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    None,
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    None,
-                    None,
-                    canonical_facts_json,
-                    None,
-                    now,
-                    now,
-                ),
+            char_id = hash_id("pattern-entity", entity.name)
+            insert_character_profile(
+                conn, char_id, project_id,
+                display_name=entity.name, role_in_story="narrative_entity",
+                archetype=entity.archetype or None,
+                primary_strength=entity.domain_or_power or None,
+                continuity_facts_json=json_safe(entity.canonical_facts or []),
             )
 
         for rel in analysis.entity_relationships:
-            edge_id = _hash_id("edge", f"{rel.source}-{rel.target}")
-            conn.execute(
-                """
-                INSERT INTO relationship_edges (
-                    edge_id, project_id, source_character_id, target_character_id,
-                    relation_kind, summary, tension, notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(edge_id) DO UPDATE SET
-                    project_id = excluded.project_id,
-                    source_character_id = excluded.source_character_id,
-                    target_character_id = excluded.target_character_id,
-                    relation_kind = excluded.relation_kind,
-                    summary = excluded.summary,
-                    tension = excluded.tension,
-                    notes = excluded.notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    edge_id,
-                    project_id,
-                    _hash_id("entity", rel.source),
-                    _hash_id("entity", rel.target),
-                    rel.relationship_type or "related",
-                    rel.description or "",
-                    None,
-                    None,
-                    now,
-                    now,
-                ),
+            edge_id = hash_id("pattern-edge", f"{rel.source}-{rel.target}")
+            insert_relationship_edge(
+                conn, edge_id, project_id,
+                source_character_id=hash_id("pattern-entity", rel.source),
+                target_character_id=hash_id("pattern-entity", rel.target),
+                relation_kind=rel.relationship_type or "related",
+                summary=rel.description or "",
             )
 
     def _update_manifest(self, project_id: str, analysis: PatternExtractionAnalysis) -> None:
         """Update manifest.json with narrative source corpus and generation mode."""
         project_dir = self._project_service.root_dir / "data" / "projects" / project_id
-        manifest_path = project_dir / "manifest.json"
-        if not manifest_path.exists():
-            logger.warning("Manifest not found for project %s, skipping metadata update", project_id)
-            return
-
-        try:
-            manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("Failed to read manifest for project %s: %s", project_id, exc)
-            return
-
-        if "config" not in manifest_data:
-            manifest_data["config"] = {}
-
+        config_updates: dict[str, str] = {}
         if analysis.source_type:
-            manifest_data["config"]["pattern_source_type"] = analysis.source_type
+            config_updates["pattern_source_type"] = analysis.source_type
         if analysis.source_corpus:
-            manifest_data["config"]["pattern_source_corpus"] = analysis.source_corpus
+            config_updates["pattern_source_corpus"] = analysis.source_corpus
         if analysis.generation_mode:
-            manifest_data["config"]["pattern_generation_mode"] = analysis.generation_mode
-
-        try:
-            manifest_path.write_text(
-                json.dumps(manifest_data, ensure_ascii=True, indent=2, sort_keys=True),
-                encoding="utf-8",
-            )
-        except OSError as exc:
-            logger.warning("Failed to write manifest for project %s: %s", project_id, exc)
+            config_updates["pattern_generation_mode"] = analysis.generation_mode
+        _update_manifest_util(project_dir, project_id, config_updates)
 
 
-def _hash_id(prefix: str, value: str) -> str:
-    """Generate a stable, order-independent ID from a string value."""
-    raw = f"pattern-{prefix}-{value.strip().lower()}"
-    short_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
-    return f"pattern-{prefix}-{short_hash}"
+

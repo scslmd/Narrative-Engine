@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import re
@@ -13,6 +12,16 @@ from pydantic import ValidationError
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
+from ..utils.db_inserts import (
+    hash_id,
+    insert_character_profile,
+    insert_foundation_profile,
+    insert_world_bible_entry,
+    json_safe,
+    next_revision_number,
+    update_foundation_revision_id,
+)
+from ..utils.json_extract import extract_json
 from ..schemas.enums import PovMode, StoryStructure
 from ..schemas.inference import InferenceRequest
 from ..schemas.manifest import Manifest, ManifestConfig
@@ -244,8 +253,11 @@ class StoryImportService:
         return analysis
 
     def _parse_llm_json(self, content: str) -> dict[str, Any]:
-        """Extract JSON from LLM response (delegates to module-level _extract_json)."""
-        return _extract_json(content)
+        """Extract JSON from LLM response."""
+        data = extract_json(content)
+        if data is None:
+            raise StoryImportError("Failed to parse LLM response as JSON")
+        return data
 
     def _transactional_import(
         self,
@@ -260,7 +272,7 @@ class StoryImportService:
         now = datetime.now(timezone.utc).isoformat()
         conn = sqlite3.connect(self._repository.db_path, timeout=30)
         try:
-            conn.execute("BEGIN")
+            conn.execute("BEGIN IMMEDIATE")
 
             self._import_foundation(conn, project_id, analysis, now)
             self._import_characters(conn, project_id, analysis, now)
@@ -282,69 +294,23 @@ class StoryImportService:
         now: str,
     ) -> None:
         """Insert foundation revision (3 operations: header + revision + update)."""
-        # 1a. Insert foundation_profiles header
-        conn.execute(
-            """
-            INSERT INTO foundation_profiles (project_id, current_revision_id, created_at, updated_at)
-            VALUES (?, NULL, ?, ?)
-            ON CONFLICT(project_id) DO UPDATE SET updated_at = excluded.updated_at
-            """,
-            (project_id, now, now),
-        )
+        next_rev = next_revision_number(conn, project_id)
 
-        # 1b. Get next revision number
-        rev_row = conn.execute(
-            "SELECT COALESCE(MAX(revision_number), 0) + 1 FROM foundation_revisions WHERE project_id = ?",
-            (project_id,),
-        ).fetchone()
-        next_rev = rev_row[0]
+        narrative_constraints_json = json_safe(list(analysis.narrative_constraints or []))
 
-        narrative_constraints_json = json.dumps(
-            list(analysis.narrative_constraints or []), ensure_ascii=True, sort_keys=True
+        revision_id = insert_foundation_profile(
+            conn, project_id, now, next_rev,
+            premise=analysis.premise,
+            logline=analysis.logline,
+            thematic_spine=analysis.thematic_spine or None,
+            emotional_promise=analysis.emotional_promise or None,
+            tone_direction=analysis.tone or None,
+            target_audience=analysis.target_audience or None,
+            constraints_json=narrative_constraints_json,
+            complexity_level=analysis.complexity_level or None,
+            success_definition=analysis.success_definition or None,
         )
-
-        conn.execute(
-            """
-            INSERT INTO foundation_revisions (
-                project_id, revision_number, premise, logline, thematic_spine, emotional_promise,
-                tone_direction, target_audience, narrative_constraints_json, complexity_level,
-                success_definition, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(project_id, revision_number) DO UPDATE SET
-                premise = excluded.premise,
-                logline = excluded.logline,
-                thematic_spine = excluded.thematic_spine,
-                emotional_promise = excluded.emotional_promise,
-                tone_direction = excluded.tone_direction,
-                target_audience = excluded.target_audience,
-                narrative_constraints_json = excluded.narrative_constraints_json,
-                complexity_level = excluded.complexity_level,
-                success_definition = excluded.success_definition,
-                updated_at = excluded.updated_at
-            """,
-            (
-                project_id,
-                next_rev,
-                analysis.premise,
-                analysis.logline,
-                analysis.thematic_spine or None,
-                analysis.emotional_promise or None,
-                analysis.tone or None,
-                analysis.target_audience or None,
-                narrative_constraints_json,
-                analysis.complexity_level or None,
-                analysis.success_definition or None,
-                now,
-                now,
-            ),
-        )
-
-        # 1c. Update foundation_profiles.current_revision_id
-        revision_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        conn.execute(
-            "UPDATE foundation_profiles SET current_revision_id = ?, updated_at = ? WHERE project_id = ?",
-            (revision_id, now, project_id),
-        )
+        update_foundation_revision_id(conn, project_id, revision_id, now)
 
     def _import_characters(
         self,
@@ -355,73 +321,25 @@ class StoryImportService:
     ) -> None:
         """Insert all characters with ON CONFLICT for idempotency."""
         for char_data in analysis.characters:
-            char_id = _hash_id("character", char_data.name)
-            contradictions_json = json.dumps(char_data.contradictions or [], ensure_ascii=True, sort_keys=True)
-            secrets_json = json.dumps(char_data.secrets or [], ensure_ascii=True, sort_keys=True)
-            values_json = json.dumps(char_data.values or [], ensure_ascii=True, sort_keys=True)
-            taboos_json = json.dumps(char_data.taboos or [], ensure_ascii=True, sort_keys=True)
-            continuity_facts_json = json.dumps(char_data.continuity_facts or [], ensure_ascii=True, sort_keys=True)
-
-            conn.execute(
-                """
-                INSERT INTO character_profiles (
-                    character_id, project_id, display_name, role_in_story, archetype,
-                    external_goal, internal_need, misbelief_or_wound, core_fear,
-                    primary_strength, fatal_flaw_or_limitation, contradictions_json,
-                    backstory_summary, voice_notes, relationship_map_json, secrets_json,
-                    values_json, taboos_json, change_axis, arc_stage_notes,
-                    continuity_facts_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(character_id) DO UPDATE SET
-                    project_id = excluded.project_id,
-                    display_name = excluded.display_name,
-                    role_in_story = excluded.role_in_story,
-                    archetype = excluded.archetype,
-                    external_goal = excluded.external_goal,
-                    internal_need = excluded.internal_need,
-                    misbelief_or_wound = excluded.misbelief_or_wound,
-                    core_fear = excluded.core_fear,
-                    primary_strength = excluded.primary_strength,
-                    fatal_flaw_or_limitation = excluded.fatal_flaw_or_limitation,
-                    contradictions_json = excluded.contradictions_json,
-                    backstory_summary = excluded.backstory_summary,
-                    voice_notes = excluded.voice_notes,
-                    relationship_map_json = excluded.relationship_map_json,
-                    secrets_json = excluded.secrets_json,
-                    values_json = excluded.values_json,
-                    taboos_json = excluded.taboos_json,
-                    change_axis = excluded.change_axis,
-                    arc_stage_notes = excluded.arc_stage_notes,
-                    continuity_facts_json = excluded.continuity_facts_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    char_id,
-                    project_id,
-                    char_data.name,
-                    char_data.role or None,
-                    char_data.archetype or None,
-                    _to_none(char_data.external_goal),
-                    _to_none(char_data.internal_need),
-                    None,
-                    _to_none(char_data.core_fear),
-                    _to_none(char_data.primary_strength),
-                    _to_none(char_data.fatal_flaw),
-                    contradictions_json,
-                    _to_none(char_data.backstory),
-                    _to_none(char_data.voice_notes),
-                    json.dumps([], ensure_ascii=True, sort_keys=True),
-                    secrets_json,
-                    values_json,
-                    taboos_json,
-                    _to_none(char_data.change_axis),
-                    None,
-                    continuity_facts_json,
-                    None,
-                    now,
-                    now,
-                ),
+            char_id = hash_id("import-character", char_data.name)
+            insert_character_profile(
+                conn, char_id, project_id,
+                display_name=char_data.name,
+                role_in_story=char_data.role or None,
+                archetype=char_data.archetype or None,
+                external_goal=_to_none(char_data.external_goal),
+                internal_need=_to_none(char_data.internal_need),
+                core_fear=_to_none(char_data.core_fear),
+                primary_strength=_to_none(char_data.primary_strength),
+                fatal_flaw=_to_none(char_data.fatal_flaw),
+                contradictions_json=json_safe(char_data.contradictions or []),
+                backstory_summary=_to_none(char_data.backstory),
+                voice_notes=_to_none(char_data.voice_notes),
+                secrets_json=json_safe(char_data.secrets or []),
+                values_json=json_safe(char_data.values or []),
+                taboos_json=json_safe(char_data.taboos or []),
+                change_axis=_to_none(char_data.change_axis),
+                continuity_facts_json=json_safe(char_data.continuity_facts or []),
             )
 
     def _import_world_bible(
@@ -433,42 +351,11 @@ class StoryImportService:
     ) -> None:
         """Insert all world bible entries with ON CONFLICT for idempotency."""
         for entry in analysis.world_bible:
-            canonical_facts_json = json.dumps(entry.canonical_facts or [], ensure_ascii=True, sort_keys=True)
-            related_chars_json = json.dumps(entry.related_character_ids or [], ensure_ascii=True, sort_keys=True)
-            source_artifacts_json = json.dumps([], ensure_ascii=True, sort_keys=True)
-            continuity_warnings_json = json.dumps([], ensure_ascii=True, sort_keys=True)
-
-            conn.execute(
-                """
-                INSERT INTO world_bible_entries (
-                    project_id, entry_type, title, summary, canonical_facts_json,
-                    related_character_ids_json, visibility_scope, source_artifacts_json,
-                    continuity_warnings_json, writer_notes, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(project_id, entry_type, title) DO UPDATE SET
-                    summary = excluded.summary,
-                    canonical_facts_json = excluded.canonical_facts_json,
-                    related_character_ids_json = excluded.related_character_ids_json,
-                    visibility_scope = excluded.visibility_scope,
-                    source_artifacts_json = excluded.source_artifacts_json,
-                    continuity_warnings_json = excluded.continuity_warnings_json,
-                    writer_notes = excluded.writer_notes,
-                    updated_at = excluded.updated_at
-                """,
-                (
-                    project_id,
-                    entry.entry_type,
-                    entry.title,
-                    entry.summary if entry.summary else None,
-                    canonical_facts_json,
-                    related_chars_json,
-                    "project",
-                    source_artifacts_json,
-                    continuity_warnings_json,
-                    None,
-                    now,
-                    now,
-                ),
+            insert_world_bible_entry(
+                conn, project_id, entry.entry_type, entry.title,
+                summary=entry.summary if entry.summary else None,
+                canonical_facts_json=json_safe(entry.canonical_facts or []),
+                related_character_ids_json=json_safe(entry.related_character_ids or []),
             )
 
     def _import_arcs(
@@ -480,11 +367,7 @@ class StoryImportService:
     ) -> None:
         """Insert all arc candidates with ON CONFLICT for idempotency."""
         for arc_data in analysis.story_arcs:
-            arc_id = _hash_id("arc", arc_data.name)
-            stage_map_json = json.dumps(arc_data.stage_map or [], ensure_ascii=True, sort_keys=True)
-            fit_notes_json = json.dumps([], ensure_ascii=True, sort_keys=True)
-            tags_json = json.dumps(arc_data.tags or [], ensure_ascii=True, sort_keys=True)
-
+            arc_id = hash_id("import-arc", arc_data.name)
             conn.execute(
                 """
                 INSERT INTO arc_candidates (
@@ -505,24 +388,13 @@ class StoryImportService:
                     project_id,
                     arc_data.name,
                     arc_data.summary if arc_data.summary else None,
-                    stage_map_json,
-                    fit_notes_json,
-                    tags_json,
+                    json_safe(arc_data.stage_map or []),
+                    json_safe([]),
+                    json_safe(arc_data.tags or []),
                     now,
                     now,
                 ),
             )
-
-
-def _hash_id(prefix: str, value: str) -> str:
-    """Generate a stable, order-independent ID from a string value.
-
-    Uses SHA-256 to produce a deterministic ID regardless of input ordering.
-    Prefix format: import-{prefix}-{hash}
-    """
-    raw = f"import-{prefix}-{value.strip().lower()}"
-    short_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
-    return f"import-{prefix}-{short_hash}"
 
 
 def _to_none(value: str | None) -> str | None:
@@ -717,79 +589,3 @@ def _map_llm_fields(data: dict[str, Any]) -> dict[str, Any]:
         result["narrative_constraints"] = []
 
     return result
-
-
-def _extract_json(content: str) -> dict[str, Any]:
-    """Extract JSON object from LLM response text.
-
-    Handles:
-    - Raw JSON object
-    - JSON inside ```json code fences
-    - JSON with trailing/leading text
-    - Truncated JSON (unbalanced braces from story text embedded in fields)
-    """
-    stripped = content.strip()
-
-    # Try direct parse first
-    try:
-        return json.loads(stripped)
-    except (json.JSONDecodeError, ValueError):
-        pass
-
-    # Strip markdown code fences
-    fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", stripped, flags=re.MULTILINE)
-    fenced = fenced.strip()
-    if fenced:
-        try:
-            return json.loads(fenced)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    # Find first { in content
-    first_brace = stripped.find("{")
-    if first_brace == -1:
-        raise StoryImportError("Failed to parse LLM response as JSON")
-
-    # Strategy 1: Find balanced brace depth from first {
-    depth = 0
-    in_string = False
-    escape = False
-    json_end = -1
-    for i in range(first_brace, len(stripped)):
-        ch = stripped[i]
-        if escape:
-            escape = False
-            continue
-        if ch == "\\":
-            escape = True
-            continue
-        if ch == '"' and not escape:
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-        if ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                json_end = i
-                break
-
-    if json_end != -1:
-        candidate = stripped[first_brace : json_end + 1]
-        try:
-            return json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    # Strategy 2: fallback to rfind approach
-    last_brace = stripped.rfind("}")
-    if last_brace > first_brace:
-        candidate = stripped[first_brace : last_brace + 1]
-        try:
-            return json.loads(candidate)
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    raise StoryImportError("Failed to parse LLM response as JSON")

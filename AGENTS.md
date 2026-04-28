@@ -320,6 +320,38 @@ def test_create_branch(tmp_path):
     assert response.status_code == 201
 ```
 
+### Parallel vs Serial Tests (pytest-xdist)
+
+**Default**: Sequential (`-n 0`). Parallel is opt-in via:
+```bash
+pytest -n auto --dist=loadfile --basetemp=.tmp_xdist
+```
+
+**Write parallel-safe tests** when possible. A test is parallel-safe if it:
+- Uses `tmp_path` for all file/db paths (isolated per test)
+- Does NOT read/write shared global state (`settings.structured_log_filename`, env vars, singleton caches)
+- Does NOT start long-lived threads or daemons without cleanup
+
+**Mark serial tests** when they depend on shared mutable state:
+```python
+import pytest
+
+# Option A: Mark a single test
+@pytest.mark.xdist_group(name="serial-my-group")
+def test_needs_serial_execution(tmp_path):
+    ...
+
+# Option B: Mark an entire file (add at module level)
+pytestmark = [pytest.mark.integration, pytest.mark.xdist_group(name="serial-my-file")]
+```
+
+**Known serial-only tests**:
+- `tests/test_audit_logging.py` — shares `settings.structured_log_filename` log file across all TestClient requests. Run with `-n 0`.
+- `tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` — starts/stops executor threads
+
+**When adding new tests**: If your test writes to a global path (log, cache, singleton DB), either isolate the path via `tmp_path` or mark it `xdist_group`.
+```
+
 ### Frontend Checks
 
 - `npm run lint` catches unsafe patterns and dead code.

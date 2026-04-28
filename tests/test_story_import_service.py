@@ -1099,8 +1099,8 @@ class TestExtractJSON:
     """Test _extract_json handles various LLM output patterns."""
 
     def _extract(self, content: str):
-        from app.services.story_import import _extract_json
-        return _extract_json(content)
+        from app.utils.json_extract import extract_json
+        return extract_json(content)
 
     def test_direct_json(self):
         """Raw JSON object should parse directly."""
@@ -1155,15 +1155,13 @@ class TestExtractJSON:
         result = self._extract('{}')
         assert result == {}
 
-    def test_no_opening_brace_raises(self):
-        """Content with no opening brace should raise StoryImportError."""
-        with pytest.raises(StoryImportError, match="Failed to parse"):
-            self._extract("This is just plain text")
+    def test_no_opening_brace_returns_none(self):
+        """Content with no opening brace should return None."""
+        assert self._extract("This is just plain text") is None
 
-    def test_empty_content_raises(self):
-        """Empty content should raise StoryImportError."""
-        with pytest.raises(StoryImportError, match="Failed to parse"):
-            self._extract("")
+    def test_empty_content_returns_none(self):
+        """Empty content should return None."""
+        assert self._extract("") is None
 
     def test_code_fence_with_trailing_explanation(self):
         """Code fence followed by explanatory text should extract JSON."""
@@ -1185,10 +1183,9 @@ class TestExtractJSON:
         assert result["outer"]["inner"] == [1, 2]
         assert result["done"] is True
 
-    def test_whitespace_only_raises(self):
-        """Whitespace-only content should raise StoryImportError."""
-        with pytest.raises(StoryImportError, match="Failed to parse"):
-            self._extract("   \n\t  ")
+    def test_whitespace_only_returns_none(self):
+        """Whitespace-only content should return None."""
+        assert self._extract("   \n\t  ") is None
 
     def test_array_fields_preserved(self):
         """JSON with array fields should preserve arrays."""

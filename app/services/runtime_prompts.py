@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 
 from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.manifest import Manifest
+from ..schemas.pattern_extraction import PatternExtractionAnalysis
 
 if TYPE_CHECKING:
-    from ..schemas.pattern_extraction import PatternExtractionAnalysis
     from .scene_context import SceneContext
 
 
@@ -319,6 +319,12 @@ def build_import_analysis_request(
         "- complexity_level: exactly LOW, MEDIUM, or HIGH\n"
         "- genre: title case (e.g., \"Fantasy\", \"Science Fiction\")\n"
         "- role: exactly one of protagonist, antagonist, mentor, deuteragonist, foil, supporting, minor\n\n"
+        'JSON OUTPUT FORMAT:\n'
+        '- Return ONLY the raw JSON object. No markdown code fences. No explanation text.\n'
+        '- Use "null" for fields you cannot determine, not empty strings (except for strings that must have content — use "" only when a string is expected but empty).\n'
+        '- Every array field must be [] when empty, never omitted.\n'
+        '- Do not use "description" anywhere — use "summary" for world_bible entries and "description" is not a valid key.\n'
+        '- Do not use "name" for sequences — use "title" instead.\n\n'
         "CHARACTER EXTRACTION RULES:\n"
         "- Include every character with meaningful presence, not just named ones.\n"
         "- For unnamed characters, use descriptive names like \"the old guard,\" \"the merchant.\"\n"
@@ -423,14 +429,14 @@ def story_bible_output_path(project_dir: Path) -> Path:
     return project_dir / "story_bible.json"
 
 
-def _build_pattern_context_block(pc: Any) -> str:
+def _build_pattern_context_block(pc: PatternExtractionAnalysis) -> str:
     """Build a pattern context block for injection into P-100 architect prompts."""
-    mode = getattr(pc, "generation_mode", "same_world") or "same_world"
-    source_corpus = getattr(pc, "source_corpus", "") or "(unknown source)"
+    mode = pc.generation_mode or "same_world"
+    source_corpus = pc.source_corpus or "(unknown source)"
 
-    patterns = getattr(pc, "archetypal_patterns", []) or []
-    rules = getattr(pc, "world_rules", []) or []
-    voice_profile = getattr(pc, "voice_profile", None)
+    patterns = pc.archetypal_patterns or []
+    rules = pc.world_rules or []
+    voice_profile = pc.voice_profile
 
     lines: list[str] = []
 
@@ -441,38 +447,32 @@ def _build_pattern_context_block(pc: Any) -> str:
         lines.append("")
         lines.append("Archetypal Patterns to Follow:")
         for p in patterns:
-            name = getattr(p, "name", "")
-            desc = getattr(p, "description", "")
-            lines.append(f"  - {name}: {desc}")
+            lines.append(f"  - {p.name}: {p.description}")
         lines.append("")
         lines.append("World Rules (must be obeyed):")
         for r in rules:
-            rule_text = getattr(r, "rule", "")
-            enforcement = getattr(r, "enforcement", "")
-            if enforcement:
-                lines.append(f"  - {rule_text} ({enforcement})")
+            if r.enforcement:
+                lines.append(f"  - {r.rule} ({r.enforcement})")
             else:
-                lines.append(f"  - {rule_text}")
+                lines.append(f"  - {r.rule}")
         if voice_profile:
             lines.append("")
             lines.append("Voice & Style Guide:")
             vp_lines = []
-            nv = getattr(voice_profile, "narrative_voice", "")
-            sr = getattr(voice_profile, "sentence_rhythm", "")
-            dd = getattr(voice_profile, "descriptive_density", "")
-            hl = getattr(voice_profile, "humor_level", "")
-            et = getattr(voice_profile, "emotional_temperature", "")
-            if nv:
-                vp_lines.append(f"narrative voice: {nv}")
-            if sr:
-                vp_lines.append(f"sentence rhythm: {sr}")
-            if dd:
-                vp_lines.append(f"descriptive density: {dd}")
-            if hl:
-                vp_lines.append(f"humor level: {hl}")
-            if et:
-                vp_lines.append(f"emotional temperature: {et}")
+            if voice_profile.narrative_voice:
+                vp_lines.append(f"narrative voice: {voice_profile.narrative_voice}")
+            if voice_profile.sentence_rhythm:
+                vp_lines.append(f"sentence rhythm: {voice_profile.sentence_rhythm}")
+            if voice_profile.descriptive_density:
+                vp_lines.append(f"descriptive density: {voice_profile.descriptive_density}")
+            if voice_profile.humor_level:
+                vp_lines.append(f"humor level: {voice_profile.humor_level}")
+            if voice_profile.emotional_temperature:
+                vp_lines.append(f"emotional temperature: {voice_profile.emotional_temperature}")
             lines.extend(vp_lines)
+        lines.append("")
+        lines.append("INSTRUCTION: Follow these patterns when building the P-100 architect foundation. ")
+        lines.append("Your output must respect these world rules, voice guidelines, and archetypal patterns.")
 
     elif mode == "new_characters":
         lines.append("PATTERN CONTEXT (New Characters Mode):")
@@ -481,20 +481,20 @@ def _build_pattern_context_block(pc: Any) -> str:
         lines.append("")
         lines.append("Archetypal Roles to Fill:")
         for p in patterns:
-            name = getattr(p, "name", "")
-            desc = getattr(p, "description", "")
-            ct = getattr(p, "character_type", "")
-            parts = [f"  - {name} ({ct}): {desc}"] if ct else [f"  - {name}: {desc}"]
-            lines.extend(parts)
+            if p.character_type:
+                lines.append(f"  - {p.name} ({p.character_type}): {p.description}")
+            else:
+                lines.append(f"  - {p.name}: {p.description}")
         lines.append("")
         lines.append("World Rules (must be obeyed):")
         for r in rules:
-            rule_text = getattr(r, "rule", "")
-            enforcement = getattr(r, "enforcement", "")
-            if enforcement:
-                lines.append(f"  - {rule_text} ({enforcement})")
+            if r.enforcement:
+                lines.append(f"  - {r.rule} ({r.enforcement})")
             else:
-                lines.append(f"  - {rule_text}")
+                lines.append(f"  - {r.rule}")
+        lines.append("")
+        lines.append("INSTRUCTION: Create new characters who fill these archetypal roles in this world. ")
+        lines.append("Your architect output must respect the world rules and populate the archetypal structure.")
 
     elif mode == "transposed":
         lines.append("PATTERN CONTEXT (Transposed Mode):")
@@ -503,29 +503,26 @@ def _build_pattern_context_block(pc: Any) -> str:
         lines.append("")
         lines.append("Patterns to Transpose:")
         for p in patterns:
-            name = getattr(p, "name", "")
-            desc = getattr(p, "description", "")
-            lines.append(f"  - {name}: {desc}")
-        narrative_structures = getattr(pc, "narrative_structures", []) or []
+            lines.append(f"  - {p.name}: {p.description}")
+        narrative_structures = pc.narrative_structures or []
         if narrative_structures:
             lines.append("")
             lines.append("Narrative Structures:")
             for ns in narrative_structures:
-                ns_name = getattr(ns, "name", "")
-                ns_phases = getattr(ns, "phases", [])
-                if ns_phases:
-                    lines.append(f"  - {ns_name}: {' -> '.join(ns_phases)}")
+                if ns.phases:
+                    lines.append(f"  - {ns.name}: {' -> '.join(ns.phases)}")
                 else:
-                    lines.append(f"  - {ns_name}")
+                    lines.append(f"  - {ns.name}")
         lines.append("")
         lines.append("Structural Rules (adapt to new world):")
         for r in rules:
-            rule_text = getattr(r, "rule", "")
-            enforcement = getattr(r, "enforcement", "")
-            if enforcement:
-                lines.append(f"  - {rule_text} ({enforcement})")
+            if r.enforcement:
+                lines.append(f"  - {r.rule} ({r.enforcement})")
             else:
-                lines.append(f"  - {rule_text}")
+                lines.append(f"  - {r.rule}")
+        lines.append("")
+        lines.append("INSTRUCTION: Transpose these patterns and structures into a new setting. ")
+        lines.append("Map each archetypal pattern and narrative structure to an equivalent in your new world.")
 
     return "\n".join(lines)
 
@@ -805,6 +802,11 @@ def build_narrative_analysis_request(
         "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
         "Extract the storytelling DNA — how stories are told in this tradition, "
         "what narrative rules govern them, what archetypal journeys characters undertake.\n\n"
+        'JSON STRUCTURE RULES:\n'
+        '- All arrays must be JSON arrays [], not strings.\n'
+        '- Use null (not empty string) for missing optional fields where shown.\n'
+        '- Do not include trailing commas in JSON objects or arrays.\n'
+        '- The "generation_mode" field must exactly match: "same_world", "new_characters", or "transposed".\n\n'
         "CRITICAL: Return ONLY the JSON object. No markdown, no explanation, no code blocks."
     )
 
@@ -915,7 +917,13 @@ def build_mythos_analysis_request(
         '}\n\n'
         "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
         "Extract the storytelling DNA — how stories are told in this tradition, "
-        "what narrative rules govern them, what archetypal journeys characters undertake."
+        "what narrative rules govern them, what archetypal journeys characters undertake.\n\n"
+        'JSON STRUCTURE RULES:\n'
+        '- All arrays must be JSON arrays [], not strings.\n'
+        '- Use null (not empty string) for missing optional fields where shown.\n'
+        '- Do not include trailing commas in JSON objects or arrays.\n'
+        '- The "generation_mode" field must exactly match: "same_world", "transposed", or "pure_pattern".\n'
+        '- The "entity_type" field must be one of: "deity", "location", "concept", "force".\n\n'
     )
 
     user_content = (

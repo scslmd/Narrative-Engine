@@ -1,10 +1,37 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Protocol
 
 from fastapi import APIRouter, HTTPException
 from fastapi.exceptions import RequestValidationError
+
+
+class _ImportServiceProtocol(Protocol):
+    def import_story(self, request: Any) -> Any: ...
+
+
+class _MythosServiceProtocol(Protocol):
+    def extract(self, request: Any) -> Any: ...
+
+
+class _PatternServiceProtocol(Protocol):
+    def extract(
+        self,
+        text: str,
+        source_type: str,
+        generation_mode: str,
+        project_id: str | None,
+        source_corpus: str | None,
+    ) -> Any: ...
+
+    def extract_from_project(
+        self,
+        project_id: str,
+        source_type: str,
+        generation_mode: str,
+        source_corpus: str | None,
+    ) -> Any: ...
 
 from app.schemas.projects import (
     ProjectArtifactResponse,
@@ -30,9 +57,9 @@ logger = logging.getLogger(__name__)
 
 def build_projects_router(
     project_service: ProjectService,
-    import_service: Any = None,
-    mythos_service: Any = None,
-    pattern_service: Any = None,
+    import_service: _ImportServiceProtocol | None = None,
+    mythos_service: _MythosServiceProtocol | None = None,
+    pattern_service: _PatternServiceProtocol | None = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError

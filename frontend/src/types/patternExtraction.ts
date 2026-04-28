@@ -1,7 +1,7 @@
 export interface PatternExtractionRequest {
   text: string;
   source_type: 'mythology' | 'narrative';
-  generation_mode?: 'same_world' | 'new_characters' | 'transposed';
+  generation_mode?: 'same_world' | 'new_characters' | 'transposed' | 'pure_pattern';
   project_id?: string | null;
   source_corpus?: string | null;
 }
@@ -16,7 +16,7 @@ export interface PatternExtractionSummary {
 
 export interface ExtractPatternsRequest {
   source_type: 'mythology' | 'narrative';
-  generation_mode?: 'same_world' | 'new_characters' | 'transposed';
+  generation_mode?: 'same_world' | 'new_characters' | 'transposed' | 'pure_pattern';
   source_corpus?: string | null;
 }
 

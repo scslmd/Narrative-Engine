@@ -631,6 +631,7 @@ def test_checker_attempt_records_executor_telemetry(tmp_path: Path) -> None:
     assert isinstance(events[1]["payload"]["queue_delay_ms"], int)
 
 
+@pytest.mark.xdist_group(name="persistence-executor")
 def test_local_executor_persists_pipeline_step_records(tmp_path: Path) -> None:
     db_path = tmp_path / "data" / "state" / "narrative_ops.db"
     models_root = tmp_path / "data" / "models"
