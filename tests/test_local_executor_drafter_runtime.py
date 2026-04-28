@@ -214,6 +214,8 @@ def test_local_executor_runs_real_drafter_path_for_p300_with_fake_inferencer(tmp
                 "prompt_tokens": 211,
                 "completion_tokens": 322,
                 "total_tokens": 533,
+                "cached_prompt_tokens": None,
+                "prompt_cache_write_tokens": None,
             },
             "artifact_path": str(output_path),
         }

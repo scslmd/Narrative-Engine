@@ -167,9 +167,16 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         if not self._base_url.strip():
             raise self._configuration_error("Inference backend base URL is not configured.")
         
+        messages = []
+        for msg in request.messages:
+            d = {"role": msg.role, "content": msg.content}
+            if msg.cache_control is not None:
+                d["cache_control"] = msg.cache_control
+            messages.append(d)
+
         payload = {
             "model": request.model or self._descriptor.default_model,
-            "messages": [message.model_dump(mode="json") for message in request.messages],
+            "messages": messages,
         }
         if not payload["model"]:
             raise self._configuration_error("Inference request is missing a model and no default model is configured.")
@@ -218,9 +225,11 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
             content=content,
             finish_reason=str(first_choice.get("finish_reason")) if isinstance(first_choice, dict) and first_choice.get("finish_reason") is not None else None,
             usage=InferenceUsage(
-                prompt_tokens=int(usage_payload.get("prompt_tokens", 0)) if usage_payload.get("prompt_tokens") else 0,
-                completion_tokens=int(usage_payload.get("completion_tokens", 0)) if usage_payload.get("completion_tokens") else 0,
-                total_tokens=int(usage_payload.get("total_tokens", 0)) if usage_payload.get("total_tokens") else 0,
+                prompt_tokens=int(usage_payload.get("prompt_tokens", 0)) if usage_payload.get("prompt_tokens") else None,
+                completion_tokens=int(usage_payload.get("completion_tokens", 0)) if usage_payload.get("completion_tokens") else None,
+                total_tokens=int(usage_payload.get("total_tokens", 0)) if usage_payload.get("total_tokens") else None,
+                cached_prompt_tokens=usage_payload.get("cached_prompt_tokens") or usage_payload.get("prompt_cache_read_tokens"),
+                prompt_cache_write_tokens=usage_payload.get("prompt_cache_write_tokens"),
             ),
             raw_response=response_payload,
         )

@@ -18,6 +18,7 @@ class ManifestConfig(StrictSchemaModel):
     pattern_source_type: str = ""
     pattern_generation_mode: str = ""
     pattern_source_corpus: str = ""
+    target_word_count: int | None = Field(default=None, ge=100)
 
     @field_validator("genre", "tone_profile", "primary_language")
     @classmethod

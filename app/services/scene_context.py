@@ -45,6 +45,7 @@ class SceneContext:
     prior_chapters: list[PriorChapterSummary] | None = None
     pattern_guidance: PatternGuidance | None = None
     author_prompt: str | None = None
+    target_word_count: int | None = None
 
     def to_prompt_string(self) -> str:
         lines = []
@@ -101,6 +102,12 @@ class SceneContext:
                 for tc in pg.thematic_constraints:
                     lines.append(f"  - {tc}")
 
+        if self.target_word_count is not None:
+            lines.append("")
+            lines.append("CHAPTER LENGTH:")
+            lines.append(f"Target approximately {self.target_word_count} words.")
+            lines.append("Adjust detail and pacing to meet this target while maintaining story quality.")
+
         if self.author_prompt:
             lines.append("")
             lines.append("AUTHOR DIRECTION:")
@@ -125,6 +132,8 @@ class SceneContextService:
         project_id: str,
         active_character_ids: Iterable[str] | None = None,
         prior_chapters: list[PriorChapterSummary] | None = None,
+        chapter_plan_id: str | None = None,
+        manifest_target_word_count: int | None = None,
     ) -> SceneContext:
         target_ids = list(active_character_ids) if active_character_ids else None
 
@@ -132,7 +141,12 @@ class SceneContextService:
             all_chars = self._repository.list_character_profiles(project_id)
             target_ids = [c.character_id for c in all_chars[:self.MAX_FALLBACK_CHARACTERS]]
             if not target_ids:
-                return SceneContext(characters=[], world_facts=[], prior_chapters=prior_chapters)
+                return SceneContext(
+                    characters=[],
+                    world_facts=[],
+                    prior_chapters=prior_chapters,
+                    target_word_count=manifest_target_word_count,
+                )
 
         anchors = []
         for cid in target_ids:
@@ -162,4 +176,21 @@ class SceneContextService:
                 facts=facts,
             ))
 
-        return SceneContext(characters=anchors, world_facts=world_facts, prior_chapters=prior_chapters)
+        # Resolve target_word_count: chapter plan > manifest default
+        resolved_word_count: int | None = None
+        if chapter_plan_id:
+            try:
+                chapter_plan = self._repository.get_chapter_plan(chapter_plan_id)
+                if hasattr(chapter_plan, "target_word_count") and chapter_plan.target_word_count is not None:
+                    resolved_word_count = chapter_plan.target_word_count
+            except KeyError:
+                pass
+        if resolved_word_count is None:
+            resolved_word_count = manifest_target_word_count
+
+        return SceneContext(
+            characters=anchors,
+            world_facts=world_facts,
+            prior_chapters=prior_chapters,
+            target_word_count=resolved_word_count,
+        )

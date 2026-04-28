@@ -961,7 +961,17 @@ class LocalExecutor:
         if rewrite_needed and critic_result:
             # Build rewrite prompt and execute single retry
             try:
-                violation_summary = "\n".join(f"- {v.character}: {v.issue} -> {v.suggestion}" for v in critic_result.violations[:3])
+                violation_lines = []
+                for v in critic_result.violations[:3]:
+                    if v.line_start is not None and v.quote is not None:
+                        violation_lines.append(
+                            f"- {v.character} (lines {v.line_start}-{v.line_end}): {v.issue}\n"
+                            f'  Quote: "{v.quote}"\n'
+                            f"  Fix: {v.suggestion}"
+                        )
+                    else:
+                        violation_lines.append(f"- {v.character}: {v.issue} -> {v.suggestion}")
+                violation_summary = "\n".join(violation_lines)
                 rewrite_prompt = f"The following issues were found in the draft:\n{violation_summary}\n\nPlease rewrite the problematic passages while preserving the overall story flow."
                 rewrite_request = InferenceRequest(
                     model=inference_request.model,
@@ -1190,7 +1200,17 @@ class LocalExecutor:
 
             if rewrite_needed and critic_result:
                 try:
-                    violation_summary = "\n".join(f"- {v.character}: {v.issue} -> {v.suggestion}" for v in critic_result.violations[:3])
+                    violation_lines = []
+                    for v in critic_result.violations[:3]:
+                        if v.line_start is not None and v.quote is not None:
+                            violation_lines.append(
+                                f"- {v.character} (lines {v.line_start}-{v.line_end}): {v.issue}\n"
+                                f'  Quote: "{v.quote}"\n'
+                                f"  Fix: {v.suggestion}"
+                            )
+                        else:
+                            violation_lines.append(f"- {v.character}: {v.issue} -> {v.suggestion}")
+                    violation_summary = "\n".join(violation_lines)
                     rewrite_prompt = f"The following issues were found in the draft:\n{violation_summary}\n\nPlease rewrite the problematic passages while preserving the overall story flow."
                     rewrite_request = InferenceRequest(
                         model=inference_request.model,

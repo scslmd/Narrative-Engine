@@ -436,6 +436,7 @@ class ChapterPlanRecord:
     position: int
     created_at: datetime
     updated_at: datetime
+    target_word_count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -2991,6 +2992,7 @@ class StoryDevelopmentRepository:
         unresolved_questions: list[str] | None = None,
         status: str = "draft",
         position: int = 0,
+        target_word_count: int | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> ChapterPlanRecord:
@@ -3002,8 +3004,8 @@ class StoryDevelopmentRepository:
                 INSERT INTO chapter_plans (
                     chapter_id, project_id, sequence_id, title, summary, objective, conflict, stakes,
                     active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
-                    status, position, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, position, created_at, updated_at, target_word_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(chapter_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     sequence_id = excluded.sequence_id,
@@ -3017,7 +3019,8 @@ class StoryDevelopmentRepository:
                     unresolved_questions_json = excluded.unresolved_questions_json,
                     status = excluded.status,
                     position = excluded.position,
-                    updated_at = excluded.updated_at
+                    updated_at = excluded.updated_at,
+                    target_word_count = excluded.target_word_count
                 """,
                 (
                     chapter_id,
@@ -3035,6 +3038,7 @@ class StoryDevelopmentRepository:
                     position,
                     now.isoformat(),
                     updated.isoformat(),
+                    target_word_count,
                 ),
             )
             connection.commit()
@@ -4580,6 +4584,7 @@ def _chapter_plan_row_to_record(row) -> ChapterPlanRecord:
         position=int(row["position"]),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
+        target_word_count=row["target_word_count"],
     )
 
 

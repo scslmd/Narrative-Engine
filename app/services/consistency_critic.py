@@ -15,6 +15,9 @@ class Violation:
     character: str
     issue: str
     suggestion: str
+    line_start: int | None = None
+    line_end: int | None = None
+    quote: str | None = None
 
 
 @dataclass(slots=True)
@@ -50,6 +53,9 @@ class ConsistencyCriticService:
                     character=v["character"],
                     issue=v["issue"],
                     suggestion=v["suggestion"],
+                    line_start=v.get("line_start"),
+                    line_end=v.get("line_end"),
+                    quote=v.get("quote"),
                 ))
             return CriticResult(passed=result.get("passed", True), violations=violations)
 

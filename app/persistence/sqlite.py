@@ -710,6 +710,7 @@ CREATE TABLE IF NOT EXISTS chapter_plans (
     position INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
+    target_word_count INTEGER,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY(sequence_id) REFERENCES sequence_plans(sequence_id) ON DELETE SET NULL
 );
@@ -896,8 +897,15 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
         _set_user_version(connection, OPERATIONS_DB_VERSION)
         return
 
+    _migrate_chapter_plans_add_target_word_count(connection)
     connection.executescript(OPERATIONS_SCHEMA)
     _apply_operations_indexes(connection)
+
+
+def _migrate_chapter_plans_add_target_word_count(connection: sqlite3.Connection) -> None:
+    if not _column_exists(connection, "chapter_plans", "target_word_count"):
+        connection.execute("ALTER TABLE chapter_plans ADD COLUMN target_word_count INTEGER")
+        connection.commit()
 
 
 def _migrate_project_db(connection: sqlite3.Connection) -> None:

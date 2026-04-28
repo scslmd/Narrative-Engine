@@ -26,6 +26,7 @@ class InferenceProviderDescriptor(StrictModel):
 class InferenceMessage(StrictModel):
     role: Literal["system", "user", "assistant"]
     content: str
+    cache_control: dict[str, Any] | None = None
 
 
 class InferenceRequest(StrictModel):
@@ -40,6 +41,8 @@ class InferenceUsage(StrictModel):
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    cached_prompt_tokens: int | None = None
+    prompt_cache_write_tokens: int | None = None
 
 
 class InferenceResponse(StrictModel):

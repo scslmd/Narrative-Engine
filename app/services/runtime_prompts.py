@@ -123,6 +123,22 @@ def build_p300_drafter_request(
         prompt_context["architect_output"] = architect_output
     chapter_label = f"chapter {chapter_id}" if chapter_id else "chapter-1"
 
+    # Resolve target_word_count: payload override > manifest default
+    target_words: int | None = payload.get("target_word_count")
+    if target_words is None:
+        target_words = getattr(getattr(manifest, "config", None), "target_word_count", None)
+
+    system_content = (
+        f"You are the Drafter role for Narrative-Engine. "
+        f"Produce the P-300 {chapter_label} draft as deterministic markdown. "
+        f"Preserve chapter flow, continuity, and stable section ordering."
+    )
+    if target_words is not None:
+        system_content += (
+            f"\n\nTarget length: approximately {target_words} words.\n"
+            f"Adjust detail and pacing to meet this target while maintaining story quality."
+        )
+
     user_parts: list[str] = []
     if scene_context is not None:
         scene_str = scene_context.to_prompt_string()
@@ -140,11 +156,8 @@ def build_p300_drafter_request(
         messages=[
             InferenceMessage(
                 role="system",
-                content=(
-                    f"You are the Drafter role for Narrative-Engine. "
-                    f"Produce the P-300 {chapter_label} draft as deterministic markdown. "
-                    f"Preserve chapter flow, continuity, and stable section ordering."
-                ),
+                content=system_content,
+                cache_control={"type": "ephemeral"},
             ),
             InferenceMessage(
                 role="user",
@@ -586,6 +599,16 @@ def build_critic_check_request(
         bio_lines.append(f"  {name}: {bio}")
     bios_block = "\n".join(bio_lines) if bio_lines else "  (no character profiles)"
 
+    # Number draft lines for LLM reference (capped at 500)
+    draft_lines = draft_text.split("\n")
+    max_display_lines = 500
+    numbered_lines = []
+    for i, line in enumerate(draft_lines[:max_display_lines], 1):
+        numbered_lines.append(f"{i}: {line}")
+    numbered_draft = "\n".join(numbered_lines)
+    if len(draft_lines) > max_display_lines:
+        numbered_draft += f"\n... ({len(draft_lines) - max_display_lines} more lines truncated)"
+
     system_prompt = (
         "You are a consistency critic for Narrative-Engine. "
         "Check whether characters' dialogue and actions align with their defined profiles.\n\n"
@@ -599,16 +622,26 @@ def build_critic_check_request(
         "  - Understatement or subtlety (not all feelings are expressed openly)\n"
         "  - Cultural or background-appropriate behavior differences\n\n"
         "Only flag CLEAR contradictions between profile and draft. Be conservative.\n\n"
+        "For each violation, include approximate line numbers (line_start, line_end)\n"
+        "and a short quoted excerpt (max 100 characters) of the problematic passage.\n"
+        "Line numbers refer to the numbered draft below.\n\n"
         "Return ONLY a JSON object with these keys:\n"
         '{\n'
         '  "passed": true or false,\n'
         '  "violations": [\n'
-        '    {"character": "<name>", "issue": "<what is wrong>", "suggestion": "<how to fix>"}\n'
+        '    {\n'
+        '      "character": "<name>",\n'
+        '      "issue": "<what is wrong>",\n'
+        '      "suggestion": "<how to fix>",\n'
+        '      "line_start": <int or null>,\n'
+        '      "line_end": <int or null>,\n'
+        '      "quote": "<short excerpt of the offending text>"\n'
+        '    }\n'
         '  ]\n\n'
         "If the character behaves consistently with their profile, set passed=true and violations=[]."
     )
 
-    user_content = f"CHARACTER PROFILES:\n{bios_block}\n\nDRAFT TO CHECK:\n{draft_text}"
+    user_content = f"CHARACTER PROFILES:\n{bios_block}\n\nDRAFT TO CHECK (line numbers for reference):\n{numbered_draft}"
 
     return InferenceRequest(
         model=str(default_model or "").strip() or None,
