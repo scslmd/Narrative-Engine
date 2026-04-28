@@ -10,6 +10,7 @@ from app.persistence.story_development import (
 from app.schemas import BrainstormItem
 from app.schemas.inference import InferenceMessage
 from app.services.runtime_prompts import build_brain_dump_organize_request
+from app.utils.json_extract import extract_json
 
 
 _ALLOWABLE_STATE_TRANSITIONS: dict[str, list[str]] = {
@@ -141,32 +142,13 @@ class BrainDumpService:
 
     @staticmethod
     def _parse_llm_json(content: str) -> dict[str, list[str]]:
-        import json
-
-        content = content.strip()
-        if not content:
+        if not content or not content.strip():
             raise BrainDumpOrganizeError("Empty LLM response.")
 
-        if content.startswith("{"):
-            return json.loads(content)
-
-        fence_open = content.find("```")
-        if fence_open != -1:
-            first_close = content.find("```", fence_open + 3)
-            if first_close != -1:
-                json_text = content[fence_open + 3 : first_close].strip()
-                lang_end = json_text.find("\n")
-                if lang_end != -1:
-                    json_text = json_text[lang_end + 1 :]
-                return json.loads(json_text)
-
-        brace_start = content.find("{")
-        brace_end = content.rfind("}")
-        if brace_start != -1 and brace_end != -1:
-            json_text = content[brace_start : brace_end + 1]
-            return json.loads(json_text)
-
-        raise BrainDumpOrganizeError("Could not extract JSON from LLM response.")
+        data = extract_json(content)
+        if data is None:
+            raise BrainDumpOrganizeError("Could not extract JSON from LLM response.")
+        return data
 
     @staticmethod
     def _validate_organize_response(data: dict[str, list[str]]) -> None:
