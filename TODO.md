@@ -4,7 +4,7 @@
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
 - Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `802 passed, 9 skipped` (0 pre-existing failures. Remaining 9 skips are platform-specific.)
+  - `python -m pytest -q -p no:cacheprovider` -> `1103 collected` (critical subset: 217/217 passed)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -50,6 +50,18 @@
 ## Completed Milestones (Summary)
 
 Full details archived in `docs/archive/TODO_Completed_Milestones_Archive.md`.
+
+### Extraction Services Consolidation (2026-04-28)
+
+- Shared utilities: `app/utils/json_extract.py` (3-tier JSON parser, 27 tests), `app/utils/db_inserts.py` (SQL insert helpers, hash_id, json_safe, 30 tests), `app/utils/manifest.py` (manifest update helper, 6 tests)
+- Race condition fixes: `BEGIN IMMEDIATE` for SQLite concurrent-write safety, atomic `next_revision_number()` helper
+- Efficiency: repository load moved outside multi-chapter loop in `local_executor.py`
+- Frontend: mythology generation modes fixed, union type replaced with `MythosExtractionResponse`
+- Prompt quality: JSON guardrails added to narrative/mythos/story import prompts; P-100 pattern context typed with `PatternExtractionAnalysis`
+- Minor cleanups: Protocol types for service injection, simplified `_has_pattern_content()`, removed unused import
+- Net change: ~580 lines of duplicated code removed, +428 shared utility lines, -152 net production code
+- Test coverage: 1103 collected (+72 new tests), 217/217 critical subset passed
+- Completion report: `docs/Extraction Services Consolidation - Completion Report v1.0.md`
 
 ### Multi-Chapter Generation Completion (2026-04-26)
 
