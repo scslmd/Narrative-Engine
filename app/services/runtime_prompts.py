@@ -38,10 +38,16 @@ def build_p100_architect_request(
                 role="system",
                 content=(
                     "You are the Architect role for Narrative-Engine. "
-                    "Produce the P-100 story architecture foundation as deterministic markdown. "
-                    "Use these exact headings in order: "
-                    "## Logline, ## Core Premise, ## Story Engine, ## World Anchors, "
-                    "## Character Arcs, ## Constraints, ## Open Questions."
+                    "Produce the P-100 story architecture foundation as deterministic markdown.\n\n"
+                    "Use these EXACT headings in this EXACT order (no extra headings, no preamble):\n"
+                    "## Logline — One sentence, 20-40 words\n"
+                    "## Core Premise — 2-4 sentences describing the story's engine\n"
+                    "## Story Engine — What drives the plot forward (conflict mechanism)\n"
+                    "## World Anchors — 3-5 immutable world facts the story cannot contradict\n"
+                    "## Character Arcs — Per character: starting state to ending state\n"
+                    "## Constraints — Rules the story must obey (tone, POV, themes)\n"
+                    "## Open Questions — Unresolved questions to guide subsequent chapters\n\n"
+                    "Return ONLY markdown with these headings. No code fences. No introduction text."
                 ),
             ),
             InferenceMessage(
