@@ -69,6 +69,42 @@ def _phase_step_name(phase: str) -> str:
     return phase
 
 
+def find_user_message_index(messages: list[InferenceMessage]) -> int | None:
+    """Find the index of the first user message in a message list.
+
+    Uses role-based lookup instead of hard-coded index for robustness.
+    """
+    for idx, msg in enumerate(messages):
+        if msg.role == "user":
+            return idx
+    return None
+
+
+def inject_scene_context(
+    request: InferenceRequest,
+    context_prompt: str,
+) -> InferenceRequest:
+    """Inject scene context into the user message of an inference request.
+
+    Uses role-based lookup to find the user message, making it robust
+    against changes in message count or ordering.
+    """
+    if not context_prompt:
+        return request
+
+    user_idx = find_user_message_index(request.messages)
+    if user_idx is None:
+        return request
+
+    existing_content = request.messages[user_idx].content
+    new_messages = list(request.messages)
+    new_messages[user_idx] = InferenceMessage(
+        role=request.messages[user_idx].role,
+        content=f"{existing_content}\n\n{context_prompt}",
+    )
+    return request.model_copy(update={"messages": new_messages})
+
+
 def _require_supported_job_phase(phase: str) -> str:
     if phase in {"P-100", "P-200", "P-300", "P-400"}:
         return phase
@@ -837,15 +873,7 @@ class LocalExecutor:
                 )
                 context_prompt = ctx.to_prompt_string()
                 if context_prompt:
-                    existing_content = inference_request.messages[1].content
-                    new_messages = list(inference_request.messages)
-                    new_messages[1] = InferenceMessage(
-                        role=new_messages[1].role,
-                        content=f"{existing_content}\n\n{context_prompt}",
-                    )
-                    inference_request = inference_request.model_copy(
-                        update={"messages": new_messages},
-                    )
+                    inference_request = inject_scene_context(inference_request, context_prompt)
             except Exception as exc:
                 logger.warning("Context assembly failed, proceeding without: %s", exc)
         self._job_manager.update_job(
@@ -1120,15 +1148,7 @@ class LocalExecutor:
                     )
                     context_prompt = ctx.to_prompt_string()
                     if context_prompt:
-                        existing_content = inference_request.messages[1].content
-                        new_messages = list(inference_request.messages)
-                        new_messages[1] = InferenceMessage(
-                            role=new_messages[1].role,
-                            content=f"{existing_content}\n\n{context_prompt}",
-                        )
-                        inference_request = inference_request.model_copy(
-                            update={"messages": new_messages},
-                        )
+                        inference_request = inject_scene_context(inference_request, context_prompt)
                 except Exception as exc:
                     logger.warning("Context assembly failed for %s: %s", safe_chapter_id, exc)
 
