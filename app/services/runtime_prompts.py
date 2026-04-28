@@ -676,12 +676,15 @@ def build_chapter_summarize_request(
         "Extract structured context from the completed chapter below.\n\n"
         "Return ONLY a JSON object with these keys:\n"
         '{\n'
-        '  "chapter_id": "<the chapter identifier>",\n'
         '  "title": "<chapter title or descriptive label>",\n'
         '  "key_events": ["<event 1>", "<event 2>"],\n'
-        '  "character_states": {"<name>": "<condition/goal at chapter end>"},\n'
+        '  "character_states": {"<name>": "<current goal + emotional state + key change>"},\n'
         '  "unresolved_threads": ["<thread 1>"]\n'
         '}\n\n'
+        "KEY EVENTS: Major plot turns, character revelations, or pivotal decisions. "
+        "Each event should describe WHAT happened and WHY it matters.\n"
+        "CHARACTER STATES: Current goal, emotional state, and key change since last chapter.\n"
+        "UNRESOLVED THREADS: Plot threads left open that affect subsequent chapters.\n\n"
         "Extract up to 10 key events, 10 character states, and 5 unresolved threads.\n"
         "Focus on plot-critical information that would affect continuity in subsequent chapters."
     )
