@@ -1,10 +1,38 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol, TypeVar
 
 from fastapi import APIRouter, HTTPException
 from fastapi.exceptions import RequestValidationError
+
+logger = logging.getLogger(__name__)
+
+R = TypeVar("R")
+
+
+def handle_service_error(
+    func: Callable[[], R],
+    specific_error: type[Exception],
+) -> R:
+    """Execute a service function and translate errors to HTTP exceptions.
+
+    Args:
+        func: Zero-argument callable that performs the service operation.
+        specific_error: Exception class that maps to 400 Bad Request.
+
+    Returns:
+        The result of func() on success.
+
+    Raises:
+        HTTPException: 400 for specific_error, 500 for unexpected failures.
+    """
+    try:
+        return func()
+    except specific_error as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 class _ImportServiceProtocol(Protocol):
@@ -108,54 +136,46 @@ def build_projects_router(
     if import_service is not None:
         @router.post("/import-story", response_model=StoryImportResponse, status_code=201)
         def import_story(request: StoryImportRequest) -> StoryImportResponse:
-            try:
-                return import_service.import_story(request)
-            except StoryImportError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            except Exception as exc:
-                raise HTTPException(status_code=500, detail=str(exc)) from exc
+            return handle_service_error(
+                lambda: import_service.import_story(request),
+                StoryImportError,
+            )
 
     if mythos_service is not None:
         @router.post("/import-mythos", response_model=MythosExtractionResponse, status_code=201)
         def import_mythos(request: MythosExtractionRequest) -> MythosExtractionResponse:
-            try:
-                return mythos_service.extract(request)
-            except MythosExtractionError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            except Exception as exc:
-                raise HTTPException(status_code=500, detail=str(exc)) from exc
+            return handle_service_error(
+                lambda: mythos_service.extract(request),
+                MythosExtractionError,
+            )
 
     if pattern_service is not None:
         @router.post("/import-patterns", response_model=PatternExtractionResponse, status_code=201)
         def import_patterns(request: PatternExtractionRequest) -> PatternExtractionResponse:
-            try:
-                return pattern_service.extract(
+            return handle_service_error(
+                lambda: pattern_service.extract(
                     text=request.text,
                     source_type=request.source_type,
                     generation_mode=request.generation_mode,
                     project_id=request.project_id,
                     source_corpus=request.source_corpus,
-                )
-            except PatternExtractionError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            except Exception as exc:
-                raise HTTPException(status_code=500, detail=str(exc)) from exc
+                ),
+                PatternExtractionError,
+            )
 
         @router.post("/{project_id}/extract-patterns", response_model=PatternExtractionResponse, status_code=201)
         def extract_patterns(
             project_id: str,
             request: ExtractPatternsRequest,
         ) -> PatternExtractionResponse:
-            try:
-                return pattern_service.extract_from_project(
+            return handle_service_error(
+                lambda: pattern_service.extract_from_project(
                     project_id=project_id,
                     source_type=request.source_type,
                     generation_mode=request.generation_mode,
                     source_corpus=request.source_corpus,
-                )
-            except PatternExtractionError as exc:
-                raise HTTPException(status_code=400, detail=str(exc)) from exc
-            except Exception as exc:
-                raise HTTPException(status_code=500, detail=str(exc)) from exc
+                ),
+                PatternExtractionError,
+            )
 
     return router
