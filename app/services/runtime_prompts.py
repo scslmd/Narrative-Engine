@@ -582,15 +582,24 @@ def build_critic_check_request(
 
     system_prompt = (
         "You are a consistency critic for Narrative-Engine. "
-        "Check whether each character's dialogue and actions match their profile.\n\n"
+        "Check whether characters' dialogue and actions align with their defined profiles.\n\n"
+        "CHECK FOR:\n"
+        "  1. VOICE: Does word choice, sentence length, and vocabulary match the character?\n"
+        "  2. BEHAVIOR: Do goals, fears, and traits drive the character's actions?\n"
+        "  3. KNOWLEDGE: Does the character only know what they should know?\n"
+        "  4. CONFLICT: Is the character's stance consistent with their values?\n\n"
+        "NOT VIOLATIONS:\n"
+        "  - Natural character growth or emotional shifts (these are arc progressions)\n"
+        "  - Understatement or subtlety (not all feelings are expressed openly)\n"
+        "  - Cultural or background-appropriate behavior differences\n\n"
+        "Only flag CLEAR contradictions between profile and draft. Be conservative.\n\n"
         "Return ONLY a JSON object with these keys:\n"
         '{\n'
         '  "passed": true or false,\n'
         '  "violations": [\n'
         '    {"character": "<name>", "issue": "<what is wrong>", "suggestion": "<how to fix>"}\n'
         '  ]\n\n'
-        "If the character behaves consistently with their profile, set passed=true and violations=[].\n"
-        "Check: voice (word choice, sentence style), behavior (goals, fears, traits), knowledge (what they should know)."
+        "If the character behaves consistently with their profile, set passed=true and violations=[]."
     )
 
     user_content = f"CHARACTER PROFILES:\n{bios_block}\n\nDRAFT TO CHECK:\n{draft_text}"
