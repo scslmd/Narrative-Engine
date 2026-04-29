@@ -231,3 +231,20 @@ class StoryImportResponse(StrictModel):
     chapters_processed: int = Field(default=0, ge=0)
     total_estimated_chapters: int = Field(default=0, ge=0)
     analysis_mode: str = Field(default="single_pass", min_length=1, max_length=20)
+
+
+class ImportSubmitResponse(StrictModel):
+    """Response when import job is submitted (202 Accepted)."""
+    import_id: str
+    status: str = "pending"
+
+
+class ImportProgressResponse(StrictModel):
+    """Response from polling endpoint — progress or final result."""
+    import_id: str
+    status: str  # pending | running | completed | failed
+    phase: str = ""
+    chapters_processed: int = 0
+    total_estimated_chapters: int = 0
+    result: StoryImportResponse | None = None
+    error: str | None = None

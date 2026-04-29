@@ -11,4 +11,22 @@ export interface StoryImportResponse {
   status: string;
   message: string;
   warnings: string[];
+  chapters_processed: number;
+  total_estimated_chapters: number;
+  analysis_mode: string;
+}
+
+export interface ImportSubmitResponse {
+  import_id: string;
+  status: "pending";
+}
+
+export interface ImportProgress {
+  import_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  phase: string;
+  chapters_processed: number;
+  total_estimated_chapters: number;
+  result: StoryImportResponse | null;
+  error: string | null;
 }

@@ -4,7 +4,8 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any
+import time
+from typing import Any, Callable
 
 from pydantic import ValidationError
 
@@ -85,11 +86,36 @@ class MultiPassImportService:
     def __init__(self, inferencer: InferenceBackend) -> None:
         self._inferencer = inferencer
 
+    def _retry_with_backoff(
+        self,
+        func: Callable[..., Any],
+        args: tuple = (),
+        kwargs: dict[str, Any] | None = None,
+        max_retries: int = 2,
+    ) -> Any:
+        """Call func with exponential backoff on LLM/transient errors."""
+        if kwargs is None:
+            kwargs = {}
+        for attempt in range(max_retries + 1):
+            try:
+                return func(*args, **kwargs)
+            except (InferenceBackendError, ValueError, ValidationError) as exc:
+                if attempt == max_retries:
+                    raise
+                wait = min(0.5 * (2 ** attempt), 5.0)
+                logger.warning(
+                    "Retry %d/%d after %.1fs: %s",
+                    attempt + 1, max_retries, wait, exc,
+                )
+                time.sleep(wait)
+        raise RuntimeError("Retry loop exited unexpectedly")
+
     def analyze_large_story(
         self,
         story_text: str,
         genre_hint: str | None = None,
         tone_hint: str | None = None,
+        on_progress: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> StoryImportAnalysis:
         """Multi-pass analysis for stories of any size.
 
@@ -98,10 +124,17 @@ class MultiPassImportService:
         """
         # Phase 1: Detect structure
         structure = self._detect_structure(story_text)
+        total_chapters = len(structure.chapters) if structure.chapters else 1
+        if on_progress:
+            on_progress("structure_detection", {
+                "chapters_processed": 0,
+                "total_estimated_chapters": total_chapters,
+            })
 
         if not structure.chapters:
             # Fallback: single chunk covering full text
             structure = self._fallback_structure(story_text)
+            total_chapters = 1
 
         # Phase 2: Process each chapter/chunk
         character_map: dict[str, CharacterAccumulator] = {}
@@ -131,6 +164,11 @@ class MultiPassImportService:
                     all_world_details.extend(result.world_details or [])
                     all_plot_events.extend(result.plot_events or [])
                     chapters_processed += 1
+                    if on_progress:
+                        on_progress("chapter_analysis", {
+                            "chapters_processed": chapters_processed,
+                            "total_estimated_chapters": total_chapters,
+                        })
                 except (InferenceBackendError, ValueError, ValidationError) as exc:
                     logger.warning(
                         "Failed to analyze chunk %s: %s. Skipping.",
@@ -154,9 +192,19 @@ class MultiPassImportService:
             genre_hint,
             tone_hint,
         )
+        if on_progress:
+            on_progress("consolidation_characters", {
+                "chapters_processed": chapters_processed,
+                "total_estimated_chapters": total_chapters,
+            })
 
         # Phase 3b: Consolidate world bible
         consolidated_world = self._consolidate_world_bible(all_world_details)
+        if on_progress:
+            on_progress("consolidation_world", {
+                "chapters_processed": chapters_processed,
+                "total_estimated_chapters": total_chapters,
+            })
 
         # Phase 3c: Detect arcs
         arc_analysis = self._detect_arcs(
@@ -166,6 +214,11 @@ class MultiPassImportService:
             genre_hint,
             tone_hint,
         )
+        if on_progress:
+            on_progress("consolidation_arcs", {
+                "chapters_processed": chapters_processed,
+                "total_estimated_chapters": total_chapters,
+            })
 
         # Build final StoryImportAnalysis
         return self._build_analysis(
@@ -180,19 +233,23 @@ class MultiPassImportService:
 
     def _detect_structure(self, story_text: str) -> StoryStructureDetection:
         """Phase 1: Detect story structure from text."""
-        from .runtime_prompts import build_structure_detection_request
+        try:
+            from .runtime_prompts import build_structure_detection_request
 
-        inference_request = build_structure_detection_request(
-            story_text=story_text,
-            default_model=self._inferencer.descriptor.default_model,
-        )
+            inference_request = build_structure_detection_request(
+                story_text=story_text,
+                default_model=self._inferencer.descriptor.default_model,
+            )
 
-        response = self._inferencer.generate_text(inference_request)
-        parsed = extract_json(response.content)
-        if parsed is None:
-            raise ValueError("Failed to parse structure detection response")
+            response = self._inferencer.generate_text(inference_request)
+            parsed = extract_json(response.content)
+            if parsed is None:
+                raise ValueError("Failed to parse structure detection response")
 
-        return StoryStructureDetection.model_validate(parsed)
+            return StoryStructureDetection.model_validate(parsed)
+        except (InferenceBackendError, ValueError, ValidationError) as exc:
+            logger.warning("Structure detection failed, using fallback: %s", exc)
+            return self._fallback_structure(story_text)
 
     def _fallback_structure(self, story_text: str) -> StoryStructureDetection:
         """Fallback when structure detection fails: fixed-size chunks."""
@@ -473,7 +530,9 @@ class MultiPassImportService:
                 default_model=self._inferencer.descriptor.default_model,
             )
 
-            response = self._inferencer.generate_text(inference_request)
+            response = self._retry_with_backoff(
+                self._inferencer.generate_text, (inference_request,), {}, max_retries=2
+            )
             parsed = extract_json(response.content)
 
             if parsed and isinstance(parsed, list):
@@ -530,7 +589,9 @@ class MultiPassImportService:
                 default_model=self._inferencer.descriptor.default_model,
             )
 
-            response = self._inferencer.generate_text(inference_request)
+            response = self._retry_with_backoff(
+                self._inferencer.generate_text, (inference_request,), {}, max_retries=2
+            )
             parsed = extract_json(response.content)
 
             if parsed and isinstance(parsed, list):
@@ -614,7 +675,9 @@ class MultiPassImportService:
                 default_model=self._inferencer.descriptor.default_model,
             )
 
-            response = self._inferencer.generate_text(inference_request)
+            response = self._retry_with_backoff(
+                self._inferencer.generate_text, (inference_request,), {}, max_retries=2
+            )
             parsed = extract_json(response.content)
 
             if parsed and isinstance(parsed, dict):

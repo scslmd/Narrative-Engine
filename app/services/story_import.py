@@ -6,7 +6,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import ValidationError
 
@@ -142,6 +142,75 @@ class StoryImportService:
 
             self._transactional_import(project_id, analysis)
             self._update_manifest(project_id, analysis)
+            return StoryImportResponse(
+                project_id=project_id,
+                status="completed",
+                message=f"Successfully imported story into project '{analysis.project_name}'",
+                warnings=warnings,
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
+            )
+        except StoryImportError as exc:
+            return StoryImportResponse(
+                project_id=project_id,
+                status="failed",
+                message=str(exc),
+                warnings=["Import failed - partial data may exist on retry"],
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
+            )
+        except InferenceBackendError as exc:
+            return StoryImportResponse(
+                project_id=project_id,
+                status="failed",
+                message=f"LLM service unavailable: {exc.code}",
+                warnings=["Retry the import when the inference service is available"],
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
+            )
+
+    def import_story_with_progress(
+        self,
+        request: StoryImportRequest,
+        on_progress: Callable[[str, dict[str, Any]], None] | None = None,
+    ) -> StoryImportResponse:
+        """Same as import_story but reports progress via callback."""
+        project_id = ""
+        analysis_mode = "single_pass"
+        chapters_processed = 0
+        total_chapters = 0
+        warnings: list[str] = []
+
+        try:
+            project_id = self._create_project(request)
+
+            if on_progress:
+                on_progress("initializing", {"chapters_processed": 0})
+
+            if len(request.story_text) > MULTI_PASS_THRESHOLD:
+                analysis_mode = "multi_pass"
+                analysis = self._multi_pass_service.analyze_large_story(
+                    request.story_text,
+                    genre_hint=request.genre,
+                    tone_hint=request.tone,
+                    on_progress=on_progress,  # type: ignore[arg-type]
+                )
+                chapters_processed = len(analysis.sequences[0].chapters) if analysis.sequences else 0
+                total_chapters = chapters_processed
+            else:
+                if on_progress:
+                    on_progress("analysis", {"chapters_processed": 0})
+                analysis = self._analyze_story(request.story_text, request.genre, request.tone)
+
+            if on_progress:
+                on_progress("persisting", {"chapters_processed": chapters_processed})
+
+            self._transactional_import(project_id, analysis)
+            self._update_manifest(project_id, analysis)
+
             return StoryImportResponse(
                 project_id=project_id,
                 status="completed",

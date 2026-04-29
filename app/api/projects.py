@@ -88,6 +88,7 @@ def build_projects_router(
     import_service: _ImportServiceProtocol | None = None,
     mythos_service: _MythosServiceProtocol | None = None,
     pattern_service: _PatternServiceProtocol | None = None,
+    import_job_manager: Any | None = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
@@ -133,13 +134,66 @@ def build_projects_router(
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    if import_service is not None:
-        @router.post("/import-story", response_model=StoryImportResponse, status_code=201)
-        def import_story(request: StoryImportRequest) -> StoryImportResponse:
-            return handle_service_error(
-                lambda: import_service.import_story(request),
-                StoryImportError,
+    if import_service is not None and import_job_manager is not None:
+        from ..schemas.story_import import ImportSubmitResponse, ImportProgressResponse
+        from fastapi import UploadFile, File, Form
+
+        def _run_import_worker(
+            import_service: Any,
+            request: StoryImportRequest,
+            job_manager: Any,
+            import_id: str,
+        ) -> Any:
+            def on_progress(phase: str, data: dict[str, Any]) -> None:
+                job_manager.update_progress(import_id, phase=phase, **data)
+
+            job_manager.update_progress(import_id, status="running", phase="initializing")
+            result = import_service.import_story_with_progress(request, on_progress)
+            return result
+
+        @router.post("/import-story", response_model=ImportSubmitResponse, status_code=202)
+        async def import_story(
+            story_text: str | None = Form(None),
+            project_name: str | None = Form(None),
+            genre: str | None = Form(None),
+            tone: str | None = Form(None),
+            project_id: str | None = Form(None),
+            file: UploadFile | None = File(None),
+        ):
+            text = story_text
+            if file is not None:
+                ext = (file.filename or "").lower().rsplit(".", 1)[-1]
+                if ext not in ("txt", "md"):
+                    raise HTTPException(status_code=400, detail=f"Unsupported file type: {file.filename}")
+                content = await file.read()
+                text = content.decode("utf-8").strip()
+
+            if not text or len(text.strip()) < 50:
+                raise HTTPException(status_code=400, detail="Story text must be at least 50 characters")
+
+            request = StoryImportRequest(
+                project_name=project_name or "",
+                story_text=text,
+                project_id=project_id or None,
+                genre=genre or None,
+                tone=tone or None,
             )
+
+            import_id = import_job_manager.submit(
+                text,
+                _run_import_worker,
+                import_service=import_service,
+                request=request,
+                job_manager=import_job_manager,
+            )
+            return ImportSubmitResponse(import_id=import_id)
+
+        @router.get("/import/{import_id}", response_model=ImportProgressResponse)
+        def get_import_status(import_id: str):
+            try:
+                return import_job_manager.get_status(import_id)
+            except KeyError:
+                raise HTTPException(status_code=404, detail=f"Import {import_id} not found or expired")
 
     if mythos_service is not None:
         @router.post("/import-mythos", response_model=MythosExtractionResponse, status_code=201)

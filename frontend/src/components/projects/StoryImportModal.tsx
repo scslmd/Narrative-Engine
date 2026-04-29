@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { importStory } from '../../services/storyImport';
+import { useState, useEffect, useRef } from 'react';
+import { submitImport, getImportStatus } from '../../services/storyImport';
 import { extractMythos } from '../../services/mythosExtraction';
 import { importPatterns } from '../../services/patternExtraction';
 import type { StoryImportResponse } from '../../types/storyImport';
@@ -31,6 +31,18 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [importId, setImportId] = useState<string | null>(null);
+  const [importPhase, setImportPhase] = useState('');
+  const [chaptersProcessed, setChaptersProcessed] = useState(0);
+  const [totalChapters, setTotalChapters] = useState(0);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const MIN_STORY_LENGTH = 50;
 
@@ -83,22 +95,46 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
           setError(response.error || 'Mythos extraction failed.');
         }
       } else {
-        response = await importStory({
-          project_name: projectName.trim(),
-          story_text: storyText,
-          genre: genre.trim() || undefined,
-          tone: tone.trim() || undefined,
-        });
+        const formData = new FormData();
+        formData.append('story_text', storyText);
+        formData.append('project_name', projectName.trim());
+        if (genre.trim()) formData.append('genre', genre.trim());
+        if (tone.trim()) formData.append('tone', tone.trim());
 
-        if (response.status === 'completed') {
-          if ('warnings' in response && response.warnings && response.warnings.length > 0) {
-            setWarnings(response.warnings);
+        const submit = await submitImport(formData);
+        setImportId(submit.import_id);
+        setImportPhase('Starting import...');
+
+        pollRef.current = setInterval(async () => {
+          try {
+            const progress = await getImportStatus(submit.import_id);
+            setImportPhase(progress.phase || 'Processing...');
+            setChaptersProcessed(progress.chapters_processed);
+            setTotalChapters(progress.total_estimated_chapters);
+
+            if (progress.status === 'completed' && progress.result) {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setImportId(null);
+
+              if (progress.result.warnings?.length > 0) {
+                setWarnings(progress.result.warnings);
+              }
+              navigate(`/workspace/${progress.result.project_id}`);
+              queryClient.invalidateQueries({ queryKey: ['projects'] });
+              onClose();
+            } else if (progress.status === 'failed') {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setImportId(null);
+              setError(progress.error || 'Import failed');
+            }
+          } catch {
+            // Keep polling on transient errors
           }
-          navigate(`/workspace/${response.project_id}`);
-          queryClient.invalidateQueries({ queryKey: ['projects'] });
-        } else {
-          setError(('message' in response ? (response as StoryImportResponse).message : null) || 'Import failed.');
-        }
+        }, 2000);
+
+        return;
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Import failed unexpectedly.';
@@ -373,6 +409,39 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
             />
           </div>
 
+          {importMode === 'story' && (
+            <>
+              <div
+                className="mt-4 flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 cursor-pointer transition-colors"
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <div className="text-center">
+                  <Upload className="w-6 h-6 mx-auto text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-500">
+                    {uploadedFileName || 'Drop a .txt or .md file, or click to browse'}
+                  </p>
+                </div>
+              </div>
+              <input
+                id="file-upload"
+                type="file"
+                accept=".txt,.md"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploadedFileName(file.name);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      setStoryText(ev.target?.result as string);
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+              />
+            </>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
               <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
@@ -392,6 +461,42 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
             </div>
           )}
 
+          {isImporting && (
+            <div className="flex flex-col items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              <p className="mt-4 text-sm text-gray-600">
+                {importPhase || 'Analyzing...'}
+              </p>
+              {totalChapters > 0 && (
+                <div className="mt-2 w-full max-w-xs">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Chapter {chaptersProcessed} of {totalChapters}</span>
+                    <span>{Math.round((chaptersProcessed / totalChapters) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      style={{ width: `${(chaptersProcessed / totalChapters) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {importId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pollRef.current) clearInterval(pollRef.current);
+                    setIsImporting(false);
+                    setImportId(null);
+                  }}
+                  className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel (import will continue in background)
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-2">
             <button
               type="button"
@@ -406,17 +511,8 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               disabled={isImporting}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-medium rounded-lg hover:from-indigo-600 hover:to-violet-700 shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isImporting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Analyzing &amp; Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  {importMode === 'mythos' ? 'Extract Mythos' : importMode === 'patterns' ? 'Extract Patterns & Create Project' : 'Import Story'}
-                </>
-              )}
+              <Upload className="w-4 h-4" />
+              {isImporting ? 'Processing...' : importMode === 'mythos' ? 'Extract Mythos' : importMode === 'patterns' ? 'Extract Patterns & Create Project' : 'Import Story'}
             </button>
           </div>
         </form>

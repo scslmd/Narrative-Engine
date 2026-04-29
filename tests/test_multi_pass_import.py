@@ -271,8 +271,10 @@ class TestStructureDetection:
     def test_detect_structure_invalid_json_falls_back(self) -> None:
         backend = MultiPhaseInferenceBackend(responses=["not valid json"])
         service = MultiPassImportService(backend)
-        with pytest.raises(ValueError, match="parse structure"):
-            service._detect_structure("Some text...")
+        result = service._detect_structure("Some text...")
+        # Should fall back to chunk-based structure, not raise
+        assert result is not None
+        assert len(result.chapters) >= 1
 
 
 class TestFallbackStructure:
@@ -914,6 +916,46 @@ class TestSizeBasedRouting:
         assert len(characters) >= 1
 
 
+class ErrorInferenceBackend(InferenceBackend):
+    """Always raises InferenceBackendError."""
+
+    @property
+    def descriptor(self) -> InferenceProviderDescriptor:
+        return InferenceProviderDescriptor(
+            backend="stub",
+            display_name="Error Backend",
+            transport="stub",
+            base_url="http://localhost:9000/v1",
+            default_model="error-model",
+            timeout_seconds=30.0,
+            supports_model_listing=False,
+            supports_chat_completions=True,
+            aliases=["error"],
+        )
+
+    def generate_text(self, request: InferenceRequest) -> InferenceResponse:
+        raise InferenceBackendError(
+            "Connection refused",
+            category="transport_failure",
+            code="connection_error",
+            finish_reason="error",
+            retryable=True,
+        )
+
+
+def test_detect_structure_falls_back_on_llm_error():
+    """Phase 1 should fall back to _fallback_structure on LLM failure, not crash."""
+    error_backend = ErrorInferenceBackend()
+    service = MultiPassImportService(error_backend)
+
+    story_text = "A" * 50_000  # large enough to need structure detection
+    result = service._detect_structure(story_text)
+
+    # Should return fallback, not raise
+    assert result is not None
+    assert len(result.chapters) >= 1
+
+
 # --- Constants Tests ---
 
 class TestConstants:
@@ -930,3 +972,109 @@ class TestConstants:
 
     def test_prior_char_context_cap(self) -> None:
         assert PRIOR_CHAR_CONTEXT_CAP == 5_000
+
+
+# --- Retry with Backoff Tests ---
+
+class TestRetryWithBackoff:
+    """Test _retry_with_backoff helper method."""
+
+    def test_retry_with_backoff_succeeds_after_failures(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=["{}"]))
+
+        call_count = [0]
+        def flaky_func():
+            call_count[0] += 1
+            if call_count[0] < 3:
+                raise InferenceBackendError("timeout", category="timeout", code="timeout", finish_reason="error", retryable=True)
+            return "success"
+
+        result = service._retry_with_backoff(flaky_func, (), {}, max_retries=3)
+        assert result == "success"
+        assert call_count[0] == 3
+
+    def test_retry_with_backoff_raises_after_max_retries(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=["{}"]))
+
+        def always_fails():
+            raise InferenceBackendError("error", category="transport_failure", code="error", finish_reason="error", retryable=True)
+
+        with pytest.raises(InferenceBackendError):
+            service._retry_with_backoff(always_fails, (), {}, max_retries=2)
+
+    def test_retry_with_backoff_no_retry_on_first_success(self) -> None:
+        call_count = [0]
+        def succeeds_immediately():
+            call_count[0] += 1
+            return "ok"
+
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=["{}"]))
+        result = service._retry_with_backoff(succeeds_immediately, (), {}, max_retries=3)
+        assert result == "ok"
+        assert call_count[0] == 1
+
+
+def test_analyze_large_story_calls_progress_callback():
+    """Progress callback should be invoked at each phase."""
+    from unittest.mock import patch
+
+    progress_log: list[tuple[str, dict]] = []
+
+    def on_progress(phase: str, data: dict):
+        progress_log.append((phase, data))
+
+    responses = [
+        json.dumps({
+            "project_name": "Test",
+            "total_estimated_words": 50000,
+            "structure_type": "traditional_novel",
+            "chapters": [
+                {"id": "chapter-1", "title": "Chapter 1", "section_type": "chapter",
+                 "start_line": 1, "end_line": 50, "start_pos": 0, "end_pos": 5000},
+                {"id": "chapter-2", "title": "Chapter 2", "section_type": "chapter",
+                 "start_line": 51, "end_line": 100, "start_pos": 5000, "end_pos": 10000},
+            ],
+            "hints": {},
+        }),
+        json.dumps({
+            "chapter_id": "chapter-1",
+            "characters": [{"name": "Hero", "role": "protagonist", "is_first_introduction": True}],
+            "world_details": [],
+            "plot_events": [{"summary": "Event 1", "significance": "development"}],
+        }),
+        json.dumps({
+            "chapter_id": "chapter-2", "characters": [], "world_details": [],
+            "plot_events": [{"summary": "Event 2", "significance": "development"}],
+        }),
+    ]
+
+    backend = MultiPhaseInferenceBackend(responses=responses)
+    service = MultiPassImportService(backend)
+
+    story_text = "A" * 35_000
+
+    # Patch consolidation methods to avoid LLM calls and extract_json list handling
+    from app.schemas.story_import import StoryImportCharacterRequest
+
+    mock_characters = [StoryImportCharacterRequest(name="Hero", role="protagonist")]
+
+    with patch.object(service, "_consolidate_characters", return_value=mock_characters), \
+         patch.object(service, "_consolidate_world_bible", return_value=[]), \
+         patch.object(service, "_detect_arcs", return_value={
+             "premise": "Test story", "logline": "A test logline", "thematic_spine": "theme",
+             "emotional_promise": "promise", "target_audience": "adults",
+             "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+             "genre": "fantasy", "tone": "dark", "pov": "THIRD_LIMITED",
+             "story_arcs": [], "sequences": [],
+             "narrative_constraints": [], "success_definition": "sd",
+         }):
+        service.analyze_large_story(story_text, on_progress=on_progress)
+
+    phases = [p for p, _ in progress_log]
+    assert "structure_detection" in phases
+    assert "chapter_analysis" in phases
+    assert any("consolidation" in p for p in phases)
+
+    # Verify chapter count was reported
+    chapter_data = [d for _, d in progress_log if d.get("total_estimated_chapters") > 0]
+    assert len(chapter_data) > 0

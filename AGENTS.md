@@ -5,12 +5,13 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py` -> ~1160 passed (~50s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~10 passed (~30s)
-  - Full baseline: ~1179 tests, ~80s total (vs. ~250s sequential)
-  - `cd frontend && npm run lint` -> passed
-  - `cd frontend && npm run typecheck` -> passed
-  - `cd frontend && npm run build` -> passed
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py` -> ~1196 passed (~4min)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~34 passed (~3min)
+  - Full baseline: ~1230 tests, ~7min total
+  - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
+  - `cd frontend && npm run lint` -> passed (2026-04-28)
+  - `cd frontend && npm run typecheck` -> passed (2026-04-28)
+  - `cd frontend && npm run build` -> passed, 1973 modules (2026-04-28)
 - Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1973 modules in production bundle.
 - Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
 - Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23. Multi-chapter generation completed in 2026-04-26 (summarization, prior context propagation, ManuscriptDocument auto-creation).
