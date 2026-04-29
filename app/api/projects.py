@@ -89,6 +89,7 @@ def build_projects_router(
     mythos_service: _MythosServiceProtocol | None = None,
     pattern_service: _PatternServiceProtocol | None = None,
     import_job_manager: Any | None = None,
+    extraction_job_manager: Any | None = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
@@ -195,41 +196,139 @@ def build_projects_router(
             except KeyError:
                 raise HTTPException(status_code=404, detail=f"Import {import_id} not found or expired")
 
-    if mythos_service is not None:
-        @router.post("/import-mythos", response_model=MythosExtractionResponse, status_code=201)
-        def import_mythos(request: MythosExtractionRequest) -> MythosExtractionResponse:
-            return handle_service_error(
-                lambda: mythos_service.extract(request),
-                MythosExtractionError,
+    if mythos_service is not None and extraction_job_manager is not None:
+        from app.schemas.extraction_progress import ExtractionSubmitResponse, ExtractionProgressResponse
+
+        def _run_mythos_worker(
+            mythos_service: Any,
+            request: MythosExtractionRequest,
+            job_manager: Any,
+            extraction_id: str,
+        ) -> dict[str, Any]:
+            def on_progress(phase: str, data: dict[str, Any]) -> None:
+                job_manager.update_progress(extraction_id, phase=phase, **data)
+
+            job_manager.update_progress(extraction_id, status="running", phase="initializing")
+            response = mythos_service.extract_with_progress(request, on_progress)
+
+            if response.status == "completed" and response.extraction:
+                return {
+                    "project_id": response.project_id,
+                    "source_corpus": response.extraction.source_corpus or "",
+                    "archetypal_patterns": response.extraction.archetypal_patterns,
+                    "narrative_structures": response.extraction.narrative_structures,
+                    "world_rules": response.extraction.cosmic_rules,
+                    "symbolic_motifs": response.extraction.symbolic_motifs,
+                }
+            else:
+                raise Exception(response.error or "Mythos extraction failed")
+
+        @router.post("/import-mythos", response_model=ExtractionSubmitResponse, status_code=202)
+        def import_mythos(request: MythosExtractionRequest):
+            if not request.text or len(request.text.strip()) < 50:
+                raise HTTPException(status_code=400, detail="Text must be at least 50 characters")
+
+            extraction_id = extraction_job_manager.submit(
+                _run_mythos_worker,
+                mythos_service=mythos_service,
+                request=request,
+                job_manager=extraction_job_manager,
+            )
+            return ExtractionSubmitResponse(extraction_id=extraction_id)
+
+    if pattern_service is not None and extraction_job_manager is not None:
+        from app.schemas.extraction_progress import ExtractionSubmitResponse as _ExtractionSubmitResponse, ExtractionProgressResponse as _ExtractionProgressResponse
+
+        def _run_pattern_worker(
+            pattern_service: Any,
+            request: PatternExtractionRequest,
+            job_manager: Any,
+            extraction_id: str,
+        ) -> dict[str, Any]:
+            def on_progress(phase: str, data: dict[str, Any]) -> None:
+                job_manager.update_progress(extraction_id, phase=phase, **data)
+
+            job_manager.update_progress(extraction_id, status="running", phase="initializing")
+            response = pattern_service.extract_with_progress(
+                text=request.text,
+                source_type=request.source_type,
+                generation_mode=request.generation_mode,
+                project_id=request.project_id,
+                source_corpus=request.source_corpus,
+                on_progress=on_progress,
             )
 
-    if pattern_service is not None:
-        @router.post("/import-patterns", response_model=PatternExtractionResponse, status_code=201)
-        def import_patterns(request: PatternExtractionRequest) -> PatternExtractionResponse:
-            return handle_service_error(
-                lambda: pattern_service.extract(
-                    text=request.text,
-                    source_type=request.source_type,
-                    generation_mode=request.generation_mode,
-                    project_id=request.project_id,
-                    source_corpus=request.source_corpus,
-                ),
-                PatternExtractionError,
-            )
+            if response.status == "completed" and response.extraction:
+                return {
+                    "project_id": response.project_id,
+                    "source_corpus": response.extraction.source_corpus or "",
+                    "archetypal_patterns": response.extraction.archetypal_patterns,
+                    "narrative_structures": response.extraction.narrative_structures,
+                    "world_rules": response.extraction.world_rules,
+                    "symbolic_motifs": response.extraction.symbolic_motifs,
+                }
+            else:
+                raise Exception(response.error or "Pattern extraction failed")
 
-        @router.post("/{project_id}/extract-patterns", response_model=PatternExtractionResponse, status_code=201)
-        def extract_patterns(
+        def _run_project_pattern_worker(
+            pattern_service: Any,
             project_id: str,
             request: ExtractPatternsRequest,
-        ) -> PatternExtractionResponse:
-            return handle_service_error(
-                lambda: pattern_service.extract_from_project(
-                    project_id=project_id,
-                    source_type=request.source_type,
-                    generation_mode=request.generation_mode,
-                    source_corpus=request.source_corpus,
-                ),
-                PatternExtractionError,
+            job_manager: Any,
+            extraction_id: str,
+        ) -> dict[str, Any]:
+            def on_progress(phase: str, data: dict[str, Any]) -> None:
+                job_manager.update_progress(extraction_id, phase=phase, **data)
+
+            job_manager.update_progress(extraction_id, status="running", phase="initializing")
+            response = pattern_service.extract_from_project(
+                project_id=project_id,
+                source_type=request.source_type,
+                generation_mode=request.generation_mode,
+                source_corpus=request.source_corpus,
             )
+
+            if response.status == "completed" and response.extraction:
+                return {
+                    "project_id": response.project_id,
+                    "source_corpus": response.extraction.source_corpus or "",
+                    "archetypal_patterns": response.extraction.archetypal_patterns,
+                    "narrative_structures": response.extraction.narrative_structures,
+                    "world_rules": response.extraction.world_rules,
+                    "symbolic_motifs": response.extraction.symbolic_motifs,
+                }
+            else:
+                raise Exception(response.error or "Pattern extraction from project failed")
+
+        @router.post("/import-patterns", response_model=_ExtractionSubmitResponse, status_code=202)
+        def import_patterns(request: PatternExtractionRequest):
+            if not request.text or len(request.text.strip()) < 50:
+                raise HTTPException(status_code=400, detail="Text must be at least 50 characters")
+
+            extraction_id = extraction_job_manager.submit(
+                _run_pattern_worker,
+                pattern_service=pattern_service,
+                request=request,
+                job_manager=extraction_job_manager,
+            )
+            return _ExtractionSubmitResponse(extraction_id=extraction_id)
+
+        @router.post("/{project_id}/extract-patterns", response_model=_ExtractionSubmitResponse, status_code=202)
+        def extract_patterns(project_id: str, request: ExtractPatternsRequest):
+            extraction_id = extraction_job_manager.submit(
+                _run_project_pattern_worker,
+                pattern_service=pattern_service,
+                project_id=project_id,
+                request=request,
+                job_manager=extraction_job_manager,
+            )
+            return _ExtractionSubmitResponse(extraction_id=extraction_id)
+
+        @router.get("/extraction/{extraction_id}", response_model=_ExtractionProgressResponse)
+        def get_extraction_status(extraction_id: str):
+            try:
+                return extraction_job_manager.get_status(extraction_id)
+            except KeyError:
+                raise HTTPException(status_code=404, detail=f"Extraction {extraction_id} not found or expired")
 
     return router

@@ -6,7 +6,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
@@ -97,6 +97,125 @@ class PatternExtractionService:
             generation_mode=generation_mode,
             source_corpus=source_corpus,
         )
+
+    def extract_with_progress(
+        self,
+        text: str,
+        source_type: str,
+        generation_mode: str,
+        project_id: str | None,
+        source_corpus: str | None,
+        on_progress: Callable[[str, dict[str, Any]], None],
+    ) -> PatternExtractionResponse:
+        """Extract patterns with progress callbacks for async operation."""
+        if source_type == "mythology":
+            mythos_request = MythosExtractionRequest(
+                text=text,
+                generation_mode=generation_mode,
+                project_id=project_id,
+                source_corpus=source_corpus,
+            )
+            mythos_response = self._mythos_service.extract_with_progress(
+                mythos_request, on_progress
+            )
+
+            summary: PatternExtractionSummary | None = None
+            if (
+                mythos_response.status == "completed"
+                and mythos_response.extraction is not None
+            ):
+                summary = PatternExtractionSummary(
+                    source_corpus=mythos_response.extraction.source_corpus,
+                    archetypal_patterns=mythos_response.extraction.archetypal_patterns,
+                    narrative_structures=mythos_response.extraction.narrative_structures,
+                    world_rules=mythos_response.extraction.cosmic_rules,
+                    symbolic_motifs=mythos_response.extraction.symbolic_motifs,
+                )
+
+            return PatternExtractionResponse(
+                status=mythos_response.status,
+                project_id=mythos_response.project_id,
+                extraction=summary,
+                error=mythos_response.error,
+            )
+
+        try:
+            on_progress("creating_project", {})
+            if project_id:
+                try:
+                    self._project_service.get_project(project_id)
+                except sqlite3.Error as exc:
+                    raise PatternExtractionError(
+                        f"Database error while verifying project: {exc}"
+                    ) from exc
+                except FileNotFoundError:
+                    raise PatternExtractionError(
+                        f"Project not found: {project_id}"
+                    )
+            else:
+                from ..schemas.projects import ProjectCreateRequest
+
+                create_request = ProjectCreateRequest(
+                    project_name=f"Narrative: {source_corpus or 'Extracted Patterns'}"
+                )
+                response = self._project_service.create_project(create_request)
+                project_id = response.project_id
+
+            on_progress("analyzing", {})
+            inference_request = build_narrative_analysis_request(
+                story_text=text,
+                source_corpus=source_corpus,
+                generation_mode=generation_mode,
+                default_model=self._inferencer.descriptor.default_model,
+            )
+            response = self._inferencer.generate_text(inference_request)
+            analysis = self._parse_llm_json(response.content)
+            if analysis is None:
+                raise PatternExtractionError(
+                    "Failed to parse LLM response as JSON"
+                )
+
+            on_progress("persisting", {})
+            now = datetime.now(timezone.utc).isoformat()
+            conn = sqlite3.connect(self._repository.db_path, timeout=30)
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                self._import_foundation(conn, project_id, analysis, now)
+                self._import_world_bible(conn, project_id, analysis, now)
+                self._import_entities(conn, project_id, analysis, now)
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                conn.close()
+
+            on_progress("updating_manifest", {})
+            self._update_manifest(project_id, analysis)
+
+            return PatternExtractionResponse(
+                status="completed",
+                project_id=project_id,
+                extraction=PatternExtractionSummary(
+                    source_corpus=analysis.source_corpus,
+                    archetypal_patterns=len(analysis.archetypal_patterns),
+                    narrative_structures=len(analysis.narrative_structures),
+                    world_rules=len(analysis.world_rules),
+                    symbolic_motifs=len(analysis.symbolic_motifs),
+                ),
+            )
+        except PatternExtractionError as exc:
+            return PatternExtractionResponse(
+                status="failed",
+                project_id=project_id or "",
+                error=str(exc),
+            )
+        except InferenceBackendError as exc:
+            return PatternExtractionResponse(
+                status="failed",
+                project_id=project_id or "",
+                error=f"LLM service unavailable: {exc.code}",
+            )
 
     def _extract_mythology(
         self,

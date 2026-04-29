@@ -1140,7 +1140,10 @@ class TestImportPatternsEndpoint:
                 f"import-patterns endpoint not registered: {response.status_code}"
             )
 
-    def test_import_patterns_returns_201_on_success(self, tmp_path: Path) -> None:
+    def test_import_patterns_returns_202_on_submit(self, tmp_path: Path) -> None:
+        """import-patterns now returns 202 with extraction_id for async processing."""
+        import time
+
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1150,12 +1153,22 @@ class TestImportPatternsEndpoint:
             response = client.post(
                 "/projects/import-patterns",
                 json={
-                    "text": "Once upon a time",
+                    "text": "This is a sufficiently long story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
                     "generation_mode": "same_world",
                 },
             )
-            assert response.status_code == 201
+            assert response.status_code == 202
+            body = response.json()
+            assert "extraction_id" in body
+            # Poll until completion or failure
+            extraction_id = body["extraction_id"]
+            for _ in range(30):
+                time.sleep(0.5)
+                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                assert status_resp.status_code == 200
+                if status_resp.json()["status"] in ("completed", "failed"):
+                    break
 
     def test_import_patterns_validates_source_type(self, tmp_path: Path) -> None:
         from fastapi.testclient import TestClient
@@ -1192,7 +1205,7 @@ class TestImportPatternsEndpoint:
             assert response.status_code == 422
 
     def test_import_patterns_accepts_request_body(self, tmp_path: Path) -> None:
-        """import-patterns accepts a JSON request body, not query params."""
+        """import-patterns accepts a JSON request body, not query params. Returns 202 for async."""
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1202,14 +1215,16 @@ class TestImportPatternsEndpoint:
             response = client.post(
                 "/projects/import-patterns",
                 json={
-                    "text": "Once upon a time",
+                    "text": "This is a sufficiently long story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
                     "generation_mode": "same_world",
                     "project_id": None,
                     "source_corpus": "Test Corpus",
                 },
             )
-            assert response.status_code == 201
+            assert response.status_code == 202
+            body = response.json()
+            assert "extraction_id" in body
 
     def test_import_patterns_rejects_missing_text(self, tmp_path: Path) -> None:
         """import-patterns rejects requests without required 'text' field."""
@@ -1392,7 +1407,10 @@ class TestExtractPatternsEndpoint:
                 f"extract-patterns endpoint not registered: {response.status_code}"
             )
 
-    def test_extract_patterns_returns_201_on_success(self, tmp_path: Path) -> None:
+    def test_extract_patterns_returns_202_on_submit(self, tmp_path: Path) -> None:
+        """extract-patterns now returns 202 with extraction_id for async processing."""
+        import time
+
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1413,11 +1431,22 @@ class TestExtractPatternsEndpoint:
                     "generation_mode": "same_world",
                 },
             )
-            # Returns 201 with status=failed (no manuscript docs) but endpoint is reachable
-            assert response.status_code == 201
+            assert response.status_code == 202
+            body = response.json()
+            assert "extraction_id" in body
+            # Poll until completion or failure (will fail due to no manuscript docs)
+            extraction_id = body["extraction_id"]
+            for _ in range(30):
+                time.sleep(0.5)
+                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                assert status_resp.status_code == 200
+                if status_resp.json()["status"] == "failed":
+                    break
 
     def test_extract_patterns_errors_when_no_manuscript_docs(self, tmp_path: Path) -> None:
-        """extract-patterns returns error when project has no manuscript documents."""
+        """extract-patterns returns error when project has no manuscript documents (async)."""
+        import time
+
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1438,16 +1467,24 @@ class TestExtractPatternsEndpoint:
                     "generation_mode": "same_world",
                 },
             )
-            assert response.status_code == 201
-            body = response.json()
-            assert body["status"] == "failed"
-            assert "No manuscript documents found" in body["error"]
+            assert response.status_code == 202
+            extraction_id = response.json()["extraction_id"]
+            # Poll until failed
+            for _ in range(30):
+                time.sleep(0.5)
+                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                assert status_resp.status_code == 200
+                data = status_resp.json()
+                if data["status"] == "failed":
+                    assert "No manuscript documents found" in (data.get("error") or "")
+                    break
 
     def test_extract_patterns_retrieves_text_from_manuscript_docs(
         self, tmp_path: Path
     ) -> None:
-        """extract-patterns retrieves source text from manuscript documents."""
+        """extract-patterns retrieves source text from manuscript documents (async)."""
         import sqlite3
+        import time
 
         from fastapi.testclient import TestClient
 
@@ -1476,7 +1513,7 @@ class TestExtractPatternsEndpoint:
                         document_id, project_id, title, content, version, created_at, updated_at
                     ) VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
                     """,
-                    (doc_id, project_id, "Chapter 1", "This is the story content."),
+                    (doc_id, project_id, "Chapter 1", "This is the story content. It has enough text to meet the minimum requirement for extraction."),
                 )
                 conn.commit()
             finally:
@@ -1489,12 +1526,19 @@ class TestExtractPatternsEndpoint:
                     "generation_mode": "same_world",
                 },
             )
-            assert response.status_code == 201
-            body = response.json()
-            # Key verification: error should NOT be about missing docs
-            # (it may fail on LLM parsing with stub backend, that's fine)
-            err = body.get("error", "")
-            assert "No manuscript documents found" not in err
+            assert response.status_code == 202
+            extraction_id = response.json()["extraction_id"]
+            # Poll until terminal state
+            for _ in range(30):
+                time.sleep(0.5)
+                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                assert status_resp.status_code == 200
+                data = status_resp.json()
+                if data["status"] in ("completed", "failed"):
+                    # Key verification: error should NOT be about missing docs
+                    err = data.get("error") or ""
+                    assert "No manuscript documents found" not in err
+                    break
 
     def test_extract_patterns_validates_source_type(self, tmp_path: Path) -> None:
         """extract-patterns validates source_type via PatternExtractionRequest."""
@@ -1593,7 +1637,7 @@ class TestMythosBackwardCompatibility:
     """Task 8: Verify mythology source_type still works via delegation."""
 
     def test_import_mythos_endpoint_still_functions(self, tmp_path: Path) -> None:
-        """POST /projects/import-mythos continues to work independently."""
+        """POST /projects/import-mythos continues to work independently (async, returns 202)."""
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1603,7 +1647,7 @@ class TestMythosBackwardCompatibility:
             resp = client.post(
                 "/projects/import-mythos",
                 json={
-                    "text": "The gods of Olympus waged war.",
+                    "text": "The gods of Olympus waged war against the titans in an epic battle that shaped the cosmos.",
                     "source_corpus": "Greek Mythology",
                     "generation_mode": "same_world",
                 },
@@ -1612,7 +1656,9 @@ class TestMythosBackwardCompatibility:
             assert resp.status_code not in (404, 405), (
                 f"import-mythos endpoint broken: {resp.status_code}"
             )
-            assert resp.status_code == 201
+            assert resp.status_code == 202
+            body = resp.json()
+            assert "extraction_id" in body
 
     def test_mythology_source_type_delegates_via_pattern_service(self) -> None:
         """source_type='mythology' delegates to MythosExtractionService through PatternExtractionService."""
@@ -1702,7 +1748,7 @@ class TestServiceWiringIntegration:
     """Task 8: End-to-end wiring tests with build_app()."""
 
     def test_mythos_and_pattern_endpoints_coexist(self, tmp_path: Path) -> None:
-        """Both import-mythos and import-patterns endpoints are accessible from the same app."""
+        """Both import-mythos and import-patterns endpoints are accessible from the same app (async)."""
         from fastapi.testclient import TestClient
 
         with patch_env_tmpdir(tmp_path):
@@ -1713,22 +1759,22 @@ class TestServiceWiringIntegration:
             mythos_resp = client.post(
                 "/projects/import-mythos",
                 json={
-                    "text": "Norse myth text.",
+                    "text": "The Norse myths tell of Odin and Thor, the gods who shaped the world and fought eternal battles against chaos.",
                     "source_corpus": "Norse Mythology",
                     "generation_mode": "same_world",
                 },
             )
-            assert mythos_resp.status_code == 201
+            assert mythos_resp.status_code == 202
 
             pattern_resp = client.post(
                 "/projects/import-patterns",
                 json={
-                    "text": "Narrative text.",
+                    "text": "This is a sufficiently long narrative story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
                     "generation_mode": "same_world",
                 },
             )
-            assert pattern_resp.status_code == 201
+            assert pattern_resp.status_code == 202
 
     def test_build_app_does_not_raise(self, tmp_path: Path) -> None:
         """build_app() completes without raising any exceptions."""

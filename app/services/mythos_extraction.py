@@ -6,7 +6,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
@@ -70,6 +70,52 @@ class MythosExtractionService:
             )
             self._transactional_import(project_id, analysis)
             self._update_manifest(project_id, analysis)
+            return MythosExtractionResponse(
+                project_id=project_id,
+                status="completed",
+                extraction=ExtractionSummary(
+                    source_corpus=analysis.source_corpus,
+                    archetypal_patterns=len(analysis.archetypal_patterns),
+                    narrative_structures=len(analysis.narrative_structures),
+                    cosmic_rules=len(analysis.cosmic_rules),
+                    symbolic_motifs=len(analysis.symbolic_motifs),
+                ),
+            )
+        except MythosExtractionError as exc:
+            return MythosExtractionResponse(
+                project_id=project_id,
+                status="failed",
+                error=str(exc),
+            )
+        except InferenceBackendError as exc:
+            return MythosExtractionResponse(
+                project_id=project_id,
+                status="failed",
+                error=f"LLM service unavailable: {exc.code}",
+            )
+
+    def extract_with_progress(
+        self,
+        request: MythosExtractionRequest,
+        on_progress: Callable[[str, dict[str, Any]], None],
+    ) -> MythosExtractionResponse:
+        """Extract mythos patterns with progress callbacks for async operation."""
+        project_id = ""
+        try:
+            on_progress("creating_project", {})
+            project_id = self._create_project(request)
+
+            on_progress("analyzing", {})
+            analysis = self._analyze_mythos(
+                request.text, request.source_corpus, request.generation_mode
+            )
+
+            on_progress("persisting", {})
+            self._transactional_import(project_id, analysis)
+
+            on_progress("updating_manifest", {})
+            self._update_manifest(project_id, analysis)
+
             return MythosExtractionResponse(
                 project_id=project_id,
                 status="completed",

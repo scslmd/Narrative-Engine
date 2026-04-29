@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { submitImport, getImportStatus } from '../../services/storyImport';
-import { extractMythos } from '../../services/mythosExtraction';
-import { importPatterns } from '../../services/patternExtraction';
-import type { StoryImportResponse } from '../../types/storyImport';
-import type { PatternExtractionRequest, PatternExtractionResponse } from '../../types/patternExtraction';
-import type { MythosExtractionResponse } from '../../types/mythosExtraction';
+import { submitMythosExtraction, getExtractionStatus as getMythosExtractionStatus } from '../../services/mythosExtraction';
+import { submitPatternExtraction, getExtractionStatus as getPatternExtractionStatus } from '../../services/patternExtraction';
+import type { PatternExtractionRequest } from '../../types/patternExtraction';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +33,8 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   const [warnings, setWarnings] = useState<string[]>([]);
   const [importId, setImportId] = useState<string | null>(null);
   const [importPhase, setImportPhase] = useState('');
+  const [extractionId, setExtractionId] = useState<string | null>(null);
+  const [extractionPhase, setExtractionPhase] = useState('');
   const [chaptersProcessed, setChaptersProcessed] = useState(0);
   const [totalChapters, setTotalChapters] = useState(0);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -66,8 +66,6 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
     setIsImporting(true);
 
     try {
-      let response: StoryImportResponse | PatternExtractionResponse | MythosExtractionResponse;
-
       if (importMode === 'patterns') {
         const patternRequest: PatternExtractionRequest = {
           text: storyText,
@@ -75,31 +73,73 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
           generation_mode: patternGenMode,
           source_corpus: sourceCorpus.trim() || null,
         };
-        response = await importPatterns(patternRequest);
+        const submit = await submitPatternExtraction(patternRequest);
+        setExtractionId(submit.extraction_id);
+        setExtractionPhase('Extracting patterns...');
 
-        if (response.status === 'completed') {
-          addToast('Patterns extracted successfully', 'success');
-          navigate(`/workspace/${response.project_id}/plan`);
-          queryClient.invalidateQueries({ queryKey: ['projects'] });
-        } else {
-          addToast(response.error || 'Pattern extraction failed', 'error');
-          setError(response.error || 'Pattern extraction failed.');
-        }
+        pollRef.current = setInterval(async () => {
+          try {
+            const progress = await getPatternExtractionStatus(submit.extraction_id);
+            setExtractionPhase(progress.phase || 'Processing...');
+
+            if (progress.status === 'completed') {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setExtractionId(null);
+              addToast('Patterns extracted successfully', 'success');
+              navigate('/workspace/plan');
+              queryClient.invalidateQueries({ queryKey: ['projects'] });
+              onClose();
+            } else if (progress.status === 'failed') {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setExtractionId(null);
+              const errorMsg = progress.error || 'Pattern extraction failed';
+              setError(errorMsg);
+              addToast(errorMsg, 'error');
+            }
+          } catch {
+            // Keep polling on transient errors
+          }
+        }, 2000);
+
+        return;
       } else if (importMode === 'mythos') {
-        response = await extractMythos({
+        const mythosSubmit = await submitMythosExtraction({
           text: storyText,
           source_corpus: sourceCorpus.trim() || null,
           generation_mode: generationMode,
         });
+        setExtractionId(mythosSubmit.extraction_id);
+        setExtractionPhase('Extracting mythos...');
 
-        if (response.status === 'completed') {
-          addToast('Mythos extracted successfully', 'success');
-          navigate(`/workspace/${response.project_id}`);
-          queryClient.invalidateQueries({ queryKey: ['projects'] });
-        } else {
-          addToast(response.error || 'Mythos extraction failed', 'error');
-          setError(response.error || 'Mythos extraction failed.');
-        }
+        pollRef.current = setInterval(async () => {
+          try {
+            const progress = await getMythosExtractionStatus(mythosSubmit.extraction_id);
+            setExtractionPhase(progress.phase || 'Processing...');
+
+            if (progress.status === 'completed' && progress.result) {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setExtractionId(null);
+              addToast('Mythos extracted successfully', 'success');
+              navigate(`/workspace/${progress.result.project_id}`);
+              queryClient.invalidateQueries({ queryKey: ['projects'] });
+              onClose();
+            } else if (progress.status === 'failed') {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setIsImporting(false);
+              setExtractionId(null);
+              const errorMsg = progress.error || 'Mythos extraction failed';
+              setError(errorMsg);
+              addToast(errorMsg, 'error');
+            }
+          } catch {
+            // Keep polling on transient errors
+          }
+        }, 2000);
+
+        return;
       } else {
         const formData = new FormData();
         formData.append('story_text', storyText);
@@ -506,7 +546,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
             <div className="flex flex-col items-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
               <p className="mt-4 text-sm text-gray-600">
-                {importPhase || 'Analyzing...'}
+                {extractionPhase || importPhase || 'Analyzing...'}
               </p>
               {totalChapters > 0 && (
                 <div className="mt-2 w-full max-w-xs">
@@ -533,6 +573,19 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
                   className="mt-4 text-sm text-gray-500 hover:text-gray-700"
                 >
                   Cancel (import will continue in background)
+                </button>
+              )}
+              {extractionId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pollRef.current) clearInterval(pollRef.current);
+                    setIsImporting(false);
+                    setExtractionId(null);
+                  }}
+                  className="mt-4 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel (extraction will continue in background)
                 </button>
               )}
             </div>
