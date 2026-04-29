@@ -8,6 +8,7 @@ import type { MythosExtractionResponse } from '../../types/mythosExtraction';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../hooks/useToast';
 
 interface StoryImportModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ type ImportMode = 'story' | 'mythos' | 'patterns';
 export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): React.ReactElement {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [projectName, setProjectName] = useState('');
   const [storyText, setStoryText] = useState('');
   const [genre, setGenre] = useState('');
@@ -76,9 +78,11 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
         response = await importPatterns(patternRequest);
 
         if (response.status === 'completed') {
+          addToast('Patterns extracted successfully', 'success');
           navigate(`/workspace/${response.project_id}/plan`);
           queryClient.invalidateQueries({ queryKey: ['projects'] });
         } else {
+          addToast(response.error || 'Pattern extraction failed', 'error');
           setError(response.error || 'Pattern extraction failed.');
         }
       } else if (importMode === 'mythos') {
@@ -89,9 +93,11 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
         });
 
         if (response.status === 'completed') {
+          addToast('Mythos extracted successfully', 'success');
           navigate(`/workspace/${response.project_id}`);
           queryClient.invalidateQueries({ queryKey: ['projects'] });
         } else {
+          addToast(response.error || 'Mythos extraction failed', 'error');
           setError(response.error || 'Mythos extraction failed.');
         }
       } else {
@@ -117,6 +123,8 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               setIsImporting(false);
               setImportId(null);
 
+              addToast(`Import completed${progress.result.chapters_processed ? ` (${progress.result.chapters_processed} chapters)` : ''}`, 'success');
+
               if (progress.result.warnings?.length > 0) {
                 setWarnings(progress.result.warnings);
               }
@@ -127,6 +135,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               if (pollRef.current) clearInterval(pollRef.current);
               setIsImporting(false);
               setImportId(null);
+              addToast(progress.error || 'Import failed', 'error');
               setError(progress.error || 'Import failed');
             }
           } catch {
@@ -145,6 +154,14 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   };
 
   if (!isOpen) return <></>;
+
+  const charCount = storyText.length;
+  const wordCount = storyText.trim() ? storyText.trim().split(/\s+/).length : 0;
+  const estimatedTime = charCount > 30000
+    ? `${Math.ceil(charCount / 10000 * 2)}-${Math.ceil(charCount / 10000 * 4)} min`
+    : charCount > 5000
+      ? '1-3 min'
+      : '< 1 min';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -407,6 +424,17 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               }
               className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2.5 text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none font-mono"
             />
+
+          {importMode === 'story' && storyText && (
+            <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+              <span>{charCount.toLocaleString()} characters</span>
+              <span>{wordCount.toLocaleString()} words</span>
+              <span>~{estimatedTime} to process</span>
+              {charCount > 100000 && (
+                <span className="text-amber-600">Large file — may take longer</span>
+              )}
+            </div>
+          )}
           </div>
 
           {importMode === 'story' && (
@@ -447,6 +475,19 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
               <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
+          )}
+
+          {error && !isImporting && (
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                handleSubmit(new Event('submit') as unknown as React.FormEvent);
+              }}
+              className="mt-2 px-4 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+            >
+              Retry Import
+            </button>
           )}
 
           {warnings.length > 0 && (

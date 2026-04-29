@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ToastProvider } from './hooks/useToast'
+import { ToastContainer } from './components/ui/Toast'
 import { Layout } from './components/Layout'
 import { ProjectList } from './views/ProjectList'
 import { Workspace } from './views/Workspace'
@@ -21,24 +23,27 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<ProjectList />} />
-            <Route path="/workspace/:projectId" element={<Workspace />}>
-              <Route index element={<Navigate to="plan" replace />} />
-              <Route path="plan" element={<PlanningView />} />
-              <Route path="write" element={<WritingView />} />
-              <Route path="write/:chapterId" element={<WritingView />} />
-              <Route path="review" element={<ReviewView />} />
-              <Route path="inspect" element={<InspectView />} />
-              <Route path="inspect/:jobId" element={<InspectView />} />
-              <Route path="braindump" element={<BrainDumpView />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<ProjectList />} />
+              <Route path="/workspace/:projectId" element={<Workspace />}>
+                <Route index element={<Navigate to="plan" replace />} />
+                <Route path="plan" element={<PlanningView />} />
+                <Route path="write" element={<WritingView />} />
+                <Route path="write/:chapterId" element={<WritingView />} />
+                <Route path="review" element={<ReviewView />} />
+                <Route path="inspect" element={<InspectView />} />
+                <Route path="inspect/:jobId" element={<InspectView />} />
+                <Route path="braindump" element={<BrainDumpView />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+          <ToastContainer />
+        </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   )
 }
