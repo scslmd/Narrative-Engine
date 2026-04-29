@@ -178,6 +178,8 @@ def test_local_executor_runs_real_architect_path_for_p100_with_fake_inferencer(t
                 "prompt_tokens": 101,
                 "completion_tokens": 202,
                 "total_tokens": 303,
+                "cached_prompt_tokens": None,
+                "prompt_cache_write_tokens": None,
             },
             "artifact_path": str(output_path),
         }

@@ -238,6 +238,8 @@ def test_local_executor_runs_real_compiler_path_for_p400_with_fake_inferencer(tm
                 "prompt_tokens": 377,
                 "completion_tokens": 455,
                 "total_tokens": 832,
+                "cached_prompt_tokens": None,
+                "prompt_cache_write_tokens": None,
             },
             "artifact_path": str(output_path),
         }

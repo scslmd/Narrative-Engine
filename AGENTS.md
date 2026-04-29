@@ -5,7 +5,9 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - `python -m pytest -q -p no:cacheprovider` -> `1103 collected` (critical subset: 217/217 passed)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py` -> ~1160 passed (~50s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~10 passed (~30s)
+  - Full baseline: ~1179 tests, ~80s total (vs. ~250s sequential)
   - `cd frontend && npm run lint` -> passed
   - `cd frontend && npm run typecheck` -> passed
   - `cd frontend && npm run build` -> passed
@@ -82,6 +84,19 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 
 - Use `-m "not integration"` for fast feedback during development.
 - Use the unmarked full suite for merge-readiness validation (unchanged).
+
+### Clustered Parallel Execution (Recommended)
+```bash
+# Step 1: Run parallel-safe tests in clusters (fast, ~50s, ~1160 tests)
+python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py
+
+# Step 2: Run serial-only tests last with extended timeout (~30s, ~10 tests)
+python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records
+```
+
+- Parallel cluster runs first because it's fast and catches most failures immediately.
+- Serial tests run last because they share global state (log file, executor threads) and time out if mixed with parallel workers.
+- Full baseline: ~1179 tests, ~80s total (vs. ~250s sequential).
 
 ### Quality Review Helper
 ```bash
@@ -327,6 +342,11 @@ def test_create_branch(tmp_path):
 pytest -n auto --dist=loadfile --basetemp=.tmp_xdist
 ```
 
+**Recommended execution order** (parallel cluster first, serial last):
+1. Run parallel-safe tests in clusters — catches most failures fast (~50s)
+2. Run serial-only tests separately — avoids global state contamination (~30s)
+See "Clustered Parallel Execution" above for exact commands.
+
 **Write parallel-safe tests** when possible. A test is parallel-safe if it:
 - Uses `tmp_path` for all file/db paths (isolated per test)
 - Does NOT read/write shared global state (`settings.structured_log_filename`, env vars, singleton caches)
@@ -365,13 +385,14 @@ pytestmark = [pytest.mark.integration, pytest.mark.xdist_group(name="serial-my-f
 1. Frontend: `cd frontend && npm run build`
 2. Frontend: `cd frontend && npm run lint`
 3. Frontend: `cd frontend && npm run typecheck`
-4. Backend: `python -m pytest -q -p no:cacheprovider`
+4. Backend: Clustered parallel execution (see "Clustered Parallel Execution" above)
 
 ### Merge-Ready Means
 
 Do not call the repo merge-ready unless all four of these are green:
 
-- `python -m pytest -q -p no:cacheprovider`
+- `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py`
+- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`

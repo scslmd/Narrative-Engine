@@ -223,6 +223,8 @@ def test_local_executor_runs_real_sequencer_path_for_p200_with_fake_inferencer(t
                 "prompt_tokens": 131,
                 "completion_tokens": 232,
                 "total_tokens": 363,
+                "cached_prompt_tokens": None,
+                "prompt_cache_write_tokens": None,
             },
             "artifact_path": str(output_path),
         }
