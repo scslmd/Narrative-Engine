@@ -34,6 +34,7 @@ from ..schemas.story_import import (
     StoryImportWorldEntry,
 )
 from ..settings import settings
+from .multi_pass_import import MULTI_PASS_THRESHOLD, MultiPassImportService
 from .projects import ProjectService
 from .runtime_prompts import build_import_analysis_request
 
@@ -100,30 +101,55 @@ class StoryImportService:
         self._repository = repository
         self._inferencer = inferencer
         self._root_dir = root_dir or settings.root_dir
+        self._multi_pass_service = MultiPassImportService(inferencer)
 
     def import_story(self, request: StoryImportRequest) -> StoryImportResponse:
         """Main entry point. Synchronous processing flow.
 
+        Routes to single-pass or multi-pass analysis based on story size.
+        Stories > MULTI_PASS_THRESHOLD chars use multi-pass chunking.
+
         Steps:
         1. Validate request (text length, project_id if provided)
         2. Create project (if project_id not provided, create new)
-        3. Call LLM to analyze and extract structured data
+        3. Analyze story (single-pass for small, multi-pass for large)
         4. Validate LLM output against StoryImportAnalysis schema
         5. Create all entities (foundation, characters, world bible, arcs)
         6. Update manifest with LLM metadata
         7. Return response
         """
         project_id = ""
+        analysis_mode = "single_pass"
+        chapters_processed = 0
+        total_chapters = 0
+        warnings: list[str] = []
+
         try:
             project_id = self._create_project(request)
-            analysis = self._analyze_story(request.story_text, request.genre, request.tone)
+
+            # Route based on story size
+            if len(request.story_text) > MULTI_PASS_THRESHOLD:
+                analysis_mode = "multi_pass"
+                analysis = self._multi_pass_service.analyze_large_story(
+                    request.story_text,
+                    genre_hint=request.genre,
+                    tone_hint=request.tone,
+                )
+                chapters_processed = len(analysis.sequences[0].chapters) if analysis.sequences else 0
+                total_chapters = chapters_processed
+            else:
+                analysis = self._analyze_story(request.story_text, request.genre, request.tone)
+
             self._transactional_import(project_id, analysis)
             self._update_manifest(project_id, analysis)
             return StoryImportResponse(
                 project_id=project_id,
                 status="completed",
                 message=f"Successfully imported story into project '{analysis.project_name}'",
-                warnings=[],
+                warnings=warnings,
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
             )
         except StoryImportError as exc:
             return StoryImportResponse(
@@ -131,6 +157,9 @@ class StoryImportService:
                 status="failed",
                 message=str(exc),
                 warnings=["Import failed - partial data may exist on retry"],
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
             )
         except InferenceBackendError as exc:
             return StoryImportResponse(
@@ -138,6 +167,9 @@ class StoryImportService:
                 status="failed",
                 message=f"LLM service unavailable: {exc.code}",
                 warnings=["Retry the import when the inference service is available"],
+                chapters_processed=chapters_processed,
+                total_estimated_chapters=total_chapters,
+                analysis_mode=analysis_mode,
             )
 
     def _create_project(self, request: StoryImportRequest) -> str:
@@ -340,6 +372,21 @@ class StoryImportService:
                 taboos_json=json_safe(char_data.taboos or []),
                 change_axis=_to_none(char_data.change_axis),
                 continuity_facts_json=json_safe(char_data.continuity_facts or []),
+                # Deep analysis fields (multi-pass import)
+                aliases_json=json_safe(getattr(char_data, "aliases", []) or []),
+                physical_description=_to_none(getattr(char_data, "physical_description", None)),
+                personality_traits_json=json_safe(getattr(char_data, "personality_traits", []) or []),
+                motives=_to_none(getattr(char_data, "motives", None)),
+                relationships_json=json_safe(getattr(char_data, "relationships", []) or []),
+                character_arc=_to_none(getattr(char_data, "character_arc", None)),
+                symbolic_role=_to_none(getattr(char_data, "symbolic_role", None)),
+                dialogue_patterns=_to_none(getattr(char_data, "dialogue_patterns", None)),
+                psychological_depth=_to_none(getattr(char_data, "psychological_depth", None)),
+                narrative_purpose=_to_none(getattr(char_data, "narrative_purpose", None)),
+                thematic_significance=_to_none(getattr(char_data, "thematic_significance", None)),
+                impact_on_others=_to_none(getattr(char_data, "impact_on_others", None)),
+                first_appearance_chapter=_to_none(getattr(char_data, "first_appearance_chapter", None)),
+                chapter_appearances_json=json_safe(getattr(char_data, "chapter_appearances", []) or []),
             )
 
     def _import_world_bible(

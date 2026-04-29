@@ -361,6 +361,20 @@ CREATE TABLE IF NOT EXISTS character_profiles (
     arc_stage_notes TEXT,
     continuity_facts_json TEXT NOT NULL DEFAULT '[]',
     writer_notes TEXT,
+    aliases_json TEXT NOT NULL DEFAULT '[]',
+    physical_description TEXT,
+    personality_traits_json TEXT NOT NULL DEFAULT '[]',
+    motives TEXT,
+    relationships_json TEXT NOT NULL DEFAULT '[]',
+    character_arc TEXT,
+    symbolic_role TEXT,
+    dialogue_patterns TEXT,
+    psychological_depth TEXT,
+    narrative_purpose TEXT,
+    thematic_significance TEXT,
+    impact_on_others TEXT,
+    first_appearance_chapter TEXT,
+    chapter_appearances_json TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
@@ -898,6 +912,7 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
         return
 
     _migrate_chapter_plans_add_target_word_count(connection)
+    _migrate_character_profiles_add_deep_analysis(connection)
     connection.executescript(OPERATIONS_SCHEMA)
     _apply_operations_indexes(connection)
 
@@ -905,6 +920,33 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
 def _migrate_chapter_plans_add_target_word_count(connection: sqlite3.Connection) -> None:
     if not _column_exists(connection, "chapter_plans", "target_word_count"):
         connection.execute("ALTER TABLE chapter_plans ADD COLUMN target_word_count INTEGER")
+        connection.commit()
+
+
+def _migrate_character_profiles_add_deep_analysis(connection: sqlite3.Connection) -> None:
+    """Add deep character analysis columns for multi-pass story import."""
+    columns = [
+        ("aliases_json", "TEXT NOT NULL DEFAULT '[]'"),
+        ("physical_description", "TEXT"),
+        ("personality_traits_json", "TEXT NOT NULL DEFAULT '[]'"),
+        ("motives", "TEXT"),
+        ("relationships_json", "TEXT NOT NULL DEFAULT '[]'"),
+        ("character_arc", "TEXT"),
+        ("symbolic_role", "TEXT"),
+        ("dialogue_patterns", "TEXT"),
+        ("psychological_depth", "TEXT"),
+        ("narrative_purpose", "TEXT"),
+        ("thematic_significance", "TEXT"),
+        ("impact_on_others", "TEXT"),
+        ("first_appearance_chapter", "TEXT"),
+        ("chapter_appearances_json", "TEXT NOT NULL DEFAULT '[]'"),
+    ]
+    added = False
+    for col_name, col_type in columns:
+        if not _column_exists(connection, "character_profiles", col_name):
+            connection.execute(f"ALTER TABLE character_profiles ADD COLUMN {col_name} {col_type}")
+            added = True
+    if added:
         connection.commit()
 
 
