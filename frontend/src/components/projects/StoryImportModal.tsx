@@ -7,6 +7,7 @@ import { X, Upload, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../hooks/useToast';
+import { useHealthCheck } from '../../hooks/useHealthCheck';
 
 interface StoryImportModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const { checkBeforeImport } = useHealthCheck();
   const [projectName, setProjectName] = useState('');
   const [storyText, setStoryText] = useState('');
   const [genre, setGenre] = useState('');
@@ -52,6 +54,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
     e.preventDefault();
     setError(null);
     setWarnings([]);
+    await checkBeforeImport();
 
     if (storyText.length < MIN_STORY_LENGTH) {
       setError(`Story text must be at least ${MIN_STORY_LENGTH} characters.`);

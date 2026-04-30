@@ -114,7 +114,10 @@ async def readiness_check() -> dict:
         "status": "ready",
         "components": {
             "database": "ok",
-            "inference_backends": {name: str(state.state) for name, state in circuit_states.items()},
+            "inference": {
+                "backend": settings.inference_backend,
+                "backends": {name: str(state.state) for name, state in circuit_states.items()},
+            },
             "disk_space": "ok",
             "projects_directory": "ok",
         },

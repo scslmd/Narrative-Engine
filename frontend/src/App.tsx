@@ -10,6 +10,7 @@ import { WritingView } from './views/WritingView'
 import { ReviewView } from './views/ReviewView'
 import { InspectView } from './views/InspectView'
 import { BrainDumpView } from './views/BrainDumpView'
+import { useHealthCheck } from './hooks/useHealthCheck'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,8 @@ const queryClient = new QueryClient({
 })
 
 function App() {
+  useHealthCheck();
+
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
