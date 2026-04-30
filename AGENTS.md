@@ -11,8 +11,9 @@
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - `cd frontend && npm run lint` -> passed (2026-04-28)
   - `cd frontend && npm run typecheck` -> passed (2026-04-28)
-  - `cd frontend && npm run build` -> passed, 1973 modules (2026-04-28)
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1973 modules in production bundle.
+  - `cd frontend && npm run build` -> passed, 1977 modules (2026-04-30)
+  - `cd frontend && npm run test` -> 315 passed (~19s)
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1977 modules in production bundle.
 - Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
 - Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23. Multi-chapter generation completed in 2026-04-26 (summarization, prior context propagation, ManuscriptDocument auto-creation).
 - Route-driven workspace state is the current frontend architecture:
@@ -395,6 +396,7 @@ The serial test suite (`test_audit_logging.py` + `test_rate_limiting.py`) was ha
 - `npm run lint` catches unsafe patterns and dead code.
 - `npm run typecheck` catches contract drift.
 - `npm run build` catches integration and bundling issues that lint can miss.
+- `npm run test` runs the Vitest suite (315 tests, ~19s).
 
 ## Build Verification
 
@@ -403,17 +405,19 @@ The serial test suite (`test_audit_logging.py` + `test_rate_limiting.py`) was ha
 1. Frontend: `cd frontend && npm run build`
 2. Frontend: `cd frontend && npm run lint`
 3. Frontend: `cd frontend && npm run typecheck`
-4. Backend: Clustered parallel execution (see "Clustered Parallel Execution" above)
+4. Frontend: `cd frontend && npm run test`
+5. Backend: Clustered parallel execution (see "Clustered Parallel Execution" above)
 
 ### Merge-Ready Means
 
-Do not call the repo merge-ready unless all four of these are green:
+Do not call the repo merge-ready unless all five of these are green:
 
 - `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py`
 - `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`
+- `cd frontend && npm run test`
 
 ## Common Pitfalls
 

@@ -6,7 +6,7 @@ import { flowService } from './flow';
 const mockStage = {
   stage_id: 'stage-1',
   project_id: 'proj-1',
-  stage_kind: 'architect' as any,
+  stage_kind: 'planning',
   display_name: 'Architect',
   description: null,
 };

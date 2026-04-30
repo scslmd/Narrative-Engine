@@ -156,17 +156,18 @@ describe('ProjectList', () => {
 
   it('submits the new project form', async () => {
     const user = userEvent.setup({ delay: 10 });
-    let receivedBody: any = null;
+    let receivedBody: { project_name: string; config: { genre: string; tone_profile: object; story_structure: string } } | null = null;
     server.use(
       http.get('/projects', () => HttpResponse.json([])),
       http.post('/projects/create', async ({ request }) => {
-        receivedBody = await request.json();
+        const body = (await request.json()) as { project_name: string; config: { genre: string; tone_profile: object; story_structure: string } };
+        receivedBody = body;
         return HttpResponse.json({
           project_id: 'new-proj',
-          project_name: receivedBody.project_name,
-          genre: receivedBody.config.genre,
-          tone_profile: receivedBody.config.tone_profile,
-          story_structure: receivedBody.config.story_structure,
+          project_name: body.project_name,
+          genre: body.config.genre,
+          tone_profile: body.config.tone_profile,
+          story_structure: body.config.story_structure,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           manifest: {},
@@ -197,8 +198,8 @@ describe('ProjectList', () => {
 
     await waitFor(() => {
       expect(receivedBody).not.toBeNull();
-      expect(receivedBody.project_name).toBe('New Project');
-      expect(receivedBody.config.genre).toBe('Sci-Fi');
+      expect(receivedBody!.project_name).toBe('New Project');
+      expect(receivedBody!.config.genre).toBe('Sci-Fi');
     });
   });
 

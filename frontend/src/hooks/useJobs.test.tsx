@@ -6,6 +6,7 @@ import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { ToastProvider } from './useToast';
 import { useJobs, useJob, useCreateJob, useJobLogs as useJobLogsFromJobs } from './useJobs';
+import type { JobDetail } from '../lib/jobsApi';
 
 const createQueryClient = () =>
   new QueryClient({
@@ -114,12 +115,12 @@ describe('useCreateJob', () => {
 
     const { result } = renderHook(() => useCreateJob('proj-1'), { wrapper: WithProviders });
 
-    let createdJob: any;
+    let createdJob: JobDetail | undefined;
     await act(async () => {
       createdJob = await result.current.mutateAsync('P-200');
     });
 
-    expect(createdJob.job_id).toBe('j-new');
+    expect(createdJob?.job_id).toBe('j-new');
   });
 });
 
