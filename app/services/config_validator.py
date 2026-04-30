@@ -124,8 +124,10 @@ class ConfigValidator:
     def _validate_database(self) -> bool:
         """Validate database can be opened and written to."""
         import os
+        from app.settings import settings
         
-        db_path = Path(os.getenv("DATABASE_PATH", "narrative_engine.db"))
+        configured_path = os.getenv("DATABASE_PATH", "").strip()
+        db_path = Path(configured_path) if configured_path else settings.operations_db_path
         
         if not db_path.parent.exists():
             try:
@@ -166,8 +168,10 @@ class ConfigValidator:
     def _validate_directories(self) -> bool:
         """Validate required directories exist and are writable (REL-09)."""
         import os
+        from app.settings import settings
         
-        base_dir = Path(os.getenv("PROJECTS_DIR", "projects"))
+        configured_path = os.getenv("PROJECTS_DIR", "").strip()
+        base_dir = Path(configured_path) if configured_path else settings.projects_dir
         
         # Ensure directory exists
         self._ensure_directory_exists(base_dir)

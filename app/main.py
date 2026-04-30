@@ -231,7 +231,7 @@ def _normalize_operation(method: str, path: str) -> str:
     return f'unknown.{suffix}'
 
 
-def build_app() -> FastAPI:
+def build_app(*, start_executor: bool = True) -> FastAPI:
     from .inference import build_inference_backend
     from .services.config_validator import validate_config_at_startup
     from .services.job_manager import JobManager
@@ -305,11 +305,13 @@ def build_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        local_executor.start()
+        if start_executor:
+            local_executor.start()
         try:
             yield
         finally:
-            local_executor.stop()
+            if start_executor:
+                local_executor.stop()
             import_job_manager.shutdown(wait=False)
             extraction_job_manager.shutdown(wait=False)
 

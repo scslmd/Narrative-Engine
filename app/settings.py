@@ -30,6 +30,8 @@ class Settings:
 
     @property
     def projects_dir(self) -> Path:
+        if self._is_pytest_runtime:
+            return self._pytest_runtime_root / "projects"
         return self.data_dir / "projects"
 
     @property

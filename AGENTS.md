@@ -5,8 +5,8 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py` -> ~1196 passed (~4min)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~34 passed (~3min)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1187 passed (~4min)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~15s)
   - Full baseline: ~1230 tests, ~7min total
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - `cd frontend && npm run lint` -> passed (2026-04-28)
@@ -89,10 +89,10 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 ### Clustered Parallel Execution (Recommended)
 ```bash
 # Step 1: Run parallel-safe tests in clusters (fast, ~50s, ~1160 tests)
-python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py
+python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py
 
 # Step 2: Run serial-only tests last with extended timeout (~30s, ~10 tests)
-python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records
+python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records
 ```
 
 - Parallel cluster runs first because it's fast and catches most failures immediately.
@@ -368,9 +368,26 @@ pytestmark = [pytest.mark.integration, pytest.mark.xdist_group(name="serial-my-f
 
 **Known serial-only tests**:
 - `tests/test_audit_logging.py` — shares `settings.structured_log_filename` log file across all TestClient requests. Run with `-n 0`.
+- `tests/test_rate_limiting.py` — creates checker runs that trigger LocalExecutor daemon threads; timing-dependent; was causing hangs when rate-limit middleware executed downstream on 429 (now fixed). Run with `-n 0`.
 - `tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` — starts/stops executor threads
 
 **When adding new tests**: If your test writes to a global path (log, cache, singleton DB), either isolate the path via `tmp_path` or mark it `xdist_group`.
+
+### Post Mortem: Serial Test Hang (2026-04-30)
+
+The serial test suite (`test_audit_logging.py` + `test_rate_limiting.py`) was hanging on test 41/43. Root cause was a feedback loop between two design mistakes:
+
+**Problem 1: Rate-limit middleware executed downstream on 429.** The middleware returned 429 but still called `await self.app(scope, receive, rate_limited_send)`, letting `/v1/role-model-checker/start` execute anyway. "Rejected" requests were creating checker-run state and touching SQLite.
+
+**Fix:** 429 now returns `JSONResponse(status_code=429)` directly without calling the downstream app. Short-circuit before route execution.
+
+**Problem 2: Partial pytest isolation.** `state_dir` and `role_model_reports_dir` were isolated per-test via `PYTEST_CURRENT_TEST`, but `projects_dir` still used the shared `data/projects/`. Every `build_app()` ran `ProjectService.reconcile_projects()` against an ever-growing shared tree. On Windows, accumulated file metadata + SQLite churn pushed late tests into apparent hangs.
+
+**Fix:** `projects_dir` now derives from `_pytest_runtime_root` during pytest, consistent with existing per-test DB/report isolation. Config validation validates those same effective paths.
+
+**Key lesson: Partial isolation is worse than obvious shared-state because it hides the real coupling.** If pytest runtime is supposed to be isolated, every path-bearing service must derive from the same isolation boundary. Verify all path properties (`projects_dir`, `state_dir`, `role_model_reports_dir`, etc.) use `_pytest_runtime_root` when `PYTEST_CURRENT_TEST` is set.
+
+**Result:** Serial suite completes in ~15s instead of hanging indefinitely.
 ```
 
 ### Frontend Checks
@@ -392,8 +409,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.xdist_group(name="serial-my-f
 
 Do not call the repo merge-ready unless all four of these are green:
 
-- `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py`
-- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records`
+- `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py`
+- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`
@@ -409,6 +426,7 @@ Do not call the repo merge-ready unless all four of these are green:
 | Invalid inspect navigation | Only route to inspect screens that can render the resolved run/job id |
 | Dead CTA buttons | Hide, disable, or complete the action; never leave no-op production buttons |
 | Test temp directory conflicts | Use `tmp_path`; do not hardcode runtime paths |
+| Partial pytest isolation hides coupling | If `PYTEST_CURRENT_TEST` isolates some paths, ALL path-bearing services must derive from `_pytest_runtime_root`. Verify `projects_dir`, `state_dir`, `role_model_reports_dir`, etc. are all isolated or none are. |
 | `node_modules` in git | Add to `.gitignore` and unstage before commit |
 | Idempotency conflicts | Same key must have the same payload; otherwise create a new key |
 | Backup restore failures | Verify disk space and backup existence before restore |

@@ -19,7 +19,11 @@ from app.settings import settings
 class ProjectService:
     def __init__(self, root_dir: Path | None = None) -> None:
         self.root_dir = root_dir or settings.root_dir
-        self.projects_dir = self.root_dir / "data" / "projects"
+        self.projects_dir = (
+            settings.projects_dir
+            if self.root_dir == settings.root_dir
+            else self.root_dir / "data" / "projects"
+        )
         self.repository = ProjectRepository(
             settings.operations_db_path if self.root_dir == settings.root_dir else self.root_dir / "data" / "state" / "narrative_ops.db"
         )

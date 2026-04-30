@@ -5,6 +5,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
+from starlette.responses import JSONResponse
+
 
 @dataclass
 class RateLimitConfig:
@@ -130,35 +132,23 @@ class RateLimitMiddleware:
         is_allowed, remaining = self._check_rate_limit(client_ip, limit_key)
         
         if not is_allowed:
-            async def rate_limited_send(message):
-                if message["type"] == "http.response.start":
-                    new_message = {
-                        "type": "http.response.start",
-                        "status": 429,
-                        "headers": [
-                            [b"content-type", b"application/json"],
-                            [b"retry-after", b"60"],
-                            [b"x-ratelimit-limit", str(RATE_LIMITS[limit_key].max_requests).encode()],
-                            [b"x-ratelimit-remaining", b"0"],
-                            [b"x-ratelimit-reset", str(int(time.time()) + 60).encode()],
-                        ],
-                    }
-                    return await send(new_message)
-                elif message["type"] == "http.response.body":
-                    import json
-                    body = json.dumps({
-                        "detail": "Rate limit exceeded. Please retry after 60 seconds.",
-                        "error": "Too Many Requests"
-                    }).encode()
-                    new_message = {
-                        "type": "http.response.body",
-                        "body": body,
-                        "more_body": False,
-                    }
-                    return await send(new_message)
-                return await send(message)
-            
-            return await self.app(scope, receive, rate_limited_send)
+            config = RATE_LIMITS[limit_key]
+            retry_after = str(config.window_seconds)
+            response = JSONResponse(
+                status_code=429,
+                content={
+                    "detail": f"Rate limit exceeded. Please retry after {config.window_seconds} seconds.",
+                    "error": "Too Many Requests",
+                },
+                headers={
+                    "retry-after": retry_after,
+                    "x-ratelimit-limit": str(config.max_requests),
+                    "x-ratelimit-remaining": "0",
+                    "x-ratelimit-reset": str(int(time.time()) + config.window_seconds),
+                },
+            )
+            await response(scope, receive, send)
+            return
         
         # Request allowed - add rate limit headers to response
         original_send = send

@@ -8,15 +8,23 @@ from app.schemas.manifest import Manifest
 from app.settings import settings
 
 
+def _projects_dir_for_root(root_dir: Path | None = None) -> Path:
+    base_dir = root_dir or settings.root_dir
+    if base_dir == settings.root_dir:
+        return settings.projects_dir
+    return base_dir / "data" / "projects"
+
+
 def ensure_project_structure(root_dir: Path | None = None) -> dict[str, Path]:
     base_dir = root_dir or settings.root_dir
+    projects_dir = _projects_dir_for_root(root_dir)
     directories = {
         "app": base_dir / "app",
         "api": base_dir / "app" / "api",
         "schemas": base_dir / "app" / "schemas",
         "services": base_dir / "app" / "services",
         "data": base_dir / "data",
-        "projects": base_dir / "data" / "projects",
+        "projects": projects_dir,
         "models": base_dir / "data" / "models",
         "state": base_dir / "data" / "state",
         "docs": base_dir / "docs",
@@ -33,8 +41,7 @@ def initialize_project_artifacts(
     root_dir: Path | None = None,
 ) -> dict[str, Path]:
     ensure_project_structure(root_dir=root_dir)
-    base_dir = root_dir or settings.root_dir
-    project_dir = base_dir / "data" / "projects" / str(project_id)
+    project_dir = _projects_dir_for_root(root_dir) / str(project_id)
     exports_dir = project_dir / "exports"
     project_dir.mkdir(parents=True, exist_ok=True)
     exports_dir.mkdir(parents=True, exist_ok=True)
