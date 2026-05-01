@@ -14,6 +14,7 @@ from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.sqlite import connect as connect_sqlite
 from ..persistence.story_development import StoryDevelopmentRepository
 from ..utils.db_inserts import (
+    CharacterInsertData,
     hash_id,
     insert_character_profile,
     insert_foundation_profile,
@@ -498,8 +499,9 @@ class StoryImportService:
         """Insert all characters with ON CONFLICT for idempotency."""
         for char_data in analysis.characters:
             char_id = hash_id("import-character", f"{project_id}:{char_data.name}")
-            insert_character_profile(
-                conn, char_id, project_id,
+            insert_character_profile(conn, CharacterInsertData(
+                character_id=char_id,
+                project_id=project_id,
                 display_name=char_data.name,
                 role_in_story=char_data.role or None,
                 archetype=char_data.archetype or None,
@@ -516,7 +518,6 @@ class StoryImportService:
                 taboos_json=json_safe(char_data.taboos or []),
                 change_axis=_to_none(char_data.change_axis),
                 continuity_facts_json=json_safe(char_data.continuity_facts or []),
-                # Deep analysis fields (multi-pass import)
                 aliases_json=json_safe(getattr(char_data, "aliases", []) or []),
                 physical_description=_to_none(getattr(char_data, "physical_description", None)),
                 personality_traits_json=json_safe(getattr(char_data, "personality_traits", []) or []),
@@ -531,7 +532,7 @@ class StoryImportService:
                 impact_on_others=_to_none(getattr(char_data, "impact_on_others", None)),
                 first_appearance_chapter=_to_none(getattr(char_data, "first_appearance_chapter", None)),
                 chapter_appearances_json=json_safe(getattr(char_data, "chapter_appearances", []) or []),
-            )
+            ))
 
     def _import_world_bible(
         self,

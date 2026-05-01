@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
@@ -160,46 +161,49 @@ def insert_world_bible_entry(
     )
 
 
-def insert_character_profile(
-    conn,
-    character_id: str,
-    project_id: str,
-    display_name: str,
-    role_in_story: str,
-    archetype: str | None = None,
-    external_goal: str | None = None,
-    internal_need: str | None = None,
-    misbelief_or_wound: str | None = None,
-    core_fear: str | None = None,
-    primary_strength: str | None = None,
-    fatal_flaw: str | None = None,
-    contradictions_json: str = "[]",
-    backstory_summary: str | None = None,
-    voice_notes: str | None = None,
-    relationship_map_json: str = "[]",
-    secrets_json: str = "[]",
-    values_json: str = "[]",
-    taboos_json: str = "[]",
-    change_axis: str | None = None,
-    arc_stage_notes: str | None = None,
-    continuity_facts_json: str = "[]",
-    writer_notes: str | None = None,
-    # Deep analysis fields (multi-pass import)
-    aliases_json: str = "[]",
-    physical_description: str | None = None,
-    personality_traits_json: str = "[]",
-    motives: str | None = None,
-    relationships_json: str = "[]",
-    character_arc: str | None = None,
-    symbolic_role: str | None = None,
-    dialogue_patterns: str | None = None,
-    psychological_depth: str | None = None,
-    narrative_purpose: str | None = None,
-    thematic_significance: str | None = None,
-    impact_on_others: str | None = None,
-    first_appearance_chapter: str | None = None,
-    chapter_appearances_json: str = "[]",
-) -> None:
+@dataclass
+class CharacterInsertData:
+    """Flat data for inserting a character_profiles row."""
+
+    character_id: str
+    project_id: str
+    display_name: str
+    role_in_story: str
+    archetype: str | None = None
+    external_goal: str | None = None
+    internal_need: str | None = None
+    misbelief_or_wound: str | None = None
+    core_fear: str | None = None
+    primary_strength: str | None = None
+    fatal_flaw: str | None = None
+    contradictions_json: str = field(default="[]")
+    backstory_summary: str | None = None
+    voice_notes: str | None = None
+    relationship_map_json: str = field(default="[]")
+    secrets_json: str = field(default="[]")
+    values_json: str = field(default="[]")
+    taboos_json: str = field(default="[]")
+    change_axis: str | None = None
+    arc_stage_notes: str | None = None
+    continuity_facts_json: str = field(default="[]")
+    writer_notes: str | None = None
+    aliases_json: str = field(default="[]")
+    physical_description: str | None = None
+    personality_traits_json: str = field(default="[]")
+    motives: str | None = None
+    relationships_json: str = field(default="[]")
+    character_arc: str | None = None
+    symbolic_role: str | None = None
+    dialogue_patterns: str | None = None
+    psychological_depth: str | None = None
+    narrative_purpose: str | None = None
+    thematic_significance: str | None = None
+    impact_on_others: str | None = None
+    first_appearance_chapter: str | None = None
+    chapter_appearances_json: str = field(default="[]")
+
+
+def insert_character_profile(conn, profile: CharacterInsertData) -> None:
     """Insert a character_profiles row."""
     now = _now_iso()
     conn.execute(
@@ -258,42 +262,42 @@ def insert_character_profile(
             updated_at = excluded.updated_at
         """,
         (
-            character_id,
-            project_id,
-            display_name,
-            role_in_story,
-            archetype,
-            external_goal,
-            internal_need,
-            misbelief_or_wound,
-            core_fear,
-            primary_strength,
-            fatal_flaw,
-            contradictions_json,
-            backstory_summary,
-            voice_notes,
-            relationship_map_json,
-            secrets_json,
-            values_json,
-            taboos_json,
-            change_axis,
-            arc_stage_notes,
-            continuity_facts_json,
-            writer_notes,
-            aliases_json,
-            physical_description,
-            personality_traits_json,
-            motives,
-            relationships_json,
-            character_arc,
-            symbolic_role,
-            dialogue_patterns,
-            psychological_depth,
-            narrative_purpose,
-            thematic_significance,
-            impact_on_others,
-            first_appearance_chapter,
-            chapter_appearances_json,
+            profile.character_id,
+            profile.project_id,
+            profile.display_name,
+            profile.role_in_story,
+            profile.archetype,
+            profile.external_goal,
+            profile.internal_need,
+            profile.misbelief_or_wound,
+            profile.core_fear,
+            profile.primary_strength,
+            profile.fatal_flaw,
+            profile.contradictions_json,
+            profile.backstory_summary,
+            profile.voice_notes,
+            profile.relationship_map_json,
+            profile.secrets_json,
+            profile.values_json,
+            profile.taboos_json,
+            profile.change_axis,
+            profile.arc_stage_notes,
+            profile.continuity_facts_json,
+            profile.writer_notes,
+            profile.aliases_json,
+            profile.physical_description,
+            profile.personality_traits_json,
+            profile.motives,
+            profile.relationships_json,
+            profile.character_arc,
+            profile.symbolic_role,
+            profile.dialogue_patterns,
+            profile.psychological_depth,
+            profile.narrative_purpose,
+            profile.thematic_significance,
+            profile.impact_on_others,
+            profile.first_appearance_chapter,
+            profile.chapter_appearances_json,
             now,
             now,
         ),

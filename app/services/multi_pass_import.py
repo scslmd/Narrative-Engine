@@ -85,8 +85,13 @@ class MultiPassImportService:
     Phase 3c: Detect and classify overall narrative arcs
     """
 
-    def __init__(self, inferencer: InferenceBackend) -> None:
+    def __init__(
+        self,
+        inferencer: InferenceBackend,
+        sleep_fn: Callable[[float], None] | None = None,
+    ) -> None:
         self._inferencer = inferencer
+        self._sleep = sleep_fn or time.sleep
 
     def _retry_with_backoff(
         self,
@@ -109,7 +114,7 @@ class MultiPassImportService:
                     "Retry %d/%d after %.1fs: %s",
                     attempt + 1, max_retries, wait, exc,
                 )
-                time.sleep(wait)
+                self._sleep(wait)
         raise RuntimeError("Retry loop exited unexpectedly")
 
     def analyze_large_story(
@@ -138,26 +143,24 @@ class MultiPassImportService:
             structure = self._fallback_structure(story_text)
             total_chapters = 1
 
-        # Phase 2: Process each chapter/chunk
+        # Phase 2: Pre-split chapters into chunks (once, not twice)
         character_map: dict[str, CharacterAccumulator] = {}
         all_world_details: list[WorldDetail] = []
         all_plot_events: list[PlotEvent] = []
         chapter_summaries: list[StoryImportChapterSummary] = []
         chapters_processed = 0
         chunks_processed = 0
-        total_chunks = sum(
-            len(self._split_into_chunks(story_text[chapter.start_pos:chapter.end_pos]))
-            for chapter in structure.chapters
-            if story_text[chapter.start_pos:chapter.end_pos].strip()
-        )
 
+        chapter_chunks: list[tuple[ChapterBoundary, list[str]]] = []
         for chapter in structure.chapters:
             text_chunk = story_text[chapter.start_pos:chapter.end_pos]
             if not text_chunk.strip():
                 continue
+            chapter_chunks.append((chapter, self._split_into_chunks(text_chunk)))
 
-            # Sub-chunk if too large
-            chunks = self._split_into_chunks(text_chunk)
+        total_chunks = sum(len(chunks) for _, chunks in chapter_chunks)
+
+        for chapter, chunks in chapter_chunks:
             known_chars_json = self._build_prior_character_context(character_map)
             chapter_results: list[ChapterAnalysisResult] = []
 
