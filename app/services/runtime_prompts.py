@@ -229,12 +229,10 @@ def build_import_analysis_request(
     tone_hint: str | None = None,
     default_model: str | None,
 ) -> InferenceRequest:
-    """Build inference request for story analysis/structure extraction.
+    """Build inference request for high-level single-pass story analysis.
 
-    The LLM should return a JSON object matching StoryImportAnalysis structure.
-    Uses temperature=0.1 for deterministic output.
-    max_tokens=16000 to fit full JSON output.
-    Truncates story_text to 24,000 chars for single-pass analysis.
+    Single-pass import is intentionally limited to high-level artifacts.
+    It should not attempt chapter-level planning synthesis.
     """
     truncated_text = story_text[:24_000]
     context_parts = []
@@ -246,7 +244,7 @@ def build_import_analysis_request(
 
     system_prompt = (
         "You are a story analysis AI for Narrative-Engine. You analyze completed stories "
-        "and extract structured metadata.\n\n"
+        "and extract high-level structured metadata.\n\n"
         "OUTPUT — Return a JSON object with EXACTLY these keys. The keys below are the ONLY valid JSON keys.\n\n"
         '{\n'
         '  "project_name": "<string>",\n'
@@ -301,17 +299,20 @@ def build_import_analysis_request(
         '    {\n'
         '      "title": "<string>",\n'
         '      "summary": "<string>",\n'
-        '      "chapters": []\n'
+        '      "chapters": [],\n'
+        '      "provenance_note": "<string>",\n'
+        '      "confidence_score": "<0.0 to 1.0>"\n'
         '    }\n'
         '  ],\n'
         '  "narrative_constraints": [],\n'
-        '  "success_definition": "<string>",\n'
-        '  "raw_story_text": ""\n'
+        '  "success_definition": "<string>"\n'
         '}\n\n'
         "CRITICAL RULES FOR FIELDS:\n"
         "- You MUST use the EXACT key names shown above. Do not use synonyms like name->title, description->summary, etc.\n"
         "- Arrays (contradictions, secrets, values, taboos, continuity_facts, canonical_facts, related_character_ids, stage_map, tags, chapters) MUST be JSON arrays, even if empty [].\n"
-        "- If you cannot infer a value, use empty string \"\" for strings or [] for arrays. Do NOT skip keys.\n\n"
+        "- If you cannot infer a value, use empty string \"\" for strings or [] for arrays. Do NOT skip keys.\n"
+        "- Do NOT fabricate chapter_summaries, scene plans, beat plans, or scene-by-scene breakdowns in single-pass mode.\n"
+        "- sequences are optional high-level movements only. If you include them, keep them coarse and use estimated chapter labels only when the text makes them clear.\n\n"
         "POV IDENTIFICATION GUIDE:\n"
         "- FIRST: Narrator uses \"I/me/my\". Reader only knows what narrator knows.\n"
         "- SECOND: Narrator addresses as \"you\". Rare.\n"
@@ -343,19 +344,22 @@ def build_import_analysis_request(
         '- Use "null" for fields you cannot determine, not empty strings (except for strings that must have content — use "" only when a string is expected but empty).\n'
         '- Every array field must be [] when empty, never omitted.\n'
         '- Do not use "description" anywhere — use "summary" for world_bible entries and "description" is not a valid key.\n'
-        '- Do not use "name" for sequences — use "title" instead.\n\n'
+        '- Do not use "name" for sequences — use "title" instead.\n'
+        '- sequence confidence_score must be between 0.0 and 1.0.\n'
+        '- sequence provenance_note should briefly say why you are confident, e.g. "single-pass high-level inference from opening chapters".\n\n'
         "CHARACTER EXTRACTION RULES:\n"
         "- Include every character with meaningful presence, not just named ones.\n"
         "- For unnamed characters, use descriptive names like \"the old guard,\" \"the merchant.\"\n"
         "- role is critical: correctly identify protagonist (drives plot) and antagonist (opposes protagonist).\n\n"
         "VALIDATION CHECKLIST (check before returning):\n"
-        "1. All required keys present, no extra top-level keys beyond raw_story_text.\n"
+        "1. All required keys present, no extra top-level keys.\n"
         "2. characters array is non-empty, every character has name and role.\n"
         "3. pov and story_structure are exact enum matches.\n"
         "4. All array fields (contradictions, secrets, values, taboos, continuity_facts, canonical_facts, stage_map, tags, chapters) are actual JSON arrays [].\n"
         "5. world_bible entries use entry_type and title (not name/description).\n"
         "6. story_arcs use summary (not description), stage_map, tags (not type).\n"
-        "7. sequences use title (not name), summary (not description).\n\n"
+        "7. sequences use title (not name), summary (not description).\n"
+        "8. Do not return chapter_summaries in this mode.\n\n"
         "CRITICAL: Return ONLY the JSON object. No markdown, no explanation, no code blocks."
     )
 
@@ -374,6 +378,91 @@ def build_import_analysis_request(
         metadata={
             "mode": "story_import",
             "role": "import_analyzer",
+        },
+    )
+
+
+def build_planning_consolidation_request(
+    *,
+    structure_json: str,
+    chapter_summaries_json: str,
+    story_arcs_json: str,
+    character_roster_json: str,
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for multi-pass planning synthesis.
+
+    This phase refines chapter planning and sequence grouping from chapter-level evidence.
+    """
+    system_prompt = (
+        "You are a planning synthesizer for Narrative-Engine. "
+        "Your job is to convert chapter-level analysis into reliable planning scaffolding.\n\n"
+        "You will receive detected structure, chapter summaries, narrative arcs, and a character roster.\n"
+        "You must synthesize:\n"
+        "1. sequence groupings that cover the full analyzed story without gaps or duplicates\n"
+        "2. chapter planning summaries with objective, conflict, stakes, continuity requirements, and unresolved questions\n"
+        "3. trust metadata for every synthesized planning artifact\n\n"
+        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "{\n"
+        '  "sequences": [\n'
+        "    {\n"
+        '      "title": "<string>",\n'
+        '      "summary": "<string>",\n'
+        '      "chapters": [],\n'
+        '      "provenance_note": "<string>",\n'
+        '      "confidence_score": "<0.0 to 1.0>"\n'
+        "    }\n"
+        "  ],\n"
+        '  "chapter_summaries": [\n'
+        "    {\n"
+        '      "chapter_id": "<string>",\n'
+        '      "title": "<string>",\n'
+        '      "summary": "<string>",\n'
+        '      "section_type": "<string>",\n'
+        '      "analysis_status": "<complete | partial_import | analysis_failed>",\n'
+        '      "objective": "<string>",\n'
+        '      "conflict": "<string>",\n'
+        '      "stakes": "<string>",\n'
+        '      "active_character_names": [],\n'
+        '      "continuity_requirements": [],\n'
+        '      "unresolved_questions": [],\n'
+        '      "plot_events": [],\n'
+        '      "estimated_word_count": "<integer or null>",\n'
+        '      "provenance_note": "<string>",\n'
+        '      "confidence_score": "<0.0 to 1.0>"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "RULES:\n"
+        "- Every chapter_id in sequences must exist in chapter_summaries.\n"
+        "- Every analyzed chapter must appear exactly once across all sequences.\n"
+        "- Do not invent new chapter_ids.\n"
+        "- Preserve analysis_status from the supplied chapter evidence. Do not upgrade failed evidence to complete.\n"
+        "- When evidence is weak, lower confidence_score instead of pretending certainty.\n"
+        "- provenance_note must briefly explain whether the item comes from direct chapter evidence, partial evidence, or structural synthesis.\n"
+        "- Do not return markdown or prose outside the JSON object.\n"
+    )
+
+    user_content = (
+        "Synthesize reliable planning scaffolding from the following evidence.\n\n"
+        f"STRUCTURE:\n{structure_json}\n\n"
+        f"CHAPTER SUMMARIES:\n{chapter_summaries_json}\n\n"
+        f"STORY ARCS:\n{story_arcs_json}\n\n"
+        f"CHARACTERS:\n{character_roster_json}"
+    )
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=16000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "multi_pass_import",
+            "phase": "planning_consolidation",
+            "role": "planning_synthesizer",
         },
     )
 

@@ -61,7 +61,7 @@ describe('useHealthCheck', () => {
 
     const { result } = renderHook(() => useHealthCheck(), { wrapper: WithProviders });
 
-    let returnedValue: boolean;
+    let returnedValue = false;
     await act(async () => {
       returnedValue = await result.current.checkBeforeImport();
     });

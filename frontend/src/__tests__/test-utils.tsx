@@ -40,7 +40,13 @@ function Wrapper({
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <MemoryRouter initialEntries={routerEntries}>
+        <MemoryRouter
+          initialEntries={routerEntries}
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           {children}
         </MemoryRouter>
       </ToastProvider>

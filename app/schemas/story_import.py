@@ -164,6 +164,31 @@ class StoryImportSequence(StrictModel):
     title: str = Field(..., min_length=1, max_length=255)
     summary: str = Field(default="", max_length=5000)
     chapters: list[str] = Field(default_factory=list)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class StoryImportChapterSummary(StrictModel):
+    chapter_id: str = Field(..., min_length=1, max_length=100)
+    title: str = Field(..., min_length=1, max_length=500)
+    summary: str = Field(default="", max_length=3000)
+    section_type: str = Field(default="chapter", min_length=1, max_length=20)
+    analysis_status: str = Field(default="complete", min_length=1, max_length=50)
+    objective: str = Field(default="", max_length=3000)
+    conflict: str = Field(default="", max_length=3000)
+    stakes: str = Field(default="", max_length=3000)
+    active_character_names: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    plot_events: list[PlotEvent] = Field(default_factory=list)
+    estimated_word_count: int | None = Field(default=None, ge=0)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class StoryImportPlanningSynthesis(StrictModel):
+    sequences: list[StoryImportSequence] = Field(default_factory=list)
+    chapter_summaries: list[StoryImportChapterSummary] = Field(default_factory=list)
 
 
 class StoryImportAnalysis(StrictModel):
@@ -182,9 +207,11 @@ class StoryImportAnalysis(StrictModel):
     world_bible: list[StoryImportWorldEntry] = Field(default_factory=list)
     story_arcs: list[StoryImportArc] = Field(default_factory=list)
     sequences: list[StoryImportSequence] = Field(default_factory=list)
+    chapter_summaries: list[StoryImportChapterSummary] = Field(default_factory=list)
     narrative_constraints: list[str] = Field(default_factory=list)
     success_definition: str = Field(default="", max_length=2000)
-    raw_story_text: str = Field(default="", max_length=5_000_000)
+    completed_chunk_count: int = Field(default=0, ge=0)
+    total_estimated_chunks: int = Field(default=0, ge=0)
 
     @model_validator(mode="before")
     @classmethod
@@ -216,11 +243,25 @@ class StoryImportAnalysis(StrictModel):
 
 
 class StoryImportRequest(StrictModel):
-    project_name: str = Field(..., min_length=1, max_length=255)
+    project_name: str = Field(default="", max_length=255)
     story_text: str = Field(..., min_length=1, max_length=5_000_000)
     project_id: str | None = Field(None, max_length=255)
     genre: str | None = None
     tone: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _require_project_target(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            project_name = str(data.get("project_name", "") or "").strip()
+            project_id = str(data.get("project_id", "") or "").strip()
+            if not project_name and not project_id:
+                raise ValueError("project_name is required when project_id is not provided")
+            if project_name:
+                data["project_name"] = project_name
+            if project_id:
+                data["project_id"] = project_id
+        return data
 
 
 class StoryImportResponse(StrictModel):
@@ -230,6 +271,8 @@ class StoryImportResponse(StrictModel):
     warnings: list[str] = Field(default_factory=list)
     chapters_processed: int = Field(default=0, ge=0)
     total_estimated_chapters: int = Field(default=0, ge=0)
+    chunks_processed: int = Field(default=0, ge=0)
+    total_estimated_chunks: int = Field(default=0, ge=0)
     analysis_mode: str = Field(default="single_pass", min_length=1, max_length=20)
 
 
@@ -246,5 +289,7 @@ class ImportProgressResponse(StrictModel):
     phase: str = ""
     chapters_processed: int = 0
     total_estimated_chapters: int = 0
+    chunks_processed: int = 0
+    total_estimated_chunks: int = 0
     result: StoryImportResponse | None = None
     error: str | None = None

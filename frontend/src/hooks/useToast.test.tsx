@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useToast, ToastProvider } from './useToast';
@@ -18,9 +19,13 @@ const WithToastProvider = ({ children }: { children: ReactNode }) => (
 describe('useToast', () => {
   it('throws when used outside ToastProvider', () => {
     const NoopWrapper = ({ children }: { children: ReactNode }) => <>{children}</>;
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     expect(() => {
       renderHook(() => useToast(), { wrapper: NoopWrapper });
     }).toThrow('useToast must be used within ToastProvider');
+
+    consoleErrorSpy.mockRestore();
   });
 
   it('starts with empty toasts array', () => {

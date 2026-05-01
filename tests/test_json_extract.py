@@ -100,8 +100,11 @@ class TestEdgeCases:
     def test_unclosed_brace(self):
         assert extract_json('{"key": "value"') is None
 
-    def test_top_level_array_returns_none(self):
-        assert extract_json("[1, 2, 3]") is None
+    def test_top_level_array_parses(self):
+        assert extract_json("[1, 2, 3]") == [1, 2, 3]
+
+    def test_text_wrapped_top_level_array_parses(self):
+        assert extract_json("Result: [1, 2, 3] thanks") == [1, 2, 3]
 
     def test_top_level_string_returns_none(self):
         assert extract_json('"just a string"') is None

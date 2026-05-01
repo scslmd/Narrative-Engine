@@ -65,8 +65,7 @@ describe('StoryImportModal', () => {
   it('submits import and shows loading state', async () => {
     const user = userEvent.setup({ delay: 10 });
     server.use(
-      http.post('/projects/import-story', async ({ request }) => {
-        await request.formData();
+      http.post('/projects/import-story', () => {
         return HttpResponse.json({
           import_id: 'test-import-1',
           status: 'pending',
@@ -190,8 +189,7 @@ describe('StoryImportModal', () => {
   it('disables submit button during import', async () => {
     const user = userEvent.setup({ delay: 10 });
     server.use(
-      http.post('/projects/import-story', async ({ request }) => {
-        await request.formData();
+      http.post('/projects/import-story', () => {
         return HttpResponse.json({
           import_id: 'test-import-2',
           status: 'pending',

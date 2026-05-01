@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act } from '@testing-library/react';
 import { render, screen } from '../__tests__/test-utils';
 import userEvent from '@testing-library/user-event';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { Layout } from './Layout';
 import { useUIStore } from '../stores/uiStore';
-import { useThemeStore } from '../stores/themeStore';
 import { useSettingsStore } from '../stores/settingsStore';
+
+vi.mock('../hooks/useRouteSync', () => ({
+  useRouteSync: vi.fn(),
+}));
 
 const mockProjects = [
   {
@@ -28,7 +32,9 @@ function renderLayout(route = '/workspace/test-project/plan') {
 
 describe('Layout', () => {
   beforeEach(() => {
-    useUIStore.setState({ mode: 'plan', projectId: null, chapterId: null, jobId: null, inspectContext: null });
+    act(() => {
+      useUIStore.setState({ mode: 'plan', projectId: null, chapterId: null, jobId: null, inspectContext: null });
+    });
     server.use(
       http.get('/projects', () => HttpResponse.json(mockProjects)),
       http.get('/health/ready', () =>
@@ -70,7 +76,9 @@ describe('Layout', () => {
   });
 
   it('shows project name and genre in workspace route', async () => {
-    useUIStore.getState().setProjectId('test-project');
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+    });
     renderLayout('/workspace/test-project/plan');
 
     await vi.waitFor(() => {
@@ -79,7 +87,9 @@ describe('Layout', () => {
   });
 
   it('does not show project name outside workspace route', async () => {
-    useUIStore.getState().setProjectId(null);
+    act(() => {
+      useUIStore.getState().setProjectId(null);
+    });
     renderLayout('/');
 
     await vi.waitFor(() => {
@@ -88,8 +98,10 @@ describe('Layout', () => {
   });
 
   it('renders mode navigation buttons in workspace', async () => {
-    useUIStore.getState().setProjectId('test-project');
-    useSettingsStore.getState().setIconMode('labels');
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+      useSettingsStore.getState().setIconMode('labels');
+    });
     renderLayout('/workspace/test-project/plan');
 
     await vi.waitFor(() => {
@@ -101,7 +113,9 @@ describe('Layout', () => {
   });
 
   it('does not render mode navigation outside workspace', async () => {
-    useUIStore.getState().setProjectId(null);
+    act(() => {
+      useUIStore.getState().setProjectId(null);
+    });
     renderLayout('/');
 
     await vi.waitFor(() => {
@@ -110,9 +124,11 @@ describe('Layout', () => {
   });
 
   it('highlights active mode in sidebar', async () => {
-    useUIStore.getState().setProjectId('test-project');
-    useUIStore.getState().setMode('write');
-    useSettingsStore.getState().setIconMode('labels');
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+      useUIStore.getState().setMode('write');
+      useSettingsStore.getState().setIconMode('labels');
+    });
     renderLayout('/workspace/test-project/write');
 
     await vi.waitFor(() => {

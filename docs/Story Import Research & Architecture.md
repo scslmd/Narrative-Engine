@@ -482,98 +482,146 @@ Key methods:
 
 ## 7. What This Means for Story Import
 
-### 7.1 The Workflow
+### 7.1 The Workflow (Async)
 
 ```
-User pastes story text
-    |
-    v
-[LLM] Analyze story -> extract metadata
-    |                 - genre, tone, POV, structure
-    |                 - premise, logline, thematic_spine
-    |                 - character list with details
-    |                 - world bible entries
-    |                 - story arcs
-    |                 - sequence/structure
-    v
-[Service] Parse LLM response into structured data
-    |
-    v
-[Service] Create project (register in DB)
-    |
-    v
-[Service] Create foundation profile
-    |
-    v
-[Service] Create character profiles (N calls)
-    |
-    v
-[Service] Create world bible entries (N calls)
-    |
-    v
-[Service] Create arc candidates + selections
-    |
-    v
-[Service] Create planning records (sequences, chapters)
-    |
-    v
-[Service] Create manuscript document (story text)
-    |
-    v
-Done - project ready with full structure
+Client                              Server
+  |                                   |
+  | POST /projects/import-story       |
+  | (form data or file upload)        |
+  |---------------------------------->|
+  | 202 {import_id, status: "pending"}|
+  |                                   |-- Submit to ImportJobManager thread pool
+  |                                   |-- Worker calls StoryImportService
+  |                                   |-- Route by story size:
+  |                                   |   ├─ <=30K chars: single-pass LLM analysis
+  |                                   |   └─ >30K chars: multi-pass (5 phases)
+  |                                   |-- Parse JSON, validate, normalize fields
+  |                                   |-- Single transaction: BEGIN IMMEDIATE
+  |                                   |-- Insert foundation + characters + world bible + arcs + planning
+  |                                   |-- Commit or rollback on error
+  |                                   |-- Update manifest.json
+  | GET /projects/import/{id}         |
+  |---------------------------------->|
+  | 200 {status, phase, progress...}  |
+  |                                   |
+  | ... poll every 2s ...             |
+  |                                   |
+  | GET /projects/import/{id}         |
+  |---------------------------------->|
+  | 200 {status: "completed", result} |
 ```
+
+**Single-Pass Import (<=30K chars)**:
+1. `POST /projects/import-story` — accepts form data or `.txt`/`.md` file upload, min 50 characters
+2. Returns `202 Accepted` with `{import_id, status: "pending"}`
+3. Background worker calls `_analyze_story()` — single LLM call (temp=0.1, max_tokens=16000)
+4. Story text truncated to 24,000 chars for the prompt
+5. JSON parsed via `extract_json()`: direct parse → markdown fences → balanced brace detection
+6. `_map_llm_fields()` normalizes LLM field names (e.g., world bible `name` -> `title`)
+7. Pydantic validation against `StoryImportAnalysis` schema
+8. `_transactional_import()` — single `BEGIN IMMEDIATE` transaction: foundation, characters, world bible, arcs, planning
+9. `_update_manifest()` — writes LLM metadata to `manifest.json`
+
+**Multi-Pass Import (>30K chars)**:
+1. Phase 1: Structure detection (LLM scans first 40K chars for TOC/chapters). Fallback: fixed-size chunks with overlap on failure.
+2. Phase 2: Per-chapter analysis with incremental character tracking. Sub-chunking at 20K chars with 1K overlap.
+3. Phase 3a: Character consolidation (LLM merges accumulated data). Fallback: raw accumulator.
+4. Phase 3b: World bible consolidation (LLM deduplicates entries). Fallback: deduplication by (type, title).
+5. Phase 3c: Arc detection and classification (LLM). Fallback: basic arcs from plot events.
+6. Phase 3d: Planning synthesis (LLM generates sequences, chapters, scenes, beats).
+7. All LLM calls have retry with exponential backoff (max 2 retries).
 
 ### 7.2 Key Design Decisions
 
-**1. One API call to start, async processing**
-- User sends `POST /projects/import-story` with story text
-- Server creates project with minimal config, returns 202
-- A background job (or service) processes the story text via LLM
-- User polls status or gets webhook notification
+**1. Async job management (ImportJobManager)**
+- In-memory job store with thread-safe dict
+- ThreadPoolExecutor with max 2 concurrent workers
+- Completed/failed jobs expire after TTL (default 300s)
+- Progress callback updates job state during execution
+- Polling endpoint returns `ImportProgressResponse` with phase, chapter/chunk counts
 
 **2. Use existing LLM infrastructure**
 - Reuse `InferenceBackend` for all analysis
-- Create a new prompt builder (e.g., `build_import_analysis_request`)
-- No new job phase needed - just a service that calls inference directly
-- Similar to how `ManuscriptReviewService` works (non-job-based analysis)
+- 7 prompt builders in `runtime_prompts.py`: single-pass + 6 multi-pass phases
+- All use temperature=0.1 for deterministic JSON output
+- No new job phase — direct inference calls (similar to ManuscriptReviewService)
 
-**3. Single structured LLM call or multi-step?**
-- **Option A (single call)**: One massive prompt with story text + structured output schema (JSON). Faster but may hit token limits.
-- **Option B (multi-step)**: Break analysis into phases (e.g., character extraction, world extraction, structure extraction). More reliable but slower.
-- **Recommendation**: Start with single call for stories under ~50K tokens. Multi-step for larger texts.
+**3. Single-pass vs Multi-pass routing**
+- Stories <=30K chars: single LLM call, fast path
+- Stories >30K chars: multi-pass with 5 phases, incremental character tracking
+- Multi-pass uses `CharacterAccumulator` to track characters across chapters
+- Prior chapter context (capped at 5K chars) passed to each chunk analysis
 
 **4. Parse LLM output**
-- Use Pydantic models for validation of LLM output
-- `ManuscriptDocumentUpdateRequest` pattern shows how to handle strict validation
-- LLM returns JSON -> validate with Pydantic -> create DB records
+- Three-strategy JSON extraction: direct parse → markdown fence strip → balanced brace detection
+- `_map_llm_fields()` normalizes common LLM mistakes before Pydantic validation
+- World bible entry type synonyms mapped to canonical values (40+ synonyms)
+- Character array fields coerced from strings to lists
 
 **5. Transaction safety**
-- Each repository method commits individually
-- If LLM fails mid-way, partial project exists
-- **Solution**: Either wrap in a manual transaction (open connection once, commit at end) or allow partial imports with recovery
+- Single `sqlite3.connect()` with `BEGIN IMMEDIATE` (writer lock, 30s timeout)
+- Raw parameterized SQL — NOT repo wrapper methods
+- All inserts use `ON CONFLICT DO UPDATE` for idempotent retries
+- Foundation revisions use `ON CONFLICT(project_id, revision_number) DO UPDATE`
+- Entire entity creation is atomic: all succeed or all roll back
 
-**6. Token management**
-- Story text could be very large (novels = 50K-100K+ words)
-- Need to chunk or summarize for LLM context window
-- Consider: first pass for metadata (small summary), second pass for detailed extraction
-- The `runtime_prompts.py` `_runtime_prompt_context` shows how to structure prompt inputs
+**6. Entity ID generation**
+- SHA-256 hash-based IDs: `hash_id("import-character", f"{project_id}:{name}")`
+- Stable, order-independent: same input always produces same ID
+- Enables deduplication on retry — re-importing same story doesn't create duplicates
 
-### 7.3 New Components Needed
+**7. Planning persistence**
+- `_import_planning()` persists sequences, chapters, scenes, beats, chapter packets
+- Validates chapter summaries against known IDs
+- Deduplicates by chapter_id
+- Resolves character names to IDs for `active_character_ids`
+
+### 7.3 Components Implemented
 
 **Backend**:
-1. `app/services/story_import.py` - `StoryImportService` class
-   - `analyze_story()` - calls LLM to parse story
-   - `create_project_from_analysis()` - builds all entities
-2. `app/schemas/story_import.py` - request/response schemas
-   - `StoryImportRequest` - story_text, project_name, project_kind
-   - `StoryImportResponse` - project_id, status, findings
-3. `app/api/projects.py` - new endpoint `POST /projects/import-story`
-4. Prompt builder in `runtime_prompts.py` - `build_import_analysis_request()`
+1. `app/services/story_import.py` — `StoryImportService` class
+   - `import_story()` — sync entry point
+   - `import_story_with_progress()` — async with progress callback
+   - `_create_project()` — creates/validates project
+   - `_analyze_story()` — single-pass LLM analysis
+   - `_transactional_import()` — atomic entity creation
+   - `_update_manifest()` — writes metadata to manifest.json
 
-**Frontend** (future):
-1. Import view with textarea/file upload
-2. Progress indicator for async processing
-3. Preview/edit of extracted data before committing
+2. `app/services/multi_pass_import.py` — `MultiPassImportService`, `CharacterAccumulator`
+   - 5-phase pipeline for large stories
+   - Fallback paths for each LLM call
+   - Retry with exponential backoff (max 2 retries)
+
+3. `app/services/import_jobs.py` — `ImportJobManager`, `ImportJob` dataclass
+   - Thread-safe in-memory job store
+   - ThreadPoolExecutor, TTL cleanup, progress updates
+
+4. `app/schemas/story_import.py` — request/response/analysis schemas
+   - `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis`
+   - `ImportSubmitResponse`, `ImportProgressResponse` (async contract)
+   - POV/structure validators normalize enum values
+
+5. `app/api/projects.py` — async endpoints
+   - `POST /projects/import-story` (202, form data or file upload)
+   - `GET /projects/import/{import_id}` (polling endpoint)
+
+6. `app/services/runtime_prompts.py` — import prompt builders
+   - `build_import_analysis_request()` — single-pass (temp=0.1, max_tokens=16000)
+   - `build_structure_detection_request()` — Phase 1 (temp=0.1, max_tokens=8000)
+   - `build_chunk_analysis_request()` — Phase 2 (temp=0.1, max_tokens=16000)
+   - `build_character_consolidation_request()` — Phase 3a (temp=0.1, max_tokens=16000)
+   - `build_world_bible_consolidation_request()` — Phase 3b (temp=0.1, max_tokens=16000)
+   - `build_arc_detection_request()` — Phase 3c (temp=0.1, max_tokens=16000)
+
+7. `app/utils/json_extract.py` — `extract_json()` utility (3 strategies)
+
+8. `app/utils/db_inserts.py` — `hash_id()`, `insert_character_profile()`, `insert_foundation_profile()`, `insert_world_bible_entry()`
+
+**Frontend**:
+1. Import view with textarea/file upload — implemented in StoryImportModal component
+2. Progress indicator for async processing — polling with phase/chapter display
+3. Error handling for failed imports — toast notifications, retry option
 
 ### 7.4 LLM Prompt Design
 

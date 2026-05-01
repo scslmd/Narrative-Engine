@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from app.utils.db_inserts import (
+    CharacterInsertData,
     hash_id,
     insert_character_profile,
     insert_foundation_profile,
@@ -351,7 +352,10 @@ class TestInsertWorldBibleEntry:
 
 class TestInsertCharacterProfile:
     def test_creates_profile(self, conn):
-        insert_character_profile(conn, "char-1", "p1", "Hero", "protagonist")
+        insert_character_profile(conn, CharacterInsertData(
+            character_id="char-1", project_id="p1",
+            display_name="Hero", role_in_story="protagonist",
+        ))
 
         row = conn.execute(
             "SELECT display_name, role_in_story FROM character_profiles WHERE character_id = ?", ("char-1",)
@@ -360,11 +364,12 @@ class TestInsertCharacterProfile:
         assert row[1] == "protagonist"
 
     def test_full_params(self, conn):
-        insert_character_profile(
-            conn, "char-2", "p1", "Villain", "antagonist",
+        insert_character_profile(conn, CharacterInsertData(
+            character_id="char-2", project_id="p1",
+            display_name="Villain", role_in_story="antagonist",
             archetype="shadow", external_goal="destroy", core_fear="failure",
             fatal_flaw="pride", contradictions_json='["brave but cautious"]',
-        )
+        ))
 
         row = conn.execute(
             "SELECT archetype, external_goal, core_fear, fatal_flaw_or_limitation, contradictions_json "
@@ -377,8 +382,14 @@ class TestInsertCharacterProfile:
         assert row[4] == '["brave but cautious"]'
 
     def test_upsert_updates(self, conn):
-        insert_character_profile(conn, "char-1", "p1", "Old Name", "role")
-        insert_character_profile(conn, "char-1", "p1", "New Name", "updated role")
+        insert_character_profile(conn, CharacterInsertData(
+            character_id="char-1", project_id="p1",
+            display_name="Old Name", role_in_story="role",
+        ))
+        insert_character_profile(conn, CharacterInsertData(
+            character_id="char-1", project_id="p1",
+            display_name="New Name", role_in_story="updated role",
+        ))
 
         row = conn.execute(
             "SELECT display_name, role_in_story FROM character_profiles WHERE character_id = ?", ("char-1",)

@@ -11,8 +11,10 @@ from typing import Any, Callable
 from pydantic import ValidationError
 
 from ..inference.base import InferenceBackend, InferenceBackendError
+from ..persistence.sqlite import connect as connect_sqlite
 from ..persistence.story_development import StoryDevelopmentRepository
 from ..utils.db_inserts import (
+    CharacterInsertData,
     hash_id,
     insert_character_profile,
     insert_foundation_profile,
@@ -24,13 +26,15 @@ from ..utils.db_inserts import (
 from ..utils.json_extract import extract_json
 from ..schemas.enums import PovMode, StoryStructure
 from ..schemas.inference import InferenceRequest
-from ..schemas.manifest import Manifest, ManifestConfig
 from ..schemas.story_import import (
+    PlotEvent,
     StoryImportAnalysis,
     StoryImportArc,
+    StoryImportChapterSummary,
     StoryImportCharacterRequest,
     StoryImportRequest,
     StoryImportResponse,
+    StoryImportSequence,
     StoryImportWorldEntry,
 )
 from ..settings import settings
@@ -122,6 +126,8 @@ class StoryImportService:
         analysis_mode = "single_pass"
         chapters_processed = 0
         total_chapters = 0
+        chunks_processed = 0
+        total_chunks = 0
         warnings: list[str] = []
 
         try:
@@ -135,10 +141,13 @@ class StoryImportService:
                     genre_hint=request.genre,
                     tone_hint=request.tone,
                 )
-                chapters_processed = len(analysis.sequences[0].chapters) if analysis.sequences else 0
-                total_chapters = chapters_processed
+                chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
+                warnings.extend(self._analysis_warnings(analysis))
             else:
                 analysis = self._analyze_story(request.story_text, request.genre, request.tone)
+                if analysis.chapter_summaries:
+                    chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
+                    warnings.extend(self._analysis_warnings(analysis))
 
             self._transactional_import(project_id, analysis)
             self._update_manifest(project_id, analysis)
@@ -149,6 +158,8 @@ class StoryImportService:
                 warnings=warnings,
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
         except StoryImportError as exc:
@@ -159,6 +170,8 @@ class StoryImportService:
                 warnings=["Import failed - partial data may exist on retry"],
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
         except InferenceBackendError as exc:
@@ -169,6 +182,8 @@ class StoryImportService:
                 warnings=["Retry the import when the inference service is available"],
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
 
@@ -182,13 +197,20 @@ class StoryImportService:
         analysis_mode = "single_pass"
         chapters_processed = 0
         total_chapters = 0
+        chunks_processed = 0
+        total_chunks = 0
         warnings: list[str] = []
 
         try:
             project_id = self._create_project(request)
 
             if on_progress:
-                on_progress("initializing", {"chapters_processed": 0})
+                on_progress("initializing", {
+                    "chapters_processed": 0,
+                    "total_estimated_chapters": 0,
+                    "chunks_processed": 0,
+                    "total_estimated_chunks": 0,
+                })
 
             if len(request.story_text) > MULTI_PASS_THRESHOLD:
                 analysis_mode = "multi_pass"
@@ -198,15 +220,28 @@ class StoryImportService:
                     tone_hint=request.tone,
                     on_progress=on_progress,  # type: ignore[arg-type]
                 )
-                chapters_processed = len(analysis.sequences[0].chapters) if analysis.sequences else 0
-                total_chapters = chapters_processed
+                chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
+                warnings.extend(self._analysis_warnings(analysis))
             else:
                 if on_progress:
-                    on_progress("analysis", {"chapters_processed": 0})
+                    on_progress("analysis", {
+                        "chapters_processed": 0,
+                        "total_estimated_chapters": 0,
+                        "chunks_processed": 0,
+                        "total_estimated_chunks": 0,
+                    })
                 analysis = self._analyze_story(request.story_text, request.genre, request.tone)
+                if analysis.chapter_summaries:
+                    chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
+                    warnings.extend(self._analysis_warnings(analysis))
 
             if on_progress:
-                on_progress("persisting", {"chapters_processed": chapters_processed})
+                on_progress("persisting", {
+                    "chapters_processed": chapters_processed,
+                    "total_estimated_chapters": total_chapters,
+                    "chunks_processed": chunks_processed,
+                    "total_estimated_chunks": total_chunks,
+                })
 
             self._transactional_import(project_id, analysis)
             self._update_manifest(project_id, analysis)
@@ -218,6 +253,8 @@ class StoryImportService:
                 warnings=warnings,
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
         except StoryImportError as exc:
@@ -228,6 +265,8 @@ class StoryImportService:
                 warnings=["Import failed - partial data may exist on retry"],
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
         except InferenceBackendError as exc:
@@ -238,13 +277,13 @@ class StoryImportService:
                 warnings=["Retry the import when the inference service is available"],
                 chapters_processed=chapters_processed,
                 total_estimated_chapters=total_chapters,
+                chunks_processed=chunks_processed,
+                total_estimated_chunks=total_chunks,
                 analysis_mode=analysis_mode,
             )
 
     def _create_project(self, request: StoryImportRequest) -> str:
         """Create project if needed, return project_id."""
-        import sqlite3
-
         from ..schemas.projects import ProjectCreateRequest
 
         if request.project_id:
@@ -261,9 +300,46 @@ class StoryImportService:
         response = self._project_service.create_project(create_request)
         return response.project_id
 
+    def _analysis_metrics(
+        self,
+        analysis: StoryImportAnalysis,
+    ) -> tuple[int, int, int, int]:
+        chapter_count = len(analysis.chapter_summaries)
+        chunk_count = analysis.completed_chunk_count or 0
+        total_chunks = analysis.total_estimated_chunks or 0
+        if chapter_count and not total_chunks:
+            total_chunks = chapter_count
+        if chapter_count and not chunk_count:
+            chunk_count = chapter_count
+        return chapter_count, chapter_count, chunk_count, total_chunks
+
+    def _analysis_warnings(self, analysis: StoryImportAnalysis) -> list[str]:
+        warnings: list[str] = []
+        failed_titles = [
+            chapter.title
+            for chapter in analysis.chapter_summaries
+            if chapter.analysis_status == "analysis_failed"
+        ]
+        partial_titles = [
+            chapter.title
+            for chapter in analysis.chapter_summaries
+            if chapter.analysis_status == "partial_import"
+        ]
+        if failed_titles:
+            warnings.append(
+                "Some chapters could not be analyzed and were imported without downstream planning artifacts: "
+                + ", ".join(failed_titles[:5])
+            )
+        if partial_titles:
+            warnings.append(
+                "Some chapters were only partially analyzed; imported planning artifacts may need review: "
+                + ", ".join(partial_titles[:5])
+            )
+        return warnings
+
     def _update_manifest(self, project_id: str, analysis: StoryImportAnalysis) -> None:
         """Update manifest.json with LLM-extracted metadata (B4/M3)."""
-        project_dir = self._project_service.root_dir / "data" / "projects" / project_id
+        project_dir = self._project_service.projects_dir / project_id
         manifest_path = project_dir / "manifest.json"
         if not manifest_path.exists():
             logger.warning("Manifest not found for project %s, skipping LLM metadata update", project_id)
@@ -328,9 +404,8 @@ class StoryImportService:
 
     def _analyze_story(self, story_text: str, genre_hint: str | None, tone_hint: str | None) -> StoryImportAnalysis:
         """Call LLM to analyze story and extract structured data."""
-        truncated_text = story_text[:24_000]
         inference_request = build_import_analysis_request(
-            story_text=truncated_text,
+            story_text=story_text,
             genre_hint=genre_hint,
             tone_hint=tone_hint,
             default_model=self._inferencer.descriptor.default_model,
@@ -356,7 +431,7 @@ class StoryImportService:
     def _parse_llm_json(self, content: str) -> dict[str, Any]:
         """Extract JSON from LLM response."""
         data = extract_json(content)
-        if data is None:
+        if data is None or not isinstance(data, dict):
             raise StoryImportError("Failed to parse LLM response as JSON")
         return data
 
@@ -371,7 +446,7 @@ class StoryImportService:
         atomicity. All inserts use ON CONFLICT for idempotent retries.
         """
         now = datetime.now(timezone.utc).isoformat()
-        conn = sqlite3.connect(self._repository.db_path, timeout=30)
+        conn = connect_sqlite(self._repository.db_path)
         try:
             conn.execute("BEGIN IMMEDIATE")
 
@@ -379,6 +454,7 @@ class StoryImportService:
             self._import_characters(conn, project_id, analysis, now)
             self._import_world_bible(conn, project_id, analysis, now)
             self._import_arcs(conn, project_id, analysis, now)
+            self._import_planning(conn, project_id, analysis, now)
 
             conn.commit()
         except Exception:
@@ -422,9 +498,10 @@ class StoryImportService:
     ) -> None:
         """Insert all characters with ON CONFLICT for idempotency."""
         for char_data in analysis.characters:
-            char_id = hash_id("import-character", char_data.name)
-            insert_character_profile(
-                conn, char_id, project_id,
+            char_id = hash_id("import-character", f"{project_id}:{char_data.name}")
+            insert_character_profile(conn, CharacterInsertData(
+                character_id=char_id,
+                project_id=project_id,
                 display_name=char_data.name,
                 role_in_story=char_data.role or None,
                 archetype=char_data.archetype or None,
@@ -441,7 +518,6 @@ class StoryImportService:
                 taboos_json=json_safe(char_data.taboos or []),
                 change_axis=_to_none(char_data.change_axis),
                 continuity_facts_json=json_safe(char_data.continuity_facts or []),
-                # Deep analysis fields (multi-pass import)
                 aliases_json=json_safe(getattr(char_data, "aliases", []) or []),
                 physical_description=_to_none(getattr(char_data, "physical_description", None)),
                 personality_traits_json=json_safe(getattr(char_data, "personality_traits", []) or []),
@@ -456,7 +532,7 @@ class StoryImportService:
                 impact_on_others=_to_none(getattr(char_data, "impact_on_others", None)),
                 first_appearance_chapter=_to_none(getattr(char_data, "first_appearance_chapter", None)),
                 chapter_appearances_json=json_safe(getattr(char_data, "chapter_appearances", []) or []),
-            )
+            ))
 
     def _import_world_bible(
         self,
@@ -483,7 +559,7 @@ class StoryImportService:
     ) -> None:
         """Insert all arc candidates with ON CONFLICT for idempotency."""
         for arc_data in analysis.story_arcs:
-            arc_id = hash_id("import-arc", arc_data.name)
+            arc_id = hash_id("import-arc", f"{project_id}:{arc_data.name}")
             conn.execute(
                 """
                 INSERT INTO arc_candidates (
@@ -511,6 +587,537 @@ class StoryImportService:
                     now,
                 ),
             )
+
+    def _import_planning(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        analysis: StoryImportAnalysis,
+        now: str,
+    ) -> None:
+        """Persist deterministic sequence/chapter planning artifacts when import analysis provides them."""
+        if not analysis.sequences and not analysis.chapter_summaries:
+            return
+
+        chapter_summaries = self._validate_planning_chapter_summaries(analysis.chapter_summaries)
+        sequences = self._validate_planning_sequences(analysis.sequences, chapter_summaries)
+        if not chapter_summaries and not sequences:
+            return
+
+        character_ids_by_name = {
+            character.name.strip().lower(): hash_id("import-character", f"{project_id}:{character.name}")
+            for character in analysis.characters
+            if character.name.strip()
+        }
+        planned_sequences: list[tuple[str, str, str, list[str]]] = []
+        if sequences:
+            for position, sequence in enumerate(sequences):
+                planned_sequences.append((
+                    hash_id("import-sequence", f"{project_id}:{sequence.title}:{position}"),
+                    sequence.title,
+                    sequence.summary,
+                    list(sequence.chapters),
+                ))
+        elif chapter_summaries:
+            planned_sequences.append((
+                hash_id("import-sequence", f"{project_id}:main-narrative:0"),
+                "Main Narrative",
+                f"Imported story with {len(chapter_summaries)} chapters",
+                [chapter.chapter_id for chapter in chapter_summaries],
+            ))
+
+        sequence_id_by_source_chapter: dict[str, str] = {}
+        for position, (sequence_id, title, summary, source_chapter_ids) in enumerate(planned_sequences):
+            for source_chapter_id in source_chapter_ids:
+                sequence_id_by_source_chapter[source_chapter_id] = sequence_id
+            source_sequence = sequences[position] if position < len(sequences) else None
+            conn.execute(
+                """
+                INSERT INTO sequence_plans (
+                    sequence_id, project_id, title, summary, beat_ids_json, chapter_ids_json,
+                    status, position, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(sequence_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    title = excluded.title,
+                    summary = excluded.summary,
+                    status = excluded.status,
+                    position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    sequence_id,
+                    project_id,
+                    title,
+                    summary,
+                    json_safe([]),
+                    json_safe([]),
+                    "imported" if chapter_summaries else "imported_high_level",
+                    position,
+                    (
+                        source_sequence.provenance_note
+                        if source_sequence is not None and source_sequence.provenance_note.strip()
+                        else ("planning synthesis from analyzed chapters" if chapter_summaries else "single-pass high-level import")
+                    ),
+                    (
+                        source_sequence.confidence_score
+                        if source_sequence is not None and source_sequence.confidence_score > 0
+                        else (0.75 if chapter_summaries else 0.45)
+                    ),
+                    now,
+                    now,
+                ),
+            )
+
+        if not chapter_summaries:
+            return
+
+        persisted_chapter_ids: dict[str, str] = {}
+        scene_ids_by_source_chapter: dict[str, list[str]] = {}
+        beat_ids_by_source_chapter: dict[str, list[str]] = {}
+        chapter_reference_ids: dict[str, list[str]] = {}
+        previous_chapter_plan_id: str | None = None
+        previous_scene_id: str | None = None
+        previous_beat_id: str | None = None
+
+        for chapter in chapter_summaries:
+            persisted_chapter_ids[chapter.chapter_id] = hash_id("import-chapter", f"{project_id}:{chapter.chapter_id}")
+
+        for chapter_position, chapter in enumerate(chapter_summaries):
+            chapter_plan_id = persisted_chapter_ids[chapter.chapter_id]
+            sequence_id = sequence_id_by_source_chapter.get(chapter.chapter_id)
+
+            active_character_ids = self._active_character_ids_for_summary(chapter, character_ids_by_name)
+            chapter_status = self._planning_status_for_chapter(chapter)
+
+            conn.execute(
+                """
+                INSERT INTO chapter_plans (
+                    chapter_id, project_id, sequence_id, title, summary, objective, conflict, stakes,
+                    active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
+                    status, position, provenance_note, confidence_score, created_at, updated_at, target_word_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(chapter_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    sequence_id = excluded.sequence_id,
+                    title = excluded.title,
+                    summary = excluded.summary,
+                    objective = excluded.objective,
+                    conflict = excluded.conflict,
+                    stakes = excluded.stakes,
+                    active_character_ids_json = excluded.active_character_ids_json,
+                    continuity_requirements_json = excluded.continuity_requirements_json,
+                    unresolved_questions_json = excluded.unresolved_questions_json,
+                    status = excluded.status,
+                    position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at,
+                    target_word_count = excluded.target_word_count
+                """,
+                (
+                    chapter_plan_id,
+                    project_id,
+                    sequence_id,
+                    chapter.title,
+                    chapter.summary or chapter.objective,
+                    chapter.objective or chapter.summary or f"Advance {chapter.title}.",
+                    chapter.conflict or "Conflict to refine from imported narrative.",
+                    chapter.stakes or "Carry forward the imported narrative consequences.",
+                    json_safe(active_character_ids),
+                    json_safe(chapter.continuity_requirements),
+                    json_safe(chapter.unresolved_questions),
+                    chapter_status,
+                    chapter_position,
+                    chapter.provenance_note or "planning synthesis from analyzed chapter evidence",
+                    chapter.confidence_score,
+                    now,
+                    now,
+                    chapter.estimated_word_count,
+                ),
+            )
+
+            scene_ids: list[str] = []
+            beat_ids: list[str] = []
+            prior_scene_id: str | None = None
+            prior_beat_id: str | None = None
+
+            if chapter.analysis_status == "analysis_failed":
+                scene_ids_by_source_chapter[chapter.chapter_id] = scene_ids
+                beat_ids_by_source_chapter[chapter.chapter_id] = beat_ids
+                chapter_reference_ids[chapter.chapter_id] = list(dict.fromkeys(active_character_ids))
+                if previous_chapter_plan_id is not None:
+                    self._insert_planning_dependency(
+                        conn,
+                        dependency_id=hash_id("import-dependency", f"{project_id}:{previous_chapter_plan_id}:{chapter_plan_id}:precedes"),
+                        project_id=project_id,
+                        upstream_id=previous_chapter_plan_id,
+                        downstream_id=chapter_plan_id,
+                        dependency_kind="precedes",
+                        reason="Imported chronological chapter order.",
+                        now=now,
+                    )
+                previous_chapter_plan_id = chapter_plan_id
+                continue
+
+            plot_events = chapter.plot_events or []
+            if not plot_events:
+                plot_events = [
+                    PlotEvent(
+                        summary=chapter.summary or chapter.objective or chapter.title,
+                        characters_involved=list(chapter.active_character_names),
+                        significance="development",
+                        unresolved_threads=list(chapter.unresolved_questions),
+                    )
+                ]
+
+            for item_position, plot_event in enumerate(plot_events):
+                event_active_character_ids = self._character_ids_for_names(
+                    plot_event.characters_involved or chapter.active_character_names,
+                    character_ids_by_name,
+                )
+                arc_stage = self._normalize_arc_stage(plot_event.significance)
+                beat_id = hash_id("import-beat", f"{project_id}:{chapter.chapter_id}:{item_position}:{plot_event.summary}")
+                scene_id = hash_id("import-scene", f"{project_id}:{chapter.chapter_id}:{item_position}:{plot_event.summary}")
+
+                beat_dependency_ids = [dep for dep in (prior_beat_id, previous_beat_id) if dep is not None]
+                conn.execute(
+                    """
+                    INSERT INTO beat_plans (
+                        beat_id, project_id, objective, conflict, stakes, dependency_ids_json, arc_stage,
+                        active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
+                        status, position, provenance_note, confidence_score, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(beat_id) DO UPDATE SET
+                        project_id = excluded.project_id,
+                        objective = excluded.objective,
+                        conflict = excluded.conflict,
+                        stakes = excluded.stakes,
+                        dependency_ids_json = excluded.dependency_ids_json,
+                        arc_stage = excluded.arc_stage,
+                        active_character_ids_json = excluded.active_character_ids_json,
+                        continuity_requirements_json = excluded.continuity_requirements_json,
+                        unresolved_questions_json = excluded.unresolved_questions_json,
+                        status = excluded.status,
+                        position = excluded.position,
+                        provenance_note = excluded.provenance_note,
+                        confidence_score = excluded.confidence_score,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        beat_id,
+                        project_id,
+                        plot_event.summary,
+                        chapter.conflict or f"Resolve {plot_event.significance.replace('_', ' ')} tension.",
+                        chapter.stakes or "Carry the narrative consequences forward.",
+                        json_safe(beat_dependency_ids),
+                        arc_stage,
+                        json_safe(event_active_character_ids),
+                        json_safe(chapter.continuity_requirements),
+                        json_safe(plot_event.unresolved_threads or chapter.unresolved_questions),
+                        chapter_status,
+                        len(beat_ids),
+                        chapter.provenance_note or "derived from imported chapter planning evidence",
+                        chapter.confidence_score,
+                        now,
+                        now,
+                    ),
+                )
+
+                conn.execute(
+                    """
+                    INSERT INTO scene_plans (
+                        scene_id, project_id, chapter_id, title, summary, objective, conflict, stakes,
+                        active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
+                        status, position, provenance_note, confidence_score, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(scene_id) DO UPDATE SET
+                        project_id = excluded.project_id,
+                        chapter_id = excluded.chapter_id,
+                        title = excluded.title,
+                        summary = excluded.summary,
+                        objective = excluded.objective,
+                        conflict = excluded.conflict,
+                        stakes = excluded.stakes,
+                        active_character_ids_json = excluded.active_character_ids_json,
+                        continuity_requirements_json = excluded.continuity_requirements_json,
+                        unresolved_questions_json = excluded.unresolved_questions_json,
+                        status = excluded.status,
+                        position = excluded.position,
+                        provenance_note = excluded.provenance_note,
+                        confidence_score = excluded.confidence_score,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        scene_id,
+                        project_id,
+                        chapter_plan_id,
+                        self._scene_title(chapter, item_position, plot_event),
+                        plot_event.summary,
+                        plot_event.summary,
+                        chapter.conflict or f"Escalate {plot_event.significance.replace('_', ' ')} tension.",
+                        chapter.stakes or "Advance the imported narrative trajectory.",
+                        json_safe(event_active_character_ids),
+                        json_safe(chapter.continuity_requirements),
+                        json_safe(plot_event.unresolved_threads or chapter.unresolved_questions),
+                        chapter_status,
+                        len(scene_ids),
+                        chapter.provenance_note or "derived from imported chapter planning evidence",
+                        chapter.confidence_score,
+                        now,
+                        now,
+                    ),
+                )
+
+                if prior_scene_id is not None:
+                    self._insert_planning_dependency(
+                        conn,
+                        dependency_id=hash_id("import-dependency", f"{project_id}:{prior_scene_id}:{scene_id}:precedes"),
+                        project_id=project_id,
+                        upstream_id=prior_scene_id,
+                        downstream_id=scene_id,
+                        dependency_kind="precedes",
+                        reason=f"Imported chronological order within {chapter.title}.",
+                        now=now,
+                    )
+                elif previous_scene_id is not None:
+                    self._insert_planning_dependency(
+                        conn,
+                        dependency_id=hash_id("import-dependency", f"{project_id}:{previous_scene_id}:{scene_id}:precedes"),
+                        project_id=project_id,
+                        upstream_id=previous_scene_id,
+                        downstream_id=scene_id,
+                        dependency_kind="precedes",
+                        reason="Imported chronological order across chapters.",
+                        now=now,
+                    )
+
+                prior_scene_id = scene_id
+                prior_beat_id = beat_id
+                previous_scene_id = scene_id
+                previous_beat_id = beat_id
+                scene_ids.append(scene_id)
+                beat_ids.append(beat_id)
+
+            scene_ids_by_source_chapter[chapter.chapter_id] = scene_ids
+            beat_ids_by_source_chapter[chapter.chapter_id] = beat_ids
+            chapter_reference_ids[chapter.chapter_id] = list(dict.fromkeys(active_character_ids + scene_ids + beat_ids))
+
+            if previous_chapter_plan_id is not None:
+                self._insert_planning_dependency(
+                    conn,
+                    dependency_id=hash_id("import-dependency", f"{project_id}:{previous_chapter_plan_id}:{chapter_plan_id}:precedes"),
+                    project_id=project_id,
+                    upstream_id=previous_chapter_plan_id,
+                    downstream_id=chapter_plan_id,
+                    dependency_kind="precedes",
+                    reason="Imported chronological chapter order.",
+                    now=now,
+                )
+
+            previous_chapter_plan_id = chapter_plan_id
+
+            packet_id = hash_id("import-packet", f"{project_id}:{chapter.chapter_id}")
+            conn.execute(
+                """
+                INSERT INTO chapter_packets (
+                    packet_id, project_id, chapter_id, included_reference_ids_json, constraints_json,
+                    scene_goals_json, status, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(packet_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    chapter_id = excluded.chapter_id,
+                    included_reference_ids_json = excluded.included_reference_ids_json,
+                    constraints_json = excluded.constraints_json,
+                    scene_goals_json = excluded.scene_goals_json,
+                    status = excluded.status,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    packet_id,
+                    project_id,
+                    chapter_plan_id,
+                    json_safe(chapter_reference_ids[chapter.chapter_id]),
+                    json_safe(list(dict.fromkeys((analysis.narrative_constraints or []) + chapter.continuity_requirements))),
+                    json_safe([event.summary for event in plot_events[:8]]),
+                    chapter_status,
+                    chapter.provenance_note or "derived from imported chapter planning evidence",
+                    chapter.confidence_score,
+                    now,
+                    now,
+                ),
+            )
+
+        sequence_beat_ids: dict[str, list[str]] = {}
+        sequence_chapter_ids: dict[str, list[str]] = {}
+        for chapter in chapter_summaries:
+            sequence_id = sequence_id_by_source_chapter.get(chapter.chapter_id)
+            if sequence_id is None:
+                continue
+            sequence_chapter_ids.setdefault(sequence_id, []).append(persisted_chapter_ids[chapter.chapter_id])
+            sequence_beat_ids.setdefault(sequence_id, []).extend(beat_ids_by_source_chapter.get(chapter.chapter_id, []))
+
+        for position, (sequence_id, title, summary, _) in enumerate(planned_sequences):
+            conn.execute(
+                """
+                INSERT INTO sequence_plans (
+                    sequence_id, project_id, title, summary, beat_ids_json, chapter_ids_json,
+                    status, position, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(sequence_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    title = excluded.title,
+                    summary = excluded.summary,
+                    beat_ids_json = excluded.beat_ids_json,
+                    chapter_ids_json = excluded.chapter_ids_json,
+                    status = excluded.status,
+                    position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    sequence_id,
+                    project_id,
+                    title,
+                    summary,
+                    json_safe(sequence_beat_ids.get(sequence_id, [])),
+                    json_safe(sequence_chapter_ids.get(sequence_id, [])),
+                    "imported",
+                    position,
+                    sequences[position].provenance_note if position < len(sequences) else "planning synthesis from analyzed chapters",
+                    sequences[position].confidence_score if position < len(sequences) else 0.75,
+                    now,
+                    now,
+                ),
+            )
+
+    def _validate_planning_chapter_summaries(
+        self,
+        chapter_summaries: list[StoryImportChapterSummary],
+    ) -> list[StoryImportChapterSummary]:
+        valid: list[StoryImportChapterSummary] = []
+        seen_ids: set[str] = set()
+        for chapter in chapter_summaries:
+            if not chapter.chapter_id.strip() or chapter.chapter_id in seen_ids:
+                continue
+            seen_ids.add(chapter.chapter_id)
+            valid.append(chapter)
+        return valid
+
+    def _validate_planning_sequences(
+        self,
+        sequences: list[StoryImportSequence],
+        chapter_summaries: list[StoryImportChapterSummary],
+    ) -> list[StoryImportSequence]:
+        known_chapter_ids = {chapter.chapter_id for chapter in chapter_summaries}
+        valid: list[StoryImportSequence] = []
+        for sequence in sequences:
+            chapter_ids = list(dict.fromkeys(
+                chapter_id for chapter_id in sequence.chapters if not known_chapter_ids or chapter_id in known_chapter_ids
+            ))
+            valid.append(
+                StoryImportSequence(
+                    title=sequence.title,
+                    summary=sequence.summary,
+                    chapters=chapter_ids,
+                    provenance_note=sequence.provenance_note,
+                    confidence_score=sequence.confidence_score,
+                )
+            )
+        return valid
+
+    def _active_character_ids_for_summary(
+        self,
+        chapter: StoryImportChapterSummary,
+        character_ids_by_name: dict[str, str],
+    ) -> list[str]:
+        return self._character_ids_for_names(chapter.active_character_names, character_ids_by_name)
+
+    def _character_ids_for_names(
+        self,
+        names: list[str],
+        character_ids_by_name: dict[str, str],
+    ) -> list[str]:
+        resolved: list[str] = []
+        for name in names:
+            normalized = name.strip().lower()
+            if normalized and normalized in character_ids_by_name:
+                resolved.append(character_ids_by_name[normalized])
+        return list(dict.fromkeys(resolved))
+
+    def _scene_title(
+        self,
+        chapter: StoryImportChapterSummary,
+        item_position: int,
+        plot_event: PlotEvent,
+    ) -> str:
+        prefix = chapter.title or chapter.chapter_id
+        return f"{prefix} Scene {item_position + 1}"
+
+    def _planning_status_for_chapter(self, chapter: StoryImportChapterSummary) -> str:
+        if chapter.analysis_status == "analysis_failed":
+            return "analysis_failed"
+        if chapter.analysis_status == "partial_import":
+            return "partial_import"
+        return "imported"
+
+    def _normalize_arc_stage(self, significance: str | None) -> str:
+        if not significance:
+            return "development"
+        normalized = significance.strip().lower()
+        valid_stages = {
+            "status_quo",
+            "inciting_incident",
+            "rising_action",
+            "crisis",
+            "climax",
+            "resolution",
+            "turning_point",
+            "development",
+        }
+        return normalized if normalized in valid_stages else "development"
+
+    def _insert_planning_dependency(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        dependency_id: str,
+        project_id: str,
+        upstream_id: str,
+        downstream_id: str,
+        dependency_kind: str,
+        reason: str,
+        now: str,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO planning_dependencies (
+                dependency_id, project_id, upstream_id, downstream_id, dependency_kind, reason, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(dependency_id) DO UPDATE SET
+                project_id = excluded.project_id,
+                upstream_id = excluded.upstream_id,
+                downstream_id = excluded.downstream_id,
+                dependency_kind = excluded.dependency_kind,
+                reason = excluded.reason,
+                updated_at = excluded.updated_at
+            """,
+            (
+                dependency_id,
+                project_id,
+                upstream_id,
+                downstream_id,
+                dependency_kind,
+                reason,
+                now,
+                now,
+            ),
+        )
 
 
 def _to_none(value: str | None) -> str | None:

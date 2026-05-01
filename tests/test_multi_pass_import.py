@@ -799,6 +799,9 @@ class TestMultiPassIntegration:
         assert len(analysis.characters) >= 1
         assert analysis.characters[0].name == "Kvothe"
         assert analysis.genre == "Fantasy"
+        assert len(analysis.chapter_summaries) == 5
+        assert analysis.chapter_summaries[0].title == "Chapter 1"
+        assert analysis.sequences[0].chapters[0] == "chapter-1"
         # Should have made multiple LLM calls
         assert len(backend.requests) >= 5
 
@@ -856,6 +859,10 @@ class TestSizeBasedRouting:
 
         assert response.status == "completed"
         assert response.analysis_mode == "single_pass"
+        sequences = repository.list_sequence_plans(response.project_id)
+        chapters = repository.list_chapter_plans(response.project_id)
+        assert sequences == []
+        assert chapters == []
 
     def test_large_story_routes_to_multi_pass(self, tmp_path: Path) -> None:
         """Stories above threshold use multi-pass analysis."""
@@ -911,9 +918,115 @@ class TestSizeBasedRouting:
 
         assert response.status == "completed"
         assert response.analysis_mode == "multi_pass"
+        assert response.chapters_processed == 3
+        assert response.total_estimated_chapters == 3
+        assert response.chunks_processed >= 3
+        assert response.total_estimated_chunks >= response.chunks_processed
         # Verify entities were persisted
         characters = repository.list_character_profiles(response.project_id)
         assert len(characters) >= 1
+        sequences = repository.list_sequence_plans(response.project_id)
+        chapters = repository.list_chapter_plans(response.project_id)
+        scenes = repository.list_scene_plans(response.project_id)
+        beats = repository.list_beat_plans(response.project_id)
+        packets = repository.list_chapter_packets(response.project_id)
+        dependencies = repository.list_planning_dependencies(response.project_id)
+
+        assert len(sequences) >= 1
+        assert len(chapters) == 3
+        assert len(scenes) >= 3
+        assert len(beats) >= 3
+        assert len(packets) == 3
+        assert len(dependencies) >= 2
+        assert all(sequence.provenance_note for sequence in sequences)
+        assert all(chapter.provenance_note for chapter in chapters)
+        assert all(chapter.confidence_score >= 0.0 for chapter in chapters)
+
+    def test_large_story_multi_sequence_counts_all_chapters(self, tmp_path: Path) -> None:
+        story_text = "B" * 50_000
+        chapters_data = [
+            {
+                "id": "part-1",
+                "title": "Part I",
+                "section_type": "part",
+                "start_line": 1,
+                "end_line": 1,
+                "start_pos": 0,
+                "end_pos": 0,
+                "estimated_word_count": 0,
+            },
+            {
+                "id": "chapter-1",
+                "title": "Chapter 1",
+                "section_type": "chapter",
+                "start_line": 1,
+                "end_line": 40,
+                "start_pos": 0,
+                "end_pos": 16000,
+                "estimated_word_count": 3200,
+            },
+            {
+                "id": "chapter-2",
+                "title": "Chapter 2",
+                "section_type": "chapter",
+                "start_line": 41,
+                "end_line": 80,
+                "start_pos": 16000,
+                "end_pos": 32000,
+                "estimated_word_count": 3200,
+            },
+            {
+                "id": "part-2",
+                "title": "Part II",
+                "section_type": "part",
+                "start_line": 81,
+                "end_line": 81,
+                "start_pos": 32000,
+                "end_pos": 32000,
+                "estimated_word_count": 0,
+            },
+            {
+                "id": "chapter-3",
+                "title": "Chapter 3",
+                "section_type": "chapter",
+                "start_line": 82,
+                "end_line": 120,
+                "start_pos": 32000,
+                "end_pos": 50000,
+                "estimated_word_count": 3600,
+            },
+        ]
+
+        responses = [_make_structure_response(chapters=chapters_data)]
+        for i in range(3):
+            responses.append(_make_chunk_analysis_response(
+                chapter_id=f"chapter-{i+1}",
+                chapter_title=f"Chapter {i+1}",
+            ))
+        responses.append(_make_character_consolidation_response())
+        responses.append(json.dumps([
+            {"entry_type": "location", "title": "Setting", "summary": "A place", "canonical_facts": [], "related_character_ids": []}
+        ]))
+        responses.append(_make_arc_detection_response())
+
+        backend = MultiPhaseInferenceBackend(responses=responses)
+        project_service = ProjectService(tmp_path)
+        db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+        repository = StoryDevelopmentRepository(db_path)
+        import_service = StoryImportService(
+            project_service=project_service,
+            repository=repository,
+            inferencer=backend,
+        )
+
+        response = import_service.import_story(StoryImportRequest(project_name="Structured", story_text=story_text))
+
+        assert response.status == "completed"
+        assert response.chapters_processed == 3
+        assert response.total_estimated_chapters == 3
+
+        sequences = repository.list_sequence_plans(response.project_id)
+        assert len(sequences) == 2
 
 
 class ErrorInferenceBackend(InferenceBackend):
@@ -1073,8 +1186,1092 @@ def test_analyze_large_story_calls_progress_callback():
     phases = [p for p, _ in progress_log]
     assert "structure_detection" in phases
     assert "chapter_analysis" in phases
+    assert "chapter_complete" in phases
     assert any("consolidation" in p for p in phases)
 
     # Verify chapter count was reported
     chapter_data = [d for _, d in progress_log if d.get("total_estimated_chapters") > 0]
     assert len(chapter_data) > 0
+    assert max(d["chapters_processed"] for d in chapter_data) <= chapter_data[-1]["total_estimated_chapters"]
+    chunk_data = [d for _, d in progress_log if d.get("total_estimated_chunks", 0) > 0]
+    assert len(chunk_data) > 0
+    assert chunk_data[-1]["chunks_processed"] == chunk_data[-1]["total_estimated_chunks"]
+
+
+# --- Phase 3d: Planning Synthesis Tests ---
+
+class TestSynthesizePlanning:
+    """Test Phase 3d: planning synthesis methods."""
+
+    def _make_structure(self, chapters: list[dict] | None = None) -> Any:
+        from app.schemas.story_import import StoryStructureDetection, StructureHint, ChapterBoundary
+        if chapters is None:
+            chapters = [
+                {"id": "chapter-1", "title": "Chapter 1", "section_type": "chapter",
+                 "start_line": 1, "end_line": 50, "start_pos": 0, "end_pos": 5000,
+                 "estimated_word_count": 1000},
+                {"id": "chapter-2", "title": "Chapter 2", "section_type": "chapter",
+                 "start_line": 51, "end_line": 100, "start_pos": 5000, "end_pos": 10000,
+                 "estimated_word_count": 1000},
+            ]
+        return StoryStructureDetection(
+            project_name="Test Novel",
+            structure_type="traditional_novel",
+            chapters=[ChapterBoundary(**ch) for ch in chapters],
+            hints=StructureHint(thematic_keywords=["power"]),
+        )
+
+    def _make_chapter_summaries(self, count: int = 2) -> list[Any]:
+        from app.schemas.story_import import StoryImportChapterSummary, PlotEvent
+        summaries = []
+        for i in range(1, count + 1):
+            summaries.append(StoryImportChapterSummary(
+                chapter_id=f"chapter-{i}",
+                title=f"Chapter {i}",
+                summary=f"Summary of chapter {i}",
+                section_type="chapter",
+                analysis_status="complete",
+                active_character_names=["Hero"],
+                plot_events=[PlotEvent(summary=f"Event {i}", significance="development")],
+            ))
+        return summaries
+
+    def test_synthesize_planning_empty_input(self) -> None:
+        """Empty chapter summaries should return empty synthesis."""
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        structure = self._make_structure()
+        result = service._synthesize_planning(
+            structure=structure,
+            chapter_summaries=[],
+            story_arcs=[],
+            characters=[],
+        )
+        assert result.sequences == []
+        assert result.chapter_summaries == []
+        assert len(backend.requests) == 0
+
+    def test_synthesize_planning_fallback_on_llm_error(self) -> None:
+        """Planning synthesis should fall back to deterministic grouping on LLM error."""
+        service = MultiPassImportService(ErrorInferenceBackend())
+        structure = self._make_structure()
+        summaries = self._make_chapter_summaries(2)
+        result = service._synthesize_planning(
+            structure=structure,
+            chapter_summaries=summaries,
+            story_arcs=[],
+            characters=[],
+        )
+        assert len(result.chapter_summaries) == 2
+        assert len(result.sequences) >= 1
+
+    def test_synthesize_planning_with_valid_llm_response(self) -> None:
+        """Valid LLM response should be used with normalization."""
+        planning_json = json.dumps({
+            "sequences": [
+                {
+                    "title": "Act One",
+                    "summary": "The setup",
+                    "chapters": ["chapter-1", "chapter-2"],
+                    "provenance_note": "llm synthesis",
+                    "confidence_score": 0.8,
+                }
+            ],
+            "chapter_summaries": [
+                {
+                    "chapter_id": "chapter-1",
+                    "title": "Chapter 1",
+                    "summary": "LLM summary for ch1",
+                    "section_type": "chapter",
+                    "analysis_status": "complete",
+                    "objective": "Setup the world",
+                    "active_character_names": ["Hero"],
+                    "plot_events": [],
+                },
+                {
+                    "chapter_id": "chapter-2",
+                    "title": "Chapter 2",
+                    "summary": "LLM summary for ch2",
+                    "section_type": "chapter",
+                    "analysis_status": "complete",
+                    "active_character_names": ["Hero"],
+                    "plot_events": [],
+                },
+            ],
+        })
+        backend = MultiPhaseInferenceBackend(responses=[planning_json])
+        service = MultiPassImportService(backend)
+        structure = self._make_structure()
+        summaries = self._make_chapter_summaries(2)
+        result = service._synthesize_planning(
+            structure=structure,
+            chapter_summaries=summaries,
+            story_arcs=[],
+            characters=[],
+        )
+        assert len(result.chapter_summaries) == 2
+        assert len(result.sequences) == 1
+        assert result.sequences[0].title == "Act One"
+        assert len(backend.requests) == 1
+
+
+class TestBuildChapterSummary:
+    """Test _build_chapter_summary collapsing logic."""
+
+    def test_complete_analysis_status(self) -> None:
+        from app.schemas.story_import import ChapterBoundary, ChapterAnalysisResult, PlotEvent, CharacterMention
+
+        chapter = ChapterBoundary(
+            id="chapter-1", title="Chapter 1", section_type="chapter",
+            start_line=1, end_line=50, start_pos=0, end_pos=5000, estimated_word_count=1000,
+        )
+        result = ChapterAnalysisResult(
+            chapter_id="chapter-1",
+            summary="A complete summary",
+            key_events=["Event 1"],
+            characters=[CharacterMention(name="Hero", role="protagonist")],
+            plot_events=[PlotEvent(summary="Key event", significance="inciting_incident")],
+        )
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        summary = service._build_chapter_summary(chapter, [result], expected_chunks=1)
+        assert summary.analysis_status == "complete"
+        assert summary.confidence_score > 0.5
+        assert "Hero" in summary.active_character_names
+
+    def test_partial_analysis_status(self) -> None:
+        from app.schemas.story_import import ChapterBoundary, ChapterAnalysisResult
+
+        chapter = ChapterBoundary(
+            id="chapter-1", title="Chapter 1", section_type="chapter",
+            start_line=1, end_line=50, start_pos=0, end_pos=5000, estimated_word_count=1000,
+        )
+        result = ChapterAnalysisResult(
+            chapter_id="chapter-1", summary="Partial summary", key_events=["Event 1"],
+        )
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        summary = service._build_chapter_summary(chapter, [result], expected_chunks=2)
+        assert summary.analysis_status == "partial_import"
+        assert 0.0 < summary.confidence_score <= 0.5
+
+    def test_failed_analysis_status(self) -> None:
+        from app.schemas.story_import import ChapterBoundary, ChapterAnalysisResult
+
+        chapter = ChapterBoundary(
+            id="chapter-1", title="Chapter 1", section_type="chapter",
+            start_line=1, end_line=50, start_pos=0, end_pos=5000, estimated_word_count=1000,
+        )
+        result = ChapterAnalysisResult(chapter_id="chapter-1")
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        summary = service._build_chapter_summary(chapter, [result], expected_chunks=1)
+        assert summary.analysis_status == "analysis_failed"
+        assert summary.confidence_score == 0.0
+
+    def test_multiple_chunk_results_merged(self) -> None:
+        from app.schemas.story_import import ChapterBoundary, ChapterAnalysisResult, PlotEvent, CharacterMention
+
+        chapter = ChapterBoundary(
+            id="chapter-1", title="Chapter 1", section_type="chapter",
+            start_line=1, end_line=50, start_pos=0, end_pos=5000, estimated_word_count=1000,
+        )
+        result1 = ChapterAnalysisResult(
+            chapter_id="chapter-1", summary="Part 1 summary",
+            key_events=["Event A"],
+            characters=[CharacterMention(name="Hero")],
+            plot_events=[PlotEvent(summary="Event A", significance="development")],
+        )
+        result2 = ChapterAnalysisResult(
+            chapter_id="chapter-1", summary="Part 2 summary",
+            key_events=["Event B"],
+            characters=[CharacterMention(name="Villain")],
+            plot_events=[PlotEvent(summary="Event B", significance="climax")],
+        )
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        summary = service._build_chapter_summary(chapter, [result1, result2], expected_chunks=2)
+        assert summary.analysis_status == "complete"
+        assert "Event A" in summary.continuity_requirements
+        assert "Event B" in summary.continuity_requirements
+        assert "Hero" in summary.active_character_names
+        assert "Villain" in summary.active_character_names
+        assert len(summary.plot_events) == 2
+
+
+class TestWithPlanningMetadata:
+    """Test _with_planning_metadata confidence and provenance assignment."""
+
+    def test_analysis_failed_gets_low_confidence(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        chapter = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="analysis_failed",
+        )
+        result = service._with_planning_metadata(chapter)
+        assert result.confidence_score == 0.0
+        assert "degraded" in result.provenance_note
+
+    def test_partial_import_gets_medium_confidence(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, PlotEvent
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        chapter = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="partial_import",
+            plot_events=[PlotEvent(summary="E1")],
+        )
+        result = service._with_planning_metadata(chapter)
+        assert 0.3 < result.confidence_score < 0.6
+
+    def test_complete_with_evidence_gets_high_confidence(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, PlotEvent
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        chapter = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="complete",
+            plot_events=[PlotEvent(summary="E1")],
+            active_character_names=["Hero"],
+        )
+        result = service._with_planning_metadata(chapter)
+        assert result.confidence_score >= 0.65
+
+    def test_existing_provenance_preserved(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        chapter = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="complete",
+            provenance_note="custom note",
+        )
+        result = service._with_planning_metadata(chapter)
+        assert result.provenance_note == "custom note"
+
+    def test_confidence_always_in_valid_range(self) -> None:
+        """_with_planning_metadata always produces confidence in [0, 1]."""
+        from app.schemas.story_import import StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        for status in ("analysis_failed", "partial_import", "complete"):
+            chapter = StoryImportChapterSummary(
+                chapter_id="ch1", title="Ch1", analysis_status=status,
+            )
+            result = service._with_planning_metadata(chapter)
+            assert 0.0 <= result.confidence_score <= 1.0
+
+
+class TestMergeChapterSummary:
+    """Test _merge_chapter_summary between base and candidate."""
+
+    def test_candidate_overwrites_base_fields(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, PlotEvent
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        base = StoryImportChapterSummary(
+            chapter_id="ch1", title="Old Title", summary="Old summary",
+            analysis_status="complete", active_character_names=["BaseChar"],
+            plot_events=[PlotEvent(summary="Base event")],
+        )
+        candidate = StoryImportChapterSummary(
+            chapter_id="ch1", title="New Title", summary="New summary",
+            analysis_status="complete", active_character_names=["CandChar"],
+        )
+        result = service._merge_chapter_summary(base, candidate)
+        assert result.title == "New Title"
+        assert result.summary == "New summary"
+        assert "CandChar" in result.active_character_names
+
+    def test_base_plot_events_preserved_when_candidate_empty(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, PlotEvent
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        base = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="complete",
+            plot_events=[PlotEvent(summary="Base event")],
+        )
+        candidate = StoryImportChapterSummary(
+            chapter_id="ch1", title="Ch1", analysis_status="complete",
+        )
+        result = service._merge_chapter_summary(base, candidate)
+        assert len(result.plot_events) == 1
+
+
+class TestNormalizeSequences:
+    """Test _normalize_sequences validation and repair."""
+
+    def test_removes_unknown_chapter_ids(self) -> None:
+        from app.schemas.story_import import StoryImportSequence, StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        sequences = [StoryImportSequence(
+            title="Act 1", chapters=["chapter-1", "unknown-chapter"],
+        )]
+        chapter_summaries = [StoryImportChapterSummary(
+            chapter_id="chapter-1", title="Ch1",
+        )]
+        result = service._normalize_sequences(
+            sequences, fallback_sequences=[], chapter_summaries=chapter_summaries,
+        )
+        assert len(result) == 1
+        assert "unknown-chapter" not in result[0].chapters
+        assert "chapter-1" in result[0].chapters
+
+    def test_creates_unassigned_sequence_for_remaining_chapters(self) -> None:
+        from app.schemas.story_import import StoryImportSequence, StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        sequences = [StoryImportSequence(
+            title="Act 1", chapters=["chapter-1"],
+        )]
+        chapter_summaries = [
+            StoryImportChapterSummary(chapter_id="chapter-1", title="Ch1"),
+            StoryImportChapterSummary(chapter_id="chapter-2", title="Ch2"),
+        ]
+        result = service._normalize_sequences(
+            sequences, fallback_sequences=[], chapter_summaries=chapter_summaries,
+        )
+        assert len(result) == 2
+        assert any("Unassigned" in s.title for s in result)
+
+    def test_fallback_when_no_valid_normalized_sequences(self) -> None:
+        from app.schemas.story_import import StoryImportSequence, StoryImportChapterSummary
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        sequences = [StoryImportSequence(
+            title="Act 1", chapters=["nonexistent"],
+        )]
+        chapter_summaries = [StoryImportChapterSummary(
+            chapter_id="chapter-1", title="Ch1",
+        )]
+        fallback = [StoryImportSequence(
+            title="Main Narrative", summary="Fallback", chapters=["chapter-1"],
+            provenance_note="fallback", confidence_score=0.5,
+        )]
+        result = service._normalize_sequences(
+            sequences, fallback_sequences=fallback, chapter_summaries=chapter_summaries,
+        )
+        assert len(result) >= 1
+        assert any("chapter-1" in s.chapters for s in result)
+
+
+class TestBuildSequencesFromStructure:
+    """Test _build_sequences_from_structure grouping logic."""
+
+    def test_groups_by_parts(self) -> None:
+        from app.schemas.story_import import StoryStructureDetection, StructureHint, ChapterBoundary, StoryImportChapterSummary
+
+        structure = StoryStructureDetection(
+            project_name="Test",
+            structure_type="traditional_novel",
+            hints=StructureHint(),
+            chapters=[
+                ChapterBoundary(id="part-1", title="Part I", section_type="part",
+                                start_line=1, end_line=1, start_pos=0, end_pos=0),
+                ChapterBoundary(id="chapter-1", title="Chapter 1", section_type="chapter",
+                                start_line=2, end_line=50, start_pos=0, end_pos=5000),
+                ChapterBoundary(id="chapter-2", title="Chapter 2", section_type="chapter",
+                                start_line=51, end_line=100, start_pos=5000, end_pos=10000),
+                ChapterBoundary(id="part-2", title="Part II", section_type="part",
+                                start_line=101, end_line=101, start_pos=10000, end_pos=10000),
+                ChapterBoundary(id="chapter-3", title="Chapter 3", section_type="chapter",
+                                start_line=102, end_line=150, start_pos=10000, end_pos=15000),
+            ],
+        )
+        chapter_summaries = [
+            StoryImportChapterSummary(chapter_id="chapter-1", title="Chapter 1"),
+            StoryImportChapterSummary(chapter_id="chapter-2", title="Chapter 2"),
+            StoryImportChapterSummary(chapter_id="chapter-3", title="Chapter 3"),
+        ]
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        result = service._build_sequences_from_structure(structure, chapter_summaries)
+        assert len(result) == 2
+        assert result[0].title == "Part I"
+        assert result[1].title == "Part II"
+        assert "chapter-3" in result[1].chapters
+
+    def test_single_sequence_fallback_when_no_parts(self) -> None:
+        from app.schemas.story_import import StoryStructureDetection, StructureHint, ChapterBoundary, StoryImportChapterSummary
+
+        structure = StoryStructureDetection(
+            project_name="Test",
+            structure_type="traditional_novel",
+            hints=StructureHint(),
+            chapters=[
+                ChapterBoundary(id="chapter-1", title="Chapter 1", section_type="chapter",
+                                start_line=1, end_line=50, start_pos=0, end_pos=5000),
+                ChapterBoundary(id="chapter-2", title="Chapter 2", section_type="chapter",
+                                start_line=51, end_line=100, start_pos=5000, end_pos=10000),
+            ],
+        )
+        chapter_summaries = [
+            StoryImportChapterSummary(chapter_id="chapter-1", title="Chapter 1"),
+            StoryImportChapterSummary(chapter_id="chapter-2", title="Chapter 2"),
+        ]
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        result = service._build_sequences_from_structure(structure, chapter_summaries)
+        assert len(result) == 1
+        assert "chapter-1" in result[0].chapters
+        assert "chapter-2" in result[0].chapters
+
+
+class TestBuildFallbackCharacters:
+    """Test _build_fallback_characters direct construction."""
+
+    def test_fallback_builds_profiles_from_accumulator(self) -> None:
+        char_map = {
+            "Hero": CharacterAccumulator(
+                name="Hero",
+                role="protagonist",
+                archetype="hero",
+                physical_descriptions=["Tall", "Dark-haired"],
+                personality_traits=["brave", "stubborn"],
+                motives=["Save the kingdom", "Find redemption"],
+                relationships=["Friend of Sidekick"],
+                development_notes=["Grows from naive to wise"],
+                first_introduction_chapter="prologue",
+                chapter_appearances=["prologue", "chapter-1"],
+            ),
+        }
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        result = service._build_fallback_characters(char_map)
+
+        assert len(result) == 1
+        assert result[0].name == "Hero"
+        assert result[0].role == "protagonist"
+        assert result[0].physical_description == "Tall; Dark-haired"
+        assert "brave" in result[0].personality_traits
+        assert "Save the kingdom" in result[0].motives
+
+    def test_fallback_characters_sorted_by_name(self) -> None:
+        char_map = {
+            "Zara": CharacterAccumulator(name="Zara", role="supporting"),
+            "Alice": CharacterAccumulator(name="Alice", role="protagonist"),
+            "Bob": CharacterAccumulator(name="Bob", role="antagonist"),
+        }
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        result = service._build_fallback_characters(char_map)
+
+        names = [c.name for c in result]
+        assert names == sorted(names)
+
+
+class TestUpdateCharacterMapEdgeCases:
+    """Test edge cases in _update_character_map."""
+
+    def test_dialogue_samples_capped_at_six(self) -> None:
+        from app.schemas.story_import import ChapterAnalysisResult, CharacterMention
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        char_map: dict[str, CharacterAccumulator] = {}
+
+        for i in range(8):
+            result = ChapterAnalysisResult(
+                chapter_id=f"ch{i+1}",
+                characters=[CharacterMention(
+                    name="Hero",
+                    role="protagonist",
+                    dialogue_samples=[f"Line {i+1}"],
+                )],
+            )
+            service._update_character_map(char_map, result, f"ch{i+1}")
+
+        assert len(char_map["Hero"].dialogue_samples) == 6
+
+    def test_physical_description_deduplication(self) -> None:
+        from app.schemas.story_import import ChapterAnalysisResult, CharacterMention
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        char_map: dict[str, CharacterAccumulator] = {}
+
+        desc = "Tall and dark-haired"
+        for i in range(3):
+            result = ChapterAnalysisResult(
+                chapter_id=f"ch{i+1}",
+                characters=[CharacterMention(
+                    name="Hero",
+                    role="protagonist",
+                    physical_description=desc,
+                )],
+            )
+            service._update_character_map(char_map, result, f"ch{i+1}")
+
+        assert char_map["Hero"].physical_descriptions.count(desc) == 1
+
+    def test_motive_deduplication(self) -> None:
+        from app.schemas.story_import import ChapterAnalysisResult, CharacterMention
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        char_map: dict[str, CharacterAccumulator] = {}
+
+        for i in range(3):
+            result = ChapterAnalysisResult(
+                chapter_id=f"ch{i+1}",
+                characters=[CharacterMention(
+                    name="Hero",
+                    role="protagonist",
+                    motives_observed="Save the kingdom",
+                )],
+            )
+            service._update_character_map(char_map, result, f"ch{i+1}")
+
+        assert char_map["Hero"].motives.count("Save the kingdom") == 1
+
+
+class TestBuildAnalysis:
+    """Test _build_analysis final assembly."""
+
+    def test_build_analysis_assembles_all_fields(self) -> None:
+        from app.schemas.story_import import (
+            StoryImportCharacterRequest, StoryImportWorldEntry,
+            StoryImportArc, StoryImportSequence, StoryImportChapterSummary,
+            StoryImportPlanningSynthesis, StoryStructureDetection, StructureHint, ChapterBoundary,
+        )
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        characters = [StoryImportCharacterRequest(name="Hero", role="protagonist")]
+        world_bible = [StoryImportWorldEntry(entry_type="location", title="Kingdom", summary="A kingdom")]
+        arc_analysis = {
+            "premise": "Test premise", "logline": "A logline",
+            "thematic_spine": "Theme", "emotional_promise": "Promise",
+            "target_audience": "Adults", "complexity_level": "MEDIUM",
+            "story_structure": "THREE_ACT", "genre": "Fantasy",
+            "tone": "Epic", "pov": "FIRST",
+            "story_arcs": [{"name": "Main Arc", "summary": "The main arc"}],
+            "narrative_constraints": [], "success_definition": "Good ending",
+        }
+        planning = StoryImportPlanningSynthesis(
+            sequences=[StoryImportSequence(title="Act 1", chapters=["ch1"])],
+            chapter_summaries=[StoryImportChapterSummary(chapter_id="ch1", title="Ch1")],
+        )
+        structure = StoryStructureDetection(
+            project_name="Test Novel",
+            structure_type="traditional_novel",
+            hints=StructureHint(),
+            chapters=[],
+        )
+
+        result = service._build_analysis(
+            characters=characters,
+            world_bible=world_bible,
+            arc_analysis=arc_analysis,
+            planning_synthesis=planning,
+            structure=structure,
+            genre_hint="Sci-Fi",
+            tone_hint="Dark",
+            completed_chunk_count=5,
+            total_estimated_chunks=5,
+        )
+
+        assert result.project_name == "Test Novel"
+        assert result.genre == "Fantasy"
+        assert len(result.characters) == 1
+        assert len(result.world_bible) == 1
+        assert len(result.story_arcs) == 1
+        assert result.story_arcs[0].name == "Main Arc"
+        assert len(result.sequences) == 1
+        assert result.completed_chunk_count == 5
+
+    def test_build_analysis_uses_hints_as_defaults(self) -> None:
+        """When arc_analysis lacks keys, genre_hint and tone_hint are used."""
+        from app.schemas.story_import import (
+            StoryImportCharacterRequest, StoryImportPlanningSynthesis,
+            StoryStructureDetection, StructureHint,
+        )
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        arc_analysis = {
+            "premise": "Test premise", "logline": "A logline", "thematic_spine": "Theme",
+            "emotional_promise": "Promise", "target_audience": "Adults",
+            "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+            "pov": "FIRST",
+            "story_arcs": [], "narrative_constraints": [], "success_definition": "",
+        }
+        structure = StoryStructureDetection(
+            project_name="Test", structure_type="novel", hints=StructureHint(), chapters=[],
+        )
+
+        result = service._build_analysis(
+            characters=[StoryImportCharacterRequest(name="Hero", role="protagonist")],
+            world_bible=[],
+            arc_analysis=arc_analysis,
+            planning_synthesis=StoryImportPlanningSynthesis(),
+            structure=structure,
+            genre_hint="Sci-Fi",
+            tone_hint="Dark",
+        )
+
+        assert result.genre == "Sci-Fi"
+        assert result.tone == "Dark"
+
+
+class TestNormalizePlanningSynthesis:
+    """Test _normalize_planning_synthesis deduplication and repair."""
+
+    def test_removes_duplicate_chapter_ids(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, StoryImportPlanningSynthesis
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        fallback = StoryImportPlanningSynthesis(
+            chapter_summaries=[
+                StoryImportChapterSummary(chapter_id="ch1", title="Ch1"),
+                StoryImportChapterSummary(chapter_id="ch2", title="Ch2"),
+            ],
+        )
+        synthesized = StoryImportPlanningSynthesis(
+            chapter_summaries=[
+                StoryImportChapterSummary(chapter_id="ch1", title="Ch1 Updated"),
+                StoryImportChapterSummary(chapter_id="ch1", title="Ch1 Duplicate"),
+                StoryImportChapterSummary(chapter_id="ch3", title="Ch3 Unknown"),
+            ],
+        )
+        result = service._normalize_planning_synthesis(fallback=fallback, synthesized=synthesized)
+        chapter_ids = [c.chapter_id for c in result.chapter_summaries]
+        assert chapter_ids.count("ch1") == 1
+        assert "ch2" in chapter_ids
+        assert "ch3" not in chapter_ids
+
+    def test_preserves_fallback_chapters_not_in_synthesis(self) -> None:
+        from app.schemas.story_import import StoryImportChapterSummary, StoryImportPlanningSynthesis
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        fallback = StoryImportPlanningSynthesis(
+            chapter_summaries=[
+                StoryImportChapterSummary(chapter_id="ch1", title="Ch1"),
+                StoryImportChapterSummary(chapter_id="ch2", title="Ch2"),
+                StoryImportChapterSummary(chapter_id="ch3", title="Ch3"),
+            ],
+        )
+        synthesized = StoryImportPlanningSynthesis(
+            chapter_summaries=[
+                StoryImportChapterSummary(chapter_id="ch1", title="Ch1 Updated"),
+            ],
+        )
+        result = service._normalize_planning_synthesis(fallback=fallback, synthesized=synthesized)
+        chapter_ids = [c.chapter_id for c in result.chapter_summaries]
+        assert "ch1" in chapter_ids
+        assert "ch2" in chapter_ids
+        assert "ch3" in chapter_ids
+
+
+class TestEmptyStoryEdgeCases:
+    """Test edge cases with minimal or empty input."""
+
+    def test_fallback_structure_with_empty_string(self) -> None:
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        result = service._fallback_structure("")
+        assert len(result.chapters) == 1
+        assert result.chapters[0].start_pos == 0
+
+    def test_split_into_chunks_with_empty_string(self) -> None:
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        chunks = service._split_into_chunks("")
+        assert chunks == [""]
+
+    def test_consolidate_world_bible_fallback_merges_facts(self) -> None:
+        from app.schemas.story_import import WorldDetail
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        details = [
+            WorldDetail(entry_type="location", title="City", description="A large city", canonical_facts=["has a castle"]),
+            WorldDetail(entry_type="location", title="city", description="Ancient and bustling", canonical_facts=["has a market"]),
+        ]
+        result = service._build_fallback_world_bible(details)
+        assert len(result) == 1
+        entry = result[0]
+        assert "A large city" in entry.summary
+        assert "Ancient and bustling" in entry.summary
+        assert "has a castle" in entry.canonical_facts
+        assert "has a market" in entry.canonical_facts
+
+    def test_fallback_arcs_with_no_main_characters(self) -> None:
+        from app.schemas.story_import import StoryStructureDetection, StructureHint
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        structure = StoryStructureDetection(
+            project_name="Test", structure_type="novel", hints=StructureHint(), chapters=[],
+        )
+        result = service._build_fallback_arcs([], [], structure)
+        assert "premise" in result
+        assert result["story_arcs"] == []
+
+    def test_retry_with_validation_error(self) -> None:
+        from pydantic import BaseModel, ValidationError as PydanticValidationError
+
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=["{}"]))
+        call_count = [0]
+
+        class _TestModel(BaseModel):
+            required_field: str
+
+        def flaky():
+            call_count[0] += 1
+            if call_count[0] < 2:
+                _TestModel.model_validate({})
+            return "ok"
+
+        result = service._retry_with_backoff(flaky, (), {}, max_retries=2)
+        assert result == "ok"
+
+    def test_retry_with_value_error(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=["{}"]))
+        call_count = [0]
+
+        def flaky():
+            call_count[0] += 1
+            if call_count[0] < 2:
+                raise ValueError("parse error")
+            return "ok"
+
+        result = service._retry_with_backoff(flaky, (), {}, max_retries=2)
+        assert result == "ok"
+
+
+class TestLargeStoryEdgeCases:
+    """Test with very large stories to verify chunking and processing."""
+
+    def test_analyze_large_story_very_large_text(self) -> None:
+        """A 100K character story should be properly chunked and processed."""
+        from unittest.mock import patch
+        from app.schemas.story_import import StoryImportCharacterRequest
+
+        story_text = "C" * 100_000
+
+        # Provide valid chapter boundaries so structure detection doesn't fall back
+        responses = [
+            json.dumps({
+                "project_name": "Large Story",
+                "total_estimated_words": 20000,
+                "structure_type": "novel",
+                "chapters": [
+                    {"id": "chapter-1", "title": "Chapter 1", "section_type": "chapter",
+                     "start_line": 1, "end_line": 500, "start_pos": 0, "end_pos": 25000,
+                     "estimated_word_count": 5000},
+                    {"id": "chapter-2", "title": "Chapter 2", "section_type": "chapter",
+                     "start_line": 501, "end_line": 1000, "start_pos": 25000, "end_pos": 50000,
+                     "estimated_word_count": 5000},
+                    {"id": "chapter-3", "title": "Chapter 3", "section_type": "chapter",
+                     "start_line": 1001, "end_line": 1500, "start_pos": 50000, "end_pos": 75000,
+                     "estimated_word_count": 5000},
+                    {"id": "chapter-4", "title": "Chapter 4", "section_type": "chapter",
+                     "start_line": 1501, "end_line": 2000, "start_pos": 75000, "end_pos": 100000,
+                     "estimated_word_count": 5000},
+                ],
+                "hints": {},
+            }),
+        ]
+        backend = MultiPhaseInferenceBackend(responses=responses)
+        service = MultiPassImportService(backend)
+
+        mock_characters = [StoryImportCharacterRequest(name="Hero", role="protagonist")]
+
+        with patch.object(service, "_analyze_chunk") as mock_analyze, \
+             patch.object(service, "_consolidate_characters", return_value=mock_characters), \
+             patch.object(service, "_consolidate_world_bible", return_value=[]), \
+             patch.object(service, "_detect_arcs", return_value={
+                 "premise": "Test", "logline": "Logline", "thematic_spine": "T",
+                 "emotional_promise": "P", "target_audience": "A",
+                 "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+                 "genre": "Fiction", "tone": "Dark", "pov": "THIRD_LIMITED",
+                 "story_arcs": [], "sequences": [],
+                 "narrative_constraints": [], "success_definition": "",
+             }):
+            mock_analyze.return_value = type('Result', (), {
+                'summary': 'Summary', 'key_events': [], 'characters': [],
+                'world_details': [], 'plot_events': [], 'thematic_elements': [],
+            })()
+
+            analysis = service.analyze_large_story(story_text)
+            assert analysis.project_name == "Large Story"
+            assert len(analysis.characters) >= 1
+
+    def test_single_chapter_story(self) -> None:
+        """A story with exactly one chapter should still complete the full pipeline."""
+        from unittest.mock import patch
+        from app.schemas.story_import import StoryImportCharacterRequest
+
+        story_text = "D" * 35_000
+
+        responses = [
+            json.dumps({
+                "project_name": "Single Chapter",
+                "total_estimated_words": 7000,
+                "structure_type": "short_story",
+                "chapters": [
+                    {"id": "chapter-1", "title": "The Only Chapter", "section_type": "chapter",
+                     "start_line": 1, "end_line": 1000, "start_pos": 0, "end_pos": 35000,
+                     "estimated_word_count": 7000},
+                ],
+                "hints": {},
+            }),
+        ]
+        backend = MultiPhaseInferenceBackend(responses=responses)
+        service = MultiPassImportService(backend)
+
+        mock_characters = [StoryImportCharacterRequest(name="Hero", role="protagonist")]
+
+        with patch.object(service, "_analyze_chunk") as mock_analyze, \
+             patch.object(service, "_consolidate_characters", return_value=mock_characters), \
+             patch.object(service, "_consolidate_world_bible", return_value=[]), \
+             patch.object(service, "_detect_arcs", return_value={
+                 "premise": "Test", "logline": "Logline", "thematic_spine": "T",
+                 "emotional_promise": "P", "target_audience": "A",
+                 "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+                 "genre": "Fiction", "tone": "Dark", "pov": "THIRD_LIMITED",
+                 "story_arcs": [], "sequences": [],
+                 "narrative_constraints": [], "success_definition": "",
+             }):
+            mock_analyze.return_value = type('Result', (), {
+                'summary': 'Summary', 'key_events': ['Event'], 'characters': [],
+                'world_details': [], 'plot_events': [], 'thematic_elements': [],
+            })()
+
+            analysis = service.analyze_large_story(story_text)
+            assert len(analysis.chapter_summaries) == 1
+            assert analysis.chapter_summaries[0].title == "The Only Chapter"
+
+
+class TestBuildFallbackWorldBible:
+    """Additional tests for _build_fallback_world_bible."""
+
+    def test_different_entry_types_not_deduped(self) -> None:
+        from app.schemas.story_import import WorldDetail
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        details = [
+            WorldDetail(entry_type="location", title="City", description="A city"),
+            WorldDetail(entry_type="organization", title="City", description="A guild named City"),
+        ]
+        result = service._build_fallback_world_bible(details)
+        assert len(result) == 2
+
+    def test_empty_world_details_returns_empty(self) -> None:
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        result = service._build_fallback_world_bible([])
+        assert result == []
+
+
+class TestStructureDetectionEdgeCases:
+    """Additional edge cases for structure detection."""
+
+    def test_detect_structure_with_markdown_json(self) -> None:
+        """LLM response with markdown code fences should be parsed correctly."""
+        structure = {
+            "project_name": "Fenced Story",
+            "total_estimated_words": 1000,
+            "structure_type": "short_story",
+            "chapters": [
+                {"id": "ch1", "title": "Chapter 1", "section_type": "chapter",
+                 "start_line": 1, "end_line": 50, "start_pos": 0, "end_pos": 2000,
+                 "estimated_word_count": 400},
+            ],
+            "hints": {},
+        }
+        fenced = f"```json\n{json.dumps(structure)}\n```"
+        backend = MultiPhaseInferenceBackend(responses=[fenced])
+        service = MultiPassImportService(backend)
+
+        result = service._detect_structure("Some story text...")
+        assert result.project_name == "Fenced Story"
+        assert len(result.chapters) == 1
+
+    def test_detect_structure_with_trailing_text(self) -> None:
+        """LLM response with trailing non-JSON text should still be parsed."""
+        structure = {
+            "project_name": "Trailing Story",
+            "total_estimated_words": 1000,
+            "structure_type": "short_story",
+            "chapters": [
+                {"id": "ch1", "title": "Chapter 1", "section_type": "chapter",
+                 "start_line": 1, "end_line": 50, "start_pos": 0, "end_pos": 2000,
+                 "estimated_word_count": 400},
+            ],
+            "hints": {},
+        }
+        with_trailing = json.dumps(structure) + "\n\nHope this helps!"
+        backend = MultiPhaseInferenceBackend(responses=[with_trailing])
+        service = MultiPassImportService(backend)
+
+        result = service._detect_structure("Some story text...")
+        assert result.project_name == "Trailing Story"
+
+
+class TestChunkAnalysisEdgeCases:
+    """Additional edge cases for chunk analysis."""
+
+    def test_analyze_chunk_with_markdown_fences(self) -> None:
+        """Chunk analysis should handle markdown-fenced JSON responses."""
+        chunk_data = {
+            "chapter_id": "ch1",
+            "characters": [{"name": "Hero", "role": "protagonist"}],
+            "world_details": [],
+            "plot_events": [],
+        }
+        fenced = f"```json\n{json.dumps(chunk_data)}\n```"
+        backend = MultiPhaseInferenceBackend(responses=[fenced])
+        service = MultiPassImportService(backend)
+
+        result = service._analyze_chunk("Chapter text", "ch1", "Ch1", None)
+        assert result.chapter_id == "ch1"
+        assert len(result.characters) == 1
+
+    def test_analyze_chunk_invalid_json_raises(self) -> None:
+        """Chunk analysis should raise ValueError on unparseable response."""
+        backend = MultiPhaseInferenceBackend(responses=["completely invalid"])
+        service = MultiPassImportService(backend)
+
+        with pytest.raises(ValueError):
+            service._analyze_chunk("Chapter text", "ch1", "Ch1", None)
+
+
+class TestBuildAnalysisEdgeCases:
+    """Test _build_analysis edge cases."""
+
+    def test_invalid_arc_data_skipped(self) -> None:
+        from app.schemas.story_import import (
+            StoryImportCharacterRequest, StoryImportPlanningSynthesis,
+            StoryStructureDetection, StructureHint,
+        )
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        arc_analysis = {
+            "premise": "P", "logline": "L", "thematic_spine": "T",
+            "emotional_promise": "E", "target_audience": "A",
+            "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+            "genre": "Fiction", "tone": "Dark", "pov": "THIRD_LIMITED",
+            "story_arcs": [
+                {"name": "Valid Arc", "summary": "Good"},
+                {"invalid_field_only": True},
+            ],
+            "narrative_constraints": [], "success_definition": "",
+        }
+        structure = StoryStructureDetection(
+            project_name="Test", structure_type="novel", hints=StructureHint(), chapters=[],
+        )
+
+        result = service._build_analysis(
+            characters=[StoryImportCharacterRequest(name="Hero", role="protagonist")],
+            world_bible=[],
+            arc_analysis=arc_analysis,
+            planning_synthesis=StoryImportPlanningSynthesis(),
+            structure=structure,
+            genre_hint=None,
+            tone_hint=None,
+        )
+
+        assert len(result.story_arcs) == 1
+        assert result.story_arcs[0].name == "Valid Arc"
+
+    def test_pov_normalized_on_invalid_value(self) -> None:
+        from app.schemas.story_import import (
+            StoryImportCharacterRequest, StoryImportPlanningSynthesis,
+            StoryStructureDetection, StructureHint,
+        )
+
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+        arc_analysis = {
+            "premise": "P", "logline": "L", "thematic_spine": "T",
+            "emotional_promise": "E", "target_audience": "A",
+            "complexity_level": "MEDIUM", "story_structure": "THREE_ACT",
+            "genre": "Fiction", "tone": "Dark", "pov": "INVALID_POV",
+            "story_arcs": [], "narrative_constraints": [], "success_definition": "",
+        }
+        structure = StoryStructureDetection(
+            project_name="Test", structure_type="novel", hints=StructureHint(), chapters=[],
+        )
+
+        result = service._build_analysis(
+            characters=[StoryImportCharacterRequest(name="Hero", role="protagonist")],
+            world_bible=[],
+            arc_analysis=arc_analysis,
+            planning_synthesis=StoryImportPlanningSynthesis(),
+            structure=structure,
+            genre_hint=None,
+            tone_hint=None,
+        )
+
+        assert result.pov == "THIRD_LIMITED"
+
+
+class TestFallbackStructureEdgeCases:
+    """Additional edge cases for fallback structure generation."""
+
+    def test_fallback_structure_respects_paragraph_boundaries(self) -> None:
+        story_text = "\n\n".join([f"Paragraph {i}" * 200 for i in range(100)])
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        result = service._fallback_structure(story_text)
+        assert len(result.chapters) >= 1
+        for ch in result.chapters:
+            assert ch.end_pos > ch.start_pos
+
+    def test_fallback_structure_id_format(self) -> None:
+        story_text = "A" * 50_000
+        backend = MultiPhaseInferenceBackend(responses=[])
+        service = MultiPassImportService(backend)
+
+        result = service._fallback_structure(story_text)
+        for i, ch in enumerate(result.chapters):
+            assert ch.id == f"chunk-{i + 1}"
+            assert ch.title == f"Chunk {i + 1}"
+
+
+class TestSplitIntoChunksEdgeCases:
+    """Additional edge cases for _split_into_chunks."""
+
+    def test_split_at_paragraph_boundary(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=[]))
+        text = "A" * 15_000 + "\n\n" + "B" * 10_000
+        chunks = service._split_into_chunks(text)
+        assert len(chunks) >= 2
+
+    def test_split_exact_max_chunk_size(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=[]))
+        text = "A" * MAX_CHUNK_SIZE
+        chunks = service._split_into_chunks(text)
+        assert len(chunks) == 1
+        assert chunks[0] == text
+
+    def test_split_text_just_over_max(self) -> None:
+        service = MultiPassImportService(MultiPhaseInferenceBackend(responses=[]))
+        text = "A" * (MAX_CHUNK_SIZE + 1)
+        chunks = service._split_into_chunks(text)
+        assert len(chunks) >= 2

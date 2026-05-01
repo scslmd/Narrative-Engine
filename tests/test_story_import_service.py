@@ -107,7 +107,6 @@ def _make_json_response(
         ],
         "narrative_constraints": [],
         "success_definition": "Satisfying ending",
-        "raw_story_text": "",
     })
 
 @pytest.mark.integration
@@ -164,6 +163,27 @@ def test_import_story_creates_project_and_all_entities(tmp_path: Path) -> None:
     assert len(arcs) == 1
     assert arcs[0].name == "Hero's Journey"
 
+    # 8b. Assert single-pass persists only high-level sequence shells
+    sequences = repository.list_sequence_plans(response.project_id)
+    assert len(sequences) == 1
+    assert sequences[0].title == "Act 1"
+    assert sequences[0].chapter_ids == []
+    assert sequences[0].beat_ids == []
+    assert sequences[0].status == "imported_high_level"
+    assert sequences[0].confidence_score > 0
+
+    chapters = repository.list_chapter_plans(response.project_id)
+    assert chapters == []
+
+    scenes = repository.list_scene_plans(response.project_id)
+    assert scenes == []
+
+    beats = repository.list_beat_plans(response.project_id)
+    assert beats == []
+
+    packets = repository.list_chapter_packets(response.project_id)
+    assert packets == []
+
     # 9. Assert LLM was called with correct params
     assert len(inferencer.requests) == 1
     req = inferencer.requests[0]
@@ -208,6 +228,120 @@ def test_import_story_with_existing_project_id(tmp_path: Path) -> None:
     # 5. Assert entities created in existing project
     characters = repository.list_character_profiles(project_id)
     assert len(characters) >= 1
+
+    sequences = repository.list_sequence_plans(project_id)
+    assert len(sequences) == 1
+
+    chapters = repository.list_chapter_plans(project_id)
+    assert chapters == []
+
+
+@pytest.mark.integration
+def test_import_story_with_existing_project_id_allows_blank_project_name(tmp_path: Path) -> None:
+    """Existing-project imports should not require project_name in the request payload."""
+    project_service = ProjectService(tmp_path)
+    create_request = ProjectCreateRequest(project_name="Existing Project")
+    create_resp = project_service.create_project(create_request)
+    project_id = create_resp.project_id
+
+    json_content = _make_json_response()
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    request = StoryImportRequest(
+        project_name="",
+        story_text="Long ago...",
+        project_id=project_id,
+    )
+    response = import_service.import_story(request)
+
+    assert response.status == "completed"
+    assert response.project_id == project_id
+
+
+@pytest.mark.integration
+def test_import_story_skips_downstream_planning_for_analysis_failed_chapters(tmp_path: Path) -> None:
+    payload = json.loads(_make_json_response())
+    payload["sequences"] = [
+        {"title": "Act 1", "summary": "Opening movement", "chapters": ["chapter-1", "chapter-2"]},
+    ]
+    payload["chapter_summaries"] = [
+        {
+            "chapter_id": "chapter-1",
+            "title": "Chapter 1",
+            "summary": "The hero answers the call.",
+            "section_type": "chapter",
+            "analysis_status": "complete",
+            "objective": "Leave home.",
+            "conflict": "Fear of the unknown.",
+            "stakes": "The kingdom may fall.",
+            "active_character_names": ["Aria"],
+            "continuity_requirements": ["Aria still has the map."],
+            "unresolved_questions": ["Who sent the summons?"],
+            "plot_events": [
+                {
+                    "summary": "Aria receives the summons.",
+                    "characters_involved": ["Aria"],
+                    "significance": "inciting_incident",
+                    "unresolved_threads": ["Who sent the summons?"],
+                }
+            ],
+        },
+        {
+            "chapter_id": "chapter-2",
+            "title": "Chapter 2",
+            "summary": "",
+            "section_type": "chapter",
+            "analysis_status": "analysis_failed",
+            "objective": "Advance Chapter 2.",
+            "conflict": "Conflict unavailable because analysis failed.",
+            "stakes": "The consequences remain unclear.",
+            "active_character_names": ["Aria"],
+            "continuity_requirements": [],
+            "unresolved_questions": [],
+            "plot_events": [],
+        },
+    ]
+
+    inferencer = FakeImportInferenceBackend(content=json.dumps(payload))
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    response = import_service.import_story(
+        StoryImportRequest(
+            project_name="Degraded Story",
+            story_text="A" * 500,
+        )
+    )
+
+    assert response.status == "completed"
+
+    chapters = repository.list_chapter_plans(response.project_id)
+    chapter_by_title = {chapter.title: chapter for chapter in chapters}
+    assert chapter_by_title["Chapter 1"].status == "imported"
+    assert chapter_by_title["Chapter 2"].status == "analysis_failed"
+
+    scenes = repository.list_scene_plans(response.project_id)
+    beats = repository.list_beat_plans(response.project_id)
+    packets = repository.list_chapter_packets(response.project_id)
+
+    assert len(scenes) == 1
+    assert len(beats) == 1
+    assert len(packets) == 1
+    assert packets[0].chapter_id == chapter_by_title["Chapter 1"].chapter_id
+    assert any("could not be analyzed" in warning for warning in response.warnings)
 
 
 @pytest.mark.integration
@@ -593,6 +727,44 @@ def test_import_story_stable_ids_on_retry(tmp_path: Path) -> None:
     # 5. Assert: Arc count unchanged
     arcs = repository.list_arc_candidates(first_response.project_id)
     assert len(arcs) == 1
+
+
+@pytest.mark.integration
+def test_import_story_ids_are_scoped_per_project(tmp_path: Path) -> None:
+    """Same imported names in different projects should not overwrite prior project rows."""
+    json_content = _make_json_response(project_name="Scoped IDs Test")
+    inferencer = FakeImportInferenceBackend(content=json_content)
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    first_response = import_service.import_story(
+        StoryImportRequest(project_name="Scoped IDs Test A", story_text="First...")
+    )
+    second_response = import_service.import_story(
+        StoryImportRequest(project_name="Scoped IDs Test B", story_text="Second...")
+    )
+
+    assert first_response.status == "completed"
+    assert second_response.status == "completed"
+    assert first_response.project_id != second_response.project_id
+
+    first_characters = repository.list_character_profiles(first_response.project_id)
+    second_characters = repository.list_character_profiles(second_response.project_id)
+    assert len(first_characters) == 1
+    assert len(second_characters) == 1
+    assert first_characters[0].character_id != second_characters[0].character_id
+
+    first_arcs = repository.list_arc_candidates(first_response.project_id)
+    second_arcs = repository.list_arc_candidates(second_response.project_id)
+    assert len(first_arcs) == 1
+    assert len(second_arcs) == 1
+    assert first_arcs[0].arc_id != second_arcs[0].arc_id
 
 
 @pytest.mark.integration

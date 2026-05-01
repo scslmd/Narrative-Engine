@@ -11,6 +11,7 @@ from typing import Any, Callable
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
 from ..utils.db_inserts import (
+    CharacterInsertData,
     hash_id,
     insert_character_profile,
     insert_foundation_profile,
@@ -278,13 +279,15 @@ class MythosExtractionService:
         """Insert archetypal patterns as character_profiles."""
         for pattern in analysis.archetypal_patterns:
             char_id = hash_id("mythos-archetype", pattern.name)
-            insert_character_profile(
-                conn, char_id, project_id,
+            insert_character_profile(conn, CharacterInsertData(
+                character_id=char_id,
+                project_id=project_id,
                 display_name=pattern.character_type or pattern.name,
-                role_in_story="archetype", archetype=pattern.name,
+                role_in_story="archetype",
+                archetype=pattern.name,
                 backstory_summary=pattern.description or None,
                 arc_stage_notes=json_safe(pattern.narrative_beats or []),
-            )
+            ))
 
     def _import_entities(
         self,
@@ -297,13 +300,15 @@ class MythosExtractionService:
         for entity in analysis.key_entities:
             if entity.entity_type in ("deity", "force"):
                 char_id = hash_id("mythos-entity", entity.name)
-                insert_character_profile(
-                    conn, char_id, project_id,
-                    display_name=entity.name, role_in_story="mythos_entity",
+                insert_character_profile(conn, CharacterInsertData(
+                    character_id=char_id,
+                    project_id=project_id,
+                    display_name=entity.name,
+                    role_in_story="mythos_entity",
                     archetype=entity.archetype or None,
                     primary_strength=entity.domain_or_power or None,
                     continuity_facts_json=json_safe(entity.canonical_facts or []),
-                )
+                ))
             else:
                 insert_world_bible_entry(
                     conn, project_id, entity.entity_type or "concept", entity.name,

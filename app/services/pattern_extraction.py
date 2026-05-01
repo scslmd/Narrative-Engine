@@ -11,6 +11,7 @@ from typing import Any, Callable
 from ..inference.base import InferenceBackend, InferenceBackendError
 from ..persistence.story_development import StoryDevelopmentRepository
 from ..utils.db_inserts import (
+    CharacterInsertData,
     hash_id,
     insert_character_profile,
     insert_foundation_profile,
@@ -604,13 +605,15 @@ class PatternExtractionService:
         """Insert key entities as character_profiles and relationships as edges."""
         for entity in analysis.key_entities:
             char_id = hash_id("pattern-entity", entity.name)
-            insert_character_profile(
-                conn, char_id, project_id,
-                display_name=entity.name, role_in_story="narrative_entity",
+            insert_character_profile(conn, CharacterInsertData(
+                character_id=char_id,
+                project_id=project_id,
+                display_name=entity.name,
+                role_in_story="narrative_entity",
                 archetype=entity.archetype or None,
                 primary_strength=entity.domain_or_power or None,
                 continuity_facts_json=json_safe(entity.canonical_facts or []),
-            )
+            ))
 
         for rel in analysis.entity_relationships:
             edge_id = hash_id("pattern-edge", f"{rel.source}-{rel.target}")
