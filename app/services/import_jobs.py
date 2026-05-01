@@ -40,7 +40,7 @@ class ImportJobManager:
         self._ttl_seconds = ttl_seconds
 
     def submit(
-        self, story_text: str, worker_fn: Callable[..., Any] | None = None, **worker_kwargs: Any
+        self, worker_fn: Callable[..., Any] | None = None, **worker_kwargs: Any
     ) -> str:
         """Create a job and submit work to thread pool. Returns import_id."""
         import_id = str(uuid.uuid4())

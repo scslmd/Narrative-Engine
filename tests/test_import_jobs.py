@@ -48,14 +48,14 @@ class TestImportJob:
 class TestImportJobManagerSubmit:
     def test_submit_returns_import_id(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("some story text")
+        import_id = mgr.submit()
         assert isinstance(import_id, str)
         assert len(import_id) > 0
         mgr.shutdown(wait=False)
 
     def test_submit_creates_pending_job(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("some story text")
+        import_id = mgr.submit()
         status = mgr.get_status(import_id)
         assert status.status == "pending"
         assert status.import_id == import_id
@@ -63,7 +63,7 @@ class TestImportJobManagerSubmit:
 
     def test_submit_without_worker_does_not_spawn_threads(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text", worker_fn=None)
+        import_id = mgr.submit(worker_fn=None)
         status = mgr.get_status(import_id)
         assert status.status == "pending"
         mgr.shutdown(wait=False)
@@ -76,7 +76,7 @@ class TestImportJobManagerSubmit:
             return "done"
 
         mgr = ImportJobManager()
-        import_id = mgr.submit("text", worker_fn=slow_worker)
+        import_id = mgr.submit(worker_fn=slow_worker)
         time.sleep(0.1)
         status = mgr.get_status(import_id)
         assert status.status == "running"
@@ -86,7 +86,7 @@ class TestImportJobManagerSubmit:
 
     def test_submit_multiple_jobs_returns_unique_ids(self):
         mgr = ImportJobManager()
-        ids = {mgr.submit(f"text-{i}") for i in range(5)}
+        ids = {mgr.submit() for i in range(5)}
         assert len(ids) == 5
         mgr.shutdown(wait=False)
 
@@ -94,7 +94,7 @@ class TestImportJobManagerSubmit:
 class TestImportJobManagerGetStatus:
     def test_get_status_returns_import_progress_response(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         status = mgr.get_status(import_id)
         assert isinstance(status, ImportProgressResponse)
         mgr.shutdown(wait=False)
@@ -107,7 +107,7 @@ class TestImportJobManagerGetStatus:
 
     def test_get_status_reflects_updated_fields(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.update_progress(
             import_id,
             status="running",
@@ -135,7 +135,7 @@ class TestImportJobManagerGetStatus:
 class TestImportJobManagerUpdateProgress:
     def test_update_progress_sets_known_fields(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.update_progress(import_id, phase="structure_detection", chapters_processed=1)
         status = mgr.get_status(import_id)
         assert status.phase == "structure_detection"
@@ -144,7 +144,7 @@ class TestImportJobManagerUpdateProgress:
 
     def test_update_progress_ignores_unknown_keys(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.update_progress(import_id, unknown_field="value", phase="test")
         status = mgr.get_status(import_id)
         assert status.phase == "test"
@@ -160,7 +160,7 @@ class TestImportJobManagerUpdateProgress:
 class TestImportJobManagerComplete:
     def test_complete_sets_status_and_result(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         result = StoryImportResponse(
             project_id="proj-1",
             status="completed",
@@ -176,7 +176,7 @@ class TestImportJobManagerComplete:
 class TestImportJobManagerFail:
     def test_fail_sets_status_and_error(self):
         mgr = ImportJobManager()
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.fail(import_id, "something went wrong")
         status = mgr.get_status(import_id)
         assert status.status == "failed"
@@ -201,7 +201,7 @@ class TestImportJobManagerWorker:
             return expected_result
 
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text", worker_fn=worker_fn)
+        import_id = mgr.submit(worker_fn=worker_fn)
         time.sleep(0.3)
         status = mgr.get_status(import_id)
         assert status.status == "completed"
@@ -213,7 +213,7 @@ class TestImportJobManagerWorker:
             raise ValueError("boom")
 
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text", worker_fn=failing_fn)
+        import_id = mgr.submit(worker_fn=failing_fn)
         time.sleep(0.3)
         status = mgr.get_status(import_id)
         assert status.status == "failed"
@@ -229,7 +229,7 @@ class TestImportJobManagerWorker:
             )
 
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text", worker_fn=failed_import_fn)
+        import_id = mgr.submit(worker_fn=failed_import_fn)
         time.sleep(0.3)
         status = mgr.get_status(import_id)
         assert status.status == "failed"
@@ -245,7 +245,7 @@ class TestImportJobManagerWorker:
             return "ok"
 
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text", worker_fn=capture_fn, extra="value")
+        import_id = mgr.submit(worker_fn=capture_fn, extra="value")
         time.sleep(0.3)
         assert received_kwargs.get("import_id") == import_id
         assert received_kwargs.get("extra") == "value"
@@ -263,7 +263,7 @@ class TestImportJobManagerWorker:
             return "ok"
 
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text", worker_fn=blocking_fn)
+        import_id = mgr.submit(worker_fn=blocking_fn)
         started_event.wait(timeout=2)
         captured_status = mgr.get_status(import_id).status
         release_event.set()
@@ -279,7 +279,7 @@ class TestImportJobManagerWorker:
 class TestImportJobManagerCleanup:
     def test_cleanup_removes_expired_completed_jobs(self):
         mgr = ImportJobManager(ttl_seconds=0)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.complete(import_id, "result")
         time.sleep(0.05)
         removed = mgr.cleanup_expired()
@@ -290,7 +290,7 @@ class TestImportJobManagerCleanup:
 
     def test_cleanup_removes_expired_failed_jobs(self):
         mgr = ImportJobManager(ttl_seconds=0)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.fail(import_id, "error")
         time.sleep(0.05)
         removed = mgr.cleanup_expired()
@@ -301,7 +301,7 @@ class TestImportJobManagerCleanup:
 
     def test_cleanup_keeps_running_jobs(self):
         mgr = ImportJobManager(ttl_seconds=0)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         mgr.update_progress(import_id, status="running")
         removed = mgr.cleanup_expired()
         assert removed == 0
@@ -311,7 +311,7 @@ class TestImportJobManagerCleanup:
 
     def test_cleanup_keeps_pending_jobs(self):
         mgr = ImportJobManager(ttl_seconds=0)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         removed = mgr.cleanup_expired()
         assert removed == 0
         status = mgr.get_status(import_id)
@@ -320,7 +320,7 @@ class TestImportJobManagerCleanup:
 
     def test_cleanup_keeps_non_expired_jobs(self):
         mgr = ImportJobManager(ttl_seconds=300)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         result = StoryImportResponse(
             project_id="proj-1",
             status="completed",
@@ -335,7 +335,7 @@ class TestImportJobManagerCleanup:
 
     def test_cleanup_returns_count_of_removed(self):
         mgr = ImportJobManager(ttl_seconds=0)
-        ids = [mgr.submit(f"text-{i}") for i in range(3)]
+        ids = [mgr.submit() for i in range(3)]
         for iid in ids:
             mgr.complete(iid, "result")
         time.sleep(0.05)
@@ -352,7 +352,7 @@ class TestImportJobManagerCleanup:
 class TestImportJobManagerThreadSafety:
     def test_concurrent_updates_do_not_corrupt_state(self):
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         errors = []
 
         def updater(i: int):
@@ -379,7 +379,7 @@ class TestImportJobManagerThreadSafety:
 
     def test_concurrent_get_status_is_safe(self):
         mgr = ImportJobManager(ttl_seconds=1)
-        import_id = mgr.submit("text")
+        import_id = mgr.submit()
         results = []
         errors = []
 
@@ -450,7 +450,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=worker_with_callbacks,
             job_manager=mgr,
         )
@@ -481,7 +480,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=counting_worker,
             job_manager=mgr,
         )
@@ -508,7 +506,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=chunk_worker,
             job_manager=mgr,
         )
@@ -537,7 +534,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=failing_callback_worker,
             job_manager=mgr,
         )
@@ -571,7 +567,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=multi_phase_worker,
             job_manager=mgr,
         )
@@ -588,7 +583,6 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(ttl_seconds=1)
         import_id = mgr.submit(
-            "text",
             worker_fn=crashing_worker,
             job_manager=mgr,
         )
@@ -621,7 +615,7 @@ class TestProgressCallbackIntegration:
 
         mgr = ImportJobManager(max_workers=2, ttl_seconds=1)
         for _ in range(4):
-            mgr.submit("text", worker_fn=tracked_worker)
+            mgr.submit(worker_fn=tracked_worker)
 
         time.sleep(0.2)
         gate.set()

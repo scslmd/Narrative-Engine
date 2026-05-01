@@ -107,7 +107,6 @@ def _make_json_response(
         ],
         "narrative_constraints": [],
         "success_definition": "Satisfying ending",
-        "raw_story_text": "",
     })
 
 @pytest.mark.integration

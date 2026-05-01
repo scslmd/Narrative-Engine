@@ -178,7 +178,6 @@ def build_projects_router(
             )
 
             import_id = import_job_manager.submit(
-                text,
                 _run_import_worker,
                 import_service=import_service,
                 request=request,

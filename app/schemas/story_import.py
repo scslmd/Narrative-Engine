@@ -212,7 +212,6 @@ class StoryImportAnalysis(StrictModel):
     success_definition: str = Field(default="", max_length=2000)
     completed_chunk_count: int = Field(default=0, ge=0)
     total_estimated_chunks: int = Field(default=0, ge=0)
-    raw_story_text: str = Field(default="", max_length=5_000_000)
 
     @model_validator(mode="before")
     @classmethod

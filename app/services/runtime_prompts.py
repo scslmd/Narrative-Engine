@@ -305,8 +305,7 @@ def build_import_analysis_request(
         '    }\n'
         '  ],\n'
         '  "narrative_constraints": [],\n'
-        '  "success_definition": "<string>",\n'
-        '  "raw_story_text": ""\n'
+        '  "success_definition": "<string>"\n'
         '}\n\n'
         "CRITICAL RULES FOR FIELDS:\n"
         "- You MUST use the EXACT key names shown above. Do not use synonyms like name->title, description->summary, etc.\n"
@@ -353,7 +352,7 @@ def build_import_analysis_request(
         "- For unnamed characters, use descriptive names like \"the old guard,\" \"the merchant.\"\n"
         "- role is critical: correctly identify protagonist (drives plot) and antagonist (opposes protagonist).\n\n"
         "VALIDATION CHECKLIST (check before returning):\n"
-        "1. All required keys present, no extra top-level keys beyond raw_story_text.\n"
+        "1. All required keys present, no extra top-level keys.\n"
         "2. characters array is non-empty, every character has name and role.\n"
         "3. pov and story_structure are exact enum matches.\n"
         "4. All array fields (contradictions, secrets, values, taboos, continuity_facts, canonical_facts, stage_map, tags, chapters) are actual JSON arrays [].\n"
