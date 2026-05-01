@@ -216,6 +216,8 @@ class PlanningService:
                     chapter_ids=list(record.chapter_ids),
                     status=record.status,
                     position=position,
+                    provenance_note=record.provenance_note,
+                    confidence_score=record.confidence_score,
                 )
             return tuple(self._sequence_from_record(self.repository.get_sequence_plan(sequence_id)) for sequence_id in normalized_ids)
 
@@ -238,6 +240,8 @@ class PlanningService:
                     unresolved_questions=list(record.unresolved_questions),
                     status=record.status,
                     position=position,
+                    provenance_note=record.provenance_note,
+                    confidence_score=record.confidence_score,
                 )
             self._sync_sequence_chapter_ids(normalized_project_id)
             return tuple(self._chapter_from_record(self.repository.get_chapter_plan(chapter_id)) for chapter_id in normalized_ids)
@@ -260,6 +264,8 @@ class PlanningService:
                 unresolved_questions=list(record.unresolved_questions),
                 status=record.status,
                 position=position,
+                provenance_note=record.provenance_note,
+                confidence_score=record.confidence_score,
             )
         return tuple(self._scene_from_record(self.repository.get_scene_plan(scene_id)) for scene_id in normalized_ids)
 
@@ -378,6 +384,8 @@ class PlanningService:
                 chapter_ids=ordered_chapter_ids,
                 status=sequence.status,
                 position=sequence.position,
+                provenance_note=sequence.provenance_note,
+                confidence_score=sequence.confidence_score,
             )
 
     def _relevant_dependency_ids(
@@ -463,6 +471,8 @@ class PlanningService:
             beat_ids=list(record.beat_ids),
             chapter_ids=list(record.chapter_ids),
             status=record.status,
+            provenance_note=record.provenance_note,
+            confidence_score=record.confidence_score,
         )
 
     def _chapter_from_record(self, record) -> ChapterPlan:
@@ -479,6 +489,8 @@ class PlanningService:
             continuity_requirements=list(record.continuity_requirements),
             unresolved_questions=list(record.unresolved_questions),
             status=record.status,
+            provenance_note=record.provenance_note,
+            confidence_score=record.confidence_score,
         )
 
     def _scene_from_record(self, record) -> ScenePlan:
@@ -495,6 +507,8 @@ class PlanningService:
             continuity_requirements=list(record.continuity_requirements),
             unresolved_questions=list(record.unresolved_questions),
             status=record.status,
+            provenance_note=record.provenance_note,
+            confidence_score=record.confidence_score,
         )
 
     def _packet_from_record(self, record) -> ChapterPacket:
@@ -506,6 +520,8 @@ class PlanningService:
             constraints=list(record.constraints),
             scene_goals=list(record.scene_goals),
             status=record.status,
+            provenance_note=record.provenance_note,
+            confidence_score=record.confidence_score,
         )
 
     def _dependency_from_record(self, record) -> PlanningDependency:

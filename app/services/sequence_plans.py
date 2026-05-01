@@ -89,6 +89,8 @@ class SequencePlanService:
             chapter_ids=existing.chapter_ids,
             status=self._normalize_status(status),
             position=existing.position,
+            provenance_note=existing.provenance_note,
+            confidence_score=existing.confidence_score,
         )
 
     def _plan_context(

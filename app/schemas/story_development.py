@@ -560,6 +560,8 @@ class BeatPlan(StrictSchemaModel):
     continuity_requirements: list[str] = Field(default_factory=list)
     unresolved_questions: list[str] = Field(default_factory=list)
     status: str = Field(default="draft", min_length=1)
+    provenance_note: str | None = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="before")
     @classmethod
@@ -584,6 +586,8 @@ class SequencePlan(StrictSchemaModel):
     beat_ids: list[str] = Field(default_factory=list)
     chapter_ids: list[str] = Field(default_factory=list)
     status: str = Field(default="draft", min_length=1)
+    provenance_note: str | None = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="before")
     @classmethod
@@ -613,6 +617,8 @@ class ChapterPlan(StrictSchemaModel):
     continuity_requirements: list[str] = Field(default_factory=list)
     unresolved_questions: list[str] = Field(default_factory=list)
     status: str = Field(default="draft", min_length=1)
+    provenance_note: str | None = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="before")
     @classmethod
@@ -644,6 +650,8 @@ class ScenePlan(StrictSchemaModel):
     continuity_requirements: list[str] = Field(default_factory=list)
     unresolved_questions: list[str] = Field(default_factory=list)
     status: str = Field(default="draft", min_length=1)
+    provenance_note: str | None = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="before")
     @classmethod
@@ -670,6 +678,8 @@ class ChapterPacket(StrictSchemaModel):
     constraints: list[str] = Field(default_factory=list)
     scene_goals: list[str] = Field(default_factory=list)
     status: str = Field(default="draft", min_length=1)
+    provenance_note: str | None = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
 
     @model_validator(mode="before")
     @classmethod

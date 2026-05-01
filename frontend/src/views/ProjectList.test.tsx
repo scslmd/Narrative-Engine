@@ -29,6 +29,7 @@ const mockProjects = [
 describe('ProjectList', () => {
   beforeEach(() => {
     server.use(
+      http.get('/projects', () => HttpResponse.json([])),
       http.get('/health/ready', () =>
         HttpResponse.json({ components: { inference: { backend: 'llama.cpp' } } }),
       ),

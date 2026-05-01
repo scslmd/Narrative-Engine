@@ -1,10 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { useJobSteps } from './useJobSteps';
 
 describe('useJobSteps', () => {
+  beforeEach(() => {
+    server.use(
+      http.get('/jobs/:id/steps', () => HttpResponse.json({ items: [] })),
+      http.get('/role-model-checker/:id/steps', () => HttpResponse.json({ items: [] })),
+    );
+  });
+
   it('returns loading state initially', () => {
     const { result } = renderHook(() =>
       useJobSteps('j1', 'pipeline_job'),
@@ -91,7 +98,7 @@ describe('useJobSteps', () => {
   });
 
   it('includes attempt number as query param when provided', async () => {
-    let receivedAttempt: string | undefined;
+    let receivedAttempt: string | null | undefined;
     server.use(
       http.get('/jobs/:id/steps', ({ request }) => {
         const url = new URL(request.url);

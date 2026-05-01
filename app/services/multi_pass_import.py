@@ -18,7 +18,9 @@ from ..schemas.story_import import (
     PlotEvent,
     StoryImportAnalysis,
     StoryImportArc,
+    StoryImportChapterSummary,
     StoryImportCharacterRequest,
+    StoryImportPlanningSynthesis,
     StoryImportSequence,
     StoryImportWorldEntry,
     StoryStructureDetection,
@@ -140,8 +142,14 @@ class MultiPassImportService:
         character_map: dict[str, CharacterAccumulator] = {}
         all_world_details: list[WorldDetail] = []
         all_plot_events: list[PlotEvent] = []
-        chapter_summaries: list[dict[str, str]] = []
+        chapter_summaries: list[StoryImportChapterSummary] = []
         chapters_processed = 0
+        chunks_processed = 0
+        total_chunks = sum(
+            len(self._split_into_chunks(story_text[chapter.start_pos:chapter.end_pos]))
+            for chapter in structure.chapters
+            if story_text[chapter.start_pos:chapter.end_pos].strip()
+        )
 
         for chapter in structure.chapters:
             text_chunk = story_text[chapter.start_pos:chapter.end_pos]
@@ -151,6 +159,7 @@ class MultiPassImportService:
             # Sub-chunk if too large
             chunks = self._split_into_chunks(text_chunk)
             known_chars_json = self._build_prior_character_context(character_map)
+            chapter_results: list[ChapterAnalysisResult] = []
 
             for chunk_text in chunks:
                 try:
@@ -163,28 +172,35 @@ class MultiPassImportService:
                     self._update_character_map(character_map, result, chapter.id)
                     all_world_details.extend(result.world_details or [])
                     all_plot_events.extend(result.plot_events or [])
-                    chapters_processed += 1
-                    if on_progress:
-                        on_progress("chapter_analysis", {
-                            "chapters_processed": chapters_processed,
-                            "total_estimated_chapters": total_chapters,
-                        })
+                    chapter_results.append(result)
                 except (InferenceBackendError, ValueError, ValidationError) as exc:
                     logger.warning(
                         "Failed to analyze chunk %s: %s. Skipping.",
                         chapter.id,
                         exc,
                     )
-                    continue
+                finally:
+                    chunks_processed += 1
+                    if on_progress:
+                        on_progress("chapter_analysis", {
+                            "chapters_processed": chapters_processed,
+                            "total_estimated_chapters": total_chapters,
+                            "chunks_processed": chunks_processed,
+                            "total_estimated_chunks": total_chunks,
+                        })
 
                 # Refresh prior context after each successful chunk
                 known_chars_json = self._build_prior_character_context(character_map)
 
-            chapter_summaries.append({
-                "chapter_id": chapter.id,
-                "title": chapter.title,
-                "section_type": chapter.section_type,
-            })
+            chapters_processed += 1
+            chapter_summaries.append(self._build_chapter_summary(chapter, chapter_results, len(chunks)))
+            if on_progress:
+                on_progress("chapter_complete", {
+                    "chapters_processed": chapters_processed,
+                    "total_estimated_chapters": total_chapters,
+                    "chunks_processed": chunks_processed,
+                    "total_estimated_chunks": total_chunks,
+                })
 
         # Phase 3a: Consolidate characters
         consolidated_characters = self._consolidate_characters(
@@ -196,6 +212,8 @@ class MultiPassImportService:
             on_progress("consolidation_characters", {
                 "chapters_processed": chapters_processed,
                 "total_estimated_chapters": total_chapters,
+                "chunks_processed": chunks_processed,
+                "total_estimated_chunks": total_chunks,
             })
 
         # Phase 3b: Consolidate world bible
@@ -204,6 +222,8 @@ class MultiPassImportService:
             on_progress("consolidation_world", {
                 "chapters_processed": chapters_processed,
                 "total_estimated_chapters": total_chapters,
+                "chunks_processed": chunks_processed,
+                "total_estimated_chunks": total_chunks,
             })
 
         # Phase 3c: Detect arcs
@@ -218,6 +238,22 @@ class MultiPassImportService:
             on_progress("consolidation_arcs", {
                 "chapters_processed": chapters_processed,
                 "total_estimated_chapters": total_chapters,
+                "chunks_processed": chunks_processed,
+                "total_estimated_chunks": total_chunks,
+            })
+
+        planning_synthesis = self._synthesize_planning(
+            structure=structure,
+            chapter_summaries=chapter_summaries,
+            story_arcs=arc_analysis.get("story_arcs", []),
+            characters=consolidated_characters,
+        )
+        if on_progress:
+            on_progress("consolidation_planning", {
+                "chapters_processed": chapters_processed,
+                "total_estimated_chapters": total_chapters,
+                "chunks_processed": chunks_processed,
+                "total_estimated_chunks": total_chunks,
             })
 
         # Build final StoryImportAnalysis
@@ -225,10 +261,12 @@ class MultiPassImportService:
             characters=consolidated_characters,
             world_bible=consolidated_world,
             arc_analysis=arc_analysis,
-            chapter_summaries=chapter_summaries,
+            planning_synthesis=planning_synthesis,
             structure=structure,
             genre_hint=genre_hint,
             tone_hint=tone_hint,
+            completed_chunk_count=chunks_processed,
+            total_estimated_chunks=total_chunks,
         )
 
     def _detect_structure(self, story_text: str) -> StoryStructureDetection:
@@ -733,10 +771,12 @@ class MultiPassImportService:
         characters: list[StoryImportCharacterRequest],
         world_bible: list[StoryImportWorldEntry],
         arc_analysis: dict[str, Any],
-        chapter_summaries: list[dict[str, str]],
+        planning_synthesis: StoryImportPlanningSynthesis,
         structure: StoryStructureDetection,
         genre_hint: str | None,
         tone_hint: str | None,
+        completed_chunk_count: int = 0,
+        total_estimated_chunks: int = 0,
     ) -> StoryImportAnalysis:
         """Assemble final StoryImportAnalysis from all phases."""
         # Map story arcs
@@ -747,14 +787,11 @@ class MultiPassImportService:
             except ValidationError:
                 continue
 
-        # Build sequences from chapter summaries
-        sequences: list[StoryImportSequence] = []
-        if chapter_summaries:
-            sequences.append(StoryImportSequence(
-                title="Main Narrative",
-                summary=f"Story with {len(chapter_summaries)} chapters",
-                chapters=[c["chapter_id"] for c in chapter_summaries],
-            ))
+        sequences = planning_synthesis.sequences or self._build_sequences_from_structure(
+            structure,
+            planning_synthesis.chapter_summaries,
+        )
+        chapter_summaries = planning_synthesis.chapter_summaries
 
         return StoryImportAnalysis(
             project_name=structure.project_name or "Untitled Story",
@@ -772,6 +809,368 @@ class MultiPassImportService:
             world_bible=world_bible,
             story_arcs=story_arcs,
             sequences=sequences,
+            chapter_summaries=chapter_summaries,
             narrative_constraints=arc_analysis.get("narrative_constraints", []),
             success_definition=arc_analysis.get("success_definition", ""),
+            completed_chunk_count=completed_chunk_count,
+            total_estimated_chunks=total_estimated_chunks,
         )
+
+    def _synthesize_planning(
+        self,
+        *,
+        structure: StoryStructureDetection,
+        chapter_summaries: list[StoryImportChapterSummary],
+        story_arcs: list[dict[str, Any]],
+        characters: list[StoryImportCharacterRequest],
+    ) -> StoryImportPlanningSynthesis:
+        """Phase 3d: synthesize planning-grade sequences and chapter summaries from analyzed chapters."""
+        if not chapter_summaries:
+            return StoryImportPlanningSynthesis(sequences=[], chapter_summaries=[])
+
+        from .runtime_prompts import build_planning_consolidation_request
+
+        fallback = StoryImportPlanningSynthesis(
+            sequences=self._build_sequences_from_structure(structure, chapter_summaries),
+            chapter_summaries=[self._with_planning_metadata(chapter) for chapter in chapter_summaries],
+        )
+
+        structure_json = json.dumps(
+            structure.model_dump(mode="json", exclude_defaults=True),
+            ensure_ascii=True,
+            indent=2,
+        )
+        chapter_summaries_json = json.dumps(
+            [chapter.model_dump(mode="json", exclude_defaults=True) for chapter in chapter_summaries],
+            ensure_ascii=True,
+            indent=2,
+        )
+        story_arcs_json = json.dumps(story_arcs, ensure_ascii=True, indent=2)
+        character_roster_json = json.dumps(
+            [
+                {
+                    "name": character.name,
+                    "role": character.role,
+                    "character_arc": character.character_arc,
+                    "relationships": character.relationships,
+                }
+                for character in characters
+            ],
+            ensure_ascii=True,
+            indent=2,
+        )
+
+        try:
+            inference_request = build_planning_consolidation_request(
+                structure_json=structure_json,
+                chapter_summaries_json=chapter_summaries_json,
+                story_arcs_json=story_arcs_json,
+                character_roster_json=character_roster_json,
+                default_model=self._inferencer.descriptor.default_model,
+            )
+            response = self._retry_with_backoff(
+                self._inferencer.generate_text,
+                (inference_request,),
+                {},
+                max_retries=2,
+            )
+            parsed = extract_json(response.content)
+            if isinstance(parsed, dict):
+                synthesized = StoryImportPlanningSynthesis.model_validate(parsed)
+                return self._normalize_planning_synthesis(
+                    fallback=fallback,
+                    synthesized=synthesized,
+                )
+        except (InferenceBackendError, ValueError, ValidationError) as exc:
+            logger.warning("Planning synthesis failed: %s. Using deterministic fallback.", exc)
+
+        return self._normalize_planning_synthesis(fallback=fallback, synthesized=fallback)
+
+    def _normalize_planning_synthesis(
+        self,
+        *,
+        fallback: StoryImportPlanningSynthesis,
+        synthesized: StoryImportPlanningSynthesis,
+    ) -> StoryImportPlanningSynthesis:
+        """Validate and repair synthesized planning before persistence."""
+        fallback_by_id = {
+            chapter.chapter_id: self._with_planning_metadata(chapter)
+            for chapter in fallback.chapter_summaries
+        }
+        normalized_chapters: list[StoryImportChapterSummary] = []
+        seen_ids: set[str] = set()
+
+        for chapter in synthesized.chapter_summaries:
+            base = fallback_by_id.get(chapter.chapter_id)
+            if base is None or chapter.chapter_id in seen_ids:
+                continue
+            seen_ids.add(chapter.chapter_id)
+            normalized_chapters.append(self._merge_chapter_summary(base, chapter))
+
+        for chapter_id, base in fallback_by_id.items():
+            if chapter_id not in seen_ids:
+                normalized_chapters.append(base)
+
+        normalized_sequences = self._normalize_sequences(
+            synthesized.sequences,
+            fallback_sequences=fallback.sequences,
+            chapter_summaries=normalized_chapters,
+        )
+        return StoryImportPlanningSynthesis(
+            sequences=normalized_sequences,
+            chapter_summaries=normalized_chapters,
+        )
+
+    def _merge_chapter_summary(
+        self,
+        base: StoryImportChapterSummary,
+        candidate: StoryImportChapterSummary,
+    ) -> StoryImportChapterSummary:
+        plot_events = candidate.plot_events or base.plot_events
+        merged = StoryImportChapterSummary(
+            chapter_id=base.chapter_id,
+            title=candidate.title or base.title,
+            summary=candidate.summary or base.summary,
+            section_type=candidate.section_type or base.section_type,
+            analysis_status=base.analysis_status,
+            objective=candidate.objective or base.objective,
+            conflict=candidate.conflict or base.conflict,
+            stakes=candidate.stakes or base.stakes,
+            active_character_names=list(dict.fromkeys(candidate.active_character_names or base.active_character_names)),
+            continuity_requirements=list(dict.fromkeys(candidate.continuity_requirements or base.continuity_requirements)),
+            unresolved_questions=list(dict.fromkeys(candidate.unresolved_questions or base.unresolved_questions)),
+            plot_events=plot_events,
+            estimated_word_count=candidate.estimated_word_count if candidate.estimated_word_count is not None else base.estimated_word_count,
+            provenance_note=candidate.provenance_note or base.provenance_note,
+            confidence_score=max(0.0, min(1.0, candidate.confidence_score or base.confidence_score)),
+        )
+        return self._with_planning_metadata(merged)
+
+    def _normalize_sequences(
+        self,
+        sequences: list[StoryImportSequence],
+        *,
+        fallback_sequences: list[StoryImportSequence],
+        chapter_summaries: list[StoryImportChapterSummary],
+    ) -> list[StoryImportSequence]:
+        known_chapter_ids = [chapter.chapter_id for chapter in chapter_summaries]
+        remaining = list(known_chapter_ids)
+        normalized: list[StoryImportSequence] = []
+
+        for sequence in sequences:
+            chapter_ids: list[str] = []
+            for chapter_id in sequence.chapters:
+                if chapter_id in remaining and chapter_id not in chapter_ids:
+                    chapter_ids.append(chapter_id)
+                    remaining.remove(chapter_id)
+            if not chapter_ids:
+                continue
+            normalized.append(StoryImportSequence(
+                title=sequence.title.strip() or f"Sequence {len(normalized) + 1}",
+                summary=sequence.summary.strip() or f"Covers {len(chapter_ids)} chapters",
+                chapters=chapter_ids,
+                provenance_note=sequence.provenance_note.strip() or "planning synthesis from chapter evidence",
+                confidence_score=max(0.0, min(1.0, sequence.confidence_score or 0.7)),
+            ))
+
+        if remaining:
+            fallback_map = {
+                sequence.title: sequence
+                for sequence in fallback_sequences
+            }
+            if normalized:
+                normalized.append(StoryImportSequence(
+                    title="Unassigned Narrative",
+                    summary=f"Covers {len(remaining)} chapters not confidently grouped by planning synthesis",
+                    chapters=remaining,
+                    provenance_note="deterministic fallback for unassigned chapters",
+                    confidence_score=0.4,
+                ))
+            else:
+                return [
+                    StoryImportSequence(
+                        title=sequence.title,
+                        summary=sequence.summary,
+                        chapters=[chapter_id for chapter_id in sequence.chapters if chapter_id in known_chapter_ids],
+                        provenance_note=sequence.provenance_note or fallback_map.get(sequence.title, sequence).provenance_note,
+                        confidence_score=sequence.confidence_score or fallback_map.get(sequence.title, sequence).confidence_score,
+                    )
+                    for sequence in fallback_sequences
+                ]
+
+        return normalized
+
+    def _with_planning_metadata(self, chapter: StoryImportChapterSummary) -> StoryImportChapterSummary:
+        """Attach deterministic provenance and confidence based on evidence quality."""
+        if chapter.analysis_status == "analysis_failed":
+            provenance_note = "no direct chapter evidence; imported as degraded shell"
+            confidence_score = 0.0
+        elif chapter.analysis_status == "partial_import":
+            provenance_note = "partial chapter evidence synthesized across incomplete chunk analysis"
+            confidence_score = 0.45 if chapter.plot_events else 0.35
+        else:
+            evidence_units = len(chapter.plot_events) + len(chapter.active_character_names)
+            confidence_score = 0.65 if evidence_units <= 2 else 0.8
+            provenance_note = "direct chapter evidence synthesized from multi-pass analysis"
+
+        if chapter.provenance_note.strip():
+            provenance_note = chapter.provenance_note.strip()
+        if chapter.confidence_score > 0:
+            confidence_score = chapter.confidence_score
+
+        return StoryImportChapterSummary(
+            chapter_id=chapter.chapter_id,
+            title=chapter.title,
+            summary=chapter.summary,
+            section_type=chapter.section_type,
+            analysis_status=chapter.analysis_status,
+            objective=chapter.objective,
+            conflict=chapter.conflict,
+            stakes=chapter.stakes,
+            active_character_names=list(chapter.active_character_names),
+            continuity_requirements=list(chapter.continuity_requirements),
+            unresolved_questions=list(chapter.unresolved_questions),
+            plot_events=list(chapter.plot_events),
+            estimated_word_count=chapter.estimated_word_count,
+            provenance_note=provenance_note,
+            confidence_score=max(0.0, min(1.0, confidence_score)),
+        )
+
+    def _build_chapter_summary(
+        self,
+        chapter: ChapterBoundary,
+        chapter_results: list[ChapterAnalysisResult],
+        expected_chunks: int,
+    ) -> StoryImportChapterSummary:
+        """Collapse one or more chunk analyses into a chapter-level planning summary."""
+        summaries = [result.summary.strip() for result in chapter_results if result.summary.strip()]
+        summary = " ".join(dict.fromkeys(summaries))
+
+        key_events: list[str] = []
+        unresolved_questions: list[str] = []
+        active_character_names: list[str] = []
+        thematic_elements: list[str] = []
+        significance_labels: list[str] = []
+        plot_events: list[PlotEvent] = []
+
+        for result in chapter_results:
+            for event in result.key_events or []:
+                normalized = event.strip()
+                if normalized and normalized not in key_events:
+                    key_events.append(normalized)
+
+            for plot_event in result.plot_events or []:
+                plot_events.append(plot_event)
+                significance = plot_event.significance.strip()
+                if significance and significance not in significance_labels:
+                    significance_labels.append(significance)
+                for thread in plot_event.unresolved_threads or []:
+                    normalized = thread.strip()
+                    if normalized and normalized not in unresolved_questions:
+                        unresolved_questions.append(normalized)
+
+            for mention in result.characters or []:
+                normalized = mention.name.strip()
+                if normalized and normalized not in active_character_names:
+                    active_character_names.append(normalized)
+
+            for theme in result.thematic_elements or []:
+                normalized = theme.strip()
+                if normalized and normalized not in thematic_elements:
+                    thematic_elements.append(normalized)
+
+        successful_results = [
+            result
+            for result in chapter_results
+            if result.summary.strip() or result.key_events or result.characters or result.plot_events
+        ]
+
+        if not successful_results:
+            analysis_status = "analysis_failed"
+        elif len(successful_results) < expected_chunks:
+            analysis_status = "partial_import"
+        else:
+            analysis_status = "complete"
+
+        objective = summary or (key_events[0] if key_events else f"Advance {chapter.title}.")
+        conflict = (
+            unresolved_questions[0]
+            if unresolved_questions
+            else (significance_labels[0].replace("_", " ") if significance_labels else "Conflict to refine from imported narrative.")
+        )
+        stakes = (
+            f"Preserve continuity around {', '.join(thematic_elements[:2])}."
+            if thematic_elements
+            else "Carry forward the imported narrative consequences."
+        )
+
+        return StoryImportChapterSummary(
+            chapter_id=chapter.id,
+            title=chapter.title,
+            summary=summary,
+            section_type=chapter.section_type,
+            analysis_status=analysis_status,
+            objective=objective,
+            conflict=conflict,
+            stakes=stakes,
+            active_character_names=active_character_names,
+            continuity_requirements=key_events[:8],
+            unresolved_questions=unresolved_questions[:8],
+            plot_events=plot_events,
+            estimated_word_count=chapter.estimated_word_count or None,
+            provenance_note="direct chapter evidence synthesized from chunk analysis" if successful_results else "no direct chapter evidence",
+            confidence_score=0.75 if analysis_status == "complete" else (0.4 if analysis_status == "partial_import" else 0.0),
+        )
+
+    def _build_sequences_from_structure(
+        self,
+        structure: StoryStructureDetection,
+        chapter_summaries: list[StoryImportChapterSummary],
+    ) -> list[StoryImportSequence]:
+        """Build sequence groupings from detected structure instead of a placeholder shell."""
+        if not chapter_summaries:
+            return []
+
+        chapter_ids = {chapter.chapter_id for chapter in chapter_summaries}
+        sequences: list[StoryImportSequence] = []
+        current_title = "Main Narrative"
+        current_ids: list[str] = []
+        current_titles: list[str] = []
+
+        def flush_current() -> None:
+            if not current_ids:
+                return
+            sequences.append(StoryImportSequence(
+                title=current_title,
+                summary=f"Covers {', '.join(current_titles[:3])}" if current_titles else f"Story with {len(current_ids)} chapters",
+                chapters=list(current_ids),
+                provenance_note="detected structure grouping",
+                confidence_score=0.55,
+            ))
+
+        for chapter in structure.chapters:
+            if chapter.section_type == "part":
+                flush_current()
+                current_title = chapter.title
+                current_ids = []
+                current_titles = []
+                continue
+
+            if chapter.id not in chapter_ids:
+                continue
+
+            current_ids.append(chapter.id)
+            current_titles.append(chapter.title)
+
+        flush_current()
+
+        if not sequences:
+            sequences.append(StoryImportSequence(
+                title="Main Narrative",
+                summary=f"Story with {len(chapter_summaries)} chapters",
+                chapters=[chapter.chapter_id for chapter in chapter_summaries],
+                provenance_note="deterministic fallback sequence grouping",
+                confidence_score=0.35,
+            ))
+
+        return sequences

@@ -13,6 +13,8 @@ export interface StoryImportResponse {
   warnings: string[];
   chapters_processed: number;
   total_estimated_chapters: number;
+  chunks_processed: number;
+  total_estimated_chunks: number;
   analysis_mode: string;
 }
 
@@ -27,6 +29,8 @@ export interface ImportProgress {
   phase: string;
   chapters_processed: number;
   total_estimated_chapters: number;
+  chunks_processed: number;
+  total_estimated_chunks: number;
   result: StoryImportResponse | null;
   error: string | null;
 }

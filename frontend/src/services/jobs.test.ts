@@ -16,7 +16,7 @@ describe('jobsService', () => {
     it('creates a job with phase and payload (202)', async () => {
       server.use(
         http.post('/jobs/create', async ({ request }) => {
-          const body = await request.json();
+          const body = (await request.json()) as { phase?: string };
           return HttpResponse.json(
             { ...mockJobStatus, phase: body.phase },
             { status: 202 },

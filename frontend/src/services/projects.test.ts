@@ -80,7 +80,7 @@ describe('projects service', () => {
     it('creates a project with required fields (201)', async () => {
       server.use(
         http.post('/projects/create', async ({ request }) => {
-          const body = await request.json();
+          const body = (await request.json()) as { project_name?: string };
           return HttpResponse.json({ ...mockDetail, project_name: body.project_name }, { status: 201 });
         }),
       );

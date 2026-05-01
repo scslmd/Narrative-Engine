@@ -251,7 +251,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
 
           <p className="text-sm text-slate-500">
             {importMode === 'story'
-              ? 'Paste a completed story and the system will analyze it, extract structured data, and create a full project with foundation, characters, world bible, arcs, planning, and drafts.'
+              ? 'Paste a completed story and the system will analyze it, extract structured data, and create a project with foundation, characters, world bible, arcs, imported planning artifacts, and chapter packets. Drafts are created later in the drafting workflow.'
               : importMode === 'mythos'
                 ? 'Paste mythology texts and the system will extract archetypal patterns, narrative structures, cosmic rules, and symbolic motifs for pattern-based story generation.'
                 : 'Paste a story or mythological text to extract reusable narrative patterns, then generate a new project using those patterns.'}

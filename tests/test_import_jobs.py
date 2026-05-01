@@ -60,6 +60,8 @@ def test_update_progress_sets_fields():
         phase="chapter_analysis",
         chapters_processed=5,
         total_estimated_chapters=12,
+        chunks_processed=9,
+        total_estimated_chunks=15,
     )
 
     status = manager.get_status(job_id)
@@ -67,6 +69,8 @@ def test_update_progress_sets_fields():
     assert status.phase == "chapter_analysis"
     assert status.chapters_processed == 5
     assert status.total_estimated_chapters == 12
+    assert status.chunks_processed == 9
+    assert status.total_estimated_chunks == 15
 
 
 def test_fail_sets_error_message():
@@ -108,6 +112,24 @@ def test_worker_catches_exception_and_marks_failed():
     status = manager.get_status(job_id)
     assert status.status == "failed"
     assert "boom" in (status.error or "")
+
+    manager.shutdown(wait=False)
+
+
+def test_worker_propagates_failed_story_import_response():
+    manager = ImportJobManager(max_workers=2, ttl_seconds=60)
+
+    def failed_worker(text: str, import_id: str):
+        return StoryImportResponse(project_id="p1", status="failed", message="invalid llm output")
+
+    job_id = manager.submit("test-text", failed_worker, text="test-text")
+    time.sleep(0.5)
+
+    status = manager.get_status(job_id)
+    assert status.status == "failed"
+    assert status.result is not None
+    assert status.result.status == "failed"
+    assert status.error == "invalid llm output"
 
     manager.shutdown(wait=False)
 

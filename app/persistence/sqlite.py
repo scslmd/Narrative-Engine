@@ -673,6 +673,8 @@ CREATE TABLE IF NOT EXISTS beat_plans (
     unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
     status TEXT NOT NULL DEFAULT 'draft',
     position INTEGER NOT NULL DEFAULT 0,
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
@@ -687,6 +689,8 @@ CREATE TABLE IF NOT EXISTS sequence_plans (
     chapter_ids_json TEXT NOT NULL DEFAULT '[]',
     status TEXT NOT NULL DEFAULT 'draft',
     position INTEGER NOT NULL DEFAULT 0,
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
@@ -722,6 +726,8 @@ CREATE TABLE IF NOT EXISTS chapter_plans (
     unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
     status TEXT NOT NULL DEFAULT 'draft',
     position INTEGER NOT NULL DEFAULT 0,
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     target_word_count INTEGER,
@@ -743,6 +749,8 @@ CREATE TABLE IF NOT EXISTS scene_plans (
     unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
     status TEXT NOT NULL DEFAULT 'draft',
     position INTEGER NOT NULL DEFAULT 0,
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
@@ -757,6 +765,8 @@ CREATE TABLE IF NOT EXISTS chapter_packets (
     constraints_json TEXT NOT NULL DEFAULT '[]',
     scene_goals_json TEXT NOT NULL DEFAULT '[]',
     status TEXT NOT NULL DEFAULT 'draft',
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
@@ -913,6 +923,7 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
 
     _migrate_chapter_plans_add_target_word_count(connection)
     _migrate_character_profiles_add_deep_analysis(connection)
+    _migrate_planning_artifacts_add_provenance_fields(connection)
     connection.executescript(OPERATIONS_SCHEMA)
     _apply_operations_indexes(connection)
 
@@ -945,6 +956,26 @@ def _migrate_character_profiles_add_deep_analysis(connection: sqlite3.Connection
     for col_name, col_type in columns:
         if not _column_exists(connection, "character_profiles", col_name):
             connection.execute(f"ALTER TABLE character_profiles ADD COLUMN {col_name} {col_type}")
+            added = True
+    if added:
+        connection.commit()
+
+
+def _migrate_planning_artifacts_add_provenance_fields(connection: sqlite3.Connection) -> None:
+    planning_tables = (
+        "beat_plans",
+        "sequence_plans",
+        "chapter_plans",
+        "scene_plans",
+        "chapter_packets",
+    )
+    added = False
+    for table_name in planning_tables:
+        if not _column_exists(connection, table_name, "provenance_note"):
+            connection.execute(f"ALTER TABLE {table_name} ADD COLUMN provenance_note TEXT")
+            added = True
+        if not _column_exists(connection, table_name, "confidence_score"):
+            connection.execute(f"ALTER TABLE {table_name} ADD COLUMN confidence_score REAL NOT NULL DEFAULT 0.0")
             added = True
     if added:
         connection.commit()

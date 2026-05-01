@@ -799,6 +799,9 @@ class TestMultiPassIntegration:
         assert len(analysis.characters) >= 1
         assert analysis.characters[0].name == "Kvothe"
         assert analysis.genre == "Fantasy"
+        assert len(analysis.chapter_summaries) == 5
+        assert analysis.chapter_summaries[0].title == "Chapter 1"
+        assert analysis.sequences[0].chapters[0] == "chapter-1"
         # Should have made multiple LLM calls
         assert len(backend.requests) >= 5
 
@@ -856,6 +859,10 @@ class TestSizeBasedRouting:
 
         assert response.status == "completed"
         assert response.analysis_mode == "single_pass"
+        sequences = repository.list_sequence_plans(response.project_id)
+        chapters = repository.list_chapter_plans(response.project_id)
+        assert sequences == []
+        assert chapters == []
 
     def test_large_story_routes_to_multi_pass(self, tmp_path: Path) -> None:
         """Stories above threshold use multi-pass analysis."""
@@ -911,9 +918,115 @@ class TestSizeBasedRouting:
 
         assert response.status == "completed"
         assert response.analysis_mode == "multi_pass"
+        assert response.chapters_processed == 3
+        assert response.total_estimated_chapters == 3
+        assert response.chunks_processed >= 3
+        assert response.total_estimated_chunks >= response.chunks_processed
         # Verify entities were persisted
         characters = repository.list_character_profiles(response.project_id)
         assert len(characters) >= 1
+        sequences = repository.list_sequence_plans(response.project_id)
+        chapters = repository.list_chapter_plans(response.project_id)
+        scenes = repository.list_scene_plans(response.project_id)
+        beats = repository.list_beat_plans(response.project_id)
+        packets = repository.list_chapter_packets(response.project_id)
+        dependencies = repository.list_planning_dependencies(response.project_id)
+
+        assert len(sequences) >= 1
+        assert len(chapters) == 3
+        assert len(scenes) >= 3
+        assert len(beats) >= 3
+        assert len(packets) == 3
+        assert len(dependencies) >= 2
+        assert all(sequence.provenance_note for sequence in sequences)
+        assert all(chapter.provenance_note for chapter in chapters)
+        assert all(chapter.confidence_score >= 0.0 for chapter in chapters)
+
+    def test_large_story_multi_sequence_counts_all_chapters(self, tmp_path: Path) -> None:
+        story_text = "B" * 50_000
+        chapters_data = [
+            {
+                "id": "part-1",
+                "title": "Part I",
+                "section_type": "part",
+                "start_line": 1,
+                "end_line": 1,
+                "start_pos": 0,
+                "end_pos": 0,
+                "estimated_word_count": 0,
+            },
+            {
+                "id": "chapter-1",
+                "title": "Chapter 1",
+                "section_type": "chapter",
+                "start_line": 1,
+                "end_line": 40,
+                "start_pos": 0,
+                "end_pos": 16000,
+                "estimated_word_count": 3200,
+            },
+            {
+                "id": "chapter-2",
+                "title": "Chapter 2",
+                "section_type": "chapter",
+                "start_line": 41,
+                "end_line": 80,
+                "start_pos": 16000,
+                "end_pos": 32000,
+                "estimated_word_count": 3200,
+            },
+            {
+                "id": "part-2",
+                "title": "Part II",
+                "section_type": "part",
+                "start_line": 81,
+                "end_line": 81,
+                "start_pos": 32000,
+                "end_pos": 32000,
+                "estimated_word_count": 0,
+            },
+            {
+                "id": "chapter-3",
+                "title": "Chapter 3",
+                "section_type": "chapter",
+                "start_line": 82,
+                "end_line": 120,
+                "start_pos": 32000,
+                "end_pos": 50000,
+                "estimated_word_count": 3600,
+            },
+        ]
+
+        responses = [_make_structure_response(chapters=chapters_data)]
+        for i in range(3):
+            responses.append(_make_chunk_analysis_response(
+                chapter_id=f"chapter-{i+1}",
+                chapter_title=f"Chapter {i+1}",
+            ))
+        responses.append(_make_character_consolidation_response())
+        responses.append(json.dumps([
+            {"entry_type": "location", "title": "Setting", "summary": "A place", "canonical_facts": [], "related_character_ids": []}
+        ]))
+        responses.append(_make_arc_detection_response())
+
+        backend = MultiPhaseInferenceBackend(responses=responses)
+        project_service = ProjectService(tmp_path)
+        db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+        repository = StoryDevelopmentRepository(db_path)
+        import_service = StoryImportService(
+            project_service=project_service,
+            repository=repository,
+            inferencer=backend,
+        )
+
+        response = import_service.import_story(StoryImportRequest(project_name="Structured", story_text=story_text))
+
+        assert response.status == "completed"
+        assert response.chapters_processed == 3
+        assert response.total_estimated_chapters == 3
+
+        sequences = repository.list_sequence_plans(response.project_id)
+        assert len(sequences) == 2
 
 
 class ErrorInferenceBackend(InferenceBackend):
@@ -1073,8 +1186,13 @@ def test_analyze_large_story_calls_progress_callback():
     phases = [p for p, _ in progress_log]
     assert "structure_detection" in phases
     assert "chapter_analysis" in phases
+    assert "chapter_complete" in phases
     assert any("consolidation" in p for p in phases)
 
     # Verify chapter count was reported
     chapter_data = [d for _, d in progress_log if d.get("total_estimated_chapters") > 0]
     assert len(chapter_data) > 0
+    assert max(d["chapters_processed"] for d in chapter_data) <= chapter_data[-1]["total_estimated_chapters"]
+    chunk_data = [d for _, d in progress_log if d.get("total_estimated_chunks", 0) > 0]
+    assert len(chunk_data) > 0
+    assert chunk_data[-1]["chunks_processed"] == chunk_data[-1]["total_estimated_chunks"]

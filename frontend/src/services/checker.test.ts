@@ -53,7 +53,7 @@ describe('checker service', () => {
     it('runs a checker and returns 202 response', async () => {
       server.use(
         http.post('/role-model-checker/run', async ({ request }) => {
-          const body = await request.json();
+          const body = (await request.json()) as { project_id?: string };
           return HttpResponse.json(
             { ...mockStatus, run_id: `run-${body.project_id}` },
             { status: 202 },

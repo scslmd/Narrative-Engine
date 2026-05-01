@@ -401,6 +401,8 @@ class BeatPlanRecord:
     unresolved_questions: list[str]
     status: str
     position: int
+    provenance_note: str | None
+    confidence_score: float
     created_at: datetime
     updated_at: datetime
 
@@ -415,6 +417,8 @@ class SequencePlanRecord:
     chapter_ids: list[str]
     status: str
     position: int
+    provenance_note: str | None
+    confidence_score: float
     created_at: datetime
     updated_at: datetime
 
@@ -434,6 +438,8 @@ class ChapterPlanRecord:
     unresolved_questions: list[str]
     status: str
     position: int
+    provenance_note: str | None
+    confidence_score: float
     created_at: datetime
     updated_at: datetime
     target_word_count: int | None = None
@@ -454,6 +460,8 @@ class ScenePlanRecord:
     unresolved_questions: list[str]
     status: str
     position: int
+    provenance_note: str | None
+    confidence_score: float
     created_at: datetime
     updated_at: datetime
 
@@ -467,6 +475,8 @@ class ChapterPacketRecord:
     constraints: list[str]
     scene_goals: list[str]
     status: str
+    provenance_note: str | None
+    confidence_score: float
     created_at: datetime
     updated_at: datetime
 
@@ -2826,6 +2836,8 @@ class StoryDevelopmentRepository:
         unresolved_questions: list[str] | None = None,
         status: str = "draft",
         position: int = 0,
+        provenance_note: str | None = None,
+        confidence_score: float = 0.0,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> BeatPlanRecord:
@@ -2837,8 +2849,8 @@ class StoryDevelopmentRepository:
                 INSERT INTO beat_plans (
                     beat_id, project_id, objective, conflict, stakes, dependency_ids_json, arc_stage,
                     active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
-                    status, position, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, position, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(beat_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     objective = excluded.objective,
@@ -2851,6 +2863,8 @@ class StoryDevelopmentRepository:
                     unresolved_questions_json = excluded.unresolved_questions_json,
                     status = excluded.status,
                     position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -2866,6 +2880,8 @@ class StoryDevelopmentRepository:
                     _json_list(unresolved_questions),
                     status,
                     position,
+                    provenance_note,
+                    confidence_score,
                     now.isoformat(),
                     updated.isoformat(),
                 ),
@@ -2911,6 +2927,8 @@ class StoryDevelopmentRepository:
         chapter_ids: list[str] | None = None,
         status: str = "draft",
         position: int = 0,
+        provenance_note: str | None = None,
+        confidence_score: float = 0.0,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> SequencePlanRecord:
@@ -2921,8 +2939,8 @@ class StoryDevelopmentRepository:
                 """
                 INSERT INTO sequence_plans (
                     sequence_id, project_id, title, summary, beat_ids_json, chapter_ids_json,
-                    status, position, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, position, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(sequence_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     title = excluded.title,
@@ -2931,6 +2949,8 @@ class StoryDevelopmentRepository:
                     chapter_ids_json = excluded.chapter_ids_json,
                     status = excluded.status,
                     position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -2942,6 +2962,8 @@ class StoryDevelopmentRepository:
                     _json_list(chapter_ids),
                     status,
                     position,
+                    provenance_note,
+                    confidence_score,
                     now.isoformat(),
                     updated.isoformat(),
                 ),
@@ -2993,6 +3015,8 @@ class StoryDevelopmentRepository:
         status: str = "draft",
         position: int = 0,
         target_word_count: int | None = None,
+        provenance_note: str | None = None,
+        confidence_score: float = 0.0,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> ChapterPlanRecord:
@@ -3004,8 +3028,8 @@ class StoryDevelopmentRepository:
                 INSERT INTO chapter_plans (
                     chapter_id, project_id, sequence_id, title, summary, objective, conflict, stakes,
                     active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
-                    status, position, created_at, updated_at, target_word_count
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, position, provenance_note, confidence_score, created_at, updated_at, target_word_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(chapter_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     sequence_id = excluded.sequence_id,
@@ -3019,6 +3043,8 @@ class StoryDevelopmentRepository:
                     unresolved_questions_json = excluded.unresolved_questions_json,
                     status = excluded.status,
                     position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
                     updated_at = excluded.updated_at,
                     target_word_count = excluded.target_word_count
                 """,
@@ -3036,6 +3062,8 @@ class StoryDevelopmentRepository:
                     _json_list(unresolved_questions),
                     status,
                     position,
+                    provenance_note,
+                    confidence_score,
                     now.isoformat(),
                     updated.isoformat(),
                     target_word_count,
@@ -3087,6 +3115,8 @@ class StoryDevelopmentRepository:
         unresolved_questions: list[str] | None = None,
         status: str = "draft",
         position: int = 0,
+        provenance_note: str | None = None,
+        confidence_score: float = 0.0,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> ScenePlanRecord:
@@ -3098,8 +3128,8 @@ class StoryDevelopmentRepository:
                 INSERT INTO scene_plans (
                     scene_id, project_id, chapter_id, title, summary, objective, conflict, stakes,
                     active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
-                    status, position, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, position, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(scene_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     chapter_id = excluded.chapter_id,
@@ -3113,6 +3143,8 @@ class StoryDevelopmentRepository:
                     unresolved_questions_json = excluded.unresolved_questions_json,
                     status = excluded.status,
                     position = excluded.position,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -3129,6 +3161,8 @@ class StoryDevelopmentRepository:
                     _json_list(unresolved_questions),
                     status,
                     position,
+                    provenance_note,
+                    confidence_score,
                     now.isoformat(),
                     updated.isoformat(),
                 ),
@@ -3173,6 +3207,8 @@ class StoryDevelopmentRepository:
         constraints: list[str] | None = None,
         scene_goals: list[str] | None = None,
         status: str = "draft",
+        provenance_note: str | None = None,
+        confidence_score: float = 0.0,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> ChapterPacketRecord:
@@ -3183,8 +3219,8 @@ class StoryDevelopmentRepository:
                 """
                 INSERT INTO chapter_packets (
                     packet_id, project_id, chapter_id, included_reference_ids_json, constraints_json,
-                    scene_goals_json, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    scene_goals_json, status, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(packet_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     chapter_id = excluded.chapter_id,
@@ -3192,6 +3228,8 @@ class StoryDevelopmentRepository:
                     constraints_json = excluded.constraints_json,
                     scene_goals_json = excluded.scene_goals_json,
                     status = excluded.status,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -3202,6 +3240,8 @@ class StoryDevelopmentRepository:
                     _json_list(constraints),
                     _json_list(scene_goals),
                     status,
+                    provenance_note,
+                    confidence_score,
                     now.isoformat(),
                     updated.isoformat(),
                 ),
@@ -4547,6 +4587,8 @@ def _beat_plan_row_to_record(row) -> BeatPlanRecord:
         unresolved_questions=_parse_json_list(row["unresolved_questions_json"]),
         status=row["status"],
         position=int(row["position"]),
+        provenance_note=row["provenance_note"],
+        confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
@@ -4562,6 +4604,8 @@ def _sequence_plan_row_to_record(row) -> SequencePlanRecord:
         chapter_ids=_parse_json_list(row["chapter_ids_json"]),
         status=row["status"],
         position=int(row["position"]),
+        provenance_note=row["provenance_note"],
+        confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
@@ -4582,6 +4626,8 @@ def _chapter_plan_row_to_record(row) -> ChapterPlanRecord:
         unresolved_questions=_parse_json_list(row["unresolved_questions_json"]),
         status=row["status"],
         position=int(row["position"]),
+        provenance_note=row["provenance_note"],
+        confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
         target_word_count=row["target_word_count"],
@@ -4603,6 +4649,8 @@ def _scene_plan_row_to_record(row) -> ScenePlanRecord:
         unresolved_questions=_parse_json_list(row["unresolved_questions_json"]),
         status=row["status"],
         position=int(row["position"]),
+        provenance_note=row["provenance_note"],
+        confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )
@@ -4617,6 +4665,8 @@ def _chapter_packet_row_to_record(row) -> ChapterPacketRecord:
         constraints=_parse_json_list(row["constraints_json"]),
         scene_goals=_parse_json_list(row["scene_goals_json"]),
         status=row["status"],
+        provenance_note=row["provenance_note"],
+        confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
     )

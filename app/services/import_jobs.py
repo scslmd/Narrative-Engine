@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from ..schemas.story_import import ImportProgressResponse
+from ..schemas.story_import import ImportProgressResponse, StoryImportResponse
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,8 @@ class ImportJob:
     phase: str = ""
     chapters_processed: int = 0
     total_estimated_chapters: int = 0
+    chunks_processed: int = 0
+    total_estimated_chunks: int = 0
     result: Any = None
     error: str | None = None
     created_at: float = field(default_factory=time.time)
@@ -62,6 +64,8 @@ class ImportJobManager:
             phase=job.phase,
             chapters_processed=job.chapters_processed,
             total_estimated_chapters=job.total_estimated_chapters,
+            chunks_processed=job.chunks_processed,
+            total_estimated_chunks=job.total_estimated_chunks,
             result=job.result,
             error=job.error,
         )
@@ -89,6 +93,14 @@ class ImportJobManager:
         self.update_progress(import_id, status="running")
         try:
             result = worker_fn(**kwargs)
+            if isinstance(result, StoryImportResponse) and result.status == "failed":
+                self.update_progress(
+                    import_id,
+                    status="failed",
+                    result=result,
+                    error=result.message,
+                )
+                return
             self.complete(import_id, result)
         except Exception as exc:
             logger.exception("Import job %s failed", import_id)
