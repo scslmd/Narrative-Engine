@@ -944,44 +944,69 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 
 ### Story Import Feature
 
-**Workflow**: User pastes story -> LLM analyzes and extracts structured JSON -> Service validates -> Creates project + all entities in single transaction.
+**Workflow**: User pastes story or uploads file -> async job submitted -> LLM analyzes and extracts structured JSON -> Service validates -> Creates project + all entities in single transaction. Client polls for progress/result.
 
-**Entry**: `POST /projects/import-story` returns **201 Created** with `status: "completed"` or `status: "failed"`. Synchronous — HTTP request blocks.
+**Entry Points**:
+- `POST /projects/import-story` returns **202 Accepted** with `{import_id, status: "pending"}`. Accepts form data (`story_text`, `project_name`, `genre`, `tone`, `project_id`) or file upload (`.txt`/`.md`). Min 50 characters.
+- `GET /projects/import/{import_id}` returns **200 OK** with `ImportProgressResponse`: status, phase, chapter/chunk counts, result (on completion), error (on failure). 404 if not found or expired.
+
+**Async Job Management**: `ImportJobManager` in `app/services/import_jobs.py`
+- In-memory job store with thread-safe dict, ThreadPoolExecutor (max 2 workers)
+- Completed/failed jobs expire after TTL (default 300s)
+- Worker calls `update_progress()` during execution, `complete()` or `fail()` on termination
 
 **Service**: `StoryImportService` in `app/services/story_import.py`
-- `import_story(request)` — main entry point
+- `import_story(request)` — sync entry point, returns `StoryImportResponse`
+- `import_story_with_progress(request, on_progress)` — same with progress callback for async worker
 - `_create_project(request)` — creates new project or validates existing `project_id`
-- `_analyze_story(text, genre_hint, tone_hint)` — calls LLM via `InferenceBackend` directly
-- `_parse_llm_json(content)` — robust extraction: direct JSON, markdown fences, trailing/leading text
-- `_transactional_import(project_id, analysis)` — single raw SQLite connection with `BEGIN`, direct parameterized SQL (NOT repo wrapper methods)
+- `_analyze_story(text, genre_hint, tone_hint)` — single-pass LLM call (<=30K chars)
+- `_parse_llm_json(content)` — delegates to `extract_json()`: direct JSON, markdown fences, balanced brace detection
+- `_map_llm_fields()` — normalizes LLM field names before validation (e.g., world bible `name` -> `title`, arc `description` -> `summary`)
+- `_transactional_import(project_id, analysis)` — single raw SQLite connection with `BEGIN IMMEDIATE`, direct parameterized SQL (NOT repo wrapper methods). Persists foundation, characters, world bible, arcs, and planning.
 
-**Transaction Safety**: Uses a single `sqlite3.connect()` with `BEGIN` (not `BEGIN IMMEDIATE`), executes raw SQL directly without repo methods. All inserts use `ON CONFLICT DO UPDATE` for idempotent retries. Foundation revisions also use `ON CONFLICT(project_id, revision_number) DO UPDATE`.
+**Transaction Safety**: Uses a single `sqlite3.connect()` with `BEGIN IMMEDIATE` (writer lock), executes raw SQL directly without repo methods. All inserts use `ON CONFLICT DO UPDATE` for idempotent retries. Foundation revisions use `ON CONFLICT(project_id, revision_number) DO UPDATE`. Connection timeout: 30s.
 
-**Entity ID Generation**: Characters and arcs use SHA-256 hash-based IDs (`import-{prefix}-{hash[:12]}`) for stable, order-independent identity. Same input always produces the same ID regardless of list ordering, enabling deduplication.
+**Multi-Pass Import**: Stories >30K chars route to `MultiPassImportService` in `app/services/multi_pass_import.py`
+- Phase 1: Structure detection (LLM, first 40K chars). Fallback: fixed-size chunks with overlap on LLM failure.
+- Phase 2: Per-chapter analysis with incremental character tracking. Sub-chunking at 20K chars with 1K overlap.
+- Phase 3a: Character consolidation (LLM). Fallback: raw accumulator data.
+- Phase 3b: World bible consolidation (LLM). Fallback: deduplication by (type, title).
+- Phase 3c: Arc detection and classification (LLM). Fallback: basic arcs from plot events.
+- Phase 3d: Planning synthesis (LLM). Generates sequences, chapter summaries, scenes, beats.
+- Retry with exponential backoff (max 2 retries) on all LLM calls
+
+**Entity ID Generation**: Characters and arcs use SHA-256 hash-based IDs (`import-{prefix}-{hash[:12]}`) via `hash_id()` in `app/utils/db_inserts.py`. Scoped per project: `hash_id("import-character", f"{project_id}:{name}")`. Same input always produces the same ID, enabling deduplication on retry.
+
+**Planning Persistence**: `_import_planning()` persists sequences, chapters, scenes, beats, and chapter packets from analysis. Validates chapter summaries against known IDs, deduplicates by chapter_id, resolves character names to IDs for `active_character_ids`.
 
 **Manifest Update**: After successful entity creation, `_update_manifest()` writes LLM-extracted `genre`, `tone`, `pov`, `story_structure`, `premise_text`, and `constraints` to `manifest.json`. Invalid enum values are silently skipped with a warning log.
 
 **API Key Protection**: The `/projects/import-story` endpoint is included in the `versioned_api_key_gate` middleware (gate applies to both `/v1/*` and `/projects/import-story` paths).
 
-**Error Handling**: `_create_project` catches `FileNotFoundError` specifically (not bare `Exception`) to distinguish missing projects from database errors.
-
-**LLM Request**: `build_import_analysis_request()` in `app/services/runtime_prompts.py`
-- `temperature=0.1`, `max_tokens=16000` for deterministic JSON output
-- Story text truncated to 24,000 chars for single-pass analysis
-- Returns JSON matching `StoryImportAnalysis` schema
+**LLM Prompt Builders** (`app/services/runtime_prompts.py`):
+- `build_import_analysis_request()` — single-pass: temp=0.1, max_tokens=16000, story truncated to 24K chars
+- `build_structure_detection_request()` — multi-pass Phase 1: temp=0.1, max_tokens=8000, scans first 40K chars
+- `build_chunk_analysis_request()` — multi-pass Phase 2: temp=0.1, max_tokens=16000
+- `build_character_consolidation_request()` — multi-pass Phase 3a: temp=0.1, max_tokens=16000
+- `build_world_bible_consolidation_request()` — multi-pass Phase 3b: temp=0.1, max_tokens=16000
+- `build_arc_detection_request()` — multi-pass Phase 3c: temp=0.1, max_tokens=16000
 
 **Error Handling**:
 - `StoryImportError(ValueError)` — caught, returns `status="failed"` response
 - `InferenceBackendError` — caught, returns `status="failed"` with error code
 - `pydantic.ValidationError` — caught, wrapped as `StoryImportError`
+- `_create_project` catches `FileNotFoundError` specifically (not bare `Exception`) to distinguish missing projects from database errors
 
 **Components**:
-- `app/services/story_import.py` — `StoryImportService` class (with `_update_manifest()`, `_hash_id()`, `_to_none()`)
-- `app/schemas/story_import.py` — `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis` (with POV/structure validators)
-- `app/api/projects.py` — `POST /projects/import-story` endpoint (guarded by API key middleware)
-- `app/services/runtime_prompts.py` — `build_import_analysis_request()` prompt builder
-- `app/main.py` — imports StoryImportService, wires into router, includes `/projects/import-story` in auth gate
-- `tests/test_story_import_service.py` — 18 test functions
+- `app/services/story_import.py` — `StoryImportService` class
+- `app/services/multi_pass_import.py` — `MultiPassImportService`, `CharacterAccumulator`
+- `app/services/import_jobs.py` — `ImportJobManager`, `ImportJob` dataclass
+- `app/schemas/story_import.py` — `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis`, `ImportSubmitResponse`, `ImportProgressResponse` (with POV/structure validators)
+- `app/api/projects.py` — `POST /projects/import-story` and `GET /projects/import/{import_id}` endpoints (guarded by API key middleware)
+- `app/services/runtime_prompts.py` — import prompt builders (7 functions)
+- `app/utils/json_extract.py` — `extract_json()` utility (3 strategies)
+- `app/utils/db_inserts.py` — `hash_id()`, `insert_character_profile()`, `insert_foundation_profile()`, `insert_world_bible_entry()`
+- `tests/test_story_import_service.py` — 46 test functions
 
 ### Pattern Extraction Feature
 
