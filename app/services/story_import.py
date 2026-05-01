@@ -283,8 +283,6 @@ class StoryImportService:
 
     def _create_project(self, request: StoryImportRequest) -> str:
         """Create project if needed, return project_id."""
-        import sqlite3
-
         from ..schemas.projects import ProjectCreateRequest
 
         if request.project_id:

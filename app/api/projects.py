@@ -4,7 +4,6 @@ import logging
 from typing import Any, Callable, Protocol, TypeVar
 
 from fastapi import APIRouter, HTTPException
-from fastapi.exceptions import RequestValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +78,6 @@ from app.schemas.pattern_extraction import (
 from app.services.mythos_extraction import MythosExtractionError
 from app.services.pattern_extraction import PatternExtractionError
 from app.services.projects import ProjectService
-
-logger = logging.getLogger(__name__)
 
 
 def build_projects_router(
@@ -221,7 +218,7 @@ def build_projects_router(
                     "symbolic_motifs": response.extraction.symbolic_motifs,
                 }
             else:
-                raise Exception(response.error or "Mythos extraction failed")
+                raise MythosExtractionError(response.error or "Mythos extraction failed")
 
         @router.post("/import-mythos", response_model=ExtractionSubmitResponse, status_code=202)
         def import_mythos(request: MythosExtractionRequest):
@@ -268,7 +265,7 @@ def build_projects_router(
                     "symbolic_motifs": response.extraction.symbolic_motifs,
                 }
             else:
-                raise Exception(response.error or "Pattern extraction failed")
+                raise PatternExtractionError(response.error or "Pattern extraction failed")
 
         def _run_project_pattern_worker(
             pattern_service: Any,
@@ -298,7 +295,7 @@ def build_projects_router(
                     "symbolic_motifs": response.extraction.symbolic_motifs,
                 }
             else:
-                raise Exception(response.error or "Pattern extraction from project failed")
+                raise PatternExtractionError(response.error or "Pattern extraction from project failed")
 
         @router.post("/import-patterns", response_model=_ExtractionSubmitResponse, status_code=202)
         def import_patterns(request: PatternExtractionRequest):
