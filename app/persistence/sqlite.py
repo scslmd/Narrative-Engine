@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 21
+OPERATIONS_DB_VERSION = 22
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -784,6 +784,89 @@ CREATE TABLE IF NOT EXISTS planning_dependencies (
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS continuity_threads (
+    thread_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active',
+    chapter_ids_json TEXT NOT NULL DEFAULT '[]',
+    character_ids_json TEXT NOT NULL DEFAULT '[]',
+    evidence_json TEXT NOT NULL DEFAULT '[]',
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS continuity_states (
+    state_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    active_threads_json TEXT NOT NULL DEFAULT '[]',
+    resolved_threads_json TEXT NOT NULL DEFAULT '[]',
+    character_states_json TEXT NOT NULL DEFAULT '{}',
+    world_facts_json TEXT NOT NULL DEFAULT '[]',
+    unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+    contradictions_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'complete',
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS continuity_findings (
+    finding_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT NOT NULL,
+    overall_confidence REAL NOT NULL DEFAULT 0.0,
+    status TEXT NOT NULL DEFAULT 'complete',
+    contradictions_json TEXT NOT NULL DEFAULT '[]',
+    unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+    provenance_note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS draft_briefs (
+    brief_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    chapter_id TEXT NOT NULL,
+    objective TEXT NOT NULL DEFAULT '',
+    emotional_turn TEXT NOT NULL DEFAULT '',
+    continuity_obligations_json TEXT NOT NULL DEFAULT '[]',
+    required_callbacks_json TEXT NOT NULL DEFAULT '[]',
+    forbidden_contradictions_json TEXT NOT NULL DEFAULT '[]',
+    voice_guidance TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'draft',
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS drafting_context_packets (
+    packet_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    brief_id TEXT NOT NULL,
+    character_anchors_json TEXT NOT NULL DEFAULT '[]',
+    world_constraints_json TEXT NOT NULL DEFAULT '[]',
+    prior_summaries_json TEXT NOT NULL DEFAULT '[]',
+    pattern_guidance_json TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'draft',
+    provenance_note TEXT,
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(brief_id) REFERENCES draft_briefs(brief_id) ON DELETE CASCADE
+);
 """
 
 
@@ -858,6 +941,11 @@ CREATE INDEX IF NOT EXISTS idx_chapter_plans_project_sequence_position ON chapte
 CREATE INDEX IF NOT EXISTS idx_scene_plans_project_chapter_position ON scene_plans(project_id, chapter_id, position, scene_id);
 CREATE INDEX IF NOT EXISTS idx_chapter_packets_project_chapter ON chapter_packets(project_id, chapter_id, packet_id);
 CREATE INDEX IF NOT EXISTS idx_planning_dependencies_project_upstream ON planning_dependencies(project_id, upstream_id, downstream_id, dependency_id);
+CREATE INDEX IF NOT EXISTS idx_continuity_threads_project_status ON continuity_threads(project_id, status, thread_id);
+CREATE INDEX IF NOT EXISTS idx_continuity_states_project_chapter ON continuity_states(project_id, chapter_id, state_id);
+CREATE INDEX IF NOT EXISTS idx_continuity_findings_project_created ON continuity_findings(project_id, created_at, finding_id);
+CREATE INDEX IF NOT EXISTS idx_draft_briefs_project_chapter ON draft_briefs(project_id, chapter_id, brief_id);
+CREATE INDEX IF NOT EXISTS idx_drafting_context_packets_project_brief ON drafting_context_packets(project_id, brief_id, packet_id);
 """
 
 

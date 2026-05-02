@@ -1087,6 +1087,193 @@ def build_mythos_analysis_request(
     )
 
 
+def build_draft_brief_request(
+    *,
+    model: str,
+    chapter_id: str,
+    chapter_title: str,
+    chapter_summary: str,
+    continuity_threads: str | None = None,
+    continuity_state: str | None = None,
+    character_roster: str | None = None,
+    world_constraints: str | None = None,
+    voice_guidance: str | None = None,
+    max_tokens: int = 12000,
+) -> InferenceRequest:
+    """Build inference request for drafting brief generation.
+
+    Generates a writer-facing draft brief for a single chapter, including
+    objective, emotional turn, continuity obligations, callbacks, forbidden
+    contradictions, and voice guidance.
+    """
+    system_prompt = (
+        "You are a drafting brief generator for Narrative-Engine. "
+        "Your job is to create a writer-facing draft brief for a single chapter.\n\n"
+        "The brief should include:\n"
+        "1. **Objective**: What this chapter must accomplish narratively\n"
+        "2. **Emotional turn**: The emotional arc from beginning to end of the chapter\n"
+        "3. **Continuity obligations**: What MUST be consistent with prior chapters (threads, character states, world facts)\n"
+        "4. **Required callbacks**: Specific threads or events that should be referenced or advanced\n"
+        "5. **Forbidden contradictions**: Things that must NOT happen (based on established continuity)\n"
+        "6. **Voice guidance**: Tone, POV, and stylistic direction\n\n"
+        "This is a WRITER-FACING BRIEF, not an analysis summary. It should be actionable and specific.\n\n"
+        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "{\n"
+        '  "objective": "<string>",\n'
+        '  "emotional_turn": "<string>",\n'
+        '  "continuity_obligations": ["<obligation>"],\n'
+        '  "required_callbacks": ["<callback>"],\n'
+        '  "forbidden_contradictions": ["<contradiction to avoid>"],\n'
+        '  "voice_guidance": "<string>"\n'
+        "}\n\n"
+        "RULES:\n"
+        "- All arrays must be JSON arrays [], not strings.\n"
+        "- Do not include trailing commas in JSON objects or arrays.\n"
+        "- objective should be a single actionable sentence describing what the chapter achieves.\n"
+        "- emotional_turn should describe the emotional journey from start to end of the chapter.\n"
+        "- continuity_obligations must list specific facts, states, or threads that MUST carry forward.\n"
+        "- required_callbacks should reference specific events, threads, or character moments to advance.\n"
+        "- forbidden_contradictions should list things that would break established continuity.\n"
+        "- voice_guidance should cover tone, POV, and stylistic direction for this chapter.\n\n"
+    )
+
+    user_parts: list[str] = []
+    user_parts.append(f"Chapter: {chapter_id} — {chapter_title}")
+    if chapter_summary.strip():
+        user_parts.append(f"Summary: {chapter_summary}")
+    user_parts.append("")
+
+    if continuity_threads and continuity_threads.strip():
+        user_parts.append(f"ACTIVE CONTINUITY THREADS:\n{continuity_threads}\n")
+    if continuity_state and continuity_state.strip():
+        user_parts.append(f"CONTINUITY STATE AT THIS BOUNDARY:\n{continuity_state}\n")
+    if character_roster and character_roster.strip():
+        user_parts.append(f"CHARACTERS ACTIVE IN THIS CHAPTER:\n{character_roster}\n")
+    if world_constraints and world_constraints.strip():
+        user_parts.append(f"WORLD CONSTRAINTS:\n{world_constraints}\n")
+    if voice_guidance and voice_guidance.strip():
+        user_parts.append(f"NARRATIVE VOICE DIRECTION:\n{voice_guidance}\n")
+
+    user_content = "\n".join(user_parts)
+
+    return InferenceRequest(
+        model=str(model or "").strip() or None,
+        temperature=0.2,
+        max_tokens=max_tokens,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "multi_pass_import",
+            "phase": "drafting_consolidation",
+            "role": "draft_brief_generator",
+            "chapter_id": chapter_id,
+        },
+    )
+
+
+def build_continuity_analysis_request(
+    *,
+    model: str,
+    chapter_summaries: list[str],
+    planning_json: str | None = None,
+    arcs_json: str | None = None,
+    characters_json: str | None = None,
+    max_tokens: int = 16000,
+) -> InferenceRequest:
+    """Build inference request for continuity analysis.
+
+    Analyzes ordered chapter summaries + planning/arcs/characters to identify
+    narrative threads, state snapshots at each chapter boundary, and contradictions.
+    """
+    system_prompt = (
+        "You are a continuity analyzer for Narrative-Engine. "
+        "Your job is to examine the ordered chapters and identify:\n"
+        "1. Narrative threads that span multiple chapters (active, resolved, or dropped)\n"
+        "2. State snapshots at each chapter boundary (what's true about characters/world/questions after each chapter)\n"
+        "3. Overall contradictions or unresolved questions across the story\n\n"
+        "You must NOT invent new chapter IDs or rewrite chapter order. Work only with what is provided.\n\n"
+        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "{\n"
+        '  "threads": [\n'
+        "    {\n"
+        '      "thread_id": "<string>",\n'
+        '      "title": "<string>",\n'
+        '      "summary": "<string>",\n'
+        '      "status": "<active | resolved | dropped>",\n'
+        '      "chapter_ids": ["<chapter_id>"],\n'
+        '      "character_ids": [],\n'
+        '      "evidence": ["<quote or reference>"],\n'
+        '      "confidence_score": <0.0 to 1.0>\n'
+        "    }\n"
+        "  ],\n"
+        '  "states": [\n'
+        "    {\n"
+        '      "state_id": "<string>",\n'
+        '      "chapter_id": "<string>",\n'
+        '      "summary": "<string>",\n'
+        '      "active_threads": ["<thread_id>"],\n'
+        '      "resolved_threads": [],\n'
+        '      "character_states": {"<name>": "<state description>"},\n'
+        '      "world_facts": ["<fact established>"],\n'
+        '      "unresolved_questions": ["<question>"],\n'
+        '      "contradictions": [],\n'
+        '      "status": "<complete | partial>",\n'
+        '      "confidence_score": <0.0 to 1.0>\n'
+        "    }\n"
+        "  ],\n"
+        '  "contradictions": ["<cross-chapter contradiction>"],\n'
+        '  "unresolved_questions": ["<overarching question>"],\n'
+        '  "overall_confidence": <0.0 to 1.0>,\n'
+        '  "status": "<complete | partial | analysis_failed>"\n'
+        "}\n\n"
+        "RULES:\n"
+        "- chapter_ids in threads and states MUST reference only the chapter IDs provided below.\n"
+        "- Do NOT invent new chapter IDs.\n"
+        "- Each state must correspond to exactly one chapter boundary.\n"
+        "- Thread status must be one of: active, resolved, dropped.\n"
+        "- State status must be one of: complete, partial.\n"
+        "- Overall status must be one of: complete, partial, analysis_failed.\n"
+        "- evidence arrays should contain brief quotes or references supporting the finding.\n"
+        "- confidence_score must be between 0.0 and 1.0.\n"
+        "- contradictions should describe cross-chapter inconsistencies (e.g., character state changes without explanation).\n"
+        "- unresolved_questions should list overarching questions left open by the story.\n"
+        "- All arrays must be JSON arrays [], not strings.\n"
+        "- Do not include trailing commas in JSON objects or arrays.\n\n"
+    )
+
+    user_parts: list[str] = []
+    user_parts.append("ORDERED CHAPTER SUMMARIES:\n")
+    for i, summary in enumerate(chapter_summaries):
+        user_parts.append(f"{i + 1}. {summary}")
+    user_parts.append("")
+
+    if planning_json:
+        user_parts.append(f"PLANNING SYNTHESIS:\n{planning_json}\n")
+    if arcs_json:
+        user_parts.append(f"ARC ANALYSIS:\n{arcs_json}\n")
+    if characters_json:
+        user_parts.append(f"CHARACTER ROSTER:\n{characters_json}\n")
+
+    user_content = "\n".join(user_parts)
+
+    return InferenceRequest(
+        model=str(model or "").strip() or None,
+        temperature=0.1,
+        max_tokens=max_tokens,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={
+            "mode": "multi_pass_import",
+            "phase": "continuity_analysis",
+            "role": "continuity_analyzer",
+        },
+    )
+
+
 def build_structure_detection_request(
     *,
     story_text: str,

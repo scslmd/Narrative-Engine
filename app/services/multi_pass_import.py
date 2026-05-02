@@ -15,6 +15,9 @@ from ..schemas.story_import import (
     ChapterAnalysisResult,
     ChapterBoundary,
     CharacterMention,
+    ContinuityFinding,
+    ContinuityState,
+    ContinuityThread,
     PlotEvent,
     StoryImportAnalysis,
     StoryImportArc,
@@ -259,6 +262,21 @@ class MultiPassImportService:
                 "total_estimated_chunks": total_chunks,
             })
 
+        # Phase 4: Continuity consolidation (error-tolerant, never blocks pipeline)
+        continuity_finding = self._run_continuity_consolidation(
+            chapter_summaries=chapter_summaries,
+            planning_synthesis=planning_synthesis,
+            arc_analysis=arc_analysis,
+            characters=consolidated_characters,
+        )
+        if on_progress:
+            on_progress("consolidation_continuity", {
+                "chapters_processed": chapters_processed,
+                "total_estimated_chapters": total_chapters,
+                "chunks_processed": chunks_processed,
+                "total_estimated_chunks": total_chunks,
+            })
+
         # Build final StoryImportAnalysis
         return self._build_analysis(
             characters=consolidated_characters,
@@ -270,6 +288,7 @@ class MultiPassImportService:
             tone_hint=tone_hint,
             completed_chunk_count=chunks_processed,
             total_estimated_chunks=total_chunks,
+            continuity_finding=continuity_finding,
         )
 
     def _detect_structure(self, story_text: str) -> StoryStructureDetection:
@@ -780,6 +799,7 @@ class MultiPassImportService:
         tone_hint: str | None,
         completed_chunk_count: int = 0,
         total_estimated_chunks: int = 0,
+        continuity_finding: ContinuityFinding | None = None,
     ) -> StoryImportAnalysis:
         """Assemble final StoryImportAnalysis from all phases."""
         # Map story arcs
@@ -817,6 +837,7 @@ class MultiPassImportService:
             success_definition=arc_analysis.get("success_definition", ""),
             completed_chunk_count=completed_chunk_count,
             total_estimated_chunks=total_estimated_chunks,
+            continuity_finding=continuity_finding,
         )
 
     def _synthesize_planning(
@@ -1177,3 +1198,521 @@ class MultiPassImportService:
             ))
 
         return sequences
+
+    def _run_continuity_consolidation(
+        self,
+        *,
+        chapter_summaries: list[StoryImportChapterSummary],
+        planning_synthesis: StoryImportPlanningSynthesis,
+        arc_analysis: dict[str, Any],
+        characters: list[StoryImportCharacterRequest],
+    ) -> ContinuityFinding | None:
+        """Phase 4: Run continuity analysis on ordered chapter summaries.
+
+        Error-tolerant: returns None on failure, never blocks the pipeline.
+        """
+        if not chapter_summaries:
+            return None
+
+        from .runtime_prompts import build_continuity_analysis_request
+
+        ordered_summaries = self._build_chapter_summaries_for_continuity(chapter_summaries)
+        planning_json = json.dumps(
+            planning_synthesis.model_dump(mode="json", exclude_defaults=True),
+            ensure_ascii=True, indent=2,
+        ) if planning_synthesis.sequences or planning_synthesis.chapter_summaries else None
+
+        arcs_json = None
+        story_arcs = arc_analysis.get("story_arcs", [])
+        if story_arcs:
+            arcs_json = json.dumps(story_arcs, ensure_ascii=True, indent=2)
+
+        characters_json = None
+        if characters:
+            char_data = [
+                {
+                    "name": c.name,
+                    "role": c.role,
+                    "character_arc": c.character_arc,
+                    "relationships": c.relationships,
+                }
+                for c in characters
+            ]
+            characters_json = json.dumps(char_data, ensure_ascii=True, indent=2)
+
+        try:
+            inference_request = build_continuity_analysis_request(
+                model=self._inferencer.descriptor.default_model,
+                chapter_summaries=ordered_summaries,
+                planning_json=planning_json,
+                arcs_json=arcs_json,
+                characters_json=characters_json,
+            )
+
+            response = self._retry_with_backoff(
+                self._inferencer.generate_text,
+                (inference_request,),
+                {},
+                max_retries=2,
+            )
+            parsed = extract_json(response.content)
+
+            if not parsed or not isinstance(parsed, dict):
+                logger.warning("Continuity analysis returned non-dict JSON")
+                return None
+
+            known_chapter_ids = {cs.chapter_id for cs in chapter_summaries}
+            normalized = self._normalize_continuity_finding(parsed, known_chapter_ids)
+            return normalized
+        except (InferenceBackendError, ValueError, ValidationError) as exc:
+            logger.warning("Continuity consolidation failed: %s. Skipping.", exc)
+            return None
+
+    def _build_chapter_summaries_for_continuity(
+        self,
+        chapter_summaries: list[StoryImportChapterSummary],
+    ) -> list[str]:
+        """Format chapter summaries into ordered text lines for the continuity prompt."""
+        lines: list[str] = []
+        for cs in chapter_summaries:
+            parts = [f"[{cs.chapter_id}] {cs.title or cs.chapter_id}"]
+            if cs.summary.strip():
+                parts.append(f"  Summary: {cs.summary}")
+            if cs.objective and cs.objective.strip():
+                parts.append(f"  Objective: {cs.objective}")
+            if cs.unresolved_questions:
+                parts.append(f"  Unresolved: {'; '.join(cs.unresolved_questions[:4])}")
+            lines.append("\n".join(parts))
+        return lines
+
+    def _normalize_continuity_finding(
+        self,
+        raw: dict[str, Any],
+        known_chapter_ids: set[str],
+    ) -> ContinuityFinding:
+        """Validate and repair continuity finding before use.
+
+        1. Validates all thread/state chapter_ids against known IDs
+        2. Caps confidence above 0.7 if evidence list is empty
+        3. Preserves analysis_failed and partial statuses
+        """
+        threads: list[dict[str, Any]] = raw.get("threads", []) or []
+        states: list[dict[str, Any]] = raw.get("states", []) or []
+        contradictions: list[str] = raw.get("contradictions", []) or []
+        unresolved_qs: list[str] = raw.get("unresolved_questions", []) or []
+        overall_confidence = float(raw.get("overall_confidence", 0.5))
+        status = str(raw.get("status", "partial")).strip()
+
+        # Preserve analysis_failed status
+        if status == "analysis_failed":
+            status = "analysis_failed"
+        elif not status or status not in ("complete", "partial"):
+            status = "partial"
+
+        normalized_threads: list[ContinuityThread] = []
+        seen_thread_ids: set[str] = set()
+        for t in threads:
+            if not isinstance(t, dict):
+                continue
+            tid = str(t.get("thread_id", "")).strip()
+            title = str(t.get("title", "Untitled Thread")).strip()
+            if not tid or tid in seen_thread_ids:
+                tid = self._make_continuity_id("thread", title)
+                if tid in seen_thread_ids:
+                    continue
+            seen_thread_ids.add(tid)
+
+            chapter_ids = t.get("chapter_ids", []) or []
+            valid_chapter_ids = [cid for cid in chapter_ids if str(cid).strip() in known_chapter_ids]
+
+            evidence = t.get("evidence", []) or []
+            confidence = float(t.get("confidence_score", 0.5))
+            # Require explicit evidence before upgrading confidence above 0.7
+            if not evidence and confidence > 0.7:
+                confidence = 0.5
+
+            thread_status = str(t.get("status", "active")).strip()
+            if thread_status not in ("active", "resolved", "dropped"):
+                thread_status = "active"
+
+            normalized_threads.append(ContinuityThread(
+                thread_id=tid,
+                project_id="",
+                title=title or "Untitled Thread",
+                summary=str(t.get("summary", "")).strip(),
+                status=thread_status,
+                chapter_ids=valid_chapter_ids,
+                character_ids=[str(c) for c in (t.get("character_ids", []) or [])],
+                evidence=[str(e) for e in evidence],
+                provenance_note="continuity analysis from multi-pass import",
+                confidence_score=max(0.0, min(1.0, confidence)),
+            ))
+
+        normalized_states: list[ContinuityState] = []
+        seen_state_ids: set[str] = set()
+        for s in states:
+            if not isinstance(s, dict):
+                continue
+            sid = str(s.get("state_id", "")).strip()
+            chapter_id = str(s.get("chapter_id", "")).strip()
+
+            if not chapter_id or chapter_id not in known_chapter_ids:
+                continue
+
+            if not sid or sid in seen_state_ids:
+                sid = self._make_continuity_id("state", chapter_id)
+                if sid in seen_state_ids:
+                    continue
+            seen_state_ids.add(sid)
+
+            evidence_count = (
+                len(s.get("world_facts", []) or [])
+                + len(s.get("character_states", {}) or {})
+                + len(s.get("unresolved_questions", []) or [])
+            )
+            confidence = float(s.get("confidence_score", 0.5))
+            if evidence_count == 0 and confidence > 0.7:
+                confidence = 0.5
+
+            state_status = str(s.get("status", "complete")).strip()
+            if state_status not in ("complete", "partial"):
+                state_status = "partial"
+
+            character_states_raw = s.get("character_states", {}) or {}
+            character_states = {
+                str(k): str(v) for k, v in character_states_raw.items()
+                if str(k).strip() and str(v).strip()
+            }
+
+            normalized_states.append(ContinuityState(
+                state_id=sid,
+                project_id="",
+                chapter_id=chapter_id,
+                summary=str(s.get("summary", "")).strip(),
+                active_threads=[str(t) for t in (s.get("active_threads", []) or [])],
+                resolved_threads=[str(t) for t in (s.get("resolved_threads", []) or [])],
+                character_states=character_states,
+                world_facts=[str(f) for f in (s.get("world_facts", []) or [])],
+                unresolved_questions=[str(q) for q in (s.get("unresolved_questions", []) or [])],
+                contradictions=[str(c) for c in (s.get("contradictions", []) or [])],
+                status=state_status,
+                provenance_note="continuity analysis from multi-pass import",
+                confidence_score=max(0.0, min(1.0, confidence)),
+            ))
+
+        return ContinuityFinding(
+            project_id="",
+            threads=normalized_threads,
+            states=normalized_states,
+            contradictions=[str(c) for c in contradictions],
+            unresolved_questions=[str(q) for q in unresolved_qs],
+            overall_confidence=max(0.0, min(1.0, overall_confidence)),
+            status=status,
+            provenance_note="continuity analysis from multi-pass import",
+        )
+
+    def _check_continuity_gate(
+        self,
+        finding: ContinuityFinding,
+    ) -> tuple[bool, list[str]]:
+        """Determine if continuity quality is acceptable for downstream use.
+
+        Returns (True, []) if overall_confidence >= 0.5 and no critical contradictions.
+        Returns (False, [reasons]) if below threshold or critical issues found.
+        Critical contradiction = mentions character identity or timeline impossibility.
+        """
+        reasons: list[str] = []
+
+        if finding.overall_confidence < 0.5:
+            reasons.append(
+                f"Continuity confidence {finding.overall_confidence:.2f} below threshold 0.50"
+            )
+
+        critical_patterns = [
+            "character identity", "identity of", "is not the same",
+            "timeline", "chronology", "impossible", "contradicts earlier",
+            "cannot have been", "simultaneously", "before they",
+        ]
+        for contradiction in finding.contradictions:
+            lower = contradiction.lower()
+            if any(pat in lower for pat in critical_patterns):
+                reasons.append(f"Critical contradiction: {contradiction[:200]}")
+
+        # Check per-state contradictions
+        for state in finding.states:
+            for contradiction in state.contradictions:
+                lower = contradiction.lower()
+                if any(pat in lower for pat in critical_patterns):
+                    reason = f"Critical contradiction in {state.chapter_id}: {contradiction[:200]}"
+                    if reason not in reasons:
+                        reasons.append(reason)
+
+        if finding.status == "analysis_failed":
+            reasons.append("Continuity analysis failed to produce results")
+
+        return (len(reasons) == 0, reasons)
+
+    def _check_drafting_readiness(
+        self,
+        *,
+        continuity_finding: ContinuityFinding | None,
+        chapter_summaries: list[StoryImportChapterSummary],
+        foundation_pov: str | None = None,
+        foundation_tone: str | None = None,
+    ) -> tuple[bool, list[str]]:
+        """Check if the import is ready for drafting brief generation.
+
+        Returns (True, []) when all gates pass.
+        Returns (False, [reasons]) with explicit degraded states.
+        """
+        reasons: list[str] = []
+
+        # Gate 1: Continuity confidence >= 0.5
+        if continuity_finding is None:
+            reasons.append("No continuity analysis available — cannot guarantee drafting consistency")
+        elif continuity_finding.overall_confidence < 0.5:
+            reasons.append(
+                f"Continuity confidence {continuity_finding.overall_confidence:.2f} below drafting threshold 0.50"
+            )
+
+        # Gate 2: No critical contradictions from continuity analysis
+        if continuity_finding and continuity_finding.contradictions:
+            critical_patterns = [
+                "character identity", "identity of", "is not the same",
+                "timeline", "chronology", "impossible", "contradicts earlier",
+                "cannot have been", "simultaneously", "before they",
+            ]
+            for contradiction in continuity_finding.contradictions:
+                lower = contradiction.lower()
+                if any(pat in lower for pat in critical_patterns):
+                    reasons.append(f"Critical contradiction blocks drafting: {contradiction[:200]}")
+
+        # Gate 3: Planning completeness — at least N chapters with summaries
+        valid_chapters = [
+            cs for cs in chapter_summaries
+            if cs.summary.strip() and cs.analysis_status != "analysis_failed"
+        ]
+        n_expected = len(chapter_summaries)
+        if n_expected == 0:
+            reasons.append("No chapter summaries available for drafting")
+        elif len(valid_chapters) < n_expected * 0.5:
+            reasons.append(
+                f"Only {len(valid_chapters)}/{n_expected} chapters have usable summaries — "
+                "below 50% completeness threshold for drafting"
+            )
+
+        # Gate 4: POV/voice stability
+        if foundation_pov and foundation_tone:
+            pass  # Voice is stable when both are present
+        elif not foundation_pov and not foundation_tone:
+            reasons.append(
+                "Neither POV nor tone established — drafting will lack voice guidance"
+            )
+
+        return (len(reasons) == 0, reasons)
+
+    def _run_drafting_consolidation(
+        self,
+        *,
+        project_id: str,
+        chapter_summaries: list[StoryImportChapterSummary],
+        continuity_finding: ContinuityFinding | None,
+        characters: list[StoryImportCharacterRequest],
+        world_bible: list[Any] | None = None,
+        foundation_pov: str | None = None,
+        foundation_tone: str | None = None,
+    ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+        """Phase 5: Generate draft briefs and context packets for each chapter.
+
+        Runs only after continuity consolidation succeeds or degrades within allowed threshold.
+        Returns list of (draft_brief_dict, context_packet_dict) tuples per chapter.
+        If a single chapter brief fails, that chapter is skipped with degraded status.
+        """
+        from .runtime_prompts import build_draft_brief_request
+        from ..utils.db_inserts import hash_id
+
+        readiness, reasons = self._check_drafting_readiness(
+            continuity_finding=continuity_finding,
+            chapter_summaries=chapter_summaries,
+            foundation_pov=foundation_pov,
+            foundation_tone=foundation_tone,
+        )
+        if not readiness:
+            logger.info(
+                "Drafting consolidation skipped — readiness gates failed: %s",
+                "; ".join(reasons),
+            )
+            return []
+
+        results: list[tuple[dict[str, Any], dict[str, Any]]] = []
+
+        # Build character name -> data lookup for per-chapter filtering
+        char_by_name: dict[str, StoryImportCharacterRequest] = {
+            c.name: c for c in characters
+        }
+
+        # Build state-by-chapter lookup from continuity finding
+        state_by_chapter: dict[str, Any] = {}
+        if continuity_finding:
+            for state in continuity_finding.states:
+                state_by_chapter[state.chapter_id] = state
+
+        # Build active threads JSON for use in brief generation
+        active_threads_json: str | None = None
+        if continuity_finding and continuity_finding.threads:
+            active_threads = [
+                t.model_dump(mode="json", exclude_defaults=True)
+                for t in continuity_finding.threads
+                if t.status == "active"
+            ]
+            if active_threads:
+                active_threads_json = json.dumps(active_threads, ensure_ascii=True, indent=2)
+
+        # Build world constraints JSON
+        world_constraints_json: str | None = None
+        if world_bible:
+            wb_data = [
+                w.model_dump(mode="json", exclude_defaults=True)
+                for w in world_bible
+            ]
+            if wb_data:
+                world_constraints_json = json.dumps(wb_data, ensure_ascii=True, indent=2)
+
+        # Build voice guidance string from foundation
+        voice_parts: list[str] = []
+        if foundation_pov:
+            voice_parts.append(f"POV: {foundation_pov}")
+        if foundation_tone:
+            voice_parts.append(f"Tone: {foundation_tone}")
+        voice_guidance_str = "\n".join(voice_parts) if voice_parts else None
+
+        for idx, chapter in enumerate(chapter_summaries):
+            brief_id = hash_id("import-brief", f"{project_id}:{chapter.chapter_id}")
+            packet_id = hash_id("import-packet", f"{project_id}:{chapter.chapter_id}")
+
+            # Build character roster for this chapter
+            char_roster_json: str | None = None
+            active_chars = chapter.active_character_names or []
+            if active_chars:
+                roster_data = []
+                for cname in active_chars:
+                    ch = char_by_name.get(cname)
+                    if ch:
+                        roster_data.append({
+                            "name": ch.name,
+                            "role": ch.role,
+                            "archetype": ch.archetype,
+                            "external_goal": ch.external_goal,
+                            "internal_need": ch.internal_need,
+                        })
+                    else:
+                        roster_data.append({"name": cname, "role": "supporting"})
+                if roster_data:
+                    char_roster_json = json.dumps(roster_data, ensure_ascii=True, indent=2)
+
+            # Build continuity state for this chapter boundary
+            continuity_state_json: str | None = None
+            prior_state = state_by_chapter.get(chapter.chapter_id)
+            if not prior_state and idx > 0:
+                prior_chapter_id = chapter_summaries[idx - 1].chapter_id
+                prior_state = state_by_chapter.get(prior_chapter_id)
+
+            if prior_state:
+                continuity_state_json = json.dumps(
+                    prior_state.model_dump(mode="json", exclude_defaults=True),
+                    ensure_ascii=True, indent=2,
+                )
+
+            # Attempt LLM generation of draft brief
+            try:
+                inference_request = build_draft_brief_request(
+                    model=self._inferencer.descriptor.default_model,
+                    chapter_id=chapter.chapter_id,
+                    chapter_title=chapter.title or chapter.chapter_id,
+                    chapter_summary=chapter.summary,
+                    continuity_threads=active_threads_json,
+                    continuity_state=continuity_state_json,
+                    character_roster=char_roster_json,
+                    world_constraints=world_constraints_json,
+                    voice_guidance=voice_guidance_str,
+                )
+
+                response = self._retry_with_backoff(
+                    self._inferencer.generate_text,
+                    (inference_request,),
+                    {},
+                    max_retries=2,
+                )
+                parsed = extract_json(response.content)
+
+                if not parsed or not isinstance(parsed, dict):
+                    raise ValueError("Draft brief response was not a JSON object")
+
+                brief_dict = {
+                    "brief_id": brief_id,
+                    "project_id": project_id,
+                    "chapter_id": chapter.chapter_id,
+                    "objective": str(parsed.get("objective", "")).strip() or chapter.objective or "",
+                    "emotional_turn": str(parsed.get("emotional_turn", "")).strip(),
+                    "continuity_obligations": list(parsed.get("continuity_obligations", [])),
+                    "required_callbacks": list(parsed.get("required_callbacks", [])),
+                    "forbidden_contradictions": list(parsed.get("forbidden_contradictions", [])),
+                    "voice_guidance": str(parsed.get("voice_guidance", "")).strip() or (voice_guidance_str or ""),
+                    "status": "complete",
+                    "provenance_note": "draft brief generated from continuity analysis",
+                    "confidence_score": 0.8,
+                }
+            except (InferenceBackendError, ValueError, ValidationError) as exc:
+                logger.warning(
+                    "Failed to generate draft brief for chapter %s: %s. Using degraded fallback.",
+                    chapter.chapter_id,
+                    exc,
+                )
+                brief_dict = {
+                    "brief_id": brief_id,
+                    "project_id": project_id,
+                    "chapter_id": chapter.chapter_id,
+                    "objective": chapter.objective or chapter.summary or "",
+                    "emotional_turn": "",
+                    "continuity_obligations": list(chapter.continuity_requirements),
+                    "required_callbacks": [],
+                    "forbidden_contradictions": [],
+                    "voice_guidance": voice_guidance_str or "",
+                    "status": "degraded",
+                    "provenance_note": f"degraded fallback — LLM brief generation failed: {exc}",
+                    "confidence_score": 0.3,
+                }
+
+            # Build context packet for this chapter
+            prior_summaries: list[str] = []
+            for prev_ch in chapter_summaries[:idx]:
+                if prev_ch.summary.strip():
+                    prior_summaries.append(
+                        f"[{prev_ch.chapter_id}] {prev_ch.title}: {prev_ch.summary}"
+                    )
+
+            packet_dict = {
+                "packet_id": packet_id,
+                "project_id": project_id,
+                "brief_id": brief_id,
+                "character_anchors": active_chars,
+                "world_constraints": [
+                    w.title for w in (world_bible or [])[:10]
+                ],
+                "prior_summaries": prior_summaries[-3:],  # Cap at last 3
+                "pattern_guidance": {},
+                "status": brief_dict["status"],
+                "provenance_note": "context packet assembled from continuity and planning data",
+                "confidence_score": brief_dict["confidence_score"],
+            }
+
+            results.append((brief_dict, packet_dict))
+
+        return results
+
+    def _make_continuity_id(self, prefix: str, label: str) -> str:
+        """Generate a stable hash-based ID for continuity artifacts."""
+        import hashlib
+        raw = f"continuity-{prefix}:{label}"
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+        return f"import-{prefix}-{digest}"

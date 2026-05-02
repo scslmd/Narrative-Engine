@@ -27,6 +27,9 @@ from ..utils.json_extract import extract_json
 from ..schemas.enums import PovMode, StoryStructure
 from ..schemas.inference import InferenceRequest
 from ..schemas.story_import import (
+    ContinuityFinding,
+    ContinuityState,
+    ContinuityThread,
     PlotEvent,
     StoryImportAnalysis,
     StoryImportArc,
@@ -455,6 +458,7 @@ class StoryImportService:
             self._import_world_bible(conn, project_id, analysis, now)
             self._import_arcs(conn, project_id, analysis, now)
             self._import_planning(conn, project_id, analysis, now)
+            self._import_continuity(conn, project_id, analysis, now)
 
             conn.commit()
         except Exception:
@@ -995,6 +999,123 @@ class StoryImportService:
                     now,
                 ),
             )
+
+    def _import_continuity(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        analysis: StoryImportAnalysis,
+        now: str,
+    ) -> None:
+        """Persist continuity artifacts from multi-pass import analysis."""
+        finding = analysis.continuity_finding
+        if not finding or (not finding.threads and not finding.states):
+            return
+
+        # Insert threads
+        for thread in finding.threads:
+            thread_id = hash_id("import-thread", f"{project_id}:{thread.title}")
+            conn.execute(
+                """
+                INSERT INTO continuity_threads (
+                    thread_id, project_id, title, summary, status,
+                    chapter_ids_json, character_ids_json, evidence_json,
+                    provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(thread_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    title = excluded.title,
+                    summary = excluded.summary,
+                    status = excluded.status,
+                    chapter_ids_json = excluded.chapter_ids_json,
+                    character_ids_json = excluded.character_ids_json,
+                    evidence_json = excluded.evidence_json,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    thread_id,
+                    project_id,
+                    thread.title,
+                    thread.summary or "",
+                    thread.status or "active",
+                    json_safe(thread.chapter_ids),
+                    json_safe(thread.character_ids),
+                    json_safe(thread.evidence),
+                    thread.provenance_note or None,
+                    thread.confidence_score,
+                    now,
+                    now,
+                ),
+            )
+
+        # Insert states
+        for state in finding.states:
+            state_id = hash_id("import-state", f"{project_id}:{state.chapter_id}")
+            conn.execute(
+                """
+                INSERT INTO continuity_states (
+                    state_id, project_id, chapter_id, summary,
+                    active_threads_json, resolved_threads_json,
+                    character_states_json, world_facts_json,
+                    unresolved_questions_json, contradictions_json,
+                    status, provenance_note, confidence_score, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(state_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    chapter_id = excluded.chapter_id,
+                    summary = excluded.summary,
+                    active_threads_json = excluded.active_threads_json,
+                    resolved_threads_json = excluded.resolved_threads_json,
+                    character_states_json = excluded.character_states_json,
+                    world_facts_json = excluded.world_facts_json,
+                    unresolved_questions_json = excluded.unresolved_questions_json,
+                    contradictions_json = excluded.contradictions_json,
+                    status = excluded.status,
+                    provenance_note = excluded.provenance_note,
+                    confidence_score = excluded.confidence_score,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    state_id,
+                    project_id,
+                    state.chapter_id,
+                    state.summary or "",
+                    json_safe(state.active_threads),
+                    json_safe(state.resolved_threads),
+                    json_safe(state.character_states),
+                    json_safe(state.world_facts),
+                    json_safe(state.unresolved_questions),
+                    json_safe(state.contradictions),
+                    state.status or "complete",
+                    state.provenance_note or None,
+                    state.confidence_score,
+                    now,
+                    now,
+                ),
+            )
+
+        # Insert overall finding
+        conn.execute(
+            """
+            INSERT INTO continuity_findings (
+                project_id, overall_confidence, status,
+                contradictions_json, unresolved_questions_json,
+                provenance_note, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                project_id,
+                finding.overall_confidence,
+                finding.status or "complete",
+                json_safe(finding.contradictions),
+                json_safe(finding.unresolved_questions),
+                finding.provenance_note or None,
+                now,
+                now,
+            ),
+        )
 
     def _validate_planning_chapter_summaries(
         self,

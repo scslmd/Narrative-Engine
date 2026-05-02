@@ -191,6 +191,51 @@ class StoryImportPlanningSynthesis(StrictModel):
     chapter_summaries: list[StoryImportChapterSummary] = Field(default_factory=list)
 
 
+# ---- Continuity Schema Models (Task 1) ----
+
+class ContinuityThread(StrictModel):
+    """Tracks an ongoing narrative thread across chapters."""
+    thread_id: str = Field(..., min_length=1, max_length=100)
+    project_id: str = Field(..., min_length=1, max_length=100)
+    title: str = Field(..., min_length=1, max_length=500)
+    summary: str = Field(default="", max_length=5000)
+    status: str = Field(default="active", min_length=1, max_length=30)
+    chapter_ids: list[str] = Field(default_factory=list)
+    character_ids: list[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ContinuityState(StrictModel):
+    """Snapshot of narrative state at a given chapter boundary."""
+    state_id: str = Field(..., min_length=1, max_length=100)
+    project_id: str = Field(..., min_length=1, max_length=100)
+    chapter_id: str = Field(..., min_length=1, max_length=100)
+    summary: str = Field(default="", max_length=5000)
+    active_threads: list[str] = Field(default_factory=list)
+    resolved_threads: list[str] = Field(default_factory=list)
+    character_states: dict[str, str] = Field(default_factory=dict)
+    world_facts: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    contradictions: list[str] = Field(default_factory=list)
+    status: str = Field(default="complete", min_length=1, max_length=30)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ContinuityFinding(StrictModel):
+    """Overall continuity analysis result for the full story."""
+    project_id: str = Field(..., min_length=1, max_length=100)
+    threads: list[ContinuityThread] = Field(default_factory=list)
+    states: list[ContinuityState] = Field(default_factory=list)
+    contradictions: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    overall_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    status: str = Field(default="complete", min_length=1, max_length=30)
+    provenance_note: str = Field(default="", max_length=1000)
+
+
 class StoryImportAnalysis(StrictModel):
     project_name: str = Field(..., min_length=1, max_length=255)
     genre: str = Field(..., min_length=1, max_length=100)
@@ -212,6 +257,7 @@ class StoryImportAnalysis(StrictModel):
     success_definition: str = Field(default="", max_length=2000)
     completed_chunk_count: int = Field(default=0, ge=0)
     total_estimated_chunks: int = Field(default=0, ge=0)
+    continuity_finding: ContinuityFinding | None = None
 
     @model_validator(mode="before")
     @classmethod
