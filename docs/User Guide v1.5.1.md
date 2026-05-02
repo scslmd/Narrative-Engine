@@ -1,20 +1,42 @@
-# Narrative Engine - User Guide v1.3
+# Narrative Engine - User Guide v1.5.1
 
-This guide walks you through using Narrative Engine from first project to a fully-developed complex story.
+This guide walks you through using Narrative Engine from first project to a fully-developed complex story, following the natural creative lifecycle: seed your project, refine canon, generate stories, and polish manuscripts.
 
 ---
 
 ## Table of Contents
 
+### Getting Started
+
 1. [Getting Started](#getting-started)
+
+### Seeding Your Project
+
 2. [Importing an Existing Story](#importing-an-existing-story)
 3. [Extracting Mythos for Pattern-Based Story Generation](#extracting-mythos-for-pattern-based-story-generation)
 4. [Extracting Patterns for Story Generation](#extracting-patterns-for-story-generation)
-5. [Story Generation Orchestration](#story-generation-orchestration)
-6. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
-7. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
-8. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
-9. [Tips and Best Practices](#tips-and-best-practices)
+
+### Refining Canon
+
+5. [Canon Workshop: Customizing Source Material Before Generation](#canon-workshop-customizing-source-material-before-generation)
+
+### Generating Stories
+
+6. [Story Generation Orchestration](#story-generation-orchestration)
+
+### Polishing Manuscripts
+
+7. [Manuscript LLM Assist: Interactive Editing with AI](#manuscript-llm-assist-interactive-editing-with-ai)
+
+### Learning Paths (Levels 1–3)
+
+8. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+9. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+10. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+
+### Reference
+
+11. [Tips and Best Practices](#tips-and-best-practices)
 
 ---
 
@@ -61,7 +83,7 @@ INFERENCE_URL=http://localhost:8081      (llama.cpp)
 
 If no inference URL is set, the app uses a stub backend for testing (jobs complete with placeholder content).
 
-### Alternative: Import an Existing Story
+### Importing an Existing Story (`/`)
 
 If you already have a completed story, you can import it and have the AI analyze and structure it automatically:
 
@@ -79,6 +101,8 @@ The system will:
 ---
 
 ## Extracting Mythos for Pattern-Based Story Generation
+
+> **Route**: `/` (home page) → "Import Existing Story" modal → toggle to "Extract Mythos"
 
 Mythos Extraction lets you paste mythology texts and have the system extract their storytelling DNA — archetypal patterns, narrative structures, cosmic rules, and symbolic motifs — then use those patterns to guide original story generation.
 
@@ -127,6 +151,8 @@ Use this when you want to write stories that follow the narrative DNA of a mytho
 ---
 
 ## Extracting Patterns for Story Generation
+
+> **Route**: `/` (home page) → "Import Existing Story" modal → toggle to "Extract Patterns"
 
 Pattern Extraction lets you paste any completed story and have the system extract its storytelling DNA — archetypal patterns, narrative structure, voice profile, thematic constraints, world rules, and entities — then use those patterns to guide original story generation. This generalizes Mythos Extraction: it works with both fiction stories (`source_type: narrative`) and mythology texts (`source_type: mythology`).
 
@@ -190,7 +216,103 @@ Use this when you want to write stories that follow the narrative DNA of an exis
 
 ---
 
+## Canon Workshop: Customizing Source Material Before Generation
+
+> **Route**: `/workspace/:projectId/canon`
+
+> **Why before generating?** Always visit the Canon Workshop *before* launching a generation run. Lock critical facts, set your policy, and preview your packet — this prevents wasted runs on contradictory content.
+
+The Canon Workshop gives you fine-grained control over what canon material gets used during story generation, how it's classified (locked, mutable, forbidden), and which reusable patterns should guide the output. It lives at `/workspace/:projectId/canon`.
+
+### When to Use the Canon Workshop
+
+Use this when you want to:
+- Edit extracted characters, world entries, mythos motifs, or patterns before generation
+- Mark specific facts as **locked canon** (must not be contradicted) or **mutable** (allowed to change)
+- Create reusable generation profiles that save your scope, policy, and brief template
+- Preview exactly what canon will be sent to the executor before launching a run
+- Manage mythos entries from Mythos Extraction or pattern entries from Pattern Extraction as editable records
+
+### Step-by-Step Guide
+
+1. **Navigate to the Canon workspace**: `/workspace/:projectId/canon`
+2. **Overview tab** — see summary counts for characters, world entries, mythos, patterns, annotations, and profiles
+3. **Characters tab** — browse character profiles with annotation controls:
+    - Click a character to open the editor
+    - Use the **Canon Annotation Toolbar** on any field to mark it as: `locked`, `soft_guidance`, `mutable`, or `forbidden_contradiction`
+    - Locked fields appear with a lock badge; they become hard constraints during generation
+4. **World tab** — browse world bible entries with the same annotation controls
+5. **Mythos tab** — edit mythos entries extracted from mythology texts:
+    - Entry types: archetype, motif, cosmic_rule, symbol, ritual, deity, cycle, theme
+    - Each entry has canonical facts, pattern notes, and generation guidance
+    - Filter by entry type using the type filter chips
+6. **Patterns tab** — edit reusable narrative patterns extracted from stories:
+    - Pattern types: plot, character, relationship, world, theme, scene, structure
+    - Each pattern has beats, constraints, transposition notes, and applicable generation modes
+7. **Generation Rules tab** — configure canon policy rules:
+    - Locked character/world fields
+    - Allowed changes
+    - Forbidden contradictions
+    - Continuity strictness level
+8. **Packet Preview tab** — see exactly what the executor will receive:
+    - Selected characters, world entries, mythos, and patterns
+    - Derived canon policy from annotations
+    - Prompt budget summary
+    - Source hashes for idempotency verification
+
+### Canon Customization Profiles
+
+Profiles let you save reusable generation configurations:
+
+1. Click **"New Profile"** in the Overview tab
+2. Fill in:
+    - **Name** — e.g., "Sequel with Locked Characters"
+    - **Description** — what this profile is for
+    - **Default Generation Mode** — sequel, prequel, side_story, etc.
+    - **Canon Scope** — which characters, world entries, mythos, and patterns to include
+    - **Canon Policy** — locked fields, allowed changes, forbidden contradictions, strictness
+    - **Generation Brief Template** — reusable brief text that gets sent to the generator
+3. Click **"Save"**
+4. Later, select a saved profile and click **"Preview Packet"** → **"Submit Generation"** to launch a run
+
+### Field-Level Annotations
+
+Annotations are the core mechanism for controlling generation behavior:
+
+- **Locked** (`locked`) — this field must not be contradicted in generated content. Violations are blocking.
+- **Soft Guidance** (`soft_guidance`) — the generator should respect this but minor deviations are acceptable.
+- **Mutable** (`mutable`) — the generator is explicitly allowed to change this field.
+- **Forbidden Contradiction** (`forbidden_contradiction`) — this specific text must not appear in generated content.
+
+Annotations can be scoped to specific generation modes (e.g., lock backstory for sequels but allow mutation for alternate routes).
+
+### Mythos Library
+
+After running Mythos Extraction, extracted entries become editable records:
+
+1. Navigate to `/workspace/:projectId/canon?tab=mythos`
+2. Review auto-extracted entries (archetypes, cosmic rules, motifs, symbols)
+3. Edit any entry: add canonical facts, refine pattern notes, set generation guidance
+4. Use **"Use in Generation"** checkbox to include entries in your canon scope
+5. Filter by type using the filter chips at the top
+
+### Pattern Library
+
+After running Pattern Extraction, extracted patterns become editable records:
+
+1. Navigate to `/workspace/:projectId/canon?tab=patterns`
+2. Review auto-extracted patterns (plot structures, character archetypes, scene templates)
+3. Edit any pattern: add beats, constraints, transposition notes
+4. Set which generation modes the pattern applies to
+5. Use **"Use in Generation"** checkbox to include patterns in your canon scope
+
+---
+
 ## Story Generation Orchestration
+
+> **Route**: `/workspace/:projectId/generate`
+
+> **Why canon matters here:** The Story Generation pipeline builds a **Canon Packet** — a snapshot of your characters, world entries, arcs, and continuity threads. This packet is the LLM's entire memory of your story for this run. If it's too large (over 120K characters), the system truncates lower-priority entries first. That's why visiting the Canon Workshop *before* generating is critical: you decide what gets included and what gets locked.
 
 Story Generation lets you take an existing project's canon (characters, world bible, arcs) and generate a new canon-congruent story — either within the same project or forked into a brand-new project. The system builds a deterministic **canon packet** from your selected source material, runs a 4-phase generation pipeline (plan → draft → gate → compile), and enforces consistency gates to ensure generated content respects locked canon facts.
 
@@ -295,7 +417,104 @@ Re-submitting the same request (same source project, same scope, same brief) wit
 
 ---
 
+## Manuscript LLM Assist: Interactive Editing with AI
+
+> **Route**: `/workspace/:projectId/write` (Writing workspace)
+
+> **Bridge from Story Generation:** After a generation run completes, use Manuscript Assist to polish the output — check canon consistency, refine voice, and fix continuity errors before promoting drafts.
+
+Manuscript LLM Assist lets you select text in the manuscript editor and request AI-powered assistance: developmental reviews, line edits, canon checks, continuations, alternate versions, and story forks — all with version conflict protection and canon risk assessment.
+
+### When to Use Manuscript Assist
+
+Use this when you want to:
+- Get developmental feedback on a specific passage or the whole manuscript
+- Request a line edit, expansion, compression, or rewrite of selected text
+- Check whether edited content contradicts locked canon facts
+- Generate a continuation from your current cursor position
+- Fork an alternate story branch from a selected passage
+- See canon risk ratings and confidence scores before accepting suggestions
+
+### Step-by-Step Guide
+
+1. **Navigate to the Writing workspace**: `/workspace/:projectId/write`
+2. **Open a manuscript document** from the left sidebar
+3. **Select text** by clicking and dragging in the editor
+4. **Assist toolbar appears** with two categories of actions:
+
+**Selection-Aware Actions** (require selected text):
+- **Line Edit Selection** — polish prose, fix grammar, improve flow
+- **Expand Selection** — add detail, description, or dialogue to the selected passage
+- **Compress Selection** — tighten the passage while preserving meaning
+- **Rewrite in Same Voice** — rephrase while maintaining character voice
+- **Alternate Version** — generate an alternative way to write the same scene
+- **Continue from Here** — generate new content following from the selection endpoint
+- **Fork from Selection** — create a branch or draft artifact diverging from this point
+
+**Document-Wide Actions** (work on the full manuscript):
+- **Developmental Review** — high-level feedback on plot, pacing, character arcs
+- **Canon Check** — verify the entire document against locked canon facts
+- **Character Voice Check** — flag dialogue that doesn't match character profiles
+- **Pacing Review** — identify slow or rushed sections
+- **Theme Review** — check thematic consistency and resonance
+- **Continuity Repair** — find and suggest fixes for continuity errors
+
+5. **Submit the assist request**:
+   - For selection actions: the toolbar captures selected text, anchors, and offsets automatically
+   - For document-wide actions: click the action button directly
+   - Optionally add a custom instruction (max 5,000 characters) to guide the AI
+6. **Review suggestions** in the right panel (Aids Panel):
+   - Each suggestion shows: source text, proposed text, rationale, canon risk level, and confidence score
+   - Canon risk ranges from `none` → `low` → `medium` → `high` → `blocking`
+7. **Accept a suggestion**:
+   - Click **"Apply"** — the suggestion replaces the target range in the manuscript
+   - Document version increments automatically
+   - If canon gates fail, you'll see a warning before applying
+8. **Reject or archive** suggestions you don't want
+9. **Fork from selection**:
+   - Creates a new story branch with the alternate content
+   - Records intentional divergence from the source manuscript
+   - Branch appears in the Branches tab for comparison
+
+### How Assist Works Behind the Scenes
+
+**Text Range Resolution:**
+Every assist request captures: selected text, character offsets, and 1000-character anchors before/after. When you apply a suggestion, the system resolves the exact location using offsets first, then falls back to anchor matching. This prevents applying suggestions to wrong locations if the document has been edited since the assist was requested.
+
+**Version Conflict Protection:**
+Every manuscript has a version number. When you apply a suggestion, the system checks that the current version matches the expected version. If another edit happened between requesting and applying, you'll get a conflict error (HTTP 409) and need to re-request the assist.
+
+**Canon Gate Checks:**
+Before suggestions are applied, the system runs gate checks:
+- Source selection must still match (range hasn't drifted)
+- Locked canon facts must not be contradicted by proposed text
+- Character voice changes are flagged as warnings
+- New entities in proposed text trigger entity intake
+
+**Executor Phases:**
+Assist requests run through dedicated executor phases:
+- **M-500**: Manuscript assist — loads document, builds assist packet, calls LLM, parses suggestions, runs gates
+- **M-550**: Assist repair — triggered when gates fail and policy allows repair; sends a repair prompt to fix violations
+
+### Tips
+
+- **Select meaningful passages.** Line edits on single sentences produce better results than whole-chapter selections.
+- **Check canon risk before applying.** Suggestions marked `high` or `blocking` contradict locked canon — review carefully.
+- **Use anchors for stability.** The system captures 1000-character anchors before/after your selection, so suggestions remain valid even if you edit nearby text.
+- **Fork early, merge late.** Use "Fork from Selection" to explore alternate directions without losing your main manuscript.
+- **Developmental review first.** Run a document-wide developmental review before doing line edits — structural feedback often changes what you'd edit at the line level.
+
+---
+
+## Learning Paths: Levels 1–3
+
+The following levels walk you through complete workflows, from simple to complex. Each level builds on the previous one and references the features documented above. Use the **User Walkthrough** (`Narrative Engine User Walkthrough v1.5.1.md`) for a detailed step-by-step version of these same workflows.
+
+---
+
 ## Level 1: Your First Simple Story
+
+> **Route**: `/workspace/:projectId/plan` (Planning workspace)
 
 In this section, you'll create a simple short story from scratch using just the basic features.
 
@@ -480,6 +699,8 @@ In single-chapter mode (Phase 5c), you manually promote drafts to ManuscriptDocu
 
 ## Level 2: Medium Complexity with Branching and Review
 
+> **Routes**: `/workspace/:projectId/plan` (Planning) → `review` (Review) → `inspect` (Inspect)
+
 This section builds on Level 1 and introduces story branches, the role model checker, and the review workflow.
 
 ### Step 1: Define Your Foundation
@@ -555,6 +776,8 @@ The checker analyzes your generated content against multiple narrative roles (pl
 ---
 
 ## Level 3: Complex Story with Full Pipeline
+
+> **Routes**: All workspace modes — `plan`, `write`, `review`, `inspect`, `braindump`, `generate`, `canon`
 
 This section demonstrates a complete professional workflow using all features together.
 
@@ -799,6 +1022,19 @@ The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity 
 - **Don't ignore foundation revisions.** If later chapters contradict your foundation, check the revision cues tab.
 - **Don't overwrite character profiles.** If you need variations, create additional characters rather than modifying existing ones.
 
+### Canon Workshop Tips
+
+1. **Lock before generating.** Visit the Canon Workshop *before* submitting a generation run. Locked fields become hard constraints during G-350 gate checks.
+2. **Use profiles for repeatability.** Save a customization profile if you generate multiple sequels or alternate routes — you won't need to reconfigure scope and policy each time.
+3. **Preview your packet.** The Packet Preview tab shows exactly what the executor will receive. Use it to catch missing entries or budget warnings before committing.
+
+### Manuscript Assist Tips
+
+1. **Select meaningful passages.** Line edits on single sentences produce better results than whole-chapter selections.
+2. **Check canon risk before applying.** Suggestions marked `high` or `blocking` contradict locked canon — review carefully.
+3. **Developmental review first.** Run a document-wide developmental review before doing line edits — structural feedback often changes what you'd edit at the line level.
+4. **Fork early, merge late.** Use "Fork from Selection" to explore alternate directions without losing your main manuscript.
+
 ### Keyboard Shortcuts and Navigation
 
 - Top navigation bar: Switch between Planning, Brain Dump, Writing, Review, Inspect modes
@@ -852,3 +1088,15 @@ The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity 
 | **Voice Profile** | Extracted narrative characteristics: narrative_voice, sentence_rhythm, descriptive_density, humor_level, emotional_temperature. Injected into P-300 drafter prompts via SceneContext's pattern_guidance field. Available for narrative source type only. |
 | **Narrative Pattern** | Extracted structural characteristics: pacing, chapter_structure, conflict_type, dialogue_style, scene_transition. Guides P-100 architect and P-300 drafter in maintaining the source story's structural DNA. Available for narrative source type only. |
 | **Thematic Constraint** | Extracted thematic boundaries: theme, moral_stance, recurring_questions[], forbidden_elements[]. Enforced as soft constraints during drafting to maintain thematic consistency with the source material. Available for narrative source type only. |
+| **Canon Workshop** | Dedicated workspace at `/workspace/:projectId/canon` for editing extracted canon material, marking fields as locked/mutable/forbidden, managing mythos and pattern entries, creating reusable generation profiles, and previewing canon packets before submission. |
+| **Canon Annotation** | Field-level classification that controls generation behavior: `locked` (must not contradict), `soft_guidance` (respect but allow minor deviation), `mutable` (explicitly allowed to change), `forbidden_contradiction` (this text must not appear). Persists in `canon_annotations` table. |
+| **Canon Customization Profile** | Saved reusable generation configuration: name, description, default mode, canon scope, canon policy, generation brief template, and selected annotation IDs. Lets you re-generate with the same settings without reconfiguring. |
+| **Mythos Entry** | Editable record of extracted mythological material: archetype, motif, cosmic_rule, symbol, ritual, deity, cycle, or theme. Contains canonical facts, pattern notes, generation guidance, and source corpus reference. Managed via Mythos Library at `/workspace/:projectId/canon?tab=mythos`. |
+| **Pattern Entry** | Editable record of extracted narrative pattern: plot, character, relationship, world, theme, scene, or structure type. Contains beats, constraints, transposition notes, and applicable generation modes. Managed via Pattern Library at `/workspace/:projectId/canon?tab=patterns`. |
+| **Manuscript LLM Assist** | Interactive editing feature that lets you select text in the manuscript editor and request AI assistance: line edits, expansions, compressions, rewrites, continuations, canon checks, voice checks, forks. Suggestions include canon risk ratings and confidence scores. |
+| **TextRange** | Selection metadata captured by the editor: start_offset, end_offset, selected_text, and 1000-character anchors before/after. Used for deterministic patching even if document offsets drift after editing. |
+| **Assist Kind** | Type of LLM assistance requested: developmental_review, canon_check, character_voice_check, pacing_review, theme_review, line_edit_selection, expand_selection, compress_selection, rewrite_selection_same_voice, alternate_selection, continue_from_selection, fork_from_selection, generate_next_chapter, generate_alternate_chapter, continuity_repair. |
+| **LLM Revision Suggestion** | AI-generated edit proposal: source_text, proposed_text, rationale, canon_risk (none/low/medium/high/blocking), confidence_score, and source_context references to canon entries. Statuses: REQUESTED → PENDING → ACCEPTED/REJECTED/ARCHIVED. |
+| **M-500 Assist Phase** | Executor phase for manuscript assist requests. Loads document, builds assist packet with canon context, calls LLM, parses JSON suggestions, runs gate checks, persists suggestions and gate results. |
+| **M-550 Repair Phase** | Optional executor phase triggered when M-500 gates fail and policy allows repair. Sends a repair prompt to fix canon violations in generated suggestions. |
+| **Version Conflict Protection** | Manuscript assist applies suggestions against an expected document version. If the document was edited between requesting and applying, the apply fails with HTTP 409, preventing silent overwrites. |
