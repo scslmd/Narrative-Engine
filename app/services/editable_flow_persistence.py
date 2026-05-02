@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from app.persistence.sqlite import connect
+from app.persistence.sqlite import connect, ensure_operations_db
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas import (
     StoryFlowDefinition,
@@ -48,6 +48,7 @@ class SQLiteEditableFlowRepository(EditableFlowRepository):
         self._db_path = Path(db_path)
 
     def get(self, project_id: str) -> EditableFlowState | None:
+        ensure_operations_db(self._db_path)
         with connect(self._db_path) as connection:
             # Ensure counter table exists (lazy creation)
             connection.execute(
@@ -71,6 +72,11 @@ class SQLiteEditableFlowRepository(EditableFlowRepository):
                 (project_id,),
             )
             rows = cursor.fetchall()
+            # Read persisted counter to preserve next_stage_index across deletions
+            counter = connection.execute(
+                "SELECT next_stage_index FROM editable_flow_counters WHERE project_id = ?",
+                (project_id,),
+            ).fetchone()
 
         if not rows:
             return None
@@ -110,12 +116,6 @@ class SQLiteEditableFlowRepository(EditableFlowRepository):
             if row["is_custom"]:
                 custom_ids.append(stage_key)
 
-        # Read persisted counter to preserve next_stage_index across deletions
-        counter = connection.execute(
-            "SELECT next_stage_index FROM editable_flow_counters WHERE project_id = ?",
-            (project_id,),
-        ).fetchone()
-
         next_stage_index = counter["next_stage_index"] if counter else max_index + 1
 
         return EditableFlowState(
@@ -133,6 +133,7 @@ class SQLiteEditableFlowRepository(EditableFlowRepository):
         return stored
 
     def delete(self, project_id: str) -> None:
+        ensure_operations_db(self._db_path)
         with connect(self._db_path) as connection:
             connection.execute(
                 "DELETE FROM story_flow_stages WHERE project_id = ?",
@@ -153,6 +154,7 @@ class SQLiteEditableFlowRepository(EditableFlowRepository):
         project_id = state.flow.project_id
         now = _now()
 
+        ensure_operations_db(self._db_path)
         with connect(self._db_path) as connection:
             # Delete existing stages for this project
             connection.execute(

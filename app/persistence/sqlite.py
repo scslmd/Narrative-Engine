@@ -1115,6 +1115,30 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "draft_artifacts", "draft_artifacts__legacy")
         _rename_table_if_exists(connection, "manuscript_documents", "manuscript_documents__legacy")
         _rename_table_if_exists(connection, "revision_suggestions", "revision_suggestions__legacy")
+        _rename_table_if_exists(connection, "runtime_artifact_selections", "runtime_artifact_selections__legacy")
+        _rename_table_if_exists(connection, "story_flow_definitions", "story_flow_definitions__legacy")
+        _rename_table_if_exists(connection, "story_flow_stages", "story_flow_stages__legacy")
+        _rename_table_if_exists(connection, "brainstorm_items", "brainstorm_items__legacy")
+        _rename_table_if_exists(connection, "brain_dump_sessions", "brain_dump_sessions__legacy")
+        _rename_table_if_exists(connection, "foundation_profiles", "foundation_profiles__legacy")
+        _rename_table_if_exists(connection, "foundation_revisions", "foundation_revisions__legacy")
+        _rename_table_if_exists(connection, "character_profiles", "character_profiles__legacy")
+        _rename_table_if_exists(connection, "relationship_edges", "relationship_edges__legacy")
+        _rename_table_if_exists(connection, "arc_stage_maps", "arc_stage_maps__legacy")
+        _rename_table_if_exists(connection, "arc_comparisons", "arc_comparisons__legacy")
+        _rename_table_if_exists(connection, "arc_selection_comparisons", "arc_selection_comparisons__legacy")
+        _rename_table_if_exists(connection, "beat_plans", "beat_plans__legacy")
+        _rename_table_if_exists(connection, "sequence_plans", "sequence_plans__legacy")
+        _rename_table_if_exists(connection, "storyboard_cards", "storyboard_cards__legacy")
+        _rename_table_if_exists(connection, "chapter_plans", "chapter_plans__legacy")
+        _rename_table_if_exists(connection, "scene_plans", "scene_plans__legacy")
+        _rename_table_if_exists(connection, "chapter_packets", "chapter_packets__legacy")
+        _rename_table_if_exists(connection, "planning_dependencies", "planning_dependencies__legacy")
+        _rename_table_if_exists(connection, "continuity_threads", "continuity_threads__legacy")
+        _rename_table_if_exists(connection, "continuity_states", "continuity_states__legacy")
+        _rename_table_if_exists(connection, "continuity_findings", "continuity_findings__legacy")
+        _rename_table_if_exists(connection, "draft_briefs", "draft_briefs__legacy")
+        _rename_table_if_exists(connection, "drafting_context_packets", "drafting_context_packets__legacy")
 
         connection.executescript(OPERATIONS_SCHEMA)
 
@@ -1189,6 +1213,30 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_draft_artifacts_legacy(connection)
         _copy_manuscript_documents_legacy(connection)
         _copy_revision_suggestions_legacy(connection)
+        _copy_runtime_artifact_selections_legacy(connection)
+        _copy_story_flow_definitions_legacy(connection)
+        _copy_story_flow_stages_legacy(connection)
+        _copy_brainstorm_items_legacy(connection)
+        _copy_brain_dump_sessions_legacy(connection)
+        _copy_foundation_profiles_legacy(connection)
+        _copy_foundation_revisions_legacy(connection)
+        _copy_character_profiles_legacy(connection)
+        _copy_relationship_edges_legacy(connection)
+        _copy_arc_stage_maps_legacy(connection)
+        _copy_arc_comparisons_legacy(connection)
+        _copy_arc_selection_comparisons_legacy(connection)
+        _copy_beat_plans_legacy(connection)
+        _copy_sequence_plans_legacy(connection)
+        _copy_storyboard_cards_legacy(connection)
+        _copy_chapter_plans_legacy(connection)
+        _copy_scene_plans_legacy(connection)
+        _copy_chapter_packets_legacy(connection)
+        _copy_planning_dependencies_legacy(connection)
+        _copy_continuity_threads_legacy(connection)
+        _copy_continuity_states_legacy(connection)
+        _copy_continuity_findings_legacy(connection)
+        _copy_draft_briefs_legacy(connection)
+        _copy_drafting_context_packets_legacy(connection)
 
         _apply_operations_indexes(connection)
         _drop_legacy_tables(connection)
@@ -1220,17 +1268,42 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("arc_candidates", "arc_candidates__legacy"),
         ("arc_selections", "arc_selections__legacy"),
         ("story_decision_nodes", "story_decision_nodes__legacy"),
-        ("story_decision_nodes", "story_decision_records__legacy"),
+        ("story_decision_records", "story_decision_records__legacy"),
         ("branch_points", "branch_points__legacy"),
         ("story_branches", "story_branches__legacy"),
         ("branch_state_refs", "branch_state_refs__legacy"),
         ("branch_comparisons", "branch_comparisons__legacy"),
+        ("branch_merge_decisions", "branch_merge_decisions__legacy"),
         ("checker_findings", "checker_findings__legacy"),
         ("review_decisions", "review_decisions__legacy"),
         ("inspect_run_links", "inspect_run_links__legacy"),
         ("draft_artifacts", "draft_artifacts__legacy"),
         ("manuscript_documents", "manuscript_documents__legacy"),
         ("revision_suggestions", "revision_suggestions__legacy"),
+        ("runtime_artifact_selections", "runtime_artifact_selections__legacy"),
+        ("story_flow_definitions", "story_flow_definitions__legacy"),
+        ("story_flow_stages", "story_flow_stages__legacy"),
+        ("brainstorm_items", "brainstorm_items__legacy"),
+        ("brain_dump_sessions", "brain_dump_sessions__legacy"),
+        ("foundation_profiles", "foundation_profiles__legacy"),
+        ("foundation_revisions", "foundation_revisions__legacy"),
+        ("character_profiles", "character_profiles__legacy"),
+        ("relationship_edges", "relationship_edges__legacy"),
+        ("arc_stage_maps", "arc_stage_maps__legacy"),
+        ("arc_comparisons", "arc_comparisons__legacy"),
+        ("arc_selection_comparisons", "arc_selection_comparisons__legacy"),
+        ("beat_plans", "beat_plans__legacy"),
+        ("sequence_plans", "sequence_plans__legacy"),
+        ("storyboard_cards", "storyboard_cards__legacy"),
+        ("chapter_plans", "chapter_plans__legacy"),
+        ("scene_plans", "scene_plans__legacy"),
+        ("chapter_packets", "chapter_packets__legacy"),
+        ("planning_dependencies", "planning_dependencies__legacy"),
+        ("continuity_threads", "continuity_threads__legacy"),
+        ("continuity_states", "continuity_states__legacy"),
+        ("continuity_findings", "continuity_findings__legacy"),
+        ("draft_briefs", "draft_briefs__legacy"),
+        ("drafting_context_packets", "drafting_context_packets__legacy"),
     ):
         if _table_exists(connection, legacy_name) and _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")
@@ -1552,33 +1625,70 @@ def _copy_world_bible_entries_legacy(connection: sqlite3.Connection) -> None:
 def _copy_arc_candidates_legacy(connection: sqlite3.Connection) -> None:
     if not _table_exists(connection, "arc_candidates__legacy"):
         return
-    rows = connection.execute(
-        """
-        SELECT candidate_id, project_id, label, summary, fit_notes, stage_map_json, created_at, updated_at
-        FROM arc_candidates__legacy
-        ORDER BY candidate_id ASC
-        """
-    ).fetchall()
-    for row in rows:
-        arc_id = f"legacy-arc-{int(row['candidate_id'])}"
-        connection.execute(
+    legacy_columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(arc_candidates__legacy)").fetchall()
+    }
+    # Handle both old schema (candidate_id, label) and new schema (arc_id, name)
+    has_old_schema = "candidate_id" in legacy_columns
+    has_new_schema = "arc_id" in legacy_columns
+    if not has_old_schema and not has_new_schema:
+        return
+    if has_old_schema:
+        rows = connection.execute(
             """
-            INSERT INTO arc_candidates (
-                arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                arc_id,
-                row["project_id"],
-                row["label"],
-                row["summary"] or "",
-                _legacy_json_list(row["stage_map_json"]),
-                _legacy_json_list(row["fit_notes"]),
-                "[]",
-                row["created_at"],
-                row["updated_at"],
-            ),
-        )
+            SELECT candidate_id, project_id, label, summary, fit_notes, stage_map_json, created_at, updated_at
+            FROM arc_candidates__legacy
+            ORDER BY candidate_id ASC
+            """
+        ).fetchall()
+        for row in rows:
+            arc_id = f"legacy-arc-{int(row['candidate_id'])}"
+            connection.execute(
+                """
+                INSERT INTO arc_candidates (
+                    arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    arc_id,
+                    row["project_id"],
+                    row["label"],
+                    row["summary"] or "",
+                    _legacy_json_list(row["stage_map_json"]),
+                    _legacy_json_list(row["fit_notes"]),
+                    "[]",
+                    row["created_at"],
+                    row["updated_at"],
+                ),
+            )
+    if has_new_schema:
+        rows = connection.execute(
+            """
+            SELECT arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
+            FROM arc_candidates__legacy
+            ORDER BY arc_id ASC
+            """
+        ).fetchall()
+        for row in rows:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO arc_candidates (
+                    arc_id, project_id, name, summary, stage_map_notes_json, fit_notes_json, tags_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row["arc_id"],
+                    row["project_id"],
+                    row["name"],
+                    row["summary"],
+                    row.get("stage_map_notes_json") or "[]",
+                    row.get("fit_notes_json") or "[]",
+                    row.get("tags_json") or "[]",
+                    row["created_at"],
+                    row["updated_at"],
+                ),
+            )
 
 
 def _copy_arc_selections_legacy(connection: sqlite3.Connection) -> None:
@@ -1588,6 +1698,7 @@ def _copy_arc_selections_legacy(connection: sqlite3.Connection) -> None:
         row["name"]
         for row in connection.execute("PRAGMA table_info(arc_selections__legacy)").fetchall()
     }
+    # Path 1: Intermediate schema with comparison_inputs_json
     if {"selected_arc_json", "comparison_inputs_json"}.issubset(legacy_columns):
         rows = connection.execute(
             """
@@ -1653,6 +1764,38 @@ def _copy_arc_selections_legacy(connection: sqlite3.Connection) -> None:
                         row["updated_at"],
                     ),
                 )
+        return
+
+    # Path 2: Current schema (has selected_arc_id and selected_arc_json)
+    if {"selected_arc_id", "selected_arc_json"}.issubset(legacy_columns):
+        rows = connection.execute(
+            """
+            SELECT selection_id, project_id, selected_arc_id, selected_arc_json, rejected_candidate_ids_json,
+                   comparison_notes_json, stage_map_id, created_at, updated_at
+            FROM arc_selections__legacy
+            ORDER BY selection_id ASC
+            """
+        ).fetchall()
+        for row in rows:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO arc_selections (
+                    selection_id, project_id, selected_arc_id, selected_arc_json, rejected_candidate_ids_json,
+                    comparison_notes_json, stage_map_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row["selection_id"],
+                    row["project_id"],
+                    row["selected_arc_id"],
+                    row["selected_arc_json"],
+                    row.get("rejected_candidate_ids_json") or "[]",
+                    row.get("comparison_notes_json") or "[]",
+                    row.get("stage_map_id"),
+                    row["created_at"],
+                    row["updated_at"],
+                ),
+            )
         return
 
     rows = connection.execute(
@@ -1931,6 +2074,119 @@ def _copy_revision_suggestions_legacy(connection: sqlite3.Connection) -> None:
     )
 
 
+def _copy_identical_schema_legacy(connection: sqlite3.Connection, table_name: str) -> None:
+    """Copy rows from legacy table to current table when schema is identical."""
+    legacy_name = f"{table_name}__legacy"
+    if not _table_exists(connection, legacy_name):
+        return
+    columns = [
+        row["name"]
+        for row in connection.execute(f"PRAGMA table_info({legacy_name})").fetchall()
+    ]
+    if not columns:
+        return
+    cols = ", ".join(columns)
+    connection.execute(
+        f"INSERT OR IGNORE INTO {table_name} ({cols}) SELECT {cols} FROM {legacy_name}"
+    )
+
+
+def _copy_runtime_artifact_selections_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "runtime_artifact_selections")
+
+
+def _copy_story_flow_definitions_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "story_flow_definitions")
+
+
+def _copy_story_flow_stages_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "story_flow_stages")
+
+
+def _copy_brainstorm_items_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "brainstorm_items")
+
+
+def _copy_brain_dump_sessions_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "brain_dump_sessions")
+
+
+def _copy_foundation_profiles_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "foundation_profiles")
+
+
+def _copy_foundation_revisions_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "foundation_revisions")
+
+
+def _copy_character_profiles_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "character_profiles")
+
+
+def _copy_relationship_edges_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "relationship_edges")
+
+
+def _copy_arc_stage_maps_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "arc_stage_maps")
+
+
+def _copy_arc_comparisons_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "arc_comparisons")
+
+
+def _copy_arc_selection_comparisons_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "arc_selection_comparisons")
+
+
+def _copy_beat_plans_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "beat_plans")
+
+
+def _copy_sequence_plans_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "sequence_plans")
+
+
+def _copy_storyboard_cards_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "storyboard_cards")
+
+
+def _copy_chapter_plans_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "chapter_plans")
+
+
+def _copy_scene_plans_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "scene_plans")
+
+
+def _copy_chapter_packets_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "chapter_packets")
+
+
+def _copy_planning_dependencies_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "planning_dependencies")
+
+
+def _copy_continuity_threads_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "continuity_threads")
+
+
+def _copy_continuity_states_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "continuity_states")
+
+
+def _copy_continuity_findings_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "continuity_findings")
+
+
+def _copy_draft_briefs_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "draft_briefs")
+
+
+def _copy_drafting_context_packets_legacy(connection: sqlite3.Connection) -> None:
+    _copy_identical_schema_legacy(connection, "drafting_context_packets")
+
+
 def _legacy_json_list(value: str | None) -> list[str]:
     if not value:
         return []
@@ -2017,6 +2273,30 @@ def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
         "draft_artifacts__legacy",
         "manuscript_documents__legacy",
         "revision_suggestions__legacy",
+        "runtime_artifact_selections__legacy",
+        "story_flow_definitions__legacy",
+        "story_flow_stages__legacy",
+        "brainstorm_items__legacy",
+        "brain_dump_sessions__legacy",
+        "foundation_profiles__legacy",
+        "foundation_revisions__legacy",
+        "character_profiles__legacy",
+        "relationship_edges__legacy",
+        "arc_stage_maps__legacy",
+        "arc_comparisons__legacy",
+        "arc_selection_comparisons__legacy",
+        "beat_plans__legacy",
+        "sequence_plans__legacy",
+        "storyboard_cards__legacy",
+        "chapter_plans__legacy",
+        "scene_plans__legacy",
+        "chapter_packets__legacy",
+        "planning_dependencies__legacy",
+        "continuity_threads__legacy",
+        "continuity_states__legacy",
+        "continuity_findings__legacy",
+        "draft_briefs__legacy",
+        "drafting_context_packets__legacy",
     ):
         if _table_exists(connection, table_name):
             connection.execute(f"DROP TABLE {table_name}")
