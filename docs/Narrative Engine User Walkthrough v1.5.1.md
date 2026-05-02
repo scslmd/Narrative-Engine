@@ -51,6 +51,7 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
 
 ### Getting Started
 
+- [Phase 0: Getting Sample Stories](#phase-0-getting-sample-stories)
 - [Phase 1: Project Setup](#phase-1-project-setup)
   - [Option A: Create Project (Manual)](#option-a-create-project-manual)
   - [Option B: Import Story (LLM-Assisted)](#option-b-import-story-llm-assisted)
@@ -100,6 +101,76 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
 - [Advanced Workflows (A–F)](#advanced-workflows)
 - [UI Features and Utilities](#ui-features-and-utilities)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Phase 0: Getting Sample Stories
+
+Before you begin the walkthrough, you may want sample stories to import and test with. Four sample stories are provided in `docs/sample-stories/`:
+
+### Available Sample Stories
+
+| Story | Author | Genre | Size | Format | Import Mode |
+|-------|--------|-------|------|--------|-------------|
+| The Time Machine | H.G. Wells | Classic Sci-Fi | ~200 KB (~30K words) | Plain text (Project Gutenberg) | Multi-pass |
+| The Picture of Dorian Gray | Oscar Wilde | Gothic Fiction | ~455 KB (~50K words) | Plain text (Project Gutenberg) | Multi-pass |
+| The Last Archive | Original | Science Fiction | ~28 KB (~5K words) | Markdown | Multi-pass |
+| Crossing Limits | Original | Pop-Romance | ~30 KB (~8K words) | Markdown | Multi-pass |
+
+All four stories exceed the 24,000-character threshold for single-pass import, which means they will exercise the **multi-pass import pipeline** -- the system that handles large stories by chunking, per-chapter analysis, and consolidation. This is the most thorough test of the import feature.
+
+### How to Import a Sample Story
+
+1. Open your preferred text editor and load one of the sample story files from `docs/sample-stories/`
+2. Select all text (Ctrl+A / Cmd+A) and copy it (Ctrl+C / Cmd+C)
+3. In the Narrative Engine frontend, navigate to the home screen (`/`)
+4. Click **"Import Existing Story"** (green/teal button)
+5. Fill in:
+   - **Project Name** -- e.g., "The Time Machine" or "The Last Archive"
+   - **Genre** -- optional hint for the LLM (e.g., "Science Fiction", "Gothic Fiction")
+   - **Tone** -- optional hint (e.g., "Classic", "Dark and Atmospheric")
+   - **Story Text** -- paste the copied story text
+6. Click **"Import Story"**
+7. The system will:
+   - Detect that the story exceeds the single-pass threshold
+   - Route to multi-pass import: structure detection, per-chapter analysis, character/world/arc consolidation
+   - Create a new project with all extracted data populated
+   - Return a success response when complete
+8. On success, you'll be redirected to the project workspace
+
+**Note**: Import requires a configured inference backend (llama.cpp, LM Studio, vLLM, or stub). Large stories may take several minutes to process through multi-pass import.
+
+### Expected Extraction Results
+
+Each sample story is designed to produce clean extraction results across all categories. Here's what to expect:
+
+#### The Time Machine
+- **Characters**: 6+ (Time Traveller, Weena, Eloi collective, Morlocks, Filby, frame narrator)
+- **World Bible**: 8+ entries (Year 802,701 AD, Time Machine technology, Eloi/Morlock societies, class evolution theme, Victorian London frame)
+- **Arcs**: 3 (class divergence, exploration/discovery, survival/rescue)
+- **Notable**: Tests extraction from classic prose with frame narrative structure and sparse character development
+
+#### The Picture of Dorian Gray
+- **Characters**: 8+ (Dorian Gray, Lord Henry Wotton, Basil Hallward, Sibyl Vane, Allan Chambers, James Vane)
+- **World Bible**: 10+ entries (Victorian London high society, aestheticism philosophy, portrait's magical properties, opium dens, moral decay theme)
+- **Arcs**: 4 (corruption, consequence, pursuit, redemption/despair)
+- **Notable**: Tests large-story multi-pass import and philosophical dialogue extraction
+
+#### The Last Archive
+- **Characters**: 6 (Miren Kael, Joss Vallen, Tessa Rowan, Ravi Chen, Director Hale, Echo/collective consciousness)
+- **World Bible**: 10+ entries (memory crystals, extraction process, Chronos interface, Grand Archive, Understack, Three Laws of Memory, Identity Drift, Erasure Protocol, Echo Fragments, New Geneva)
+- **Arcs**: 3 (discovery, conflict with Council, Chronos resolution)
+- **Notable**: Tests technology/world-bible extraction with many named concepts and clear arc structure
+
+#### Crossing Limits
+- **Characters**: 7 (Elara Voss, Kai Mercer, Dr. Nadia Chen, Mira Voss, The Keeper, Prof. Ashworth, The Guide)
+- **World Bible**: 8+ entries (book-worlds concept, Crossing Limit Rule, Athenaeum, reality degradation, anchor points, Sealed Collection, book-world ethics, merge threat)
+- **Arcs**: 3 (romance, mystery of destabilization, rescue/stabilization)
+- **Notable**: Tests romance genre handling, dual-world settings, and relationship-driven plot extraction
+
+### Bridge to Phase 1
+
+After importing a sample story, you'll be in the project workspace. Proceed to [Phase 1](#phase-1-project-setup) to explore the imported data, or skip directly to [Phase 2](#phase-2-planning-workspace) to review the extracted planning structure.
 
 ---
 
