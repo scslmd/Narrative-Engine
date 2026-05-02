@@ -35,6 +35,8 @@ from ..schemas.story_import import (
     StoryImportArc,
     StoryImportChapterSummary,
     StoryImportCharacterRequest,
+    StoryImportDraftBrief,
+    StoryImportDraftingContextPacket,
     StoryImportRequest,
     StoryImportResponse,
     StoryImportSequence,
@@ -143,6 +145,7 @@ class StoryImportService:
                     request.story_text,
                     genre_hint=request.genre,
                     tone_hint=request.tone,
+                    project_id=project_id,
                 )
                 chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
                 warnings.extend(self._analysis_warnings(analysis))
@@ -222,6 +225,7 @@ class StoryImportService:
                     genre_hint=request.genre,
                     tone_hint=request.tone,
                     on_progress=on_progress,  # type: ignore[arg-type]
+                    project_id=project_id,
                 )
                 chapters_processed, total_chapters, chunks_processed, total_chunks = self._analysis_metrics(analysis)
                 warnings.extend(self._analysis_warnings(analysis))
@@ -337,6 +341,16 @@ class StoryImportService:
             warnings.append(
                 "Some chapters were only partially analyzed; imported planning artifacts may need review: "
                 + ", ".join(partial_titles[:5])
+            )
+        if analysis.continuity_gate_reasons:
+            warnings.extend(
+                f"Continuity gate warning: {reason}"
+                for reason in analysis.continuity_gate_reasons
+            )
+        if analysis.drafting_gate_reasons:
+            warnings.extend(
+                f"Drafting consolidation skipped: {reason}"
+                for reason in analysis.drafting_gate_reasons
             )
         return warnings
 
@@ -459,6 +473,7 @@ class StoryImportService:
             self._import_arcs(conn, project_id, analysis, now)
             self._import_planning(conn, project_id, analysis, now)
             self._import_continuity(conn, project_id, analysis, now)
+            self._import_drafting_context(conn, project_id, analysis, now)
 
             conn.commit()
         except Exception:
@@ -1009,7 +1024,7 @@ class StoryImportService:
     ) -> None:
         """Persist continuity artifacts from multi-pass import analysis."""
         finding = analysis.continuity_finding
-        if not finding or (not finding.threads and not finding.states):
+        if not finding:
             return
 
         # Insert threads
@@ -1096,22 +1111,160 @@ class StoryImportService:
                 ),
             )
 
-        # Insert overall finding
+        # Insert/update overall finding. The deterministic key makes retries idempotent
+        # while still allowing future non-import findings to use independent keys.
+        finding_key = hash_id("import-continuity-finding", f"{project_id}:story-import")
+        existing = conn.execute(
+            """
+            SELECT finding_id
+            FROM continuity_findings
+            WHERE project_id = ? AND finding_key = ?
+            """,
+            (project_id, finding_key),
+        ).fetchone()
+        if existing is not None:
+            conn.execute(
+                """
+                UPDATE continuity_findings
+                SET overall_confidence = ?,
+                    status = ?,
+                    contradictions_json = ?,
+                    unresolved_questions_json = ?,
+                    provenance_note = ?,
+                    updated_at = ?
+                WHERE finding_id = ?
+                """,
+                (
+                    finding.overall_confidence,
+                    finding.status or "complete",
+                    json_safe(finding.contradictions),
+                    json_safe(finding.unresolved_questions),
+                    finding.provenance_note or None,
+                    now,
+                    int(existing["finding_id"]),
+                ),
+            )
+            return
+
         conn.execute(
             """
             INSERT INTO continuity_findings (
-                project_id, overall_confidence, status,
+                project_id, finding_key, overall_confidence, status,
                 contradictions_json, unresolved_questions_json,
                 provenance_note, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 project_id,
+                finding_key,
                 finding.overall_confidence,
                 finding.status or "complete",
                 json_safe(finding.contradictions),
                 json_safe(finding.unresolved_questions),
                 finding.provenance_note or None,
+                now,
+                now,
+            ),
+        )
+
+    def _import_drafting_context(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        analysis: StoryImportAnalysis,
+        now: str,
+    ) -> None:
+        """Persist draft briefs and context packets generated by multi-pass import."""
+        for brief in analysis.draft_briefs:
+            self._insert_draft_brief(conn, project_id, brief, now)
+
+        for packet in analysis.drafting_context_packets:
+            self._insert_drafting_context_packet(conn, project_id, packet, now)
+
+    def _insert_draft_brief(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        brief: StoryImportDraftBrief,
+        now: str,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO draft_briefs (
+                brief_id, project_id, chapter_id, objective, emotional_turn,
+                continuity_obligations_json, required_callbacks_json,
+                forbidden_contradictions_json, voice_guidance, status,
+                provenance_note, confidence_score, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(brief_id) DO UPDATE SET
+                project_id = excluded.project_id,
+                chapter_id = excluded.chapter_id,
+                objective = excluded.objective,
+                emotional_turn = excluded.emotional_turn,
+                continuity_obligations_json = excluded.continuity_obligations_json,
+                required_callbacks_json = excluded.required_callbacks_json,
+                forbidden_contradictions_json = excluded.forbidden_contradictions_json,
+                voice_guidance = excluded.voice_guidance,
+                status = excluded.status,
+                provenance_note = excluded.provenance_note,
+                confidence_score = excluded.confidence_score,
+                updated_at = excluded.updated_at
+            """,
+            (
+                brief.brief_id,
+                project_id,
+                brief.chapter_id,
+                brief.objective,
+                brief.emotional_turn,
+                json_safe(brief.continuity_obligations),
+                json_safe(brief.required_callbacks),
+                json_safe(brief.forbidden_contradictions),
+                brief.voice_guidance,
+                brief.status,
+                brief.provenance_note or None,
+                brief.confidence_score,
+                now,
+                now,
+            ),
+        )
+
+    def _insert_drafting_context_packet(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        packet: StoryImportDraftingContextPacket,
+        now: str,
+    ) -> None:
+        conn.execute(
+            """
+            INSERT INTO drafting_context_packets (
+                packet_id, project_id, brief_id, character_anchors_json,
+                world_constraints_json, prior_summaries_json, pattern_guidance_json,
+                status, provenance_note, confidence_score, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(packet_id) DO UPDATE SET
+                project_id = excluded.project_id,
+                brief_id = excluded.brief_id,
+                character_anchors_json = excluded.character_anchors_json,
+                world_constraints_json = excluded.world_constraints_json,
+                prior_summaries_json = excluded.prior_summaries_json,
+                pattern_guidance_json = excluded.pattern_guidance_json,
+                status = excluded.status,
+                provenance_note = excluded.provenance_note,
+                confidence_score = excluded.confidence_score,
+                updated_at = excluded.updated_at
+            """,
+            (
+                packet.packet_id,
+                project_id,
+                packet.brief_id,
+                json_safe(packet.character_anchors),
+                json_safe(packet.world_constraints),
+                json_safe(packet.prior_summaries),
+                json.dumps(packet.pattern_guidance, ensure_ascii=True, sort_keys=True),
+                packet.status,
+                packet.provenance_note or None,
+                packet.confidence_score,
                 now,
                 now,
             ),

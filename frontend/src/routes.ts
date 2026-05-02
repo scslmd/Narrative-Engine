@@ -1,4 +1,4 @@
-export type WorkspaceMode = 'plan' | 'write' | 'review' | 'inspect' | 'braindump'
+export type WorkspaceMode = 'plan' | 'write' | 'review' | 'inspect' | 'braindump' | 'generate'
 
 export interface RouteState {
   mode: WorkspaceMode
@@ -16,4 +16,5 @@ export const routes = {
   inspect: (projectId: string, jobId?: string) => 
     jobId ? `/workspace/${projectId}/inspect/${jobId}` : `/workspace/${projectId}/inspect`,
   braindump: (projectId: string) => `/workspace/${projectId}/braindump`,
+  generate: (projectId: string) => `/workspace/${projectId}/generate`,
 } as const

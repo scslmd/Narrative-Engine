@@ -10,6 +10,7 @@ import { WritingView } from './views/WritingView'
 import { ReviewView } from './views/ReviewView'
 import { InspectView } from './views/InspectView'
 import { BrainDumpView } from './views/BrainDumpView'
+import { GenerationView } from './views/GenerationView'
 import { useHealthCheck } from './hooks/useHealthCheck'
 
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ function App() {
                 <Route path="inspect" element={<InspectView />} />
                 <Route path="inspect/:jobId" element={<InspectView />} />
                 <Route path="braindump" element={<BrainDumpView />} />
+                <Route path="generate" element={<GenerationView />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

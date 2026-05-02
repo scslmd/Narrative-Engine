@@ -190,6 +190,39 @@ def test_continuity_finding_upsert_and_get(tmp_path: Path) -> None:
     assert fetched.contradictions == record.contradictions
 
 
+def test_continuity_finding_upsert_is_idempotent_with_finding_key(tmp_path: Path) -> None:
+    db_path = tmp_path / "ops.db"
+    project_id = "proj-finding-key"
+    _seed_project(db_path, project_id)
+    repo = StoryDevelopmentRepository(db_path)
+
+    first = repo.upsert_continuity_finding(
+        project_id=project_id,
+        finding_key="import-story",
+        overall_confidence=0.41,
+        status="partial",
+        contradictions=["Timeline mismatch"],
+        created_at=STAMP,
+    )
+    second = repo.upsert_continuity_finding(
+        project_id=project_id,
+        finding_key="import-story",
+        overall_confidence=0.83,
+        status="complete",
+        contradictions=["Resolved timeline note"],
+        unresolved_questions=["Who keeps the key?"],
+        created_at=STAMP,
+    )
+
+    assert second.finding_id == first.finding_id
+    assert second.finding_key == "import-story"
+    assert second.overall_confidence == 0.83
+    assert second.status == "complete"
+    assert second.contradictions == ["Resolved timeline note"]
+    assert second.unresolved_questions == ["Who keeps the key?"]
+    assert len(repo.list_continuity_findings(project_id)) == 1
+
+
 def test_draft_brief_upsert_and_get(tmp_path: Path) -> None:
     db_path = tmp_path / "ops.db"
     project_id = "proj-brief"

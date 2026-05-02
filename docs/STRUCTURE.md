@@ -36,11 +36,12 @@ The backend code lives under [`app/`](app/). The structure is layered:
 
 ### API Layer
 
-- [`app/api/projects.py`](app/api/projects.py): project endpoints and artifact/projection reads
+- [`app/api/projects.py`](app/api/projects.py): project endpoints, artifact/projection reads, story import, pattern extraction
 - [`app/api/jobs.py`](app/api/jobs.py): job lifecycle endpoints, status, and retry flows
 - [`app/api/models.py`](app/api/models.py): model and provider availability endpoints
 - [`app/api/role_model_checker.py`](app/api/role_model_checker.py): checker execution and inspect endpoints
 - [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, drafting reads, and branching reads or mutations
+- [`app/api/story_generation.py`](app/api/story_generation.py): canon generation runs, fork preview/project, gate results (8 endpoints under `/v1/story-generation`)
 - [`app/api/health.py`](app/api/health.py): liveness, readiness, and metrics endpoints
 - [`app/api/auth.py`](app/api/auth.py): API key management endpoints
 - [`app/api/backup.py`](app/api/backup.py): database backup and restore endpoints
@@ -82,6 +83,10 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/story_branching.py`](app/services/story_branching.py): story-branch creation, branch comparison, active-branch selection, and merge-decision service layer
 - [`app/services/story_import.py`](app/services/story_import.py): story import service for parsing and importing existing stories
 - [`app/services/chapter_summarizer.py`](app/services/chapter_summarizer.py): LLM-based chapter summarization, extracts PriorChapterSummary from completed chapters
+- [`app/services/canon_packet_builder.py`](app/services/canon_packet_builder.py): deterministic canon packet builder with budget-aware truncation for story generation
+- [`app/services/story_forking.py`](app/services/story_forking.py): project forking, canon copying with ID remapping, provenance tracking
+- [`app/services/story_generation_orchestrator.py`](app/services/story_generation_orchestrator.py): full generation lifecycle orchestration (G-200/G-300/G-350/G-400 job pipeline)
+- [`app/services/generation_gates.py`](app/services/generation_gates.py): canon consistency gate checks, repair prompt builder, policy enforcement
 
 ### Persistence Layer
 
@@ -257,32 +262,24 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
 
 ## Documentation
 
-The specification and planning docs live under [`docs/`](docs/).
+The specification and planning docs live under [`docs/`](docs/). The single source of truth for development guidelines, API patterns, and feature documentation is [`AGENTS.md`](../AGENTS.md).
 
-- Core navigation:
-  - [`docs/Documentation Guide v0.1.md`](docs/Documentation%20Guide%20v0.1.md)
-  - [`docs/Project Index v0.1.md`](docs/Project%20Index%20v0.1.md)
-  - [`docs/Validation Notes v0.1.md`](docs/Validation%20Notes%20v0.1.md)
-  - [`docs/QUALITY_GUIDELINES.md`](docs/QUALITY_GUIDELINES.md)
-- Product and system contracts:
-  - [`docs/Narrative SRS v1.0.md`](docs/Narrative%20SRS%20v1.0.md)
-  - [`docs/Frontend Design SRS v0.5.md`](docs/Frontend%20Design%20SRS%20v0.5.md)
-  - [`docs/Story Development Product Spec v1.0.md`](docs/Story%20Development%20Product%20Spec%20v1.0.md)
-  - [`docs/Story Development Canonical Contract v1.0.md`](docs/Story%20Development%20Canonical%20Contract%20v1.0.md)
-  - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md)
-- Runtime and inspect contracts:
-  - [`docs/Async Protocol Blueprint v0.1.md`](docs/Async%20Protocol%20Blueprint%20v0.1.md)
-  - [`docs/Inference Runtime Blueprint v0.1.md`](docs/Inference%20Runtime%20Blueprint%20v0.1.md)
-  - [`docs/Runtime Error Mapping Blueprint v0.1.md`](docs/Runtime%20Error%20Mapping%20Blueprint%20v0.1.md)
-  - [`docs/Runtime Telemetry Contract v0.1.md`](docs/Runtime%20Telemetry%20Contract%20v0.1.md)
-  - [`docs/Step Record Blueprint v0.1.md`](docs/Step%20Record%20Blueprint%20v0.1.md)
-  - [`docs/Step and Lineage API Projection Blueprint v0.1.md`](docs/Step%20and%20Lineage%20API%20Projection%20Blueprint%20v0.1.md)
-  - [`docs/Step and Lineage API Test Matrix v0.1.md`](docs/Step%20and%20Lineage%20API%20Test%20Matrix%20v0.1.md)
-  - [`docs/Failure Mode Test Matrix v0.1.md`](docs/Failure%20Mode%20Test%20Matrix%20v0.1.md)
-  - [`docs/Validation Notes v0.1.md`](docs/Validation%20Notes%20v0.1.md)
-  - [`docs/Story Arc Paradigm Blueprint v0.1.md`](docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md)
+- Active reference:
+  - [`docs/QUALITY_GUIDELINES.md`](docs/QUALITY_GUIDELINES.md) — code review scoring rubrics
+  - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md) — task decomposition process template
+  - [`docs/Frontend Workspace Behavior Contract v0.1.md`](docs/Frontend%20Workspace%20Behavior%20Contract%20v0.1.md) — frontend routing and state rules
+- User-facing:
+  - [`docs/User Guide v1.3.md`](docs/User%20Guide%20v1.3.md) — end-user onboarding guide
+  - [`docs/Narrative Engine User Walkthrough v1.3.md`](docs/Narrative%20Engine%20User%20Walkthrough%20v1.3.md) — interactive walkthrough
+- Future blueprints (not yet implemented):
+  - [`docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md`](docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md) — LLM-assisted manuscript editing
+  - [`docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md`](docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md) — canon customization UI enhancements
+- Implemented feature blueprints (architecture reference):
+  - [`docs/story-generation-orchestration-blueprint-2026-05-02.md`](docs/story-generation-orchestration-blueprint-2026-05-02.md) — canon packets, forking, gates, wizard UI
+- Domain knowledge:
+  - [`docs/Story Arc Paradigm Blueprint v0.1.md`](docs/Story%20Arc%20Paradigm%20Blueprint%20v0.1.md) — story arc types and classification
 - Historical material:
-  - [`docs/archive/`](docs/archive)
+  - [`docs/archive/`](docs/archive) — completed task lists, superseded specs, resolved analyses (30+ files)
 
 ## Data And Runtime State
 

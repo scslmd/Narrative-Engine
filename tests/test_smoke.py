@@ -9,6 +9,12 @@ from app.main import build_app
 pytestmark = pytest.mark.integration
 
 
+def _create_project(client: TestClient, project_name: str) -> str:
+    response = client.post('/projects/create', json={'project_name': project_name})
+    assert response.status_code == 201
+    return response.json()['project_id']
+
+
 def _poll_json(client: TestClient, path: str, *, terminal_statuses: set[str], attempts: int = 12, delay_seconds: float = 0.2) -> dict:
     payload = {}
     for _ in range(attempts):
@@ -30,12 +36,15 @@ def test_health_endpoint() -> None:
 
 def test_projects_endpoint_lists_projects() -> None:
     client = TestClient(build_app())
+    first_project_id = _create_project(client, 'Smoke Science Fantasy Project')
+    second_project_id = _create_project(client, 'Smoke Romance Project')
+
     response = client.get('/projects')
     assert response.status_code == 200
     payload = response.json()
-    names = {item['project_name'] for item in payload}
-    assert 'Science Fantasy Test Project' in names
-    assert 'Romance Test Project' in names
+    ids = {item['project_id'] for item in payload}
+    assert first_project_id in ids
+    assert second_project_id in ids
 
 
 def test_models_endpoint_returns_workflow_preferences() -> None:
@@ -76,7 +85,8 @@ def test_role_model_checker_stub_runs() -> None:
 
 def test_job_stub_runs() -> None:
     with TestClient(build_app()) as client:
-        response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': 'science-fantasy-test'}})
+        project_id = _create_project(client, 'Smoke Job Project')
+        response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': project_id}})
         assert response.status_code == 202
         payload = response.json()
         assert payload['status'] == 'PENDING'

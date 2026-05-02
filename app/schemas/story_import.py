@@ -236,6 +236,36 @@ class ContinuityFinding(StrictModel):
     provenance_note: str = Field(default="", max_length=1000)
 
 
+class StoryImportDraftBrief(StrictModel):
+    """Drafting brief generated from imported planning and continuity data."""
+    brief_id: str = Field(..., min_length=1, max_length=100)
+    project_id: str = Field(..., min_length=1, max_length=100)
+    chapter_id: str = Field(..., min_length=1, max_length=100)
+    objective: str = Field(default="", max_length=5000)
+    emotional_turn: str = Field(default="", max_length=2000)
+    continuity_obligations: list[str] = Field(default_factory=list)
+    required_callbacks: list[str] = Field(default_factory=list)
+    forbidden_contradictions: list[str] = Field(default_factory=list)
+    voice_guidance: str = Field(default="", max_length=5000)
+    status: str = Field(default="draft", min_length=1, max_length=30)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class StoryImportDraftingContextPacket(StrictModel):
+    """Context packet paired with a generated import draft brief."""
+    packet_id: str = Field(..., min_length=1, max_length=100)
+    project_id: str = Field(..., min_length=1, max_length=100)
+    brief_id: str = Field(..., min_length=1, max_length=100)
+    character_anchors: list[str] = Field(default_factory=list)
+    world_constraints: list[str] = Field(default_factory=list)
+    prior_summaries: list[str] = Field(default_factory=list)
+    pattern_guidance: dict[str, Any] = Field(default_factory=dict)
+    status: str = Field(default="draft", min_length=1, max_length=30)
+    provenance_note: str = Field(default="", max_length=1000)
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
 class StoryImportAnalysis(StrictModel):
     project_name: str = Field(..., min_length=1, max_length=255)
     genre: str = Field(..., min_length=1, max_length=100)
@@ -258,6 +288,12 @@ class StoryImportAnalysis(StrictModel):
     completed_chunk_count: int = Field(default=0, ge=0)
     total_estimated_chunks: int = Field(default=0, ge=0)
     continuity_finding: ContinuityFinding | None = None
+    continuity_gate_passed: bool | None = None
+    continuity_gate_reasons: list[str] = Field(default_factory=list)
+    drafting_gate_passed: bool | None = None
+    drafting_gate_reasons: list[str] = Field(default_factory=list)
+    draft_briefs: list[StoryImportDraftBrief] = Field(default_factory=list)
+    drafting_context_packets: list[StoryImportDraftingContextPacket] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

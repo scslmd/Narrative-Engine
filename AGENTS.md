@@ -5,17 +5,17 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1187 passed (~4min)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~15s)
-  - Full baseline: ~1230 tests, ~7min total
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1266 passed (~51s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
+  - Full baseline: ~1309 tests, ~67s total
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - `cd frontend && npm run lint` -> passed (2026-04-28)
   - `cd frontend && npm run typecheck` -> passed (2026-04-28)
   - `cd frontend && npm run build` -> passed, 1977 modules (2026-04-30)
   - `cd frontend && npm run test` -> 315 passed (~19s)
 - Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1977 modules in production bundle.
-- Frontend services: 112 exported functions across 18 service files, 37 dead functions removed (42% reduction) in 2026-04-23 integration audit. All remaining exports are wired to components.
-- Feature coverage: 13/13 backend-to-frontend feature areas fully linked. Story Import UI added in 2026-04-23. Multi-chapter generation completed in 2026-04-26 (summarization, prior context propagation, ManuscriptDocument auto-creation).
+- Frontend services: 120 exported functions across 19 service files (8 story generation + 112 existing). All exports wired to components.
+- Feature coverage: 14/14 backend-to-frontend feature areas fully linked. Story Generation added 2026-05-01 (canon packets, forking, gates, wizard UI).
 - Route-driven workspace state is the current frontend architecture:
   - `/workspace/:projectId/plan`
   - `/workspace/:projectId/write`
@@ -24,6 +24,7 @@
   - `/workspace/:projectId/inspect`
   - `/workspace/:projectId/inspect/:jobId`
   - `/workspace/:projectId/braindump`
+  - `/workspace/:projectId/generate`
 - Inspect deep links are expected to render from the route, and review-driven "Jump to Source" should resolve an inspect run before navigation.
 
 ## Agent Guardrails
@@ -597,6 +598,16 @@ Do not call the repo merge-ready unless all five of these are green:
 - `PATCH /v1/story-development/relationships/{edge_id}?project_id={id}`
 - `DELETE /v1/story-development/relationships/{edge_id}?project_id={id}`
 
+#### Story Generation
+- `POST /v1/story-generation/runs` (201 Created - submit generation run)
+- `GET /v1/story-generation/runs?project_id={id}` (list runs for project)
+- `GET /v1/story-generation/runs/{generation_id}` (get run status)
+- `POST /v1/story-generation/runs/{generation_id}/retry` (retry run)
+- `GET /v1/story-generation/runs/{generation_id}/packet` (get canon packet)
+- `GET /v1/story-generation/runs/{generation_id}/gates` (get gate results)
+- `POST /v1/story-generation/fork-preview` (preview fork scope)
+- `POST /v1/story-generation/fork-project` (201 Created - fork to new project)
+
 #### Jobs
 - `POST /v1/jobs/create`
 - `GET /v1/jobs/{job_id}/status`
@@ -1053,6 +1064,72 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `app/services/runtime_prompts.py` — `build_pattern_extraction_request()`, `_build_pattern_context_block()`
 - `app/services/scene_context.py` — extended `SceneContext` with `pattern_guidance` and `author_prompt`
 - `tests/test_pattern_extraction.py` — 87 test functions
+
+### Story Generation Orchestration Feature
+
+**Workflow**: User imports source story -> opens generation wizard -> selects mode/destination/canon scope/policy -> orchestrator builds canon packet, creates 4-phase job pipeline (G-200 plan, G-300 draft, G-350 gate, G-400 compile) -> executor generates canon-congruent story with consistency gates.
+
+**Entry Points**:
+- `POST /v1/story-generation/runs` (201 Created) — submit generation run; idempotent via `idempotency_key` + `request_hash`
+- `GET /v1/story-generation/runs?project_id={id}` — list runs for project (source, target, or either role)
+- `GET /v1/story-generation/runs/{generation_id}` — get run status, job IDs, artifacts
+- `POST /v1/story-generation/runs/{generation_id}/retry` — retry a generation run
+- `GET /v1/story-generation/runs/{generation_id}/packet` — get canon packet JSON
+- `GET /v1/story-generation/runs/{generation_id}/gates` — get gate results with pass/fail/severity
+- `POST /v1/story-generation/fork-preview` — preview what would be forked (characters, world, arcs, threads)
+- `POST /v1/story-generation/fork-project` (201 Created) — fork to new project without running generation
+
+**Services**:
+- `StoryGenerationOrchestrator` (`app/services/story_generation_orchestrator.py`) — full lifecycle: resolve destination, create run, build/store packet, queue G-200/G-300/G-350/G-400 jobs
+- `CanonPacketBuilder` (`app/services/canon_packet_builder.py`) — deterministic packet from source canon; budget-aware truncation (120K cap); scope filtering by character/world/arc/thread IDs
+- `StoryForkingService` (`app/services/story_forking.py`) — create target project, copy selected canon with ID remapping, record provenance
+- `GenerationGateService` (`app/services/generation_gates.py`) — plan gate (known character obligations), draft gate (forbidden contradiction check), repair prompt builder
+
+**Schemas**: `app/schemas/generation.py` (30 classes/enums)
+- `CanonGenerationRequest` — main input: source_project_id, mode, destination, canon_scope, brief, overrides, chapter count, policy, model params
+- `CanonScope` — selector: character_ids, world_bible_refs, arc_ids, continuity_thread_ids; validates at least one unless full_project
+- `GenerationDestination` — same_project (requires target_project_id) or new_project (requires target_project_name)
+- `CanonPolicy` — locked fields, allowed changes, forbidden contradictions, continuity_strictness (warn/block/repair_once/repair_twice)
+- `CanonGenerationPacket` — executor input: all snapshots + policy + budget summary + source hashes; deterministic packet_id via hash_id
+- `GenerationPlan` — output: premise, logline, story arcs, chapter plans, canon obligations, intentional differences, status
+
+**Persistence**: 3 new tables in operations DB (`app/persistence/sqlite.py`)
+- `canon_generation_runs` — PK generation_id; 4 indexes; partial unique on source+idempotency_key
+- `canon_generation_packets` — FK CASCADE to runs; packet_json, source_hashes_json, prompt_budget_json
+- `generation_gate_results` — FK CASCADE to runs; artifact_kind, artifact_id, gate_name, passed, severity, repair fields
+
+**Executor G-Phases**: `app/services/local_executor.py` + `app/schemas/enums.py` (G_200 through G_400)
+- G-200: Generation plan creation — loads packet, creates generation plan artifact
+- G-300: Chapter drafting loop — iterates chapter_ids, drafts each with canon context, prior summaries
+- G-350: Gate checks — runs gate checks on artifacts, persists gate results, handles repair per policy
+- G-400: Final manuscript assembly — assembles from chapter drafts only when blocking gates pass
+
+**LLM Prompt Builders**: `app/services/runtime_prompts.py`
+- `build_g200_story_generation_plan_request()` — plan generation from canon packet
+- `build_g300_chapter_generation_request()` — chapter drafting with canon context
+- `build_g350_canon_repair_request()` — repair failed gate artifacts (temp=0.1, max_tokens=4000)
+- `build_g400_manuscript_assembly_request()` — final manuscript compilation
+
+**Frontend**: 9 components in `frontend/src/components/generation/`
+- Wizard: mode selector, destination selector, canon scope, policy editor, brief/chapter count, preview/submit
+- Panels: fork preview, run card, gate results, generated story review
+- Types: `frontend/src/types/storyGeneration.ts` (12 exports, snake_case preserved)
+- Service: `frontend/src/services/storyGeneration.ts` (8 functions, shared Axios client)
+- Route: `/workspace/:projectId/generate` in `App.tsx`
+
+**Error Handling**: 404 (missing source), 409 (idempotency conflict), 400 (validation errors)
+
+**Components**:
+- `app/services/story_generation_orchestrator.py` — orchestrator, job pipeline creation
+- `app/services/canon_packet_builder.py` — deterministic packet builder, budget truncation
+- `app/services/story_forking.py` — project forking, canon copying with ID remapping
+- `app/services/generation_gates.py` — gate checks, repair prompts
+- `app/api/story_generation.py` — router: 8 endpoints under `/v1/story-generation`
+- `app/schemas/generation.py` — 30 classes/enums (StrictModel)
+- `app/persistence/sqlite.py` — 3 new tables + indexes (line 872-925)
+- `app/persistence/story_development.py` — 9 CRUD methods + 3 dataclass records
+- `frontend/src/components/generation/*.tsx` — 9 components
+- `frontend/src/views/GenerationView.tsx` — React Query view, route-wired
 
 ## Implementation Workflow for Next Phases/Tasks
 

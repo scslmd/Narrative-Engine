@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   LayoutList, Map, GitBranch, Network, FileCheck,
   Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon
@@ -99,6 +99,7 @@ const tabActiveBgDarkMap: Record<PlanningTab, string> = {
 
 export function PlanningView() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<PlanningTab>('manifest');
   const [characterEditorMode, setCharacterEditorMode] = useState<CharacterEditorMode>('list');
@@ -289,13 +290,22 @@ export function PlanningView() {
   return (
     <div className="h-full flex flex-col">
       <div className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white/60'} px-4 py-2`}>
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1 flex-wrap justify-between">
+          <button
+            type="button"
+            onClick={() => projectId && navigate(`/workspace/${projectId}/generate`)}
+            className="px-3 py-1.5 text-xs font-medium rounded-md bg-indigo-600 text-white"
+          >
+            Generate Story
+          </button>
+          <div className="flex items-center gap-1 flex-wrap">
           <div className="flex items-center gap-1">
             {coreTabs.map((tab) => renderTabButton(tab, true))}
           </div>
           <ChevronRight className={`w-3.5 h-3.5 mx-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`} />
           <div className="flex items-center gap-1">
             {contentTabs.map((tab) => renderTabButton(tab, false))}
+          </div>
           </div>
         </div>
       </div>

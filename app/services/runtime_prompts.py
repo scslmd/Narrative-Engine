@@ -10,6 +10,7 @@ from ..schemas.pattern_extraction import PatternExtractionAnalysis
 
 if TYPE_CHECKING:
     from .scene_context import SceneContext
+    from app.schemas.generation import CanonGenerationPacket, GenerationPlan
 
 
 def build_p100_architect_request(
@@ -218,6 +219,148 @@ def build_p400_compiler_request(
             "role": "compiler",
             "project_id": manifest.project_id,
             "project_name": manifest.project_name,
+        },
+    )
+
+
+def build_g200_story_generation_plan_request(
+    packet: CanonGenerationPacket,
+    default_model: str | None,
+) -> InferenceRequest:
+    return InferenceRequest(
+        model=default_model,
+        temperature=0.15,
+        max_tokens=4000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=(
+                    "You are the generation planner. Produce deterministic JSON with premise, logline, "
+                    "chapter plans, canon obligations, and intentional differences."
+                ),
+            ),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(packet.model_dump(mode="json"), ensure_ascii=True, indent=2, sort_keys=True),
+            ),
+        ],
+        metadata={
+            "mode": "generation_phase",
+            "phase": "G-200",
+            "role": "generation_planner",
+            "packet_id": packet.packet_id,
+        },
+    )
+
+
+def build_g300_chapter_generation_request(
+    packet: CanonGenerationPacket,
+    plan: GenerationPlan,
+    chapter_id: str,
+    prior_summaries: list[str],
+    default_model: str | None,
+) -> InferenceRequest:
+    payload = {
+        "packet_id": packet.packet_id,
+        "chapter_id": chapter_id,
+        "premise": plan.premise,
+        "logline": plan.logline,
+        "canon_obligations": plan.canon_obligations,
+        "intentional_differences": plan.intentional_differences,
+        "characters": [item.model_dump(mode="json") for item in packet.characters],
+        "world_bible": [item.model_dump(mode="json") for item in packet.world_bible],
+        "continuity_threads": [item.model_dump(mode="json") for item in packet.continuity_threads],
+        "prior_summaries": prior_summaries[-4:],
+    }
+    return InferenceRequest(
+        model=default_model,
+        temperature=0.2,
+        max_tokens=8000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content="Draft the chapter as markdown while preserving locked canon constraints.",
+            ),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True),
+            ),
+        ],
+        metadata={
+            "mode": "generation_phase",
+            "phase": "G-300",
+            "role": "generation_drafter",
+            "packet_id": packet.packet_id,
+            "chapter_id": chapter_id,
+        },
+    )
+
+
+def build_g350_canon_repair_request(
+    packet: CanonGenerationPacket,
+    artifact_text: str,
+    gate_reasons: list[str],
+    default_model: str | None,
+) -> InferenceRequest:
+    return InferenceRequest(
+        model=default_model,
+        temperature=0.1,
+        max_tokens=4000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content="Repair canon contradictions while preserving intended story intent.",
+            ),
+            InferenceMessage(
+                role="user",
+                content=(
+                    f"Gate reasons: {gate_reasons}\n"
+                    f"Canon policy: {packet.canon_policy.model_dump(mode='json')}\n"
+                    f"Artifact:\n{artifact_text}"
+                ),
+            ),
+        ],
+        metadata={
+            "mode": "generation_phase",
+            "phase": "G-350",
+            "role": "generation_gate",
+            "packet_id": packet.packet_id,
+        },
+    )
+
+
+def build_g400_manuscript_assembly_request(
+    packet: CanonGenerationPacket,
+    chapter_artifacts: list[dict[str, str]],
+    default_model: str | None,
+) -> InferenceRequest:
+    return InferenceRequest(
+        model=default_model,
+        temperature=0.1,
+        max_tokens=6000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content="Assemble the chapter artifacts into a cohesive manuscript.",
+            ),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(
+                    {
+                        "packet_id": packet.packet_id,
+                        "chapter_artifacts": chapter_artifacts,
+                    },
+                    ensure_ascii=True,
+                    indent=2,
+                    sort_keys=True,
+                ),
+            ),
+        ],
+        metadata={
+            "mode": "generation_phase",
+            "phase": "G-400",
+            "role": "generation_compiler",
+            "packet_id": packet.packet_id,
         },
     )
 

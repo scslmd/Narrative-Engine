@@ -231,6 +231,99 @@ def _make_arc_detection_response() -> str:
     })
 
 
+def _make_continuity_response() -> str:
+    return json.dumps({
+        "threads": [
+            {
+                "thread_id": "thread-legend",
+                "title": "The Prodigy's Legend",
+                "summary": "Kvothe's reputation grows across the story.",
+                "status": "active",
+                "chapter_ids": ["chapter-1", "chapter-2", "chapter-3"],
+                "character_ids": ["Kvothe"],
+                "evidence": ["Chapter summaries track reputation growth."],
+                "confidence_score": 0.82,
+            }
+        ],
+        "states": [
+            {
+                "state_id": "state-chapter-1",
+                "chapter_id": "chapter-1",
+                "summary": "Kvothe begins the public legend thread.",
+                "active_threads": ["thread-legend"],
+                "resolved_threads": [],
+                "character_states": {"Kvothe": "ambitious"},
+                "world_facts": ["University exists"],
+                "unresolved_questions": [],
+                "contradictions": [],
+                "confidence_score": 0.81,
+            }
+        ],
+        "contradictions": [],
+        "unresolved_questions": [],
+        "overall_confidence": 0.84,
+        "status": "complete",
+    })
+
+
+def _make_low_confidence_continuity_response() -> str:
+    return json.dumps({
+        "threads": [],
+        "states": [],
+        "contradictions": [
+            "Timeline contradiction: Kvothe cannot have been at the University before he arrives."
+        ],
+        "unresolved_questions": ["Which arrival sequence is canonical?"],
+        "overall_confidence": 0.31,
+        "status": "partial",
+    })
+
+
+def _make_draft_brief_response() -> str:
+    return json.dumps({
+        "objective": "Advance Kvothe's public legend while preserving continuity.",
+        "emotional_turn": "Ambition becomes pressure.",
+        "continuity_obligations": ["Keep the legend thread active."],
+        "required_callbacks": ["Reference the University."],
+        "forbidden_contradictions": ["Do not resolve the legend thread yet."],
+        "voice_guidance": "First-person reflective and epic.",
+    })
+
+
+def _make_planning_response(chapter_ids: list[str]) -> str:
+    return json.dumps({
+        "sequences": [
+            {
+                "title": "Main Sequence",
+                "summary": "Planning-grade sequence for imported chapters.",
+                "chapters": chapter_ids,
+                "provenance_note": "test planning synthesis",
+                "confidence_score": 0.78,
+            }
+        ],
+        "chapter_summaries": [
+            {
+                "chapter_id": chapter_id,
+                "title": chapter_id.replace("-", " ").title(),
+                "summary": f"Planning summary for {chapter_id}.",
+                "section_type": "chapter",
+                "analysis_status": "complete",
+                "objective": f"Objective for {chapter_id}.",
+                "conflict": "External pressure grows.",
+                "stakes": "The legend may fail.",
+                "active_character_names": ["Kvothe"],
+                "continuity_requirements": ["Keep the legend thread active."],
+                "unresolved_questions": [],
+                "plot_events": [],
+                "estimated_word_count": 1000,
+                "provenance_note": "test planning synthesis",
+                "confidence_score": 0.78,
+            }
+            for chapter_id in chapter_ids
+        ],
+    })
+
+
 # --- Phase 1: Structure Detection Tests ---
 
 class TestStructureDetection:
@@ -902,6 +995,9 @@ class TestSizeBasedRouting:
              "canonical_facts": [], "related_character_ids": []}
         ]))
         responses.append(_make_arc_detection_response())
+        responses.append(_make_planning_response(["chapter-1", "chapter-2", "chapter-3"]))
+        responses.append(_make_continuity_response())
+        responses.extend([_make_draft_brief_response() for _ in range(3)])
 
         backend = MultiPhaseInferenceBackend(responses=responses)
         project_service = ProjectService(tmp_path)
@@ -931,6 +1027,9 @@ class TestSizeBasedRouting:
         beats = repository.list_beat_plans(response.project_id)
         packets = repository.list_chapter_packets(response.project_id)
         dependencies = repository.list_planning_dependencies(response.project_id)
+        continuity_findings = repository.list_continuity_findings(response.project_id)
+        draft_briefs = repository.list_draft_briefs(response.project_id)
+        context_packets = repository.list_drafting_context_packets(response.project_id)
 
         assert len(sequences) >= 1
         assert len(chapters) == 3
@@ -941,6 +1040,69 @@ class TestSizeBasedRouting:
         assert all(sequence.provenance_note for sequence in sequences)
         assert all(chapter.provenance_note for chapter in chapters)
         assert all(chapter.confidence_score >= 0.0 for chapter in chapters)
+        assert len(continuity_findings) == 1
+        assert continuity_findings[0].overall_confidence == 0.84
+        assert len(draft_briefs) == 3
+        assert len(context_packets) == 3
+        assert all(brief.status == "complete" for brief in draft_briefs)
+
+    def test_large_story_continuity_gate_warning_persists_finding_without_drafts(self, tmp_path: Path) -> None:
+        story_text = "C" * 50_000
+        chunk_size = len(story_text) // 3
+        chapters_data = []
+        start_pos = 0
+        for i in range(3):
+            end_pos = min(start_pos + chunk_size, len(story_text))
+            chapters_data.append({
+                "id": f"chapter-{i+1}",
+                "title": f"Chapter {i+1}",
+                "section_type": "chapter",
+                "start_line": i + 1,
+                "end_line": i + 1,
+                "start_pos": start_pos,
+                "end_pos": end_pos,
+                "estimated_word_count": chunk_size // 5,
+            })
+            start_pos = end_pos
+        responses = [_make_structure_response(chapters=chapters_data)]
+        for i in range(3):
+            responses.append(_make_chunk_analysis_response(
+                chapter_id=f"chapter-{i+1}",
+                chapter_title=f"Chapter {i+1}",
+            ))
+        responses.extend([
+            _make_character_consolidation_response(),
+            json.dumps([{
+                "entry_type": "location",
+                "title": "Setting",
+                "summary": "A place",
+                "canonical_facts": [],
+                "related_character_ids": [],
+            }]),
+            _make_arc_detection_response(),
+            _make_planning_response(["chapter-1", "chapter-2", "chapter-3"]),
+            _make_low_confidence_continuity_response(),
+        ])
+        backend = MultiPhaseInferenceBackend(responses=responses)
+        project_service = ProjectService(tmp_path)
+        db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+        repository = StoryDevelopmentRepository(db_path)
+        import_service = StoryImportService(
+            project_service=project_service,
+            repository=repository,
+            inferencer=backend,
+        )
+
+        response = import_service.import_story(
+            StoryImportRequest(project_name="Large Gate Warning", story_text=story_text)
+        )
+
+        assert response.status == "completed"
+        assert any("Continuity gate warning" in warning for warning in response.warnings)
+        findings = repository.list_continuity_findings(response.project_id)
+        assert len(findings) == 1
+        assert findings[0].overall_confidence == 0.31
+        assert repository.list_draft_briefs(response.project_id) == []
 
     def test_large_story_multi_sequence_counts_all_chapters(self, tmp_path: Path) -> None:
         story_text = "B" * 50_000

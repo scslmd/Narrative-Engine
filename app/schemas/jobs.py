@@ -76,6 +76,50 @@ class JobCreateRequest(StrictModel):
                     raise ValueError("Payload 'max_tokens' must be an integer")
                 if max_tokens < 1:
                     raise ValueError("Payload 'max_tokens' must be >= 1")
+        elif self.phase in ("G-200", "G-300", "G-350", "G-400"):
+            generation_id = self.payload.get("generation_id")
+            if generation_id is None:
+                raise ValueError(
+                    f"Payload must contain 'generation_id' for phase {self.phase}"
+                )
+            if not isinstance(generation_id, str):
+                raise ValueError(
+                    f"Payload 'generation_id' must be a string for phase {self.phase}"
+                )
+            if not generation_id.strip():
+                raise ValueError(
+                    f"Payload 'generation_id' must be a non-empty string for phase {self.phase}"
+                )
+
+            if self.phase == "G-300":
+                chapter_id = self.payload.get("chapter_id")
+                chapter_ids = self.payload.get("chapter_ids")
+                if chapter_id is None and chapter_ids is None:
+                    raise ValueError(
+                        "Payload must contain 'chapter_id' or 'chapter_ids' for phase G-300"
+                    )
+                if chapter_id is not None:
+                    if not isinstance(chapter_id, str) or not chapter_id.strip():
+                        raise ValueError("Payload 'chapter_id' must be a non-empty string")
+                if chapter_ids is not None:
+                    if not isinstance(chapter_ids, list) or not chapter_ids:
+                        raise ValueError("Payload 'chapter_ids' must be a non-empty list")
+                    if any(not isinstance(chapter, str) or not chapter.strip() for chapter in chapter_ids):
+                        raise ValueError("Payload 'chapter_ids' must contain only non-empty strings")
+
+            if self.phase == "G-350":
+                artifact_refs = self.payload.get("artifact_refs")
+                if artifact_refs is None:
+                    raise ValueError("Payload must contain 'artifact_refs' for phase G-350")
+                if not isinstance(artifact_refs, list):
+                    raise ValueError("Payload 'artifact_refs' must be a list")
+
+            if self.phase == "G-400":
+                chapter_artifact_ids = self.payload.get("chapter_artifact_ids")
+                if chapter_artifact_ids is None:
+                    raise ValueError("Payload must contain 'chapter_artifact_ids' for phase G-400")
+                if not isinstance(chapter_artifact_ids, list):
+                    raise ValueError("Payload 'chapter_artifact_ids' must be a list")
         return self
 
 

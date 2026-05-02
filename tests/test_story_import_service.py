@@ -194,6 +194,54 @@ def test_import_story_creates_project_and_all_entities(tmp_path: Path) -> None:
 
 
 @pytest.mark.integration
+def test_import_story_persists_contradiction_only_continuity_findings_idempotently(tmp_path: Path) -> None:
+    payload = json.loads(_make_json_response())
+    payload["continuity_finding"] = {
+        "project_id": "import-project",
+        "threads": [],
+        "states": [],
+        "contradictions": ["Timeline contradiction: Aria leaves before she receives the map."],
+        "unresolved_questions": ["Which map handoff is canonical?"],
+        "overall_confidence": 0.62,
+        "status": "partial",
+        "provenance_note": "single-pass continuity smoke",
+    }
+    inferencer = FakeImportInferenceBackend(content=json.dumps(payload))
+    project_service = ProjectService(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    repository = StoryDevelopmentRepository(db_path)
+    import_service = StoryImportService(
+        project_service=project_service,
+        repository=repository,
+        inferencer=inferencer,
+    )
+
+    request = StoryImportRequest(
+        project_name="Continuity Story",
+        story_text="Once upon a time in a kingdom far away...",
+    )
+    first_response = import_service.import_story(request)
+    assert first_response.status == "completed"
+
+    second_response = import_service.import_story(
+        StoryImportRequest(
+            project_name="Continuity Story",
+            story_text="Once upon a time in a kingdom far away...",
+            project_id=first_response.project_id,
+        )
+    )
+    assert second_response.status == "completed"
+
+    findings = repository.list_continuity_findings(first_response.project_id)
+    assert len(findings) == 1
+    assert findings[0].finding_key is not None
+    assert findings[0].contradictions == [
+        "Timeline contradiction: Aria leaves before she receives the map."
+    ]
+    assert findings[0].unresolved_questions == ["Which map handoff is canonical?"]
+
+
+@pytest.mark.integration
 def test_import_story_with_existing_project_id(tmp_path: Path) -> None:
     """Import into an existing project should not create a new one."""
     # 1. Setup: Create project first

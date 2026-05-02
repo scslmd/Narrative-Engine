@@ -16,6 +16,7 @@ from .api import (
     build_jobs_router,
     build_models_router,
     build_projects_router,
+    build_story_generation_router,
     build_story_development_router,
     build_role_model_checker_router,
 )
@@ -297,6 +298,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
         role_check_service=role_check_service,
         inferencer=inferencer,
         project_service=project_service,
+        story_repository=story_development_repository,
         scene_context_service=SceneContextService(repository=story_development_repository),
         consistency_critic_service=ConsistencyCriticService(inferencer=inferencer),
         entity_intake_service=EntityIntakeService(inferencer=inferencer),
@@ -490,6 +492,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(build_models_router(model_registry))
     app.include_router(build_story_development_router(story_development_repository))
     app.include_router(build_story_development_router(story_development_repository, prefix='/v1/story-development'))
+    app.include_router(build_story_generation_router(story_development_repository, project_service, job_manager))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
 

@@ -73,6 +73,7 @@ Implemented and working now:
 - latency telemetry in `/health/metrics` endpoint with average, min, and max latency fields for both jobs and role-model-checker runs (REL-05)
 - operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
 - file permission validation with world-writable directory rejection and directory-safety checks (REL-09)
+- story generation orchestration: canon packet builder, project forking, consistency gates, 4-phase executor pipeline (G-200/G-300/G-350/G-400), wizard UI at `/workspace/:projectId/generate`
 
 Still being built:
 
@@ -91,7 +92,9 @@ Still being built:
 
 Current verified baseline:
 
-- `python -m pytest -q -p no:cacheprovider` -> `840 passed, 9 skipped` (0 pre-existing failures)
+- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1266 passed (~51s)
+- Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
+- Full baseline: ~1309 tests, ~67s total
 
 ### Frontend
 
@@ -123,28 +126,30 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- `python -m pytest -q -p no:cacheprovider` -> `840 passed, 9 skipped` (0 pre-existing failures)
+- Parallel cluster: ~1266 passed (~51s)
+- Serial tests: ~43 passed (~16s)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
-- `cd frontend && npm run build` -> passed
+- `cd frontend && npm run build` -> passed, 1977 modules
+- `cd frontend && npm run test` -> 315 passed (~19s)
 
-**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI, verified all 13/13 feature areas linked.
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard, all 14/14 feature areas linked.
 
 ## Core Docs
 
-- [AGENTS.md](AGENTS.md) - development guidelines, API patterns, and merge readiness checks
+- [AGENTS.md](AGENTS.md) - development guidelines, API patterns, feature documentation, and merge readiness checks (single source of truth)
 - [docs/STRUCTURE.md](docs/STRUCTURE.md) - project structure overview
-- [docs/BACKEND_API_REFERENCE.md](docs/BACKEND_API_REFERENCE.md) - backend API reference
-- [docs/User Guide.md](docs/User%20Guide.md) - user-facing guide
-- [docs/Narrative SRS v0.3.md](docs/Narrative%20SRS%20v0.3.md) - product spec
-- [docs/Frontend Design SRS v0.5.md](docs/Frontend%20Design%20SRS%20v0.5.md) - frontend design spec
-- [docs/Feature Reference.md](docs/Feature%20Reference.md) - feature reference
-- [docs/Narrative Engine User Walkthrough.md](docs/Narrative%20Engine%20User%20Walkthrough.md) - complete step-by-step walkthrough of all features
+- [docs/User Guide v1.3.md](docs/User%20Guide%20v1.3.md) - user-facing guide
+- [docs/Narrative Engine User Walkthrough v1.3.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.3.md) - complete step-by-step walkthrough of all features
+- [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md) - code review scoring rubrics
 
 ## Planning Docs
 
 - [TODO.md](TODO.md) - active backlog and implementation notes
+- [docs/story-generation-orchestration-blueprint-2026-05-02.md](docs/story-generation-orchestration-blueprint-2026-05-02.md) - story generation architecture (implemented)
 
 ## Archive
+
+Historical documentation (completed task lists, superseded specs, resolved analyses): [docs/archive/](docs/archive/)
 
 - [docs/archive/](docs/archive) - superseded docs, review dumps, and historical task materials

@@ -23,6 +23,8 @@ from ..schemas.story_import import (
     StoryImportArc,
     StoryImportChapterSummary,
     StoryImportCharacterRequest,
+    StoryImportDraftBrief,
+    StoryImportDraftingContextPacket,
     StoryImportPlanningSynthesis,
     StoryImportSequence,
     StoryImportWorldEntry,
@@ -126,6 +128,7 @@ class MultiPassImportService:
         genre_hint: str | None = None,
         tone_hint: str | None = None,
         on_progress: Callable[[str, dict[str, Any]], None] | None = None,
+        project_id: str | None = None,
     ) -> StoryImportAnalysis:
         """Multi-pass analysis for stories of any size.
 
@@ -269,6 +272,10 @@ class MultiPassImportService:
             arc_analysis=arc_analysis,
             characters=consolidated_characters,
         )
+        continuity_gate_passed: bool | None = None
+        continuity_gate_reasons: list[str] = []
+        if continuity_finding is not None:
+            continuity_gate_passed, continuity_gate_reasons = self._check_continuity_gate(continuity_finding)
         if on_progress:
             on_progress("consolidation_continuity", {
                 "chapters_processed": chapters_processed,
@@ -276,6 +283,41 @@ class MultiPassImportService:
                 "chunks_processed": chunks_processed,
                 "total_estimated_chunks": total_chunks,
             })
+
+        draft_briefs: list[StoryImportDraftBrief] = []
+        drafting_context_packets: list[StoryImportDraftingContextPacket] = []
+        drafting_gate_passed: bool | None = None
+        drafting_gate_reasons: list[str] = []
+        if project_id is not None:
+            drafting_gate_passed, drafting_gate_reasons = self._check_drafting_readiness(
+                continuity_finding=continuity_finding,
+                chapter_summaries=planning_synthesis.chapter_summaries,
+                foundation_pov=arc_analysis.get("pov"),
+                foundation_tone=arc_analysis.get("tone"),
+            )
+            if drafting_gate_passed:
+                drafting_pairs = self._run_drafting_consolidation(
+                    project_id=project_id,
+                    chapter_summaries=planning_synthesis.chapter_summaries,
+                    continuity_finding=continuity_finding,
+                    characters=consolidated_characters,
+                    world_bible=consolidated_world,
+                    foundation_pov=arc_analysis.get("pov"),
+                    foundation_tone=arc_analysis.get("tone"),
+                )
+                for brief_data, packet_data in drafting_pairs:
+                    try:
+                        draft_briefs.append(StoryImportDraftBrief.model_validate(brief_data))
+                        drafting_context_packets.append(StoryImportDraftingContextPacket.model_validate(packet_data))
+                    except ValidationError as exc:
+                        logger.warning("Dropping invalid drafting import artifact: %s", exc)
+            if on_progress:
+                on_progress("consolidation_drafting", {
+                    "chapters_processed": chapters_processed,
+                    "total_estimated_chapters": total_chapters,
+                    "chunks_processed": chunks_processed,
+                    "total_estimated_chunks": total_chunks,
+                })
 
         # Build final StoryImportAnalysis
         return self._build_analysis(
@@ -289,6 +331,12 @@ class MultiPassImportService:
             completed_chunk_count=chunks_processed,
             total_estimated_chunks=total_chunks,
             continuity_finding=continuity_finding,
+            continuity_gate_passed=continuity_gate_passed,
+            continuity_gate_reasons=continuity_gate_reasons,
+            drafting_gate_passed=drafting_gate_passed,
+            drafting_gate_reasons=drafting_gate_reasons,
+            draft_briefs=draft_briefs,
+            drafting_context_packets=drafting_context_packets,
         )
 
     def _detect_structure(self, story_text: str) -> StoryStructureDetection:
@@ -800,6 +848,12 @@ class MultiPassImportService:
         completed_chunk_count: int = 0,
         total_estimated_chunks: int = 0,
         continuity_finding: ContinuityFinding | None = None,
+        continuity_gate_passed: bool | None = None,
+        continuity_gate_reasons: list[str] | None = None,
+        drafting_gate_passed: bool | None = None,
+        drafting_gate_reasons: list[str] | None = None,
+        draft_briefs: list[StoryImportDraftBrief] | None = None,
+        drafting_context_packets: list[StoryImportDraftingContextPacket] | None = None,
     ) -> StoryImportAnalysis:
         """Assemble final StoryImportAnalysis from all phases."""
         # Map story arcs
@@ -838,6 +892,12 @@ class MultiPassImportService:
             completed_chunk_count=completed_chunk_count,
             total_estimated_chunks=total_estimated_chunks,
             continuity_finding=continuity_finding,
+            continuity_gate_passed=continuity_gate_passed,
+            continuity_gate_reasons=list(continuity_gate_reasons or []),
+            drafting_gate_passed=drafting_gate_passed,
+            drafting_gate_reasons=list(drafting_gate_reasons or []),
+            draft_briefs=list(draft_briefs or []),
+            drafting_context_packets=list(drafting_context_packets or []),
         )
 
     def _synthesize_planning(
@@ -1263,6 +1323,14 @@ class MultiPassImportService:
 
             known_chapter_ids = {cs.chapter_id for cs in chapter_summaries}
             normalized = self._normalize_continuity_finding(parsed, known_chapter_ids)
+            if (
+                not normalized.threads
+                and not normalized.states
+                and not normalized.contradictions
+                and not normalized.unresolved_questions
+            ):
+                logger.warning("Continuity analysis returned no usable findings")
+                return None
             return normalized
         except (InferenceBackendError, ValueError, ValidationError) as exc:
             logger.warning("Continuity consolidation failed: %s. Skipping.", exc)
@@ -1337,7 +1405,7 @@ class MultiPassImportService:
 
             normalized_threads.append(ContinuityThread(
                 thread_id=tid,
-                project_id="",
+                project_id="import-project",
                 title=title or "Untitled Thread",
                 summary=str(t.get("summary", "")).strip(),
                 status=thread_status,
@@ -1386,7 +1454,7 @@ class MultiPassImportService:
 
             normalized_states.append(ContinuityState(
                 state_id=sid,
-                project_id="",
+                project_id="import-project",
                 chapter_id=chapter_id,
                 summary=str(s.get("summary", "")).strip(),
                 active_threads=[str(t) for t in (s.get("active_threads", []) or [])],
@@ -1401,7 +1469,7 @@ class MultiPassImportService:
             ))
 
         return ContinuityFinding(
-            project_id="",
+            project_id="import-project",
             threads=normalized_threads,
             states=normalized_states,
             contradictions=[str(c) for c in contradictions],

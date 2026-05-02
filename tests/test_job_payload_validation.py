@@ -233,3 +233,41 @@ class TestJobCreateEndpointValidation:
             json={'phase': 'P-400', 'payload': {'project_id': 'test-project'}}
         )
         assert response.status_code == 202
+
+
+class TestGenerationJobCreateRequestValidation:
+    """Test schema-level validation for generation phases."""
+
+    def test_g200_requires_generation_id(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="G-200", payload={})
+
+    def test_g300_requires_chapter_reference(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="G-300", payload={"generation_id": "gen-1"})
+
+        req = JobCreateRequest(
+            phase="G-300",
+            payload={"generation_id": "gen-1", "chapter_ids": ["chapter-1", "chapter-2"]},
+        )
+        assert req.payload["generation_id"] == "gen-1"
+
+    def test_g350_requires_artifact_refs(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="G-350", payload={"generation_id": "gen-1"})
+
+        req = JobCreateRequest(
+            phase="G-350",
+            payload={"generation_id": "gen-1", "artifact_refs": []},
+        )
+        assert req.payload["generation_id"] == "gen-1"
+
+    def test_g400_requires_chapter_artifact_ids(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="G-400", payload={"generation_id": "gen-1"})
+
+        req = JobCreateRequest(
+            phase="G-400",
+            payload={"generation_id": "gen-1", "chapter_artifact_ids": ["draft-1"]},
+        )
+        assert req.payload["generation_id"] == "gen-1"

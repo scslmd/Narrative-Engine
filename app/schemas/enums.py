@@ -32,6 +32,10 @@ class JobPhase(str, Enum):
     P_200 = "P-200"
     P_300 = "P-300"
     P_400 = "P-400"
+    G_200 = "G-200"
+    G_300 = "G-300"
+    G_350 = "G-350"
+    G_400 = "G-400"
 
 
 class JobStatus(str, Enum):

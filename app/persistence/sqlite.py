@@ -823,6 +823,7 @@ CREATE TABLE IF NOT EXISTS continuity_states (
 CREATE TABLE IF NOT EXISTS continuity_findings (
     finding_id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id TEXT NOT NULL,
+    finding_key TEXT,
     overall_confidence REAL NOT NULL DEFAULT 0.0,
     status TEXT NOT NULL DEFAULT 'complete',
     contradictions_json TEXT NOT NULL DEFAULT '[]',
@@ -866,6 +867,54 @@ CREATE TABLE IF NOT EXISTS drafting_context_packets (
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
     FOREIGN KEY(brief_id) REFERENCES draft_briefs(brief_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS canon_generation_runs (
+    generation_id TEXT PRIMARY KEY,
+    source_project_id TEXT NOT NULL,
+    target_project_id TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    request_json TEXT NOT NULL,
+    canon_scope_json TEXT NOT NULL,
+    canon_policy_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    gate_status TEXT NOT NULL DEFAULT 'pending',
+    warnings_json TEXT NOT NULL DEFAULT '[]',
+    created_job_ids_json TEXT NOT NULL DEFAULT '[]',
+    created_artifacts_json TEXT NOT NULL DEFAULT '[]',
+    idempotency_key TEXT,
+    request_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS canon_generation_packets (
+    packet_id TEXT PRIMARY KEY,
+    generation_id TEXT NOT NULL,
+    source_project_id TEXT NOT NULL,
+    target_project_id TEXT NOT NULL,
+    packet_json TEXT NOT NULL,
+    source_hashes_json TEXT NOT NULL,
+    prompt_budget_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(generation_id) REFERENCES canon_generation_runs(generation_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS generation_gate_results (
+    gate_result_id TEXT PRIMARY KEY,
+    generation_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    artifact_kind TEXT NOT NULL,
+    artifact_id TEXT NOT NULL,
+    gate_name TEXT NOT NULL,
+    passed INTEGER NOT NULL,
+    severity TEXT NOT NULL,
+    reasons_json TEXT NOT NULL DEFAULT '[]',
+    repair_attempted INTEGER NOT NULL DEFAULT 0,
+    repair_job_id TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(generation_id) REFERENCES canon_generation_runs(generation_id) ON DELETE CASCADE
 );
 """
 
@@ -944,8 +993,16 @@ CREATE INDEX IF NOT EXISTS idx_planning_dependencies_project_upstream ON plannin
 CREATE INDEX IF NOT EXISTS idx_continuity_threads_project_status ON continuity_threads(project_id, status, thread_id);
 CREATE INDEX IF NOT EXISTS idx_continuity_states_project_chapter ON continuity_states(project_id, chapter_id, state_id);
 CREATE INDEX IF NOT EXISTS idx_continuity_findings_project_created ON continuity_findings(project_id, created_at, finding_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_continuity_findings_project_key ON continuity_findings(project_id, finding_key) WHERE finding_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_draft_briefs_project_chapter ON draft_briefs(project_id, chapter_id, brief_id);
 CREATE INDEX IF NOT EXISTS idx_drafting_context_packets_project_brief ON drafting_context_packets(project_id, brief_id, packet_id);
+CREATE INDEX IF NOT EXISTS idx_generation_runs_source_created ON canon_generation_runs(source_project_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_generation_runs_target_created ON canon_generation_runs(target_project_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_generation_runs_status ON canon_generation_runs(status, updated_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_generation_runs_idempotency ON canon_generation_runs(source_project_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_generation_packets_generation ON canon_generation_packets(generation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_generation_gate_results_generation ON generation_gate_results(generation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_generation_gate_results_artifact ON generation_gate_results(project_id, artifact_kind, artifact_id, created_at);
 """
 
 
@@ -1012,6 +1069,7 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
     _migrate_chapter_plans_add_target_word_count(connection)
     _migrate_character_profiles_add_deep_analysis(connection)
     _migrate_planning_artifacts_add_provenance_fields(connection)
+    _migrate_continuity_findings_add_finding_key(connection)
     connection.executescript(OPERATIONS_SCHEMA)
     _apply_operations_indexes(connection)
 
@@ -1066,6 +1124,16 @@ def _migrate_planning_artifacts_add_provenance_fields(connection: sqlite3.Connec
             connection.execute(f"ALTER TABLE {table_name} ADD COLUMN confidence_score REAL NOT NULL DEFAULT 0.0")
             added = True
     if added:
+        connection.commit()
+
+
+def _migrate_continuity_findings_add_finding_key(connection: sqlite3.Connection) -> None:
+    if _table_exists(connection, "continuity_findings") and not _column_exists(
+        connection,
+        "continuity_findings",
+        "finding_key",
+    ):
+        connection.execute("ALTER TABLE continuity_findings ADD COLUMN finding_key TEXT")
         connection.commit()
 
 

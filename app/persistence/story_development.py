@@ -532,6 +532,7 @@ class ContinuityStateRecord:
 class ContinuityFindingRecord:
     finding_id: int
     project_id: str
+    finding_key: str | None
     overall_confidence: float
     status: str
     contradictions: list[str]
@@ -573,6 +574,55 @@ class DraftingContextPacketRecord:
     confidence_score: float
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass(frozen=True)
+class CanonGenerationRunRecord:
+    generation_id: str
+    source_project_id: str
+    target_project_id: str
+    mode: str
+    request_json: dict[str, Any]
+    canon_scope_json: dict[str, Any]
+    canon_policy_json: dict[str, Any]
+    status: str
+    gate_status: str
+    warnings: list[str]
+    created_job_ids: list[str]
+    created_artifacts: list[dict[str, Any]]
+    idempotency_key: str | None
+    request_hash: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class CanonGenerationPacketRecord:
+    packet_id: str
+    generation_id: str
+    source_project_id: str
+    target_project_id: str
+    packet_json: dict[str, Any]
+    source_hashes_json: dict[str, str]
+    prompt_budget_json: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class GenerationGateResultRecord:
+    gate_result_id: str
+    generation_id: str
+    project_id: str
+    artifact_kind: str
+    artifact_id: str
+    gate_name: str
+    passed: bool
+    severity: str
+    reasons: list[str]
+    repair_attempted: bool
+    repair_job_id: str | None
+    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -3606,6 +3656,7 @@ class StoryDevelopmentRepository:
         self,
         *,
         project_id: str,
+        finding_key: str | None = None,
         overall_confidence: float = 0.0,
         status: str = "complete",
         contradictions: list[str] | None = None,
@@ -3617,15 +3668,50 @@ class StoryDevelopmentRepository:
         now = _now(created_at)
         updated = _now(updated_at or created_at)
         with connect(self.db_path) as connection:
+            if finding_key is not None:
+                existing = connection.execute(
+                    """
+                    SELECT finding_id
+                    FROM continuity_findings
+                    WHERE project_id = ? AND finding_key = ?
+                    """,
+                    (project_id, finding_key),
+                ).fetchone()
+                if existing is not None:
+                    connection.execute(
+                        """
+                        UPDATE continuity_findings
+                        SET overall_confidence = ?,
+                            status = ?,
+                            contradictions_json = ?,
+                            unresolved_questions_json = ?,
+                            provenance_note = ?,
+                            updated_at = ?
+                        WHERE finding_id = ?
+                        """,
+                        (
+                            overall_confidence,
+                            status,
+                            _json_list(contradictions),
+                            _json_list(unresolved_questions),
+                            provenance_note,
+                            updated.isoformat(),
+                            int(existing["finding_id"]),
+                        ),
+                    )
+                    connection.commit()
+                    return self.get_continuity_finding(int(existing["finding_id"]))
+
             cursor = connection.execute(
                 """
                 INSERT INTO continuity_findings (
-                    project_id, overall_confidence, status, contradictions_json, unresolved_questions_json,
+                    project_id, finding_key, overall_confidence, status, contradictions_json, unresolved_questions_json,
                     provenance_note, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     project_id,
+                    finding_key,
                     overall_confidence,
                     status,
                     _json_list(contradictions),
@@ -4092,6 +4178,284 @@ class StoryDevelopmentRepository:
                 (project_id, target_document_id),
             ).fetchall()
         return [_revision_suggestion_row_to_record(row) for row in rows]
+
+    def upsert_canon_generation_run(
+        self,
+        *,
+        generation_id: str,
+        source_project_id: str,
+        target_project_id: str,
+        mode: str,
+        request_json: Mapping[str, Any],
+        canon_scope_json: Mapping[str, Any],
+        canon_policy_json: Mapping[str, Any],
+        status: str,
+        gate_status: str = "pending",
+        warnings: list[str] | None = None,
+        created_job_ids: list[str] | None = None,
+        created_artifacts: Sequence[Mapping[str, Any]] | None = None,
+        idempotency_key: str | None = None,
+        request_hash: str = "",
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> CanonGenerationRunRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            if idempotency_key:
+                existing = connection.execute(
+                    """
+                    SELECT generation_id, request_hash
+                    FROM canon_generation_runs
+                    WHERE source_project_id = ? AND idempotency_key = ?
+                    """,
+                    (source_project_id, idempotency_key),
+                ).fetchone()
+                if existing is not None and existing["request_hash"] != request_hash:
+                    raise ValueError("idempotency key conflict: request hash mismatch")
+            connection.execute(
+                """
+                INSERT INTO canon_generation_runs (
+                    generation_id, source_project_id, target_project_id, mode,
+                    request_json, canon_scope_json, canon_policy_json,
+                    status, gate_status, warnings_json, created_job_ids_json, created_artifacts_json,
+                    idempotency_key, request_hash, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(generation_id) DO UPDATE SET
+                    source_project_id = excluded.source_project_id,
+                    target_project_id = excluded.target_project_id,
+                    mode = excluded.mode,
+                    request_json = excluded.request_json,
+                    canon_scope_json = excluded.canon_scope_json,
+                    canon_policy_json = excluded.canon_policy_json,
+                    status = excluded.status,
+                    gate_status = excluded.gate_status,
+                    warnings_json = excluded.warnings_json,
+                    created_job_ids_json = excluded.created_job_ids_json,
+                    created_artifacts_json = excluded.created_artifacts_json,
+                    idempotency_key = excluded.idempotency_key,
+                    request_hash = excluded.request_hash,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    generation_id,
+                    source_project_id,
+                    target_project_id,
+                    mode,
+                    _json_object(request_json),
+                    _json_object(canon_scope_json),
+                    _json_object(canon_policy_json),
+                    status,
+                    gate_status,
+                    _json_list(warnings),
+                    _json_list(created_job_ids),
+                    _json_objects(created_artifacts),
+                    idempotency_key,
+                    request_hash,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_canon_generation_run(generation_id)
+
+    def get_canon_generation_run(self, generation_id: str) -> CanonGenerationRunRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM canon_generation_runs
+                WHERE generation_id = ?
+                """,
+                (generation_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(generation_id)
+        return _canon_generation_run_row_to_record(row)
+
+    def list_canon_generation_runs(self, project_id: str, *, role: str = "either") -> list[CanonGenerationRunRecord]:
+        normalized_project_id = self._normalize_text(project_id, field_name="project_id")
+        normalized_role = self._normalize_text(role, field_name="role").lower()
+        if normalized_role not in {"source", "target", "either"}:
+            raise ValueError("role must be one of: source, target, either")
+        if normalized_role == "source":
+            where_clause = "source_project_id = ?"
+            params: tuple[str, ...] = (normalized_project_id,)
+        elif normalized_role == "target":
+            where_clause = "target_project_id = ?"
+            params = (normalized_project_id,)
+        else:
+            where_clause = "(source_project_id = ? OR target_project_id = ?)"
+            params = (normalized_project_id, normalized_project_id)
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM canon_generation_runs
+                WHERE {where_clause}
+                ORDER BY created_at DESC
+                """,
+                params,
+            ).fetchall()
+        return [_canon_generation_run_row_to_record(row) for row in rows]
+
+    def upsert_canon_generation_packet(
+        self,
+        *,
+        packet_id: str,
+        generation_id: str,
+        source_project_id: str,
+        target_project_id: str,
+        packet_json: Mapping[str, Any],
+        source_hashes_json: Mapping[str, str],
+        prompt_budget_json: Mapping[str, Any],
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> CanonGenerationPacketRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO canon_generation_packets (
+                    packet_id, generation_id, source_project_id, target_project_id,
+                    packet_json, source_hashes_json, prompt_budget_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(packet_id) DO UPDATE SET
+                    generation_id = excluded.generation_id,
+                    source_project_id = excluded.source_project_id,
+                    target_project_id = excluded.target_project_id,
+                    packet_json = excluded.packet_json,
+                    source_hashes_json = excluded.source_hashes_json,
+                    prompt_budget_json = excluded.prompt_budget_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    packet_id,
+                    generation_id,
+                    source_project_id,
+                    target_project_id,
+                    _json_object(packet_json),
+                    _json_object(source_hashes_json),
+                    _json_object(prompt_budget_json),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_canon_generation_packet(packet_id)
+
+    def get_canon_generation_packet(self, packet_id: str) -> CanonGenerationPacketRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM canon_generation_packets
+                WHERE packet_id = ?
+                """,
+                (packet_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(packet_id)
+        return _canon_generation_packet_row_to_record(row)
+
+    def list_canon_generation_packets_for_generation(
+        self,
+        generation_id: str,
+    ) -> list[CanonGenerationPacketRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM canon_generation_packets
+                WHERE generation_id = ?
+                ORDER BY created_at DESC
+                """,
+                (generation_id,),
+            ).fetchall()
+        return [_canon_generation_packet_row_to_record(row) for row in rows]
+
+    def upsert_generation_gate_result(
+        self,
+        *,
+        gate_result_id: str,
+        generation_id: str,
+        project_id: str,
+        artifact_kind: str,
+        artifact_id: str,
+        gate_name: str,
+        passed: bool,
+        severity: str,
+        reasons: list[str] | None = None,
+        repair_attempted: bool = False,
+        repair_job_id: str | None = None,
+        created_at: datetime | None = None,
+    ) -> GenerationGateResultRecord:
+        now = _now(created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO generation_gate_results (
+                    gate_result_id, generation_id, project_id, artifact_kind, artifact_id,
+                    gate_name, passed, severity, reasons_json, repair_attempted, repair_job_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(gate_result_id) DO UPDATE SET
+                    generation_id = excluded.generation_id,
+                    project_id = excluded.project_id,
+                    artifact_kind = excluded.artifact_kind,
+                    artifact_id = excluded.artifact_id,
+                    gate_name = excluded.gate_name,
+                    passed = excluded.passed,
+                    severity = excluded.severity,
+                    reasons_json = excluded.reasons_json,
+                    repair_attempted = excluded.repair_attempted,
+                    repair_job_id = excluded.repair_job_id,
+                    created_at = excluded.created_at
+                """,
+                (
+                    gate_result_id,
+                    generation_id,
+                    project_id,
+                    artifact_kind,
+                    artifact_id,
+                    gate_name,
+                    1 if passed else 0,
+                    severity,
+                    _json_list(reasons),
+                    1 if repair_attempted else 0,
+                    repair_job_id,
+                    now.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_generation_gate_result(gate_result_id)
+
+    def get_generation_gate_result(self, gate_result_id: str) -> GenerationGateResultRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM generation_gate_results
+                WHERE gate_result_id = ?
+                """,
+                (gate_result_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(gate_result_id)
+        return _generation_gate_result_row_to_record(row)
+
+    def list_generation_gate_results(self, generation_id: str) -> list[GenerationGateResultRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM generation_gate_results
+                WHERE generation_id = ?
+                ORDER BY created_at DESC
+                """,
+                (generation_id,),
+            ).fetchall()
+        return [_generation_gate_result_row_to_record(row) for row in rows]
 
     # ============================================================================
     # Storyboard Card Methods
@@ -5217,6 +5581,7 @@ def _continuity_finding_row_to_record(row) -> ContinuityFindingRecord:
     return ContinuityFindingRecord(
         finding_id=int(row["finding_id"]),
         project_id=row["project_id"],
+        finding_key=row["finding_key"],
         overall_confidence=float(row["overall_confidence"] or 0.0),
         status=row["status"],
         contradictions=_parse_json_list(row["contradictions_json"]),
@@ -5260,6 +5625,58 @@ def _drafting_context_packet_row_to_record(row) -> DraftingContextPacketRecord:
         confidence_score=float(row["confidence_score"] or 0.0),
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _canon_generation_run_row_to_record(row) -> CanonGenerationRunRecord:
+    return CanonGenerationRunRecord(
+        generation_id=row["generation_id"],
+        source_project_id=row["source_project_id"],
+        target_project_id=row["target_project_id"],
+        mode=row["mode"],
+        request_json=dict(json.loads(row["request_json"] or "{}")),
+        canon_scope_json=dict(json.loads(row["canon_scope_json"] or "{}")),
+        canon_policy_json=dict(json.loads(row["canon_policy_json"] or "{}")),
+        status=row["status"],
+        gate_status=row["gate_status"],
+        warnings=_parse_json_list(row["warnings_json"]),
+        created_job_ids=_parse_json_list(row["created_job_ids_json"]),
+        created_artifacts=_parse_json_objects(row["created_artifacts_json"]),
+        idempotency_key=row["idempotency_key"],
+        request_hash=row["request_hash"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _canon_generation_packet_row_to_record(row) -> CanonGenerationPacketRecord:
+    return CanonGenerationPacketRecord(
+        packet_id=row["packet_id"],
+        generation_id=row["generation_id"],
+        source_project_id=row["source_project_id"],
+        target_project_id=row["target_project_id"],
+        packet_json=dict(json.loads(row["packet_json"] or "{}")),
+        source_hashes_json=dict(json.loads(row["source_hashes_json"] or "{}")),
+        prompt_budget_json=dict(json.loads(row["prompt_budget_json"] or "{}")),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _generation_gate_result_row_to_record(row) -> GenerationGateResultRecord:
+    return GenerationGateResultRecord(
+        gate_result_id=row["gate_result_id"],
+        generation_id=row["generation_id"],
+        project_id=row["project_id"],
+        artifact_kind=row["artifact_kind"],
+        artifact_id=row["artifact_id"],
+        gate_name=row["gate_name"],
+        passed=bool(row["passed"]),
+        severity=row["severity"],
+        reasons=_parse_json_list(row["reasons_json"]),
+        repair_attempted=bool(row["repair_attempted"]),
+        repair_job_id=row["repair_job_id"],
+        created_at=datetime.fromisoformat(row["created_at"]),
     )
 
 
