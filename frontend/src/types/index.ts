@@ -59,3 +59,30 @@ export type {
   CharacterProfileUpdateRequest,
   RelationshipEdgeCreateRequest,
 } from './characters';
+
+export type {
+  CanonAnnotation,
+  CanonAnnotationCreateRequest,
+  CanonCustomizationProfile,
+  CanonCustomizationProfileCreateRequest,
+  CanonCustomizationProfileUpdateRequest,
+  CanonTargetKind,
+  CanonAnnotationKind,
+  CanonProfileStatus,
+} from './canonCustomization';
+
+export type {
+  MythosEntry,
+  MythosEntryCreateRequest,
+  MythosEntryUpdateRequest,
+  MythosEntryType,
+  MythosVisibilityScope,
+} from './mythos';
+
+export type {
+  PatternEntry,
+  PatternEntryCreateRequest,
+  PatternEntryUpdateRequest,
+  PatternEntryType,
+  PatternSourceType,
+} from './patterns';

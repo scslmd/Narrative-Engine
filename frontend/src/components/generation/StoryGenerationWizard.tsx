@@ -54,6 +54,8 @@ export function StoryGenerationWizard({
     world_bible_refs: [],
     continuity_thread_ids: [],
     arc_ids: [],
+    mythos_ids: [],
+    pattern_ids: [],
     include_relationships: true,
     include_unresolved_questions: true,
     include_contradictions_as_forbidden: true,

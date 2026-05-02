@@ -1,14 +1,30 @@
 import { useEffect, useState } from 'react';
 import type { CharacterProfile } from '../../types/characters';
+import type { CanonAnnotation, CanonAnnotationKind } from '../../types/canonCustomization';
+import { CanonAnnotationToolbar } from '../canon/CanonAnnotationToolbar';
 
 interface CharacterBuilderProps {
   projectId: string;
   character?: CharacterProfile;
   onSave?: (character: Partial<CharacterProfile>) => void;
   onCancel?: () => void;
+  canonAnnotations?: CanonAnnotation[];
+  onAnnotateField?: (
+    targetId: string,
+    fieldPath: string,
+    annotationKind: CanonAnnotationKind,
+    note: string,
+  ) => Promise<void>;
 }
 
-export function CharacterBuilder({ projectId, character, onSave, onCancel }: CharacterBuilderProps) {
+export function CharacterBuilder({
+  projectId,
+  character,
+  onSave,
+  onCancel,
+  canonAnnotations = [],
+  onAnnotateField,
+}: CharacterBuilderProps) {
   const [characterId, setCharacterId] = useState(character?.character_id || '');
   const [displayName, setDisplayName] = useState(character?.display_name || '');
   const [roleInStory, setRoleInStory] = useState(character?.role_in_story || '');
@@ -172,6 +188,18 @@ export function CharacterBuilder({ projectId, character, onSave, onCancel }: Cha
                 placeholder="Enter character name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
               />
+              {characterId && onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="character"
+                  target_id={characterId}
+                  field_path="display_name"
+                  annotations={canonAnnotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
             </Section>
 
             <Section title="Role in Story" description="Character's narrative function">
@@ -299,6 +327,18 @@ export function CharacterBuilder({ projectId, character, onSave, onCancel }: Cha
               placeholder="How does this character speak? What's their voice like?"
               className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
+            {characterId && onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="character"
+                target_id={characterId}
+                field_path="voice_notes"
+                annotations={canonAnnotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </Section>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -450,6 +490,18 @@ export function CharacterBuilder({ projectId, character, onSave, onCancel }: Cha
                 + Add Fact
               </button>
             </div>
+            {characterId && onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="character"
+                target_id={characterId}
+                field_path="continuity_facts"
+                annotations={canonAnnotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </Section>
 
           <Section title="Writer Notes" description="Private notes for the author">

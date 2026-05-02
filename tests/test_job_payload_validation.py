@@ -271,3 +271,27 @@ class TestGenerationJobCreateRequestValidation:
             payload={"generation_id": "gen-1", "chapter_artifact_ids": ["draft-1"]},
         )
         assert req.payload["generation_id"] == "gen-1"
+
+
+class TestManuscriptAssistJobCreateRequestValidation:
+    """Test schema-level validation for manuscript assist phases."""
+
+    def test_m500_requires_assist_id(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="M-500", payload={})
+
+        req = JobCreateRequest(
+            phase="M-500",
+            payload={"assist_id": "assist-1"},
+        )
+        assert req.payload["assist_id"] == "assist-1"
+
+    def test_m550_requires_gate_result_id(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreateRequest(phase="M-550", payload={"assist_id": "assist-1"})
+
+        req = JobCreateRequest(
+            phase="M-550",
+            payload={"assist_id": "assist-1", "gate_result_id": "gate-1"},
+        )
+        assert req.payload["assist_id"] == "assist-1"

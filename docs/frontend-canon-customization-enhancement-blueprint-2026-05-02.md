@@ -1139,3 +1139,24 @@ Required validation:
 - `cd frontend && npm run build`
 - `cd frontend && npm run test`
 
+## Implementation Status (2026-05-02)
+
+Completed:
+- FE-CANON-001 to FE-CANON-018 implemented in production code and tests.
+- Canon schemas, persistence, repository methods, services, and APIs are wired and validated.
+- `CanonPacketBuilder` includes mythos, patterns, annotations, and updated source hashes.
+- Frontend canon/mythos/pattern types and services are implemented with Vitest coverage.
+- `/workspace/:projectId/canon` route is implemented with deep-link tab handling (`?tab=mythos|patterns|packet`).
+- Canon component suite is implemented under `frontend/src/components/canon/`, including profile, rules, scope summary, and packet preview controls.
+- Mythos and pattern workspaces are implemented under `frontend/src/components/mythos/` and `frontend/src/components/patterns/`.
+- Field-level annotation controls are integrated into `CharacterBuilder` and `WorldBibleWorkspace`.
+- Import modal post-extraction flows now route to canon customization tabs.
+- Canon profile workflow can preview packet and launch generation directly.
+
+Validation completed:
+- `python -m pytest tests/test_canon_packet_builder.py -q -p no:cacheprovider`
+- `python -m pytest tests/test_canon_customization_api.py tests/test_mythos_pattern_library_api.py -q -p no:cacheprovider`
+- `cd frontend && npm run test -- canonCustomization mythosLibrary patternLibrary storyGeneration`
+- `cd frontend && npm run typecheck`
+- `cd frontend && npm run build`
+- `cd frontend && npm run lint` (warnings only, no errors)

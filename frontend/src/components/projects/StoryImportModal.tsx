@@ -90,7 +90,9 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               setIsImporting(false);
               setExtractionId(null);
               addToast('Patterns extracted successfully', 'success');
-              navigate('/workspace/plan');
+              if (progress.result?.project_id) {
+                navigate(`/workspace/${progress.result.project_id}/canon?tab=patterns`);
+              }
               queryClient.invalidateQueries({ queryKey: ['projects'] });
               onClose();
             } else if (progress.status === 'failed') {
@@ -126,7 +128,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
               setIsImporting(false);
               setExtractionId(null);
               addToast('Mythos extracted successfully', 'success');
-              navigate(`/workspace/${progress.result.project_id}/generate`);
+              navigate(`/workspace/${progress.result.project_id}/canon?tab=mythos`);
               queryClient.invalidateQueries({ queryKey: ['projects'] });
               onClose();
             } else if (progress.status === 'failed') {

@@ -57,6 +57,8 @@ class CanonScope(StrictModel):
     world_bible_refs: list[WorldBibleRef] = Field(default_factory=list)
     continuity_thread_ids: list[str] = Field(default_factory=list)
     arc_ids: list[str] = Field(default_factory=list)
+    mythos_ids: list[str] = Field(default_factory=list)
+    pattern_ids: list[str] = Field(default_factory=list)
     include_relationships: bool = True
     include_unresolved_questions: bool = True
     include_contradictions_as_forbidden: bool = True
@@ -71,6 +73,8 @@ class CanonScope(StrictModel):
                 self.world_bible_refs,
                 self.continuity_thread_ids,
                 self.arc_ids,
+                self.mythos_ids,
+                self.pattern_ids,
             )
         )
         if not has_scope:
@@ -197,6 +201,10 @@ class CanonGenerationPacket(StrictModel):
     continuity_threads: list[CanonicalContinuityThreadSnapshot] = Field(default_factory=list)
     continuity_findings: list[CanonicalContinuityFindingSnapshot] = Field(default_factory=list)
     drafting_context_packets: list[CanonicalDraftingContextSnapshot] = Field(default_factory=list)
+    mythos_entries: list[dict[str, object]] = Field(default_factory=list)
+    pattern_entries: list[dict[str, object]] = Field(default_factory=list)
+    canon_annotations: list[dict[str, object]] = Field(default_factory=list)
+    customization_profile_id: str | None = None
     canon_policy: CanonPolicy = Field(default_factory=CanonPolicy)
     prompt_budget_summary: PromptBudgetSummary = Field(default_factory=PromptBudgetSummary)
     source_hashes: dict[str, str] = Field(default_factory=dict)

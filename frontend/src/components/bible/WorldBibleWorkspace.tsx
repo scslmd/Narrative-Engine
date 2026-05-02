@@ -1,11 +1,20 @@
 import { useState } from 'react';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryType } from '../../types/bible';
+import type { CanonAnnotation, CanonAnnotationKind } from '../../types/canonCustomization';
+import { CanonAnnotationToolbar } from '../canon/CanonAnnotationToolbar';
 
 interface WorldBibleWorkspaceProps {
   projectId: string;
   entries?: WorldBibleEntry[];
   onEntryAdd?: (entry: WorldBibleEntryCreateRequest) => void;
   onEntryUpdate?: (entry: WorldBibleEntry, originalTitle: string) => void;
+  canonAnnotations?: CanonAnnotation[];
+  onAnnotateField?: (
+    targetId: string,
+    fieldPath: string,
+    annotationKind: CanonAnnotationKind,
+    note: string,
+  ) => Promise<void>;
 }
 
 export function WorldBibleWorkspace({
@@ -13,6 +22,8 @@ export function WorldBibleWorkspace({
   entries = [],
   onEntryAdd,
   onEntryUpdate,
+  canonAnnotations = [],
+  onAnnotateField,
 }: WorldBibleWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<WorldBibleEntryType | 'all'>('all');
   const [editingEntry, setEditingEntry] = useState<WorldBibleEntry | null>(null);
@@ -146,6 +157,9 @@ export function WorldBibleWorkspace({
         {editingEntry ? (
           <WorldBibleEntryEditor
             entry={editingEntry}
+            projectId={projectId}
+            annotations={canonAnnotations}
+            onAnnotateField={onAnnotateField}
             onSave={handleSaveEntry}
             onCancel={() => {
               setEditingEntry(null);
@@ -217,13 +231,29 @@ function WorldBibleEntryCard({ entry, onClick }: WorldBibleEntryCardProps) {
 }
 
 interface WorldBibleEntryEditorProps {
+  projectId: string;
+  annotations: CanonAnnotation[];
+  onAnnotateField?: (
+    targetId: string,
+    fieldPath: string,
+    annotationKind: CanonAnnotationKind,
+    note: string,
+  ) => Promise<void>;
   entry: WorldBibleEntry;
   onSave: () => void;
   onCancel: () => void;
   onUpdate: (entry: WorldBibleEntry) => void;
 }
 
-function WorldBibleEntryEditor({ entry, onSave, onCancel, onUpdate }: WorldBibleEntryEditorProps) {
+function WorldBibleEntryEditor({
+  projectId,
+  annotations,
+  onAnnotateField,
+  entry,
+  onSave,
+  onCancel,
+  onUpdate,
+}: WorldBibleEntryEditorProps) {
   const handleUpdate = (field: keyof WorldBibleEntry, value: string | string[] | null) => {
     onUpdate({ ...entry, [field]: value });
   };
@@ -281,6 +311,18 @@ function WorldBibleEntryEditor({ entry, onSave, onCancel, onUpdate }: WorldBible
               onChange={(e) => handleUpdate('title', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
             />
+            {onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="world_bible"
+                target_id={entry.entry_id}
+                field_path="title"
+                annotations={annotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </div>
 
           <div>
@@ -291,6 +333,18 @@ function WorldBibleEntryEditor({ entry, onSave, onCancel, onUpdate }: WorldBible
               placeholder="A brief summary of this entry..."
               className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
+            {onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="world_bible"
+                target_id={entry.entry_id}
+                field_path="summary"
+                annotations={annotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </div>
 
           <div>
@@ -320,6 +374,18 @@ function WorldBibleEntryEditor({ entry, onSave, onCancel, onUpdate }: WorldBible
                 + Add Fact
               </button>
             </div>
+            {onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="world_bible"
+                target_id={entry.entry_id}
+                field_path="canonical_facts"
+                annotations={annotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </div>
 
           <div>
@@ -349,6 +415,18 @@ function WorldBibleEntryEditor({ entry, onSave, onCancel, onUpdate }: WorldBible
                 + Add Warning
               </button>
             </div>
+            {onAnnotateField && (
+              <CanonAnnotationToolbar
+                projectId={projectId}
+                target_kind="world_bible"
+                target_id={entry.entry_id}
+                field_path="continuity_warnings"
+                annotations={annotations}
+                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                  onAnnotateField(targetId, fieldPath, annotationKind, note)
+                }
+              />
+            )}
           </div>
 
           <div>

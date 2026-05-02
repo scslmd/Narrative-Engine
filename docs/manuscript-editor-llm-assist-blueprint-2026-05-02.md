@@ -2,6 +2,24 @@
 
 Date: 2026-05-02
 
+## Implementation Progress (Current Branch)
+
+- [x] MS-ASSIST-001: Add Manuscript Assist Schemas
+- [x] MS-ASSIST-002: Add Persistence Tables
+- [x] MS-ASSIST-003: Add Repository Methods
+- [x] MS-ASSIST-004: Add Manuscript Assist Service
+- [x] MS-ASSIST-005: Add Assist Gate Service
+- [x] MS-ASSIST-006: Add Runtime Prompt Builders
+- [x] MS-ASSIST-007: Add Executor Phases
+- [x] MS-ASSIST-008: Add Manuscript Assist API
+- [x] MS-ASSIST-009: Add Frontend Types And Service
+- [x] MS-ASSIST-010: Add `useManuscriptAssist` Hook
+- [x] MS-ASSIST-011: Upgrade Manuscript Editor Toolbar (Phase 1 textarea selection/actions)
+- [x] MS-ASSIST-012: Add LLM Suggestions Panel Integration (merged with existing AidsPanel)
+- [ ] MS-ASSIST-013: Dedicated fork-from-selection modal workflow
+- [x] MS-ASSIST-014: Wire Writing View
+- [x] MS-ASSIST-015: End-To-End Fake LLM Test
+
 ## Purpose
 
 This document defines the implementation plan for a frontend manuscript “word processor” that lets an author edit generated manuscript text, fork or modify story branches from those edits, and request backend LLM assistance for story development, canon checks, revision suggestions, alternate scenes, continuations, and repair.
@@ -1099,4 +1117,3 @@ Required validation:
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`
 - `cd frontend && npm run test`
-

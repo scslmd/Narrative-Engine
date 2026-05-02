@@ -10,10 +10,11 @@ This guide walks you through using Narrative Engine from first project to a full
 2. [Importing an Existing Story](#importing-an-existing-story)
 3. [Extracting Mythos for Pattern-Based Story Generation](#extracting-mythos-for-pattern-based-story-generation)
 4. [Extracting Patterns for Story Generation](#extracting-patterns-for-story-generation)
-5. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
-5. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
-6. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
-7. [Tips and Best Practices](#tips-and-best-practices)
+5. [Story Generation Orchestration](#story-generation-orchestration)
+6. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+7. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+8. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+9. [Tips and Best Practices](#tips-and-best-practices)
 
 ---
 
@@ -186,6 +187,111 @@ Use this when you want to write stories that follow the narrative DNA of an exis
 - In Same World mode, you create original characters that follow the extracted archetypes within the source story's world
 - Transposed mode gives maximum creative freedom while maintaining the source story's narrative DNA
 - Voice profile extraction is most accurate when the source text has a distinctive narrative voice
+
+---
+
+## Story Generation Orchestration
+
+Story Generation lets you take an existing project's canon (characters, world bible, arcs) and generate a new canon-congruent story — either within the same project or forked into a brand-new project. The system builds a deterministic **canon packet** from your selected source material, runs a 4-phase generation pipeline (plan → draft → gate → compile), and enforces consistency gates to ensure generated content respects locked canon facts.
+
+### When to Use Story Generation
+
+Use this when you want to:
+- Write a sequel, prequel, or side story using characters and world from an existing project
+- Fork selected characters into a completely new setting
+- Generate an alternate route where key decisions played out differently
+- Create a new arc within the same project without manually rebuilding context
+
+### Step-by-Step Guide
+
+1. **Navigate to the Generate workspace** for your source project: `/workspace/:projectId/generate`
+2. **Open the Generation Wizard** — it loads your project's characters and world bible entries automatically
+3. **Select Generation Mode:**
+   - **Same Project — New Arc** — adds a new narrative arc within the existing project
+   - **Same Project — Sequel** — continues the story after the current ending
+   - **Same Project — Prequel** — generates events that happened before the current story
+   - **Same Project — Side Story** — explores a parallel storyline with shared canon
+   - **Same Project — Alternate Route** — reimagines key decisions from the existing story
+   - **New Project — Character Fork** — copies selected characters into a new project
+   - **New Project — World Fork** — copies the world bible into a new project
+   - **New Project — Hybrid Fork** — copies both characters and world elements
+4. **Select Destination:**
+   - **Same Project** — specify the target project ID (defaults to current project)
+   - **New Project** — enter a name for the new project; the system creates it automatically
+5. **Select Canon Scope** — choose what source material the generator should respect:
+   - **Characters** — select specific characters (or leave empty for all)
+   - **World Bible Entries** — select locations, rules, concepts, etc.
+   - **Arcs** — select narrative arcs to carry forward
+   - **Continuity Threads** — select unresolved threads to address
+6. **Enter a Generation Brief** — describe what you want the new story to accomplish (required, max 10,000 characters)
+7. **Configure Canon Policy:**
+   - **Locked Character Fields** — fields that cannot be changed (default: display_name, role_in_story, backstory, voice_notes, continuity_facts, relationships)
+   - **Locked World Fields** — immutable world facts (default: entry_type, title, summary, canonical_facts)
+   - **Allowed Changes** — explicitly permitted modifications to characters or world
+   - **Forbidden Contradictions** — specific phrases or facts that must not appear in generated content
+   - **Continuity Strictness** — how to handle violations:
+     - `warn` — record a warning, allow generation to proceed
+     - `block` — stop generation if a contradiction is detected
+     - `repair_once` — attempt one automatic repair, then block if still failing
+     - `repair_twice` — attempt two repairs before blocking
+8. **Set Chapter Count** — target number of chapters (1–100)
+9. **Submit the Run** — the system creates a generation run and queues 4 phases:
+   - **G-200 Plan** — generates a new story architecture from the canon packet
+   - **G-300 Draft** — drafts each chapter with canon context and prior summaries
+   - **G-350 Gate** — checks every artifact against locked canon facts
+   - **G-400 Compile** — assembles the final manuscript (only if blocking gates pass)
+10. **Monitor Progress** — run cards show status, job IDs, and warnings
+11. **Review Gate Results** — click a run to see which gates passed or failed, with reasons
+12. **Inspect or Repair** — failed gates link to the Inspect view for debugging; repair actions are available when your policy allows
+
+### Fork Preview
+
+Before committing to a fork, use the **Fork Preview** button to see exactly what would be copied:
+- Selected characters and their remapped target IDs
+- Selected world bible entries
+- Arcs and continuity threads
+- Foundation profile that will be created in the target project
+
+### Fork Project (Without Generation)
+
+If you want to fork canon into a new project without immediately running generation:
+1. Configure mode, destination, and scope in the wizard
+2. Click **"Fork Project Only"** instead of "Submit Run"
+3. The system creates the target project with copied canon but no generation jobs
+4. You can then run P-100 through P-400 manually against the new project
+
+### What Happens Behind the Scenes
+
+**Canon Packet Builder:**
+The system queries your source project and builds a deterministic packet containing snapshots of every selected character, world entry, arc, and continuity thread. The packet is budget-aware — if the total exceeds 120K characters, it truncates lower-priority entries (supporting characters before major ones, prose summaries before canonical facts).
+
+**Generation Pipeline:**
+- **G-200** loads the canon packet and asks the LLM to generate a new story plan: premise, logline, story arcs, chapter plans, and canon obligations. The plan must cite source canon IDs.
+- **G-300** iterates over each planned chapter, drafting prose with full canon context (character profiles, world constraints, prior chapter summaries). Each chapter produces a draft artifact and a ManuscriptDocument.
+- **G-350** runs gate checks on every generated artifact. Locked character facts, locked world facts, and forbidden contradictions are verified. If your policy allows repair, the system sends a repair prompt to fix violations.
+- **G-400** assembles the final manuscript from all chapter drafts. This phase only runs if no blocking gates failed.
+
+**Idempotency:**
+Re-submitting the same request (same source project, same scope, same brief) with an idempotency key returns the existing generation run instead of creating a duplicate. The system detects conflicts via SHA-256 request hashes.
+
+### Example: Fork Characters into a New Sci-Fi Project
+
+1. Open Generate workspace on your fantasy project
+2. Mode: **New Project — Character Fork**
+3. Destination: **New Project** named "Cyberpunk Chronicles"
+4. Canon Scope: select 3 characters you want to transpose
+5. Brief: "Reimagine these characters in a near-future cyberpunk city. Keep their core personalities and relationships, but adapt their goals and conflicts to a corporate dystopia."
+6. Policy: continuity strictness = `warn`, forbidden contradictions = ["magic", "spell", "mana"]
+7. Chapter count: 5
+8. Submit — the system creates the new project, copies the 3 characters with remapped IDs, and runs the generation pipeline
+
+### Tips
+
+- **Start with a small scope.** Select only the characters and world entries most relevant to the new story. Large packets increase latency and token costs.
+- **Use forbidden contradictions wisely.** List specific terms or facts that must not appear (e.g., character deaths, resolved plot points).
+- **Prefer `warn` over `block` for exploration.** Blocking stops generation entirely. Warning lets you review issues afterward.
+- **Review gate results before promoting.** Even passing gates may have warnings worth checking.
+- **Fork preview first.** Always preview what will be copied before committing to a fork, especially with hybrid forks.
 
 ---
 
@@ -730,6 +836,18 @@ The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity 
 | **Prior Chapter Summary** | LLM-extracted context from completed chapters, including key events (max 10), character states (max 10), and unresolved threads (max 5). Automatically generated by ChapterSummarizerService after each chapter draft in batch mode. Injected into subsequent chapters for continuity. |
 | **ChapterSummarizerService** | LLM-based service that reads completed chapter markdown and extracts structured PriorChapterSummary. Follows the ConsistencyCriticService pattern: error-tolerant, never blocks the pipeline. |
 | **ChapterOrchestrator** | Programmatic service for running multiple P-300 jobs sequentially across chapters (one job per chapter). For batch mode within a single job, use the `chapter_ids` payload instead. |
+| **Canon Generation Packet** | Deterministic artifact that packages snapshots of selected characters, world bible entries, arcs, and continuity threads from a source project for use in story generation. Budget-aware: truncates to 120K character cap by dropping lower-priority entries first. |
+| **Generation Run** | A single invocation of the story generation pipeline (G-200 through G-400). Identified by `generation_id`, tracks source project, target project, mode, job IDs, status, gate results, and created artifacts. Idempotent via request hash and optional idempotency key. |
+| **Generation Mode** | How the new story relates to the source: same_project_new_arc, same_project_sequel, same_project_prequel, same_project_side_story, same_project_alternate_route, new_project_character_fork, new_project_world_fork, or new_project_hybrid_fork. |
+| **Canon Policy** | Rules governing what the generator may or may not change: locked character/world fields, allowed changes, forbidden contradictions, and continuity strictness (warn, block, repair_once, repair_twice). |
+| **Continuity Strictness** | How gate violations are handled: `warn` records a warning and proceeds; `block` stops generation; `repair_once` attempts one automatic repair then blocks; `repair_twice` allows two repairs. |
+| **G-200 Plan Phase** | First generation phase. Loads the canon packet and generates a new story plan: premise, logline, arcs, chapter plans, and canon obligations. Must cite source canon IDs. |
+| **G-300 Draft Phase** | Second generation phase. Iterates over planned chapters, drafting prose with full canon context and prior chapter summaries. Produces draft artifacts and ManuscriptDocuments. |
+| **G-350 Gate Phase** | Third generation phase. Checks every generated artifact against locked canon facts and forbidden contradictions. Applies repair policy for violations. |
+| **G-400 Compile Phase** | Final generation phase. Assembles the final manuscript from chapter drafts. Only runs if no blocking gates failed. |
+| **Gate Result** | Record of a consistency check: gate name, pass/fail status, severity (info/warning/blocking), reasons, and repair metadata. Persists in `generation_gate_results` table. |
+| **Story Forking** | Creates a target project and copies selected canon (characters, world entries, arcs) into it with deterministic ID remapping and provenance tracking. Can run without generation for manual pipeline control. |
+| **Fork Preview** | Validates selected canon scope and returns what would be copied in a fork — characters, world entries, arcs, threads — before committing to the operation. |
 | **Pattern Extraction** | Generalized service that analyzes any story or mythology text and extracts storytelling DNA — archetypal patterns, narrative structure, voice profile, thematic constraints, world rules, and entities. Supports narrative and mythology source types with three generation modes (same_world, new_characters, transposed). |
 | **Voice Profile** | Extracted narrative characteristics: narrative_voice, sentence_rhythm, descriptive_density, humor_level, emotional_temperature. Injected into P-300 drafter prompts via SceneContext's pattern_guidance field. Available for narrative source type only. |
 | **Narrative Pattern** | Extracted structural characteristics: pacing, chapter_structure, conflict_type, dialogue_style, scene_transition. Guides P-100 architect and P-300 drafter in maintaining the source story's structural DNA. Available for narrative source type only. |

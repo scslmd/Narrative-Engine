@@ -15,6 +15,7 @@ from app.schemas.generation import (
     CanonicalDraftingContextSnapshot,
     CanonicalRelationshipSnapshot,
     CanonicalWorldSnapshot,
+    CanonPolicy,
     CanonScope,
     PromptBudgetSummary,
 )
@@ -41,6 +42,10 @@ class CanonPacketBuilder:
         arcs = self._load_arc_snapshots(scope)
         continuity_threads, continuity_findings = self._load_continuity_snapshots(scope)
         drafting_packets = self._load_drafting_context_snapshots(scope.source_project_id, scope)
+        mythos_entries = self._load_mythos_snapshots(scope)
+        pattern_entries = self._load_pattern_snapshots(scope)
+        canon_annotations = self._load_annotation_snapshots(scope)
+        canon_policy = self._load_annotation_policy(scope.source_project_id, canon_annotations, request.canon_policy)
 
         packet_parts = {
             "foundation": foundation,
@@ -51,6 +56,9 @@ class CanonPacketBuilder:
             "continuity_threads": [item.model_dump(mode="json") for item in continuity_threads],
             "continuity_findings": [item.model_dump(mode="json") for item in continuity_findings],
             "drafting_packets": [item.model_dump(mode="json") for item in drafting_packets],
+            "mythos_entries": mythos_entries,
+            "pattern_entries": pattern_entries,
+            "canon_annotations": canon_annotations,
         }
         source_hashes = self._compute_source_hashes(packet_parts)
         scope_hash = sha256(
@@ -75,7 +83,10 @@ class CanonPacketBuilder:
             continuity_threads=continuity_threads,
             continuity_findings=continuity_findings,
             drafting_context_packets=drafting_packets,
-            canon_policy=request.canon_policy,
+            mythos_entries=mythos_entries,
+            pattern_entries=pattern_entries,
+            canon_annotations=canon_annotations,
+            canon_policy=canon_policy,
             prompt_budget_summary=PromptBudgetSummary(
                 estimated_prompt_chars=0,
                 target_max_chars=120_000,
@@ -225,6 +236,91 @@ class CanonPacketBuilder:
             normalized = json.dumps(value, ensure_ascii=True, sort_keys=True)
             hashes[key] = sha256(normalized.encode("utf-8")).hexdigest()
         return hashes
+
+    def _load_mythos_snapshots(self, scope: CanonScope) -> list[dict[str, object]]:
+        records = self._repository.list_mythos_entries(scope.source_project_id)
+        selected_ids = set(scope.mythos_ids)
+        if scope.scope_mode != "full_project" and selected_ids:
+            records = [item for item in records if item.mythos_id in selected_ids]
+        records.sort(key=lambda item: (item.entry_type.lower(), item.name.lower()))
+        return [
+            {
+                **record.__dict__,
+                "created_at": record.created_at.isoformat(),
+                "updated_at": record.updated_at.isoformat(),
+            }
+            for record in records
+        ]
+
+    def _load_pattern_snapshots(self, scope: CanonScope) -> list[dict[str, object]]:
+        records = self._repository.list_pattern_entries(scope.source_project_id)
+        selected_ids = set(scope.pattern_ids)
+        if scope.scope_mode != "full_project" and selected_ids:
+            records = [item for item in records if item.pattern_id in selected_ids]
+        records.sort(key=lambda item: (item.pattern_type.lower(), item.name.lower()))
+        return [
+            {
+                **record.__dict__,
+                "created_at": record.created_at.isoformat(),
+                "updated_at": record.updated_at.isoformat(),
+            }
+            for record in records
+        ]
+
+    def _load_annotation_snapshots(self, scope: CanonScope) -> list[dict[str, object]]:
+        records = self._repository.list_canon_annotations(scope.source_project_id)
+        records.sort(key=lambda item: (item.target_kind, item.target_id, item.field_path, item.annotation_kind))
+        return [
+            {
+                **record.__dict__,
+                "created_at": record.created_at.isoformat(),
+                "updated_at": record.updated_at.isoformat(),
+            }
+            for record in records
+        ]
+
+    def _load_annotation_policy(
+        self,
+        project_id: str,
+        annotations: list[dict[str, object]],
+        base_policy: CanonPolicy,
+    ) -> CanonPolicy:
+        policy = base_policy.model_copy(deep=True)
+        if not annotations:
+            return policy
+        _ = project_id
+        locked_character: set[str] = set(policy.locked_character_fields)
+        locked_world: set[str] = set(policy.locked_world_fields)
+        mutable_character: set[str] = set(policy.allowed_character_changes)
+        mutable_world: set[str] = set(policy.allowed_world_changes)
+        forbidden: set[str] = set(policy.forbidden_contradictions)
+        for item in annotations:
+            target_kind = str(item.get("target_kind", ""))
+            field_path = str(item.get("field_path", ""))
+            annotation_kind = str(item.get("annotation_kind", ""))
+            note = str(item.get("note", "") or "")
+            field_ref = f"{target_kind}.{field_path}".strip(".")
+            if annotation_kind == "locked":
+                if target_kind == "character":
+                    locked_character.add(field_ref)
+                if target_kind == "world_bible":
+                    locked_world.add(field_ref)
+            if annotation_kind == "mutable":
+                if target_kind == "character":
+                    mutable_character.add(field_ref)
+                if target_kind == "world_bible":
+                    mutable_world.add(field_ref)
+            if annotation_kind == "forbidden_contradiction":
+                forbidden.add(note or field_ref)
+        return policy.model_copy(
+            update={
+                "locked_character_fields": sorted(locked_character),
+                "locked_world_fields": sorted(locked_world),
+                "allowed_character_changes": sorted(mutable_character),
+                "allowed_world_changes": sorted(mutable_world),
+                "forbidden_contradictions": sorted(forbidden),
+            }
+        )
 
     def _fit_prompt_budget(self, packet: CanonGenerationPacket, max_chars: int) -> CanonGenerationPacket:
         payload = packet.model_dump(mode="json")

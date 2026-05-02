@@ -5,7 +5,9 @@ import { ManuscriptList } from '../components/writing/ManuscriptList';
 import { DraftList } from '../components/writing/DraftList';
 import { ManuscriptEditor } from '../components/writing/ManuscriptEditor';
 import { useWritingView } from '../hooks/useWritingView';
+import { useManuscriptAssist } from '../hooks/useManuscriptAssist';
 import { useThemeStore } from '../stores/themeStore';
+import type { RevisionSuggestion } from '../types/aids';
 
 export function WritingView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -44,6 +46,29 @@ export function WritingView() {
     promoteDraft,
     createDraftPending,
   } = useWritingView(isDark);
+  const assist = useManuscriptAssist({
+    projectId,
+    documentId: selectedDocument?.document_id ?? null,
+    documentVersion: selectedDocument?.version,
+    content: isEditing ? editContent : selectedDocument?.content,
+  });
+
+  const mergedSuggestions: RevisionSuggestion[] = [
+    ...revisionSuggestions,
+    ...assist.llmSuggestions.map((item) => ({
+      suggestion_id: item.suggestion_id,
+      project_id: item.project_id,
+      target_document_id: item.target_document_id,
+      source_text: item.source_text,
+      proposed_text: item.proposed_text,
+      rationale: item.rationale,
+      source_context: item.source_context,
+      status:
+        item.status === 'ARCHIVED'
+          ? 'REJECTED'
+          : item.status,
+    })),
+  ];
 
   if (!projectId) {
     return (
@@ -118,6 +143,15 @@ export function WritingView() {
             onSave={handleSave}
             onCancel={handleCancel}
             onContentChange={setEditContent}
+            onSelectionChange={assist.setSelectionFromEditor}
+            selectedRange={assist.selectedRange}
+            onAssistRequest={(kind, instruction) => {
+              if (kind === 'fork_from_selection') {
+                void assist.submitAssist(kind, instruction, { create_draft_artifact: true });
+                return;
+              }
+              void assist.submitAssist(kind, instruction);
+            }}
             isDark={isDark}
           />
         ) : (
@@ -132,9 +166,23 @@ export function WritingView() {
 
       <AidsPanel
         projectId={projectId}
-        suggestions={revisionSuggestions}
-        onSuggestionAccept={handleSuggestionAccept}
-        onSuggestionReject={handleSuggestionReject}
+        suggestions={mergedSuggestions}
+        onSuggestionAccept={(suggestionId) => {
+          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+          if (llm) {
+            void assist.applySuggestion(suggestionId);
+            return;
+          }
+          void handleSuggestionAccept(suggestionId);
+        }}
+        onSuggestionReject={(suggestionId) => {
+          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+          if (llm) {
+            void assist.rejectSuggestion(suggestionId);
+            return;
+          }
+          void handleSuggestionReject(suggestionId);
+        }}
       />
     </div>
   );

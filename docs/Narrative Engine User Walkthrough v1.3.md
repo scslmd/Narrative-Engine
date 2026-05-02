@@ -26,6 +26,7 @@ The Narrative Engine is a narrative compilation system for long-form fiction dev
 - **Arc Management** -- character arc candidates, selections, and stage maps
 - **Flow Editor** -- customizable story development pipeline
 - **State-Aware Narrative Controller** -- automatic quality checks during P-300 drafting (context injection, consistency critic, entity intake)
+- **Story Generation Orchestration** -- generate new canon-congruent stories from existing projects; fork characters/world into new projects; 4-phase pipeline (G-200 plan, G-300 draft, G-350 gate, G-400 compile) with consistency gates
 
 ---
 
@@ -919,6 +920,175 @@ View the story decision hierarchy:
 
 ---
 
+## Phase 12: Story Generation Orchestration
+
+### Step 12: Open the Generate Workspace
+
+**Route**: `/workspace/:projectId/generate`
+
+The Generate workspace is where you create new stories from existing canon. It loads your project's characters and world bible entries automatically, making them available for selection in the wizard.
+
+### Step 12a: Launch the Generation Wizard
+
+1. Navigate to `/workspace/:projectId/generate`
+2. The **Story Generation Wizard** appears with several configuration steps
+3. The wizard loads:
+   - Character profiles (for canon scope selection)
+   - World Bible entries (for canon scope selection)
+   - Existing generation runs (to monitor or retry)
+
+### Step 12b: Select Generation Mode
+
+The wizard's first step asks how the new story relates to the source:
+
+- **Same Project — New Arc** (`same_project_new_arc`) — adds a fresh narrative arc within the existing project, reusing all canon
+- **Same Project — Sequel** (`same_project_sequel`) — continues the story after its current ending
+- **Same Project — Prequel** (`same_project_prequel`) — generates events that happened before the current story
+- **Same Project — Side Story** (`same_project_side_story`) — explores a parallel storyline sharing the same world
+- **Same Project — Alternate Route** (`same_project_alternate_route`) — reimagines key decisions from the existing story
+- **New Project — Character Fork** (`new_project_character_fork`) — copies selected characters into a new project with a fresh world
+- **New Project — World Fork** (`new_project_world_fork`) — copies the world bible into a new project with new characters
+- **New Project — Hybrid Fork** (`new_project_hybrid_fork`) — copies both characters and world elements into a new project
+
+### Step 12c: Select Destination
+
+- **Same Project** — the target project ID defaults to the current project. You can override it to generate into a different existing project.
+- **New Project** — enter a name for the new project. The system creates it automatically, copies selected canon with remapped IDs, and records provenance linking back to the source project.
+
+### Step 12d: Configure Canon Scope
+
+Select which source material the generator should respect:
+
+1. **Characters** — check boxes next to characters you want included. Leave all unchecked for full-project scope.
+2. **World Bible Entries** — select locations, rules, concepts, organizations, etc. that should be preserved.
+3. **Arcs** — select narrative arcs to carry forward into the new story.
+4. **Continuity Threads** — select unresolved threads the generator should address.
+
+At least one category must have selections unless you're using full-project scope.
+
+### Step 12e: Enter Generation Brief
+
+The brief is a required text field (max 10,000 characters) describing what you want the new story to accomplish. Examples:
+
+- "Write a sequel where the protagonist returns 5 years later to discover the antagonist has resurfaced in a new form."
+- "Create a side story told from the mentor's perspective, covering events that happened during the main story but were never shown."
+- "Fork these three characters into a cyberpunk setting. Keep their core personalities and relationships but adapt goals and conflicts to a corporate dystopia."
+
+### Step 12f: Configure Canon Policy
+
+The policy controls what the generator may or may not change:
+
+1. **Locked Character Fields** — fields that cannot be contradicted in generated content. Defaults: `display_name`, `role_in_story`, `backstory`, `voice_notes`, `continuity_facts`, `relationships`
+2. **Locked World Fields** — immutable world facts. Defaults: `entry_type`, `title`, `summary`, `canonical_facts`
+3. **Allowed Character Changes** — explicitly permitted modifications (e.g., "new_goal", "changed_relationship")
+4. **Allowed World Changes** — permitted world modifications (e.g., "new_location", "technology_evolution")
+5. **Forbidden Contradictions** — specific phrases or facts that must not appear in generated content. Example: "the dragon was slain" (if you want the dragon alive)
+6. **Continuity Strictness** — how to handle gate violations:
+   - `warn` — record a warning, allow generation to proceed
+   - `block` — stop generation immediately if a contradiction is detected
+   - `repair_once` — attempt one automatic LLM repair, then block if still failing
+   - `repair_twice` — attempt two repairs before blocking
+
+### Step 12g: Set Chapter Count and Submit
+
+1. Enter the target number of chapters (1–100)
+2. Optionally set words per chapter (250–10,000), model ID, temperature, and max tokens
+3. Click **"Submit Run"**
+
+The system:
+1. Validates the request (scope, destination, idempotency)
+2. Creates a generation run with a unique `generation_id`
+3. Builds a deterministic **Canon Generation Packet** from selected source material
+4. Queues 4 executor jobs: G-200 (plan), G-300 (draft), G-350 (gate), G-400 (compile)
+5. Returns a `GenerationRunResponse` with the run ID, job IDs, and status
+
+### Step 12h: Monitor the Run
+
+After submission, the **Generation Run Card** appears showing:
+- Generation ID
+- Source and target project IDs
+- Job IDs for each phase
+- Status (queued → running → completed/blocked/failed)
+- Warnings generated during execution
+- Created artifacts (plans, drafts, manuscripts)
+
+Click a run card to expand details. Use the **Gate Results** panel to see which consistency checks passed or failed.
+
+### Step 12i: Review Gate Results
+
+The **Generation Gate Panel** shows gate results for each artifact:
+
+- **Gate Name** — e.g., `plan_references_known_canon`, `chapter_canon_congruence`, `manuscript_canon_congruence`
+- **Passed** — true/false
+- **Severity** — info, warning, or blocking
+- **Reasons** — specific contradictions or violations detected
+- **Repair Attempted** — whether the system tried to fix violations (per policy)
+
+Failed gates link to the Inspect view for deep debugging. Repair actions are available when your continuity strictness policy allows them.
+
+### Step 12j: Fork Preview (Optional)
+
+Before committing to a fork, click **"Preview Fork"** to see exactly what would be copied:
+- Selected character IDs and their remapped target IDs
+- Selected world Bible entries
+- Arcs and continuity threads
+- Foundation profile that will be created in the target project
+
+This is read-only — no projects or data are modified.
+
+### Step 12k: Fork Project Only (Without Generation)
+
+If you want to fork canon into a new project without immediately running generation:
+
+1. Configure mode, destination, and scope in the wizard
+2. Click **"Fork Project Only"** instead of "Submit Run"
+3. The system creates the target project with copied canon but no generation jobs
+4. Navigate to the new project's workspace and run P-100 through P-400 manually
+
+### Step 12l: Inspect a Generation Run
+
+Generation runs produce inspectable artifacts:
+
+1. From the Generate workspace, click **"Jump to Inspect"** on a run card
+2. Or navigate directly to `/workspace/:projectId/inspect/:jobId`
+3. The Inspect view shows:
+   - Step timeline for each generation phase (G-200 through G-400)
+   - Artifact lineage (packet → plan → drafts → manuscript)
+   - Gate results with reasons and repair metadata
+   - Execution logs
+
+### What Happens Behind the Scenes (Generation Pipeline)
+
+**G-200: Generation Plan**
+The executor loads the canon packet and calls the LLM to generate a new story architecture. Output includes: premise, logline, story arcs, chapter plans, canon obligations (citing source canon IDs), and intentional differences from the source.
+
+**G-300: Chapter Drafting Loop**
+For each planned chapter, the executor drafts prose with full context: character profiles (active characters only), world constraints, prior chapter summaries (last 3 max), and the generation brief. Each chapter produces a draft artifact and an auto-created ManuscriptDocument.
+
+**G-350: Gate Checks**
+The executor runs consistency checks on every generated artifact:
+- Locked character facts are not contradicted
+- Locked world facts are not contradicted
+- Forbidden contradictions are absent from the text
+If your policy allows repair, failed artifacts are sent to an LLM repair pass. The number of repair attempts is governed by continuity strictness.
+
+**G-400: Manuscript Assembly**
+The executor assembles the final manuscript from all chapter drafts. This phase only runs if no blocking gates failed. If blocking gates failed, the run status becomes `blocked`.
+
+### Troubleshooting Story Generation
+
+| Issue | Solution |
+|-------|----------|
+| Run fails with "source project not found" | Verify the source project ID is correct and exists |
+| Gate results show many contradictions | Relax locked fields or add allowed changes to the canon policy |
+| Generation is too slow | Reduce canon scope (fewer characters/world entries) or chapter count |
+| Forked project has missing relationships | Relationships are only copied if both endpoint characters are selected |
+| Idempotency conflict (409) | Same idempotency key with different payload. Use a new key or match the original payload exactly |
+| Run is "blocked" after G-350 | Blocking gate failed and repair policy was exhausted. Review gate results, fix policy, and retry |
+| Packet exceeds budget warning | The system auto-truncates to 120K chars. Reduce scope for full fidelity |
+
+---
+
 ## Advanced Workflows
 
 ### Workflow A: Full Story Pipeline (Automated Generation)
@@ -985,6 +1155,27 @@ Each phase is triggered via the Job Launch panel (right sidebar) by selecting th
 7. Make decisions on each finding
 8. Inspect checker runs via the **Inspect** workspace for detailed analysis
 9. Iterate until satisfied
+
+### Workflow F: Import Source Story, Generate Sequel, Fork to New Project
+
+This workflow demonstrates the full story generation pipeline from import through forking:
+
+1. **Import a source story** — paste an existing completed story via `POST /projects/import-story` or the frontend import modal
+2. **Review the imported project** — verify characters, world bible, arcs, and foundation are correctly extracted
+3. **Navigate to Generate workspace** — `/workspace/:projectId/generate`
+4. **Configure the wizard:**
+   - Mode: `new_project_character_fork`
+   - Destination: New Project named "Sequel: [Name]"
+   - Canon Scope: select all major characters and key world entries
+   - Brief: "Write a sequel set 5 years after the original story. The protagonist has retired but is drawn back when new threats emerge."
+   - Policy: continuity strictness = `warn`, forbidden contradictions listing resolved plot points from the original
+   - Chapter count: 8
+5. **Preview the fork** — verify selected characters, world entries, and arcs will be copied correctly
+6. **Submit the run** — the system creates the target project, copies canon, and queues G-200 through G-400
+7. **Monitor progress** — watch run status transition from queued → running → completed (or blocked)
+8. **Review gate results** — check for any warnings about canon contradictions
+9. **Navigate to the new project** — explore the generated sequel in its own workspace
+10. **Iterate** — adjust policy, retry failed runs, or run manual P-phases for refinement
 
 ---
 
@@ -1055,6 +1246,14 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 - **Consistency critic isn't catching out-of-character dialogue.** Ensure voice notes are specific (e.g., "terse, avoids metaphors" rather than "normal"). Vague voice notes produce vague critic checks.
 - **Too many auto-detected characters.** The entity intake stop-word list filters common non-name words, but some false positives may slip through (e.g., "Morning", "Shadow"). Review the Characters tab after each P-300 run and delete any spurious entries.
 - **Drafts take longer to generate.** The narrative controller adds 1-5 extra LLM calls per draft (critic check + optional rewrite + up to 3 entity intake calls). This is intentional for quality. Use the stub backend for faster iteration during early exploration.
+
+### Story Generation Issues
+
+- **Run status stays "queued".** The LocalExecutor may not be running or the inference backend is unavailable. Check `GET /health/ready` and verify your model server is accessible.
+- **Gate results show contradictions for accurate content.** The gate checks are text-based substring matches. If a locked fact contains a phrase that legitimately appears in context (e.g., "the king died" as historical background vs. as a current event), add that phrase to `allowed_character_changes` or relax the locked field.
+- **Forked project has fewer characters than selected.** Character copy only includes characters whose IDs match exactly. Check that your canon scope character IDs match the IDs in your Characters tab.
+- **Idempotency conflict (HTTP 409).** You re-submitted a generation request with the same idempotency key but different payload. The system uses SHA-256 hashing to detect this. Either omit the idempotency key for a new run, or match the original payload exactly.
+- **Generation takes too long.** Large canon packets (many characters, world entries) increase prompt size and LLM latency. Reduce scope to only essential elements. Also check that your inference backend has sufficient VRAM and isn't throttled.
 
 ### Branch State Management
 

@@ -16,6 +16,7 @@ interface LayoutProps {
 const stageMap: Record<WorkspaceMode, 'planning' | 'writing' | 'review' | 'inspect'> = {
   plan: 'planning',
   braindump: 'planning',
+  canon: 'planning',
   generate: 'planning',
   write: 'writing',
   review: 'review',
@@ -25,6 +26,7 @@ const stageMap: Record<WorkspaceMode, 'planning' | 'writing' | 'review' | 'inspe
 const modeIcons: Record<WorkspaceMode, typeof Grid3x3> = {
   plan: LayoutList,
   braindump: Lightbulb,
+  canon: BookOpen,
   generate: Sparkles,
   write: BookOpen,
   review: Search,
@@ -34,6 +36,7 @@ const modeIcons: Record<WorkspaceMode, typeof Grid3x3> = {
 const modeLabels: Record<WorkspaceMode, string> = {
   plan: 'Planning',
   braindump: 'Brain Dump',
+  canon: 'Canon',
   generate: 'Generate',
   write: 'Writing',
   review: 'Review',
