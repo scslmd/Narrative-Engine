@@ -626,6 +626,122 @@ class GenerationGateResultRecord:
 
 
 @dataclass(frozen=True)
+class ManuscriptAssistRunRecord:
+    assist_id: str
+    project_id: str
+    document_id: str
+    assist_kind: str
+    request_json: dict[str, Any]
+    status: str
+    summary: str
+    created_draft_artifact_id: str | None
+    created_branch_id: str | None
+    created_manuscript_document_id: str | None
+    job_ids: list[str]
+    warnings: list[str]
+    idempotency_key: str | None
+    request_hash: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class ManuscriptAssistSuggestionRecord:
+    suggestion_id: str
+    assist_id: str
+    project_id: str
+    target_document_id: str
+    suggestion_kind: str
+    source_text: str
+    proposed_text: str
+    rationale: str
+    range_json: dict[str, Any] | None
+    canon_risk: str
+    confidence_score: float
+    source_context: list[str]
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class ManuscriptAssistGateResultRecord:
+    gate_result_id: str
+    assist_id: str
+    project_id: str
+    document_id: str
+    gate_name: str
+    passed: bool
+    severity: str
+    reasons: list[str]
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class CanonAnnotationRecord:
+    annotation_id: str
+    project_id: str
+    target_kind: str
+    target_id: str
+    field_path: str
+    annotation_kind: str
+    note: str
+    applies_to_modes: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class CanonCustomizationProfileRecord:
+    profile_id: str
+    project_id: str
+    name: str
+    description: str
+    default_generation_mode: str
+    canon_scope_json: dict[str, Any]
+    canon_policy_json: dict[str, Any]
+    generation_brief_template: str
+    selected_annotation_ids: list[str]
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class MythosEntryRecord:
+    mythos_id: str
+    project_id: str
+    entry_type: str
+    name: str
+    summary: str
+    canonical_facts: list[str]
+    pattern_notes: list[str]
+    source_corpus: str | None
+    generation_guidance: str
+    visibility_scope: str
+    writer_notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class PatternEntryRecord:
+    pattern_id: str
+    project_id: str
+    pattern_type: str
+    name: str
+    summary: str
+    source_type: str
+    generation_modes: list[str]
+    beats: list[str]
+    constraints: list[str]
+    transposition_notes: str
+    writer_notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
 class DraftArtifactRecord:
     artifact_id: str
     project_id: str
@@ -4457,6 +4573,646 @@ class StoryDevelopmentRepository:
             ).fetchall()
         return [_generation_gate_result_row_to_record(row) for row in rows]
 
+    def upsert_manuscript_assist_run(
+        self,
+        *,
+        assist_id: str,
+        project_id: str,
+        document_id: str,
+        assist_kind: str,
+        request_json: Mapping[str, Any],
+        status: str,
+        summary: str = "",
+        created_draft_artifact_id: str | None = None,
+        created_branch_id: str | None = None,
+        created_manuscript_document_id: str | None = None,
+        job_ids: list[str] | None = None,
+        warnings: list[str] | None = None,
+        idempotency_key: str | None = None,
+        request_hash: str = "",
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> ManuscriptAssistRunRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            if idempotency_key:
+                existing = connection.execute(
+                    """
+                    SELECT assist_id, request_hash
+                    FROM manuscript_assist_runs
+                    WHERE project_id = ? AND idempotency_key = ?
+                    """,
+                    (project_id, idempotency_key),
+                ).fetchone()
+                if existing is not None and existing["request_hash"] != request_hash:
+                    raise ValueError("idempotency key conflict: request hash mismatch")
+            connection.execute(
+                """
+                INSERT INTO manuscript_assist_runs (
+                    assist_id, project_id, document_id, assist_kind, request_json, status, summary,
+                    created_draft_artifact_id, created_branch_id, created_manuscript_document_id,
+                    job_ids_json, warnings_json, idempotency_key, request_hash, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(assist_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    document_id = excluded.document_id,
+                    assist_kind = excluded.assist_kind,
+                    request_json = excluded.request_json,
+                    status = excluded.status,
+                    summary = excluded.summary,
+                    created_draft_artifact_id = excluded.created_draft_artifact_id,
+                    created_branch_id = excluded.created_branch_id,
+                    created_manuscript_document_id = excluded.created_manuscript_document_id,
+                    job_ids_json = excluded.job_ids_json,
+                    warnings_json = excluded.warnings_json,
+                    idempotency_key = excluded.idempotency_key,
+                    request_hash = excluded.request_hash,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    assist_id,
+                    project_id,
+                    document_id,
+                    assist_kind,
+                    _json_object(request_json),
+                    status,
+                    summary,
+                    created_draft_artifact_id,
+                    created_branch_id,
+                    created_manuscript_document_id,
+                    _json_list(job_ids),
+                    _json_list(warnings),
+                    idempotency_key,
+                    request_hash,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_manuscript_assist_run(assist_id)
+
+    def get_manuscript_assist_run(self, assist_id: str) -> ManuscriptAssistRunRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM manuscript_assist_runs
+                WHERE assist_id = ?
+                """,
+                (assist_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(assist_id)
+        return _manuscript_assist_run_row_to_record(row)
+
+    def list_manuscript_assist_runs(
+        self,
+        project_id: str,
+        document_id: str | None = None,
+    ) -> list[ManuscriptAssistRunRecord]:
+        with connect(self.db_path) as connection:
+            if document_id is None:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM manuscript_assist_runs
+                    WHERE project_id = ?
+                    ORDER BY updated_at DESC
+                    """,
+                    (project_id,),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM manuscript_assist_runs
+                    WHERE project_id = ? AND document_id = ?
+                    ORDER BY updated_at DESC
+                    """,
+                    (project_id, document_id),
+                ).fetchall()
+        return [_manuscript_assist_run_row_to_record(row) for row in rows]
+
+    def upsert_manuscript_assist_suggestion(
+        self,
+        *,
+        suggestion_id: str,
+        assist_id: str,
+        project_id: str,
+        target_document_id: str,
+        suggestion_kind: str,
+        source_text: str,
+        proposed_text: str,
+        rationale: str,
+        range_json: Mapping[str, Any] | None = None,
+        canon_risk: str = "none",
+        confidence_score: float = 0.0,
+        source_context: list[str] | None = None,
+        status: str = "REQUESTED",
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> ManuscriptAssistSuggestionRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO manuscript_assist_suggestions (
+                    suggestion_id, assist_id, project_id, target_document_id, suggestion_kind,
+                    source_text, proposed_text, rationale, range_json, canon_risk, confidence_score,
+                    source_context_json, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(suggestion_id) DO UPDATE SET
+                    assist_id = excluded.assist_id,
+                    project_id = excluded.project_id,
+                    target_document_id = excluded.target_document_id,
+                    suggestion_kind = excluded.suggestion_kind,
+                    source_text = excluded.source_text,
+                    proposed_text = excluded.proposed_text,
+                    rationale = excluded.rationale,
+                    range_json = excluded.range_json,
+                    canon_risk = excluded.canon_risk,
+                    confidence_score = excluded.confidence_score,
+                    source_context_json = excluded.source_context_json,
+                    status = excluded.status,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    suggestion_id,
+                    assist_id,
+                    project_id,
+                    target_document_id,
+                    suggestion_kind,
+                    source_text,
+                    proposed_text,
+                    rationale,
+                    _json_object(range_json) if range_json is not None else None,
+                    canon_risk,
+                    float(confidence_score),
+                    _json_list(source_context),
+                    status,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_manuscript_assist_suggestion(suggestion_id)
+
+    def get_manuscript_assist_suggestion(self, suggestion_id: str) -> ManuscriptAssistSuggestionRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM manuscript_assist_suggestions
+                WHERE suggestion_id = ?
+                """,
+                (suggestion_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(suggestion_id)
+        return _manuscript_assist_suggestion_row_to_record(row)
+
+    def list_manuscript_assist_suggestions(
+        self,
+        project_id: str,
+        document_id: str,
+        status: str | None = None,
+    ) -> list[ManuscriptAssistSuggestionRecord]:
+        with connect(self.db_path) as connection:
+            if status is None:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM manuscript_assist_suggestions
+                    WHERE project_id = ? AND target_document_id = ?
+                    ORDER BY updated_at DESC
+                    """,
+                    (project_id, document_id),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT *
+                    FROM manuscript_assist_suggestions
+                    WHERE project_id = ? AND target_document_id = ? AND status = ?
+                    ORDER BY updated_at DESC
+                    """,
+                    (project_id, document_id, status),
+                ).fetchall()
+        return [_manuscript_assist_suggestion_row_to_record(row) for row in rows]
+
+    def update_manuscript_assist_suggestion_status(self, suggestion_id: str, status: str) -> ManuscriptAssistSuggestionRecord:
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                UPDATE manuscript_assist_suggestions
+                SET status = ?, updated_at = ?
+                WHERE suggestion_id = ?
+                """,
+                (status, _now().isoformat(), suggestion_id),
+            )
+            connection.commit()
+        return self.get_manuscript_assist_suggestion(suggestion_id)
+
+    def upsert_manuscript_assist_gate_result(
+        self,
+        *,
+        gate_result_id: str,
+        assist_id: str,
+        project_id: str,
+        document_id: str,
+        gate_name: str,
+        passed: bool,
+        severity: str,
+        reasons: list[str] | None = None,
+        created_at: datetime | None = None,
+    ) -> ManuscriptAssistGateResultRecord:
+        now = _now(created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO manuscript_assist_gate_results (
+                    gate_result_id, assist_id, project_id, document_id, gate_name,
+                    passed, severity, reasons_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(gate_result_id) DO UPDATE SET
+                    assist_id = excluded.assist_id,
+                    project_id = excluded.project_id,
+                    document_id = excluded.document_id,
+                    gate_name = excluded.gate_name,
+                    passed = excluded.passed,
+                    severity = excluded.severity,
+                    reasons_json = excluded.reasons_json,
+                    created_at = excluded.created_at
+                """,
+                (
+                    gate_result_id,
+                    assist_id,
+                    project_id,
+                    document_id,
+                    gate_name,
+                    1 if passed else 0,
+                    severity,
+                    _json_list(reasons),
+                    now.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_manuscript_assist_gate_result(gate_result_id)
+
+    def get_manuscript_assist_gate_result(self, gate_result_id: str) -> ManuscriptAssistGateResultRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM manuscript_assist_gate_results
+                WHERE gate_result_id = ?
+                """,
+                (gate_result_id,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(gate_result_id)
+        return _manuscript_assist_gate_result_row_to_record(row)
+
+    def list_manuscript_assist_gate_results(self, assist_id: str) -> list[ManuscriptAssistGateResultRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM manuscript_assist_gate_results
+                WHERE assist_id = ?
+                ORDER BY created_at DESC
+                """,
+                (assist_id,),
+            ).fetchall()
+        return [_manuscript_assist_gate_result_row_to_record(row) for row in rows]
+
+    def upsert_canon_annotation(
+        self,
+        *,
+        annotation_id: str,
+        project_id: str,
+        target_kind: str,
+        target_id: str,
+        field_path: str,
+        annotation_kind: str,
+        note: str = "",
+        applies_to_modes: list[str] | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> CanonAnnotationRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO canon_annotations (
+                    annotation_id, project_id, target_kind, target_id, field_path, annotation_kind,
+                    note, applies_to_modes_json, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(annotation_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    target_kind = excluded.target_kind,
+                    target_id = excluded.target_id,
+                    field_path = excluded.field_path,
+                    annotation_kind = excluded.annotation_kind,
+                    note = excluded.note,
+                    applies_to_modes_json = excluded.applies_to_modes_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    annotation_id,
+                    project_id,
+                    target_kind,
+                    target_id,
+                    field_path,
+                    annotation_kind,
+                    note,
+                    _json_list(applies_to_modes),
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_canon_annotation(annotation_id)
+
+    def get_canon_annotation(self, annotation_id: str) -> CanonAnnotationRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute("SELECT * FROM canon_annotations WHERE annotation_id = ?", (annotation_id,)).fetchone()
+        if row is None:
+            raise KeyError(annotation_id)
+        return _canon_annotation_row_to_record(row)
+
+    def delete_canon_annotation(self, annotation_id: str) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute("DELETE FROM canon_annotations WHERE annotation_id = ?", (annotation_id,))
+            connection.commit()
+
+    def list_canon_annotations(
+        self,
+        project_id: str,
+        target_kind: str | None = None,
+        target_id: str | None = None,
+    ) -> list[CanonAnnotationRecord]:
+        query = "SELECT * FROM canon_annotations WHERE project_id = ?"
+        params: list[str] = [project_id]
+        if target_kind is not None:
+            query += " AND target_kind = ?"
+            params.append(target_kind)
+        if target_id is not None:
+            query += " AND target_id = ?"
+            params.append(target_id)
+        query += " ORDER BY target_kind ASC, target_id ASC, field_path ASC, annotation_kind ASC"
+        with connect(self.db_path) as connection:
+            rows = connection.execute(query, tuple(params)).fetchall()
+        return [_canon_annotation_row_to_record(row) for row in rows]
+
+    def upsert_canon_customization_profile(
+        self,
+        *,
+        profile_id: str,
+        project_id: str,
+        name: str,
+        description: str,
+        default_generation_mode: str,
+        canon_scope_json: Mapping[str, Any],
+        canon_policy_json: Mapping[str, Any],
+        generation_brief_template: str = "",
+        selected_annotation_ids: list[str] | None = None,
+        status: str = "draft",
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> CanonCustomizationProfileRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO canon_customization_profiles (
+                    profile_id, project_id, name, description, default_generation_mode,
+                    canon_scope_json, canon_policy_json, generation_brief_template,
+                    selected_annotation_ids_json, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(profile_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    name = excluded.name,
+                    description = excluded.description,
+                    default_generation_mode = excluded.default_generation_mode,
+                    canon_scope_json = excluded.canon_scope_json,
+                    canon_policy_json = excluded.canon_policy_json,
+                    generation_brief_template = excluded.generation_brief_template,
+                    selected_annotation_ids_json = excluded.selected_annotation_ids_json,
+                    status = excluded.status,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    profile_id,
+                    project_id,
+                    name,
+                    description,
+                    default_generation_mode,
+                    _json_object(canon_scope_json),
+                    _json_object(canon_policy_json),
+                    generation_brief_template,
+                    _json_list(selected_annotation_ids),
+                    status,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_canon_customization_profile(profile_id)
+
+    def get_canon_customization_profile(self, profile_id: str) -> CanonCustomizationProfileRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute("SELECT * FROM canon_customization_profiles WHERE profile_id = ?", (profile_id,)).fetchone()
+        if row is None:
+            raise KeyError(profile_id)
+        return _canon_customization_profile_row_to_record(row)
+
+    def list_canon_customization_profiles(self, project_id: str) -> list[CanonCustomizationProfileRecord]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                "SELECT * FROM canon_customization_profiles WHERE project_id = ? ORDER BY updated_at DESC",
+                (project_id,),
+            ).fetchall()
+        return [_canon_customization_profile_row_to_record(row) for row in rows]
+
+    def delete_canon_customization_profile(self, profile_id: str) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute("DELETE FROM canon_customization_profiles WHERE profile_id = ?", (profile_id,))
+            connection.commit()
+
+    def upsert_mythos_entry(
+        self,
+        *,
+        mythos_id: str,
+        project_id: str,
+        entry_type: str,
+        name: str,
+        summary: str = "",
+        canonical_facts: list[str] | None = None,
+        pattern_notes: list[str] | None = None,
+        source_corpus: str | None = None,
+        generation_guidance: str = "",
+        visibility_scope: str = "project",
+        writer_notes: str | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> MythosEntryRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO mythos_entries (
+                    mythos_id, project_id, entry_type, name, summary, canonical_facts_json, pattern_notes_json,
+                    source_corpus, generation_guidance, visibility_scope, writer_notes, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(mythos_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    entry_type = excluded.entry_type,
+                    name = excluded.name,
+                    summary = excluded.summary,
+                    canonical_facts_json = excluded.canonical_facts_json,
+                    pattern_notes_json = excluded.pattern_notes_json,
+                    source_corpus = excluded.source_corpus,
+                    generation_guidance = excluded.generation_guidance,
+                    visibility_scope = excluded.visibility_scope,
+                    writer_notes = excluded.writer_notes,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    mythos_id,
+                    project_id,
+                    entry_type,
+                    name,
+                    summary,
+                    _json_list(canonical_facts),
+                    _json_list(pattern_notes),
+                    source_corpus,
+                    generation_guidance,
+                    visibility_scope,
+                    writer_notes,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_mythos_entry(mythos_id)
+
+    def get_mythos_entry(self, mythos_id: str) -> MythosEntryRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute("SELECT * FROM mythos_entries WHERE mythos_id = ?", (mythos_id,)).fetchone()
+        if row is None:
+            raise KeyError(mythos_id)
+        return _mythos_entry_row_to_record(row)
+
+    def list_mythos_entries(self, project_id: str, entry_type: str | None = None) -> list[MythosEntryRecord]:
+        with connect(self.db_path) as connection:
+            if entry_type is None:
+                rows = connection.execute(
+                    "SELECT * FROM mythos_entries WHERE project_id = ? ORDER BY entry_type ASC, name ASC",
+                    (project_id,),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT * FROM mythos_entries WHERE project_id = ? AND entry_type = ? ORDER BY name ASC",
+                    (project_id, entry_type),
+                ).fetchall()
+        return [_mythos_entry_row_to_record(row) for row in rows]
+
+    def delete_mythos_entry(self, mythos_id: str) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute("DELETE FROM mythos_entries WHERE mythos_id = ?", (mythos_id,))
+            connection.commit()
+
+    def upsert_pattern_entry(
+        self,
+        *,
+        pattern_id: str,
+        project_id: str,
+        pattern_type: str,
+        name: str,
+        summary: str = "",
+        source_type: str = "manual",
+        generation_modes: list[str] | None = None,
+        beats: list[str] | None = None,
+        constraints: list[str] | None = None,
+        transposition_notes: str = "",
+        writer_notes: str | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> PatternEntryRecord:
+        now = _now(created_at)
+        updated = _now(updated_at or created_at)
+        with connect(self.db_path) as connection:
+            connection.execute(
+                """
+                INSERT INTO pattern_entries (
+                    pattern_id, project_id, pattern_type, name, summary, source_type,
+                    generation_modes_json, beats_json, constraints_json, transposition_notes,
+                    writer_notes, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(pattern_id) DO UPDATE SET
+                    project_id = excluded.project_id,
+                    pattern_type = excluded.pattern_type,
+                    name = excluded.name,
+                    summary = excluded.summary,
+                    source_type = excluded.source_type,
+                    generation_modes_json = excluded.generation_modes_json,
+                    beats_json = excluded.beats_json,
+                    constraints_json = excluded.constraints_json,
+                    transposition_notes = excluded.transposition_notes,
+                    writer_notes = excluded.writer_notes,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    pattern_id,
+                    project_id,
+                    pattern_type,
+                    name,
+                    summary,
+                    source_type,
+                    _json_list(generation_modes),
+                    _json_list(beats),
+                    _json_list(constraints),
+                    transposition_notes,
+                    writer_notes,
+                    now.isoformat(),
+                    updated.isoformat(),
+                ),
+            )
+            connection.commit()
+        return self.get_pattern_entry(pattern_id)
+
+    def get_pattern_entry(self, pattern_id: str) -> PatternEntryRecord:
+        with connect(self.db_path) as connection:
+            row = connection.execute("SELECT * FROM pattern_entries WHERE pattern_id = ?", (pattern_id,)).fetchone()
+        if row is None:
+            raise KeyError(pattern_id)
+        return _pattern_entry_row_to_record(row)
+
+    def list_pattern_entries(self, project_id: str, pattern_type: str | None = None) -> list[PatternEntryRecord]:
+        with connect(self.db_path) as connection:
+            if pattern_type is None:
+                rows = connection.execute(
+                    "SELECT * FROM pattern_entries WHERE project_id = ? ORDER BY pattern_type ASC, name ASC",
+                    (project_id,),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT * FROM pattern_entries WHERE project_id = ? AND pattern_type = ? ORDER BY name ASC",
+                    (project_id, pattern_type),
+                ).fetchall()
+        return [_pattern_entry_row_to_record(row) for row in rows]
+
+    def delete_pattern_entry(self, pattern_id: str) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute("DELETE FROM pattern_entries WHERE pattern_id = ?", (pattern_id,))
+            connection.commit()
+
     # ============================================================================
     # Storyboard Card Methods
     # ============================================================================
@@ -5677,6 +6433,129 @@ def _generation_gate_result_row_to_record(row) -> GenerationGateResultRecord:
         repair_attempted=bool(row["repair_attempted"]),
         repair_job_id=row["repair_job_id"],
         created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _manuscript_assist_run_row_to_record(row) -> ManuscriptAssistRunRecord:
+    return ManuscriptAssistRunRecord(
+        assist_id=row["assist_id"],
+        project_id=row["project_id"],
+        document_id=row["document_id"],
+        assist_kind=row["assist_kind"],
+        request_json=dict(json.loads(row["request_json"] or "{}")),
+        status=row["status"],
+        summary=row["summary"] or "",
+        created_draft_artifact_id=row["created_draft_artifact_id"],
+        created_branch_id=row["created_branch_id"],
+        created_manuscript_document_id=row["created_manuscript_document_id"],
+        job_ids=_parse_json_list(row["job_ids_json"]),
+        warnings=_parse_json_list(row["warnings_json"]),
+        idempotency_key=row["idempotency_key"],
+        request_hash=row["request_hash"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _manuscript_assist_suggestion_row_to_record(row) -> ManuscriptAssistSuggestionRecord:
+    return ManuscriptAssistSuggestionRecord(
+        suggestion_id=row["suggestion_id"],
+        assist_id=row["assist_id"],
+        project_id=row["project_id"],
+        target_document_id=row["target_document_id"],
+        suggestion_kind=row["suggestion_kind"],
+        source_text=row["source_text"],
+        proposed_text=row["proposed_text"],
+        rationale=row["rationale"],
+        range_json=_parse_json_object(row["range_json"]),
+        canon_risk=row["canon_risk"],
+        confidence_score=float(row["confidence_score"] or 0.0),
+        source_context=_parse_json_list(row["source_context_json"]),
+        status=row["status"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _manuscript_assist_gate_result_row_to_record(row) -> ManuscriptAssistGateResultRecord:
+    return ManuscriptAssistGateResultRecord(
+        gate_result_id=row["gate_result_id"],
+        assist_id=row["assist_id"],
+        project_id=row["project_id"],
+        document_id=row["document_id"],
+        gate_name=row["gate_name"],
+        passed=bool(row["passed"]),
+        severity=row["severity"],
+        reasons=_parse_json_list(row["reasons_json"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+    )
+
+
+def _canon_annotation_row_to_record(row) -> CanonAnnotationRecord:
+    return CanonAnnotationRecord(
+        annotation_id=row["annotation_id"],
+        project_id=row["project_id"],
+        target_kind=row["target_kind"],
+        target_id=row["target_id"],
+        field_path=row["field_path"],
+        annotation_kind=row["annotation_kind"],
+        note=row["note"] or "",
+        applies_to_modes=_parse_json_list(row["applies_to_modes_json"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _canon_customization_profile_row_to_record(row) -> CanonCustomizationProfileRecord:
+    return CanonCustomizationProfileRecord(
+        profile_id=row["profile_id"],
+        project_id=row["project_id"],
+        name=row["name"],
+        description=row["description"] or "",
+        default_generation_mode=row["default_generation_mode"],
+        canon_scope_json=dict(json.loads(row["canon_scope_json"] or "{}")),
+        canon_policy_json=dict(json.loads(row["canon_policy_json"] or "{}")),
+        generation_brief_template=row["generation_brief_template"] or "",
+        selected_annotation_ids=_parse_json_list(row["selected_annotation_ids_json"]),
+        status=row["status"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _mythos_entry_row_to_record(row) -> MythosEntryRecord:
+    return MythosEntryRecord(
+        mythos_id=row["mythos_id"],
+        project_id=row["project_id"],
+        entry_type=row["entry_type"],
+        name=row["name"],
+        summary=row["summary"] or "",
+        canonical_facts=_parse_json_list(row["canonical_facts_json"]),
+        pattern_notes=_parse_json_list(row["pattern_notes_json"]),
+        source_corpus=row["source_corpus"],
+        generation_guidance=row["generation_guidance"] or "",
+        visibility_scope=row["visibility_scope"],
+        writer_notes=row["writer_notes"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _pattern_entry_row_to_record(row) -> PatternEntryRecord:
+    return PatternEntryRecord(
+        pattern_id=row["pattern_id"],
+        project_id=row["project_id"],
+        pattern_type=row["pattern_type"],
+        name=row["name"],
+        summary=row["summary"] or "",
+        source_type=row["source_type"],
+        generation_modes=_parse_json_list(row["generation_modes_json"]),
+        beats=_parse_json_list(row["beats_json"]),
+        constraints=_parse_json_list(row["constraints_json"]),
+        transposition_notes=row["transposition_notes"] or "",
+        writer_notes=row["writer_notes"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
     )
 
 

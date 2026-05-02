@@ -22,6 +22,8 @@ from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
 from .role_model_checker import RoleModelCheckerService
 from .runtime_prompts import (
+    build_m500_manuscript_assist_request,
+    build_m550_manuscript_repair_request,
     build_g200_story_generation_plan_request,
     build_g300_chapter_generation_request,
     build_g350_canon_repair_request,
@@ -41,6 +43,7 @@ from .scene_context import SceneContextService
 from .consistency_critic import ConsistencyCriticService
 from .entity_intake import EntityIntakeService
 from .chapter_summarizer import ChapterSummarizerService
+from .manuscript_assist_gates import ManuscriptAssistGateService
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +82,10 @@ def _phase_step_name(phase: str) -> str:
         return "generation_gate"
     if phase == "G-400":
         return "generation_compiler"
+    if phase == "M-500":
+        return "manuscript_assist"
+    if phase == "M-550":
+        return "manuscript_assist_repair"
     return phase
 
 
@@ -119,7 +126,7 @@ def inject_scene_context(
 
 
 def _require_supported_job_phase(phase: str) -> str:
-    if phase in {"P-100", "P-200", "P-300", "P-400", "G-200", "G-300", "G-350", "G-400"}:
+    if phase in {"P-100", "P-200", "P-300", "P-400", "G-200", "G-300", "G-350", "G-400", "M-500", "M-550"}:
         return phase
     raise ValueError(f"Unsupported job phase: {phase}")
 
@@ -306,6 +313,26 @@ class LocalExecutor:
                 return
             if phase == "G-400":
                 self._run_generation_compiler_phase(
+                    job_id=job_id,
+                    started_at=started_at,
+                    current_phase=phase,
+                    attempt=attempt,
+                    request_payload=request_payload,
+                    project_id=project_id,
+                )
+                return
+            if phase == "M-500":
+                self._run_manuscript_assist_phase(
+                    job_id=job_id,
+                    started_at=started_at,
+                    current_phase=phase,
+                    attempt=attempt,
+                    request_payload=request_payload,
+                    project_id=project_id,
+                )
+                return
+            if phase == "M-550":
+                self._run_manuscript_assist_repair_phase(
                     job_id=job_id,
                     started_at=started_at,
                     current_phase=phase,
@@ -2046,6 +2073,231 @@ class LocalExecutor:
             current_phase=current_phase,
             current_step="generation_compiler",
             detail="Generation compiler phase finished.",
+            finish_reason=inference_response.finish_reason or "completed",
+        )
+
+    def _run_manuscript_assist_phase(
+        self,
+        *,
+        job_id: UUID,
+        started_at: datetime,
+        current_phase: str,
+        attempt: dict[str, Any],
+        request_payload: dict[str, Any],
+        project_id: str | None,
+    ) -> None:
+        from app.schemas.manuscript_assist import (
+            AssistSuggestionStatus,
+            LLMRevisionSuggestion,
+            ManuscriptAssistPacket,
+            ManuscriptAssistRequest,
+            TextRange,
+        )
+        from app.utils.json_extract import extract_json
+
+        payload = dict(request_payload.get("payload", {}))
+        assist_id = str(payload.get("assist_id", "")).strip()
+        if not assist_id:
+            raise ValueError("M-500 requires payload.assist_id.")
+        run = self._story_repository.get_manuscript_assist_run(assist_id)
+        document = self._story_repository.get_manuscript_document(run.document_id)
+        request = ManuscriptAssistRequest.model_validate(run.request_json)
+        packet = ManuscriptAssistPacket(
+            assist_id=run.assist_id,
+            project_id=run.project_id,
+            document_id=run.document_id,
+            assist_kind=request.assist_kind,
+            instruction=request.instruction,
+            document_title=document.title,
+            document_content=document.content,
+            text_range=request.text_range,
+            canon_scope=request.canon_scope,
+            canon_policy=request.canon_policy,
+            model_id=request.model_id,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+        )
+        inference_request = build_m500_manuscript_assist_request(packet, default_model=None)
+        inference_response = self._inferencer.generate_text(inference_request)
+        extracted = extract_json(inference_response.content)
+        parsed: dict[str, Any] = extracted if isinstance(extracted, dict) else {}
+        summary = str(parsed.get("summary") or "").strip()
+        warnings = [str(item) for item in parsed.get("warnings", []) if isinstance(item, str)]
+        suggestions_raw = parsed.get("suggestions", [])
+        gate_service = ManuscriptAssistGateService()
+        created_suggestion_ids: list[str] = []
+        for index, raw in enumerate(suggestions_raw if isinstance(suggestions_raw, list) else []):
+            if not isinstance(raw, dict):
+                continue
+            source_text = str(raw.get("source_text") or "")
+            proposed_text = str(raw.get("proposed_text") or "")
+            rationale = str(raw.get("rationale") or "")
+            if not source_text.strip() or not proposed_text.strip():
+                continue
+            range_json = request.text_range.model_dump(mode="json") if request.text_range is not None else None
+            suggestion_id = f"assist-suggestion-{stable_hash_text(f'{assist_id}:{index}:{source_text}:{proposed_text}')[:16]}"
+            suggestion = self._story_repository.upsert_manuscript_assist_suggestion(
+                suggestion_id=suggestion_id,
+                assist_id=assist_id,
+                project_id=run.project_id,
+                target_document_id=run.document_id,
+                suggestion_kind=request.assist_kind.value if hasattr(request.assist_kind, "value") else str(request.assist_kind),
+                source_text=source_text,
+                proposed_text=proposed_text,
+                rationale=rationale or "Generated manuscript assist suggestion.",
+                range_json=range_json,
+                canon_risk=str(raw.get("canon_risk") or "none"),
+                confidence_score=float(raw.get("confidence_score") or 0.0),
+                source_context=[str(item) for item in raw.get("source_context", []) if isinstance(item, str)],
+                status=AssistSuggestionStatus.PENDING.value,
+            )
+            created_suggestion_ids.append(suggestion.suggestion_id)
+            llm_suggestion = LLMRevisionSuggestion(
+                suggestion_id=suggestion.suggestion_id,
+                assist_id=suggestion.assist_id,
+                project_id=suggestion.project_id,
+                target_document_id=suggestion.target_document_id,
+                source_text=suggestion.source_text,
+                proposed_text=suggestion.proposed_text,
+                rationale=suggestion.rationale,
+                suggestion_kind=request.assist_kind,
+                range=TextRange.model_validate(suggestion.range_json) if suggestion.range_json else None,
+                canon_risk=suggestion.canon_risk,
+                confidence_score=suggestion.confidence_score,
+                status=suggestion.status,
+                source_context=suggestion.source_context,
+            )
+            gate = gate_service.check_suggestion_against_canon(llm_suggestion)
+            gate_result_id = f"assist-gate-{stable_hash_text(f'{assist_id}:{suggestion_id}:{gate.gate_name}')[:16]}"
+            self._story_repository.upsert_manuscript_assist_gate_result(
+                gate_result_id=gate_result_id,
+                assist_id=assist_id,
+                project_id=run.project_id,
+                document_id=run.document_id,
+                gate_name=gate.gate_name,
+                passed=gate.passed,
+                severity=gate.severity,
+                reasons=gate.reasons,
+            )
+        self._story_repository.upsert_manuscript_assist_run(
+            assist_id=run.assist_id,
+            project_id=run.project_id,
+            document_id=run.document_id,
+            assist_kind=run.assist_kind,
+            request_json=run.request_json,
+            status="completed",
+            summary=summary,
+            created_draft_artifact_id=run.created_draft_artifact_id,
+            created_branch_id=run.created_branch_id,
+            created_manuscript_document_id=run.created_manuscript_document_id,
+            job_ids=run.job_ids,
+            warnings=warnings,
+            idempotency_key=run.idempotency_key,
+            request_hash=run.request_hash,
+        )
+        finished_at = _utcnow()
+        self._step_records.create_step_record(
+            logical_run_id=str(attempt["logical_run_id"]),
+            run_id=job_id,
+            run_kind="pipeline_job",
+            attempt_number=int(attempt["attempt_number"]),
+            step_name="manuscript_assist",
+            step_index=1,
+            state="COMPLETED",
+            project_id=project_id,
+            model_id=inference_response.model or inference_request.model,
+            critic_profile=None,
+            backend_name=self._inferencer.descriptor.display_name,
+            backend_version=_provider_backend_version(inference_response.raw_response),
+            input_hash=stable_hash_payload(request_payload),
+            output_hash=stable_hash_payload({"suggestion_ids": created_suggestion_ids}),
+            prompt_hash=stable_hash_payload(inference_request.model_dump(mode="json")),
+            input_artifact_refs=["manuscript_document"],
+            output_artifact_refs=["manuscript_assist_suggestion", "manuscript_assist_gate_result"],
+            started_at=started_at,
+            finished_at=finished_at,
+            finish_reason=inference_response.finish_reason or "completed",
+            error_code=None,
+            error_category=None,
+            executor_id="job-worker-local",
+            lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+        )
+        self._job_manager.update_job(
+            job_id,
+            status="COMPLETED",
+            current_phase=current_phase,
+            current_step="manuscript_assist",
+            detail="Manuscript assist phase finished.",
+            finish_reason=inference_response.finish_reason or "completed",
+        )
+
+    def _run_manuscript_assist_repair_phase(
+        self,
+        *,
+        job_id: UUID,
+        started_at: datetime,
+        current_phase: str,
+        attempt: dict[str, Any],
+        request_payload: dict[str, Any],
+        project_id: str | None,
+    ) -> None:
+        from app.schemas.manuscript_assist import ManuscriptAssistPacket, ManuscriptAssistRequest
+
+        payload = dict(request_payload.get("payload", {}))
+        assist_id = str(payload.get("assist_id", "")).strip()
+        gate_result_id = str(payload.get("gate_result_id", "")).strip()
+        if not assist_id or not gate_result_id:
+            raise ValueError("M-550 requires payload.assist_id and payload.gate_result_id.")
+        run = self._story_repository.get_manuscript_assist_run(assist_id)
+        request = ManuscriptAssistRequest.model_validate(run.request_json)
+        packet = ManuscriptAssistPacket(
+            assist_id=run.assist_id,
+            project_id=run.project_id,
+            document_id=run.document_id,
+            assist_kind=request.assist_kind,
+            instruction=request.instruction,
+            text_range=request.text_range,
+            canon_scope=request.canon_scope,
+            canon_policy=request.canon_policy,
+            model_id=request.model_id,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+        )
+        gate_result = self._story_repository.get_manuscript_assist_gate_result(gate_result_id)
+        inference_request = build_m550_manuscript_repair_request(packet, gate_result.reasons, default_model=None)
+        inference_response = self._inferencer.generate_text(inference_request)
+        self._step_records.create_step_record(
+            logical_run_id=str(attempt["logical_run_id"]),
+            run_id=job_id,
+            run_kind="pipeline_job",
+            attempt_number=int(attempt["attempt_number"]),
+            step_name="manuscript_assist_repair",
+            step_index=1,
+            state="COMPLETED",
+            project_id=project_id,
+            model_id=inference_response.model or inference_request.model,
+            critic_profile=None,
+            backend_name=self._inferencer.descriptor.display_name,
+            backend_version=_provider_backend_version(inference_response.raw_response),
+            input_hash=stable_hash_payload(request_payload),
+            output_hash=stable_hash_payload({"assist_id": assist_id, "gate_result_id": gate_result_id}),
+            prompt_hash=stable_hash_payload(inference_request.model_dump(mode="json")),
+            input_artifact_refs=["manuscript_assist_gate_result"],
+            output_artifact_refs=["manuscript_assist_suggestion"],
+            started_at=started_at,
+            finished_at=_utcnow(),
+            finish_reason=inference_response.finish_reason or "completed",
+            error_code=None,
+            error_category=None,
+            executor_id="job-worker-local",
+            lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+        )
+        self._job_manager.update_job(
+            job_id,
+            status="COMPLETED",
+            current_phase=current_phase,
+            current_step="manuscript_assist_repair",
+            detail="Manuscript assist repair phase finished.",
             finish_reason=inference_response.finish_reason or "completed",
         )
 

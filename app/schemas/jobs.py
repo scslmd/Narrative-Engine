@@ -120,6 +120,22 @@ class JobCreateRequest(StrictModel):
                     raise ValueError("Payload must contain 'chapter_artifact_ids' for phase G-400")
                 if not isinstance(chapter_artifact_ids, list):
                     raise ValueError("Payload 'chapter_artifact_ids' must be a list")
+        elif self.phase in ("M-500", "M-550"):
+            assist_id = self.payload.get("assist_id")
+            if assist_id is None:
+                raise ValueError(
+                    f"Payload must contain 'assist_id' for phase {self.phase}"
+                )
+            if not isinstance(assist_id, str) or not assist_id.strip():
+                raise ValueError(
+                    f"Payload 'assist_id' must be a non-empty string for phase {self.phase}"
+                )
+            if self.phase == "M-550":
+                gate_result_id = self.payload.get("gate_result_id")
+                if gate_result_id is None:
+                    raise ValueError("Payload must contain 'gate_result_id' for phase M-550")
+                if not isinstance(gate_result_id, str) or not gate_result_id.strip():
+                    raise ValueError("Payload 'gate_result_id' must be a non-empty string")
         return self
 
 

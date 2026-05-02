@@ -916,6 +916,127 @@ CREATE TABLE IF NOT EXISTS generation_gate_results (
     created_at TEXT NOT NULL,
     FOREIGN KEY(generation_id) REFERENCES canon_generation_runs(generation_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS manuscript_assist_runs (
+    assist_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    assist_kind TEXT NOT NULL,
+    request_json TEXT NOT NULL,
+    status TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    created_draft_artifact_id TEXT,
+    created_branch_id TEXT,
+    created_manuscript_document_id TEXT,
+    job_ids_json TEXT NOT NULL DEFAULT '[]',
+    warnings_json TEXT NOT NULL DEFAULT '[]',
+    idempotency_key TEXT,
+    request_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(document_id) REFERENCES manuscript_documents(document_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS manuscript_assist_suggestions (
+    suggestion_id TEXT PRIMARY KEY,
+    assist_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    target_document_id TEXT NOT NULL,
+    suggestion_kind TEXT NOT NULL,
+    source_text TEXT NOT NULL,
+    proposed_text TEXT NOT NULL,
+    rationale TEXT NOT NULL,
+    range_json TEXT,
+    canon_risk TEXT NOT NULL DEFAULT 'none',
+    confidence_score REAL NOT NULL DEFAULT 0.0,
+    source_context_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'REQUESTED',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(assist_id) REFERENCES manuscript_assist_runs(assist_id) ON DELETE CASCADE,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(target_document_id) REFERENCES manuscript_documents(document_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS manuscript_assist_gate_results (
+    gate_result_id TEXT PRIMARY KEY,
+    assist_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    gate_name TEXT NOT NULL,
+    passed INTEGER NOT NULL,
+    severity TEXT NOT NULL,
+    reasons_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(assist_id) REFERENCES manuscript_assist_runs(assist_id) ON DELETE CASCADE,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE,
+    FOREIGN KEY(document_id) REFERENCES manuscript_documents(document_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS canon_annotations (
+    annotation_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    target_kind TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    field_path TEXT NOT NULL,
+    annotation_kind TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    applies_to_modes_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS canon_customization_profiles (
+    profile_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    default_generation_mode TEXT NOT NULL,
+    canon_scope_json TEXT NOT NULL,
+    canon_policy_json TEXT NOT NULL,
+    generation_brief_template TEXT NOT NULL DEFAULT '',
+    selected_annotation_ids_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS mythos_entries (
+    mythos_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    entry_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    canonical_facts_json TEXT NOT NULL DEFAULT '[]',
+    pattern_notes_json TEXT NOT NULL DEFAULT '[]',
+    source_corpus TEXT,
+    generation_guidance TEXT NOT NULL DEFAULT '',
+    visibility_scope TEXT NOT NULL DEFAULT 'project',
+    writer_notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS pattern_entries (
+    pattern_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    pattern_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    source_type TEXT NOT NULL DEFAULT 'manual',
+    generation_modes_json TEXT NOT NULL DEFAULT '[]',
+    beats_json TEXT NOT NULL DEFAULT '[]',
+    constraints_json TEXT NOT NULL DEFAULT '[]',
+    transposition_notes TEXT NOT NULL DEFAULT '',
+    writer_notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
 """
 
 
@@ -1003,6 +1124,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_generation_runs_idempotency ON canon_gener
 CREATE INDEX IF NOT EXISTS idx_generation_packets_generation ON canon_generation_packets(generation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_generation_gate_results_generation ON generation_gate_results(generation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_generation_gate_results_artifact ON generation_gate_results(project_id, artifact_kind, artifact_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_assist_runs_project_document ON manuscript_assist_runs(project_id, document_id, updated_at);
+CREATE INDEX IF NOT EXISTS idx_assist_runs_status ON manuscript_assist_runs(status, updated_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_assist_runs_idempotency ON manuscript_assist_runs(project_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_assist_suggestions_document_status ON manuscript_assist_suggestions(project_id, target_document_id, status, updated_at);
+CREATE INDEX IF NOT EXISTS idx_assist_suggestions_assist ON manuscript_assist_suggestions(assist_id, suggestion_id);
+CREATE INDEX IF NOT EXISTS idx_assist_gate_results_assist ON manuscript_assist_gate_results(assist_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_canon_annotations_project_target ON canon_annotations(project_id, target_kind, target_id);
+CREATE INDEX IF NOT EXISTS idx_canon_annotations_project_kind ON canon_annotations(project_id, annotation_kind);
+CREATE INDEX IF NOT EXISTS idx_canon_profiles_project_status ON canon_customization_profiles(project_id, status, updated_at);
+CREATE INDEX IF NOT EXISTS idx_mythos_entries_project_type ON mythos_entries(project_id, entry_type, name);
+CREATE INDEX IF NOT EXISTS idx_pattern_entries_project_type ON pattern_entries(project_id, pattern_type, name);
 """
 
 

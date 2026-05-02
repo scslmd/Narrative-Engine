@@ -13,8 +13,12 @@ from fastapi.staticfiles import StaticFiles
 from .middleware.path_traversal import PathTraversalMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
 from .api import (
+    build_canon_customization_router,
     build_jobs_router,
+    build_manuscript_assist_router,
     build_models_router,
+    build_mythos_library_router,
+    build_pattern_library_router,
     build_projects_router,
     build_story_generation_router,
     build_story_development_router,
@@ -493,6 +497,10 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(build_story_development_router(story_development_repository))
     app.include_router(build_story_development_router(story_development_repository, prefix='/v1/story-development'))
     app.include_router(build_story_generation_router(story_development_repository, project_service, job_manager))
+    app.include_router(build_manuscript_assist_router(story_development_repository, job_manager))
+    app.include_router(build_canon_customization_router(story_development_repository))
+    app.include_router(build_mythos_library_router(story_development_repository))
+    app.include_router(build_pattern_library_router(story_development_repository))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
 

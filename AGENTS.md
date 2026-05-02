@@ -5,17 +5,17 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1266 passed (~51s)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1427 collected (~51s)
   - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
-  - Full baseline: ~1309 tests, ~67s total
+  - Full baseline: ~1470 tests, ~67s total
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - `cd frontend && npm run lint` -> passed (2026-04-28)
   - `cd frontend && npm run typecheck` -> passed (2026-04-28)
   - `cd frontend && npm run build` -> passed, 1977 modules (2026-04-30)
   - `cd frontend && npm run test` -> 315 passed (~19s)
 - Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1977 modules in production bundle.
-- Frontend services: 120 exported functions across 19 service files (8 story generation + 112 existing). All exports wired to components.
-- Feature coverage: 14/14 backend-to-frontend feature areas fully linked. Story Generation added 2026-05-01 (canon packets, forking, gates, wizard UI).
+- Frontend services: 135 exported functions across 23 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 106 existing). All exports wired to components.
+- Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Canon Workshop and Manuscript Assist added 2026-05-02 (annotation controls, customization profiles, mythos/pattern libraries, LLM assist toolbar, suggestion apply/reject, version conflict protection).
 - Route-driven workspace state is the current frontend architecture:
   - `/workspace/:projectId/plan`
   - `/workspace/:projectId/write`
@@ -25,6 +25,7 @@
   - `/workspace/:projectId/inspect/:jobId`
   - `/workspace/:projectId/braindump`
   - `/workspace/:projectId/generate`
+  - `/workspace/:projectId/canon` (supports `?tab=mythos|patterns|packet` deep-links)
 - Inspect deep links are expected to render from the route, and review-driven "Jump to Source" should resolve an inspect run before navigation.
 
 ## Agent Guardrails
@@ -607,6 +608,41 @@ Do not call the repo merge-ready unless all five of these are green:
 - `GET /v1/story-generation/runs/{generation_id}/gates` (get gate results)
 - `POST /v1/story-generation/fork-preview` (preview fork scope)
 - `POST /v1/story-generation/fork-project` (201 Created - fork to new project)
+
+#### Canon Customization
+- `GET /v1/canon/annotations?project_id={id}&target_kind={kind}&target_id={id}` (list annotations)
+- `POST /v1/canon/annotations` (create annotation, 201)
+- `DELETE /v1/canon/annotations/{annotation_id}?project_id={id}` (delete annotation)
+- `GET /v1/canon/profiles?project_id={id}` (list customization profiles)
+- `POST /v1/canon/profiles` (create profile, 201)
+- `PATCH /v1/canon/profiles/{profile_id}?project_id={id}` (update profile)
+- `DELETE /v1/canon/profiles/{profile_id}?project_id={id}` (delete profile)
+- `POST /v1/canon/profiles/{profile_id}/packet-preview?project_id={id}` (preview canon packet)
+
+#### Mythos Library
+- `GET /v1/mythos/entries?project_id={id}&entry_type={type}` (list mythos entries)
+- `POST /v1/mythos/entries` (create entry, 201)
+- `PATCH /v1/mythos/entries/{mythos_id}?project_id={id}` (update entry)
+- `DELETE /v1/mythos/entries/{mythos_id}?project_id={id}` (delete entry)
+- `POST /v1/mythos/materialize-extraction` (materialize extraction to editable entries)
+
+#### Pattern Library
+- `GET /v1/patterns/entries?project_id={id}&pattern_type={type}` (list pattern entries)
+- `POST /v1/patterns/entries` (create entry, 201)
+- `PATCH /v1/patterns/entries/{pattern_id}?project_id={id}` (update entry)
+- `DELETE /v1/patterns/entries/{pattern_id}?project_id={id}` (delete entry)
+- `POST /v1/patterns/materialize-extraction` (materialize extraction to editable entries)
+
+#### Manuscript Assist
+- `POST /v1/manuscript-assist/runs` (202 Accepted - submit assist request)
+- `GET /v1/manuscript-assist/runs?project_id={id}&document_id={id}` (list assist runs)
+- `GET /v1/manuscript-assist/runs/{assist_id}` (get run status)
+- `POST /v1/manuscript-assist/runs/{assist_id}/retry` (retry assist)
+- `GET /v1/manuscript-assist/runs/{assist_id}/gates` (get assist gate results)
+- `GET /v1/manuscript-assist/suggestions?project_id={id}&document_id={id}&status={status}` (list suggestions)
+- `POST /v1/manuscript-assist/suggestions/{suggestion_id}/apply` (apply suggestion, 200/409)
+- `POST /v1/manuscript-assist/suggestions/{suggestion_id}/reject` (reject suggestion)
+- `POST /v1/manuscript-assist/suggestions/{suggestion_id}/archive` (archive suggestion)
 
 #### Jobs
 - `POST /v1/jobs/create`

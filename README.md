@@ -14,10 +14,14 @@ Narrative-Engine supports:
 - role-based drafting and review workflows
 - critic and checker feedback loops
 - exact backend progress and status monitoring for long-running work
-- story import from existing completed stories
+- story import from existing completed stories (single-pass and multi-pass for large works)
+- pattern extraction: extract storytelling DNA (voice, structure, archetypes) from any text to seed new projects
 - beat-level planning and storyboard card management
 - brain dump with LLM-powered text categorization
 - manuscript review and scoring
+- story generation orchestration: generate canon-congruent sequels or alternates from existing projects
+- canon workshop: annotate source material, create reusable generation profiles, manage mythos/pattern libraries
+- manuscript LLM assist: AI-powered line edits, expansions, rewrites, and developmental checks with version conflict protection
 
 ## Current Architecture
 
@@ -74,11 +78,11 @@ Implemented and working now:
 - operation field normalization in audit logging middleware with stable semantic names like `job.create`, `project_artifact.manifest.read`, `story_development.drafting.draft_artifacts.read` (REL-10)
 - file permission validation with world-writable directory rejection and directory-safety checks (REL-09)
 - story generation orchestration: canon packet builder, project forking, consistency gates, 4-phase executor pipeline (G-200/G-300/G-350/G-400), wizard UI at `/workspace/:projectId/generate`
-
-Still being built:
-
-- richer runtime telemetry and latency diagnostics
-- broader production-grade test coverage
+- canon workshop: field-level annotations (locked/mutable/forbidden), customization profiles, mythos/pattern libraries with materiality process, packet preview before submission
+- manuscript LLM assist: selection-aware actions (line edits, expansion, compression, rewrites, continuations, forks), document-wide actions (developmental review, canon checks, voice checks, pacing, theme, continuity repair), version conflict protection with offset-based patching
+- pattern extraction: generalized extraction of archetypal patterns, narrative structure, voice profile, thematic constraints, and entities from any story text; supports Same World / New Characters / Transposed generation modes
+- multi-pass story import: large stories (>30K chars) automatically chunked and analyzed per-chapter with LLM consolidation for characters, world bible, arcs, and planning
+- sample stories: 4 curated stories (2 public domain from Project Gutenberg, 2 original) in `docs/sample-stories/` for walkthrough testing and feature demonstration
 
 ## Quickstart
 
@@ -92,9 +96,9 @@ Still being built:
 
 Current verified baseline:
 
-- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1266 passed (~51s)
+- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1427 passed (~51s)
 - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
-- Full baseline: ~1309 tests, ~67s total
+- Full baseline: ~1470 tests, ~67s total
 
 ### Frontend
 
@@ -126,21 +130,21 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- Parallel cluster: ~1266 passed (~51s)
+- Parallel cluster: ~1427 passed (~51s)
 - Serial tests: ~43 passed (~16s)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
 - `cd frontend && npm run build` -> passed, 1977 modules
 - `cd frontend && npm run test` -> 315 passed (~19s)
 
-**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard, all 14/14 feature areas linked.
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard. 2026-05-02: added Canon Workshop and Manuscript Assist, all 17/17 feature areas linked.
 
 ## Core Docs
 
 - [AGENTS.md](AGENTS.md) - development guidelines, API patterns, feature documentation, and merge readiness checks (single source of truth)
 - [docs/STRUCTURE.md](docs/STRUCTURE.md) - project structure overview
-- [docs/User Guide v1.3.md](docs/User%20Guide%20v1.3.md) - user-facing guide
-- [docs/Narrative Engine User Walkthrough v1.3.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.3.md) - complete step-by-step walkthrough of all features
+- [docs/User Guide v1.5.1.md](docs/User%20Guide%20v1.5.1.md) - user-facing guide
+- [docs/Narrative Engine User Walkthrough v1.5.1.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.5.1.md) - complete step-by-step walkthrough of all features (includes Phase 0 sample stories)
 - [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md) - code review scoring rubrics
 
 ## Planning Docs

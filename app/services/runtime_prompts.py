@@ -11,6 +11,7 @@ from ..schemas.pattern_extraction import PatternExtractionAnalysis
 if TYPE_CHECKING:
     from .scene_context import SceneContext
     from app.schemas.generation import CanonGenerationPacket, GenerationPlan
+    from app.schemas.manuscript_assist import ManuscriptAssistPacket
 
 
 def build_p100_architect_request(
@@ -361,6 +362,84 @@ def build_g400_manuscript_assembly_request(
             "phase": "G-400",
             "role": "generation_compiler",
             "packet_id": packet.packet_id,
+        },
+    )
+
+
+def build_m500_manuscript_assist_request(
+    packet: ManuscriptAssistPacket,
+    default_model: str | None,
+) -> InferenceRequest:
+    payload = packet.model_dump(mode="json")
+    return InferenceRequest(
+        model=packet.model_id or default_model,
+        temperature=packet.temperature if packet.temperature is not None else 0.2,
+        max_tokens=packet.max_tokens if packet.max_tokens is not None else 4000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=(
+                    "You are a manuscript assistant for narrative editing. "
+                    "Return strict JSON only: summary, suggestions[], created_branch_brief, warnings."
+                ),
+            ),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True),
+            ),
+        ],
+        metadata={
+            "mode": "manuscript_assist_phase",
+            "phase": "M-500",
+            "role": "manuscript_assist",
+            "assist_id": packet.assist_id,
+            "document_id": packet.document_id,
+        },
+    )
+
+
+def build_m550_manuscript_repair_request(
+    packet: ManuscriptAssistPacket,
+    gate_reasons: list[str],
+    default_model: str | None,
+) -> InferenceRequest:
+    return InferenceRequest(
+        model=packet.model_id or default_model,
+        temperature=0.1,
+        max_tokens=3000,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content="Repair manuscript assist output to satisfy canon and continuity constraints.",
+            ),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(
+                        {
+                            "assist_id": packet.assist_id,
+                            "project_id": packet.project_id,
+                            "document_id": packet.document_id,
+                            "assist_kind": packet.assist_kind.value
+                            if hasattr(packet.assist_kind, "value")
+                            else str(packet.assist_kind),
+                            "gate_reasons": gate_reasons,
+                        "instruction": packet.instruction,
+                        "text_range": packet.text_range.model_dump(mode="json")
+                        if packet.text_range is not None
+                        else None,
+                    },
+                    ensure_ascii=True,
+                    indent=2,
+                    sort_keys=True,
+                ),
+            ),
+        ],
+        metadata={
+            "mode": "manuscript_assist_phase",
+            "phase": "M-550",
+            "role": "manuscript_assist_repair",
+            "assist_id": packet.assist_id,
+            "document_id": packet.document_id,
         },
     )
 

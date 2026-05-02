@@ -442,7 +442,7 @@ def test_drafting_context_packets_included(tmp_path) -> None:
     assert "pkt-2" in pkt_ids
 
 
-def test_source_hashes_contains_sha256_for_all_8_parts(tmp_path) -> None:
+def test_source_hashes_contains_sha256_for_all_packet_parts(tmp_path) -> None:
     project_service, repo = _setup_project(tmp_path)
     repo.upsert_foundation_profile(
         project_id="source-project",
@@ -467,6 +467,9 @@ def test_source_hashes_contains_sha256_for_all_8_parts(tmp_path) -> None:
         "continuity_threads",
         "continuity_findings",
         "drafting_packets",
+        "mythos_entries",
+        "pattern_entries",
+        "canon_annotations",
     }
     assert set(packet.source_hashes.keys()) == expected_keys
     for key, hash_val in packet.source_hashes.items():

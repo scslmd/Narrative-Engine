@@ -1,5 +1,6 @@
 import { Edit3, Save, X, Sparkles } from 'lucide-react';
 import type { ManuscriptDocument, RevisionSuggestion } from '../../types/drafting';
+import type { ManuscriptAssistKind, TextRange } from '../../types/manuscriptAssist';
 
 interface ManuscriptEditorProps {
   document: ManuscriptDocument;
@@ -12,6 +13,9 @@ interface ManuscriptEditorProps {
   onSave: () => void;
   onCancel: () => void;
   onContentChange: (content: string) => void;
+  onSelectionChange?: (start: number, end: number, content: string) => void;
+  onAssistRequest?: (kind: ManuscriptAssistKind, instruction: string) => void;
+  selectedRange?: TextRange | null;
   isDark: boolean;
 }
 
@@ -26,6 +30,9 @@ export function ManuscriptEditor({
   onSave,
   onCancel,
   onContentChange,
+  onSelectionChange,
+  onAssistRequest,
+  selectedRange,
   isDark,
 }: ManuscriptEditorProps) {
   return (
@@ -87,11 +94,47 @@ export function ManuscriptEditor({
               <X className="w-3.5 h-3.5" />
               Cancel
             </button>
+            {onAssistRequest && (
+              <>
+                <button
+                  onClick={() => onAssistRequest('developmental_review', 'Review this document for developmental improvements.')}
+                  className="rounded-md px-2.5 py-1 text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                >
+                  Assist: Review
+                </button>
+                <button
+                  onClick={() => onAssistRequest('line_edit_selection', 'Tighten and polish this selected passage.')}
+                  disabled={!selectedRange}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    selectedRange
+                      ? 'bg-violet-600 text-white hover:bg-violet-500'
+                      : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  Assist: Selection
+                </button>
+                <button
+                  onClick={() => onAssistRequest('fork_from_selection', 'Fork a new variant from this selected passage.')}
+                  disabled={!selectedRange}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    selectedRange
+                      ? 'bg-amber-600 text-white hover:bg-amber-500'
+                      : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  Fork Selection
+                </button>
+              </>
+            )}
           </div>
           <main className={`flex-1 overflow-hidden`}>
             <textarea
               value={editContent}
               onChange={(e) => onContentChange(e.target.value)}
+              onSelect={(e) => {
+                const target = e.currentTarget;
+                onSelectionChange?.(target.selectionStart ?? 0, target.selectionEnd ?? 0, target.value);
+              }}
               className={`w-full h-full p-6 resize-none outline-none text-sm leading-relaxed ${
                 isDark
                   ? 'bg-slate-900 text-slate-300'

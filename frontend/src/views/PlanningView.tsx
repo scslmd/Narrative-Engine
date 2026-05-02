@@ -23,6 +23,7 @@ import { getFoundation, createFoundation, updateFoundation } from '../services/f
 import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
 import { getRelationships, deleteRelationship } from '../services/relationships';
 import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
+import { createCanonAnnotation, getCanonAnnotations } from '../services/canonCustomization';
 
 import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
@@ -132,6 +133,11 @@ export function PlanningView() {
   });
 
   const planning = usePlanningTab(activeTab);
+  const canonAnnotationsQuery = useQuery({
+    queryKey: ['canon', 'annotations', projectId],
+    queryFn: () => getCanonAnnotations(projectId || ''),
+    enabled: Boolean(projectId) && (activeTab === 'characters' || activeTab === 'world-bible'),
+  });
 
   const relationshipsQuery = useQuery({
     queryKey: ['planning', 'relationships', projectId],
@@ -240,6 +246,13 @@ export function PlanningView() {
       void queryClient.invalidateQueries({ queryKey: ['planning', 'world-bible', projectId] });
     },
   });
+  const canonAnnotationMutation = useMutation({
+    mutationFn: createCanonAnnotation,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['canon', 'annotations', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['canon', 'profiles', projectId] });
+    },
+  });
 
    const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
 
@@ -263,6 +276,7 @@ export function PlanningView() {
     ? characters.find((character) => character.character_id === selectedCharacterId)
     : null;
   const worldBibleEntries = worldBibleQuery.data ?? [];
+  const canonAnnotations = canonAnnotationsQuery.data ?? [];
 
   const renderTabButton = (tab: { key: PlanningTab; label: string }, isCore: boolean) => {
     const isActive = activeTab === tab.key;
@@ -430,6 +444,17 @@ export function PlanningView() {
               <CharacterBuilder
                 projectId={projectId}
                 onSave={(character) => characterSaveMutation.mutate(character)}
+                canonAnnotations={canonAnnotations}
+                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                  await canonAnnotationMutation.mutateAsync({
+                    project_id: projectId,
+                    target_kind: 'character',
+                    target_id: targetId,
+                    field_path: fieldPath,
+                    annotation_kind: annotationKind,
+                    note,
+                  });
+                }}
                 onCancel={() => {
                   setCharacterEditorMode('list');
                   setSelectedCharacterId(null);
@@ -440,6 +465,17 @@ export function PlanningView() {
                 projectId={projectId}
                 character={selectedCharacter}
                 onSave={(character) => characterSaveMutation.mutate(character)}
+                canonAnnotations={canonAnnotations}
+                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                  await canonAnnotationMutation.mutateAsync({
+                    project_id: projectId,
+                    target_kind: 'character',
+                    target_id: targetId,
+                    field_path: fieldPath,
+                    annotation_kind: annotationKind,
+                    note,
+                  });
+                }}
                 onCancel={() => {
                   setCharacterEditorMode('list');
                   setSelectedCharacterId(null);
@@ -508,6 +544,17 @@ export function PlanningView() {
               <WorldBibleWorkspace
                 projectId={projectId}
                 entries={worldBibleEntries}
+                canonAnnotations={canonAnnotations}
+                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                  await canonAnnotationMutation.mutateAsync({
+                    project_id: projectId,
+                    target_kind: 'world_bible',
+                    target_id: targetId,
+                    field_path: fieldPath,
+                    annotation_kind: annotationKind,
+                    note,
+                  });
+                }}
                 onEntryAdd={(request) => worldBibleAddMutation.mutate(request)}
                 onEntryUpdate={(entry, originalTitle) =>
                   worldBibleUpdateMutation.mutate({ entry, originalTitle })

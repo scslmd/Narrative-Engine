@@ -20,6 +20,8 @@ export interface CanonScope {
   world_bible_refs: WorldBibleRef[];
   continuity_thread_ids: string[];
   arc_ids: string[];
+  mythos_ids: string[];
+  pattern_ids: string[];
   include_relationships: boolean;
   include_unresolved_questions: boolean;
   include_contradictions_as_forbidden: boolean;
@@ -98,6 +100,10 @@ export interface CanonGenerationPacket {
   continuity_threads: Array<Record<string, unknown>>;
   continuity_findings: Array<Record<string, unknown>>;
   drafting_context_packets: Array<Record<string, unknown>>;
+  mythos_entries: Array<Record<string, unknown>>;
+  pattern_entries: Array<Record<string, unknown>>;
+  canon_annotations: Array<Record<string, unknown>>;
+  customization_profile_id?: string | null;
   canon_policy: CanonPolicy;
   prompt_budget_summary: Record<string, unknown>;
   source_hashes: Record<string, string>;
