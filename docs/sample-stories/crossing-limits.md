@@ -1,6 +1,6 @@
 Crossing Limits
 
-by [Author]
+by Narrative Engine
 
 A pop-romance about love, books, and the boundaries between worlds.
 

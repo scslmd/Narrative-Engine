@@ -1,6 +1,6 @@
 The Last Archive
 
-by [Author]
+by Narrative Engine
 
 A science fiction story about memory, identity, and what we choose to remember.
 

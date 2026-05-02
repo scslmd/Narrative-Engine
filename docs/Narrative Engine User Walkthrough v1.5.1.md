@@ -113,11 +113,11 @@ Before you begin the walkthrough, you may want sample stories to import and test
 | Story | Author | Genre | Size | Format | Import Mode |
 |-------|--------|-------|------|--------|-------------|
 | The Time Machine | H.G. Wells | Classic Sci-Fi | ~200 KB (~30K words) | Plain text (Project Gutenberg) | Multi-pass |
-| The Picture of Dorian Gray | Oscar Wilde | Gothic Fiction | ~455 KB (~50K words) | Plain text (Project Gutenberg) | Multi-pass |
-| The Last Archive | Original | Science Fiction | ~28 KB (~5K words) | Markdown | Multi-pass |
-| Crossing Limits | Original | Pop-Romance | ~30 KB (~8K words) | Markdown | Multi-pass |
+| The Picture of Dorian Gray | Oscar Wilde | Gothic Fiction | ~455 KB (~75K words) | Plain text (Project Gutenberg) | Multi-pass |
+| The Last Archive | Original | Science Fiction | ~28 KB (~5K words) | Markdown | Single-pass |
+| Crossing Limits | Original | Pop-Romance | ~30 KB (~5K words) | Markdown | Multi-pass |
 
-All four stories exceed the 24,000-character threshold for single-pass import, which means they will exercise the **multi-pass import pipeline** -- the system that handles large stories by chunking, per-chapter analysis, and consolidation. This is the most thorough test of the import feature.
+Three of the four stories exceed the 30,000-character threshold for single-pass import, which exercises the **multi-pass import pipeline** -- the system that handles large stories by chunking, per-chapter analysis, and consolidation. The Last Archive (~28K chars) exercises single-pass import instead. Together they test both code paths thoroughly.
 
 ### How to Import a Sample Story
 

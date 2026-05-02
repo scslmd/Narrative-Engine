@@ -94,7 +94,7 @@ Four sample stories are available in `docs/sample-stories/` for testing and lear
 | The Last Archive | Original | Science Fiction | ~28 KB |
 | Crossing Limits | Original | Pop-Romance | ~30 KB |
 
-All four stories exceed the 24,000-character threshold and exercise the **multi-pass import pipeline**. See `docs/sample-stories/README.md` for detailed extraction expectations per story.
+Three of the four stories exceed the 30,000-character threshold and exercise the **multi-pass import pipeline**; The Last Archive exercises single-pass. See `docs/sample-stories/README.md` for detailed extraction expectations per story.
 
 To use a sample story: open the file, copy its contents, paste into the Import Story dialog on the home page, and click Import.
 

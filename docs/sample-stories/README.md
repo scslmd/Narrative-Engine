@@ -22,16 +22,16 @@ This directory contains four sample stories for use with the Narrative Engine wa
 
 #### The Picture of Dorian Gray by Oscar Wilde
 - **File**: `picture-of-dorian-gray.txt`
-- **Size**: ~455 KB (~458K characters, ~50K words)
+- **Size**: ~455 KB (~458K characters, ~75K words)
 - **Source**: Project Gutenberg #174
 - **Format**: Plain text UTF-8 (raw Project Gutenberg format)
 - **Genre**: Philosophical Fiction / Gothic
 - **Import mode**: Multi-pass (large story, multiple chapters)
 
 **Expected Extraction Results:**
-- **Characters (8+)**: Dorian Gray (protagonist, beautiful youth), Lord Henry Wotton (antagonist/philosopher, corrupting influence), Basil Hallward (artist, moral compass, victim), Sibyl Vane (actress, Dorian's brief love, catalyst), Allan Chambers (friend, blackmail victim), James Vane (Sibyl's brother, pursuer), the Portrait (symbolic character, moral record)
+- **Characters (8+)**: Dorian Gray (protagonist, beautiful youth), Lord Henry Wotton (antagonist/philosopher, corrupting influence), Basil Hallward (artist, moral compass, victim), Sibyl Vane (actress, Dorian's brief love, catalyst), Alan Campbell (friend, blackmail victim), James Vane (Sibyl's brother, pursuer), the Portrait (symbolic character, moral record)
 - **World Bible (10+)**: Victorian London high society, aestheticism philosophy, the portrait's magical properties, opium dens of London, country estate settings, theater world, moral decay theme, beauty vs. morality duality, secret keeping and reputation, class structures
-- **Arcs (4)**: Corruption arc (Dorian's moral decline), consequence arc (portrait bears moral burden), pursuit arc (past catches up: Sibyl's family, Basil, Allan), redemption/despair arc (final attempt at atonement)
+- **Arcs (4)**: Corruption arc (Dorian's moral decline), consequence arc (portrait bears moral burden), pursuit arc (past catches up: Sibyl's family, Basil, Alan), redemption/despair arc (final attempt at atonement)
 - **Patterns**: Philosophical dialogue as plot driver, Faustian bargain structure, duality motif (public face vs. private soul), Gothic decay, aestheticism vs. morality debate
 
 ### Original Stories (Written for Narrative Engine)
@@ -42,7 +42,7 @@ This directory contains four sample stories for use with the Narrative Engine wa
 - **Author**: Original work for Narrative Engine
 - **Format**: Markdown
 - **Genre**: Science Fiction
-- **Import mode**: Multi-pass (just above 24K char threshold)
+- **Import mode**: Single-pass (below 30K char multi-pass threshold)
 
 **Synopsis**: In a future where human memories can be extracted and stored in crystals, archivist Miren Kael discovers that stored memories are evolving -- breaking the fundamental laws that govern the Archive system. With help from unlikely allies including a guilt-ridden architect, an idealistic engineer, and a memory-rights activist, she must relocate 47 "awakened" memories into an experimental system before the Archive Council erases them permanently.
 
@@ -72,22 +72,21 @@ This directory contains four sample stories for use with the Narrative Engine wa
 
 #### Crossing Limits
 - **File**: `crossing-limits.md`
-- **Size**: ~30 KB (~30K characters, ~8K words)
+- **Size**: ~30 KB (~30K characters, ~5K words)
 - **Author**: Original work for Narrative Engine
 - **Format**: Markdown
 - **Genre**: Pop-Romance / Speculative Fiction
-- **Import mode**: Multi-pass (above 24K char threshold)
+- **Import mode**: Multi-pass (exceeds 30K char single-pass threshold)
 
 **Synopsis**: Elara Voss works at the Athenaeum, a secret library where books are doorways to living worlds. When Kai Mercer -- a man who has been dreaming about a specific book-world since childhood -- walks through her door, Elara must help him navigate the rules of crossing between worlds while confronting a destabilized book-world that is trying to merge with reality. Along the way, they discover that some connections transcend boundaries.
 
 **Expected Extraction Results:**
-- **Characters (7)**:
+- **Characters (6)**:
   - Elara Voss -- protagonist, Athenaeum keeper, believes books are literally alive
   - Kai Mercer -- love interest, spontaneous breacher, soul-connected to a book-world
   - Dr. Nadia Chen -- mentor, senior researcher at the Athenaeum
-  - Mira Voss (Mercer) -- family/anchor, Elara's real-world tether during crossings
+  - Mira Mercer -- family/anchor, Elara's real-world tether during crossings
   - The Keeper -- trapped reader, guardian of the dying book-world
-  - Prof. Ashworth -- antagonist, represents institutional fear of uncontrolled crossing
   - The Guide -- Kai's dream figure, later revealed as Elara herself
 - **World Bible (8+)**:
   - Book-worlds -- living realities accessible through specific books
@@ -107,7 +106,7 @@ This directory contains four sample stories for use with the Narrative Engine wa
 
 ### For Walkthrough Testing
 Each story is designed to exercise the full import pipeline:
-1. All four stories exceed the 24K character threshold, triggering multi-pass import
+1. Three stories exceed the 30K character threshold, triggering multi-pass import (Time Machine, Dorian Gray, Crossing Limits). The Last Archive (~28K chars) exercises single-pass import.
 2. Each contains deliberate character archetypes, world-building elements, and narrative arcs
 3. The variety of genres (classic sci-fi, gothic fiction, modern sci-fi, pop-romance) tests extraction robustness across different writing styles
 
