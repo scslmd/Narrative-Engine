@@ -23,10 +23,14 @@ export async function getProject(projectId: string): Promise<ProjectDetailRespon
 
 export async function createProject(data: ProjectCreateRequest): Promise<ProjectDetailResponse> {
   const response = await api.post('/projects/create', data);
-  
+
   if (response.status !== 201) {
     throw new Error(`Failed to create project: ${response.status}`);
   }
-  
+
   return response.data;
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await api.delete(`/projects/${projectId}`);
 }

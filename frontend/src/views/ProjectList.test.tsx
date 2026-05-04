@@ -227,4 +227,161 @@ describe('ProjectList', () => {
       expect(screen.getByText('Your Projects')).toBeInTheDocument();
     });
   });
+
+  it('renders delete button on each project card', async () => {
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    expect(deleteButtons).toHaveLength(2);
+  });
+
+  it('opens confirmation dialog when delete button is clicked', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete.*Sci-Fi Adventure.*cannot be undone/i)).toBeInTheDocument();
+    });
+  });
+
+  it('closes confirmation dialog when cancel is clicked', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete.*Sci-Fi Adventure/i)).toBeInTheDocument();
+    });
+
+    const cancelButtons = screen.getAllByRole('button', { name: /cancel/i });
+    await user.click(cancelButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Delete.*Sci-Fi Adventure/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('deletes project on confirm and shows success toast', async () => {
+    const user = userEvent.setup();
+    let deleteCalled = false;
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/projects/proj-1', () => {
+        deleteCalled = true;
+        return new HttpResponse(null, { status: 200 });
+      }),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete.*Sci-Fi Adventure/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+
+    // Verify API was called
+    await waitFor(() => {
+      expect(deleteCalled).toBe(true);
+    });
+
+    // Verify success toast appeared
+    await waitFor(() => {
+      expect(screen.getByText(/project deleted|deleted successfully/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows error toast on 409 active jobs', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/projects/proj-1', () =>
+        HttpResponse.json({ detail: 'Cannot delete project with active jobs. Complete or cancel jobs first.' }, { status: 409 }),
+      ),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete.*Sci-Fi Adventure/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/active jobs|Cannot delete project with active jobs/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows error toast on 404 not found', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/projects/proj-1', () =>
+        HttpResponse.json({ detail: 'Project not found' }, { status: 404 }),
+      ),
+    );
+
+    render(<ProjectList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Sci-Fi Adventure')).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Delete.*Sci-Fi Adventure/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/not found|Project not found/i)).toBeInTheDocument();
+    });
+  });
 });

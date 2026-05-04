@@ -3,6 +3,7 @@ import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, MemoryRouterProps } from 'react-router-dom';
 import { ToastProvider } from '../hooks/useToast';
+import { ToastContainer } from '../components/ui/Toast';
 
 interface TestRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   queryClient?: QueryClient;
@@ -49,6 +50,7 @@ function Wrapper({
         >
           {children}
         </MemoryRouter>
+        <ToastContainer />
       </ToastProvider>
     </QueryClientProvider>
   );

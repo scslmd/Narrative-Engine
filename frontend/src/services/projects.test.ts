@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getProjects, getProject, createProject } from './projects';
+import { getProjects, getProject, createProject, deleteProject } from './projects';
 import type { ProjectSummaryResponse, ProjectDetailResponse } from '../types/project';
 
 const mockSummary: ProjectSummaryResponse = {
@@ -88,6 +88,48 @@ describe('projects service', () => {
       const result = await createProject({ project_name: 'New Project' });
 
       expect(result.project_name).toBe('New Project');
+    });
+  });
+
+  describe('deleteProject', () => {
+    it('deletes a project on 200 response', async () => {
+      server.use(
+        http.delete('/projects/proj-1', () => {
+          return new HttpResponse(null, { status: 200 });
+        }),
+      );
+
+      await expect(deleteProject('proj-1')).resolves.toBeUndefined();
+    });
+
+    it('deletes a project on 204 response', async () => {
+      server.use(
+        http.delete('/projects/proj-1', () => {
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+
+      await expect(deleteProject('proj-1')).resolves.toBeUndefined();
+    });
+
+    it('throws ApiError on 404', async () => {
+      server.use(
+        http.delete('/projects/proj-missing', () => {
+          return HttpResponse.json({ detail: 'Project not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(deleteProject('proj-missing')).rejects.toThrow('Project not found');
+    });
+
+    it('throws ApiError on 409 active jobs', async () => {
+      server.use(
+        http.delete('/projects/proj-1', () => {
+          return HttpResponse.json({ detail: 'Cannot delete project with active jobs' }, { status: 409 });
+        }),
+      );
+
+      await expect(deleteProject('proj-1')).rejects.toThrow();
     });
   });
 });
