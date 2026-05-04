@@ -1,4 +1,4 @@
-import type { CheckerFinding, ReviewDecision, FindingsFilter, ReviewDecisionCreateRequest } from '../types/review';
+import type { CheckerFinding, ReviewDecision, FindingsFilter, ReviewDecisionCreateRequest, ReviewFinding } from '../types/review';
 import api from '../lib/api';
 
 interface FindingListResponse {
@@ -57,6 +57,30 @@ export async function createDecision(request: ReviewDecisionCreateRequest): Prom
 
   if (response.status !== 201) {
     throw new Error(`Failed to create decision: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getFinding(findingId: string, projectId: string): Promise<ReviewFinding> {
+  const response = await api.get(`/story-development/review/findings/${findingId}`, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch finding: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getDecision(decisionId: string, projectId: string): Promise<ReviewDecision> {
+  const response = await api.get(`/story-development/review/decisions/${decisionId}`, {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch decision: ${response.status}`);
   }
 
   return response.data;

@@ -14,6 +14,7 @@ import type {
   ArcComparisonRecord,
   ArcCandidateCreateRequest,
   ArcSelectionCreateRequest,
+  ArcSelectionUpdateRequest,
   ArcStageMapCreateRequest,
 } from '../types/arcs';
 import api from '../lib/api';
@@ -149,6 +150,27 @@ export async function createArcStageMap(data: ArcStageMapCreateRequest): Promise
 
   if (response.status !== 201) {
     throw new Error(`Failed to create arc stage map: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Update an arc selection
+ */
+export async function updateArcSelection(
+  selectionId: string,
+  data: ArcSelectionUpdateRequest,
+  projectId: string,
+): Promise<ArcSelection> {
+  const response = await api.patch(
+    `/story-development/arcs/selections/${selectionId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update arc selection ${selectionId}: ${response.status}`);
   }
 
   return response.data;

@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getCharacters, createCharacter, updateCharacter } from './characters';
+import {
+  getCharacters,
+  createCharacter,
+  updateCharacter,
+  getCharacter,
+  getCharacterRelationships,
+} from './characters';
 
 const mockCharacter = {
   character_id: 'char-1',
@@ -135,6 +141,106 @@ describe('characters service', () => {
       );
 
       await expect(updateCharacter('char-missing', 'proj-1', {})).rejects.toThrow();
+    });
+  });
+
+  describe('getCharacter', () => {
+    it('returns a single character profile by id', async () => {
+      server.use(
+        http.get('/story-development/characters/char-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json(mockCharacter);
+        }),
+      );
+
+      const result = await getCharacter('char-1', 'proj-1');
+
+      expect(result.character_id).toBe('char-1');
+      expect(result.display_name).toBe('Test Character');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/characters/char-missing', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getCharacter('char-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getCharacterRelationships', () => {
+    it('returns relationships for a character', async () => {
+      const mockEdges = [
+        {
+          edge_id: 'edge-1',
+          source_character_id: 'char-1',
+          target_character_id: 'char-2',
+          relation_kind: 'rivalry',
+          summary: 'Long-standing rivalry',
+          tension: 'high',
+          notes: null,
+        },
+        {
+          edge_id: 'edge-2',
+          source_character_id: 'char-1',
+          target_character_id: 'char-3',
+          relation_kind: 'mentorship',
+          summary: 'Mentor-student bond',
+          tension: null,
+          notes: 'Developed in chapter 3',
+        },
+      ];
+
+      server.use(
+        http.get('/story-development/characters/char-1/relationships', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({
+            project_id: 'proj-1',
+            items: mockEdges,
+            meta: {},
+          });
+        }),
+      );
+
+      const result = await getCharacterRelationships('char-1', 'proj-1');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].edge_id).toBe('edge-1');
+      expect(result[0].relation_kind).toBe('rivalry');
+      expect(result[1].edge_id).toBe('edge-2');
+      expect(result[1].notes).toBe('Developed in chapter 3');
+    });
+
+    it('returns empty array when character has no relationships', async () => {
+      server.use(
+        http.get('/story-development/characters/char-solo/relationships', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({
+            project_id: 'proj-1',
+            items: [],
+            meta: {},
+          });
+        }),
+      );
+
+      const result = await getCharacterRelationships('char-solo', 'proj-1');
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/characters/char-missing/relationships', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getCharacterRelationships('char-missing', 'proj-1')).rejects.toThrow();
     });
   });
 });

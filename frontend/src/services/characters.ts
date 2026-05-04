@@ -1,15 +1,19 @@
 /**
  * Characters Service
- * 
+ *
  * Service for interacting with character-related API endpoints:
  * - List character profiles
+ * - Get single character profile
  * - Create character profile
  * - Update character profile
- * 
+ * - Get character relationships
+ *
  * Backend endpoints:
  * - GET /story-development/characters
+ * - GET /story-development/characters/{character_id}
  * - POST /story-development/characters
  * - PATCH /story-development/characters/{character_id}
+ * - GET /story-development/characters/{character_id}/relationships
  */
 
 import type {
@@ -17,6 +21,8 @@ import type {
   CharacterProfileCreateRequest,
   CharacterProfileUpdateRequest,
   CharacterProfileListResponse,
+  RelationshipEdge,
+  RelationshipEdgeListResponse,
 } from '../types/characters';
 import api from '../lib/api';
 
@@ -70,4 +76,43 @@ export async function updateCharacter(
   }
 
   return response.data;
+}
+
+/**
+ * Get a single character profile by ID
+ */
+export async function getCharacter(
+  characterId: string,
+  projectId: string,
+): Promise<CharacterProfile> {
+  const response = await api.get(
+    `/story-development/characters/${characterId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch character ${characterId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Get relationships for a character
+ */
+export async function getCharacterRelationships(
+  characterId: string,
+  projectId: string,
+): Promise<RelationshipEdge[]> {
+  const response = await api.get(
+    `/story-development/characters/${characterId}/relationships`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch relationships for ${characterId}: ${response.status}`);
+  }
+
+  const data: RelationshipEdgeListResponse = response.data;
+  return data.items;
 }

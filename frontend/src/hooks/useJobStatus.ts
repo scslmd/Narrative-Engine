@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { JobStatusResponse } from '../types/job';
-import { jobsService } from '../services/jobs';
+import { getStatus } from '../services/jobs';
 
 interface UseJobStatusResult {
   status: JobStatusResponse['status'] | null;
@@ -19,7 +19,7 @@ export function useJobStatus(jobId: string | null): UseJobStatusResult {
 
   const { data, isLoading, isError } = useQuery<JobStatusResponse>({
     queryKey: ['job-status', jobId],
-    queryFn: () => jobsService.getStatus(jobId!),
+    queryFn: () => getStatus(jobId!),
     enabled: !!jobId,
     refetchInterval: (query) => {
       if (!query.state.data) return 600;

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import StepTimeline from './StepTimeline';
 import ArtifactLineage from './ArtifactLineage';
 import type { InspectContext } from '../../types/inspect';
-import { jobsService } from '../../services/jobs';
+import { getAttempts } from '../../services/jobs';
 import { getCheckerAttempts } from '../../services/checker';
 import type { AttemptHistoryItem } from '../../types/inspect';
 
@@ -24,7 +24,7 @@ export default function InspectTabs({ context }: InspectTabsProps) {
     
     try {
       const response = context.runKind === 'pipeline_job'
-        ? await jobsService.getAttempts(context.jobId)
+        ? await getAttempts(context.jobId)
         : await getCheckerAttempts(context.jobId);
       
       setAttempts(response.items || []);

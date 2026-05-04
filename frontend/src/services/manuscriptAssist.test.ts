@@ -5,6 +5,7 @@ import {
   applyLLMSuggestion,
   getLLMSuggestions,
   listManuscriptAssists,
+  retryManuscriptAssist,
   submitManuscriptAssist,
 } from './manuscriptAssist';
 
@@ -125,5 +126,27 @@ describe('manuscriptAssist service', () => {
     });
     expect(suggestions[0].suggestion_id).toBe('sug-1');
     expect(applied.manuscript.version).toBe(2);
+  });
+
+  it('retryManuscriptAssist posts retry and returns new run', async () => {
+    server.use(
+      http.post('/v1/manuscript-assist/runs/assist-1/retry', () =>
+        HttpResponse.json({
+          assist_id: 'assist-retry-1',
+          project_id: 'proj-1',
+          document_id: 'doc-1',
+          assist_kind: 'line_edit_selection',
+          status: 'queued',
+          summary: '',
+          suggestions: [],
+          gate_results: [],
+          job_ids: ['job-retry-1'],
+          warnings: [],
+        }),
+      ),
+    );
+    const result = await retryManuscriptAssist('assist-1');
+    expect(result.assist_id).toBe('assist-retry-1');
+    expect(result.status).toBe('queued');
   });
 });

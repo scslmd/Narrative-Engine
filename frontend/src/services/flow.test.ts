@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { flowService } from './flow';
+import { getStages, addStage, updateStageWithProject, deleteStage, archiveStage, renameStage, initFlow, reorderFlowStages } from './flow';
 
 const mockStage = {
   stage_id: 'stage-1',
@@ -26,7 +26,7 @@ describe('flow service', () => {
         }),
       );
 
-      const result = await flowService.getStages('proj-1');
+      const result = await getStages('proj-1');
 
       expect(result).toHaveLength(1);
       expect(result[0].stage_id).toBe('stage-1');
@@ -39,7 +39,7 @@ describe('flow service', () => {
         }),
       );
 
-      await expect(flowService.getStages('proj-missing')).rejects.toThrow();
+      await expect(getStages('proj-missing')).rejects.toThrow();
     });
   });
 
@@ -51,7 +51,7 @@ describe('flow service', () => {
         }),
       );
 
-      const result = await flowService.addStage('proj-1', 'drafting', 'Custom Drafter');
+      const result = await addStage('proj-1', 'drafting', 'Custom Drafter');
 
       expect(result.stage_kind).toBe('drafting');
     });
@@ -63,7 +63,7 @@ describe('flow service', () => {
         }),
       );
 
-      await expect(flowService.addStage('proj-1', 'drafting')).rejects.toThrow();
+      await expect(addStage('proj-1', 'drafting')).rejects.toThrow();
     });
   });
 
@@ -75,7 +75,7 @@ describe('flow service', () => {
         }),
       );
 
-      const result = await flowService.updateStageWithProject('proj-1', 'stage-1', {
+      const result = await updateStageWithProject('proj-1', 'stage-1', {
         display_name: 'Updated Name',
       });
 
@@ -89,7 +89,7 @@ describe('flow service', () => {
         }),
       );
 
-      await expect(flowService.updateStageWithProject('proj-1', 'stage-bad', {})).rejects.toThrow();
+      await expect(updateStageWithProject('proj-1', 'stage-bad', {})).rejects.toThrow();
     });
   });
 
@@ -101,7 +101,7 @@ describe('flow service', () => {
         }),
       );
 
-      await expect(flowService.deleteStage('proj-1', 'stage-1')).resolves.toBeUndefined();
+      await expect(deleteStage('proj-1', 'stage-1')).resolves.toBeUndefined();
     });
 
     it('throws on error response', async () => {
@@ -111,7 +111,7 @@ describe('flow service', () => {
         }),
       );
 
-      await expect(flowService.deleteStage('proj-1', 'stage-bad')).rejects.toThrow();
+      await expect(deleteStage('proj-1', 'stage-bad')).rejects.toThrow();
     });
   });
 
@@ -123,7 +123,7 @@ describe('flow service', () => {
         }),
       );
 
-      const result = await flowService.archiveStage('proj-1', 'stage-1');
+      const result = await archiveStage('proj-1', 'stage-1');
 
       expect(result.stage_configuration_state).toBe('ARCHIVED');
     });
@@ -137,9 +137,66 @@ describe('flow service', () => {
         }),
       );
 
-      const result = await flowService.renameStage('proj-1', 'stage-1', 'New Name');
+      const result = await renameStage('proj-1', 'stage-1', 'New Name');
 
       expect(result.display_name).toBe('New Name');
+    });
+  });
+
+  describe('initFlow', () => {
+    it('initializes flow stages for a project (201)', async () => {
+      server.use(
+        http.post('/story-development/flow/stages', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({
+            project_id: 'proj-1',
+            items: [mockStage],
+            meta: {},
+          }, { status: 201 });
+        }),
+      );
+
+      const result = await initFlow('proj-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].stage_id).toBe('stage-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.post('/story-development/flow/stages', () => {
+          return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
+        }),
+      );
+
+      await expect(initFlow('proj-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('reorderFlowStages', () => {
+    it('reorders flow stages (200)', async () => {
+      server.use(
+        http.post('/story-development/flow/stages/reorder', async ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          const body = (await request.json()) as { stage_ids: string[] };
+          expect(body.stage_ids).toEqual(['stage-3', 'stage-1', 'stage-2']);
+          return HttpResponse.json(null);
+        }),
+      );
+
+      await expect(reorderFlowStages(['stage-3', 'stage-1', 'stage-2'], 'proj-1')).resolves.toBeUndefined();
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.post('/story-development/flow/stages/reorder', () => {
+          return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
+        }),
+      );
+
+      await expect(reorderFlowStages([], 'proj-missing')).rejects.toThrow();
     });
   });
 });

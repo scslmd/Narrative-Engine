@@ -5,15 +5,15 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1427 collected (~51s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
-  - Full baseline: ~1470 tests, ~67s total
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> 1397 passed, 2 pre-existing failures, 10 skipped (~32s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> 43 passed (~23s)
+  - Full baseline: ~1442 tests, ~55s total
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - `cd frontend && npm run lint` -> passed (2026-04-28)
-  - `cd frontend && npm run typecheck` -> passed (2026-04-28)
-  - `cd frontend && npm run build` -> passed, 1977 modules (2026-04-30)
-  - `cd frontend && npm run test` -> 315 passed (~19s)
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 1977 modules in production bundle.
+  - `cd frontend && npm run lint` -> passed (2026-05-03)
+  - `cd frontend && npm run typecheck` -> passed (2026-05-03)
+  - `cd frontend && npm run build` -> passed, 2016 modules (2026-05-03)
+  - `cd frontend && npm run test` -> 503 passed (~12s)
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2016 modules in production bundle.
 - Frontend services: 135 exported functions across 23 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 106 existing). All exports wired to components.
 - Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Canon Workshop and Manuscript Assist added 2026-05-02 (annotation controls, customization profiles, mythos/pattern libraries, LLM assist toolbar, suggestion apply/reject, version conflict protection).
 - Route-driven workspace state is the current frontend architecture:

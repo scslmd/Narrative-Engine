@@ -8,6 +8,7 @@
 import type {
   StoryboardCard,
   StoryboardCardCreateRequest,
+  StoryboardCardUpdateRequest,
 } from '../types/planning';
 import api from '../lib/api';
 
@@ -49,4 +50,66 @@ export async function createStoryboardCard(
   }
 
   return response.data;
+}
+
+/**
+ * Update an existing storyboard card
+ */
+export async function updateStoryboardCard(
+  cardId: string,
+  data: StoryboardCardUpdateRequest,
+  projectId?: string,
+): Promise<StoryboardCard> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.patch(`/storyboard/cards/${cardId}`, data, { params });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update storyboard card ${cardId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Delete a storyboard card
+ */
+export async function deleteStoryboardCard(
+  cardId: string,
+  projectId?: string,
+): Promise<void> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.delete(`/storyboard/cards/${cardId}`, { params });
+
+  if (response.status !== 204) {
+    throw new Error(`Failed to delete storyboard card ${cardId}: ${response.status}`);
+  }
+}
+
+/**
+ * Reindex cards within a column (drag-drop reorder)
+ */
+export async function reindexColumn(
+  columnId: string,
+  orderedIds: string[],
+  projectId?: string,
+): Promise<StoryboardCard[]> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.put(
+    `/storyboard/cards/${columnId}/reindex`,
+    { card_ids: orderedIds },
+    { params },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to reindex column ${columnId}: ${response.status}`);
+  }
+
+  const data = response.data;
+  return data.items;
 }

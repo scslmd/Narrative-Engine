@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from './worldBible';
+import { getWorldBibleEntries, getWorldBibleEntry, createWorldBibleEntry, updateWorldBibleEntry } from './worldBible';
 
 const mockEntry = {
   entry_id: 'entry-1',
@@ -40,6 +40,47 @@ describe('worldBible service', () => {
       );
 
       await expect(getWorldBibleEntries('proj-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('getWorldBibleEntry', () => {
+    it('returns a single world bible entry by type and title', async () => {
+      server.use(
+        http.get('/story-development/world-bible/location/Test%20Location', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json(mockEntry);
+        }),
+      );
+
+      const result = await getWorldBibleEntry('location', 'Test Location', 'proj-1');
+
+      expect(result.entry_id).toBe('entry-1');
+      expect(result.title).toBe('Test Location');
+    });
+
+    it('encodes special characters in title', async () => {
+      server.use(
+        http.get('/story-development/world-bible/location/City%20of%20the%20Dead%3A%20Volume%20I', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({ ...mockEntry, title: 'City of the Dead: Volume I' });
+        }),
+      );
+
+      const result = await getWorldBibleEntry('location', 'City of the Dead: Volume I', 'proj-1');
+
+      expect(result.title).toBe('City of the Dead: Volume I');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/world-bible/location/Missing', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getWorldBibleEntry('location', 'Missing', 'proj-missing')).rejects.toThrow();
     });
   });
 

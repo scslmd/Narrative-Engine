@@ -20,21 +20,38 @@ interface DraftArtifactCardProps {
   artifact: {
     artifact_id: string;
     title: string;
-    status: string;
     content: string;
+    status: string;
   };
   isExpanded: boolean;
   onToggle: () => void;
   onPromote: () => void;
   promotePending: boolean;
+  onContinue: () => void;
+  continuePending: boolean;
+  onAlternateVariant: () => void;
+  alternatePending: boolean;
   isDark: boolean;
 }
 
-export function DraftArtifactCard({ artifact, isExpanded, onToggle, onPromote, promotePending, isDark }: DraftArtifactCardProps) {
+export function DraftArtifactCard({
+  artifact,
+  isExpanded,
+  onToggle,
+  onPromote,
+  promotePending,
+  onContinue,
+  continuePending,
+  onAlternateVariant,
+  alternatePending,
+  isDark,
+}: DraftArtifactCardProps) {
   const isLight = !isDark;
   const statusColor = isLight
     ? STATUS_COLORS_LIGHT[artifact.status] || STATUS_COLORS_LIGHT.DRAFT
     : STATUS_COLORS[artifact.status] || STATUS_COLORS.DRAFT;
+
+  const hasContent = artifact.content && artifact.content.trim().length > 0;
 
   return (
     <div className={`rounded-md border transition-all duration-150 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -66,6 +83,30 @@ export function DraftArtifactCard({ artifact, isExpanded, onToggle, onPromote, p
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
               Promote
+            </button>
+          </div>
+          <div className="flex gap-1.5">
+            <button
+              onClick={onContinue}
+              disabled={!hasContent || continuePending}
+              title={!hasContent ? 'No prior content to continue from' : undefined}
+              className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded font-medium disabled:opacity-40 ${isDark ? 'bg-sky-600 text-white hover:bg-sky-500' : 'bg-sky-500 text-white hover:bg-sky-400'}`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              Continue
+            </button>
+            <button
+              onClick={onAlternateVariant}
+              disabled={!hasContent || alternatePending}
+              title={!hasContent ? 'No prior content to create variant from' : undefined}
+              className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded font-medium disabled:opacity-40 ${isDark ? 'bg-violet-600 text-white hover:bg-violet-500' : 'bg-violet-500 text-white hover:bg-violet-400'}`}
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a4 4 0 008 0V7M4 9l4-2m0 0l4-2m-4 2V3" />
+              </svg>
+              Alternate
             </button>
           </div>
         </div>

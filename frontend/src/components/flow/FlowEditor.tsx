@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StoryFlowStage, StageKind } from '../../types/flow';
-import { flowService } from '../../services/flow';
+import { getStages, addStage, renameStage, deleteStage, updateStageWithProject, archiveStage } from '../../services/flow';
 import StageList from './StageList';
 import { useState } from 'react';
 
@@ -30,11 +30,11 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
 
   const { data: stages, isLoading, isError } = useQuery<StoryFlowStage[]>({
     queryKey: ['flow-stages', projectId],
-    queryFn: () => flowService.getStages(projectId),
+    queryFn: () => getStages(projectId),
   });
 
   const addStageMutation = useMutation({
-    mutationFn: ({ kind, name }: { kind: StageKind; name: string }) => flowService.addStage(projectId, kind, name),
+    mutationFn: ({ kind, name }: { kind: StageKind; name: string }) => addStage(projectId, kind, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       setShowAddDialog(false);
@@ -48,7 +48,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
 
   const renameMutation = useMutation({
     mutationFn: ({ stageId, displayName }: { stageId: string; displayName: string }) =>
-      flowService.renameStage(projectId, stageId, displayName),
+      renameStage(projectId, stageId, displayName),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       setEditingStageId(null);
@@ -60,7 +60,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (stageId: string) => flowService.deleteStage(projectId, stageId),
+    mutationFn: (stageId: string) => deleteStage(projectId, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       setError(null);
@@ -79,7 +79,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
       currentState: string;
     }) => {
       const newState = currentState === 'DISABLED' ? 'ENABLED' : 'DISABLED';
-      return flowService.updateStageWithProject(projectId, stageId, {
+      return updateStageWithProject(projectId, stageId, {
         stage_configuration_state: newState,
       });
     },
@@ -93,7 +93,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (stageId: string) => flowService.archiveStage(projectId, stageId),
+    mutationFn: (stageId: string) => archiveStage(projectId, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
       setError(null);

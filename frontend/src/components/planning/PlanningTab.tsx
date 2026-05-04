@@ -20,6 +20,7 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
     <div className={`p-5 space-y-5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
       <SequencePlanSection
         plans={state.sequencePlans} isLoading={state.sequencesLoading}
+        error={state.sequencesError} onRetry={callbacks.retrySequences}
         createOpen={state.sequenceCreateOpen} createTitle={state.sequenceCreateTitle} createSummary={state.sequenceCreateSummary}
         editOpenId={state.sequenceEditOpenId} editTitle={state.sequenceEditTitle} editSummary={state.sequenceEditSummary}
         onCreateOpen={() => { callbacks.setSequenceCreateOpen(true); callbacks.setSequenceCreateTitle(''); callbacks.setSequenceCreateSummary(''); }}
@@ -38,6 +39,7 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
 
       <ChapterPlanSection
         plans={state.chapterPlans} isLoading={state.chaptersLoading}
+        error={state.chaptersError} onRetry={callbacks.retryChapters}
         createOpen={state.chapterCreateOpen} createTitle={state.chapterCreateTitle}
         createObjective={state.chapterCreateObjective} createConflict={state.chapterCreateConflict} createStakes={state.chapterCreateStakes}
         createSequenceId={state.chapterCreateSequenceId}
@@ -62,6 +64,7 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
 
       <ScenePlanSection
         plans={state.scenePlans} isLoading={state.scenesLoading}
+        error={state.scenesError} onRetry={callbacks.retryScenes}
         createOpen={state.sceneCreateOpen} createTitle={state.sceneCreateTitle}
         createObjective={state.sceneCreateObjective} createConflict={state.sceneCreateConflict} createStakes={state.sceneCreateStakes}
         createChapterId={state.sceneCreateChapterId}
@@ -86,6 +89,7 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
 
       <BeatPlanSection
         plans={state.beatPlans} isLoading={state.beatsLoading}
+        error={state.beatsError} onRetry={callbacks.retryBeats}
         createOpen={state.beatCreateOpen} createObjective={state.beatCreateObjective}
         createConflict={state.beatCreateConflict} createStakes={state.beatCreateStakes}
         editOpenId={state.beatEditOpenId} editObjective={state.beatEditObjective}
@@ -107,11 +111,13 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
       <DependenciesSection
         dependencies={state.dependencies}
         isLoading={state.dependenciesLoading}
+        error={state.dependenciesError} onRetry={callbacks.retryDependencies}
       />
 
       <ChapterPacketsSection
         packets={state.chapterPackets}
         isLoading={state.packetsLoading}
+        error={state.packetsError} onRetry={callbacks.retryPackets}
         createOpen={state.packetCreateOpen}
         createChapterId={state.packetCreateChapterId}
         onCreateOpen={() => callbacks.setPacketCreateOpen(true)}
@@ -124,6 +130,7 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
       <StoryboardCardsSection
         cards={state.storyboardCards}
         isLoading={state.cardsLoading}
+        error={state.cardsError} onRetry={callbacks.retryCards}
         createOpen={state.cardCreateOpen}
         createTitle={state.cardCreateTitle}
         createContent={state.cardCreateContent}
@@ -140,6 +147,19 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
         onCreateTypeChange={callbacks.setCardCreateType}
         onCreate={callbacks.cardCreateSubmit}
         onCreateButtonDisabled={!state.cardCreateTitle.trim()}
+        editOpenId={state.cardEditOpenId}
+        editTitle={state.cardEditTitle}
+        editContent={state.cardEditContent}
+        editType={state.cardEditType}
+        onEditOpen={callbacks.openEditCard}
+        onEditClose={() => { callbacks.setCardEditOpenId(null); callbacks.setCardEditTitle(''); callbacks.setCardEditContent(''); callbacks.setCardEditType('idea'); }}
+        onEditTitleChange={callbacks.setCardEditTitle}
+        onEditContentChange={callbacks.setCardEditContent}
+        onEditTypeChange={callbacks.setCardEditType}
+        onUpdate={callbacks.cardUpdateSubmit}
+        onDelete={callbacks.cardDelete}
+        onReorder={callbacks.cardReorder}
+        onUpdateButtonDisabled={false}
       />
 
       <ArcsTab

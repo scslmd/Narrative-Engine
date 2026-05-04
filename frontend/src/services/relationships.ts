@@ -14,6 +14,13 @@ import type {
   RelationshipEdge,
   RelationshipEdgeListResponse,
 } from '../types/characters';
+
+export interface RelationshipUpdateRequest {
+  relation_kind?: string;
+  summary?: string;
+  tension?: string | null;
+  notes?: string | null;
+}
 import api from '../lib/api';
 
 /**
@@ -47,4 +54,25 @@ export async function deleteRelationship(
   if (response.status !== 200) {
     throw new Error(`Failed to delete relationship ${edgeId}: ${response.status}`);
   }
+}
+
+/**
+ * Update a relationship edge
+ */
+export async function updateRelationship(
+  edgeId: string,
+  data: RelationshipUpdateRequest,
+  projectId: string,
+): Promise<RelationshipEdge> {
+  const response = await api.patch(
+    `/story-development/relationships/${edgeId}`,
+    data,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to update relationship ${edgeId}: ${response.status}`);
+  }
+
+  return response.data;
 }

@@ -1,5 +1,10 @@
 import { useState, type KeyboardEvent } from 'react';
-import type { BrainstormItem, BrainstormItemCreateRequest, BrainstormItemStatus } from '../../types/brainstorm';
+import type {
+  BrainstormItem,
+  BrainstormItemCreateRequest,
+  BrainstormItemPromoteRequest,
+  BrainstormItemStatus,
+} from '../../types/brainstorm';
 import type { BrainstormItemType } from '../../types/braindump';
 
 interface BrainstormWorkspaceProps {
@@ -7,7 +12,14 @@ interface BrainstormWorkspaceProps {
   items?: BrainstormItem[];
   onItemAdd?: (item: BrainstormItemCreateRequest) => void;
   onClusterCreate?: (itemIds: string[]) => void;
+  onPromote?: (request: BrainstormItemPromoteRequest) => Promise<void>;
 }
+
+const TARGET_TYPES = [
+  { value: 'character', label: 'Character' },
+  { value: 'world_bible', label: 'World Bible' },
+  { value: 'arc', label: 'Arc' },
+];
 
 const STATUS_OPTIONS: Array<{ value: BrainstormItemStatus; label: string }> = [
   { value: 'keep', label: 'Keep' },
@@ -33,12 +45,21 @@ export function BrainstormWorkspace({
   items = [],
   onItemAdd,
   onClusterCreate,
+  onPromote,
 }: BrainstormWorkspaceProps) {
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemStatus, setNewItemStatus] = useState<BrainstormItemStatus>('keep');
   const [newItemTags, setNewItemTags] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<'all' | BrainstormItemStatus>('all');
+
+  // Promotion dialog state
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [promoteItemId, setPromoteItemId] = useState<string | null>(null);
+  const [promoteTargetKind, setPromoteTargetKind] = useState('character');
+  const [promoteTargetId, setPromoteTargetId] = useState('');
+  const [promoteError, setPromoteError] = useState<string | null>(null);
+  const [promoteLoading, setPromoteLoading] = useState(false);
 
   const filteredItems = items.filter((item) => filter === 'all' || item.status === filter);
 
@@ -80,6 +101,47 @@ export function BrainstormWorkspace({
 
     onClusterCreate(Array.from(selectedItems));
     setSelectedItems(new Set());
+  };
+
+  const handleOpenPromote = (itemId: string) => {
+    setPromoteItemId(itemId);
+    setPromoteTargetKind('character');
+    setPromoteTargetId('');
+    setPromoteError(null);
+    setPromoteOpen(true);
+  };
+
+  const handleClosePromote = () => {
+    setPromoteOpen(false);
+    setPromoteItemId(null);
+    setPromoteError(null);
+    setPromoteLoading(false);
+  };
+
+  const handlePromoteSubmit = async () => {
+    if (!promoteItemId || !onPromote) return;
+    if (!promoteTargetId.trim()) {
+      setPromoteError('Target ID is required');
+      return;
+    }
+
+    setPromoteLoading(true);
+    setPromoteError(null);
+
+    try {
+      await onPromote({
+        item_id: promoteItemId,
+        project_id: projectId,
+        target_object_kind: promoteTargetKind,
+        target_object_id: promoteTargetId.trim(),
+      });
+      handleClosePromote();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Promotion failed';
+      setPromoteError(message);
+    } finally {
+      setPromoteLoading(false);
+    }
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -182,6 +244,7 @@ export function BrainstormWorkspace({
               item={item}
               selected={selectedItems.has(item.item_id)}
               onSelect={() => handleToggleSelect(item.item_id)}
+              onPromote={onPromote ? () => handleOpenPromote(item.item_id) : undefined}
             />
           ))}
         </div>
@@ -193,6 +256,65 @@ export function BrainstormWorkspace({
           </div>
         )}
       </div>
+
+      {promoteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Promote to</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target type</label>
+                <select
+                  value={promoteTargetKind}
+                  onChange={(e) => setPromoteTargetKind(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {TARGET_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target ID</label>
+                <input
+                  type="text"
+                  value={promoteTargetId}
+                  onChange={(e) => setPromoteTargetId(e.target.value)}
+                  placeholder="Enter target ID"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {promoteError && (
+                <p className="text-sm text-red-600">{promoteError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={handleClosePromote}
+                disabled={promoteLoading}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePromoteSubmit}
+                disabled={promoteLoading || !promoteTargetId.trim()}
+                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {promoteLoading ? 'Promoting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -201,25 +323,26 @@ interface BrainstormCardProps {
   item: BrainstormItem;
   selected: boolean;
   onSelect: () => void;
+  onPromote?: () => void;
 }
 
-function BrainstormCard({ item, selected, onSelect }: BrainstormCardProps) {
+function BrainstormCard({ item, selected, onSelect, onPromote }: BrainstormCardProps) {
   const statusStyles: Record<BrainstormItemStatus, string> = {
     keep: 'bg-green-100 text-green-800 border-green-200',
     park: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     discard: 'bg-red-100 text-red-800 border-red-200',
   };
 
+  const isPromoted = item.promoted_to != null;
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`text-left bg-white border-2 rounded-lg p-3 transition-all ${
+    <div
+      className={`bg-white border-2 rounded-lg p-3 transition-all ${
         selected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
       }`}
     >
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {item.item_type && (
             <span className={`px-1.5 py-0.5 text-xs rounded border ${CATEGORY_BADGE_STYLES[item.item_type as BrainstormItemType].color}`}>
               {CATEGORY_BADGE_STYLES[item.item_type as BrainstormItemType].label}
@@ -228,10 +351,30 @@ function BrainstormCard({ item, selected, onSelect }: BrainstormCardProps) {
           <span className={`px-2 py-0.5 text-xs rounded border ${statusStyles[item.status]}`}>
             {item.status}
           </span>
+          {isPromoted && item.promoted_to && (
+            <span className="px-2 py-0.5 text-xs rounded border bg-indigo-100 text-indigo-800 border-indigo-200">
+              Promoted: {item.promoted_to}
+            </span>
+          )}
         </div>
+        {!isPromoted && onPromote && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPromote();
+            }}
+            className="px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+          >
+            Promote
+          </button>
+        )}
       </div>
 
-      <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap break-words">
+      <p
+        className="text-sm text-gray-700 mb-3 whitespace-pre-wrap break-words cursor-pointer"
+        onClick={onSelect}
+      >
         {item.content}
       </p>
 
@@ -248,7 +391,7 @@ function BrainstormCard({ item, selected, onSelect }: BrainstormCardProps) {
       {item.source_notes && (
         <p className="text-xs text-gray-500 italic line-clamp-2">{item.source_notes}</p>
       )}
-    </button>
+    </div>
   );
 }
 

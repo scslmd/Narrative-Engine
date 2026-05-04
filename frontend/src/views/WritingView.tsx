@@ -44,6 +44,10 @@ export function WritingView() {
     handleToggleDraft,
     promotePending,
     promoteDraft,
+    continuePending,
+    alternatePending,
+    continueDraftAction,
+    alternateVariantAction,
     createDraftPending,
   } = useWritingView(isDark);
   const assist = useManuscriptAssist({
@@ -116,6 +120,8 @@ export function WritingView() {
               draftForm={draftForm}
               isPending={createDraftPending}
               promotePending={promotePending}
+              continuePending={continuePending}
+              alternatePending={alternatePending}
               isLoading={draftsQueryLoading}
               isDark={isDark}
               onCreateDraft={handleCreateDraft}
@@ -125,6 +131,8 @@ export function WritingView() {
               onContentChange={(content) => setDraftForm(draftForm ? { ...draftForm, content } : null)}
               onToggleDraft={handleToggleDraft}
               onPromoteDraft={promoteDraft}
+              onContinueDraft={continueDraftAction}
+              onAlternateVariant={alternateVariantAction}
             />
           </div>
         </div>

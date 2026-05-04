@@ -9,6 +9,8 @@ interface DraftListProps {
   draftForm: { title: string; content: string } | null;
   isPending: boolean;
   promotePending: boolean;
+  continuePending: boolean;
+  alternatePending: boolean;
   isLoading: boolean;
   isDark: boolean;
   onCreateDraft: () => void;
@@ -18,6 +20,8 @@ interface DraftListProps {
   onContentChange: (content: string) => void;
   onToggleDraft: (id: string) => void;
   onPromoteDraft: (id: string) => void;
+  onContinueDraft: (id: string) => void;
+  onAlternateVariant: (id: string) => void;
 }
 
 export function DraftList({
@@ -26,6 +30,8 @@ export function DraftList({
   draftForm,
   isPending,
   promotePending,
+  continuePending,
+  alternatePending,
   isLoading,
   isDark,
   onCreateDraft,
@@ -35,6 +41,8 @@ export function DraftList({
   onContentChange,
   onToggleDraft,
   onPromoteDraft,
+  onContinueDraft,
+  onAlternateVariant,
 }: DraftListProps) {
   if (isLoading) {
     return (
@@ -70,6 +78,10 @@ export function DraftList({
           onToggle={() => onToggleDraft(artifact.artifact_id)}
           onPromote={() => onPromoteDraft(artifact.artifact_id)}
           promotePending={promotePending}
+          onContinue={() => onContinueDraft(artifact.artifact_id)}
+          continuePending={continuePending}
+          onAlternateVariant={() => onAlternateVariant(artifact.artifact_id)}
+          alternatePending={alternatePending}
           isDark={isDark}
         />
       ))}

@@ -1,10 +1,16 @@
-import { Section, EmptyState, WorkspaceStatus } from './ui';
+import { Section } from './ui';
 import { useIsDark } from './hooks';
 import type { ChapterPacket } from '../../types/planning';
+import type { ApiError } from '../../lib/api';
+import { ErrorBanner } from '../ui/ErrorBanner';
+import { LoadingState } from '../ui/LoadingState';
+import { EmptyState } from '../ui/EmptyState';
 
 export interface ChapterPacketsSectionProps {
   packets: ChapterPacket[];
   isLoading: boolean;
+  error: ApiError | null;
+  onRetry: () => void;
   createOpen: boolean;
   createChapterId: string;
   onCreateOpen: () => void;
@@ -24,6 +30,8 @@ export function ChapterPacketsSection({
   onCreateChapterIdChange,
   onCreate,
   onCreateButtonDisabled,
+  error,
+  onRetry,
 }: ChapterPacketsSectionProps) {
   const isDark = useIsDark();
   const inputClass = `text-sm px-2 py-1 rounded border w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`;
@@ -65,19 +73,23 @@ export function ChapterPacketsSection({
         </div>
       }
     >
-      {isLoading ? (
-        <WorkspaceStatus title="Loading chapter packets" detail="Fetching chapter packets..." />
-      ) : packets.length === 0 ? (
-        <EmptyState text="No chapter packets configured. Packets will appear once chapters are ready for drafting." />
+      {error ? (
+        <ErrorBanner error={error} onRetry={onRetry} />
       ) : (
-        <div className="space-y-2">
-          {packets.map((packet) => (
-            <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <div className="font-medium">{packet.chapter_id}</div>
-              <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
+        <LoadingState isLoading={isLoading}>
+          {packets.length === 0 ? (
+            <EmptyState title="No chapter packets" description="Packets will appear once chapters are ready for drafting." actionLabel="Create Packet" onAction={onCreateOpen} />
+          ) : (
+            <div className="space-y-2">
+              {packets.map((packet) => (
+                <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <div className="font-medium">{packet.chapter_id}</div>
+                  <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </LoadingState>
       )}
     </Section>
   );

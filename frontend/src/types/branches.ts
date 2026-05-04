@@ -1,3 +1,11 @@
+export interface BranchRecord {
+  branch_id: string;
+  project_id: string;
+  branch_point_id: string;
+  branch_name: string;
+  branch_state: 'ACTIVE' | 'ARCHIVED';
+}
+
 export interface StoryBranch {
   branch_id: string;
   project_id: string;
@@ -12,6 +20,15 @@ export interface BranchComparisonRecord {
   source_branch_id: string;
   target_branch_id: string;
   review_notes: string[];
+}
+
+export interface MergeDecisionRecord {
+  merge_decision_id: string;
+  project_id: string;
+  source_branch_id: string;
+  target_branch_id: string;
+  merge_rationale: string;
+  resulting_decision_node_ids: string[];
 }
 
 export interface BranchMergeDecision {

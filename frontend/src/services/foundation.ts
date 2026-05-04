@@ -17,6 +17,8 @@ import type {
   FoundationUpdateRequest,
   FoundationReadResponse,
   FoundationWriteResponse,
+  FoundationRevision,
+  FoundationReviewCue,
 } from '../types/foundation';
 import api from '../lib/api';
 
@@ -66,4 +68,36 @@ export async function updateFoundation(
   }
 
   return response.data;
+}
+
+/**
+ * Get review cues for a project's foundation
+ */
+export async function getReviewCues(projectId: string): Promise<FoundationReviewCue[]> {
+  const response = await api.get('/story-development/foundation/review-cues', {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch review cues: ${response.status}`);
+  }
+
+  const data = response.data;
+  return data.items;
+}
+
+/**
+ * Get foundation revisions for a project
+ */
+export async function getFoundationRevisions(projectId: string): Promise<FoundationRevision[]> {
+  const response = await api.get('/story-development/foundation/revisions', {
+    params: { project_id: projectId },
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch foundation revisions: ${response.status}`);
+  }
+
+  const data = response.data;
+  return data.items;
 }

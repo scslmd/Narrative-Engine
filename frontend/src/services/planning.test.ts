@@ -3,11 +3,16 @@ import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import {
   getSequencePlans,
+  getSequencePlan,
   getChapterPlans,
+  getChapterPlan,
   getScenePlans,
+  getScenePlan,
   getBeatPlans,
+  getBeatPlan,
   getPlanningDependencies,
   getChapterPackets,
+  getChapterPacket,
   createSequencePlan,
   updateSequencePlan,
   createChapterPlan,
@@ -156,6 +161,121 @@ describe('planning service', () => {
       );
 
       await expect(getChapterPackets('proj-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('getSequencePlan', () => {
+    it('returns a single sequence plan', async () => {
+      server.use(
+        http.get('/story-development/planning/sequence-plans/seq-1', () =>
+          HttpResponse.json({ sequence_id: 'seq-1', title: 'Act One' }),
+        ),
+      );
+
+      const result = await getSequencePlan('seq-1', 'proj-1');
+      expect(result.sequence_id).toBe('seq-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/planning/sequence-plans/seq-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getSequencePlan('seq-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getChapterPlan', () => {
+    it('returns a single chapter plan', async () => {
+      server.use(
+        http.get('/story-development/planning/chapter-plans/ch-1', () =>
+          HttpResponse.json({ chapter_id: 'ch-1', title: 'Chapter One' }),
+        ),
+      );
+
+      const result = await getChapterPlan('ch-1', 'proj-1');
+      expect(result.chapter_id).toBe('ch-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/planning/chapter-plans/ch-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getChapterPlan('ch-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getScenePlan', () => {
+    it('returns a single scene plan', async () => {
+      server.use(
+        http.get('/story-development/planning/scene-plans/sc-1', () =>
+          HttpResponse.json({ scene_id: 'sc-1', title: 'Opening Scene' }),
+        ),
+      );
+
+      const result = await getScenePlan('sc-1', 'proj-1');
+      expect(result.scene_id).toBe('sc-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/planning/scene-plans/sc-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getScenePlan('sc-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getBeatPlan', () => {
+    it('returns a single beat plan', async () => {
+      server.use(
+        http.get('/story-development/planning/beat-plans/bt-1', () =>
+          HttpResponse.json({ beat_id: 'bt-1', objective: 'Inciting incident' }),
+        ),
+      );
+
+      const result = await getBeatPlan('bt-1', 'proj-1');
+      expect(result.beat_id).toBe('bt-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/planning/beat-plans/bt-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getBeatPlan('bt-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getChapterPacket', () => {
+    it('returns a single chapter packet', async () => {
+      server.use(
+        http.get('/story-development/planning/chapter-packets/pkt-1', () =>
+          HttpResponse.json({ packet_id: 'pkt-1', chapter_id: 'ch-1' }),
+        ),
+      );
+
+      const result = await getChapterPacket('pkt-1', 'proj-1');
+      expect(result.packet_id).toBe('pkt-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/planning/chapter-packets/pkt-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getChapterPacket('pkt-missing', 'proj-1')).rejects.toThrow();
     });
   });
 

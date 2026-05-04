@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { JobPhase, JobCreateRequest, JobStatusResponse } from '../../types/job';
-import { jobsService } from '../../services/jobs';
+import { createJob } from '../../services/jobs';
 import { useToastStore } from '../../stores/toastStore';
 import PhaseSelector from './PhaseSelector';
 import PayloadBuilder from './PayloadBuilder';
@@ -33,7 +33,7 @@ export default function JobLaunchForm({ onJobCreated }: JobLaunchFormProps) {
         payload,
       };
 
-      const job = await jobsService.createJob(request);
+      const job = await createJob(request);
       
       addToast(`Job ${job.id} created successfully`, 'success');
       

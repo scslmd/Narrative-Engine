@@ -10,6 +10,8 @@ import {
   createRevisionSuggestion,
   createDraftArtifact,
   promoteDraftToManuscript,
+  continueDraft,
+  createAlternateVariant,
 } from '../services/drafting';
 import type { ManuscriptDocument, DraftArtifact } from '../types/drafting';
 import type { RevisionSuggestion } from '../types/aids';
@@ -54,6 +56,10 @@ export interface WritingViewHookResult {
   createDraftPending: boolean;
   promotePending: boolean;
   promoteDraft: (artifactId: string) => void;
+  continuePending: boolean;
+  alternatePending: boolean;
+  continueDraftAction: (artifactId: string) => void;
+  alternateVariantAction: (artifactId: string) => void;
 }
 
 export function useWritingView(isDark: boolean): WritingViewHookResult {
@@ -131,6 +137,38 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     },
     onError: () => {
       toast.error('Failed to promote draft');
+    },
+  });
+
+  const continueMutation = useMutation({
+    mutationFn: (artifactId: string) =>
+      continueDraft(artifactId, projectId!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+      toast.success('Draft continued');
+    },
+    onError: (err) => {
+      if (err instanceof Error && err.message.includes('404')) {
+        toast.error('No prior content to continue from');
+      } else {
+        toast.error('Failed to continue draft');
+      }
+    },
+  });
+
+  const alternateMutation = useMutation({
+    mutationFn: (artifactId: string) =>
+      createAlternateVariant(artifactId, projectId!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+      toast.success('Alternate variant created');
+    },
+    onError: (err) => {
+      if (err instanceof Error && err.message.includes('404')) {
+        toast.error('No prior content to create variant from');
+      } else {
+        toast.error('Failed to create alternate variant');
+      }
     },
   });
 
@@ -290,6 +328,14 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     promoteMutation.mutate(artifactId);
   }, [promoteMutation]);
 
+  const continueDraftAction = useCallback((artifactId: string) => {
+    continueMutation.mutate(artifactId);
+  }, [continueMutation]);
+
+  const alternateVariantAction = useCallback((artifactId: string) => {
+    alternateMutation.mutate(artifactId);
+  }, [alternateMutation]);
+
   return {
     projectId,
     selectedDocumentId,
@@ -324,5 +370,9 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     createDraftPending: createDraftMutation.isPending,
     promotePending: promoteMutation.isPending,
     promoteDraft,
+    continuePending: continueMutation.isPending,
+    alternatePending: alternateMutation.isPending,
+    continueDraftAction,
+    alternateVariantAction,
   };
 }

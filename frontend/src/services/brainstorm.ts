@@ -17,6 +17,7 @@ import type {
   BrainstormItemCreateRequest,
   BrainstormItemClusterRequest,
   BrainstormItemListResponse,
+  BrainstormPromotionResult,
 } from '../types/brainstorm';
 import api from '../lib/api';
 
@@ -61,6 +62,29 @@ export async function clusterBrainstormItems(
 
   if (response.status !== 200) {
     throw new Error(`Failed to cluster brainstorm items: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Promote a brainstorm item to a target entity (character, world bible entry, arc)
+ */
+export async function promoteBrainstormItem(
+  itemId: string,
+  projectId: string,
+  targetKind: string,
+  targetId: string,
+): Promise<BrainstormPromotionResult> {
+  const response = await api.post('/story-development/brainstorm/items/promote', {
+    item_id: itemId,
+    project_id: projectId,
+    target_object_kind: targetKind,
+    target_object_id: targetId,
+  });
+
+  if (response.status !== 201) {
+    throw new Error(`Failed to promote brainstorm item: ${response.status}`);
   }
 
   return response.data;

@@ -74,6 +74,11 @@ export interface BrainstormItemListResponse {
   meta: Record<string, string>;
 }
 
+export interface BrainstormPromotionResult {
+  promoted_to: string;
+  target_id: string;
+}
+
 export interface BrainstormPromotionListResponse {
   project_id: string;
   items: BrainstormPromotion[];

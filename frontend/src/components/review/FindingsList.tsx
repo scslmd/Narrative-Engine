@@ -1,7 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { CheckerFinding, Severity } from '../../types/review';
+import { useState, useCallback } from 'react';
+import type { Severity } from '../../types/review';
 import { getFindings } from '../../services/review';
 import { FindingCard } from './FindingCard';
+import { useApiQuery } from '../../hooks/useApiQuery';
+import { LoadingState } from '../ui/LoadingState';
+import { EmptyState } from '../ui/EmptyState';
+import { ErrorBanner } from '../ui/ErrorBanner';
 
 interface FindingsListProps {
   projectId: string;
@@ -10,49 +14,33 @@ interface FindingsListProps {
 const severities: Severity[] = ['low', 'medium', 'high', 'critical'];
 
 export function FindingsList({ projectId }: FindingsListProps) {
-  const [findings, setFindings] = useState<CheckerFinding[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
   const [severityFilter, setSeverityFilter] = useState<Severity[] | null>(null);
   const [sourceKindFilter, setSourceKindFilter] = useState<string | null>(null);
 
-  const loadFindings = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await getFindings({
+  const findingsQuery = useApiQuery({
+    queryKey: ['review', 'findings', projectId, JSON.stringify(severityFilter), sourceKindFilter || ''],
+    serviceFn: () =>
+      getFindings({
         project_id: projectId,
         severity: severityFilter || undefined,
         source_object_kind: sourceKindFilter || undefined,
-      });
-      setFindings(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load findings');
-      setFindings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, severityFilter, sourceKindFilter]);
+      }),
+    onErrorToast: false,
+  });
 
-  useEffect(() => {
-    void loadFindings();
-  }, [loadFindings]);
-
-  const handleSelectFinding = () => {
+  const handleSelectFinding = useCallback(() => {
     // Selection handled by parent component
-  };
+  }, []);
 
   return (
     <div className="h-full flex flex-col">
       <header className="border-b px-4 py-3 bg-white">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">Findings</h2>
-          
+
           <button
-            onClick={loadFindings}
-            disabled={loading}
+            onClick={() => void findingsQuery.refetch()}
+            disabled={findingsQuery.isLoading}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
           >
             Refresh
@@ -85,43 +73,29 @@ export function FindingsList({ projectId }: FindingsListProps) {
         </div>
       </header>
 
+      <ErrorBanner error={findingsQuery.error} onRetry={() => void findingsQuery.retry()} />
+
       <main className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg p-4 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="text-center py-8 text-red-600">
-            <p>{error}</p>
-          </div>
-        )}
-
-        {!loading && !error && findings.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No review findings have been fetched yet. Findings are generated when checker/inspect jobs run on project artifacts such as chapter plans, scene plans, and manuscripts.</p>
-          </div>
-        )}
-
-        {!loading && !error && findings.length > 0 && (
-          <>
-            <p className="text-sm text-gray-500 mb-2">{findings.length} finding(s)</p>
-            {findings.map((finding) => (
-              <FindingCard 
-                key={finding.finding_id} 
-                finding={finding}
-                projectId={projectId}
-                onSelect={handleSelectFinding}
-              />
-            ))}
-          </>
-        )}
+        <LoadingState isLoading={findingsQuery.isLoading}>
+          {findingsQuery.data && findingsQuery.data.length === 0 ? (
+            <EmptyState
+              title="No review findings yet"
+              description="Findings are generated when checker/inspect jobs run on project artifacts such as chapter plans, scene plans, and manuscripts."
+            />
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 mb-2">{findingsQuery.data?.length || 0} finding(s)</p>
+              {(findingsQuery.data || []).map((finding) => (
+                <FindingCard
+                  key={finding.finding_id}
+                  finding={finding}
+                  projectId={projectId}
+                  onSelect={handleSelectFinding}
+                />
+              ))}
+            </>
+          )}
+        </LoadingState>
       </main>
     </div>
   );

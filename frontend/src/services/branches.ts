@@ -1,4 +1,4 @@
-import type { StoryBranch, BranchComparisonRecord, BranchMergeDecision } from '../types/branches';
+import type { BranchRecord, MergeDecisionRecord, StoryBranch, BranchComparisonRecord, BranchMergeDecision, BranchStateRef } from '../types/branches';
 import api from '../lib/api';
 
 interface BranchListResponse {
@@ -68,6 +68,76 @@ export async function createMergeDecision(
 
   if (response.status !== 201) {
     throw new Error(`Failed to create merge decision: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getBranch(
+  branchId: string,
+  projectId?: string,
+): Promise<BranchRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.get(`/story-development/branches/${branchId}`, { params });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch branch: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getBranchComparison(
+  comparisonId: string,
+  projectId?: string,
+): Promise<BranchComparisonRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.get(
+    `/story-development/branches/comparisons/${comparisonId}`,
+    { params },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch comparison: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getMergeDecision(
+  decisionId: string,
+  projectId?: string,
+): Promise<MergeDecisionRecord> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.get(
+    `/story-development/branches/merge-decisions/${decisionId}`,
+    { params },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch merge decision: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getBranchStateRefs(
+  branchId: string,
+  projectId?: string,
+): Promise<BranchStateRef[]> {
+  const params: Record<string, string> = {};
+  if (projectId) params.project_id = projectId;
+
+  const response = await api.get(`/story-development/branches/${branchId}/state-refs`, { params });
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch state refs: ${response.status}`);
   }
 
   return response.data;

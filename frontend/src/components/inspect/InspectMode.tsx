@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCheckerStatus } from '../../services/checker';
-import { jobsService } from '../../services/jobs';
+import { getStatus } from '../../services/jobs';
 import { useUIStore } from '../../stores/uiStore';
 import InspectTabs from './InspectTabs';
 
@@ -49,7 +49,7 @@ export default function InspectMode() {
         return;
       }
 
-      const jobStatus = await jobsService.getStatus(routeJobId)
+      const jobStatus = await getStatus(routeJobId)
         .then((status) => ({ ok: true as const, status }))
         .catch(() => ({ ok: false as const }));
 

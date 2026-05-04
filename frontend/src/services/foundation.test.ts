@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getFoundation, createFoundation, updateFoundation } from './foundation';
+import { getFoundation, createFoundation, updateFoundation, getReviewCues, getFoundationRevisions } from './foundation';
 
 const mockProfile = {
   foundation_id: 'found-1',
@@ -23,6 +23,13 @@ const mockRevision = {
   foundation_id: 'found-1',
   snapshot: mockProfile,
   change_summary: null,
+};
+
+const mockReviewCue = {
+  impacted_area: 'character_arcs',
+  reason: 'Premise changed significantly',
+  triggering_revision_id: 'rev-1',
+  triggering_fields: ['premise'],
 };
 
 describe('foundation service', () => {
@@ -140,6 +147,68 @@ describe('foundation service', () => {
       );
 
       await expect(updateFoundation('proj-missing', {})).rejects.toThrow();
+    });
+  });
+
+  describe('getReviewCues', () => {
+    it('returns review cues for a project', async () => {
+      server.use(
+        http.get('/story-development/foundation/review-cues', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({
+            project_id: 'proj-1',
+            items: [mockReviewCue],
+            meta: {},
+          });
+        }),
+      );
+
+      const result = await getReviewCues('proj-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].impacted_area).toBe('character_arcs');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/foundation/review-cues', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getReviewCues('proj-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('getFoundationRevisions', () => {
+    it('returns foundation revisions for a project', async () => {
+      server.use(
+        http.get('/story-development/foundation/revisions', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({
+            project_id: 'proj-1',
+            items: [mockRevision],
+            meta: {},
+          });
+        }),
+      );
+
+      const result = await getFoundationRevisions('proj-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].revision_id).toBe('rev-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/foundation/revisions', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getFoundationRevisions('proj-missing')).rejects.toThrow();
     });
   });
 });

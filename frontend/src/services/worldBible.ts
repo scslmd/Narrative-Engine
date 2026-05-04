@@ -52,6 +52,26 @@ export async function createWorldBibleEntry(
 }
 
 /**
+ * Get a single world bible entry by type and title
+ */
+export async function getWorldBibleEntry(
+  entryType: string,
+  title: string,
+  projectId: string,
+): Promise<WorldBibleEntry> {
+  const response = await api.get(
+    `/story-development/world-bible/${entryType}/${encodeURIComponent(title)}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch world bible entry ${entryType}/${title}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
  * Update a world bible entry
  */
 export async function updateWorldBibleEntry(

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { jobsService } from '../services/jobs';
+import { getLogs } from '../services/jobs';
 
 interface LogEntry {
   timestamp: string;
@@ -10,7 +10,7 @@ interface LogEntry {
 export function useJobLogs(jobId: string | null) {
   const { data, isLoading, error } = useQuery<{ id: string; entries: LogEntry[] }>({
     queryKey: ['job-logs', jobId],
-    queryFn: () => jobsService.getLogs(jobId!),
+    queryFn: () => getLogs(jobId!),
     enabled: !!jobId,
     refetchInterval: 1000,
     retry: 3,

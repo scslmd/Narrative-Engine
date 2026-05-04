@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from './brainstorm';
+import {
+  getBrainstormItems,
+  createBrainstormItem,
+  clusterBrainstormItems,
+  promoteBrainstormItem,
+} from './brainstorm';
 
 const mockItem = {
   item_id: 'item-1',
@@ -99,6 +104,48 @@ describe('brainstorm service', () => {
       );
 
       await expect(clusterBrainstormItems({ project_id: 'proj-1', item_ids: [] })).rejects.toThrow();
+    });
+  });
+
+  describe('promoteBrainstormItem', () => {
+    it('promotes a brainstorm item to a target type (201)', async () => {
+      server.use(
+        http.post('/story-development/brainstorm/items/promote', async ({ request }) => {
+          const body = (await request.json()) as Record<string, string>;
+          expect(body.item_id).toBe('item-1');
+          expect(body.project_id).toBe('proj-1');
+          expect(body.target_object_kind).toBe('character');
+          return HttpResponse.json({
+            promoted_to: 'character',
+            target_id: 'char-abc',
+          }, { status: 201 });
+        }),
+      );
+
+      const result = await promoteBrainstormItem('item-1', 'proj-1', 'character', 'char-abc');
+
+      expect(result.promoted_to).toBe('character');
+      expect(result.target_id).toBe('char-abc');
+    });
+
+    it('throws on 409 conflict (already promoted)', async () => {
+      server.use(
+        http.post('/story-development/brainstorm/items/promote', () =>
+          HttpResponse.json({ detail: 'Already promoted' }, { status: 409 }),
+        ),
+      );
+
+      await expect(promoteBrainstormItem('item-1', 'proj-1', 'character', 'char-abc')).rejects.toThrow();
+    });
+
+    it('throws on 400 invalid target type', async () => {
+      server.use(
+        http.post('/story-development/brainstorm/items/promote', () =>
+          HttpResponse.json({ detail: 'Invalid target type' }, { status: 400 }),
+        ),
+      );
+
+      await expect(promoteBrainstormItem('item-1', 'proj-1', 'invalid_type', 'char-abc')).rejects.toThrow();
     });
   });
 });

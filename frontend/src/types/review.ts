@@ -11,6 +11,8 @@ export interface CheckerFinding {
   source_context?: string;
 }
 
+export type ReviewFinding = CheckerFinding;
+
 export type DecisionAction = 'accept' | 'reject' | 'defer' | 'escalate' | 'refine';
 
 export interface ReviewDecision {

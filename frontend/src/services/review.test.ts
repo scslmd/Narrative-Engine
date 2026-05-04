@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { getFindings, getDecisionsForFinding, createDecision } from './review';
+import { getFindings, getDecisionsForFinding, createDecision, getFinding, getDecision } from './review';
 
 const mockFinding = {
   finding_id: 'finding-1',
@@ -141,6 +141,58 @@ describe('review service', () => {
         target_id: 'x',
         decision: 'accept',
       })).rejects.toThrow();
+    });
+  });
+
+  describe('getFinding', () => {
+    it('returns a single finding by id', async () => {
+      server.use(
+        http.get('/story-development/review/findings/finding-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json(mockFinding);
+        }),
+      );
+
+      const result = await getFinding('finding-1', 'proj-1');
+
+      expect(result.finding_id).toBe('finding-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/review/findings/finding-missing', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getFinding('finding-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getDecision', () => {
+    it('returns a single decision by id', async () => {
+      server.use(
+        http.get('/story-development/review/decisions/decision-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json(mockDecision);
+        }),
+      );
+
+      const result = await getDecision('decision-1', 'proj-1');
+
+      expect(result.decision_id).toBe('decision-1');
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.get('/story-development/review/decisions/decision-missing', () => {
+          return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getDecision('decision-missing', 'proj-1')).rejects.toThrow();
     });
   });
 });

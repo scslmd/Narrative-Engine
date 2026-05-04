@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { ApiError } from '../lib/api';
 import {
   getSequencePlans,
   getChapterPlans,
@@ -22,6 +23,9 @@ import {
 import {
   getStoryboardCards,
   createStoryboardCard,
+  updateStoryboardCard,
+  deleteStoryboardCard,
+  reindexColumn,
 } from '../services/storyboard';
 import {
   getArcCandidates,
@@ -59,6 +63,15 @@ export interface PlanningTabState {
   dependenciesLoading: boolean;
   packetsLoading: boolean;
   cardsLoading: boolean;
+
+  // Error states
+  sequencesError: ApiError | null;
+  chaptersError: ApiError | null;
+  scenesError: ApiError | null;
+  beatsError: ApiError | null;
+  dependenciesError: ApiError | null;
+  packetsError: ApiError | null;
+  cardsError: ApiError | null;
   candidatesLoading: boolean;
   selectionsLoading: boolean;
   stageMapsLoading: boolean;
@@ -113,6 +126,10 @@ export interface PlanningTabState {
   cardCreateTitle: string;
   cardCreateContent: string;
   cardCreateType: string;
+  cardEditOpenId: string | null;
+  cardEditTitle: string;
+  cardEditContent: string;
+  cardEditType: string;
 
   arcCandidateCreateOpen: boolean;
   arcCandidateCreateId: string;
@@ -191,12 +208,29 @@ export interface PlanningTabCallbacks {
   setPacketCreateChapterId: (value: string) => void;
   packetCreateSubmit: () => void;
 
+  // Retry callbacks
+  retrySequences: () => void;
+  retryChapters: () => void;
+  retryScenes: () => void;
+  retryBeats: () => void;
+  retryDependencies: () => void;
+  retryPackets: () => void;
+  retryCards: () => void;
+
   // Storyboard Cards
   setCardCreateOpen: (open: boolean) => void;
   setCardCreateTitle: (value: string) => void;
   setCardCreateContent: (value: string) => void;
   setCardCreateType: (value: string) => void;
   cardCreateSubmit: () => void;
+  setCardEditOpenId: (id: string | null) => void;
+  setCardEditTitle: (value: string) => void;
+  setCardEditContent: (value: string) => void;
+  setCardEditType: (value: string) => void;
+  cardUpdateSubmit: (cardId: string) => void;
+  cardDelete: (cardId: string) => void;
+  cardReorder: (columnId: string, orderedIds: string[]) => void;
+  openEditCard: (card: StoryboardCard) => void;
 
   // Arc Candidates
   setArcCandidateCreateOpen: (open: boolean) => void;
@@ -373,6 +407,30 @@ export function usePlanningTab(tab: string): {
     },
   });
 
+  const storyboardCardUpdateMutation = useMutation({
+    mutationFn: (data: { cardId: string; payload: Parameters<typeof updateStoryboardCard>[1] }) =>
+      updateStoryboardCard(data.cardId, data.payload, projectId || undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
+    },
+  });
+
+  const storyboardCardDeleteMutation = useMutation({
+    mutationFn: (cardId: string) =>
+      deleteStoryboardCard(cardId, projectId || undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
+    },
+  });
+
+  const storyboardCardReindexMutation = useMutation({
+    mutationFn: (data: { columnId: string; orderedIds: string[] }) =>
+      reindexColumn(data.columnId, data.orderedIds, projectId || undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
+    },
+  });
+
   const selectArcMutation = useMutation({
     mutationFn: (arcId: string) =>
       createArcSelection({
@@ -510,6 +568,11 @@ export function usePlanningTab(tab: string): {
   const [cardCreateTitle, setCardCreateTitle] = useState('');
   const [cardCreateContent, setCardCreateContent] = useState('');
   const [cardCreateType, setCardCreateType] = useState('idea');
+
+  const [cardEditOpenId, setCardEditOpenId] = useState<string | null>(null);
+  const [cardEditTitle, setCardEditTitle] = useState('');
+  const [cardEditContent, setCardEditContent] = useState('');
+  const [cardEditType, setCardEditType] = useState('idea');
 
   const [arcCandidateCreateOpen, setArcCandidateCreateOpen] = useState(false);
   const [arcCandidateCreateId, setArcCandidateCreateId] = useState('');
@@ -771,6 +834,15 @@ export function usePlanningTab(tab: string): {
       });
     },
 
+    // Retry callbacks
+    retrySequences: () => { void sequencePlansQuery.refetch(); },
+    retryChapters: () => { void chapterPlansQuery.refetch(); },
+    retryScenes: () => { void scenePlansQuery.refetch(); },
+    retryBeats: () => { void beatPlansQuery.refetch(); },
+    retryDependencies: () => { void dependenciesQuery.refetch(); },
+    retryPackets: () => { void chapterPacketsQuery.refetch(); },
+    retryCards: () => { void storyboardCardsQuery.refetch(); },
+
     // Storyboard Cards
     setCardCreateOpen,
     setCardCreateTitle,
@@ -791,6 +863,44 @@ export function usePlanningTab(tab: string): {
         setCardCreateContent('');
         setCardCreateType('idea');
       });
+    },
+    setCardEditOpenId,
+    setCardEditTitle,
+    setCardEditContent,
+    setCardEditType,
+    cardUpdateSubmit: (cardId) => {
+      void storyboardCardUpdateMutation.mutateAsync({
+        cardId,
+        payload: {
+          title: cardEditTitle.trim() || undefined,
+          content: cardEditContent.trim() || undefined,
+          card_type: cardEditType || undefined,
+        },
+      }).then(() => {
+        setCardEditOpenId(null);
+        setCardEditTitle('');
+        setCardEditContent('');
+        setCardEditType('idea');
+      });
+    },
+    cardDelete: (cardId) => {
+      void storyboardCardDeleteMutation.mutateAsync(cardId).then(() => {
+        if (cardEditOpenId === cardId) {
+          setCardEditOpenId(null);
+          setCardEditTitle('');
+          setCardEditContent('');
+          setCardEditType('idea');
+        }
+      });
+    },
+    cardReorder: (columnId, orderedIds) => {
+      void storyboardCardReindexMutation.mutateAsync({ columnId, orderedIds });
+    },
+    openEditCard: (card) => {
+      setCardEditOpenId(card.card_id);
+      setCardEditTitle(card.title);
+      setCardEditContent(card.content || '');
+      setCardEditType(card.card_type || 'idea');
     },
 
     // Arc Candidates
@@ -871,6 +981,15 @@ export function usePlanningTab(tab: string): {
     selectionsLoading: arcSelectionsQuery.isLoading,
     stageMapsLoading: arcStageMapsQuery.isLoading,
     comparisonsLoading: arcComparisonsQuery.isLoading,
+
+    // Error states
+    sequencesError: sequencePlansQuery.error ? (sequencePlansQuery.error instanceof ApiError ? sequencePlansQuery.error : new ApiError(sequencePlansQuery.error?.message ?? 'Unknown error', 0)) : null,
+    chaptersError: chapterPlansQuery.error ? (chapterPlansQuery.error instanceof ApiError ? chapterPlansQuery.error : new ApiError(chapterPlansQuery.error?.message ?? 'Unknown error', 0)) : null,
+    scenesError: scenePlansQuery.error ? (scenePlansQuery.error instanceof ApiError ? scenePlansQuery.error : new ApiError(scenePlansQuery.error?.message ?? 'Unknown error', 0)) : null,
+    beatsError: beatPlansQuery.error ? (beatPlansQuery.error instanceof ApiError ? beatPlansQuery.error : new ApiError(beatPlansQuery.error?.message ?? 'Unknown error', 0)) : null,
+    dependenciesError: dependenciesQuery.error ? (dependenciesQuery.error instanceof ApiError ? dependenciesQuery.error : new ApiError(dependenciesQuery.error?.message ?? 'Unknown error', 0)) : null,
+    packetsError: chapterPacketsQuery.error ? (chapterPacketsQuery.error instanceof ApiError ? chapterPacketsQuery.error : new ApiError(chapterPacketsQuery.error?.message ?? 'Unknown error', 0)) : null,
+    cardsError: storyboardCardsQuery.error ? (storyboardCardsQuery.error instanceof ApiError ? storyboardCardsQuery.error : new ApiError(storyboardCardsQuery.error?.message ?? 'Unknown error', 0)) : null,
     sequenceCreateOpen,
     sequenceCreateTitle,
     sequenceCreateSummary,
@@ -914,6 +1033,10 @@ export function usePlanningTab(tab: string): {
     cardCreateTitle,
     cardCreateContent,
     cardCreateType,
+    cardEditOpenId,
+    cardEditTitle,
+    cardEditContent,
+    cardEditType,
     arcCandidateCreateOpen,
     arcCandidateCreateId,
     arcCandidateCreateName,

@@ -116,6 +116,101 @@ export async function getChapterPackets(projectId: string): Promise<ChapterPacke
   return data.items;
 }
 
+/**
+ * Get a single sequence plan by ID
+ */
+export async function getSequencePlan(
+  sequenceId: string,
+  projectId: string,
+): Promise<SequencePlan> {
+  const response = await api.get(
+    `/story-development/planning/sequence-plans/${sequenceId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch sequence plan ${sequenceId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Get a single chapter plan by ID
+ */
+export async function getChapterPlan(
+  chapterId: string,
+  projectId: string,
+): Promise<ChapterPlan> {
+  const response = await api.get(
+    `/story-development/planning/chapter-plans/${chapterId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch chapter plan ${chapterId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Get a single scene plan by ID
+ */
+export async function getScenePlan(
+  sceneId: string,
+  projectId: string,
+): Promise<ScenePlan> {
+  const response = await api.get(
+    `/story-development/planning/scene-plans/${sceneId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch scene plan ${sceneId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Get a single beat plan by ID
+ */
+export async function getBeatPlan(
+  beatId: string,
+  projectId: string,
+): Promise<BeatPlan> {
+  const response = await api.get(
+    `/story-development/planning/beat-plans/${beatId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch beat plan ${beatId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+/**
+ * Get a single chapter packet by ID
+ */
+export async function getChapterPacket(
+  packetId: string,
+  projectId: string,
+): Promise<ChapterPacket> {
+  const response = await api.get(
+    `/story-development/planning/chapter-packets/${packetId}`,
+    { params: { project_id: projectId } },
+  );
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch chapter packet ${packetId}: ${response.status}`);
+  }
+
+  return response.data;
+}
+
 // ============================================================================
 // Sequence Plan mutations
 // ============================================================================

@@ -10,6 +10,7 @@ import {
   createArcSelection,
   deleteArcSelection,
   createArcStageMap,
+  updateArcSelection,
 } from './arcs';
 
 const mockCandidate = {
@@ -254,6 +255,39 @@ describe('arcs service', () => {
         arc_id: 'arc-bad',
         stage_kinds: [],
       })).rejects.toThrow();
+    });
+  });
+
+  describe('updateArcSelection', () => {
+    it('updates an arc selection (200)', async () => {
+      server.use(
+        http.patch('/story-development/arcs/selections/sel-1', async ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          const body = await request.json();
+          expect(body).toHaveProperty('comparison_notes');
+          return HttpResponse.json({
+            selection_id: 'sel-1',
+            project_id: 'proj-1',
+            comparison_notes: ['updated note'],
+          });
+        }),
+      );
+
+      const result = await updateArcSelection('sel-1', { comparison_notes: ['updated note'] }, 'proj-1');
+
+      expect(result.selection_id).toBe('sel-1');
+      expect(result.comparison_notes).toEqual(['updated note']);
+    });
+
+    it('throws on error response', async () => {
+      server.use(
+        http.patch('/story-development/arcs/selections/sel-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(updateArcSelection('sel-missing', {}, 'proj-1')).rejects.toThrow();
     });
   });
 });

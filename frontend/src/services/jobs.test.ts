@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
-import { jobsService } from './jobs';
+import { createJob, getStatus, getLogs, getAttempts, getJobSteps, getJobLineage, retryJob } from './jobs';
 import type { JobStatusResponse } from '../types/job';
+import type { StepRecord, ArtifactLineageView } from '../types/inspect';
 
 const mockJobStatus: JobStatusResponse = {
   id: 'job-123',
@@ -11,7 +12,7 @@ const mockJobStatus: JobStatusResponse = {
   attempt_number: 1,
 };
 
-describe('jobsService', () => {
+describe('jobs', () => {
   describe('createJob', () => {
     it('creates a job with phase and payload (202)', async () => {
       server.use(
@@ -24,7 +25,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.createJob({ phase: 'P-100', payload: { project_id: 'proj-1' } });
+      const result = await createJob({ phase: 'P-100', payload: { project_id: 'proj-1' } });
 
       expect(result.id).toBe('job-123');
       expect(result.phase).toBe('P-100');
@@ -37,7 +38,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.createJob({ phase: 'P-300', payload: {} });
+      const result = await createJob({ phase: 'P-300', payload: {} });
 
       expect(result.id).toBe('job-123');
     });
@@ -50,8 +51,8 @@ describe('jobsService', () => {
       );
 
       await expect(
-        jobsService.createJob({ phase: 'P-100', payload: {} }),
-      ).rejects.toThrow('Failed to create job: 201');
+       createJob({ phase: 'P-100', payload: {} }),
+       ).rejects.toThrow('Failed to create job: 201');
     });
 
     it('throws on 400 invalid request', async () => {
@@ -62,7 +63,7 @@ describe('jobsService', () => {
       );
 
       await expect(
-        jobsService.createJob({ phase: 'P-100', payload: {} }),
+        createJob({ phase: 'P-100', payload: {} }),
       ).rejects.toThrow('Invalid phase');
     });
 
@@ -74,7 +75,7 @@ describe('jobsService', () => {
       );
 
       await expect(
-        jobsService.createJob({ phase: 'P-100', payload: {} }),
+        createJob({ phase: 'P-100', payload: {} }),
       ).rejects.toThrow('Conflict');
     });
 
@@ -86,7 +87,7 @@ describe('jobsService', () => {
       );
 
       await expect(
-        jobsService.createJob({ phase: 'P-100', payload: {} }),
+        createJob({ phase: 'P-100', payload: {} }),
       ).rejects.toThrow('Server error occurred. Please try again later.');
     });
   });
@@ -99,7 +100,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getStatus('job-123');
+      const result = await getStatus('job-123');
 
       expect(result.id).toBe('job-123');
       expect(result.status).toBe('COMPLETED');
@@ -112,7 +113,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getStatus('job-running');
+      const result = await getStatus('job-running');
 
       expect(result.status).toBe('RUNNING');
     });
@@ -124,7 +125,7 @@ describe('jobsService', () => {
         }),
       );
 
-      await expect(jobsService.getStatus('job-missing')).rejects.toThrow();
+      await expect(getStatus('job-missing')).rejects.toThrow();
     });
   });
 
@@ -144,7 +145,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getLogs('job-123');
+      const result = await getLogs('job-123');
 
       expect(result.id).toBe('job-123');
       expect(result.entries).toHaveLength(2);
@@ -158,7 +159,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getLogs('job-empty');
+      const result = await getLogs('job-empty');
 
       expect(result.entries).toEqual([]);
     });
@@ -170,7 +171,7 @@ describe('jobsService', () => {
         }),
       );
 
-      await expect(jobsService.getLogs('job-missing')).rejects.toThrow();
+      await expect(getLogs('job-missing')).rejects.toThrow();
     });
   });
 
@@ -208,7 +209,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getAttempts('job-123');
+      const result = await getAttempts('job-123');
 
       expect(result.job_id).toBe('job-123');
       expect(result.items).toHaveLength(1);
@@ -268,7 +269,7 @@ describe('jobsService', () => {
         }),
       );
 
-      const result = await jobsService.getAttempts('job-retries');
+      const result = await getAttempts('job-retries');
 
       expect(result.items).toHaveLength(2);
       expect(result.items[0].status).toBe('FAILED');
@@ -283,7 +284,157 @@ describe('jobsService', () => {
         }),
       );
 
-      await expect(jobsService.getAttempts('job-missing')).rejects.toThrow();
+      await expect(getAttempts('job-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('getJobSteps', () => {
+    it('returns step records for a job', async () => {
+      const mockSteps: StepRecord[] = [
+        {
+          step_record_id: 's1',
+          logical_run_id: 'job-123',
+          run_id: 'job-123',
+          run_kind: 'pipeline_job',
+          attempt_number: 1,
+          step_name: 'architect',
+          step_index: 0,
+          state: 'COMPLETED',
+          project_id: 'proj-1',
+        },
+        {
+          step_record_id: 's2',
+          logical_run_id: 'job-123',
+          run_id: 'job-123',
+          run_kind: 'pipeline_job',
+          attempt_number: 1,
+          step_name: 'sequence',
+          step_index: 1,
+          state: 'COMPLETED',
+          project_id: 'proj-1',
+        },
+      ];
+
+      server.use(
+        http.get('/jobs/job-123/steps', () => {
+          return HttpResponse.json({ items: mockSteps });
+        }),
+      );
+
+      const result = await getJobSteps('job-123');
+
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].step_name).toBe('architect');
+      expect(result.items[1].step_name).toBe('sequence');
+      expect(result.items[0].state).toBe('COMPLETED');
+    });
+
+    it('returns empty steps array', async () => {
+      server.use(
+        http.get('/jobs/job-empty/steps', () => {
+          return HttpResponse.json({ items: [] });
+        }),
+      );
+
+      const result = await getJobSteps('job-empty');
+
+      expect(result.items).toEqual([]);
+    });
+
+    it('throws on 404 not found', async () => {
+      server.use(
+        http.get('/jobs/job-missing/steps', () => {
+          return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getJobSteps('job-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('getJobLineage', () => {
+    it('returns lineage artifacts for a job', async () => {
+      const mockArtifacts: ArtifactLineageView[] = [
+        {
+          artifact_id: 'a1',
+          artifact_kind: 'PROJECT_BRIEF',
+          state: 'CANONICAL',
+          run_id: 'job-123',
+          step_name: 'architect',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+        {
+          artifact_id: 'a2',
+          artifact_kind: 'CHAPTER_PLAN',
+          state: 'CANONICAL',
+          run_id: 'job-123',
+          step_name: 'sequence',
+          created_at: '2026-01-01T00:01:00Z',
+        },
+      ];
+
+      server.use(
+        http.get('/jobs/job-123/lineage', () => {
+          return HttpResponse.json({ items: mockArtifacts });
+        }),
+      );
+
+      const result = await getJobLineage('job-123');
+
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].artifact_id).toBe('a1');
+      expect(result.items[0].artifact_kind).toBe('PROJECT_BRIEF');
+      expect(result.items[1].state).toBe('CANONICAL');
+    });
+
+    it('returns empty lineage array', async () => {
+      server.use(
+        http.get('/jobs/job-empty/lineage', () => {
+          return HttpResponse.json({ items: [] });
+        }),
+      );
+
+      const result = await getJobLineage('job-empty');
+
+      expect(result.items).toEqual([]);
+    });
+
+    it('throws on 404 not found', async () => {
+      server.use(
+        http.get('/jobs/job-missing/lineage', () => {
+          return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(getJobLineage('job-missing')).rejects.toThrow();
+    });
+  });
+
+  describe('retryJob', () => {
+    it('retries a failed job and returns new run info', async () => {
+      server.use(
+        http.post('/jobs/job-failed/retry', () => {
+          return HttpResponse.json({
+            run_id: 'job-retry-1',
+            status: 'QUEUED',
+          });
+        }),
+      );
+
+      const result = await retryJob('job-failed');
+
+      expect(result.run_id).toBe('job-retry-1');
+      expect(result.status).toBe('QUEUED');
+    });
+
+    it('throws on 404 not found', async () => {
+      server.use(
+        http.post('/jobs/job-missing/retry', () => {
+          return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
+        }),
+      );
+
+      await expect(retryJob('job-missing')).rejects.toThrow();
     });
   });
 });
