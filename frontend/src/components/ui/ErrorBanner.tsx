@@ -12,6 +12,7 @@ export function ErrorBanner({ error, onRetry }: ErrorBannerProps) {
 
   useEffect(() => {
     if (!error) return;
+    setVisible(true);
     const timer = setTimeout(() => {
       setVisible(false);
     }, 30000);

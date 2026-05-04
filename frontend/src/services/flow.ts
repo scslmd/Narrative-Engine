@@ -65,7 +65,9 @@ export async function updateStageWithProject(projectId: string, stageId: string,
   if (updates.custom_prompt_guidance !== undefined) payload.custom_prompt_guidance = updates.custom_prompt_guidance;
   if (updates.stage_configuration_state !== undefined) payload.stage_configuration_state = updates.stage_configuration_state;
 
-  const response = await api.patch(`/story-development/flow/stages/${stageId}?project_id=${projectId}`, payload);
+  const response = await api.patch(`/story-development/flow/stages/${stageId}`, payload, {
+    params: { project_id: projectId },
+  });
 
   if (response.status !== 200) {
     throw new Error(`Failed to update flow stage ${stageId}: ${response.status}`);
@@ -75,7 +77,9 @@ export async function updateStageWithProject(projectId: string, stageId: string,
 }
 
 export async function deleteStage(projectId: string, stageId: string): Promise<void> {
-  const response = await api.delete(`/story-development/flow/stages/${stageId}?project_id=${projectId}`);
+  const response = await api.delete(`/story-development/flow/stages/${stageId}`, {
+    params: { project_id: projectId },
+  });
 
   if (response.status !== 200) {
     throw new Error(`Failed to delete flow stage ${stageId}: ${response.status}`);
