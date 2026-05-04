@@ -4,6 +4,7 @@ import logging
 from typing import Any, Callable, Protocol, TypeVar
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,9 @@ from app.schemas.pattern_extraction import (
 from app.services.mythos_extraction import MythosExtractionError
 from app.services.pattern_extraction import PatternExtractionError
 from app.services.projects import ProjectService
+from app.services.project_export import ProjectExportService, _EXPORT_VERSION
+from app.services.project_import import ProjectImportService, ProjectImportError
+
 
 
 def build_projects_router(
@@ -326,5 +330,131 @@ def build_projects_router(
                 return extraction_job_manager.get_status(extraction_id)
             except KeyError:
                 raise HTTPException(status_code=404, detail=f"Extraction {extraction_id} not found or expired")
+
+    if import_job_manager is not None:
+        from ..schemas.project_io import ProjectExportSubmitResponse, ProjectExportProgressResponse
+        from fastapi import UploadFile, File, Form
+
+        def _run_import_export_worker(
+            import_id: str,
+            zip_path: str,
+            project_name: str | None,
+        ) -> None:
+            worker_zip_path = Path(zip_path)
+            try:
+                import_service = ProjectImportService()
+                metadata = import_service.validate_zip(worker_zip_path)
+                import_job_manager.update_progress(import_id, phase="validating_zip")
+
+                effective_name = project_name or metadata.original_project_name
+
+                result = import_service.import_from_zip(worker_zip_path, effective_name)
+                import_job_manager.complete(import_id, result=result)
+            except ProjectImportError as e:
+                import_job_manager.fail(import_id, error=str(e))
+            except Exception as e:
+                import_job_manager.fail(import_id, error=f"Unexpected error: {e}")
+
+        @router.post("/import-export", status_code=202)
+        async def import_export_zip(
+            project_name: str | None = Form(None),
+            file: UploadFile = File(...),
+        ):
+            """Import a project from an uploaded ZIP archive. Returns 202 with import_id."""
+
+            if not file.filename or not file.filename.endswith(".zip"):
+                raise HTTPException(status_code=422, detail="Only .zip files are accepted")
+
+            import tempfile as _tempfile
+            import uuid as _uuid
+
+            tmp_dir = _tempfile.mkdtemp()
+            zip_path = f"{tmp_dir}/import_{_uuid.uuid4().hex}.zip"
+
+            content = await file.read()
+            MAX_IMPORT_SIZE = 524_288_000
+            if len(content) > MAX_IMPORT_SIZE:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"ZIP file too large. Maximum size: {MAX_IMPORT_SIZE / 1_000_000:.0f} MB",
+                )
+
+            with open(zip_path, "wb") as zf:
+                zf.write(content)
+
+            return ProjectExportSubmitResponse(
+                import_id=import_job_manager.submit(
+                    _run_import_export_worker,
+                    zip_path=zip_path,
+                    project_name=project_name,
+                ),
+            )
+
+        @router.get("/export/{import_id}", response_model=dict)
+        def get_export_import_status(import_id: str):
+            """Get the status of an export/import job."""
+            try:
+                return import_job_manager.get_status(import_id)
+            except KeyError:
+                raise HTTPException(status_code=404, detail="Import job not found or expired")
+
+        @router.post("/{project_id}/export")
+        async def export_project(project_id: str):
+            """Export a project as a ZIP file stream."""
+            try:
+                projection = project_service._require_projection(project_id)
+            except FileNotFoundError:
+                raise HTTPException(status_code=404, detail="Project not found")
+
+            from pathlib import Path as _Path
+            project_dir = (
+                _Path(projection.get("project_dir", "")) if projection else None
+            )
+            if not project_dir or not project_dir.exists():
+                raise HTTPException(status_code=404, detail="Project directory not found")
+
+            manifest_path = project_dir / "manifest.json"
+            if manifest_path.exists():
+                try:
+                    with open(manifest_path) as mf:
+                        import json as _json
+
+                        manifest = _json.load(mf)
+                    project_name = manifest.get("project_name", f"project-{project_id}")
+                except Exception:
+                    project_name = f"project-{project_id}"
+            else:
+                project_name = f"project-{project_id}"
+
+            import tempfile as _tempfile2
+            import uuid as _uuid2
+
+            zip_dir = (
+                _Path(_tempfile2.mkdtemp())
+                / f"{project_name.replace(' ', '_')}-{project_id}-v{_EXPORT_VERSION}.zip"
+            )
+
+            try:
+                export_service = ProjectExportService()
+                export_service.create_zip(project_dir, zip_dir, project_name, project_id)
+
+                def stream_gen():
+                    with open(zip_dir, "rb") as zf:
+                        while chunk := zf.read(8192):
+                            yield chunk
+
+                return StreamingResponse(
+                    stream_gen(),
+                    media_type="application/zip",
+                    headers={
+                        "Content-Disposition": f'attachment; filename="{project_name.replace(" ", "_")}-{project_id}-v{_EXPORT_VERSION}.zip"'
+                    },
+                )
+            except Exception:
+                if zip_dir.exists():
+                    zip_dir.unlink(missing_ok=True)
+                if zip_dir.parent.exists():
+                    zip_dir.parent.rmdir(missing_ok=True)
+                raise HTTPException(status_code=500, detail="Failed to create export archive")
 
     return router

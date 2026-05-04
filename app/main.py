@@ -433,6 +433,9 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
                 request.url.path.startswith('/v1')
                 or request.url.path == '/projects/import-story'
                 or request.url.path.startswith('/projects/import/')
+                or request.url.path.endswith('/export')
+                or request.url.path.startswith('/projects/export/')
+                or request.url.path == '/projects/import-export'
             ):
                 api_key = request.headers.get('X-API-Key')
                 if api_key is None:
