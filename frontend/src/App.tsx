@@ -23,36 +23,41 @@ const queryClient = new QueryClient({
   },
 })
 
-function App() {
+function AppInner() {
   useHealthCheck();
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<ProjectList />} />
+          <Route path="/workspace/:projectId" element={<Workspace />}>
+            <Route index element={<Navigate to="plan" replace />} />
+            <Route path="plan" element={<PlanningView />} />
+            <Route path="write" element={<WritingView />} />
+            <Route path="write/:chapterId" element={<WritingView />} />
+            <Route path="review" element={<ReviewView />} />
+            <Route path="inspect" element={<InspectView />} />
+            <Route path="inspect/:jobId" element={<InspectView />} />
+            <Route path="braindump" element={<BrainDumpView />} />
+            <Route path="canon" element={<CanonView />} />
+            <Route path="generate" element={<GenerationView />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+      <ToastContainer />
+    </BrowserRouter>
+  );
+}
 
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<ProjectList />} />
-              <Route path="/workspace/:projectId" element={<Workspace />}>
-                <Route index element={<Navigate to="plan" replace />} />
-                <Route path="plan" element={<PlanningView />} />
-                <Route path="write" element={<WritingView />} />
-                <Route path="write/:chapterId" element={<WritingView />} />
-                <Route path="review" element={<ReviewView />} />
-                <Route path="inspect" element={<InspectView />} />
-                <Route path="inspect/:jobId" element={<InspectView />} />
-                <Route path="braindump" element={<BrainDumpView />} />
-                <Route path="canon" element={<CanonView />} />
-                <Route path="generate" element={<GenerationView />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Layout>
-          <ToastContainer />
-        </BrowserRouter>
+        <AppInner />
       </ToastProvider>
     </QueryClientProvider>
-  )
+  );
 }
 
 export default App

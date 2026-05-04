@@ -134,9 +134,16 @@ def test_checker_idempotency_key_rejects_different_payload(tmp_path) -> None:
         )
 
 
+def _create_project(client: TestClient, project_name: str) -> str:
+    response = client.post("/projects/create", json={"project_name": project_name})
+    assert response.status_code == 201
+    return response.json()["project_id"]
+
+
 def test_job_start_endpoint_returns_accepted_and_completes_via_status_polling() -> None:
     with TestClient(build_app()) as client:
-        response = client.post("/jobs/create", json={"phase": "P-100", "payload": {"project_id": "science-fantasy-test"}})
+        project_id = _create_project(client, "Failure Mode Job Test")
+        response = client.post("/jobs/create", json={"phase": "P-100", "payload": {"project_id": project_id}})
 
         assert response.status_code == 202
         payload = response.json()
@@ -148,10 +155,11 @@ def test_job_start_endpoint_returns_accepted_and_completes_via_status_polling() 
 
 def test_job_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> None:
     with TestClient(build_app()) as client:
+        project_id = _create_project(client, "Failure Mode Idempotency Test")
         first = client.post(
             "/jobs/create",
             headers={"Idempotency-Key": "job-api-123"},
-            json={"phase": "P-100", "payload": {"project_id": "science-fantasy-test"}},
+            json={"phase": "P-100", "payload": {"project_id": project_id}},
         )
         first_payload = first.json()
         status_payload = _poll_json(client, first.headers["Location"], terminal_statuses={"COMPLETED", "FAILED"})
@@ -160,7 +168,7 @@ def test_job_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> 
         second = client.post(
             "/jobs/create",
             headers={"Idempotency-Key": "job-api-123"},
-            json={"phase": "P-100", "payload": {"project_id": "science-fantasy-test"}},
+            json={"phase": "P-100", "payload": {"project_id": project_id}},
         )
 
         assert second.status_code == 200
