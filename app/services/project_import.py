@@ -126,7 +126,7 @@ class ProjectImportService:
         metadata = self.validate_zip(zip_path)
 
         ops_db = ops_db_path or settings.operations_db_path
-        temp_dir = Path(str(ops_db).parent) / f".import_{metadata.original_project_id}_{uuid.uuid4().hex[:8]}"
+        temp_dir = (Path(str(ops_db))).parent / f".import_{metadata.original_project_id}_{uuid.uuid4().hex[:8]}"
         temp_dir.mkdir(parents=True, exist_ok=True)
 
         try:

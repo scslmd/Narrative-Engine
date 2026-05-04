@@ -413,3 +413,23 @@ class ProjectRepository:
         if artifact_type in {"sequence", "sequences"}:
             return "sequence"
         return artifact_type
+
+    def delete_project(self, project_id: str) -> None:
+        """Delete a project from the operations database.
+        
+        This removes the project row and all related rows (project_artifacts,
+        and any other tables with FK → projects(project_id)).
+        
+        Args:
+            project_id: The project identifier to delete.
+            
+        Raises:
+            KeyError: If the project does not exist.
+        """
+        projection = self.get_project_projection(project_id)
+        if projection is None:
+            raise KeyError(project_id)
+        
+        with connect(self.db_path) as connection:
+            connection.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
+            connection.commit()

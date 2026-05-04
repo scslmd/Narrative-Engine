@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Protocol, TypeVar
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,6 @@ def build_projects_router(
 
     if import_service is not None and import_job_manager is not None:
         from ..schemas.story_import import ImportSubmitResponse, ImportProgressResponse
-        from fastapi import UploadFile, File, Form
 
         def _run_import_worker(
             import_service: Any,
@@ -332,8 +331,9 @@ def build_projects_router(
                 raise HTTPException(status_code=404, detail=f"Extraction {extraction_id} not found or expired")
 
     if import_job_manager is not None:
+        from pathlib import Path
         from ..schemas.project_io import ProjectExportSubmitResponse, ProjectExportProgressResponse
-        from fastapi import UploadFile, File, Form
+
 
         def _run_import_export_worker(
             import_id: str,
@@ -394,7 +394,18 @@ def build_projects_router(
         def get_export_import_status(import_id: str):
             """Get the status of an export/import job."""
             try:
-                return import_job_manager.get_status(import_id)
+                status = import_job_manager.get_status(import_id)
+                return {
+                    "import_id": status.import_id,
+                    "status": status.status,
+                    "phase": status.phase,
+                    "chapters_processed": status.chapters_processed,
+                    "total_estimated_chapters": status.total_estimated_chapters,
+                    "chunks_processed": status.chunks_processed,
+                    "total_estimated_chunks": status.total_estimated_chunks,
+                    "result": status.result,
+                    "error": status.error,
+                }
             except KeyError:
                 raise HTTPException(status_code=404, detail="Import job not found or expired")
 
@@ -407,9 +418,7 @@ def build_projects_router(
                 raise HTTPException(status_code=404, detail="Project not found")
 
             from pathlib import Path as _Path
-            project_dir = (
-                _Path(projection.get("project_dir", "")) if projection else None
-            )
+            project_dir = projection.manifest_path.parent if projection else None
             if not project_dir or not project_dir.exists():
                 raise HTTPException(status_code=404, detail="Project directory not found")
 
@@ -451,10 +460,16 @@ def build_projects_router(
                     },
                 )
             except Exception:
-                if zip_dir.exists():
-                    zip_dir.unlink(missing_ok=True)
-                if zip_dir.parent.exists():
-                    zip_dir.parent.rmdir(missing_ok=True)
+                try:
+                    if zip_dir.exists():
+                        zip_dir.unlink()
+                except OSError:
+                    pass
+                try:
+                    if zip_dir.parent.exists():
+                        zip_dir.parent.rmdir()
+                except OSError:
+                    pass
                 raise HTTPException(status_code=500, detail="Failed to create export archive")
 
     return router
