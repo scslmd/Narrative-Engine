@@ -1,4 +1,4 @@
-# Narrative Engine - User Guide v1.5.1
+# Narrative Engine - User Guide v1.6.0
 
 This guide walks you through using Narrative Engine from first project to a fully-developed complex story, following the natural creative lifecycle: seed your project, refine canon, generate stories, and polish manuscripts.
 
@@ -16,27 +16,31 @@ This guide walks you through using Narrative Engine from first project to a full
 3. [Extracting Mythos for Pattern-Based Story Generation](#extracting-mythos-for-pattern-based-story-generation)
 4. [Extracting Patterns for Story Generation](#extracting-patterns-for-story-generation)
 
+### Transferring Projects
+
+5. [Exporting and Importing Projects](#exporting-and-importing-projects)
+
 ### Refining Canon
 
-5. [Canon Workshop: Customizing Source Material Before Generation](#canon-workshop-customizing-source-material-before-generation)
+6. [Canon Workshop: Customizing Source Material Before Generation](#canon-workshop-customizing-source-material-before-generation)
 
 ### Generating Stories
 
-6. [Story Generation Orchestration](#story-generation-orchestration)
+7. [Story Generation Orchestration](#story-generation-orchestration)
 
 ### Polishing Manuscripts
 
-7. [Manuscript LLM Assist: Interactive Editing with AI](#manuscript-llm-assist-interactive-editing-with-ai)
+8. [Manuscript LLM Assist: Interactive Editing with AI](#manuscript-llm-assist-interactive-editing-with-ai)
 
 ### Learning Paths (Levels 1–3)
 
-8. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
-9. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
-10. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
+9. [Level 1: Your First Simple Story](#level-1-your-first-simple-story)
+10. [Level 2: Medium Complexity with Branching and Review](#level-2-medium-complexity-with-branching-and-review)
+11. [Level 3: Complex Story with Full Pipeline](#level-3-complex-story-with-full-pipeline)
 
 ### Reference
 
-11. [Tips and Best Practices](#tips-and-best-practices)
+12. [Tips and Best Practices](#tips-and-best-practices)
 
 ---
 
@@ -228,6 +232,94 @@ Use this when you want to write stories that follow the narrative DNA of an exis
 - In Same World mode, you create original characters that follow the extracted archetypes within the source story's world
 - Transposed mode gives maximum creative freedom while maintaining the source story's narrative DNA
 - Voice profile extraction is most accurate when the source text has a distinctive narrative voice
+
+---
+
+## Exporting and Importing Projects
+
+> **Route**: `/` (home page) — Project List actions
+
+Project Export and Import let you create complete ZIP archive backups of any project and restore them as new projects elsewhere. This supports moving work between machines, archiving completed stories, or sharing project templates without requiring direct file access.
+
+### When to Use Export/Import
+
+Use this when you want to:
+- Create a portable backup of a completed project (directory structure + operations DB records)
+- Move a project from one machine or installation to another
+- Share a project setup with another user without exposing your full data directory
+- Archive a finished story for safekeeping outside the live workspace
+
+### Exporting a Project
+
+Export creates a synchronous ZIP archive download containing:
+- **Project directory** — manifest.json, bible.db, sequences.json, chapters/, exports/, .telemetry, .structured_log
+- **Operations DB dump** — all 49 tables scoped to the project_id (projects, project_artifacts, foundation_profiles, character_profiles, world_bible_entries, arc_* tables, planning tables, draft_artifacts, manuscript_documents, jobs, step_records, job_attempts, and more)
+- **Metadata** — export_version field, project name, project ID, export timestamp
+
+**Step-by-step:**
+
+1. Navigate to the home page (`/`) — the Project List view
+2. Find the project you want to export in the grid
+3. Click the **Export** button (archive icon) on the project row
+4. The browser will download a ZIP file named `{project_name}_export.zip` immediately
+5. The file contains a `metadata.json` with export version, project ID, and timestamp
+
+The export is synchronous — you receive the complete ZIP in one download. No polling or progress tracking needed.
+
+### Importing an Exported Project
+
+Import takes a previously exported ZIP file and creates a **brand new project** from it. The original source project is never modified. All data from both the project directory and operations DB is restored into a fresh project with a new project ID.
+
+> **Important**: Import always creates a brand-new project with a fresh UUID. It does NOT overwrite or merge with any existing project, even if the names match.
+
+**Step-by-step:**
+
+1. Navigate to the home page (`/`)
+2. Click **"Import Project"** (button above the project list)
+3. The import wizard opens:
+   - **Drag & drop** your exported ZIP file into the upload area, or click to browse
+   - Enter a **new project name** — this becomes the display name for the imported project
+4. Click **"Import Project"**
+5. The system validates the ZIP (min 1 MB, max 500 MB):
+   - Checks `metadata.json` exists and is valid
+   - Verifies the project directory structure (`manifest.json`, `bible.db`)
+   - Detects the `export_version` for forward migration compatibility
+6. The import runs asynchronously on the server:
+   - Extracts the ZIP to an isolated temp directory with path traversal protection
+   - Runs a schema version migration pass if the export version is older than the current version (the system only applies newer versions, not older ones)
+   - Creates a new project in `data/projects/{new_project_id}/` with restored files
+   - Restores operations DB records into the new project scope
+   - Initializes project artifacts and registers everything in the operations registry
+7. A progress indicator shows status updates:
+   - **pending** — queued for processing
+   - **processing** — extracting and restoring data
+   - **completed** — import finished successfully (redirects to new project)
+   - **failed** — an error occurred (error message displayed)
+8. On success, you're redirected to the imported project's workspace
+
+### Schema Versioning and Migration
+
+Every export includes an `export_version` field in `metadata.json`. This tracks which schema version was current when the export was created:
+
+- **Forward migration** — if you import an older export into a newer Narrative Engine installation, the system applies a migration pass to reconcile any changes. The import process never downgrades your schema.
+- **Backward compatibility** — exports always contain the full project directory structure, so even if schema versions differ significantly, the core files (manifest.json, bible.db) remain usable.
+
+To check the version of an exported ZIP without extracting it:
+
+```bash
+unzip -p archive.zip metadata.json | python -m json.tool
+```
+
+### Troubleshooting Export/Import
+
+| Issue | Solution |
+|-------|----------|
+| Export button does nothing | Ensure your project has a valid manifest and database; check browser console for errors |
+| ZIP download is very large (500+ MB) | The operations DB grows over time with job records and step data. Consider archiving rather than importing if you only need reference data |
+| Import fails with "invalid export" | Ensure the ZIP was created by Narrative Engine and contains `metadata.json`. Corrupted or manually re-packed ZIPs will fail |
+| Import shows "project directory missing manifest" | The source project's directory was incomplete or the ZIP is corrupted. Re-export the original project |
+| Export takes a long time for large projects | Large operations DB dumps can take 30+ seconds. This is expected for projects with extensive job history |
+| Missing data after import | Check that both `metadata.json` and the project directory exist in the source ZIP. The operations DB dump must contain tables matching `_OPS_TABLES_WITH_PROJECT_ID` |
 
 ---
 
@@ -1115,3 +1207,7 @@ The State-Aware Narrative Controller (Scene Context, Consistency Critic, Entity 
 | **M-500 Assist Phase** | Executor phase for manuscript assist requests. Loads document, builds assist packet with canon context, calls LLM, parses JSON suggestions, runs gate checks, persists suggestions and gate results. |
 | **M-550 Repair Phase** | Optional executor phase triggered when M-500 gates fail and policy allows repair. Sends a repair prompt to fix canon violations in generated suggestions. |
 | **Version Conflict Protection** | Manuscript assist applies suggestions against an expected document version. If the document was edited between requesting and applying, the apply fails with HTTP 409, preventing silent overwrites. |
+| **Project Export** | Creates a complete ZIP archive snapshot of a project including its directory structure (manifest.json, bible.db, chapters/, etc.) and all operations DB records scoped to the project_id. Downloaded synchronously via streaming response. Accessible from the Project List page. |
+| **Project Import** | Restores a previously exported project ZIP as a brand-new project with a fresh UUID. Never overwrites or merges with existing projects. Runs asynchronously (202 Accepted + polling). Includes schema version migration for forward compatibility. Accessed via the "Import Project" button on the home page. |
+| **Export ZIP** | The ZIP archive format used by project export. Contains metadata.json (with export_version, project_id, project_name, timestamp), the full project directory tree, and all operations DB tables. Minimum size 1 MB, maximum size 500 MB for imports. |
+| **Export Version** | Schema versioning field in metadata.json that tracks which Narrative Engine schema version was current at export time. Used during import to apply forward migration passes when importing older exports into newer installations. |

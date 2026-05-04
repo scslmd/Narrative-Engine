@@ -1,10 +1,10 @@
-# Narrative Engine - Complete User Walkthrough v1.5.1
+# Narrative Engine - Complete User Walkthrough v1.6.0
 
 > Purpose: Step-by-step guide to using all features of the Narrative Engine application, starting simple and incrementally building to advanced workflows.
 >
 > Prerequisites: A working Narrative Engine installation with backend and frontend running. Inference backend (llama.cpp, LM Studio, vLLM, or stub) configured and accessible.
 >
-> Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.5.1.md`) for feature reference and detailed explanations.
+> Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.6.0.md`) for feature reference and detailed explanations.
 
 ---
 
@@ -15,6 +15,8 @@ The Narrative Engine is a narrative compilation system for long-form fiction dev
 - **Mythos Extraction** -- paste mythology texts and extract narrative patterns to seed a new project
 - **Pattern Extraction** -- paste any story or mythology text and extract storytelling DNA including voice profile, narrative structure, thematic constraints, and entities to seed a new project
 - **Story Import** -- paste an existing story and have the LLM auto-extract structured data
+- **Project Export** -- create a complete ZIP archive backup of a project (directory + operations DB) for transfer or archiving
+- **Project Import** -- restore an exported ZIP as a brand-new project with full data fidelity; import runs asynchronously with progress tracking
 - **Project Creation** -- manual project setup with genre, tone, POV, structure
 - **Planning** -- hierarchical story planning (sequences, chapters, scenes, beats)
 - **Writing** -- manuscript editing with draft management and AI suggestions
@@ -57,6 +59,7 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
   - [Option B: Import Story (LLM-Assisted)](#option-b-import-story-llm-assisted)
   - [Option C: Extract Mythos (Pattern-Based Seed)](#option-c-extract-mythos-pattern-based-seed)
   - [Option D: Extract Patterns (Generalized Pattern-Based Seed)](#option-d-extract-patterns-generalized-pattern-based-seed)
+- [Phase 1d: Import an Exported Project](#phase-1d-import-an-exported-project)
 - [Phase 1b: Mythos Extraction Results](#phase-1b-mythos-extraction-results-optional)
 - [Phase 1c: Pattern Extraction Results](#phase-1c-pattern-extraction-results-optional)
 
@@ -305,6 +308,112 @@ If you used Pattern Extraction as your project seed, the following will be pre-p
 | Voice profile not extracted | Use source_type = "narrative" for fiction stories; mythology source type does not extract voice profiles |
 | Wrong generation mode | Same World for in-universe stories, New Characters for same world with original cast, Transposed for adapted settings |
 | Partial results | Retry — the LLM may extract more patterns on a second pass |
+
+From here, proceed to Phase 2 (Planning Workspace).
+
+---
+
+## Phase 1d: Import an Exported Project
+
+### Step 1: Open the Import Wizard
+
+**Route**: `/`
+
+The Import wizard restores a previously exported project ZIP archive as a brand-new project. This is the primary way to transfer projects between machines, installations, or users.
+
+### Step 2: Upload Your Exported ZIP
+
+1. On the home page (`/`), click **"Import Project"** (the button above the project list grid)
+2. The import modal opens with a drag-and-drop upload area
+3. Either:
+   - **Drag and drop** your exported ZIP file onto the upload area, or
+   - **Click to browse** and select the ZIP file from your filesystem
+4. A valid export ZIP must contain `metadata.json`, a project directory (with `manifest.json` and `bible.db`), and optionally an `operations_db.sql` dump
+
+### Step 3: Specify Import Details
+
+1. After uploading, fill in:
+   - **New Project Name** — choose a name for the imported project. This is always a brand-new project with a fresh UUID; it does NOT replace or merge with any existing project, even if the names match.
+2. Click **"Import Project"** to start the asynchronous import process
+
+### Step 4: Monitor Import Progress
+
+The import runs asynchronously on the server. A progress indicator shows updates:
+
+- **Pending** — the import is queued for processing
+- **Processing** — extracting ZIP, validating structure, migrating schema version, restoring data
+- **Completed** — import finished successfully; you are redirected to the new project workspace
+- **Failed** — an error occurred; the error message explains what went wrong and how to fix it
+
+Typical import time for a small-to-medium project (10-50 MB ZIP) is 15-30 seconds. Larger projects with extensive job history may take longer.
+
+### Step 5: Verify the Imported Project
+
+After successful import, you are redirected to the new project's workspace. Verify that:
+- Characters, world bible entries, foundation profile, and planning data match the source project
+- The manifest reflects the original project settings (genre, tone, structure, etc.)
+- All chapters, drafts, and manuscripts are present
+
+### What Happens Behind the Scenes (Import Flow)
+
+1. **ZIP Validation** — the server checks that the ZIP is ≥1 MB, ≤500 MB, contains `metadata.json`, and has a valid project directory structure
+2. **Schema Detection** — reads `export_version` from `metadata.json` to determine the schema version used at export time
+3. **Isolated Extraction** — extracts to a temporary directory with path traversal protection (rejected paths outside the extraction root)
+4. **Migration Pass** — if the export version is older than the current server version, applies forward migration to reconcile any schema changes
+5. **Project Creation** — creates a new project in `data/projects/{new_project_id}/` by copying restored files
+6. **Operations DB Restore** — inserts all scoped operations DB records (projects, project_artifacts, foundation_profiles, character_profiles, etc.) under the new project scope
+7. **Artifact Initialization** — runs `initialize_project_artifacts` to register the project in the operations registry
+
+### Importing Without Drag-and-Drop (API)
+
+If you prefer using the API directly:
+
+```bash
+curl -X POST http://localhost:8000/projects/import-export \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@my_project_export.zip" \
+  -F "project_name=My Restored Project"
+```
+
+Response (202 Accepted):
+```json
+{
+  "import_id": "abc123",
+  "status": "pending",
+  "project_name": "My Restored Project"
+}
+```
+
+Poll for status:
+```bash
+curl http://localhost:8000/projects/export/abc123
+```
+
+### Expected Results
+
+After a successful import, the new project contains everything from the export:
+- All characters with full profiles and relationships
+- World bible entries across all types (locations, concepts, rules, organizations)
+- Foundation profile with premise, logline, thematic spine, etc.
+- Planning hierarchy (sequences → chapters → scenes → beats)
+- Draft artifacts and manuscript documents
+- Job history and step records from the operations DB
+
+The only differences are:
+- The project has a new UUID (project_id)
+- All internal IDs referencing the old project are updated to the new ID
+- Job timestamps are preserved from the original export
+
+### Troubleshooting Project Import
+
+| Issue | Solution |
+|-------|----------|
+| "Invalid export: metadata.json not found" | The ZIP was not created by Narrative Engine, or it is corrupted. Re-export the source project |
+| "Invalid export: missing manifest.json" | The source project's directory is incomplete. Check that the export contains both `metadata.json` and a valid project directory |
+| Import hangs at "Processing" for more than 5 minutes | Large operations DB dumps take longer to restore. Wait for completion or check server logs |
+| Error: "project directory missing required files" | The source project's directory structure changed (e.g., deleted bible.db). Re-export from the original workspace |
+| Imported project looks incomplete | Some data may have been corrupted during export. Verify the source project is accessible and working before re-exporting |
+| Missing character relationships after import | Relationships are stored in a separate table; ensure the export ZIP contains the full operations DB dump |
 
 From here, proceed to Phase 2 (Planning Workspace).
 
@@ -1563,6 +1672,15 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 - The LLM must return valid JSON matching the import schema
 - At least one character must be extracted
 - Genre and tone values that don't match enum values are silently skipped (warning in response)
+
+### Project Export/Import Issues
+
+- **Export button does nothing** — Ensure the project has a valid manifest and database. Check browser console for network errors when clicking export.
+- **ZIP file is larger than expected (500+ MB)** — The operations DB accumulates job records, step data, and attempt history over time. This is normal for projects with extensive AI execution history.
+- **Import fails with "invalid export"** — Verify the ZIP was created by Narrative Engine and contains `metadata.json`. Manually re-packed or corrupted ZIPs will fail validation.
+- **Import shows "processing" indefinitely** — Large operations DB dumps require time to restore rows into the database. Check server logs for progress; typical import takes 15-30 seconds for medium projects.
+- **Imported project is missing data** — Verify the export ZIP contains both `metadata.json` and a complete project directory (with `manifest.json`, `bible.db`, etc.). Missing components indicate an incomplete source export.
+- **Schema migration fails on import** — The export version may be significantly older than your current installation. Check `metadata.json` for `export_version`. If the migration fails, the import is rolled back; contact support with the error details.
 
 ### Job Failure Recovery
 

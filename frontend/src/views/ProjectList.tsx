@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
-import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
 import { StoryImportModal } from '../components/projects/StoryImportModal';
+import { ImportProjectModal } from '../components/projects/ImportProjectModal';
 import { useApiMutation } from '../hooks/useApiMutation';
 import { useToast } from '../hooks/useToast';
 import { deleteProject } from '../services/projects';
+import { exportProject } from '../services/projectIO';
 import type { ProjectSummary } from '../lib/projectsApi';
 
 export function ProjectList(): React.ReactElement {
@@ -18,7 +20,9 @@ export function ProjectList(): React.ReactElement {
   const [selectedPov, setSelectedPov] = useState<string>('Third_Limited');
   const [selectedStructure, setSelectedStructure] = useState<string>('THREE_ACT');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showImportProjectModal, setShowImportProjectModal] = useState(false);
   const [deletingProject, setDeletingProject] = useState<ProjectSummary | null>(null);
+  const [isExporting, setIsExporting] = useState<string | null>(null);
   const { addToast } = useToast();
 
   const deleteMutation = useApiMutation({
@@ -54,6 +58,17 @@ export function ProjectList(): React.ReactElement {
 
   const handleDeleteClick = (project: ProjectSummary) => {
     setDeletingProject(project);
+  };
+
+  const handleExport = async (projectId: string) => {
+    setIsExporting(projectId);
+    try {
+      await exportProject(projectId);
+    } catch {
+      // ApiError interceptor already shows toast on error
+    } finally {
+      setIsExporting(null);
+    }
   };
 
   const POV_DESCRIPTIONS: Record<string, string> = {
@@ -282,6 +297,17 @@ export function ProjectList(): React.ReactElement {
         </button>
       </form>
 
+      <div className="flex justify-end mb-4">
+        <button
+          type="button"
+          onClick={() => setShowImportProjectModal(true)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-colors"
+        >
+          <Upload className="w-4 h-4" />
+          Import Project
+        </button>
+      </div>
+
       <div>
         <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
         
@@ -311,10 +337,30 @@ export function ProjectList(): React.ReactElement {
                      </div>
                    </a>
                    <div className="flex items-center gap-2">
-                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
-                       {new Date(project.updated_at).toLocaleDateString()}
-                     </span>
-                     <button
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
+                        {new Date(project.updated_at).toLocaleDateString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleExport(project.project_id)}
+                        disabled={isExporting === project.project_id}
+                        className={`p-1 rounded transition-colors ${
+                          isDark
+                            ? 'text-slate-600 hover:text-indigo-400 hover:bg-slate-800'
+                            : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
+                        } disabled:opacity-50`}
+                        title="Export project as ZIP"
+                      >
+                        {isExporting === project.project_id ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
                        onClick={() => handleDeleteClick(project)}
                        disabled={deleteMutation.isPending}
                        className={`p-1 rounded transition-colors ${
@@ -341,6 +387,7 @@ export function ProjectList(): React.ReactElement {
       </div>
 
       <StoryImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
+      <ImportProjectModal isOpen={showImportProjectModal} onClose={() => setShowImportProjectModal(false)} />
 
       {deletingProject && (
         <div
