@@ -3,13 +3,18 @@ import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import {
   getDraftArtifacts,
+  getDraftArtifact,
   getManuscriptDocuments,
+  getManuscriptDocument,
   promoteDraftToManuscript,
   getRevisionSuggestions,
+  getRevisionSuggestion,
   createRevisionSuggestion,
   updateManuscriptContent,
   triggerManuscriptReview,
   createDraftArtifact,
+  continueDraft,
+  createAlternateVariant,
 } from './drafting';
 
 describe('drafting service', () => {
@@ -256,6 +261,227 @@ describe('drafting service', () => {
         title: '',
         content: '',
       })).rejects.toThrow();
+    });
+  });
+
+  describe('continueDraft', () => {
+    it('continues a draft from a prior artifact (201)', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+          HttpResponse.json(
+            { artifact_id: 'art-continued', title: 'Continued Draft', status: 'DRAFT' },
+            { status: 201 },
+          ),
+        ),
+      );
+
+      const result = await continueDraft('art-1', 'proj-1');
+      expect(result.artifact_id).toBe('art-continued');
+    });
+
+    it('sends the correct request body', async () => {
+      let capturedBody: unknown;
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/continue', async ({ request }) => {
+          capturedBody = await request.json();
+          return HttpResponse.json(
+            { artifact_id: 'art-continued' },
+            { status: 201 },
+          );
+        }),
+      );
+
+      await continueDraft('art-base', 'proj-1');
+      expect(capturedBody).toEqual(
+        expect.objectContaining({
+          artifact_id: expect.any(String),
+          project_id: 'proj-1',
+          prior_draft_artifact_id: 'art-base',
+        }),
+      );
+    });
+
+    it('throws 404 when prior draft not found', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+          HttpResponse.json({ detail: 'Prior draft or manuscript not found.' }, { status: 404 }),
+        ),
+      );
+
+      await expect(continueDraft('art-missing', 'proj-1')).rejects.toThrow();
+    });
+
+    it('throws 400 on validation error', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+          HttpResponse.json({ detail: 'Validation error' }, { status: 400 }),
+        ),
+      );
+
+      await expect(continueDraft('art-1', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('createAlternateVariant', () => {
+    it('creates an alternate variant of a draft (201)', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+          HttpResponse.json(
+            { artifact_id: 'art-variant', title: 'Alternate Draft', status: 'PROPOSED' },
+            { status: 201 },
+          ),
+        ),
+      );
+
+      const result = await createAlternateVariant('art-1', 'proj-1');
+      expect(result.artifact_id).toBe('art-variant');
+    });
+
+    it('sends the correct request body', async () => {
+      let capturedBody: unknown;
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/alternate-variant', async ({ request }) => {
+          capturedBody = await request.json();
+          return HttpResponse.json(
+            { artifact_id: 'art-variant' },
+            { status: 201 },
+          );
+        }),
+      );
+
+      await createAlternateVariant('art-base', 'proj-1');
+      expect(capturedBody).toEqual(
+        expect.objectContaining({
+          artifact_id: expect.any(String),
+          project_id: 'proj-1',
+          base_draft_artifact_id: 'art-base',
+        }),
+      );
+    });
+
+    it('throws 404 when base draft not found', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+          HttpResponse.json({ detail: 'Base draft or manuscript not found.' }, { status: 404 }),
+        ),
+      );
+
+      await expect(createAlternateVariant('art-missing', 'proj-1')).rejects.toThrow();
+    });
+
+    it('throws 400 on validation error', async () => {
+      server.use(
+        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+          HttpResponse.json({ detail: 'Validation error' }, { status: 400 }),
+        ),
+      );
+
+      await expect(createAlternateVariant('art-1', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getDraftArtifact', () => {
+    it('returns a single draft artifact by id', async () => {
+      server.use(
+        http.get('/story-development/drafting/draft-artifacts/art-1', () =>
+          HttpResponse.json({ artifact_id: 'art-1', title: 'Single Draft' }),
+        ),
+      );
+
+      const result = await getDraftArtifact('art-1', 'proj-1');
+      expect(result.artifact_id).toBe('art-1');
+    });
+
+    it('passes project_id as query parameter', async () => {
+      server.use(
+        http.get('/story-development/drafting/draft-artifacts/art-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({ artifact_id: 'art-1' });
+        }),
+      );
+
+      await getDraftArtifact('art-1', 'proj-1');
+    });
+
+    it('throws on 404 response', async () => {
+      server.use(
+        http.get('/story-development/drafting/draft-artifacts/art-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getDraftArtifact('art-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getManuscriptDocument', () => {
+    it('returns a single manuscript document by id', async () => {
+      server.use(
+        http.get('/story-development/drafting/manuscript-documents/doc-1', () =>
+          HttpResponse.json({ document_id: 'doc-1', title: 'Single Document' }),
+        ),
+      );
+
+      const result = await getManuscriptDocument('doc-1', 'proj-1');
+      expect(result.document_id).toBe('doc-1');
+    });
+
+    it('passes project_id as query parameter', async () => {
+      server.use(
+        http.get('/story-development/drafting/manuscript-documents/doc-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({ document_id: 'doc-1' });
+        }),
+      );
+
+      await getManuscriptDocument('doc-1', 'proj-1');
+    });
+
+    it('throws on 404 response', async () => {
+      server.use(
+        http.get('/story-development/drafting/manuscript-documents/doc-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getManuscriptDocument('doc-missing', 'proj-1')).rejects.toThrow();
+    });
+  });
+
+  describe('getRevisionSuggestion', () => {
+    it('returns a single revision suggestion by id', async () => {
+      server.use(
+        http.get('/story-development/drafting/revision-suggestions/sug-1', () =>
+          HttpResponse.json({ suggestion_id: 'sug-1', rationale: 'Fix wording' }),
+        ),
+      );
+
+      const result = await getRevisionSuggestion('sug-1', 'proj-1');
+      expect(result.suggestion_id).toBe('sug-1');
+    });
+
+    it('passes project_id as query parameter', async () => {
+      server.use(
+        http.get('/story-development/drafting/revision-suggestions/sug-1', ({ request }) => {
+          const url = new URL(request.url);
+          expect(url.searchParams.get('project_id')).toBe('proj-1');
+          return HttpResponse.json({ suggestion_id: 'sug-1' });
+        }),
+      );
+
+      await getRevisionSuggestion('sug-1', 'proj-1');
+    });
+
+    it('throws on 404 response', async () => {
+      server.use(
+        http.get('/story-development/drafting/revision-suggestions/sug-missing', () =>
+          HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
+        ),
+      );
+
+      await expect(getRevisionSuggestion('sug-missing', 'proj-1')).rejects.toThrow();
     });
   });
 });
