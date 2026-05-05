@@ -61,10 +61,25 @@ class _PatternServiceProtocol(Protocol):
         source_corpus: str | None,
     ) -> Any: ...
 
+
+class _MaintenanceServiceProtocol(Protocol):
+    def scan_orphans(self) -> MaintenanceScanResponse: ...
+    def cleanup(self, project_ids: list[str]) -> MaintenanceCleanupResponse: ...
+    def delete_project(self, project_id: str) -> ProjectDeletionResponse: ...
+    def truncate_audit_log(self, retain_lines: int | None = None) -> AuditLogTruncationResponse: ...
+    def compact_database(self) -> DatabaseCompactionResponse: ...
+
 from app.schemas.projects import (
+    AuditLogTruncationRequest,
+    AuditLogTruncationResponse,
+    DatabaseCompactionResponse,
+    MaintenanceCleanupRequest,
+    MaintenanceCleanupResponse,
+    MaintenanceScanResponse,
     ProjectArtifactResponse,
     ProjectCreateRequest,
     ProjectDetailResponse,
+    ProjectDeletionResponse,
     ProjectSummaryResponse,
 )
 from app.schemas.mythos_extraction import (
@@ -81,6 +96,7 @@ from app.services.pattern_extraction import PatternExtractionError
 from app.services.projects import ProjectService
 from app.services.project_export import ProjectExportService, _EXPORT_VERSION
 from app.services.project_import import ProjectImportService, ProjectImportError
+from app.services.project_maintenance import ProjectMaintenanceError
 
 
 
@@ -91,6 +107,7 @@ def build_projects_router(
     pattern_service: _PatternServiceProtocol | None = None,
     import_job_manager: Any | None = None,
     extraction_job_manager: Any | None = None,
+    maintenance_service: _MaintenanceServiceProtocol | None = None,
 ) -> APIRouter:
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
@@ -135,6 +152,33 @@ def build_projects_router(
             return project_service.read_artifact(project_id, "chapter-1")
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if maintenance_service is not None:
+        @router.post("/maintenance/scan", response_model=MaintenanceScanResponse)
+        def scan_orphans() -> MaintenanceScanResponse:
+            return maintenance_service.scan_orphans()
+
+        @router.post("/maintenance/cleanup", response_model=MaintenanceCleanupResponse)
+        def cleanup(request: MaintenanceCleanupRequest) -> MaintenanceCleanupResponse:
+            try:
+                return maintenance_service.cleanup(request.project_ids)
+            except ProjectMaintenanceError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        @router.delete("/maintenance/projects/{project_id}", response_model=ProjectDeletionResponse)
+        def delete_project(project_id: str) -> ProjectDeletionResponse:
+            try:
+                return maintenance_service.delete_project(project_id)
+            except ProjectMaintenanceError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+        @router.post("/maintenance/audit-log/truncate", response_model=AuditLogTruncationResponse)
+        def truncate_audit_log(request: AuditLogTruncationRequest) -> AuditLogTruncationResponse:
+            return maintenance_service.truncate_audit_log(retain_lines=request.retain_lines)
+
+        @router.post("/maintenance/database/compact", response_model=DatabaseCompactionResponse)
+        def compact_database() -> DatabaseCompactionResponse:
+            return maintenance_service.compact_database()
 
     if import_service is not None and import_job_manager is not None:
         from ..schemas.story_import import ImportSubmitResponse, ImportProgressResponse

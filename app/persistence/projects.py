@@ -433,3 +433,60 @@ class ProjectRepository:
         with connect(self.db_path) as connection:
             connection.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
             connection.commit()
+
+    def delete_project_history(self, project_id: str) -> dict[str, int]:
+        """Delete all execution history for a project.
+
+        Removes jobs, checker runs, step records, artifact lineage, and
+        canon generation records associated with the given project.
+
+        Args:
+            project_id: The project identifier whose history to remove.
+
+        Returns:
+            Dict mapping table name to number of rows deleted.
+        """
+        counts: dict[str, int] = {}
+
+        with connect(self.db_path) as conn:
+            job_ids = [
+                row["job_id"]
+                for row in conn.execute(
+                    "SELECT job_id FROM jobs WHERE project_id = ?", (project_id,)
+                ).fetchall()
+            ]
+            checker_run_ids = [
+                row["run_id"]
+                for row in conn.execute(
+                    "SELECT run_id FROM checker_runs WHERE project_id = ?", (project_id,)
+                ).fetchall()
+            ]
+            all_run_ids: list[str] = list(job_ids) + checker_run_ids
+
+            cur = conn.execute("DELETE FROM jobs WHERE project_id = ?", (project_id,))
+            counts["jobs"] = cur.rowcount
+
+            cur = conn.execute("DELETE FROM checker_runs WHERE project_id = ?", (project_id,))
+            counts["checker_runs"] = cur.rowcount
+
+            if all_run_ids:
+                placeholder = ",".join("?" for _ in all_run_ids)
+                cur = conn.execute(
+                    f"DELETE FROM step_records WHERE run_id IN ({placeholder})", all_run_ids
+                )
+                counts["step_records"] = cur.rowcount
+
+                cur = conn.execute(
+                    f"DELETE FROM artifact_lineage WHERE run_id IN ({placeholder})", all_run_ids
+                )
+                counts["artifact_lineage"] = cur.rowcount
+
+            cur = conn.execute(
+                "DELETE FROM canon_generation_runs WHERE source_project_id = ? OR target_project_id = ?",
+                (project_id, project_id),
+            )
+            counts["canon_generation_runs"] = cur.rowcount
+
+            conn.commit()
+
+        return counts
