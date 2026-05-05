@@ -5,12 +5,14 @@ interface PatternLibraryWorkspaceProps {
   entries: PatternEntry[];
   selectedPatternIds: string[];
   onToggleUse: (patternId: string) => void;
+  onDeleteEntry?: (patternId: string) => void;
 }
 
 export function PatternLibraryWorkspace({
   entries,
   selectedPatternIds,
   onToggleUse,
+  onDeleteEntry,
 }: PatternLibraryWorkspaceProps) {
   return (
     <div className="space-y-2">
@@ -22,6 +24,7 @@ export function PatternLibraryWorkspace({
             entry={entry}
             selected={selectedPatternIds.includes(entry.pattern_id)}
             onToggleUse={onToggleUse}
+            onDelete={onDeleteEntry}
           />
         ))}
       </div>

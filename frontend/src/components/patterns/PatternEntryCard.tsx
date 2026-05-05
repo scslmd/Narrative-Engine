@@ -1,13 +1,15 @@
 import type { PatternEntry } from '../../types/patterns';
+import { InlineActions } from '../ui/InlineActions';
 import { PatternModeSelector } from './PatternModeSelector';
 
 interface PatternEntryCardProps {
   entry: PatternEntry;
   selected: boolean;
   onToggleUse: (patternId: string) => void;
+  onDelete?: (patternId: string) => void;
 }
 
-export function PatternEntryCard({ entry, selected, onToggleUse }: PatternEntryCardProps) {
+export function PatternEntryCard({ entry, selected, onToggleUse, onDelete }: PatternEntryCardProps) {
   return (
     <div className="rounded border border-slate-200 bg-white p-3">
       <div className="flex items-center justify-between">
@@ -22,6 +24,11 @@ export function PatternEntryCard({ entry, selected, onToggleUse }: PatternEntryC
       <div className="mt-2">
         <PatternModeSelector modes={entry.generation_modes} />
       </div>
+      {onDelete && (
+        <div className="mt-2">
+          <InlineActions actions={[{ label: 'Delete', variant: 'ghost', danger: true, onClick: () => onDelete(entry.pattern_id) }]} />
+        </div>
+      )}
     </div>
   );
 }
