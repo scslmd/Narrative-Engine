@@ -191,6 +191,13 @@ export function WritingView() {
           }
           void handleSuggestionReject(suggestionId);
         }}
+        onSuggestionArchive={(suggestionId) => {
+          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+          if (llm) {
+            void assist.archiveSuggestion(suggestionId);
+            return;
+          }
+        }}
       />
     </div>
   );

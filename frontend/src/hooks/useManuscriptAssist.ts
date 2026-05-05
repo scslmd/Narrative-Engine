@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   applyLLMSuggestion,
+  archiveLLMSuggestion,
   getLLMSuggestions,
   listManuscriptAssists,
   rejectLLMSuggestion,
@@ -86,6 +87,14 @@ export function useManuscriptAssist({
     },
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: (suggestionId: string) =>
+      archiveLLMSuggestion(projectId!, suggestionId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
+    },
+  });
+
   const setSelectionFromEditor = (start: number, end: number, textContent: string) => {
     if (start === end) {
       setSelectedRange(null);
@@ -110,6 +119,8 @@ export function useManuscriptAssist({
 
   const rejectSuggestion = (suggestionId: string) => rejectMutation.mutateAsync(suggestionId);
 
+  const archiveSuggestion = (suggestionId: string) => archiveMutation.mutateAsync(suggestionId);
+
   const assistRuns: ManuscriptAssistResult[] = useMemo(
     () => assistRunsQuery.data ?? [],
     [assistRunsQuery.data],
@@ -127,6 +138,7 @@ export function useManuscriptAssist({
     submitAssist,
     applySuggestion,
     rejectSuggestion,
+    archiveSuggestion,
     setSelectionFromEditor,
     content,
   };

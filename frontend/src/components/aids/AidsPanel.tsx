@@ -9,6 +9,7 @@ interface AidsPanelProps {
   onSuggestionSelect?: (suggestion: RevisionSuggestion) => void;
   onSuggestionAccept?: (suggestionId: string) => void;
   onSuggestionReject?: (suggestionId: string) => void;
+  onSuggestionArchive?: (suggestionId: string) => void;
 }
 
 export function AidsPanel({
@@ -16,6 +17,7 @@ export function AidsPanel({
   onSuggestionSelect,
   onSuggestionAccept,
   onSuggestionReject,
+  onSuggestionArchive,
 }: AidsPanelProps) {
   const [activeTab, setActiveTab] = useState<'suggestions' | 'diff' | 'history'>('suggestions');
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export function AidsPanel({
 
                   <p className="text-xs italic text-gray-500">{suggestion.rationale}</p>
 
-                  {(onSuggestionAccept || onSuggestionReject) && (
+                  {(onSuggestionAccept || onSuggestionReject || onSuggestionArchive) && (
                     <div className="mt-3 flex gap-2">
                       {onSuggestionAccept && (
                         <button
@@ -140,6 +142,18 @@ export function AidsPanel({
                           className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
                         >
                           Reject
+                        </button>
+                      )}
+                      {onSuggestionArchive && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onSuggestionArchive(suggestion.suggestion_id);
+                          }}
+                          className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
+                        >
+                          Archive
                         </button>
                       )}
                     </div>
