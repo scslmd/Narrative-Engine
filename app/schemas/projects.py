@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import Field
@@ -99,3 +100,55 @@ class ProjectArtifactResponse(StrictSchemaModel):
 
 
 ProjectSummary = ProjectSummaryResponse
+
+
+class OrphanInfo(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    project_name: str | None = None
+    kind: Literal["orphaned_dir", "db_only", "disk_only"]
+    size_bytes: int = Field(ge=0)
+
+
+class MaintenanceSummary(StrictSchemaModel):
+    audit_log_lines: int = Field(ge=0)
+    audit_log_retain_lines: int = Field(ge=1)
+    database_size_bytes: int = Field(ge=0)
+    checker_report_files: int = Field(ge=0)
+    total_jobs: int = Field(ge=0)
+    total_checker_runs: int = Field(ge=0)
+
+
+class MaintenanceScanResponse(StrictSchemaModel):
+    orphaned_dirs: list[OrphanInfo] = Field(default_factory=list)
+    db_only: list[OrphanInfo] = Field(default_factory=list)
+    disk_only: list[OrphanInfo] = Field(default_factory=list)
+    summary: MaintenanceSummary
+
+
+class MaintenanceCleanupRequest(StrictSchemaModel):
+    project_ids: list[str] = Field(min_length=1)
+
+
+class MaintenanceCleanupResponse(StrictSchemaModel):
+    removed: int = Field(ge=0)
+    errors: list[dict[str, str]] = Field(default_factory=list)
+
+
+class AuditLogTruncationRequest(StrictSchemaModel):
+    retain_lines: int = Field(ge=1, default=10000)
+
+
+class AuditLogTruncationResponse(StrictSchemaModel):
+    truncated: int = Field(ge=0)
+    retained: int = Field(ge=0)
+
+
+class DatabaseCompactionResponse(StrictSchemaModel):
+    before_bytes: int = Field(ge=0)
+    after_bytes: int = Field(ge=0)
+
+
+class ProjectDeletionResponse(StrictSchemaModel):
+    deleted: bool
+    project_id: str = Field(min_length=1)
+    history_removed: dict[str, int]

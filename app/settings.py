@@ -137,5 +137,15 @@ class Settings:
         raw_value = os.getenv("CORS_ALLOW_CREDENTIALS", "").strip()
         return raw_value.lower() == "true"
 
+    @property
+    def audit_log_retain_lines(self) -> int:
+        raw = os.getenv("AUDIT_LOG_RETAIN_LINES", "").strip()
+        if raw:
+            try:
+                return max(1, int(raw))
+            except ValueError:
+                pass
+        return 10000
+
 
 settings = Settings()
