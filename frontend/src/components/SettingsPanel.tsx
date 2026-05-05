@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Settings, X, Trash2, Database, FileText, Scan, Loader2, Check } from 'lucide-react'
+import { Settings, X, Trash2, Database, FileText, Scan, Loader2, Check, HardDrive, Key } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useSettingsStore, IconMode } from '../stores/settingsStore'
 import { themeMeta } from '../theme/theme'
 import { useToast } from '../hooks/useToast'
 import { scanOrphans, cleanupOrphans, truncateAuditLog, compactDatabase } from '../services/maintenance'
+import { useBackups } from '../hooks/useBackups'
+import { useAuthKeys } from '../hooks/useAuthKeys'
 import type { OrphanInfo, MaintenanceScanResult } from '../types/maintenance'
 
 interface SettingsPanelProps {
@@ -281,6 +283,192 @@ function MaintenanceSection() {
   )
 }
 
+function BackupsSection() {
+  const { addToast } = useToast()
+  const { backups, isLoading, createBackup, restoreBackup, deleteBackup, isCreating, isRestoring, isDeleting } = useBackups()
+
+  const handleCreate = async () => {
+    try {
+      await createBackup()
+      addToast('Backup created successfully', 'success')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Backup creation failed', 'error')
+    }
+  }
+
+  const handleRestore = async (backupId: string) => {
+    if (!window.confirm(`Restore backup ${backupId}? This will overwrite current data.`)) return
+    try {
+      await restoreBackup(backupId)
+      addToast('Backup restored successfully', 'success')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Restore failed', 'error')
+    }
+  }
+
+  const handleDelete = async (backupId: string) => {
+    if (!window.confirm(`Delete backup ${backupId}? This cannot be undone.`)) return
+    try {
+      await deleteBackup(backupId)
+      addToast('Backup deleted', 'success')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Delete failed', 'error')
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <HardDrive className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+        <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">Backups</h4>
+      </div>
+
+      <button
+        onClick={handleCreate}
+        disabled={isCreating}
+        className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+        {isCreating ? 'Creating...' : 'Create Backup'}
+      </button>
+
+      {isLoading && (
+        <p className="mt-3 text-xs text-[var(--text-tertiary)] text-center">Loading backups...</p>
+      )}
+
+      {!isLoading && backups.length === 0 && (
+        <p className="mt-3 text-xs text-[var(--text-tertiary)] text-center">No backups yet.</p>
+      )}
+
+      {!isLoading && backups.length > 0 && (
+        <div className="mt-3 space-y-1.5 max-h-48 overflow-y-auto">
+          {backups.map((backup) => (
+            <div
+              key={backup.backup_id}
+              className="flex items-center justify-between rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-[var(--text-primary)] truncate">{backup.backup_id}</div>
+                <div className="text-[10px] text-[var(--text-tertiary)]">
+                  {new Date(backup.created_at).toLocaleString()} · {backup.size_mb.toFixed(1)} MB · {backup.project_count} project{backup.project_count !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                <button
+                  onClick={() => handleRestore(backup.backup_id)}
+                  disabled={isRestoring}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--border-primary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50"
+                >
+                  Restore
+                </button>
+                <button
+                  onClick={() => handleDelete(backup.backup_id)}
+                  disabled={isDeleting}
+                  className="text-[10px] px-2 py-1 rounded border border-[var(--color-destructive)] text-[var(--color-destructive)] hover:bg-[var(--color-destructive)] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AuthKeysSection() {
+  const { addToast } = useToast()
+  const { keys, isLoading, createKey, deleteKey, isCreating, isDeleting } = useAuthKeys()
+  const [newKeyName, setNewKeyName] = useState('')
+
+  const handleCreate = async () => {
+    const name = newKeyName.trim()
+    if (!name) return
+    try {
+      await createKey(name)
+      addToast(`API key "${name}" created`, 'success')
+      setNewKeyName('')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Key creation failed', 'error')
+    }
+  }
+
+  const handleDelete = async (prefix: string) => {
+    if (!window.confirm(`Revoke key "${prefix}"? This cannot be undone.`)) return
+    try {
+      await deleteKey(prefix)
+      addToast('API key revoked', 'success')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Delete failed', 'error')
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Key className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+        <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">API Keys</h4>
+      </div>
+
+      <div className="flex gap-2 mb-3">
+        <input
+          type="text"
+          value={newKeyName}
+          onChange={(e) => setNewKeyName(e.target.value)}
+          placeholder="Key name"
+          className="flex-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-[var(--color-primary)]"
+        />
+        <button
+          onClick={handleCreate}
+          disabled={isCreating || !newKeyName.trim()}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
+          Create
+        </button>
+      </div>
+
+      {isLoading && (
+        <p className="text-xs text-[var(--text-tertiary)] text-center">Loading keys...</p>
+      )}
+
+      {!isLoading && keys.length === 0 && (
+        <p className="text-xs text-[var(--text-tertiary)] text-center">No API keys.</p>
+      )}
+
+      {!isLoading && keys.length > 0 && (
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          {keys.map((key) => (
+            <div
+              key={key.key_prefix}
+              className="flex items-center justify-between rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium text-[var(--text-primary)] truncate">{key.name}</div>
+                <div className="text-[10px] text-[var(--text-tertiary)]">
+                  {key.key_prefix} · {key.permissions.join(', ')}
+                </div>
+                <div className="text-[10px] text-[var(--text-tertiary)]">
+                  Created {new Date(key.created_at).toLocaleString()}
+                  {key.expires_at ? ` · Expires ${new Date(key.expires_at).toLocaleDateString()}` : ' · No expiry'}
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(key.key_prefix)}
+                disabled={isDeleting}
+                className="text-[10px] px-2 py-1 rounded border border-[var(--color-destructive)] text-[var(--color-destructive)] hover:bg-[var(--color-destructive)] hover:text-white transition-colors disabled:opacity-50 flex-shrink-0 ml-2"
+              >
+                Revoke
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { mode: themeMode, setMode: setThemeMode, toggleMode } = useThemeStore()
   const { iconMode, showTooltips, setIconMode, setShowTooltips } = useSettingsStore()
@@ -410,6 +598,16 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           {/* Maintenance */}
           <div className="border-t border-[var(--border-primary)] pt-5">
             <MaintenanceSection />
+          </div>
+
+          {/* Backups */}
+          <div className="border-t border-[var(--border-primary)] pt-5">
+            <BackupsSection />
+          </div>
+
+          {/* API Keys */}
+          <div className="border-t border-[var(--border-primary)] pt-5">
+            <AuthKeysSection />
           </div>
         </div>
       </div>
