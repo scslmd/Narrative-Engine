@@ -1,7 +1,11 @@
-import { Settings, X } from 'lucide-react'
+import { useState } from 'react'
+import { Settings, X, Trash2, Database, FileText, Scan, Loader2, Check } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useSettingsStore, IconMode } from '../stores/settingsStore'
 import { themeMeta } from '../theme/theme'
+import { useToast } from '../hooks/useToast'
+import { scanOrphans, cleanupOrphans, truncateAuditLog, compactDatabase } from '../services/maintenance'
+import type { OrphanInfo, MaintenanceScanResult } from '../types/maintenance'
 
 interface SettingsPanelProps {
   onClose: () => void
@@ -12,6 +16,270 @@ const iconModes: { value: IconMode; label: string }[] = [
   { value: 'icons-large', label: 'Icons Only (Large)' },
   { value: 'icons-small', label: 'Icons Only (Small)' },
 ]
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  const value = bytes / Math.pow(1024, i)
+  return `${value.toFixed(i > 0 ? 1 : 0)} ${units[i]}`
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString()
+}
+
+function MaintenanceSection() {
+  const { addToast } = useToast()
+  const [scanResult, setScanResult] = useState<MaintenanceScanResult | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [scanning, setScanning] = useState(false)
+  const [cleaning, setCleaning] = useState(false)
+  const [truncating, setTruncating] = useState(false)
+  const [compacting, setCompacting] = useState(false)
+
+  const allOrphans: OrphanInfo[] = [
+    ...(scanResult?.orphaned_dirs ?? []),
+    ...(scanResult?.db_only ?? []),
+    ...(scanResult?.disk_only ?? []),
+  ]
+
+  const handleScan = async () => {
+    setScanning(true)
+    setSelectedIds(new Set())
+    try {
+      const result = await scanOrphans()
+      setScanResult(result)
+      addToast(`Scan complete: ${result.orphaned_dirs.length + result.db_only.length + result.disk_only.length} orphans found`, 'success')
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Scan failed', 'error')
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const toggleItem = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAll = () => setSelectedIds(new Set(allOrphans.map(o => o.project_id)))
+  const deselectAll = () => setSelectedIds(new Set())
+
+  const handleCleanup = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    if (!window.confirm(`Remove ${ids.length} orphaned project(s)? This cannot be undone.`)) return
+    setCleaning(true)
+    try {
+      const result = await cleanupOrphans(ids)
+      addToast(`Removed ${result.removed} orphan(s)${result.errors.length > 0 ? `, ${result.errors.length} error(s)` : ''}`, result.errors.length > 0 ? 'info' : 'success')
+      setSelectedIds(new Set())
+      setScanResult(null)
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Cleanup failed', 'error')
+    } finally {
+      setCleaning(false)
+    }
+  }
+
+  const handleTruncate = async () => {
+    if (!window.confirm('Truncate old audit log entries? This cannot be undone.')) return
+    setTruncating(true)
+    try {
+      const result = await truncateAuditLog()
+      addToast(`Truncated ${result.truncated} lines, retained ${result.retained}`, 'success')
+      setScanResult(prev => prev ? { ...prev, summary: { ...prev.summary, audit_log_lines: result.retained } } : null)
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Truncation failed', 'error')
+    } finally {
+      setTruncating(false)
+    }
+  }
+
+  const handleCompact = async () => {
+    if (!window.confirm('Compact the database? This may take a moment.')) return
+    setCompacting(true)
+    try {
+      const result = await compactDatabase()
+      const saved = result.before_bytes - result.after_bytes
+      addToast(`Database compacted: ${formatBytes(result.before_bytes)} → ${formatBytes(result.after_bytes)} (saved ${formatBytes(saved)})`, 'success')
+      setScanResult(prev => prev ? { ...prev, summary: { ...prev.summary, database_size_bytes: result.after_bytes } } : null)
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Compaction failed', 'error')
+    } finally {
+      setCompacting(false)
+    }
+  }
+
+  const kindLabel = (kind: OrphanInfo['kind']) => {
+    switch (kind) {
+      case 'orphaned_dir': return 'Orphaned Directory'
+      case 'db_only': return 'Database Only'
+      case 'disk_only': return 'Disk Only'
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Scan className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+        <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">Maintenance</h4>
+      </div>
+
+      <button
+        onClick={handleScan}
+        disabled={scanning}
+        className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scan className="w-4 h-4" />}
+        {scanning ? 'Scanning...' : 'Scan for Orphans'}
+      </button>
+
+      {scanResult && (
+        <div className="mt-4 space-y-3">
+          {/* System Summary */}
+          <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-3 space-y-2">
+            <p className="text-xs font-semibold text-[var(--text-secondary)]">System Summary</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3 text-[var(--text-tertiary)]" />
+                <span className="text-[var(--text-secondary)]">Audit log:</span>
+                <span className="text-[var(--text-primary)] font-mono">{formatNumber(scanResult.summary.audit_log_lines)} lines</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Database className="w-3 h-3 text-[var(--text-tertiary)]" />
+                <span className="text-[var(--text-secondary)]">DB size:</span>
+                <span className="text-[var(--text-primary)] font-mono">{formatBytes(scanResult.summary.database_size_bytes)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[var(--text-tertiary)]">Reports:</span>
+                <span className="text-[var(--text-primary)] font-mono">{formatNumber(scanResult.summary.checker_report_files)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[var(--text-tertiary)]">Jobs:</span>
+                <span className="text-[var(--text-primary)] font-mono">{formatNumber(scanResult.summary.total_jobs)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[var(--text-tertiary)]">Checker runs:</span>
+                <span className="text-[var(--text-primary)] font-mono">{formatNumber(scanResult.summary.total_checker_runs)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Orphaned Items */}
+          {allOrphans.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                  {allOrphans.length} Orphaned Item{allOrphans.length !== 1 ? 's' : ''}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAll}
+                    className="text-xs text-[var(--color-primary)] hover:underline"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={deselectAll}
+                    className="text-xs text-[var(--text-tertiary)] hover:underline"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {allOrphans.map((item) => (
+                  <label
+                    key={item.project_id}
+                    className={`
+                      flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer transition-all
+                      ${selectedIds.has(item.project_id)
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]'
+                        : 'border-[var(--border-primary)] hover:bg-[var(--bg-secondary)]'
+                      }
+                    `}
+                  >
+                    <div className={`
+                      w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0
+                      ${selectedIds.has(item.project_id)
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]'
+                        : 'border-[var(--border-secondary)]'
+                      }
+                    `}>
+                      {selectedIds.has(item.project_id) && <Check className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.project_id)}
+                      onChange={() => toggleItem(item.project_id)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-[var(--text-primary)] truncate">
+                          {item.project_name || item.project_id}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] font-medium">
+                          {kindLabel(item.kind)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-[var(--text-tertiary)] truncate">
+                        {item.project_id} · {formatBytes(item.size_bytes)}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <button
+                onClick={handleCleanup}
+                disabled={selectedIds.size === 0 || cleaning}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--color-destructive)] bg-[var(--color-destructive-subtle)] px-4 py-2.5 text-sm font-medium text-[var(--color-destructive)] hover:bg-[var(--color-destructive)] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cleaning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {cleaning ? 'Cleaning...' : `Clean Selected (${selectedIds.size})`}
+              </button>
+            </div>
+          )}
+
+          {/* System Actions */}
+          <div className="space-y-2 pt-2 border-t border-[var(--border-primary)]">
+            <p className="text-xs font-semibold text-[var(--text-secondary)]">System Actions</p>
+            <button
+              onClick={handleTruncate}
+              disabled={truncating}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {truncating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              {truncating ? 'Truncating...' : 'Truncate Audit Log'}
+            </button>
+            <button
+              onClick={handleCompact}
+              disabled={compacting}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {compacting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+              {compacting ? 'Compacting...' : 'Compact Database'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!scanResult && !scanning && (
+        <p className="mt-2 text-xs text-[var(--text-tertiary)] text-center">
+          Run a scan to check for orphaned projects and view system stats.
+        </p>
+      )}
+    </div>
+  )
+}
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { mode: themeMode, setMode: setThemeMode, toggleMode } = useThemeStore()
@@ -137,6 +405,11 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                 `}
               />
             </button>
+          </div>
+
+          {/* Maintenance */}
+          <div className="border-t border-[var(--border-primary)] pt-5">
+            <MaintenanceSection />
           </div>
         </div>
       </div>
