@@ -21,7 +21,7 @@ from tests.conftest import read_last_audit_record, count_audit_records
 @pytest.fixture
 def audit_client() -> Generator[TestClient, None, None]:
     """Provide a TestClient with executor disabled and proper cleanup."""
-    log_path = Path(settings.structured_log_filename)
+    log_path = settings.audit_log_path
     if log_path.exists():
         log_path.unlink()
 
@@ -36,7 +36,7 @@ def audit_client() -> Generator[TestClient, None, None]:
     elif 'API_KEY' in os.environ:
         del os.environ['API_KEY']
 
-    log_path = Path(settings.structured_log_filename)
+    log_path = settings.audit_log_path
     if log_path.exists():
         log_path.unlink()
 
@@ -49,7 +49,7 @@ class TestAuditLogging:
         """A request to /v1 endpoint should create an audit record."""
         audit_client.get('/v1/jobs')
 
-        log_path = Path(settings.structured_log_filename)
+        log_path = settings.audit_log_path
         assert log_path.exists()
 
         assert count_audit_records() == 1
@@ -96,7 +96,7 @@ class TestAuditLogging:
             headers={'X-API-Key': test_key}
         )
 
-        log_path = Path(settings.structured_log_filename)
+        log_path = settings.audit_log_path
         with open(log_path, 'r') as f:
             log_content = f.read()
 
@@ -110,7 +110,7 @@ class TestAuditLogging:
         audit_client.get('/health/')
         audit_client.get('/models')
 
-        log_path = Path(settings.structured_log_filename)
+        log_path = settings.audit_log_path
         if log_path.exists():
             with open(log_path, 'r') as f:
                 lines = f.readlines()

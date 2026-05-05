@@ -19,6 +19,7 @@ from app.persistence.steps import stable_hash_payload
 pytestmark = pytest.mark.integration
 from app.schemas.inference import InferenceProviderDescriptor, InferenceRequest, InferenceResponse, InferenceUsage
 from app.schemas.jobs import JobCreateRequest
+from app.schemas.projects import ProjectCreateRequest
 from app.schemas.manifest import Manifest
 from app.schemas.role_model_checker import RoleCheckResult, RoleModelCheckStartRequest
 from app.services.job_manager import JobManager
@@ -637,6 +638,17 @@ def test_local_executor_persists_pipeline_step_records(tmp_path: Path) -> None:
     models_root = tmp_path / "data" / "models"
     reports_root = tmp_path / "data" / "role_model_checker_runs"
     models_root.mkdir(parents=True, exist_ok=True)
+
+    # Create project in the executor's expected projects_dir (settings.projects_dir)
+    # so it works under both normal and pytest-isolated environments
+    project_service = ProjectService()
+    project_service.create_project(
+        ProjectCreateRequest(
+            project_id="science-fantasy-test",
+            project_name="Science Fantasy Test",
+        )
+    )
+
     job_manager = JobManager(db_path)
     checker_manager = RoleModelCheckManager(db_path)
     step_records = StepRecordService(db_path)
@@ -645,6 +657,7 @@ def test_local_executor_persists_pipeline_step_records(tmp_path: Path) -> None:
         role_check_manager=checker_manager,
         role_check_service=RoleModelCheckerService(models_root, reports_root),
         step_record_service=step_records,
+        project_service=project_service,
         poll_interval_seconds=0.05,
     )
 

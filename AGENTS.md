@@ -5,9 +5,9 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> 1397 passed, 2 pre-existing failures, 10 skipped (~32s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> 43 passed (~23s)
-  - Full baseline: ~1442 tests, ~55s total
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2.py` -> 1438 passed, 10 skipped (~35s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~31s)
+  - Full baseline: ~1499 tests, ~65s total
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - `cd frontend && npm run lint` -> passed (2026-05-03)
   - `cd frontend && npm run typecheck` -> passed (2026-05-03)
@@ -108,16 +108,16 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 
 ### Clustered Parallel Execution (Recommended)
 ```bash
-# Step 1: Run parallel-safe tests in clusters (fast, ~50s, ~1160 tests)
-python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py
+# Step 1: Run parallel-safe tests in clusters (fast, ~35s, ~1448 tests)
+python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py
 
-# Step 2: Run serial-only tests last with extended timeout (~30s, ~10 tests)
-python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records
+# Step 2: Run serial-only tests last with extended timeout (~31s, ~51 tests)
+python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
 ```
 
 - Parallel cluster runs first because it's fast and catches most failures immediately.
 - Serial tests run last because they share global state (log file, executor threads) and time out if mixed with parallel workers.
-- Full baseline: ~1179 tests, ~80s total (vs. ~250s sequential).
+- Full baseline: ~1499 tests, ~65s total (vs. ~250s sequential).
 
 ### Quality Review Helper
 ```bash
@@ -431,8 +431,8 @@ The serial test suite (`test_audit_logging.py` + `test_rate_limiting.py`) was ha
 
 Do not call the repo merge-ready unless all five of these are green:
 
-- `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py`
-- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records`
+- `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py`
+- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`
@@ -980,6 +980,8 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 **Existing prompt builders** (`app/services/runtime_prompts.py`):
 - P-100 Architect (markdown output), P-200 Sequencer (JSON output), P-300 Drafter (markdown), P-400 Compiler (JSON)
 - P-300 default max_tokens: 8000 (supports full-chapter drafts, overridable via payload)
+
+**Prompt caching research**: `docs/superpowers/research/2026-05-05-prompt-caching-llama-cpp.md` — llama.cpp supports host-memory prompt caching (`--cache-ram`) for prefix reuse across requests. `cache_control` on messages is a Fireworks AI extension, silently ignored by llama.cpp. P-300 prompt restructuring (static/dynamic message split) is planned as P-CACHE-002 through P-CACHE-005 in v1.7 roadmap. **Read this doc before any work on inference performance or prompt restructuring.**
 
 ### Multi-Chapter Generation
 

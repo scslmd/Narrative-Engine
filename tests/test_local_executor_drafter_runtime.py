@@ -576,6 +576,7 @@ def test_local_executor_p300_sanitizes_malicious_chapter_id(tmp_path: Path) -> N
     assert fallback_path.exists(), f"Expected fallback chapter at {fallback_path}"
 
 
+@pytest.mark.xdist_group(name="serial-executor")
 def test_multi_chapter_pipeline_generates_sequential_chapters(tmp_path: Path) -> None:
     """Full integration: run P-300 for two chapters with parameterized output paths."""
     project_id = "multi-chapter-test"

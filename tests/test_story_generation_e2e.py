@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from time import sleep
 
+import pytest
+
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas.generation import (
     CanonGenerationRequest,
@@ -19,6 +21,8 @@ from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
 from app.services.story_forking import StoryForkingService
 from app.services.story_generation_orchestrator import StoryGenerationOrchestrator
+
+pytestmark = pytest.mark.xdist_group(name="serial-executor")
 
 
 def _wait(job_manager: JobManager, job_id, attempts: int = 120) -> str:

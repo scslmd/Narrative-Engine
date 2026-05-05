@@ -1183,6 +1183,7 @@ def _configure_connection(connection: sqlite3.Connection) -> None:
     connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA journal_mode = WAL")
+    connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
 
 
 def _migrate_operations_db(connection: sqlite3.Connection) -> None:

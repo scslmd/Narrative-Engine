@@ -6,7 +6,10 @@ from fastapi.testclient import TestClient
 
 from app.main import build_app
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.xdist_group(name="serial-smoke"),
+]
 
 
 def _create_project(client: TestClient, project_name: str) -> str:

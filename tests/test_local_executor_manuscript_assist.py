@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from time import sleep
 
+import pytest
+
 from app.persistence.sqlite import connect
 from app.persistence.story_development import StoryDevelopmentRepository
 from app.schemas.jobs import JobCreateRequest
@@ -10,6 +12,8 @@ from app.services.local_executor import LocalExecutor
 from app.services.projects import ProjectService
 from app.services.role_model_check_manager import RoleModelCheckManager
 from app.services.role_model_checker import RoleModelCheckerService
+
+pytestmark = pytest.mark.xdist_group(name="serial-executor")
 
 
 def _wait_for_terminal(job_manager: JobManager, job_id, attempts: int = 80) -> str:

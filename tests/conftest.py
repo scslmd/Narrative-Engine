@@ -11,6 +11,9 @@ import _pytest.tmpdir
 import pytest
 
 
+# Force stub inference backend for all tests (overrides .env llama.cpp)
+os.environ["NARRATIVE_INFERENCE_BACKEND"] = "stub"
+
 # Set API_KEY for all tests (SEC-01)
 os.environ["API_KEY"] = "test-secret-key-123"
 
@@ -95,7 +98,7 @@ def read_last_audit_record() -> dict[str, Any] | None:
     import json
     from app.settings import settings
     
-    log_path = Path(settings.structured_log_filename)
+    log_path = settings.audit_log_path
     if not log_path.exists():
         return None
     
@@ -112,7 +115,7 @@ def count_audit_records() -> int:
     """Count the number of audit records in the log file."""
     from app.settings import settings
     
-    log_path = Path(settings.structured_log_filename)
+    log_path = settings.audit_log_path
     if not log_path.exists():
         return 0
     

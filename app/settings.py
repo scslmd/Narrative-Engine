@@ -51,6 +51,12 @@ class Settings:
         return self.data_dir / "role_model_checker_runs"
 
     @property
+    def audit_log_path(self) -> Path:
+        if self._is_pytest_runtime:
+            return self._pytest_runtime_root / "telemetry.jsonl"
+        return Path(self.structured_log_filename)
+
+    @property
     def _is_pytest_runtime(self) -> bool:
         return bool(os.getenv("PYTEST_CURRENT_TEST", "").strip())
 
