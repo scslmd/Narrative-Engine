@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import type { FoundationProfile } from '../../types/foundation';
+import type { FoundationProfile, FoundationRevision, FoundationReviewCue } from '../../types/foundation';
 
 interface FoundationEditorProps {
   projectId: string;
   foundation?: FoundationProfile;
   onSave?: (foundation: Partial<FoundationProfile>) => void;
   onCancel?: () => void;
+  revisions?: FoundationRevision[];
+  reviewCues?: FoundationReviewCue[];
 }
 
-export function FoundationEditor({ projectId, foundation, onSave, onCancel }: FoundationEditorProps) {
+export function FoundationEditor({ projectId, foundation, onSave, onCancel, revisions, reviewCues }: FoundationEditorProps) {
+  const [activeTab, setActiveTab] = useState<'editor' | 'history' | 'cues'>('editor');
   const [premise, setPremise] = useState(foundation?.premise || '');
   const [logline, setLogline] = useState(foundation?.logline || '');
   const [thematicSpine, setThematicSpine] = useState(foundation?.thematic_spine || '');
@@ -102,124 +105,174 @@ export function FoundationEditor({ projectId, foundation, onSave, onCancel }: Fo
         </div>
       </div>
 
-      {/* Editor content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Premise */}
-          <Section title="Premise" description="The foundational situation or scenario">
-            <textarea
-              value={premise}
-              onChange={(e) => setPremise(e.target.value)}
-              placeholder="What is the basic situation or scenario that drives your story?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Logline */}
-          <Section title="Logline" description="A one-sentence summary of your story">
-            <textarea
-              value={logline}
-              onChange={(e) => setLogline(e.target.value)}
-              placeholder="In one sentence: Who is the protagonist, what do they want, and what stands in their way?"
-              className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Thematic Spine */}
-          <Section title="Thematic Spine" description="The central theme or message">
-            <textarea
-              value={thematicSpine}
-              onChange={(e) => setThematicSpine(e.target.value)}
-              placeholder="What is your story really about? What's the deeper meaning?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Emotional Promise */}
-          <Section title="Emotional Promise" description="What readers will feel">
-            <textarea
-              value={emotionalPromise}
-              onChange={(e) => setEmotionalPromise(e.target.value)}
-              placeholder="What emotional journey will readers experience?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Tone and Voice Direction */}
-          <Section title="Tone and Voice Direction" description="The mood and narrative style">
-            <textarea
-              value={toneAndVoiceDirection}
-              onChange={(e) => setToneAndVoiceDirection(e.target.value)}
-              placeholder="What is the mood and narrative voice? (e.g., dark and lyrical, light and conversational)"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Target Audience */}
-          <Section title="Target Audience" description="Who will read this story">
-            <textarea
-              value={targetAudience}
-              onChange={(e) => setTargetAudience(e.target.value)}
-              placeholder="Who is your intended readership?"
-              className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          {/* Complexity Level */}
-          <Section title="Complexity Level" description="Narrative complexity">
-            <select
-              value={complexityLevel}
-              onChange={(e) => setComplexityLevel(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select complexity level</option>
-              <option value="simple">Simple</option>
-              <option value="moderate">Moderate</option>
-              <option value="complex">Complex</option>
-              <option value="very complex">Very Complex</option>
-            </select>
-          </Section>
-
-          {/* Narrative Constraints */}
-          <Section title="Narrative Constraints" description="Guidelines and limitations">
-            <div className="space-y-2">
-              {narrativeConstraints.map((constraint, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={constraint}
-                    onChange={(e) => handleConstraintChange(index, e.target.value)}
-                    placeholder={`Constraint ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => handleRemoveConstraint(index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={handleAddConstraint}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Constraint
-              </button>
-            </div>
-          </Section>
-
-          {/* Success Definition */}
-          <Section title="Success Definition" description="What makes this story successful">
-            <textarea
-              value={successDefinition}
-              onChange={(e) => setSuccessDefinition(e.target.value)}
-              placeholder="What would make this story a success? What should it achieve?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-        </div>
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200 bg-white">
+        <button
+          onClick={() => setActiveTab('editor')}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === 'editor' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          Editor
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === 'history' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          History ({revisions?.length ?? 0})
+        </button>
+        <button
+          onClick={() => setActiveTab('cues')}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === 'cues' ? 'border-b-2 border-indigo-500 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          Review Cues ({reviewCues?.length ?? 0})
+        </button>
       </div>
+
+      {/* Editor content */}
+      {activeTab === 'editor' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <Section title="Premise" description="The foundational situation or scenario">
+              <textarea
+                value={premise}
+                onChange={(e) => setPremise(e.target.value)}
+                placeholder="What is the basic situation or scenario that drives your story?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Logline" description="A one-sentence summary of your story">
+              <textarea
+                value={logline}
+                onChange={(e) => setLogline(e.target.value)}
+                placeholder="In one sentence: Who is the protagonist, what do they want, and what stands in their way?"
+                className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Thematic Spine" description="The central theme or message">
+              <textarea
+                value={thematicSpine}
+                onChange={(e) => setThematicSpine(e.target.value)}
+                placeholder="What is your story really about? What's the deeper meaning?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Emotional Promise" description="What readers will feel">
+              <textarea
+                value={emotionalPromise}
+                onChange={(e) => setEmotionalPromise(e.target.value)}
+                placeholder="What emotional journey will readers experience?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Tone and Voice Direction" description="The mood and narrative style">
+              <textarea
+                value={toneAndVoiceDirection}
+                onChange={(e) => setToneAndVoiceDirection(e.target.value)}
+                placeholder="What is the mood and narrative voice? (e.g., dark and lyrical, light and conversational)"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Target Audience" description="Who will read this story">
+              <textarea
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
+                placeholder="Who is your intended readership?"
+                className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Complexity Level" description="Narrative complexity">
+              <select
+                value={complexityLevel}
+                onChange={(e) => setComplexityLevel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select complexity level</option>
+                <option value="simple">Simple</option>
+                <option value="moderate">Moderate</option>
+                <option value="complex">Complex</option>
+                <option value="very complex">Very Complex</option>
+              </select>
+            </Section>
+
+            <Section title="Narrative Constraints" description="Guidelines and limitations">
+              <div className="space-y-2">
+                {narrativeConstraints.map((constraint, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={constraint}
+                      onChange={(e) => handleConstraintChange(index, e.target.value)}
+                      placeholder={`Constraint ${index + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleRemoveConstraint(index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={handleAddConstraint}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                >
+                  + Add Constraint
+                </button>
+              </div>
+            </Section>
+
+            <Section title="Success Definition" description="What makes this story successful">
+              <textarea
+                value={successDefinition}
+                onChange={(e) => setSuccessDefinition(e.target.value)}
+                placeholder="What would make this story a success? What should it achieve?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+          </div>
+        </div>
+      )}
+
+      {/* History tab */}
+      {activeTab === 'history' && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {revisions?.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No revision history</div>
+          ) : (
+            revisions?.map((revision) => (
+              <div key={revision.revision_id} className="rounded-lg border border-gray-200 bg-white p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-900">{revision.revision_id}</span>
+                  <span className="text-xs text-gray-500">{revision.change_summary ?? 'No summary'}</span>
+                </div>
+                <pre className="whitespace-pre-wrap text-sm text-gray-700">{revision.snapshot?.premise || 'No premise'}</pre>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Review Cues tab */}
+      {activeTab === 'cues' && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {reviewCues?.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No review cues</div>
+          ) : (
+            reviewCues?.map((cue, index) => (
+              <div key={index} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-sm font-medium text-amber-900">{cue.impacted_area}</p>
+                <p className="text-xs text-amber-700 mt-1">{cue.reason}</p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
