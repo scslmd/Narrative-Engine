@@ -41,3 +41,7 @@ nul
 
 # Worktrees (isolated development branches)
 .worktrees/
+
+# AI agent workspace directories
+.agents/
+.opencode/

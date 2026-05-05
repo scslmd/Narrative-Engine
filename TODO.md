@@ -3,11 +3,11 @@
 ## Current Truth
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
-- Latest verified validation baseline:
-  - `python -m pytest -q -p no:cacheprovider` -> `1103 collected` (critical subset: 217/217 passed)
-  - `cd frontend && npm run lint` -> passed
-  - `cd frontend && npm run typecheck` -> passed
-  - `cd frontend && npm run build` -> passed
+- Latest verified validation baseline (2026-05-05):
+  - Backend parallel: 1413 passed, 10 skipped, 2 pre-existing failures (~35s)
+  - Backend serial: 51 passed (~32s)
+  - Frontend tests: 522 passed (~13s)
+  - Frontend lint/typecheck/build: all green (2025 modules)
 - The React frontend is merged and is now the default shipped frontend surface.
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
 - Temporary review notes, executor task dumps, and stale readiness checklists belong under `docs/archive/`, not in the active docs surface.
@@ -156,6 +156,16 @@ with real API backing.
 - Bug fixes: arc_id required in ArcCandidateCreateRequest frontend type, deleteArcSelection project_id query param, ArcSelectionCreateRequest.selected_arc accepts string or object
 - Removed unused getSelectedArc import, inlined logic in PlanningView
 - Validation: 802 passed, 9 skipped, typecheck passed, build passed, lint passed
+
+### Unwired API Exposure -- All Complete (2026-05-05)
+- Shared infrastructure: `<InlineActions>` component (~40 lines, reuses Button variants + useApiMutation), `useConfirmation` hook
+- Phase A (critical gaps): Archive suggestion wiring in AidsPanel, relationship update/delete wiring in RelationshipMapGraph, arc selection actions in ArcsTab
+- Phase B (feature completeness): Mythos library CRUD with delete action, Pattern library CRUD with delete action, Foundation history + review cues tabs, Brainstorm promote workflow
+- Phase C (admin features): Backup management in SettingsPanel (create/list/restore/delete), API key management in SettingsPanel (create/list/revoke)
+- New hooks: useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery
+- New types: BackupInfo (`frontend/src/types/backup.ts`), ApiKeyInfo (`frontend/src/types/authKeys.ts`)
+- Backend restoration: `ProjectMaintenanceService` restored from `codex/project-maintenance` branch (orphan detection, cleanup, audit log truncation, database compaction)
+- Validation: 1413 parallel + 51 serial backend tests, 522 frontend tests, lint/typecheck/build green
 
 ### Testing
 - Smoke coverage, persistence coverage, contract coverage, failure-mode coverage

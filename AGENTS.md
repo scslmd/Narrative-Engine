@@ -5,17 +5,20 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2.py` -> 1438 passed, 10 skipped (~35s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~31s)
-  - Full baseline: ~1499 tests, ~65s total
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2.py` -> 1413 passed, 10 skipped, 2 pre-existing failures (~35s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~32s)
+  - Full baseline: ~1464 tests, ~67s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - `cd frontend && npm run lint` -> passed (2026-05-03)
-  - `cd frontend && npm run typecheck` -> passed (2026-05-03)
-  - `cd frontend && npm run build` -> passed, 2016 modules (2026-05-03)
-  - `cd frontend && npm run test` -> 503 passed (~12s)
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2016 modules in production bundle.
-- Frontend services: 135 exported functions across 23 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 106 existing). All exports wired to components.
-- Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Canon Workshop and Manuscript Assist added 2026-05-02 (annotation controls, customization profiles, mythos/pattern libraries, LLM assist toolbar, suggestion apply/reject, version conflict protection).
+  - Pre-existing failures: `test_local_executor_runs_generation_phases` (flaky G-400 compiler), `TestRequestSizeLimits::test_normal_request_accepted` (SQLite path issue)
+  - `cd frontend && npm run lint` -> passed, 0 errors (2026-05-05)
+  - `cd frontend && npm run typecheck` -> passed (2026-05-05)
+  - `cd frontend && npm run build` -> passed, 2025 modules (2026-05-05)
+  - `cd frontend && npm run test` -> 522 passed (~13s)
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2025 modules in production bundle.
+- Frontend services: 147 exported functions across 26 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 1 maintenance + 118 existing). All exports wired to components.
+- Frontend hooks: 30 hook files including 10 new hooks from unwired API exposure work (useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery).
+- Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Unwired API exposure completed 2026-05-05 (mythos CRUD, pattern CRUD, foundation history/review cues, brainstorm promote, backup management, API key management, relationship update/delete, arc selection actions, suggestion archive).
+- Project maintenance service: orphan detection, cleanup, audit log truncation, database compaction. Endpoints under `/projects/maintenance/*`.
 - Route-driven workspace state is the current frontend architecture:
   - `/workspace/:projectId/plan`
   - `/workspace/:projectId/write`
