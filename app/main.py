@@ -289,8 +289,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     import_job_manager = ImportJobManager(max_workers=4, ttl_seconds=300)
     from .services.extraction_jobs import ExtractionJobManager
     extraction_job_manager = ExtractionJobManager(max_workers=2, ttl_seconds=300)
-    from .services.project_maintenance import ProjectMaintenanceService
-    maintenance_service = ProjectMaintenanceService()
+ 
     role_check_manager = RoleModelCheckManager(settings.operations_db_path)
     role_check_service = RoleModelCheckerService(
         models_root,
@@ -495,7 +494,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(auth_router)  # Authentication endpoints (SEC-02)
     app.include_router(backup_router)  # Backup endpoints (REL-04)
     app.include_router(health_router)  # Health endpoints (REL-05, REL-06)
-    app.include_router(build_projects_router(project_service, import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
+    app.include_router(build_projects_router(project_service, import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_jobs_router(job_manager, prefix='/v1/jobs'))
     app.include_router(build_models_router(model_registry))
