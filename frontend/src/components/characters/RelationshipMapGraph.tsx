@@ -12,10 +12,12 @@ import {
   Shield,
   Compass,
 } from 'lucide-react';
+import { useRelationships } from '../../hooks/useRelationships';
 
 interface RelationshipMapGraphProps {
   characters: CharacterProfile[];
   relationships: RelationshipEdge[];
+  projectId?: string;
   onDeleteRelationship?: (edgeId: string) => void;
   className?: string;
 }
@@ -194,9 +196,12 @@ const NODE_STROKE = 2;
 export function RelationshipMapGraph({
   characters,
   relationships,
+  projectId,
   onDeleteRelationship,
   className = '',
 }: RelationshipMapGraphProps) {
+  const relationshipsHook = useRelationships(projectId ?? '');
+  const hookDelete = projectId ? relationshipsHook.deleteRelationship : undefined;
   const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -267,11 +272,15 @@ export function RelationshipMapGraph({
   );
 
   const handleDeleteEdge = useCallback(
-    (edgeId: string, e: React.MouseEvent) => {
+    async (edgeId: string, e: React.MouseEvent) => {
       e.stopPropagation();
-      onDeleteRelationship?.(edgeId);
+      if (hookDelete) {
+        await hookDelete(edgeId);
+      } else {
+        onDeleteRelationship?.(edgeId);
+      }
     },
-    [onDeleteRelationship],
+    [onDeleteRelationship, hookDelete],
   );
 
   const isSubGraph = characters.length > graphNodes.length;
