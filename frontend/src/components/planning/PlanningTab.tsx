@@ -174,6 +174,10 @@ export function PlanningTab({ isDark, state, callbacks }: PlanningTabProps) {
           stageMapsLoading: state.stageMapsLoading,
           comparisonsLoading: state.comparisonsLoading,
         }}
+        actions={{
+          onUpdateSelection: callbacks.arcUpdateSelection,
+          onDeleteSelection: callbacks.arcDeleteSelection,
+        }}
         tab={{
           arcCandidateCreateOpen: state.arcCandidateCreateOpen,
           arcCandidateCreateId: state.arcCandidateCreateId,

@@ -35,10 +35,11 @@ import {
   createArcCandidate,
   createArcSelection,
   deleteArcSelection,
+  updateArcSelection,
   createArcStageMap,
 } from '../services/arcs';
 import type { SequencePlan, ChapterPlan, ScenePlan, BeatPlan, PlanningDependency, ChapterPacket, StoryboardCard } from '../types/planning';
-import type { ArcCandidate, ArcSelection, ArcStageMap, ArcComparisonRecord } from '../types/arcs';
+import type { ArcCandidate, ArcSelection, ArcStageMap, ArcComparisonRecord, ArcSelectionUpdateRequest } from '../types/arcs';
 
 export interface PlanningTabState {
   // Data
@@ -250,6 +251,8 @@ export interface PlanningTabCallbacks {
   // Arc Selection
   selectArc: (arcId: string) => void;
   deselectArc: () => void;
+  arcUpdateSelection: (selectionId: string, data: ArcSelectionUpdateRequest) => void;
+  arcDeleteSelection: (selectionId: string) => void;
 }
 
 export function usePlanningTab(tab: string): {
@@ -480,6 +483,22 @@ export function usePlanningTab(tab: string): {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['arc-stage-maps', projectId] });
+    },
+  });
+
+  const arcSelectionUpdateMutation = useMutation({
+    mutationFn: ({ selectionId, data }: { selectionId: string; data: ArcSelectionUpdateRequest }) =>
+      updateArcSelection(selectionId, data, projectId || ''),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arc-selections', projectId] });
+    },
+  });
+
+  const arcSelectionDeleteMutation = useMutation({
+    mutationFn: (selectionId: string) =>
+      deleteArcSelection(selectionId, projectId || ''),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['arc-selections', projectId] });
     },
   });
 
@@ -954,6 +973,12 @@ export function usePlanningTab(tab: string): {
     },
     deselectArc: () => {
       void deselectArcMutation.mutateAsync();
+    },
+    arcUpdateSelection: (selectionId, data) => {
+      void arcSelectionUpdateMutation.mutateAsync({ selectionId, data });
+    },
+    arcDeleteSelection: (selectionId) => {
+      void arcSelectionDeleteMutation.mutateAsync(selectionId);
     },
   };
 

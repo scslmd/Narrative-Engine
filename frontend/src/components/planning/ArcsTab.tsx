@@ -2,7 +2,7 @@ import { ArcStageMapFlow } from '../arcs/ArcStageMapFlow';
 import { ArcComparisonGraph } from '../arcs/ArcComparisonGraph';
 import { Section, EmptyState, WorkspaceStatus } from './ui';
 import { useIsDark } from './hooks';
-import type { ArcCandidate, ArcSelection, ArcStageMap, ArcComparisonRecord } from '../../types/arcs';
+import type { ArcCandidate, ArcSelection, ArcStageMap, ArcComparisonRecord, ArcSelectionUpdateRequest } from '../../types/arcs';
 
 const STAGE_OPTIONS = [
   'exposition',
@@ -26,6 +26,10 @@ export interface ArcsTabProps {
     selectionsLoading: boolean;
     stageMapsLoading: boolean;
     comparisonsLoading: boolean;
+  };
+  actions: {
+    onUpdateSelection: (selectionId: string, data: ArcSelectionUpdateRequest) => void;
+    onDeleteSelection: (selectionId: string) => void;
   };
   tab: {
     arcCandidateCreateOpen: boolean;
@@ -52,7 +56,7 @@ export interface ArcsTabProps {
   };
 }
 
-export function ArcsTab({ data, tab }: ArcsTabProps) {
+export function ArcsTab({ data, actions, tab }: ArcsTabProps) {
   const isDark = useIsDark();
   const selectClass = `text-xs px-2 py-1.5 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`;
   const inputClass = `text-xs px-2 py-1 rounded border ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-gray-300 text-gray-900'}`;
@@ -74,14 +78,34 @@ export function ArcsTab({ data, tab }: ArcsTabProps) {
         {data.selectionsLoading ? (
           <WorkspaceStatus title="Loading arc selections" detail="Fetching selected arcs..." />
         ) : data.selectedArcId || data.arcSelections.length > 0 ? (
-          <div className={`p-4 rounded-lg border ${isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200'}`}>
-            <div className="font-medium">{data.selectedArcId ?? (data.arcSelections[0]?.selected_arc.arc_id)}</div>
-            {data.selectedArcId && (
-              (() => {
-                const selected = data.arcCandidates.find((c) => c.arc_id === data.selectedArcId);
-                return selected?.summary ? <p className={`text-sm mt-1 ${isDark ? 'text-emerald-300/70' : 'text-emerald-700'}`}>{selected.summary}</p> : null;
-              })()
-            )}
+          <div className="space-y-2">
+            {data.arcSelections.map((selection) => {
+              const arc = selection.selected_arc;
+              return (
+                <div key={selection.selection_id} className={`p-4 rounded-lg border ${isDark ? 'bg-emerald-950/30 border-emerald-900/50' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{arc.name || arc.arc_id}</div>
+                      {arc.summary && <p className={`text-sm mt-1 ${isDark ? 'text-emerald-300/70' : 'text-emerald-700'}`}>{arc.summary}</p>}
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => actions.onUpdateSelection(selection.selection_id, { comparison_notes: [...(selection.comparison_notes ?? []), 'Updated inline'] })}
+                        className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-violet-950 text-violet-300 hover:bg-violet-900' : 'bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+                      >
+                        Update
+                      </button>
+                      <button
+                        onClick={() => actions.onDeleteSelection(selection.selection_id)}
+                        className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-rose-950 text-rose-300 hover:bg-rose-900' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'}`}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <EmptyState text="No arc selected. Arc selections define the narrative trajectory for this project." />
