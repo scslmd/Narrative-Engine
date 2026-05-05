@@ -12,40 +12,38 @@
 
 The Narrative Engine is a narrative compilation system for long-form fiction development. It provides:
 
-- **Mythos Extraction** -- paste mythology texts and extract narrative patterns to seed a new project
-- **Pattern Extraction** -- paste any story or mythology text and extract storytelling DNA including voice profile, narrative structure, thematic constraints, and entities to seed a new project
+- **Pattern Extraction** -- paste any story or mythology text and extract storytelling DNA to seed a new project
 - **Story Import** -- paste an existing story and have the LLM auto-extract structured data
-- **Project Export** -- create a complete ZIP archive backup of a project (directory + operations DB) for transfer or archiving
-- **Project Import** -- restore an exported ZIP as a brand-new project with full data fidelity; import runs asynchronously with progress tracking
+- **Project Export/Import** -- create ZIP archive backups and restore projects on other installations
 - **Project Creation** -- manual project setup with genre, tone, POV, structure
+- **Brain Dump** -- freeform ideation with AI-powered categorization
 - **Planning** -- hierarchical story planning (sequences, chapters, scenes, beats)
 - **Writing** -- manuscript editing with draft management and AI suggestions
+- **Manuscript LLM Assist** -- interactive AI editing: line edits, expansions, canon checks, forks
 - **Review** -- automated review findings and decision management
 - **Inspection** -- deep-dive into AI job execution steps, artifacts, and lineage
-- **Brain Dump** -- freeform ideation with AI-powered categorization
 - **Role Model Checker** -- consistency checking against narrative roles
 - **Story Branching** -- alternate story paths, comparison, and merging
 - **World Bible** -- canonical world entries with pinning and character cross-references
 - **Character Profiles** -- detailed character management with relationship graph
 - **Arc Management** -- character arc candidates, selections, and stage maps
 - **Flow Editor** -- customizable story development pipeline
-- **State-Aware Narrative Controller** -- automatic quality checks during P-300 drafting (context injection, consistency critic, entity intake)
-- **Story Generation Orchestration** -- generate new canon-congruent stories from existing projects; fork characters/world into new projects; 4-phase pipeline (G-200 plan, G-300 draft, G-350 gate, G-400 compile) with consistency gates
-- **Canon Workshop** -- edit extracted canon material, mark fields as locked/mutable/forbidden, manage mythos and pattern entries, create reusable generation profiles, preview canon packets before submission
-- **Manuscript LLM Assist** -- select text in the manuscript editor and request AI assistance: line edits, expansions, rewrites, continuations, canon checks, forks; suggestions include canon risk ratings and confidence scores
+- **State-Aware Narrative Controller** -- automatic quality checks during P-300 drafting
+- **Canon Workshop** -- edit canon material, mark fields locked/mutable/forbidden, create generation profiles
+- **Story Generation Orchestration** -- generate new canon-congruent stories; fork into new projects; 4-phase pipeline with consistency gates
 
 ---
 
 ## How to Use This Walkthrough
 
-This walkthrough follows the **creative lifecycle**: seed your project, plan and refine, generate stories, then polish manuscripts. Follow the phases in order for the best learning experience. Each phase includes:
+This walkthrough follows the **creative lifecycle**: seed your project, ideate, plan, write, polish, then generate new stories. Follow the phases in order for the best learning experience. Each phase includes:
 
 - **Route** — the URL path in the frontend
 - **Step-by-step instructions** — what to click and fill in
 - **"What you see"** — what the UI shows after each action
 - **Troubleshooting** — common issues and fixes (at the end)
 
-For deeper feature explanations, cross-reference the **User Guide** (`User Guide v1.5.1.md`).
+For deeper feature explanations, cross-reference the **User Guide** (`User Guide v1.6.0.md`).
 
 ---
 
@@ -57,47 +55,46 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
 - [Phase 1: Project Setup](#phase-1-project-setup)
   - [Option A: Create Project (Manual)](#option-a-create-project-manual)
   - [Option B: Import Story (LLM-Assisted)](#option-b-import-story-llm-assisted)
-  - [Option C: Extract Mythos (Pattern-Based Seed)](#option-c-extract-mythos-pattern-based-seed)
-  - [Option D: Extract Patterns (Generalized Pattern-Based Seed)](#option-d-extract-patterns-generalized-pattern-based-seed)
-- [Phase 1d: Import an Exported Project](#phase-1d-import-an-exported-project)
-- [Phase 1b: Mythos Extraction Results](#phase-1b-mythos-extraction-results-optional)
-- [Phase 1c: Pattern Extraction Results](#phase-1c-pattern-extraction-results-optional)
+  - [Option C: Extract Patterns (Pattern-Based Seed)](#option-c-extract-patterns-pattern-based-seed)
+- [Phase 1b: Extraction Results](#phase-1b-extraction-results-optional)
+
+### Ideation
+
+- [Phase 2: Brain Dump](#phase-2-brain-dump)
+- [Phase 3: Brainstorm](#phase-3-brainstorm)
 
 ### Planning and Setup
 
-- [Phase 2: Planning Workspace](#phase-2-planning-workspace)
-  - [Manifest, Foundation, Characters, World Bible](#step-2a-manifest-view)
-  - [Sequence, Chapter, Scene, Beat Plans](#step-2e-planning---sequence-plans)
-  - [Dependencies, Chapter Packets, Storyboard Cards](#step-2i-planning---dependencies)
-  - [Flow Editor](#step-2l-flow-editor)
-- [Phase 3: Arc Management](#phase-3-arc-management)
-- [Phase 4: Story Branching](#phase-4-story-branching)
+- [Phase 4: Planning Workspace](#phase-4-planning-workspace)
+  - [Manifest, Foundation, Characters, World Bible](#step-4a-manifest-view)
+  - [Sequence, Chapter, Scene, Beat Plans](#step-4e-planning---sequence-plans)
+  - [Dependencies, Chapter Packets, Storyboard Cards](#step-4i-planning---dependencies)
+  - [Flow Editor](#step-4l-flow-editor)
+- [Phase 5: Arc Management](#phase-5-arc-management)
 
 ### Writing and AI Assistance
 
-- [Phase 5: Writing Workspace](#phase-5-writing-workspace)
-  - [Manuscript Editing, Draft Management, Promotion](#step-5-manuscript-editing)
-  - [Draft Continuation, Alternate Variants, Revision Suggestions](#step-5d-draft-continuation)
-- [Phase 5g: State-Aware Narrative Controller](#phase-5g-state-aware-narrative-controller-automatic)
-- [Phase 5h: Multi-Chapter Generation](#phase-5h-multi-chapter-generation)
-- [Phase 5i: Manuscript LLM Assist](#phase-5i-manuscript-llm-assist)
+- [Phase 6: Writing Workspace](#phase-6-writing-workspace)
+  - [Manuscript Editing, Draft Management, Promotion](#step-6-manuscript-editing)
+  - [Draft Continuation, Alternate Variants, Revision Suggestions](#step-6d-draft-continuation)
+- [Phase 6g: State-Aware Narrative Controller](#phase-6g-state-aware-narrative-controller-automatic)
+- [Phase 6h: Multi-Chapter Generation](#phase-6h-multi-chapter-generation)
+- [Phase 6i: Manuscript LLM Assist](#phase-6i-manuscript-llm-assist)
 
 ### Quality and Review
 
-- [Phase 6: Role Model Checker](#phase-6-role-model-checker)
-- [Phase 7: Review Workspace](#phase-7-review-workspace)
+- [Phase 7: Role Model Checker and Review](#phase-7-role-model-checker-and-review)
 - [Phase 8: Inspect Workspace](#phase-8-inspect-workspace)
-
-### Ideation and Decisions
-
-- [Phase 9: Brain Dump](#phase-9-brain-dump)
-- [Phase 10: Brainstorm](#phase-10-brainstorm)
-- [Phase 11: Decisions](#phase-11-decisions)
 
 ### Advanced Generation
 
-- [Phase 12: Story Generation Orchestration](#phase-12-story-generation-orchestration)
-- [Phase 13: Canon Workshop](#phase-13-canon-workshop)
+- [Phase 9: Canon Workshop](#phase-9-canon-workshop)
+- [Phase 10: Story Generation Orchestration](#phase-10-story-generation-orchestration)
+
+### Project Lifecycle
+
+- [Phase 11: Story Branching](#phase-11-story-branching)
+- [Phase 12: Exporting and Importing Projects](#phase-12-exporting-and-importing-projects)
 
 ### Reference
 
@@ -120,7 +117,7 @@ Before you begin the walkthrough, you may want sample stories to import and test
 | The Last Archive | Original | Science Fiction | ~28 KB (~5K words) | Markdown | Single-pass |
 | Crossing Limits | Original | Pop-Romance | ~30 KB (~5K words) | Markdown | Multi-pass |
 
-Three of the four stories exceed the 30,000-character threshold for single-pass import, which exercises the **multi-pass import pipeline** -- the system that handles large stories by chunking, per-chapter analysis, and consolidation. The Last Archive (~28K chars) exercises single-pass import instead. Together they test both code paths thoroughly.
+Three of the four stories exceed the 30,000-character threshold for single-pass import, which exercises the **multi-pass import pipeline**. The Last Archive (~28K chars) exercises single-pass import instead.
 
 ### How to Import a Sample Story
 
@@ -135,7 +132,7 @@ Three of the four stories exceed the 30,000-character threshold for single-pass 
    - **Story Text** -- paste the copied story text
 6. Click **"Import Story"**
 7. The system will:
-   - Detect that the story exceeds the single-pass threshold
+   - Detect that the story exceeds the single-pass threshold (if applicable)
    - Route to multi-pass import: structure detection, per-chapter analysis, character/world/arc consolidation
    - Create a new project with all extracted data populated
    - Return a success response when complete
@@ -145,35 +142,29 @@ Three of the four stories exceed the 30,000-character threshold for single-pass 
 
 ### Expected Extraction Results
 
-Each sample story is designed to produce clean extraction results across all categories. Here's what to expect:
-
 #### The Time Machine
 - **Characters**: 6+ (Time Traveller, Weena, Eloi collective, Morlocks, Filby, frame narrator)
 - **World Bible**: 8+ entries (Year 802,701 AD, Time Machine technology, Eloi/Morlock societies, class evolution theme, Victorian London frame)
 - **Arcs**: 3 (class divergence, exploration/discovery, survival/rescue)
-- **Notable**: Tests extraction from classic prose with frame narrative structure and sparse character development
 
 #### The Picture of Dorian Gray
 - **Characters**: 8+ (Dorian Gray, Lord Henry Wotton, Basil Hallward, Sibyl Vane, Allan Chambers, James Vane)
 - **World Bible**: 10+ entries (Victorian London high society, aestheticism philosophy, portrait's magical properties, opium dens, moral decay theme)
 - **Arcs**: 4 (corruption, consequence, pursuit, redemption/despair)
-- **Notable**: Tests large-story multi-pass import and philosophical dialogue extraction
 
 #### The Last Archive
 - **Characters**: 6 (Miren Kael, Joss Vallen, Tessa Rowan, Ravi Chen, Director Hale, Echo/collective consciousness)
 - **World Bible**: 10+ entries (memory crystals, extraction process, Chronos interface, Grand Archive, Understack, Three Laws of Memory, Identity Drift, Erasure Protocol, Echo Fragments, New Geneva)
 - **Arcs**: 3 (discovery, conflict with Council, Chronos resolution)
-- **Notable**: Tests technology/world-bible extraction with many named concepts and clear arc structure
 
 #### Crossing Limits
 - **Characters**: 7 (Elara Voss, Kai Mercer, Dr. Nadia Chen, Mira Voss, The Keeper, Prof. Ashworth, The Guide)
 - **World Bible**: 8+ entries (book-worlds concept, Crossing Limit Rule, Athenaeum, reality degradation, anchor points, Sealed Collection, book-world ethics, merge threat)
 - **Arcs**: 3 (romance, mystery of destabilization, rescue/stabilization)
-- **Notable**: Tests romance genre handling, dual-world settings, and relationship-driven plot extraction
 
 ### Bridge to Phase 1
 
-After importing a sample story, you'll be in the project workspace. Proceed to [Phase 1](#phase-1-project-setup) to explore the imported data, or skip directly to [Phase 2](#phase-2-planning-workspace) to review the extracted planning structure.
+After importing a sample story, you'll be in the project workspace. Proceed to [Phase 1](#phase-1-project-setup) to explore the imported data, or skip directly to [Phase 4](#phase-4-planning-workspace) to review the extracted planning structure.
 
 ---
 
@@ -183,7 +174,7 @@ After importing a sample story, you'll be in the project workspace. Proceed to [
 
 **Route**: `/`
 
-The home screen shows two options:
+The home screen shows three ways to start a project:
 
 #### Option A: Create Project (Manual)
 
@@ -219,211 +210,123 @@ The home screen shows two options:
 
 **Note**: Story Import requires a configured inference backend (llama.cpp, LM Studio, vLLM, etc.). If unavailable, the import will fail with an error message.
 
-#### Option C: Extract Mythos (Pattern-Based Seed)
+#### Option C: Extract Patterns (Pattern-Based Seed)
 
-1. Click the "Import Existing Story" button to open the modal, then toggle to "Extract Mythos" mode
-2. Fill in:
-   - **Project Name** -- required, name for the new project
-   - **Source Tradition** -- optional, e.g., "Greek Mythology", "Norse Sagas". Omit to let AI identify.
-   - **Generation Mode** -- select one:
-     - **Same World** -- keep mythological setting, create original characters following extracted patterns
-     - **Transposed** -- map archetypes to a new setting (e.g., Greek tragedy → corporate drama)
-     - **Pure Pattern** -- apply narrative structures only; free-form world and genre
-   - **Mythology Texts** -- paste mythology texts, sagas, or source material (up to 24,000 characters). Include diverse myths for richer pattern extraction.
-3. Click "Extract Mythos"
-4. The system:
-   - Analyzes your text via LLM
-   - Extracts archetypal patterns, narrative structures, cosmic rules, symbolic motifs
-   - Creates a project with foundation profile, world bible entries, character archetypes, and key entities
-   - Returns a success/failure response
-5. On success, you are redirected to the project workspace
-
-**Note**: Mythos Extraction requires a configured inference backend. Generation modes determine how extracted patterns are applied: Same World for in-universe stories, Transposed for adapted settings, Pure Pattern for maximum creative freedom.
-
-#### Option D: Extract Patterns (Generalized Pattern-Based Seed)
+Pattern Extraction lets you paste any story or mythology text and extract its storytelling DNA — archetypal patterns, narrative structure, voice profile, thematic constraints, and entities — then use those patterns to guide original story generation.
 
 1. Click the "Import Existing Story" button to open the modal, then toggle to "Extract Patterns" mode
 2. Fill in:
    - **Project Name** -- required, name for the new project
    - **Source Type** -- select one:
-     - **Narrative** — fiction stories; includes voice profile, narrative pattern, and thematic constraints in extraction
-     - **Mythology** — mythological texts; delegates to Mythos Extraction pipeline
+     - **Narrative** — fiction stories; includes voice profile, narrative pattern, and thematic constraints
+     - **Mythology** — mythological texts; extracts archetypal patterns, cosmic rules, symbolic motifs
    - **Generation Mode** -- select one:
      - **Same World** — keep the source story's world, create original characters following extracted patterns
-     - **New Characters** — same world, original cast fulfilling extracted archetypes
-     - **Transposed** — map patterns and voice to a new setting; maximum creative freedom with narrative DNA preserved
-   - **Source Corpus** -- optional label (e.g., "Dune", "The Shining")
-   - **Story Text** -- paste any completed story text for analysis (up to 24,000 characters)
+     - **New Characters** — same world, original cast fulfilling extracted archetypes (narrative source only)
+     - **Transposed** — map patterns and voice to a new setting (maximum creative freedom)
+   - **Source Corpus** -- optional label (e.g., "Dune", "Greek Mythology")
+   - **Story Text** -- paste any completed story or mythology text (up to 24,000 characters)
 3. Click "Extract Patterns"
 4. The system:
    - Analyzes your text via LLM
-   - Extracts archetypal patterns, narrative structures, voice profile, thematic constraints, world rules, symbolic motifs, and entities
-   - Creates a project with foundation profile, world bible entries, character archetypes, and narrative-specific fields (voice profile, thematic constraints)
+   - Extracts patterns, structure, voice, constraints, and entities
+   - Creates a project with foundation profile, world bible entries, character archetypes, and narrative-specific fields
    - Returns a success/failure response
 5. On success, you are redirected to the project workspace
 
-**Note**: Pattern Extraction requires a configured inference backend. Source type determines which extraction pipeline is used: Narrative for fiction stories with voice profile extraction, Mythology for mythological texts (delegates to MythosExtractionService). Generation modes determine how extracted patterns guide downstream generation.
+**Note**: Pattern Extraction requires a configured inference backend. Source type determines which extraction pipeline is used: Narrative for fiction stories with voice profile extraction, Mythology for mythological texts.
 
 ---
 
-## Phase 1b: Mythos Extraction Results (Optional)
-
-If you used Mythos Extraction as your project seed, the following will be pre-populated when you enter the workspace:
-
-- **Foundation Editor** -- thematic spine, emotional promise, tone direction derived from source material
-- **World Bible** -- cosmic rules and symbolic motifs as concept entries
-- **Character Builder** -- archetypal pattern carriers available as templates
-- **P-100 Architect** -- applies mythos context based on your generation mode
-- **P-300 Drafter** -- enforces cosmic rules as hard constraints during drafting
-
-### Troubleshooting Mythos Extraction
-
-| Issue | Solution |
-|-------|----------|
-| Extraction returns no patterns | Ensure text is 2,000+ characters and includes multiple mythological accounts |
-| Wrong source tradition detected | Specify source_corpus manually and retry |
-| Partial results | Retry — the LLM may extract more patterns on a second pass |
-| Generation mode unclear | Same World for in-universe stories, Transposed for adapted settings, Pure Pattern for maximum freedom |
-
----
-
-## Phase 1c: Pattern Extraction Results (Optional)
+## Phase 1b: Extraction Results (Optional)
 
 If you used Pattern Extraction as your project seed, the following will be pre-populated when you enter the workspace:
 
-- **Foundation Editor** -- thematic spine, emotional promise, tone direction derived from source material; narrative constraints include archetypal patterns + narrative structures + thematic constraints
+- **Foundation Editor** -- thematic spine, emotional promise, tone direction derived from source material
 - **World Bible** -- world rules and symbolic motifs as concept entries
-- **Character Builder** -- archetypal pattern carriers available as templates; key entities with appropriate roles
+- **Character Builder** -- archetypal pattern carriers available as templates
 - **Voice Profile** -- extracted narrative voice, sentence rhythm, descriptive density, humor level, emotional temperature (narrative source type only)
 - **Narrative Pattern** -- pacing, chapter structure, conflict type, dialogue style, scene transition (narrative source type only)
 - **Thematic Constraints** -- themes with moral stances, recurring questions, forbidden elements (narrative source type only)
-- **P-100 Architect** -- applies pattern context via `_build_pattern_context_block()` based on generation mode
+- **P-100 Architect** -- applies pattern context based on generation mode
 - **P-300 Drafter** -- uses SceneContext's `pattern_guidance` and `author_prompt` for pattern-informed drafting
 
-### Troubleshooting Pattern Extraction
+### Troubleshooting Extraction
 
 | Issue | Solution |
 |-------|----------|
-| Extraction returns no patterns | Ensure text is 2,000+ characters and includes diverse scenes from the source story |
-| Voice profile not extracted | Use source_type = "narrative" for fiction stories; mythology source type does not extract voice profiles |
-| Wrong generation mode | Same World for in-universe stories, New Characters for same world with original cast, Transposed for adapted settings |
+| Extraction returns no patterns | Ensure text is 2,000+ characters and includes diverse scenes |
+| Voice profile not extracted | Use source_type = "narrative" for fiction stories; mythology does not extract voice profiles |
+| Wrong generation mode | Same World for in-universe stories, New Characters for original cast, Transposed for adapted settings |
 | Partial results | Retry — the LLM may extract more patterns on a second pass |
 
-From here, proceed to Phase 2 (Planning Workspace).
+From here, proceed to [Phase 2](#phase-2-brain-dump) (Brain Dump) to add your own ideas, or to [Phase 4](#phase-4-planning-workspace) (Planning) to refine the extracted data.
 
 ---
 
-## Phase 1d: Import an Exported Project
+## Phase 2: Brain Dump
 
-### Step 1: Open the Import Wizard
+> **Bridge from Phase 1:** After creating or importing your project, the first step in adding your own creative input is freeform ideation. Brain Dump captures raw ideas before you organize them into structured elements.
 
-**Route**: `/`
+**Route**: `/workspace/:projectId/braindump`
 
-The Import wizard restores a previously exported project ZIP archive as a brand-new project. This is the primary way to transfer projects between machines, installations, or users.
+Freeform ideation with AI-powered organization:
 
-### Step 2: Upload Your Exported ZIP
+1. Start with a blank canvas (or an existing session)
+2. Write raw thoughts, ideas, plot points, character notes in the canvas
+3. No structure needed -- just write freely
+4. When done, click **"Organize"** to have the LLM categorize the text
 
-1. On the home page (`/`), click **"Import Project"** (the button above the project list grid)
-2. The import modal opens with a drag-and-drop upload area
-3. Either:
-   - **Drag and drop** your exported ZIP file onto the upload area, or
-   - **Click to browse** and select the ZIP file from your filesystem
-4. A valid export ZIP must contain `metadata.json`, a project directory (with `manifest.json` and `bible.db`), and optionally an `operations_db.sql` dump
+Organize results appear as:
+- **Categorized items** grouped by type (characters, locations, plot-points, etc.)
+- **Item cards** showing the extracted element with its category
+- **Continue Editing** button to return to the draft canvas
 
-### Step 3: Specify Import Details
+From the organized results, you can:
+- Create brainstorm items from categorized content
+- Create world bible entries from setting entries
+- Create character profiles from character entries
+- Add to foundation profiles from thematic entries
 
-1. After uploading, fill in:
-   - **New Project Name** — choose a name for the imported project. This is always a brand-new project with a fresh UUID; it does NOT replace or merge with any existing project, even if the names match.
-2. Click **"Import Project"** to start the asynchronous import process
+### Tips
 
-### Step 4: Monitor Import Progress
-
-The import runs asynchronously on the server. A progress indicator shows updates:
-
-- **Pending** — the import is queued for processing
-- **Processing** — extracting ZIP, validating structure, migrating schema version, restoring data
-- **Completed** — import finished successfully; you are redirected to the new project workspace
-- **Failed** — an error occurred; the error message explains what went wrong and how to fix it
-
-Typical import time for a small-to-medium project (10-50 MB ZIP) is 15-30 seconds. Larger projects with extensive job history may take longer.
-
-### Step 5: Verify the Imported Project
-
-After successful import, you are redirected to the new project's workspace. Verify that:
-- Characters, world bible entries, foundation profile, and planning data match the source project
-- The manifest reflects the original project settings (genre, tone, structure, etc.)
-- All chapters, drafts, and manuscripts are present
-
-### What Happens Behind the Scenes (Import Flow)
-
-1. **ZIP Validation** — the server checks that the ZIP is ≥1 MB, ≤500 MB, contains `metadata.json`, and has a valid project directory structure
-2. **Schema Detection** — reads `export_version` from `metadata.json` to determine the schema version used at export time
-3. **Isolated Extraction** — extracts to a temporary directory with path traversal protection (rejected paths outside the extraction root)
-4. **Migration Pass** — if the export version is older than the current server version, applies forward migration to reconcile any schema changes
-5. **Project Creation** — creates a new project in `data/projects/{new_project_id}/` by copying restored files
-6. **Operations DB Restore** — inserts all scoped operations DB records (projects, project_artifacts, foundation_profiles, character_profiles, etc.) under the new project scope
-7. **Artifact Initialization** — runs `initialize_project_artifacts` to register the project in the operations registry
-
-### Importing Without Drag-and-Drop (API)
-
-If you prefer using the API directly:
-
-```bash
-curl -X POST http://localhost:8000/projects/import-export \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@my_project_export.zip" \
-  -F "project_name=My Restored Project"
-```
-
-Response (202 Accepted):
-```json
-{
-  "import_id": "abc123",
-  "status": "pending",
-  "project_name": "My Restored Project"
-}
-```
-
-Poll for status:
-```bash
-curl http://localhost:8000/projects/export/abc123
-```
-
-### Expected Results
-
-After a successful import, the new project contains everything from the export:
-- All characters with full profiles and relationships
-- World bible entries across all types (locations, concepts, rules, organizations)
-- Foundation profile with premise, logline, thematic spine, etc.
-- Planning hierarchy (sequences → chapters → scenes → beats)
-- Draft artifacts and manuscript documents
-- Job history and step records from the operations DB
-
-The only differences are:
-- The project has a new UUID (project_id)
-- All internal IDs referencing the old project are updated to the new ID
-- Job timestamps are preserved from the original export
-
-### Troubleshooting Project Import
-
-| Issue | Solution |
-|-------|----------|
-| "Invalid export: metadata.json not found" | The ZIP was not created by Narrative Engine, or it is corrupted. Re-export the source project |
-| "Invalid export: missing manifest.json" | The source project's directory is incomplete. Check that the export contains both `metadata.json` and a valid project directory |
-| Import hangs at "Processing" for more than 5 minutes | Large operations DB dumps take longer to restore. Wait for completion or check server logs |
-| Error: "project directory missing required files" | The source project's directory structure changed (e.g., deleted bible.db). Re-export from the original workspace |
-| Imported project looks incomplete | Some data may have been corrupted during export. Verify the source project is accessible and working before re-exporting |
-| Missing character relationships after import | Relationships are stored in a separate table; ensure the export ZIP contains the full operations DB dump |
-
-From here, proceed to Phase 2 (Planning Workspace).
+- Use Brain Dump liberally — capture raw ideas first, organize them later
+- Don't self-censor at the ideation stage
+- Run Organize multiple times as you add more content
+- Organized items feed into the Planning workspace (Foundation, Characters, World Bible tabs)
 
 ---
 
-## Phase 2: Planning Workspace
+## Phase 3: Brainstorm
 
-> **Bridge from Phase 1:** After creating or importing your project, the next step is to plan your story structure. If you imported a story or used Pattern/Mythos Extraction, many of these fields are pre-populated — review and refine them before launching AI jobs.
+> **Bridge from Phase 2:** After organizing your Brain Dump, convert categorized ideas into structured brainstorm items that can be clustered and promoted to planning elements.
 
-### Step 2: Explore the Workspace Layout
+**Tab**: Brainstorm (in PlanningView)
+
+Manage brainstorm items and clusters:
+
+1. Click "+ New Item" to create a brainstorm item
+2. Fill in:
+   - **Content** -- the brainstorm idea
+   - **Kind** -- the type of idea (plot, character, setting, theme, etc.)
+   - **Notes** -- additional context
+3. Click "Save"
+
+### Cluster Items
+
+Group related brainstorm items:
+
+1. Select multiple brainstorm items
+2. Click "Cluster" to group them together
+3. The cluster is created with a generated title based on the items' common themes
+
+---
+
+## Phase 4: Planning Workspace
+
+> **Bridge from Phase 3:** After ideating and brainstorming, it's time to structure your story. If you imported a story or used Pattern Extraction, many of these fields are pre-populated — review and refine them before launching AI jobs.
+
+### Step 4: Explore the Workspace Layout
 
 **Route**: `/workspace/:projectId/plan`
 
@@ -433,7 +336,7 @@ The workspace has three panels:
 - **Center Panel** -- active view (PlanningView with 12 tabs)
 - **Right Panel** -- notes (project-specific sticky notes) and job launch panel
 
-### Step 2a: Manifest View
+### Step 4a: Manifest View
 
 **Tab**: Manifest
 
@@ -444,7 +347,7 @@ View the project's core configuration:
 
 This is read-only and reflects the project creation or import data.
 
-### Step 2b: Foundation Editor
+### Step 4b: Foundation Editor
 
 **Tab**: Foundation
 
@@ -465,7 +368,7 @@ Set the story's foundational elements:
 
 The foundation is used as input by the P-100 Architect job phase.
 
-### Step 2c: Characters
+### Step 4c: Characters
 
 **Tab**: Characters
 
@@ -484,22 +387,17 @@ Manage character profiles:
    - **Fatal Flaw or Limitation** -- the character's critical weakness
    - **Contradictions** -- conflicting traits that add depth
    - **Backstory Summary** -- key events that shaped the character
-   - **Voice Notes** -- how the character speaks/thinks
+   - **Voice Notes** -- how the character speaks/thinks (critical for consistency checking)
    - **Secrets** -- hidden information about the character
    - **Values** -- core principles the character holds
    - **Taboos** -- things the character will never do
    - **Change Axis** -- how the character evolves
-   - **Arc Stage Notes** -- where the character is in their arc
    - **Continuity Facts** -- immutable facts for consistency
    - **Writer Notes** -- any additional guidance
 3. Click "Save" to create or update the character
+4. Use the **Relationships** section to define connections between characters
 
-Characters can be referenced in:
-- World Bible entries (via `related_character_ids`)
-- Brain Dump sessions (via AI categorization)
-- Story Import analysis (auto-extracted)
-
-### Step 2d: World Bible
+### Step 4d: World Bible
 
 **Tab**: World Bible
 
@@ -523,7 +421,7 @@ Entries can be:
 - Cross-referenced with characters via `related_character_ids`
 - Used as context for AI jobs (P-100 Architect references world anchors)
 
-### Step 2e: Planning - Sequence Plans
+### Step 4e: Planning - Sequence Plans
 
 **Tab**: Planning > Sequence Plans
 
@@ -543,7 +441,7 @@ Sequences form the top level of the planning hierarchy:
 Sequence > Chapter > Scene > Beat
 ```
 
-### Step 2f: Planning - Chapter Plans
+### Step 4f: Planning - Chapter Plans
 
 **Tab**: Planning > Chapter Plans
 
@@ -556,10 +454,11 @@ Create chapters within sequences:
    - **Sequence ID** -- assign to an existing sequence
    - **Order** -- the chapter's position within the sequence
    - **Word Count Target** -- planned word count
+   - **Active Character IDs** -- characters who appear in this chapter (keeps P-300 prompts focused)
    - **Notes** -- planning notes
 3. Click "Save"
 
-### Step 2g: Planning - Scene Plans
+### Step 4g: Planning - Scene Plans
 
 **Tab**: Planning > Scene Plans
 
@@ -575,7 +474,7 @@ Create scenes within chapters:
    - **Notes** -- planning notes
 3. Click "Save"
 
-### Step 2h: Planning - Beat Plans
+### Step 4h: Planning - Beat Plans
 
 **Tab**: Planning > Beat Plans
 
@@ -591,7 +490,7 @@ Create beats within scenes:
    - **Notes** -- planning notes
 3. Click "Save"
 
-### Step 2i: Planning - Dependencies
+### Step 4i: Planning - Dependencies
 
 **Tab**: Planning > Dependencies
 
@@ -601,7 +500,7 @@ View and manage dependencies between planning entities. The dependencies view sh
 - Which beats depend on which scenes
 - Cross-entity dependency conflicts
 
-### Step 2j: Planning - Chapter Packets
+### Step 4j: Planning - Chapter Packets
 
 **Tab**: Planning > Chapter Packets
 
@@ -615,7 +514,7 @@ Create chapter packets that bundle planning data for AI generation:
 
 Chapter packets are used as input for the P-300 Drafter phase when generating manuscript drafts.
 
-### Step 2k: Planning - Storyboard Cards
+### Step 4k: Planning - Storyboard Cards
 
 **Tab**: Planning > Storyboard Cards
 
@@ -629,12 +528,9 @@ Create and manage storyboard cards in a Kanban-style view:
    - **Order** -- position within the column
 3. Click "Save"
 
-Cards can be:
-- Reordered within columns via the reindex endpoint
-- Moved between columns by updating the column field
-- Linked to sequence/chapter/scene plans for traceability
+Cards can be reordered within columns, moved between columns, and linked to planning entities for traceability.
 
-### Step 2l: Flow Editor
+### Step 4l: Flow Editor
 
 **Tab**: Flow
 
@@ -642,22 +538,17 @@ Manage the story development pipeline stages:
 
 1. View existing stages (typically: Architect, Sequencer, Drafter, Compiler)
 2. **Add Stage** -- click the "+" button to add a new stage
-   - Select stage kind
-   - Provide a display name
-   - Set description
 3. **Rename Stage** -- click the pencil icon on any stage
 4. **Disable/Enable Stage** -- toggle the stage on/off
 5. **Archive Stage** -- click the archive icon to archive (preserves history)
 6. **Delete Stage** -- click the delete icon (custom stages only, default stages hidden)
 7. **Reorder Stages** -- use drag handles to change execution order
 
-Stages define the pipeline flow for automated story generation.
-
 ---
 
-## Phase 3: Arc Management
+## Phase 5: Arc Management
 
-### Step 3: Arc Candidates
+### Step 5: Arc Candidates
 
 **Tab**: Arcs > Candidates
 
@@ -667,7 +558,6 @@ Identify character arcs to track:
 2. Fill in:
    - **Arc Name** -- a descriptive name for the arc (e.g., "Hero's Journey")
    - **Summary** -- what this arc represents
-   - **Project ID** -- automatically set to current project
    - **Character ID** -- which character this arc tracks
    - **Stage Kind** -- the narrative stage type
    - **Notes** -- additional context
@@ -678,17 +568,15 @@ Arc candidates are hypotheses about character development that can be:
 - **Deselected** -- removed from active consideration
 - **Compared** -- visualized against other arc candidates
 
-### Step 3b: Arc Selections
+### Step 5b: Arc Selections
 
 **Tab**: Arcs > Selections
-
-Manage active arc selections:
 
 1. After creating arc candidates, click "Select" on the preferred arc
 2. The selection is recorded in the Arcs Selections view
 3. Deselect an arc by clicking "Deselect"
 
-### Step 3c: Arc Stage Maps
+### Step 5c: Arc Stage Maps
 
 **Tab**: Arcs > Stage Maps
 
@@ -702,78 +590,22 @@ Define the stage progression for an arc:
    - **Notes** -- narrative notes for this stage
 3. Click "Save"
 
-Stage maps are visualized as an SVG sequential flow diagram with:
-- Directional arrows between stages
-- Color-coded stage types
-- Multi-stage-map support with selector dropdown
-- Active arc indicator badge
+Stage maps are visualized as an SVG sequential flow diagram with directional arrows, color-coded stage types, and active arc indicator badges.
 
-### Step 3d: Arc Comparisons
+### Step 5d: Arc Comparisons
 
 **Tab**: Arcs > Comparisons
 
-Compare arc candidates visually:
-
 1. After having multiple arc candidates, create a comparison
-2. The comparison is visualized as a graph showing:
-   - Arc candidates as nodes
-   - Relationships between arcs
-   - Similarity metrics
+2. The comparison is visualized as a graph showing arc candidates as nodes, relationships between arcs, and similarity metrics
 
 ---
 
-## Phase 4: Story Branching
+## Phase 6: Writing Workspace
 
-### Step 4: Create Branches
+> **Bridge from Phase 5 (Arcs):** With your story planned, launch P-300 Drafter jobs from the Job Launch panel to generate chapter drafts. Then use the Writing workspace to edit and Manuscript Assist (Phase 6i) to polish them.
 
-**Tab**: Branches
-
-Manage alternate story paths:
-
-1. Click "Create Branch" to create a new branch
-2. Fill in:
-   - **Branch Name** -- a descriptive name (e.g., "Alternate Ending")
-   - **Branch Point** -- the ID of the branch point in the story
-   - **State** -- ACTIVE (default), MERGED, or ARCHIVED
-3. Click "Save"
-
-Branches allow you to:
-- Explore alternate story directions without modifying the main story
-- Compare branches side-by-side
-- Make merge decisions to consolidate branches
-
-### Step 4b: Branch Comparisons
-
-**Tab**: Branches > Comparisons
-
-Compare two branches:
-
-1. Select two branches from the comparison form
-2. Click "Compare" to generate a comparison analysis
-3. The comparison shows differences in:
-   - Draft content
-   - Planning entities
-   - Character development
-   - World bible entries
-
-### Step 4c: Merge Decisions
-
-**Tab**: Branches > Merge
-
-Decide whether to merge branches:
-
-1. Select source and target branches
-2. Enter a **merge rationale** explaining why you're merging
-3. Click "Create Merge Decision"
-4. The merge decision is recorded and the source branch state can be updated
-
----
-
-## Phase 5: Writing Workspace
-
-> **Bridge from Phase 4 (Branching):** After exploring story branches, move to the Writing workspace to edit your manuscript. Launch P-300 Drafter jobs from the Job Launch panel to generate chapter drafts, then use Manuscript Assist (Phase 5i) to polish them.
-
-### Step 5: Manuscript Editing
+### Step 6: Manuscript Editing
 
 **Route**: `/workspace/:projectId/write`
 
@@ -787,9 +619,7 @@ To write/edit:
 
 1. In the left sidebar, click a manuscript document to select it
 2. Edit the content in the main editor
-3. The editor shows:
-   - Live word count and character count
-   - Character count indicator
+3. The editor shows live word count and character count
 4. Changes are saved automatically (via the PATCH endpoint)
 
 To create a new manuscript document:
@@ -798,20 +628,17 @@ To create a new manuscript document:
 2. Fill in the title and initial content
 3. Click "Save"
 
-### Step 5b: Draft Management
+### Step 6b: Draft Management
 
 **Draft List (center panel)**:
 
 1. View existing draft artifacts with their titles, content previews, status, and word counts
 2. Click a draft to expand its preview
 3. Click "+ New Draft" to create a new draft artifact
-4. Fill in:
-   - **Title** -- the draft title
-   - **Content** -- the draft content
-   - **Status** -- DRAFT, REVISING, or FINAL
+4. Fill in title, content, and status (DRAFT, REVISING, or FINAL)
 5. Click "Save"
 
-### Step 5c: Draft Promotion
+### Step 6c: Draft Promotion
 
 Promote a draft to a manuscript:
 
@@ -823,40 +650,32 @@ Promote a draft to a manuscript:
 4. Click "Promote"
 5. The draft becomes a manuscript document in the left sidebar
 
-### Step 5d: Draft Continuation
+### Step 6d: Draft Continuation and Alternate Variants
 
-Continue an existing draft:
-
+**Continue a draft:**
 1. Select a draft artifact
 2. Click "Continue Draft" to generate additional content
-3. The system sends the draft context to the inference backend
-4. The continuation is appended to the draft content
+3. The continuation is appended to the draft content
 
-### Step 5e: Alternate Variants
-
-Create alternate versions of a draft:
-
+**Create alternate variants:**
 1. Select a draft artifact
 2. Click "Create Alternate Variant"
 3. Specify the variation (e.g., "Darker tone", "More dialogue")
 4. A new draft artifact is created with the variant content
 
-### Step 5f: Revision Suggestions
+### Step 6e: Revision Suggestions
 
 The right panel shows revision suggestions for the active manuscript:
 
 1. After editing a manuscript, click "Trigger Review" to generate suggestions
-2. Suggestions appear in the Aids panel with:
-   - Severity level (error, warning, suggestion)
-   - Description of the issue
-   - Affected text range
+2. Suggestions appear in the Aids panel with severity level, description, and affected text range
 3. **Accept** a suggestion to apply it (in-place text replacement)
 4. **Reject** a suggestion to dismiss it
-  5. Suggestions can be filtered by status (REQUESTED, PENDING, ACCEPTED, REJECTED)
+5. Suggestions can be filtered by status (REQUESTED, PENDING, ACCEPTED, REJECTED)
 
 ---
 
-## Phase 5g: State-Aware Narrative Controller (Automatic)
+## Phase 6g: State-Aware Narrative Controller (Automatic)
 
 When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller runs three automatic quality checks. These run in the background and never block or fail your pipeline.
 
@@ -864,14 +683,7 @@ When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller ru
 
 **What it does:** Before the drafter sends its prompt to the LLM, the system queries your character profiles and world bible entries and injects them as structured constraints into the prompt.
 
-**What you see:** The generated prose is more consistent with your established characters and world rules because the LLM receives explicit context about:
-- Character archetypes (e.g., "reluctant hero")
-- Voice notes (e.g., "terse, avoids metaphors")
-- External goals and internal needs
-- Core fears
-- World canonical facts (e.g., "The Athenaeum has seven sub-levels")
-- Pattern guidance: voice profile, world rules, and thematic constraints from extracted patterns (if project was seeded via Pattern Extraction)
-- Author prompt: per-chapter author direction (if provided)
+**What you see:** The generated prose is more consistent with your established characters and world rules because the LLM receives explicit context about character archetypes, voice notes, goals, fears, world canonical facts, pattern guidance (if project was seeded via Pattern Extraction), and per-chapter author direction.
 
 **How to prepare:** The more detail you fill in your character profiles (especially voice notes, goals, fears) and world bible entries (canonical facts), the better the injected context will be. Empty fields are silently skipped.
 
@@ -879,138 +691,77 @@ When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller ru
 
 **What it does:** After the draft is generated, a separate LLM pass checks whether each character's dialogue and actions match their profile. If violations are found, the system triggers an automatic rewrite to fix them.
 
-**What you see:** Your final draft has fewer instances of characters speaking out of character or behaving inconsistently with their established traits. The rewrite happens automatically — you don't need to trigger it manually.
+**What you see:** Your final draft has fewer instances of characters speaking out of character or behaving inconsistently. The rewrite happens automatically.
 
-**How it works:**
-1. The critic receives the draft text and character bios (archetype + voice notes)
-2. It checks: voice (word choice, sentence style), behavior (goals, fears, traits), knowledge (what characters should know)
-3. If violations are found (up to 3), a rewrite prompt is sent to fix them
-4. If the rewrite fails or encounters an error, the original draft is kept
-
-**How to prepare:** Fill in voice notes for your characters. The critic relies on voice notes to detect when dialogue doesn't match established speech patterns. Characters with empty voice notes will produce fewer useful critic flags.
+**How to prepare:** Fill in voice notes for your characters. The critic relies on voice notes to detect when dialogue doesn't match established speech patterns.
 
 ### Entity Intake
 
-**What it does:** Detects new characters that appear in the draft prose but aren't yet in your character profiles. Extracts skeletal profiles (name, inferred archetype, inferred goal) from the character's behavior in the text and saves them to your project.
+**What it does:** Detects new characters that appear in the draft prose but aren't yet in your character profiles. Extracts skeletal profiles (name, inferred archetype, inferred goal) and saves them to your project.
 
-**What you see:** After a P-300 run, check your **Characters** tab. You may find auto-generated character profiles with:
-- **Display Name** -- extracted from the prose
-- **Role in Story** -- set to "supporting" (default)
-- **Archetype** -- inferred from behavior (e.g., "mysterious ally")
-- **External Goal** -- inferred from actions in the scene
-- **Writer Notes** -- includes a snippet of the draft where the character appeared
+**What you see:** After a P-300 run, check your **Characters** tab. You may find auto-generated character profiles with extracted names, inferred archetypes, and inferred goals.
 
-**How it works:**
-1. The system extracts proper noun candidates from the draft text
-2. It filters out known characters (those already in your profiles) and common non-name words
-3. For unknown names (up to 3 per draft), it sends an LLM request to extract archetype and goal from behavior
-4. Detected entities are saved as new character profiles with a generated ID (`auto-{name}`)
-
-**How to prepare:** No setup needed. After each P-300 run, review the Characters tab for any auto-detected profiles that need fleshing out (backstory, relationships, arc stages, etc.).
+**How to prepare:** No setup needed. After each P-300 run, review the Characters tab for any auto-detected profiles that need fleshing out.
 
 ### Error Handling Guarantee
 
-All three checks follow the same rule: **never fail the pipeline**. If any check encounters an error (LLM timeout, database issue, malformed response), the system logs a warning and proceeds with the original draft. Your P-300 job will always complete, even if one or more quality checks fail silently.
+All three checks follow the same rule: **never fail the pipeline**. If any check encounters an error, the system logs a warning and proceeds with the original draft.
 
 ---
 
-## Phase 5h: Multi-Chapter Generation
+## Phase 6h: Multi-Chapter Generation
 
-When your story has multiple chapters, you can draft them sequentially with cross-chapter continuity. Each chapter build on what came before.
+When your story has multiple chapters, you can draft them sequentially with cross-chapter continuity.
 
 ### Drafting Chapter by Chapter
 
-**What it does:** When you launch a P-300 job with a `chapter_id` (e.g., `"ch-002"`), the system writes that chapter to a separate file (`chapters/ch-002.md`) and injects context from prior chapters into the LLM prompt.
-
-**What you see:** Each chapter is saved independently, making it easy to review, edit, or regenerate individual chapters without affecting others.
+**What it does:** When you launch a P-300 job with a `chapter_id` in the job payload, the system writes that chapter to a separate file and injects context from prior chapters into the LLM prompt.
 
 **How it works:**
-1. You launch P-300 with `chapter_id: "ch-002"` in the job payload
-2. The system queries your ChapterPlan for `active_character_ids` (characters who appear in this chapter)
+1. You launch P-300 with `chapter_id` in the job payload
+2. The system queries your ChapterPlan for `active_character_ids`
 3. Scene Context Injection includes: active character profiles + world constraints + **prior chapter summaries** (last 3 chapters max)
-4. Prior chapter summaries include: key events (max 10), character states at chapter end (max 10), unresolved threads (max 5)
+4. Prior chapter summaries include: key events (max 10), character states (max 10), unresolved threads (max 5)
 5. The draft is written to `chapters/{chapter_id}.md`
 
 **How to prepare:**
-- Create ChapterPlan entries with `active_character_ids` for each chapter (keeps prompts focused and reduces token usage)
-- Fill in character voice notes and world bible facts — the richer your reference data, the better the cross-chapter continuity
-- For sequential drafting, run chapters in order (ch-001, then ch-002, etc.) so prior context is available
+- Create ChapterPlan entries with `active_character_ids` for each chapter
+- Fill in character voice notes and world bible facts
+- Run chapters in order so prior context is available
 
-### ChapterOrchestrator (Sequential Multi-Chapter)
+### Batch Mode
 
-**What it does:** Runs P-300 jobs sequentially for all chapters in your project. Each chapter waits for the prior to complete before starting.
+Instead of creating separate jobs per chapter, you can draft multiple chapters in a single job using the `chapter_ids` list in the job payload. This runs chapters sequentially within one job, with automatic LLM-based summarization between chapters. ManuscriptDocument records are auto-created for each completed chapter.
 
-**What you see:** A series of P-300 jobs, one per chapter, each producing a completed chapter file. Failed chapters are logged but don't stop subsequent chapters from running.
-
-**How it works:**
-1. Orchestrator receives a list of chapter IDs (e.g., `["ch-001", "ch-002", "ch-003"]`)
-2. For each chapter, it creates a P-300 job with the chapter_id in the payload
-3. The job runs through the full pipeline (context injection → draft → critic → entity intake)
-4. When complete, the next chapter begins — now with access to the prior chapter's context
-
-**How to use:** Currently available as a programmatic service. Launch individual P-300 jobs with `chapter_id` in the payload for now. Future UI integration will expose orchestrator controls.
-
-#### Batch Mode Alternative
-
-Instead of creating separate jobs per chapter, you can draft multiple chapters in a single job using the `chapter_ids` list:
-
-```bash
-curl -X POST http://localhost:8000/v1/jobs/create \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phase": "P-300",
-    "payload": {
-      "project_id": "<your-project-id>",
-      "chapter_ids": ["ch-001", "ch-002", "ch-003"]
-    }
-  }'
-```
-
-This runs chapters sequentially within one job, with automatic LLM-based summarization between chapters. Each chapter's summary (key events, character states, unresolved threads) is injected into the next chapter's prompt for continuity. ManuscriptDocument records are auto-created for each completed chapter.
-
-#### Checking Results
+### Checking Results
 
 After the job completes, verify outputs:
-
 1. **Job status**: `GET /v1/jobs/{job_id}/status` — shows completion count
-2. **Step records**: `GET /v1/jobs/{job_id}/steps` — one step per chapter (`drafter-ch-XXX`)
-3. **ManuscriptDocuments**: `GET /v1/story-development/drafting/manuscript-documents?project_id={id}` — auto-created for each completed chapter
-4. **Chapter files**: Check `data/projects/{project_id}/chapters/` directory
-5. **Inspect view**: Navigate to `/workspace/{projectId}/inspect/{jobId}` in the frontend
+2. **Step records**: `GET /v1/jobs/{job_id}/steps` — one step per chapter
+3. **ManuscriptDocuments**: Available in the Writing workspace sidebar
+4. **Inspect view**: Navigate to `/workspace/{projectId}/inspect/{jobId}`
 
-> **Note:** In batch mode, you do NOT need to manually promote drafts (Phase 5c). ManuscriptDocument records are created automatically for each completed chapter.
+> **Note:** In batch mode, you do NOT need to manually promote drafts. ManuscriptDocument records are created automatically.
 
-#### Failed Chapters
+### Failed Chapters
 
-If a chapter fails mid-batch, subsequent chapters continue running (without the failed chapter's summary). To retry:
-```json
-{
-  "phase": "P-300",
-  "payload": {
-    "project_id": "<your-project-id>",
-    "chapter_ids": ["ch-002"]
-  }
-}
-```
-Check step records or the Inspect view to identify which chapter failed and why.
+If a chapter fails mid-batch, subsequent chapters continue running (without the failed chapter's summary). Retry the failed chapter by submitting a new job with just that chapter's ID.
 
 ---
 
-## Phase 5i: Manuscript LLM Assist
+## Phase 6i: Manuscript LLM Assist
 
 > **Route**: `/workspace/:projectId/write` (Writing workspace)
+>
+> **Bridge from Phase 6h:** After drafting chapters, use Manuscript Assist to polish the output — check canon consistency, refine voice, fix continuity errors, and explore alternate directions.
 
-> **Bridge from Phase 5h:** After drafting chapters, use Manuscript Assist to polish the output — check canon consistency, refine voice, fix continuity errors, and explore alternate directions before promoting drafts.
-
-The Writing workspace supports interactive AI assistance through text selection and assist actions. Use this after any P-300 draft or manual edit to get AI-powered feedback and suggestions.
-
-### Step 5i: Select Text and Request Assist
+### Step 6i: Select Text and Request Assist
 
 1. Navigate to `/workspace/:projectId/write`
 2. Open a manuscript document from the left sidebar
 3. Click **"Edit"** to enter edit mode
 4. **Select text** by clicking and dragging in the editor
-5. The **Assist Toolbar** appears above the selection with two categories:
+5. The **Assist Toolbar** appears above the selection:
 
 **Selection-Aware Actions** (require selected text):
 - **Line Edit Selection** — polish prose, fix grammar, improve flow
@@ -1032,107 +783,57 @@ The Writing workspace supports interactive AI assistance through text selection 
 6. Click an action button to submit the assist request
 7. Optionally add a custom instruction (max 5,000 characters)
 
-### Step 5j: Review LLM Suggestions
+### Step 6j: Review, Apply, or Reject Suggestions
 
-1. After submission, suggestions appear in the right panel (Aids Panel)
-2. Each suggestion shows:
-    - **Source text** — what was analyzed
-    - **Proposed text** — the suggested replacement or addition
-    - **Rationale** — why this change helps
-    - **Canon risk** — none, low, medium, high, or blocking
-    - **Confidence score** — 0.0 to 1.0
-    - **Source context** — which canon entries were referenced
-3. Suggestions have statuses: REQUESTED → PENDING → ACCEPTED/REJECTED/ARCHIVED
+1. Suggestions appear in the right panel (Aids Panel)
+2. Each suggestion shows: source text, proposed text, rationale, canon risk (none/low/medium/high/blocking), confidence score (0.0-1.0), and source context references
+3. **Apply** — replaces the target range, increments document version, runs canon gate checks
+4. **Reject** — dismisses the suggestion
+5. **Archive** — keeps for reference but marks as not applicable now
 
-### Step 5k: Apply a Suggestion
-
-1. Find the suggestion you want to apply
-2. Click **"Apply"** on the suggestion card
-3. The system:
-    - Resolves the exact location using offsets, then anchors if offsets drifted
-    - Checks version conflict protection (current version must match expected)
-    - Runs canon gate checks before applying
-    - Replaces the target range and increments the document version
-4. If canon gates fail with blocking severity, you'll see a warning before applying
-
-### Step 5l: Reject or Archive Suggestions
-
-- **Reject** — dismisses the suggestion; it won't appear again for this assist run
-- **Archive** — keeps the suggestion for reference but marks it as not applicable now
-
-### Step 5m: Fork from Selection
+### Step 6k: Fork from Selection
 
 1. Select text in the editor
 2. Click **"Fork from Selection"** in the Assist Toolbar
-3. Choose destination:
-    - **Same Project Branch** — creates a story branch with the alternate content
-    - **New Draft Artifact** — creates a separate draft for exploration
-4. The system:
-    - Records intentional divergence from the source manuscript
-    - Creates the branch or draft artifact
-    - Shows the created ID for navigation
+3. Choose destination: Same Project Branch or New Draft Artifact
+4. The system records intentional divergence and creates the branch or draft
 
-### Step 5n: Monitor Assist Runs
+### Step 6l: Monitor Assist Runs
 
 1. In the Aids Panel, switch to the **Assist Runs** tab
-2. View past assist requests with their status (queued, running, completed, blocked, failed)
-3. Click a run to see:
-    - Suggestions generated
-    - Gate results with reasons and severity
-    - Created draft artifacts or branches
-    - Job IDs for inspection
+2. View past assist requests with their status
+3. Click a run to see suggestions, gate results, created artifacts, and job IDs
 
 ---
 
-## Phase 6: Role Model Checker
+## Phase 7: Role Model Checker and Review
 
-### Step 6: Run a Checker
+> **Bridge from Phase 6 (Writing):** After drafting and polishing, run quality checks to verify consistency across your entire story.
 
-**Tab**: Checker
+### Step 7a: Run the Role Model Checker
 
-Use the role model checker to verify story consistency:
+**Tab**: Checker (in Planning workspace)
 
 1. Click "Run Checker" to start a new checker run
-2. Select the roles to check (Architect, Sequencer, Drafter, Critic)
+2. Select the roles to check:
+   - **Planner** — does the plot make logical sense?
+   - **Character Analyst** — are characters consistent and well-developed?
+   - **Consistency Checker** — do facts align across chapters?
+   - **Tone Monitor** — is the tone consistent?
+   - **Pacing Reviewer** — is the pacing appropriate?
 3. Click "Start" to submit the check
-4. The run status updates in real-time (via polling):
-   - PENDING --> PROCESSING --> COMPLETED or FAILED
-5. Click on a completed run to view:
-   - **Steps** -- individual step records with execution details
-   - **Attempts** -- retry history for each step
-   - **Lineage** -- artifact lineage graph
-   - **Logs** -- execution log entries
+4. The run status updates in real-time: PENDING → PROCESSING → COMPLETED or FAILED
+5. Click on a completed run to view steps, attempts, lineage, and logs
 
-The role model checker:
-- Validates story elements against defined narrative roles
-- Checks consistency between foundation, characters, world bible, and planning
-- Produces review findings that appear in the Review workspace
-
----
-
-## Phase 7: Review Workspace
-
-### Step 7: Review Findings
+### Step 7b: Review Findings
 
 **Route**: `/workspace/:projectId/review`
 
-The Review View has two tabs:
-
-#### Findings Tab
-
-Review findings generated by:
-- The P-400 Compiler phase
-- The Role Model Checker
-- Manuscript reviews
-
-1. Browse findings filtered by severity:
+1. **Findings tab** — browse findings filtered by severity:
    - ERROR -- critical issues that must be addressed
    - WARNING -- important concerns
    - SUGGESTION -- optional improvements
-2. Click a finding card to expand:
-   - The finding description
-   - Source object (which story element triggered it)
-   - Related inspect run (if applicable)
+2. Click a finding card to expand: description, source object, related inspect run
 3. Make a decision on each finding:
    - **Accept** -- acknowledge and address
    - **Reject** -- dismiss the finding
@@ -1141,18 +842,16 @@ Review findings generated by:
    - **Refine** -- request a revised check
 4. The decision is recorded and linked to the finding
 
-#### Inspect Run Links Tab
+### Step 7c: Decisions and Inspect Run Links
 
-View and manage links between review objects and inspect runs:
+**Decisions tab** — view the story decision hierarchy:
+- Decision nodes with parent-child relationships
+- Decision paths (lineage of decisions leading to a point)
+- Click a node to see the decision text, options considered, rationale, and related findings
 
-1. Browse existing inspect run links
-2. Click "New Link" to create a manual link:
-   - **Object Kind** -- the type of object (job, checker, manuscript, etc.)
-   - **Object ID** -- the ID of the object
-   - **Logical Run ID** -- the conceptual run identifier
-   - **Run ID** -- the actual job/checker run ID
-   - **Run Kind** -- the type of run (pipeline_job or role_model_checker)
-3. Click "Save" to create the link
+**Inspect Run Links tab** — view and manage links between review objects and inspect runs:
+- Browse existing inspect run links
+- Create manual links between objects and runs for traceability
 
 ---
 
@@ -1168,24 +867,10 @@ Deep-dive into AI job execution:
 2. Click "Jump to Source" from a review finding
 3. The Inspect View shows:
    - **Run Header** -- run ID, run kind, status
-   - **Steps Tab** -- timeline of individual execution steps with:
-     - Executor name and instance ID
-     - Queue delay, claimed/started/finished timestamps
-     - Input/output/prompt hashes
-     - Finish reason and error details
-   - **Artifacts Tab** -- generated artifacts with:
-     - Artifact kind (manifest, architect_output, sequence, chapter_1, story_bible)
-     - Content preview
-     - File path
-     - Creation timestamp
-   - **Lineage Tab** -- artifact lineage graph showing:
-     - Input-output relationships between artifacts
-     - Content hashes
-     - Supersession chains
-   - **Logs Tab** -- execution log entries with:
-     - Timestamp
-     - Log level (INFO, WARNING, ERROR)
-     - Message
+   - **Steps Tab** -- timeline of individual execution steps with executor name, timestamps, hashes, finish reason, error details
+   - **Artifacts Tab** -- generated artifacts with kind, content preview, file path, timestamp
+   - **Lineage Tab** -- artifact lineage graph showing input-output relationships, content hashes, supersession chains
+   - **Logs Tab** -- execution log entries with timestamp, level, message
 
 From the Inspect View, you can:
 - Click "Back to Manuscript" to return to the Writing view
@@ -1194,259 +879,15 @@ From the Inspect View, you can:
 
 ---
 
-## Phase 9: Brain Dump
+## Phase 9: Canon Workshop
 
-### Step 9: Brain Dump Session
-
-**Route**: `/workspace/:projectId/braindump`
-
-Freeform ideation with AI-powered organization:
-
-1. Start with a blank canvas (or an existing session)
-2. Write raw thoughts, ideas, plot points, character notes in the canvas
-3. No structure needed -- just write freely
-4. When done, click "Organize" to have the LLM categorize the text
-
-Organize results appear as:
-- **Categorized items** grouped by type (characters, locations, plot-points, etc.)
-- **Item cards** showing the extracted element with its category
-- **Continue Editing** button to return to the draft canvas
-
-From the organized results, you can:
-- Create brainstorm items from categorized content
-- Create world bible entries
-- Create character profiles
-- Add to foundation profiles
-
----
-
-## Phase 10: Brainstorm
-
-### Step 10: Brainstorm Items
-
-**Tab**: Brainstorm (in PlanningView)
-
-Manage brainstorm items and clusters:
-
-1. Click "+ New Item" to create a brainstorm item
-2. Fill in:
-   - **Content** -- the brainstorm idea
-   - **Kind** -- the type of idea (plot, character, setting, theme, etc.)
-   - **Notes** -- additional context
-3. Click "Save"
-
-### Step 10b: Cluster Items
-
-Group related brainstorm items:
-
-1. Select multiple brainstorm items
-2. Click "Cluster" to group them together
-3. The cluster is created with a generated title based on the items' common themes
-
----
-
-## Phase 11: Decisions
-
-### Step 11: Decision Tree
-
-**Tab**: Decisions
-
-View the story decision hierarchy:
-
-1. The Decision Tree view shows:
-   - Decision nodes with their parent-child relationships
-   - Decision paths (the lineage of decisions leading to a point)
-   - Decision metadata (timestamps, authors, reasons)
-2. Click a decision node to see:
-   - The decision text
-   - The options that were considered
-   - The rationale for the chosen option
-   - Related findings and inspect runs
-
----
-
-## Phase 12: Story Generation Orchestration
-
-> **Bridge from Phase 11 (Decisions):** After recording your creative decisions, use Story Generation to produce new canon-congruent stories — sequels, prequels, side stories, or forks into new projects. For best results, visit the Canon Workshop (Phase 13) first to lock critical facts and set your policy.
-
-### Step 12: Open the Generate Workspace
-
-**Route**: `/workspace/:projectId/generate`
-
-The Generate workspace is where you create new stories from existing canon. It loads your project's characters and world bible entries automatically, making them available for selection in the wizard.
-
-### Step 12a: Launch the Generation Wizard
-
-1. Navigate to `/workspace/:projectId/generate`
-2. The **Story Generation Wizard** appears with several configuration steps
-3. The wizard loads:
-   - Character profiles (for canon scope selection)
-   - World Bible entries (for canon scope selection)
-   - Existing generation runs (to monitor or retry)
-
-### Step 12b: Select Generation Mode
-
-The wizard's first step asks how the new story relates to the source:
-
-- **Same Project — New Arc** (`same_project_new_arc`) — adds a fresh narrative arc within the existing project, reusing all canon
-- **Same Project — Sequel** (`same_project_sequel`) — continues the story after its current ending
-- **Same Project — Prequel** (`same_project_prequel`) — generates events that happened before the current story
-- **Same Project — Side Story** (`same_project_side_story`) — explores a parallel storyline sharing the same world
-- **Same Project — Alternate Route** (`same_project_alternate_route`) — reimagines key decisions from the existing story
-- **New Project — Character Fork** (`new_project_character_fork`) — copies selected characters into a new project with a fresh world
-- **New Project — World Fork** (`new_project_world_fork`) — copies the world bible into a new project with new characters
-- **New Project — Hybrid Fork** (`new_project_hybrid_fork`) — copies both characters and world elements into a new project
-
-### Step 12c: Select Destination
-
-- **Same Project** — the target project ID defaults to the current project. You can override it to generate into a different existing project.
-- **New Project** — enter a name for the new project. The system creates it automatically, copies selected canon with remapped IDs, and records provenance linking back to the source project.
-
-### Step 12d: Configure Canon Scope
-
-Select which source material the generator should respect:
-
-1. **Characters** — check boxes next to characters you want included. Leave all unchecked for full-project scope.
-2. **World Bible Entries** — select locations, rules, concepts, organizations, etc. that should be preserved.
-3. **Arcs** — select narrative arcs to carry forward into the new story.
-4. **Continuity Threads** — select unresolved threads the generator should address.
-
-At least one category must have selections unless you're using full-project scope.
-
-### Step 12e: Enter Generation Brief
-
-The brief is a required text field (max 10,000 characters) describing what you want the new story to accomplish. Examples:
-
-- "Write a sequel where the protagonist returns 5 years later to discover the antagonist has resurfaced in a new form."
-- "Create a side story told from the mentor's perspective, covering events that happened during the main story but were never shown."
-- "Fork these three characters into a cyberpunk setting. Keep their core personalities and relationships but adapt goals and conflicts to a corporate dystopia."
-
-### Step 12f: Configure Canon Policy
-
-The policy controls what the generator may or may not change:
-
-1. **Locked Character Fields** — fields that cannot be contradicted in generated content. Defaults: `display_name`, `role_in_story`, `backstory`, `voice_notes`, `continuity_facts`, `relationships`
-2. **Locked World Fields** — immutable world facts. Defaults: `entry_type`, `title`, `summary`, `canonical_facts`
-3. **Allowed Character Changes** — explicitly permitted modifications (e.g., "new_goal", "changed_relationship")
-4. **Allowed World Changes** — permitted world modifications (e.g., "new_location", "technology_evolution")
-5. **Forbidden Contradictions** — specific phrases or facts that must not appear in generated content. Example: "the dragon was slain" (if you want the dragon alive)
-6. **Continuity Strictness** — how to handle gate violations:
-   - `warn` — record a warning, allow generation to proceed
-   - `block` — stop generation immediately if a contradiction is detected
-   - `repair_once` — attempt one automatic LLM repair, then block if still failing
-   - `repair_twice` — attempt two repairs before blocking
-
-### Step 12g: Set Chapter Count and Submit
-
-1. Enter the target number of chapters (1–100)
-2. Optionally set words per chapter (250–10,000), model ID, temperature, and max tokens
-3. Click **"Submit Run"**
-
-The system:
-1. Validates the request (scope, destination, idempotency)
-2. Creates a generation run with a unique `generation_id`
-3. Builds a deterministic **Canon Generation Packet** from selected source material
-4. Queues 4 executor jobs: G-200 (plan), G-300 (draft), G-350 (gate), G-400 (compile)
-5. Returns a `GenerationRunResponse` with the run ID, job IDs, and status
-
-### Step 12h: Monitor the Run
-
-After submission, the **Generation Run Card** appears showing:
-- Generation ID
-- Source and target project IDs
-- Job IDs for each phase
-- Status (queued → running → completed/blocked/failed)
-- Warnings generated during execution
-- Created artifacts (plans, drafts, manuscripts)
-
-Click a run card to expand details. Use the **Gate Results** panel to see which consistency checks passed or failed.
-
-### Step 12i: Review Gate Results
-
-The **Generation Gate Panel** shows gate results for each artifact:
-
-- **Gate Name** — e.g., `plan_references_known_canon`, `chapter_canon_congruence`, `manuscript_canon_congruence`
-- **Passed** — true/false
-- **Severity** — info, warning, or blocking
-- **Reasons** — specific contradictions or violations detected
-- **Repair Attempted** — whether the system tried to fix violations (per policy)
-
-Failed gates link to the Inspect view for deep debugging. Repair actions are available when your continuity strictness policy allows them.
-
-### Step 12j: Fork Preview (Optional)
-
-Before committing to a fork, click **"Preview Fork"** to see exactly what would be copied:
-- Selected character IDs and their remapped target IDs
-- Selected world Bible entries
-- Arcs and continuity threads
-- Foundation profile that will be created in the target project
-
-This is read-only — no projects or data are modified.
-
-### Step 12k: Fork Project Only (Without Generation)
-
-If you want to fork canon into a new project without immediately running generation:
-
-1. Configure mode, destination, and scope in the wizard
-2. Click **"Fork Project Only"** instead of "Submit Run"
-3. The system creates the target project with copied canon but no generation jobs
-4. Navigate to the new project's workspace and run P-100 through P-400 manually
-
-### Step 12l: Inspect a Generation Run
-
-Generation runs produce inspectable artifacts:
-
-1. From the Generate workspace, click **"Jump to Inspect"** on a run card
-2. Or navigate directly to `/workspace/:projectId/inspect/:jobId`
-3. The Inspect view shows:
-   - Step timeline for each generation phase (G-200 through G-400)
-   - Artifact lineage (packet → plan → drafts → manuscript)
-   - Gate results with reasons and repair metadata
-   - Execution logs
-
-### What Happens Behind the Scenes (Generation Pipeline)
-
-**G-200: Generation Plan**
-The executor loads the canon packet and calls the LLM to generate a new story architecture. Output includes: premise, logline, story arcs, chapter plans, canon obligations (citing source canon IDs), and intentional differences from the source.
-
-**G-300: Chapter Drafting Loop**
-For each planned chapter, the executor drafts prose with full context: character profiles (active characters only), world constraints, prior chapter summaries (last 3 max), and the generation brief. Each chapter produces a draft artifact and an auto-created ManuscriptDocument.
-
-**G-350: Gate Checks**
-The executor runs consistency checks on every generated artifact:
-- Locked character facts are not contradicted
-- Locked world facts are not contradicted
-- Forbidden contradictions are absent from the text
-If your policy allows repair, failed artifacts are sent to an LLM repair pass. The number of repair attempts is governed by continuity strictness.
-
-**G-400: Manuscript Assembly**
-The executor assembles the final manuscript from all chapter drafts. This phase only runs if no blocking gates failed. If blocking gates failed, the run status becomes `blocked`.
-
-### Troubleshooting Story Generation
-
-| Issue | Solution |
-|-------|----------|
-| Run fails with "source project not found" | Verify the source project ID is correct and exists |
-| Gate results show many contradictions | Relax locked fields or add allowed changes to the canon policy |
-| Generation is too slow | Reduce canon scope (fewer characters/world entries) or chapter count |
-| Forked project has missing relationships | Relationships are only copied if both endpoint characters are selected |
-| Idempotency conflict (409) | Same idempotency key with different payload. Use a new key or match the original payload exactly |
-| Run is "blocked" after G-350 | Blocking gate failed and repair policy was exhausted. Review gate results, fix policy, and retry |
-| Packet exceeds budget warning | The system auto-truncates to 120K chars. Reduce scope for full fidelity |
-
----
-
-## Phase 13: Canon Workshop
-
-> **Bridge from Story Generation:** While you can visit the Canon Workshop at any time, the most impactful time to use it is *before* launching a generation run (Phase 12). Lock critical facts, set your policy, and preview your packet — this prevents wasted runs on contradictory content.
-
-### Step 13: Open the Canon Workspace
+> **Bridge from Phase 8 (Inspect):** Before launching a story generation run (Phase 10), visit the Canon Workshop to lock critical facts, set your policy, and preview your packet. This prevents wasted runs on contradictory content.
 
 **Route**: `/workspace/:projectId/canon`
 
 The Canon Workspace is where you edit extracted canon material, classify fields for generation control, manage mythos and pattern entries, and create reusable generation profiles.
 
-### Step 13a: Overview Tab
+### Step 9a: Overview Tab
 
 1. Navigate to `/workspace/:projectId/canon`
 2. The **Overview** tab shows summary counts:
@@ -1455,7 +896,7 @@ The Canon Workspace is where you edit extracted canon material, classify fields 
    - Saved customization profiles
 3. Click **"New Profile"** to create a reusable generation configuration
 
-### Step 13b: Characters Tab with Annotations
+### Step 9b: Characters Tab with Annotations
 
 1. Click the **Characters** tab
 2. Browse character profiles in card view
@@ -1464,56 +905,46 @@ The Canon Workspace is where you edit extracted canon material, classify fields 
    - Click the annotation icon next to a field
    - Select classification: `locked`, `soft_guidance`, `mutable`, or `forbidden_contradiction`
    - Optionally add a note explaining why
-   - Optionally scope to specific generation modes (e.g., lock backstory for sequels only)
+   - Optionally scope to specific generation modes
 5. Locked fields display a lock badge; they become hard constraints during generation
 
-### Step 13c: World Bible Tab with Annotations
+### Step 9c: World Bible Tab with Annotations
 
 1. Click the **World** tab
 2. Browse world bible entries by type
 3. Edit any entry and use annotation controls on: title, summary, canonical facts, continuity warnings
 4. Mark critical facts as `locked` or specific phrases as `forbidden_contradiction`
 
-### Step 13d: Mythos Library Tab
+### Step 9d: Mythos and Pattern Library Tabs
 
-1. Click the **Mythos** tab (or navigate to `?tab=mythos`)
-2. Browse mythos entries by type: archetype, motif, cosmic_rule, symbol, ritual, deity, cycle, theme
-3. Edit any entry: add canonical facts, refine pattern notes, set generation guidance
-4. Use **"Use in Generation"** checkbox to include entries in canon scope
-5. Filter by type using the filter chips at the top
+**Mythos tab** (`?tab=mythos`):
+1. Browse mythos entries by type: archetype, motif, cosmic_rule, symbol, ritual, deity, cycle, theme
+2. Edit any entry: add canonical facts, refine pattern notes, set generation guidance
+3. Use **"Use in Generation"** checkbox to include entries in canon scope
 
-### Step 13e: Pattern Library Tab
+**Patterns tab** (`?tab=patterns`):
+1. Browse pattern entries by type: plot, character, relationship, world, theme, scene, structure
+2. Edit any pattern: add beats, constraints, transposition notes
+3. Set which generation modes the pattern applies to
+4. Use **"Use in Generation"** checkbox
 
-1. Click the **Patterns** tab (or navigate to `?tab=patterns`)
-2. Browse pattern entries by type: plot, character, relationship, world, theme, scene, structure
-3. Edit any pattern: add beats, constraints, transposition notes
-4. Set which generation modes the pattern applies to
-5. Use **"Use in Generation"** checkbox to include patterns in canon scope
+### Step 9e: Generation Rules and Profiles
 
-### Step 13f: Generation Rules Tab
+**Generation Rules tab:**
+1. Configure canon policy rules:
+   - Locked Character Fields (default: display_name, role_in_story, backstory, voice_notes, continuity_facts, relationships)
+   - Locked World Fields (default: entry_type, title, summary, canonical_facts)
+   - Allowed Changes — explicitly permitted modifications
+   - Forbidden Contradictions — specific phrases that must not appear
+   - Continuity Strictness — warn, block, repair_once, or repair_twice
 
-1. Click the **Generation Rules** tab
-2. Configure canon policy rules:
-   - **Locked Character Fields** — fields that cannot be contradicted (default: display_name, role_in_story, backstory, voice_notes, continuity_facts, relationships)
-   - **Locked World Fields** — immutable world facts (default: entry_type, title, summary, canonical_facts)
-   - **Allowed Changes** — explicitly permitted modifications
-   - **Forbidden Contradictions** — specific phrases that must not appear
-   - **Continuity Strictness** — warn, block, repair_once, or repair_twice
-
-### Step 13g: Canon Customization Profiles
-
+**Canon Customization Profiles:**
 1. Click **"New Profile"** in the Overview tab
-2. Fill in:
-   - **Name** — e.g., "Sequel with Locked Characters"
-   - **Description** — what this profile is for
-   - **Default Generation Mode** — sequel, prequel, side_story, etc.
-   - **Canon Scope** — select characters, world entries, mythos, and patterns
-   - **Canon Policy** — locked fields, allowed changes, forbidden contradictions, strictness
-   - **Generation Brief Template** — reusable brief text
+2. Fill in: Name, Description, Default Generation Mode, Canon Scope, Canon Policy, Generation Brief Template
 3. Click **"Save"**
 4. Later, select a saved profile and click **"Preview Packet"** → **"Submit Generation"**
 
-### Step 13h: Packet Preview Tab
+### Step 9f: Packet Preview Tab
 
 1. Click the **Packet Preview** tab (or navigate to `?tab=packet`)
 2. Select a saved profile or configure scope inline
@@ -1528,49 +959,216 @@ The Canon Workspace is where you edit extracted canon material, classify fields 
 
 ---
 
+## Phase 10: Story Generation Orchestration
+
+> **Bridge from Phase 9 (Canon Workshop):** With your canon locked and policy set, you're ready to generate new stories — sequels, prequels, side stories, or forks into new projects.
+
+**Route**: `/workspace/:projectId/generate`
+
+### Step 10a: Launch the Generation Wizard
+
+1. Navigate to `/workspace/:projectId/generate`
+2. The **Story Generation Wizard** appears with several configuration steps
+3. The wizard loads character profiles, world bible entries, and existing generation runs
+
+### Step 10b: Select Generation Mode
+
+- **Same Project — New Arc** (`same_project_new_arc`) — adds a fresh narrative arc within the existing project
+- **Same Project — Sequel** (`same_project_sequel`) — continues the story after its current ending
+- **Same Project — Prequel** (`same_project_prequel`) — generates events that happened before the current story
+- **Same Project — Side Story** (`same_project_side_story`) — explores a parallel storyline sharing the same world
+- **Same Project — Alternate Route** (`same_project_alternate_route`) — reimagines key decisions from the existing story
+- **New Project — Character Fork** (`new_project_character_fork`) — copies selected characters into a new project
+- **New Project — World Fork** (`new_project_world_fork`) — copies the world bible into a new project
+- **New Project — Hybrid Fork** (`new_project_hybrid_fork`) — copies both characters and world elements
+
+### Step 10c: Select Destination
+
+- **Same Project** — target project ID defaults to the current project
+- **New Project** — enter a name; the system creates it automatically with copied canon and provenance tracking
+
+### Step 10d: Configure Canon Scope
+
+Select which source material the generator should respect:
+1. **Characters** — check boxes next to characters. Leave all unchecked for full-project scope.
+2. **World Bible Entries** — select locations, rules, concepts, etc.
+3. **Arcs** — select narrative arcs to carry forward
+4. **Continuity Threads** — select unresolved threads to address
+
+### Step 10e: Enter Generation Brief and Policy
+
+1. **Brief** (required, max 10,000 characters) — describe what you want the new story to accomplish
+2. **Canon Policy:**
+   - Locked Character/World Fields — defaults provided
+   - Allowed Changes — explicitly permitted modifications
+   - Forbidden Contradictions — specific phrases that must not appear
+   - Continuity Strictness — `warn`, `block`, `repair_once`, `repair_twice`
+
+### Step 10f: Submit and Monitor
+
+1. Enter the target number of chapters (1–100)
+2. Click **"Submit Run"**
+3. The system validates, creates a generation run, builds a Canon Generation Packet, and queues 4 executor jobs: G-200 (plan), G-300 (draft), G-350 (gate), G-400 (compile)
+4. **Generation Run Card** shows: generation ID, source/target project IDs, job IDs, status, warnings, created artifacts
+5. Click a run card to expand details and view **Gate Results**
+
+### Step 10g: Review Gate Results and Inspect
+
+**Gate Results** show:
+- Gate name, pass/fail, severity (info/warning/blocking), reasons, repair metadata
+- Failed gates link to the Inspect view for debugging
+
+**Fork Preview** (optional):
+- Click **"Preview Fork"** to see what would be copied before committing
+
+**Fork Project Only** (without generation):
+- Click **"Fork Project Only"** to create the target project with copied canon but no generation jobs
+
+### What Happens Behind the Scenes
+
+- **G-200**: Loads canon packet, generates new story architecture (premise, arcs, chapter plans, canon obligations)
+- **G-300**: Iterates over planned chapters, drafts prose with full canon context and prior summaries
+- **G-350**: Runs consistency checks on every artifact; applies repair policy for violations
+- **G-400**: Assembles final manuscript from chapter drafts; only runs if no blocking gates failed
+
+### Troubleshooting Story Generation
+
+| Issue | Solution |
+|-------|----------|
+| Run fails with "source project not found" | Verify the source project ID is correct |
+| Gate results show many contradictions | Relax locked fields or add allowed changes |
+| Generation is too slow | Reduce canon scope or chapter count |
+| Forked project has missing relationships | Relationships only copied if both endpoint characters are selected |
+| Idempotency conflict (409) | Same key with different payload. Use a new key or match original payload |
+| Run is "blocked" after G-350 | Blocking gate failed, repair exhausted. Review gates, fix policy, retry |
+| Packet exceeds budget warning | System auto-truncates to 120K chars. Reduce scope for full fidelity |
+
+---
+
+## Phase 11: Story Branching
+
+> **Bridge from Phase 10 (Generation):** After generating stories, you may want to explore alternate directions within existing projects. Branches let you explore multiple versions without modifying your main story.
+
+**Tab**: Branches (in Planning workspace)
+
+### Step 11a: Create Branches
+
+1. Click the **Branches** tab
+2. Click **"Create Branch"**
+3. Fill in:
+   - **Branch Name** -- a descriptive name (e.g., "Alternate Ending")
+   - **Branch Point** -- the ID of the branch point in the story
+   - **State** -- ACTIVE (default), MERGED, or ARCHIVED
+4. Click "Save"
+5. Click **"Set Active"** to switch to this branch
+6. Draft this alternate version by launching P-300
+
+### Step 11b: Branch Comparisons
+
+1. Select two branches from the comparison form
+2. Click "Compare" to generate a comparison analysis
+3. The comparison shows differences in draft content, planning entities, character development, and world bible entries
+
+### Step 11c: Merge Decisions
+
+1. Select source and target branches
+2. Enter a **merge rationale** explaining why you're merging
+3. Click "Create Merge Decision"
+4. The merge decision is recorded and the source branch state can be updated
+
+### Tips
+
+- Only one branch is active at a time — set explicitly before launching jobs
+- Use branches for endings — explore multiple endings in parallel, then merge the best elements
+- MERGED branches are read-only; ARCHIVED branches are preserved for reference
+
+---
+
+## Phase 12: Exporting and Importing Projects
+
+> **Bridge from Phase 11 (Branching):** Once your project is complete, you can export it as a portable ZIP archive for backup, transfer, or sharing.
+
+**Route**: `/` (home page) — Project List actions
+
+### Step 12a: Export a Project
+
+1. Navigate to the home page (`/`) — the Project List view
+2. Find the project you want to export in the grid
+3. Click the **Export** button (archive icon) on the project row
+4. The browser downloads a ZIP file named `{project_name}_export.zip`
+
+The ZIP contains:
+- Project directory (manifest.json, bible.db, sequences.json, chapters/, exports/, .telemetry, .structured_log)
+- Operations DB dump (all 49 tables scoped to the project_id)
+- Metadata (export_version, project name, project ID, timestamp)
+
+### Step 12b: Import an Exported Project
+
+1. Navigate to the home page (`/`)
+2. Click **"Import Project"** (button above the project list)
+3. The import wizard opens:
+   - **Drag & drop** your exported ZIP file, or click to browse
+   - Enter a **new project name** — this becomes the display name for the imported project
+4. Click **"Import Project"**
+5. The system validates the ZIP and runs the import asynchronously:
+   - Extracts to an isolated temp directory with path traversal protection
+   - Runs schema version migration if needed
+   - Creates a new project with restored files and database records
+6. Progress indicator shows: pending → processing → completed (or failed)
+7. On success, you're redirected to the imported project's workspace
+
+> **Important**: Import always creates a brand-new project with a fresh UUID. It does NOT overwrite or merge with any existing project.
+
+### Troubleshooting Export/Import
+
+| Issue | Solution |
+|-------|----------|
+| Export button does nothing | Ensure your project has a valid manifest; check browser console |
+| ZIP is very large (500+ MB) | Operations DB grows over time with job records. Expected for extensive history |
+| Import fails with "invalid export" | ZIP must be created by Narrative Engine and contain `metadata.json` |
+| Import hangs at "Processing" | Large DB dumps take time. Typical import: 15-30 seconds for medium projects |
+| Missing data after import | Verify ZIP contains both `metadata.json` and the project directory |
+
+---
+
 ## Advanced Workflows
 
 ### Workflow A: Full Story Pipeline (Automated Generation)
 
 After setting up foundation, characters, and world bible:
 
-1. **Run P-100 Architect** -- generates the story architecture foundation (markdown)
-2. **Run P-200 Sequencer** -- generates the sequence plan (JSON) using P-100 output
-3. **Run P-300 Drafter** -- generates chapter drafts with automatic quality checks:
+1. **Brain Dump** raw ideas, click Organize
+2. **Run P-100 Architect** -- generates the story architecture (markdown)
+3. **Run P-200 Sequencer** -- generates the sequence plan (JSON) using P-100 output
+4. **Run P-300 Drafter** -- generates chapter drafts with automatic quality checks:
    - Scene Context Injection feeds character profiles and world facts into the prompt
    - Consistency Critic verifies character voice and behavior, triggers rewrite on violations
    - Entity Intake detects new characters in draft prose and auto-extracts skeletal profiles
-4. **Check Characters tab** -- review any auto-detected character profiles from Entity Intake
-5. **Run P-400 Compiler** -- generates the story bible snapshot (JSON) using all prior outputs
-6. **Review findings** from P-400 and make decisions
-7. **Iterate** -- update foundation or world bible, re-run phases as needed
-
-Each phase is triggered via the Job Launch panel (right sidebar) by selecting the phase and clicking "Launch".
+5. **Check Characters tab** -- review any auto-detected character profiles from Entity Intake
+6. **Run P-400 Compiler** -- generates the story bible snapshot (JSON) using all prior outputs
+7. **Review findings** from P-400 and make decisions
+8. **Iterate** -- update foundation or world bible, re-run phases as needed
 
 ### Workflow B: Brain Dump to Structured Project
 
-1. Go to **Brain Dump** tab
-2. Write raw ideas freely (characters, settings, plot points, themes)
-3. Click **Organize** to have the LLM categorize the content
-4. Review the categorized results
-5. Navigate to **Planning** workspace:
+1. Go to **Brain Dump**, write raw ideas freely
+2. Click **Organize** to have the LLM categorize the content
+3. Navigate to **Planning** workspace:
    - **Foundation** tab -- create foundation from organized themes
    - **Characters** tab -- create characters from organized character entries
    - **World Bible** tab -- create world entries from organized setting entries
    - **Arcs** tab -- create arc candidates from organized plot arc ideas
-6. Run the **Full Story Pipeline** (P-100 through P-400)
-7. **Review** findings and iterate
+4. Run the **Full Story Pipeline** (P-100 through P-400)
+5. **Review** findings and iterate
 
 ### Workflow C: Story Branching and Comparison
 
-1. In the **Planning** workspace, establish a baseline plan (sequences, chapters, scenes)
-2. Go to **Branches** tab
-3. Create a branch with a descriptive name (e.g., "Alternative Climax")
-4. Edit the manuscript in **Write** workspace for this branch
-5. Create new planning entities (alternate sequences, chapters)
-6. Go back to **Branches** tab and create a comparison between branches
-7. Review the comparison
-8. If satisfied, create a **merge decision** to consolidate the branch
+1. In the **Planning** workspace, establish a baseline plan
+2. Go to **Branches** tab, create a branch with a descriptive name
+3. Edit the manuscript in **Write** workspace for this branch
+4. Create new planning entities (alternate sequences, chapters)
+5. Go back to **Branches** tab and create a comparison between branches
+6. If satisfied, create a **merge decision** to consolidate the branch
 
 ### Workflow D: Character Arc Development
 
@@ -1579,42 +1177,36 @@ Each phase is triggered via the Job Launch panel (right sidebar) by selecting th
 3. Define stage maps with narrative progression chips
 4. Run the **Role Model Checker** to verify character consistency
 5. Review findings in the **Review** workspace
-6. Make decisions on character arc issues
-7. Update character profiles based on review feedback
-8. Iterate
+6. Update character profiles based on review feedback
+7. Iterate
 
 ### Workflow E: Manuscript Review Cycle
 
 1. Write/edit manuscript content in the **Writing** workspace
-2. Click **Trigger Review** to generate revision suggestions
-3. Review suggestions in the **Aids** panel
-4. Accept/reject individual suggestions
-5. Run the **Role Model Checker** for deeper consistency analysis
-6. Review findings in the **Review** workspace
-7. Make decisions on each finding
-8. Inspect checker runs via the **Inspect** workspace for detailed analysis
-9. Iterate until satisfied
+2. Use **Manuscript Assist** for line edits, expansions, canon checks
+3. Run the **Role Model Checker** for deeper consistency analysis
+4. Review findings in the **Review** workspace
+5. Inspect checker runs via the **Inspect** workspace for detailed analysis
+6. Iterate until satisfied
 
 ### Workflow F: Import Source Story, Generate Sequel, Fork to New Project
 
-This workflow demonstrates the full story generation pipeline from import through forking:
-
-1. **Import a source story** — paste an existing completed story via `POST /projects/import-story` or the frontend import modal
-2. **Review the imported project** — verify characters, world bible, arcs, and foundation are correctly extracted
-3. **Navigate to Generate workspace** — `/workspace/:projectId/generate`
-4. **Configure the wizard:**
+1. **Import a source story** — paste an existing completed story via the frontend import modal
+2. **Review the imported project** — verify characters, world bible, arcs, and foundation
+3. **Visit Canon Workshop** — lock critical facts, set policy
+4. **Navigate to Generate workspace** — `/workspace/:projectId/generate`
+5. **Configure the wizard:**
    - Mode: `new_project_character_fork`
    - Destination: New Project named "Sequel: [Name]"
    - Canon Scope: select all major characters and key world entries
-   - Brief: "Write a sequel set 5 years after the original story. The protagonist has retired but is drawn back when new threats emerge."
-   - Policy: continuity strictness = `warn`, forbidden contradictions listing resolved plot points from the original
-   - Chapter count: 8
-5. **Preview the fork** — verify selected characters, world entries, and arcs will be copied correctly
-6. **Submit the run** — the system creates the target project, copies canon, and queues G-200 through G-400
-7. **Monitor progress** — watch run status transition from queued → running → completed (or blocked)
-8. **Review gate results** — check for any warnings about canon contradictions
-9. **Navigate to the new project** — explore the generated sequel in its own workspace
-10. **Iterate** — adjust policy, retry failed runs, or run manual P-phases for refinement
+   - Brief: describe the sequel
+   - Policy: continuity strictness = `warn`, forbidden contradictions listing resolved plot points
+6. **Preview the fork** — verify selected characters, world entries, and arcs
+7. **Submit the run** — system creates target project, copies canon, queues G-200 through G-400
+8. **Monitor progress** — watch run status transition
+9. **Review gate results** — check for warnings about canon contradictions
+10. **Navigate to the new project** — explore the generated sequel
+11. **Iterate** — adjust policy, retry failed runs, or run manual P-phases for refinement
 
 ---
 
@@ -1675,12 +1267,12 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 
 ### Project Export/Import Issues
 
-- **Export button does nothing** — Ensure the project has a valid manifest and database. Check browser console for network errors when clicking export.
-- **ZIP file is larger than expected (500+ MB)** — The operations DB accumulates job records, step data, and attempt history over time. This is normal for projects with extensive AI execution history.
-- **Import fails with "invalid export"** — Verify the ZIP was created by Narrative Engine and contains `metadata.json`. Manually re-packed or corrupted ZIPs will fail validation.
-- **Import shows "processing" indefinitely** — Large operations DB dumps require time to restore rows into the database. Check server logs for progress; typical import takes 15-30 seconds for medium projects.
-- **Imported project is missing data** — Verify the export ZIP contains both `metadata.json` and a complete project directory (with `manifest.json`, `bible.db`, etc.). Missing components indicate an incomplete source export.
-- **Schema migration fails on import** — The export version may be significantly older than your current installation. Check `metadata.json` for `export_version`. If the migration fails, the import is rolled back; contact support with the error details.
+- **Export button does nothing** — Ensure the project has a valid manifest and database. Check browser console for network errors.
+- **ZIP file is larger than expected (500+ MB)** — The operations DB accumulates job records over time. Normal for projects with extensive AI execution history.
+- **Import fails with "invalid export"** — Verify the ZIP was created by Narrative Engine and contains `metadata.json`.
+- **Import shows "processing" indefinitely** — Large operations DB dumps require time to restore. Check server logs; typical import takes 15-30 seconds.
+- **Imported project is missing data** — Verify the export ZIP contains both `metadata.json` and a complete project directory.
+- **Schema migration fails on import** — The export version may be significantly older than your current installation. Import is rolled back on migration failure.
 
 ### Job Failure Recovery
 
@@ -1690,33 +1282,33 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 
 ### Narrative Controller Issues
 
-- **Drafts don't seem to use character context.** Check that your character profiles have filled-in fields (archetype, voice notes, goals, fears). Empty fields are not injected. The system falls back to the first 5 characters if no active character IDs are specified for a scene.
-- **Consistency critic isn't catching out-of-character dialogue.** Ensure voice notes are specific (e.g., "terse, avoids metaphors" rather than "normal"). Vague voice notes produce vague critic checks.
-- **Too many auto-detected characters.** The entity intake stop-word list filters common non-name words, but some false positives may slip through (e.g., "Morning", "Shadow"). Review the Characters tab after each P-300 run and delete any spurious entries.
-- **Drafts take longer to generate.** The narrative controller adds 1-5 extra LLM calls per draft (critic check + optional rewrite + up to 3 entity intake calls). This is intentional for quality. Use the stub backend for faster iteration during early exploration.
+- **Drafts don't seem to use character context.** Check that character profiles have filled-in fields (archetype, voice notes, goals, fears). Empty fields are not injected.
+- **Consistency critic isn't catching out-of-character dialogue.** Ensure voice notes are specific (e.g., "terse, avoids metaphors" rather than "normal").
+- **Too many auto-detected characters.** The entity intake stop-word list filters common non-name words, but some false positives may slip through. Review the Characters tab after each P-300 run.
+- **Drafts take longer to generate.** The narrative controller adds 1-5 extra LLM calls per draft. Intentional for quality. Use the stub backend for faster iteration.
 
 ### Story Generation Issues
 
-- **Run status stays "queued".** The LocalExecutor may not be running or the inference backend is unavailable. Check `GET /health/ready` and verify your model server is accessible.
-- **Gate results show contradictions for accurate content.** The gate checks are text-based substring matches. If a locked fact contains a phrase that legitimately appears in context (e.g., "the king died" as historical background vs. as a current event), add that phrase to `allowed_character_changes` or relax the locked field.
-- **Forked project has fewer characters than selected.** Character copy only includes characters whose IDs match exactly. Check that your canon scope character IDs match the IDs in your Characters tab.
-- **Idempotency conflict (HTTP 409).** You re-submitted a generation request with the same idempotency key but different payload. The system uses SHA-256 hashing to detect this. Either omit the idempotency key for a new run, or match the original payload exactly.
-- **Generation takes too long.** Large canon packets (many characters, world entries) increase prompt size and LLM latency. Reduce scope to only essential elements. Also check that your inference backend has sufficient VRAM and isn't throttled.
+- **Run status stays "queued".** The LocalExecutor may not be running or the inference backend is unavailable. Check `GET /health/ready`.
+- **Gate results show contradictions for accurate content.** Gate checks are text-based substring matches. Add legitimate phrases to `allowed_character_changes` or relax locked fields.
+- **Forked project has fewer characters than selected.** Character copy only includes characters whose IDs match exactly.
+- **Idempotency conflict (HTTP 409).** Re-submitted with same key but different payload. Omit the idempotency key for a new run, or match the original payload exactly.
+- **Generation takes too long.** Large canon packets increase prompt size and LLM latency. Reduce scope to only essential elements.
 
 ### Canon Workshop Issues
 
-- **Annotations don't persist after reload.** Check that the annotation was saved (toolbar shows a checkmark). Unsaved annotations are lost on navigation. Verify `GET /v1/canon/annotations?project_id={id}` returns the expected data.
-- **Packet preview doesn't include selected entries.** Ensure "Use in Generation" is checked for each entry. Unchecked entries are excluded from the packet regardless of profile settings.
-- **Profile can't be saved.** Verify that at least one canon scope category has selections (characters, world, mythos, or patterns). Empty profiles are rejected.
-- **Mythos/pattern entries don't appear after extraction.** Extraction creates project-level data but may not auto-materialize editable records. Call `POST /v1/mythos/materialize-extraction` or `POST /v1/patterns/materialize-extraction` to create editable entries from extraction results.
+- **Annotations don't persist after reload.** Check that the annotation was saved (toolbar shows a checkmark). Unsaved annotations are lost on navigation.
+- **Packet preview doesn't include selected entries.** Ensure "Use in Generation" is checked for each entry.
+- **Profile can't be saved.** Verify that at least one canon scope category has selections. Empty profiles are rejected.
+- **Mythos/pattern entries don't appear after extraction.** Call `POST /v1/mythos/materialize-extraction` or `POST /v1/patterns/materialize-extraction` to create editable entries.
 
 ### Manuscript Assist Issues
 
-- **Assist request fails with "selection not found".** The selected text no longer matches the document (you edited it after requesting). Re-select the text and re-submit the assist.
-- **Apply suggestion returns 409 Conflict.** Document version mismatch — another edit happened between requesting and applying. Refresh the editor, re-request the assist, and try again.
-- **Suggestion shows "blocking" canon risk.** The proposed text contradicts a locked canon fact. Either relax the locked field in Canon Workshop, or reject the suggestion and edit manually.
-- **Fork from Selection creates empty branch.** Ensure the selected text is meaningful (at least a paragraph). Very short selections may not produce useful fork content.
-- **Assist runs stay "queued".** Same as generation — check `GET /health/ready` and verify your inference backend is running. M-500 jobs require a configured inference URL.
+- **Assist request fails with "selection not found".** Selected text no longer matches the document. Re-select and re-submit.
+- **Apply suggestion returns 409 Conflict.** Document version mismatch. Refresh the editor, re-request the assist.
+- **Suggestion shows "blocking" canon risk.** Proposed text contradicts a locked canon fact. Relax the locked field or reject the suggestion.
+- **Fork from Selection creates empty branch.** Ensure selected text is meaningful (at least a paragraph).
+- **Assist runs stay "queued".** Check `GET /health/ready` and verify your inference backend is running.
 
 ### Branch State Management
 
