@@ -1,7 +1,8 @@
 param(
     [string]$Host = "127.0.0.1",
     [int]$Port = 8000,
-    [switch]$Full
+    [switch]$Dev,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,7 +14,9 @@ if (-not (Test-Path $cmd)) {
     exit 1
 }
 
-# Use cmd /c to bypass PowerShell execution policy
+# Build argument list
 $args = @('--host', $Host, '--port', $Port)
-if ($Full) { $args += '--full' }
+if ($Dev) { $args += '--dev' }
+if ($SkipBuild) { $args += '--skip-build' }
+
 cmd /c $cmd $args

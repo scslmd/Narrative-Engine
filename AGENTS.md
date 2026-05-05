@@ -58,6 +58,23 @@ python -m pytest tests/test_story_branching_service.py::test_create_branch
 python -m app.main
 ```
 
+### Startup
+```bash
+# Production mode (single window, built frontend):
+start_narrative_core.cmd
+
+# Development mode (2 windows, hot-reload):
+start_narrative_core.cmd --dev
+
+# PowerShell equivalent:
+.\start_narrative_core.ps1 -Dev
+```
+
+- Production mode builds the frontend once and runs uvicorn in the current terminal.
+- Dev mode spawns separate windows for uvicorn (with `--reload`) and Vite dev server (hot-reload).
+- Both modes accept `--host` and `--port` flags.
+- `--skip-build` uses existing `frontend/dist/` without rebuilding.
+
 ### Security and Reliability Focused Tests
 ```bash
 python -m pytest tests/test_input_validation.py
