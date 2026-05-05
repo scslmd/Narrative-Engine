@@ -66,6 +66,13 @@ _pytest.pathlib.cleanup_dead_symlinks = _safe_cleanup_dead_symlinks
 _pytest.tmpdir.cleanup_dead_symlinks = _safe_cleanup_dead_symlinks
 
 
+def pytest_sessionfinish(session):
+    """Clean up per-test pytest runtime directories after the session completes."""
+    runtime_dir = Path(__file__).resolve().parents[1] / ".tmp_test_projects" / "pytest_runtime"
+    if runtime_dir.exists():
+        shutil.rmtree(runtime_dir, ignore_errors=True)
+
+
 @pytest.fixture
 def tmp_path() -> Path:
     base_dir = Path(__file__).resolve().parents[1] / ".tmp_test_projects"

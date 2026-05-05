@@ -96,30 +96,34 @@ class ConfigValidator:
     def _validate_inference_backend(self) -> bool:
         """Validate inference backend is reachable."""
         import os
-        
-        inference_url = os.getenv("INFERENCE_URL")
-        
-        if not inference_url:
-            print("[WARN] INFERENCE_URL not set. Using stub backend.")
+        from app.settings import settings
+
+        backend = settings.inference_backend
+        if backend == "stub":
+            print("[WARN] Inference backend is 'stub'. Imports/extractions will produce placeholder content.")
             return True  # Stub backend is acceptable for development
-        
+
+        inference_url = settings.inference_base_url
+        if not inference_url:
+            print(f"[WARN] No inference URL configured for backend '{backend}'. Using stub behavior.")
+            return True
+
         try:
             import urllib.request
-            
+
             timeout = float(os.getenv("INFERENCE_TIMEOUT", "5.0"))
-            
+
             with urllib.request.urlopen(inference_url, timeout=timeout) as response:
                 status_code = response.status
                 if status_code != 200:
                     print(f"[WARN] Inference backend returned {status_code}, but is reachable")
-            
+
             return True
-            
+
         except Exception as e:
-            raise ConfigValidationError(
-                f"Inference backend unreachable at {inference_url}: {e}",
-                "inference_backend",
-            )
+            print(f"[WARN] Inference backend unreachable at {inference_url}: {e}")
+            print("[WARN] Imports/extractions will fail until backend is available.")
+            return True  # Don't block startup for unreachable backend
     
     def _validate_database(self) -> bool:
         """Validate database can be opened and written to."""

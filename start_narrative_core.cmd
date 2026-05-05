@@ -14,8 +14,26 @@ if not exist "%PYTHON%" set PYTHON=python
 :: Parse arguments
 :args
 if "%~1"=="" goto :done_args
-if /i "%~1"=="--host" set HOST=%~2
-if /i "%~1"=="--port" set PORT=%~2
+if /i "%~1"=="--host" (
+    if "%~2"=="" (
+        echo ERROR: --host requires a value
+        exit /b 1
+    )
+    set HOST=%~2
+    shift
+    shift
+    goto :args
+)
+if /i "%~1"=="--port" (
+    if "%~2"=="" (
+        echo ERROR: --port requires a value
+        exit /b 1
+    )
+    set PORT=%~2
+    shift
+    shift
+    goto :args
+)
 if /i "%~1"=="--dev" set MODE=dev
 if /i "%~1"=="--skip-build" set SKIP_BUILD=1
 shift
@@ -54,10 +72,10 @@ if "%SKIP_BUILD%"=="0" (
 if "%SKIP_BUILD%"=="1" goto :skip_build
 echo [1/2] Building frontend ...
 cd /d "%ROOT%frontend"
-npm run build >nul 2>&1
+call npm run build
 if errorlevel 1 (
     echo.
-    echo ERROR: Frontend build failed. Fix the errors above, then retry.
+    echo ERROR: Frontend build failed. See errors above.
     exit /b 1
 )
 cd /d "%ROOT%"
@@ -108,13 +126,20 @@ echo.
 echo Starting in development mode (hot-reload enabled) ...
 echo.
 
+:: Check npm availability for frontend dev server
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: npm not found. Install Node.js and ensure it's in PATH.
+    exit /b 1
+)
+
 :: Start backend with reload
 echo [1/2] Starting backend ...
-start "Narrative Engine Backend" cmd /k "cd /d "%ROOT%" && "%PYTHON%" -m uvicorn app.main:build_app --factory --reload --host %HOST% --port %PORT% & pause"
+start "Narrative Engine Backend" cmd /k "cd /d ""%ROOT%"" && ""%PYTHON%"" -m uvicorn app.main:build_app --factory --reload --host %HOST% --port %PORT% & pause"
 
 :: Start frontend dev server
 echo [2/2] Starting frontend ...
-start "Narrative Engine Frontend" cmd /k "cd /d "%ROOT%frontend" && npm run dev & pause"
+start "Narrative Engine Frontend" cmd /k "cd /d ""%ROOT%frontend"" && npm run dev & pause"
 
 echo.
 echo ============================================

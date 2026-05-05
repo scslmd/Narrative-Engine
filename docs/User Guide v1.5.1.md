@@ -53,39 +53,65 @@ This guide walks you through using Narrative Engine from first project to a full
 
 ### Start the Server
 
-**Windows:**
+**Windows (production, single window):**
 ```
 start_narrative_core.cmd
 ```
 
+**Windows (development, 2 windows with hot-reload):**
+```
+start_narrative_core.cmd --dev
+```
+
 **PowerShell:**
 ```
-.\start_narrative_core.ps1
+.\start_narrative_core.ps1        # production
+.\start_narrative_core.ps1 -Dev   # development
 ```
 
 The backend starts on `http://127.0.0.1:8000`.
 
-### Start the Frontend
+**Modes:**
+- **Production (default)** — builds the frontend once, runs uvicorn in a single terminal window. The backend serves the built frontend as static files. Use this for day-to-day work.
+- **Development (`--dev`)** — spawns two terminal windows: one for uvicorn (with `--reload`) and one for the Vite dev server (hot-reload). Use this when actively developing the frontend.
+
+### Frontend-Only Development
+
+If you need to develop the frontend in isolation:
 
 ```
 cd frontend
 npm install
-copy .env.example .env.local   (Windows) or cp .env.example .env.local  (Unix)
 npm run dev
 ```
 
-The frontend opens at `http://localhost:5173`.
+The frontend dev server opens at `http://localhost:5173` and proxies API calls to the backend.
 
 ### Configure Your Model
 
-Narrative Engine works with any OpenAI-compatible local model server (llama.cpp, LM Studio, vLLM). Set the `INFERENCE_URL` environment variable to point at your model server:
+Narrative Engine works with any OpenAI-compatible local model server (llama.cpp, LM Studio, vLLM). Configure your model in the `.env` file:
 
 ```
-INFERENCE_URL=http://localhost:1234/v1   (LM Studio)
-INFERENCE_URL=http://localhost:8081      (llama.cpp)
+NARRATIVE_INFERENCE_BACKEND=llama.cpp
+NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:8080
 ```
 
-If no inference URL is set, the app uses a stub backend for testing (jobs complete with placeholder content).
+Common configurations:
+```
+# llama.cpp
+NARRATIVE_INFERENCE_BACKEND=llama.cpp
+NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:8080
+
+# LM Studio
+NARRATIVE_INFERENCE_BACKEND=lmstudio
+NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:1234
+
+# vLLM
+NARRATIVE_INFERENCE_BACKEND=vllm
+NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:8000
+```
+
+If no inference backend is set, the app uses a stub backend for testing (jobs complete with placeholder content).
 
 ### Sample Stories
 
