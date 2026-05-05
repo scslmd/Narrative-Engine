@@ -1,12 +1,14 @@
+import { InlineActions } from '../ui/InlineActions';
 import type { MythosEntry } from '../../types/mythos';
 
 interface MythosEntryCardProps {
   entry: MythosEntry;
   selected: boolean;
   onToggleUse: (mythosId: string) => void;
+  onDelete?: (mythosId: string) => void;
 }
 
-export function MythosEntryCard({ entry, selected, onToggleUse }: MythosEntryCardProps) {
+export function MythosEntryCard({ entry, selected, onToggleUse, onDelete }: MythosEntryCardProps) {
   return (
     <div className="rounded border border-slate-200 bg-white p-3">
       <div className="flex items-center justify-between">
@@ -18,6 +20,11 @@ export function MythosEntryCard({ entry, selected, onToggleUse }: MythosEntryCar
       </div>
       <div className="text-xs text-slate-500 mt-1">{entry.entry_type}</div>
       <div className="text-sm text-slate-700 mt-1">{entry.summary}</div>
+      {onDelete && (
+        <div className="mt-2">
+          <InlineActions actions={[{ label: 'Delete', variant: 'ghost', danger: true, onClick: () => onDelete(entry.mythos_id) }]} />
+        </div>
+      )}
     </div>
   );
 }

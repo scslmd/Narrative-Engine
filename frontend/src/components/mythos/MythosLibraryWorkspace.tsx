@@ -7,12 +7,14 @@ interface MythosLibraryWorkspaceProps {
   entries: MythosEntry[];
   selectedMythosIds: string[];
   onToggleUse: (mythosId: string) => void;
+  onDeleteEntry?: (mythosId: string) => void;
 }
 
 export function MythosLibraryWorkspace({
   entries,
   selectedMythosIds,
   onToggleUse,
+  onDeleteEntry,
 }: MythosLibraryWorkspaceProps) {
   const [filter, setFilter] = useState<MythosEntryType | 'all'>('all');
   const filtered = useMemo(
@@ -32,6 +34,7 @@ export function MythosLibraryWorkspace({
             entry={entry}
             selected={selectedMythosIds.includes(entry.mythos_id)}
             onToggleUse={onToggleUse}
+            onDelete={onDeleteEntry}
           />
         ))}
       </div>
