@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CanonWorkshop } from '../components/canon/CanonWorkshop';
+import { useMythosLibrary } from '../hooks/useMythosLibrary';
+import { usePatternLibrary } from '../hooks/usePatternLibrary';
 import {
   createCanonProfile,
   getCanonAnnotations,
@@ -9,8 +11,6 @@ import {
   previewCanonProfilePacket,
 } from '../services/canonCustomization';
 import { getCharacters } from '../services/characters';
-import { getMythosEntries } from '../services/mythosLibrary';
-import { getPatternEntries } from '../services/patternLibrary';
 import { createGenerationRun } from '../services/storyGeneration';
 import { getWorldBibleEntries } from '../services/worldBible';
 import type { CanonGenerationPacket } from '../types/storyGeneration';
@@ -37,16 +37,8 @@ export function CanonView() {
     queryFn: () => getWorldBibleEntries(projectId || ''),
     enabled: Boolean(projectId),
   });
-  const mythosQuery = useQuery({
-    queryKey: ['canon', 'mythos', projectId],
-    queryFn: () => getMythosEntries(projectId || ''),
-    enabled: Boolean(projectId),
-  });
-  const patternsQuery = useQuery({
-    queryKey: ['canon', 'patterns', projectId],
-    queryFn: () => getPatternEntries(projectId || ''),
-    enabled: Boolean(projectId),
-  });
+  const { entries: mythosEntries, deleteEntry: deleteMythosEntry } = useMythosLibrary(projectId || '');
+  const { entries: patternEntries, deleteEntry: deletePatternEntry } = usePatternLibrary(projectId || '');
   const annotationsQuery = useQuery({
     queryKey: ['canon', 'annotations', projectId],
     queryFn: () => getCanonAnnotations(projectId || ''),
@@ -78,8 +70,6 @@ export function CanonView() {
   const isLoading = [
     charactersQuery,
     worldQuery,
-    mythosQuery,
-    patternsQuery,
     annotationsQuery,
     profilesQuery,
   ].some((query) => query.isLoading);
@@ -91,8 +81,6 @@ export function CanonView() {
   if (
     charactersQuery.isError ||
     worldQuery.isError ||
-    mythosQuery.isError ||
-    patternsQuery.isError ||
     annotationsQuery.isError ||
     profilesQuery.isError
   ) {
@@ -104,8 +92,8 @@ export function CanonView() {
       projectId={projectId}
       characters={charactersQuery.data || []}
       worldEntries={worldQuery.data || []}
-      mythosEntries={mythosQuery.data || []}
-      patternEntries={patternsQuery.data || []}
+      mythosEntries={mythosEntries}
+      patternEntries={patternEntries}
       annotations={annotationsQuery.data || []}
       profiles={profilesQuery.data || []}
       packetPreview={packetPreview}
@@ -118,6 +106,8 @@ export function CanonView() {
         setPacketPreview(packet);
       }}
       onSubmitGeneration={async (request) => createGenerationMutation.mutateAsync(request)}
+      onDeleteMythosEntry={(mythosId) => void deleteMythosEntry(mythosId)}
+      onDeletePatternEntry={(patternId) => void deletePatternEntry(patternId)}
     />
   );
 }

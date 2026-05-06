@@ -18,14 +18,14 @@ import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { PlanningTab } from '../components/planning/PlanningTab';
 import { usePlanningTab } from '../hooks/usePlanningTab';
-import { getBrainstormItems, createBrainstormItem, clusterBrainstormItems } from '../services/brainstorm';
-import { getFoundation, createFoundation, updateFoundation } from '../services/foundation';
+import { useFoundation } from '../hooks/useFoundation';
+import { useBrainstorm } from '../hooks/useBrainstorm';
+import { createFoundation } from '../services/foundation';
 import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
 import { getRelationships, deleteRelationship } from '../services/relationships';
 import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
 import { createCanonAnnotation, getCanonAnnotations } from '../services/canonCustomization';
 
-import type { BrainstormItemCreateRequest } from '../types/brainstorm';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
@@ -108,17 +108,9 @@ export function PlanningView() {
   const { mode } = useThemeStore();
   const isDark = mode === 'dark';
 
-  const brainstormQuery = useQuery({
-    queryKey: ['planning', 'brainstorm-items', projectId],
-    queryFn: () => getBrainstormItems(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'brainstorm',
-  });
+  const { items: brainstormItems, isLoading: brainstormLoading, addItem: addBrainstormItem, clusterItems: clusterBrainstormItems, promoteItem: promoteBrainstormItem } = useBrainstorm(projectId || '');
 
-  const foundationQuery = useQuery({
-    queryKey: ['planning', 'foundation', projectId],
-    queryFn: () => getFoundation(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'foundation',
-  });
+  const { profile: foundation, revisions, reviewCues, isLoading: foundationLoading, updateProfile: foundationUpdate } = useFoundation(projectId || '');
 
   const charactersQuery = useQuery({
     queryKey: ['planning', 'characters', projectId],
@@ -152,31 +144,12 @@ export function PlanningView() {
     },
   });
 
-  const brainstormCreateMutation = useMutation({
-    mutationFn: (request: BrainstormItemCreateRequest) => createBrainstormItem(request),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'brainstorm-items', projectId] });
-    },
-  });
-
-  const brainstormClusterMutation = useMutation({
-    mutationFn: (itemIds: string[]) =>
-      clusterBrainstormItems({
-        project_id: projectId || '',
-        item_ids: itemIds,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'brainstorm-items', projectId] });
-    },
-  });
-
   const foundationSaveMutation = useMutation({
     mutationFn: (foundation: Partial<FoundationProfile>) => {
       const payload = omitKeys(foundation, ['project_id', 'foundation_id', 'version']);
-      const activeFoundation = foundationQuery.data?.active_profile;
 
-      if (activeFoundation) {
-        return updateFoundation(projectId || '', payload as FoundationUpdateRequest);
+      if (foundation) {
+        return foundationUpdate(payload as FoundationUpdateRequest);
       }
 
       return createFoundation({
@@ -185,7 +158,7 @@ export function PlanningView() {
       });
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning', 'foundation', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['foundation', projectId] });
     },
   });
 
@@ -270,8 +243,6 @@ export function PlanningView() {
     return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
   }
 
-  const brainstormItems = brainstormQuery.data ?? [];
-  const foundation = foundationQuery.data?.active_profile ?? undefined;
   const selectedCharacter = selectedCharacterId
     ? characters.find((character) => character.character_id === selectedCharacterId)
     : null;
@@ -359,16 +330,17 @@ export function PlanningView() {
 
         {activeTab === 'brainstorm' && (
           <div className="h-full">
-            {brainstormQuery.isLoading ? (
+            {brainstormLoading ? (
               <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." />
-            ) : brainstormQuery.error ? (
-              <WorkspaceStatus title="Could not load brainstorm" detail={getErrorMessage(brainstormQuery.error)} tone="error" />
             ) : (
               <BrainstormWorkspace
                 projectId={projectId}
                 items={brainstormItems}
-                onItemAdd={(request) => brainstormCreateMutation.mutate(request)}
-                onClusterCreate={(itemIds) => brainstormClusterMutation.mutate(itemIds)}
+                onItemAdd={(request) => void addBrainstormItem(request)}
+                onClusterCreate={(itemIds) => void clusterBrainstormItems(itemIds)}
+                onPromote={async ({ item_id, target_object_kind, target_object_id }) => {
+                await promoteBrainstormItem(item_id, target_object_kind, target_object_id);
+              }}
               />
             )}
           </div>
@@ -376,15 +348,15 @@ export function PlanningView() {
 
         {activeTab === 'foundation' && (
           <div className="h-full">
-            {foundationQuery.isLoading ? (
+            {foundationLoading ? (
               <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." />
-            ) : foundationQuery.error ? (
-              <WorkspaceStatus title="Could not load foundation" detail={getErrorMessage(foundationQuery.error)} tone="error" />
             ) : (
               <FoundationEditor
                 projectId={projectId}
-                foundation={foundation}
+                foundation={foundation ?? undefined}
                 onSave={(updates) => foundationSaveMutation.mutate(updates)}
+                revisions={revisions}
+                reviewCues={reviewCues}
               />
             )}
           </div>

@@ -30,6 +30,8 @@ interface CanonWorkshopProps {
   onSaveProfile: (request: CanonCustomizationProfileCreateRequest) => Promise<void>;
   onPreviewPacket: (profileId: string) => Promise<void>;
   onSubmitGeneration: (request: CanonGenerationRequest) => Promise<GenerationRunResponse>;
+  onDeleteMythosEntry?: (mythosId: string) => void;
+  onDeletePatternEntry?: (patternId: string) => void;
   packetPreview: CanonGenerationPacket | null;
   initialTab?: 'overview' | 'mythos' | 'patterns' | 'packet';
 }
@@ -45,6 +47,8 @@ export function CanonWorkshop({
   onSaveProfile,
   onPreviewPacket,
   onSubmitGeneration,
+  onDeleteMythosEntry,
+  onDeletePatternEntry,
   packetPreview,
   initialTab = 'overview',
 }: CanonWorkshopProps) {
@@ -159,6 +163,7 @@ export function CanonWorkshop({
           entries={mythosEntries}
           selectedMythosIds={selectedMythosIds}
           onToggleUse={(mythosId) => setSelectedMythosIds(toggleString(selectedMythosIds, mythosId))}
+          onDeleteEntry={onDeleteMythosEntry}
         />
       )}
 
@@ -167,6 +172,7 @@ export function CanonWorkshop({
           entries={patternEntries}
           selectedPatternIds={selectedPatternIds}
           onToggleUse={(patternId) => setSelectedPatternIds(toggleString(selectedPatternIds, patternId))}
+          onDeleteEntry={onDeletePatternEntry}
         />
       )}
 
