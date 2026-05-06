@@ -24,6 +24,34 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/projects': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/jobs': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/storyboard': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/story-development': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/backup': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/chapters': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
   build: {

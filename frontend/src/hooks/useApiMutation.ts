@@ -22,7 +22,7 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.status) {
       case 401:
-        return 'Authentication required';
+        return 'API key required — see Settings > API Keys and User Guide §Authentication';
       case 403:
         return 'Access denied';
       case 500:

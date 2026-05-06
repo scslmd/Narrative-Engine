@@ -29,7 +29,7 @@ export function getErrorTitle(error: unknown, statusCode?: number): string {
   const status = statusCode ?? getStatusCode(error);
   
   if (isNetworkError(error)) return 'Connection Error';
-  if (status === 401) return 'Authentication Required';
+  if (status === 401) return 'API Key Required';
   if (status === 403) return 'Access Denied';
   if (status === 404) return 'Not Found';
   if (status === 409) return 'Conflict';
@@ -46,7 +46,7 @@ export function formatErrorMessage(error: unknown, statusCode?: number): string 
   const status = statusCode ?? getStatusCode(error);
   
   if (!status) return error instanceof Error ? error.message : 'An unexpected error occurred';
-  if (status === 401) return 'Please sign in to continue';
+  if (status === 401) return 'API key required. Create one in Settings > API Keys, then set the NARRATIVE_API_KEY environment variable on your server. See User Guide §Authentication.';
   if (status === 403) return 'You do not have permission to access this resource';
   if (status === 404) return 'The requested resource was not found';
   if (status === 409) return 'This operation cannot be completed due to a conflict';

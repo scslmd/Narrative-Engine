@@ -35,8 +35,8 @@ api.interceptors.response.use(
       // Bad Request - validation errors
       message = data?.detail || 'Invalid request parameters'
     } else if (status === 401) {
-      // Unauthorized
-      message = 'Authentication required'
+      // Unauthorized — API key required for /v1/* endpoints
+      message = data?.detail || 'API key required. Create one in Settings, then configure it on the server (see User Guide §Authentication).'
     } else if (status === 403) {
       // Forbidden
       message = 'Access denied'

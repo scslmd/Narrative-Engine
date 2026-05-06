@@ -84,7 +84,7 @@ describe('useApiQuery', () => {
     const toast = result.current.allToasts[0];
     expect(toast).toBeDefined();
     expect(toast.variant).toBe('error');
-    expect(toast.message).toBe('Authentication required');
+    expect(toast.message).toBe('API key required — see Settings > API Keys and User Guide §Authentication');
   });
 
   it('shows error toast for 403 status', async () => {

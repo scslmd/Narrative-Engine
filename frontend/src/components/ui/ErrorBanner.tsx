@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, ShieldAlert } from 'lucide-react';
 import type { ApiError } from '../../lib/api';
 
 interface ErrorBannerProps {
@@ -21,27 +21,42 @@ export function ErrorBanner({ error, onRetry }: ErrorBannerProps) {
 
   if (!error || !visible) return null;
 
-  const message = error.status ? `[${error.status}] ${error.message}` : error.message;
+  const isAuthError = error.status === 401;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-      <span className="text-sm text-red-800 flex-1">{message}</span>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm font-medium text-red-700 hover:text-red-900 transition-colors"
-        >
-          Retry
-        </button>
+    <div className={`flex items-start gap-3 px-4 py-3 border rounded-lg ${isAuthError ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+      {isAuthError ? (
+        <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+      ) : (
+        <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
       )}
-      <button
-        onClick={() => setVisible(false)}
-        className="opacity-60 hover:opacity-100 transition-opacity"
-        aria-label="Dismiss"
-      >
-        <X className="w-4 h-4 text-red-500" />
-      </button>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${isAuthError ? 'text-amber-900' : 'text-red-800'}`}>
+          {isAuthError ? 'API key required' : error.status ? `[${error.status}] ${error.message}` : error.message}
+        </p>
+        {isAuthError && (
+          <p className="text-xs text-amber-700 mt-1">
+            This feature requires API authentication. Create a key in <strong>Settings &gt; API Keys</strong>, then set the <code className="px-1 py-0.5 bg-amber-100 rounded text-[10px]">NARRATIVE_API_KEY</code> environment variable on your server. See <strong>User Guide §Authentication</strong>.
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className={`text-sm font-medium transition-colors ${isAuthError ? 'text-amber-700 hover:text-amber-900' : 'text-red-700 hover:text-red-900'}`}
+          >
+            Retry
+          </button>
+        )}
+        <button
+          onClick={() => setVisible(false)}
+          className="opacity-60 hover:opacity-100 transition-opacity"
+          aria-label="Dismiss"
+        >
+          <X className={`w-4 h-4 ${isAuthError ? 'text-amber-500' : 'text-red-500'}`} />
+        </button>
+      </div>
     </div>
   );
 }

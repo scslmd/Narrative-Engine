@@ -561,7 +561,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
             'api', 'v1', 'docs', 'openapi.json', 'redoc', 'swagger',
             'health', 'assets', 'static', 'favicon',
             'jobs', 'projects', 'models', 'role-model-checker',
-            'story-development',
+            'story-development', 'auth', 'backup',
         )
         _frontend_skip_extensions = ('.css', '.js', '.svg', '.png', '.jpg', '.ico')
 

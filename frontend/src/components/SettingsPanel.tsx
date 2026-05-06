@@ -434,7 +434,12 @@ function AuthKeysSection() {
       )}
 
       {!isLoading && keys.length === 0 && (
-        <p className="text-xs text-[var(--text-tertiary)] text-center">No API keys.</p>
+        <div className="space-y-2">
+          <p className="text-xs text-[var(--text-tertiary)] text-center">No API keys created yet.</p>
+          <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
+            API keys are required for Story Generation, Canon Workshop, Brain Dump, and other /v1/* features when your server has authentication enabled. Not all local services require a key — check each feature's documentation. Create a key below, then set the <code className="px-1 py-0.5 bg-[var(--bg-tertiary)] rounded text-[10px] font-mono">NARRATIVE_API_KEY</code> environment variable on your server to enable auth-gated features. See <strong>User Guide §Authentication</strong> for details.
+          </p>
+        </div>
       )}
 
       {!isLoading && keys.length > 0 && (

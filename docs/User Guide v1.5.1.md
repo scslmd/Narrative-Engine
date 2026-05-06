@@ -8,7 +8,7 @@ This guide walks you through using Narrative Engine from first project to a full
 
 ### Getting Started
 
-1. [Getting Started](#getting-started)
+1. [Getting Started](#getting-started) (includes Authentication setup)
 2. [Sample Stories](#sample-stories)
 
 ### Seeding Your Project
@@ -99,14 +99,14 @@ The frontend dev server opens at `http://localhost:5173` and proxies API calls t
 
 ### Configure Your Model
 
-Narrative Engine works with any OpenAI-compatible local model server (llama.cpp, LM Studio, vLLM). Configure your model in the `.env` file:
+Narrative Engine works with any OpenAI-compatible model server — local (llama.cpp, LM Studio, vLLM) or cloud (OpenAI, Anthropic via vertex, Google Gemini, etc.). Configure your model in the `.env` file:
 
 ```
 NARRATIVE_INFERENCE_BACKEND=llama.cpp
 NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:8080
 ```
 
-Common configurations:
+**Common local configurations:**
 ```
 # llama.cpp
 NARRATIVE_INFERENCE_BACKEND=llama.cpp
@@ -121,7 +121,106 @@ NARRATIVE_INFERENCE_BACKEND=vllm
 NARRATIVE_INFERENCE_BASE_URL=http://127.0.0.1:8000
 ```
 
-If no inference backend is set, the app uses a stub backend for testing (jobs complete with placeholder content).
+**Cloud provider configurations:**
+For cloud providers (OpenAI, Anthropic, Google Gemini, etc.), use the `openai_compatible` backend with their API endpoint and your API key:
+
+```
+# OpenAI
+NARRATIVE_INFERENCE_BACKEND=openai_compatible
+NARRATIVE_INFERENCE_BASE_URL=https://api.openai.com/v1
+NARRATIVE_INFERENCE_API_KEY=sk-proj-...
+NARRATIVE_INFERENCE_MODEL=gpt-4o
+
+# Anthropic (via Google Vertex AI)
+NARRATIVE_INFERENCE_BACKEND=openai_compatible
+NARRATIVE_INFERENCE_BASE_URL=https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT/locations/us-central1/endpoints/ENDPOINT
+NARRATIVE_INFERENCE_API_KEY=your-api-key
+NARRATIVE_INFERENCE_MODEL=claude-sonnet-4@20250514
+
+# Google Gemini (via AI Studio)
+NARRATIVE_INFERENCE_BACKEND=openai_compatible
+NARRATIVE_INFERENCE_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+NARRATIVE_INFERENCE_API_KEY=your-gemini-api-key
+NARRATIVE_INFERENCE_MODEL=gemini-2.0-flash
+```
+
+**Environment variables reference:**
+
+| Variable | Required? | Description |
+|----------|-----------|-------------|
+| `NARRATIVE_INFERENCE_BACKEND` | Yes (for real inference) | One of: `llama.cpp`, `lmstudio`, `vllm`, `openai_compatible`, `stub` |
+| `NARRATIVE_INFERENCE_BASE_URL` | Yes | Base URL of the model server. Trailing `/v1` is auto-appended if missing. |
+| `NARRATIVE_INFERENCE_API_KEY` | Only for cloud providers | API key sent as `Authorization: Bearer {key}` to the provider. Leave blank or omit for local servers that don't require auth. |
+| `NARRATIVE_INFERENCE_MODEL` | Recommended | Default model ID to use (e.g., `gpt-4o`, `llama-3.1-8b`). Can be overridden per job. |
+| `NARRATIVE_INFERENCE_TIMEOUT_SECONDS` | No (default: 300) | Request timeout in seconds. Use higher values for large prompts or slow models. |
+
+If no inference backend is set, the app uses a **stub backend** for testing (jobs complete with placeholder content). Local servers typically don't need an API key — omit `NARRATIVE_INFERENCE_API_KEY` or leave it blank. Cloud providers require a valid key.
+
+### Authentication
+
+Some features require API key authentication; others do not. Whether a feature needs an API key depends on its backend endpoint — the `/v1/*` endpoints are gated when `NARRATIVE_API_KEY` is set on the server, while unversioned endpoints (projects, health, backups) are always open. **Check your local service's documentation or configuration to determine if auth is required in your setup.** By default, no API key is required.
+
+**Features that require an API key** (when `NARRATIVE_API_KEY` is set):
+- Story Generation Orchestration (`/v1/story-generation/*`)
+- Canon Workshop: Mythos Library, Pattern Library, Profiles, Annotations (`/v1/canon/*`, `/v1/mythos/*`, `/v1/patterns/*`)
+- Brain Dump (`/v1/story-development/braindump/*`)
+- Manuscript Assist (`/v1/manuscript-assist/*`)
+- Jobs & Role Model Checker (`/v1/jobs/*`, `/v1/role-model-checker/*`)
+
+**Features that do NOT require an API key** (always accessible):
+- Project management: list, create, get details, manifest, sequence, chapters (`/projects/*`)
+- Health checks (`/health/*`)
+- Backup management (`/backup/*`)
+- API key management itself (`/auth/keys*`)
+
+To enable authentication for the gated features:
+
+**Step 1: Create an API key in the UI**
+
+1. Open the app and click the **Settings** button (gear icon) in the top-right corner
+2. Scroll to the **API Keys** section at the bottom
+3. Enter a name for your key (e.g., "local-dev") and click **Create**
+4. The server will generate a key and display its prefix (first 4 characters) and permissions
+
+**Step 2: Configure the server**
+
+Set the `NARRATIVE_API_KEY` environment variable to the full key value. On Windows:
+
+```powershell
+# PowerShell (current session)
+$env:NARRATIVE_API_KEY = "your-full-api-key-here"
+
+# Or add to your .env file for persistence
+echo "NARRATIVE_API_KEY=your-full-api-key-here" >> .env
+```
+
+On macOS/Linux:
+
+```bash
+export NARRATIVE_API_KEY="your-full-api-key-here"
+# Or add to ~/.bashrc, ~/.zshrc, or your .env file
+```
+
+**Step 3: Restart the server**
+
+Restart Narrative Core so the new environment variable takes effect.
+
+**How it works**
+
+Authentication is **opt-in**: the server only enforces API key checks when `NARRATIVE_API_KEY` is set in the environment. Without it, all endpoints — including `/v1/*` — are accessible without a key. This means local development and testing work out of the box. When you do set `NARRATIVE_API_KEY`, the server's middleware intercepts requests to `/v1/*` and other protected paths, rejecting any that lack a matching `X-API-Key` header. The frontend's development proxy can be configured to forward this header automatically (see `frontend/vite.config.ts`).
+
+**Troubleshooting**
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `[401] API key required` toast | Server has `NARRATIVE_API_KEY` set, but request lacks the `X-API-Key` header | Configure the key in your environment or disable auth by unsetting `NARRATIVE_API_KEY` |
+| Canon Workshop shows "API key required" banner | Same as above — `/v1/*` endpoints are gated | Follow Steps 1–3 above |
+| Brain Dump stuck on "Loading..." | API call returned 401; check browser console for details | Create an API key and configure it, or temporarily disable auth |
+| "Invalid or missing API key" | Key doesn't match the server's `NARRATIVE_API_KEY` value | Verify the exact key string; watch for extra spaces or quotes |
+
+**Disabling authentication**
+
+To run without API key requirements (e.g., for local development), simply unset or remove the `NARRATIVE_API_KEY` environment variable and restart the server. All endpoints will be accessible without authentication.
 
 ---
 

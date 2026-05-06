@@ -86,7 +86,7 @@ describe('useApiMutation', () => {
     const toasts = result.current.allToasts;
     expect(toasts).toHaveLength(1);
     expect(toasts[0].variant).toBe('error');
-    expect(toasts[0].message).toBe('Authentication required');
+    expect(toasts[0].message).toBe('API key required — see Settings > API Keys and User Guide §Authentication');
   });
 
   it('shows error toast for 403 status', async () => {

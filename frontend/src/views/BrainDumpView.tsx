@@ -158,9 +158,21 @@ export function BrainDumpView() {
 
   // Error state
   if (error) {
+    const isAuthError = error instanceof Error && 'status' in error && error.status === 401;
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-red-400">Failed to load brain dump session.</p>
+        {isAuthError ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2 max-w-md text-center">
+            <p className="text-sm font-medium text-amber-900">API key required</p>
+            <p className="text-sm text-amber-800">
+              Brain Dump requires API authentication. Create an API key in{' '}
+              <button className="font-semibold text-amber-900 underline hover:no-underline cursor-pointer">Settings &gt; API Keys</button>, then set the <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">NARRATIVE_API_KEY</code> environment variable on your server.
+            </p>
+            <p className="text-xs text-amber-700">See <strong>User Guide §Authentication</strong> for setup instructions.</p>
+          </div>
+        ) : (
+          <p className="text-red-400">Failed to load brain dump session.</p>
+        )}
       </div>
     );
   }

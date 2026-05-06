@@ -2,7 +2,7 @@
 
 > Purpose: Step-by-step guide to using all features of the Narrative Engine application, starting simple and incrementally building to advanced workflows.
 >
-> Prerequisites: A working Narrative Engine installation with backend and frontend running. Inference backend (llama.cpp, LM Studio, vLLM, or stub) configured and accessible.
+> Prerequisites: A working Narrative Engine installation with backend and frontend running. Inference backend (llama.cpp, LM Studio, vLLM, or stub) configured in `.env` and accessible. If using a cloud provider (OpenAI, Anthropic, Gemini), set `NARRATIVE_INFERENCE_API_KEY` — see **User Guide §Configure Your Model**. If your server has `NARRATIVE_API_KEY` set for endpoint protection, create an API key in Settings for features like Brain Dump, Canon Workshop, and Story Generation (see **User Guide §Authentication**).
 >
 > Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.6.0.md`) for feature reference and detailed explanations.
 
@@ -267,6 +267,8 @@ From here, proceed to [Phase 2](#phase-2-brain-dump) (Brain Dump) to add your ow
 ## Phase 2: Brain Dump
 
 > **Bridge from Phase 1:** After creating or importing your project, the first step in adding your own creative input is freeform ideation. Brain Dump captures raw ideas before you organize them into structured elements.
+>
+> **Authentication note:** Brain Dump uses API endpoints that require an API key if your server has `NARRATIVE_API_KEY` set. If you see "API key required" or the view stays on "Loading...", follow the setup in **User Guide §Authentication**.
 
 **Route**: `/workspace/:projectId/braindump`
 
