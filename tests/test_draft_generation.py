@@ -174,3 +174,26 @@ def test_title_resolution_truncates_to_255() -> None:
     instruction = "A" * 300
     title = instruction.strip()[:255] or "Generated Draft"
     assert len(title) == 255
+
+
+def test_prompt_builder_includes_all_context_fields() -> None:
+    """Prompt builder includes instruction, document_title, and document_content."""
+    import json as _json
+    from app.schemas.manuscript_assist import ManuscriptAssistPacket
+    from app.services.runtime_prompts import build_m500_draft_generation_request
+
+    packet = ManuscriptAssistPacket.model_validate({
+        "assist_id": "a1",
+        "project_id": "p1",
+        "document_id": "d1",
+        "assist_kind": "ai_generate_draft",
+        "instruction": "Test instruction",
+        "document_title": "Test Title",
+        "document_content": "Existing content",
+    })
+    req = build_m500_draft_generation_request(packet, default_model="m")
+
+    user_data = _json.loads(req.messages[1].content)
+    assert user_data["instruction"] == "Test instruction"
+    assert user_data["document_title"] == "Test Title"
+    assert user_data["document_content"] == "Existing content"
