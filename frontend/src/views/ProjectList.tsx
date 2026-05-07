@@ -133,6 +133,84 @@ export function ProjectList(): React.ReactElement {
         </p>
       </div>
 
+      <div>
+        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
+        
+        {projects && projects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+           {projects.map((project) => (
+               <div
+                 key={project.project_id}
+                 className={`group rounded-xl border p-4 transition-all duration-200 ${
+                   isDark
+                     ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card-hover'
+                     : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-card-hover'
+                 }`}
+               >
+                 <div className="flex items-start justify-between">
+                   <a
+                     href={`/workspace/${project.project_id}`}
+                     className="flex-1 min-w-0"
+                   >
+                     <h3 className={`font-semibold group-hover:text-indigo-500 transition-colors ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                       {project.project_name}
+                     </h3>
+                     <div className={`flex items-center gap-2 mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+                       <span>{project.genre}</span>
+                       <span>•</span>
+                       <span>{project.tone_profile}</span>
+                     </div>
+                   </a>
+                   <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
+                        {new Date(project.updated_at).toLocaleDateString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleExport(project.project_id)}
+                        disabled={isExporting === project.project_id}
+                        className={`p-1 rounded transition-colors ${
+                          isDark
+                            ? 'text-slate-600 hover:text-indigo-400 hover:bg-slate-800'
+                            : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
+                        } disabled:opacity-50`}
+                        title="Export project as ZIP"
+                      >
+                        {isExporting === project.project_id ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                          </svg>
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                       onClick={() => handleDeleteClick(project)}
+                       disabled={deleteMutation.isPending}
+                       className={`p-1 rounded transition-colors ${
+                         isDark
+                           ? 'text-slate-600 hover:text-red-400 hover:bg-slate-800'
+                           : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
+                       } disabled:opacity-50`}
+                       title="Delete project"
+                       aria-label={`Delete ${project.project_name}`}
+                     >
+                       <Trash2 className="w-3.5 h-3.5" />
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             ))}
+          </div>
+        ) : (
+          <div className={`text-center py-12 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+            <BookOpen className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
+            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>No projects yet. Create your first project below!</p>
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className={`rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card p-6 space-y-5`}>
         <div className="flex items-center gap-2.5 mb-1">
           <BookOpen className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} />
@@ -306,84 +384,6 @@ export function ProjectList(): React.ReactElement {
           <Upload className="w-4 h-4" />
           Import Project
         </button>
-      </div>
-
-      <div>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
-        
-        {projects && projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-           {projects.map((project) => (
-               <div
-                 key={project.project_id}
-                 className={`group rounded-xl border p-4 transition-all duration-200 ${
-                   isDark
-                     ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card-hover'
-                     : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-card-hover'
-                 }`}
-               >
-                 <div className="flex items-start justify-between">
-                   <a
-                     href={`/workspace/${project.project_id}`}
-                     className="flex-1 min-w-0"
-                   >
-                     <h3 className={`font-semibold group-hover:text-indigo-500 transition-colors ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                       {project.project_name}
-                     </h3>
-                     <div className={`flex items-center gap-2 mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                       <span>{project.genre}</span>
-                       <span>•</span>
-                       <span>{project.tone_profile}</span>
-                     </div>
-                   </a>
-                   <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
-                        {new Date(project.updated_at).toLocaleDateString()}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleExport(project.project_id)}
-                        disabled={isExporting === project.project_id}
-                        className={`p-1 rounded transition-colors ${
-                          isDark
-                            ? 'text-slate-600 hover:text-indigo-400 hover:bg-slate-800'
-                            : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
-                        } disabled:opacity-50`}
-                        title="Export project as ZIP"
-                      >
-                        {isExporting === project.project_id ? (
-                          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                          </svg>
-                        ) : (
-                          <Download className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      <button
-                       onClick={() => handleDeleteClick(project)}
-                       disabled={deleteMutation.isPending}
-                       className={`p-1 rounded transition-colors ${
-                         isDark
-                           ? 'text-slate-600 hover:text-red-400 hover:bg-slate-800'
-                           : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
-                       } disabled:opacity-50`}
-                       title="Delete project"
-                       aria-label={`Delete ${project.project_name}`}
-                     >
-                       <Trash2 className="w-3.5 h-3.5" />
-                     </button>
-                   </div>
-                 </div>
-               </div>
-             ))}
-          </div>
-        ) : (
-          <div className={`text-center py-12 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            <BookOpen className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
-            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>No projects yet. Create your first project above!</p>
-          </div>
-        )}
       </div>
 
       <StoryImportModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
