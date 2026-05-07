@@ -132,6 +132,15 @@ def build_projects_router(
         except Exception as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @router.delete("/{project_id}", response_model=ProjectDeletionResponse)
+    def delete_project(project_id: str) -> ProjectDeletionResponse:
+        if not maintenance_service:
+            raise HTTPException(status_code=503, detail="Maintenance service unavailable")
+        try:
+            return maintenance_service.delete_project(project_id)
+        except ProjectMaintenanceError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @router.get("/{project_id}/manifest")
     def get_manifest(project_id: str) -> dict:
         try:
