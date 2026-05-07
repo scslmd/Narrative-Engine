@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-05
+> Living document. Last updated: 2026-05-07
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -324,6 +324,10 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
 - Shared Axios client with `ApiError` interceptor (handles 400/401/403/404/409/5xx)
 - One service file per API domain, one type file per domain
 - 29 service files, 29 test files, 34 type files
+
+### Frontend Service Data Transformation (`checker.ts`)
+
+The `getModelCatalog()` service function transforms the backend's `/models` response into the frontend's expected shape. The backend returns `discovered_models` as `list[str]` (plain model ID strings like `"Qwen3.6-27B-Q5_K_M-mtp.gguf"`), while the frontend's `ModelCatalog` type expects `Array<{role: string; model_id: string; name: string}>`. The transformation iterates over `workflow_order` roles and expands each discovered model into a per-role entry, deriving a human-readable name from the filename. Already-shaped objects (from tests) pass through unchanged. This transformation was added 2026-05-07 to fix a blank-screen bug in the Planning→Checker tab caused by the original mock-to-real-API switch (commit `a8d3e8f`) where the mock returned properly-shaped objects but the real backend returns strings.
 
 ### Component Hierarchy
 
@@ -766,6 +770,12 @@ pytest -n 0 \
 | `services/planning.ts` | 439 |
 | `components/SettingsPanel.tsx` | 418 |
 | `components/brainstorm/BrainstormWorkspace.tsx` | 407 |
+
+### Known Issues
+
+| Issue | Impact | Status |
+|-------|--------|--------|
+| `Fallback.tsx` renders `null` | ErrorBoundary catches render errors and shows blank area instead of error message. Masks component crashes as invisible regions (e.g., Planning→Checker tab). | Known — affects user-facing error visibility |
 
 ### Counts
 

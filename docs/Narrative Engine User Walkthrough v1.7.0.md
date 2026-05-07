@@ -1,10 +1,12 @@
-# Narrative Engine - Complete User Walkthrough v1.6.0
+# Narrative Engine - Complete User Walkthrough v1.7.0
 
 > Purpose: Step-by-step guide to using all features of the Narrative Engine application, starting simple and incrementally building to advanced workflows.
 >
 > Prerequisites: A working Narrative Engine installation with backend and frontend running. Inference backend (llama.cpp, LM Studio, vLLM, or stub) configured in `.env` and accessible. If using a cloud provider (OpenAI, Anthropic, Gemini), set `NARRATIVE_INFERENCE_API_KEY` — see **User Guide §Configure Your Model**. If your server has `NARRATIVE_API_KEY` set for endpoint protection, create an API key in Settings for features like Brain Dump, Canon Workshop, and Story Generation (see **User Guide §Authentication**).
 >
-> Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.6.0.md`) for feature reference and detailed explanations.
+> Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.7.0.md`) for feature reference and detailed explanations.
+>
+> **v1.7.0 update:** Added Phase 13 (Iterate and Refine). Fixed character PATCH 422 bug — optional fields with empty values no longer block saving edits to minimally-created characters.
 
 ---
 
@@ -95,6 +97,7 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
 
 - [Phase 11: Story Branching](#phase-11-story-branching)
 - [Phase 12: Exporting and Importing Projects](#phase-12-exporting-and-importing-projects)
+- [Phase 13: Iterate and Refine](#phase-13-iterate-and-refine)
 
 ### Reference
 
@@ -665,6 +668,51 @@ Promote a draft to a manuscript:
 3. Specify the variation (e.g., "Darker tone", "More dialogue")
 4. A new draft artifact is created with the variant content
 
+### Step 6di: AI Draft Generation
+
+> **Bridge from Step 6d:** You can continue or branch existing drafts. But what if you want to generate a brand-new draft from a brief idea, without running the full P-300 pipeline? Use AI Draft Generation — it creates a complete chapter draft from a title and description, using your project's canon as context.
+
+This feature is ideal for exploratory writing, alternate scenes, or quick drafts based on a new idea. It runs asynchronously in the background and doesn't block your workflow.
+
+**Generate an AI Draft:**
+
+1. In the Writing workspace (`/workspace/:projectId/write`), scroll to the **Draft List** in the left sidebar
+2. Click the **"⚡ AI"** button (next to "+ New Draft")
+3. The AI draft form opens with two fields:
+   - **Draft title** — required, max 255 characters. Example: `Chapter 3: The Signal`
+   - **Brief** — describe what this draft should cover. Be specific for best results. Example: `Elena discovers the alien signal embedded in CERES's core data. She must decide whether to broadcast it to the colony ship or keep it secret.`
+4. If a chapter plan exists for the selected manuscript, a "Plan:" hint appears above the brief field, showing the planned summary from your outline
+5. Click **"Generate"** — the system submits an async job and shows "Generating..." in the form
+
+**What you see while generating:**
+
+- The draft form closes and a new draft card appears with status `PENDING`
+- A pulsing amber dot and "Generating..." text indicate the job is running
+- The system polls every 3 seconds for completion
+- Generation typically takes 30 seconds to 3 minutes depending on your model speed
+
+**On success:**
+
+- The draft card updates to status `DRAFT` with the full generated content
+- A toast notification says "Draft generation complete"
+- Click the draft to expand and preview the content
+- Use **Promote to Manuscript** to convert it into a versioned manuscript, or use Manuscript Assist for line edits
+
+**On failure:**
+
+- The draft card shows an error banner: "Generation failed: {reason}"
+- Two buttons appear: **Retry** (resubmits the job) and **Dismiss** (clears the error)
+- Common failures include model timeouts or invalid LLM responses. Retry usually succeeds.
+
+**Tips for better AI drafts:**
+
+- Write specific briefs — include character names, setting details, and the emotional beat you want
+- Reference established canon — the AI uses your characters' voice notes, world bible entries, and foundation as context
+- If the draft isn't quite right, use Manuscript Assist (Line Edit, Expand, Rewrite) to refine it
+- You can generate multiple drafts for the same scene and compare them before promoting one
+
+---
+
 ### Step 6e: Revision Suggestions
 
 The right panel shows revision suggestions for the active manuscript:
@@ -675,9 +723,58 @@ The right panel shows revision suggestions for the active manuscript:
 4. **Reject** a suggestion to dismiss it
 5. Suggestions can be filtered by status (REQUESTED, PENDING, ACCEPTED, REJECTED)
 
+### Step 6f: Diff Viewer
+
+The Diff Viewer shows a side-by-side comparison of a suggestion's source text versus its proposed replacement.
+
+1. In the **Suggestions** tab, click any suggestion card
+2. The view automatically switches to the **Diff Viewer** tab
+3. Two columns appear: **Source** (left, original text) and **Proposed** (right, suggested text)
+4. Changes are color-coded:
+   - **Red background + strikethrough** (left column): text that would be deleted
+   - **Green background** (right column): text that would be added
+   - **Yellow background**: text that would be replaced
+5. The header shows a summary: number of additions, deletions, and replacements
+
+**Example walkthrough:** Run a Line Edit Selection assist on a paragraph. Click the resulting suggestion. The Diff Viewer shows the original sentence in the left column with words to remove crossed out in red, and the tightened version in the right column with new words highlighted in green. The header reads "2 additions · 1 deletion · 3 replacements."
+
+If no suggestion is selected, the viewer displays: "Select a suggestion to compare. Pick a suggestion from the open list or history to view the source and proposed text side by side."
+
+### Step 6g: History Tab
+
+The History tab shows all revision suggestions across every status, grouped by manuscript document. This is your complete audit trail of suggested changes.
+
+1. Click the **History** tab in the Aids Panel
+2. Suggestions are grouped by target document ID (e.g., `ms-1` for Chapter 1), with a count per group
+3. Use the filter bar to narrow by status:
+   - **All** — every suggestion ever generated
+   - **Requested** / **Pending** — suggestions awaiting your decision
+   - **Accepted** — suggestions you've applied
+   - **Rejected** — suggestions you've dismissed
+   - **Superseded** — suggestions made obsolete by later edits
+4. Each card shows:
+   - Status badge (color-coded: gray=REQUESTED, yellow=PENDING, green=ACCEPTED, red=REJECTED)
+   - Source text (red, strikethrough) → Proposed text (green)
+   - Rationale (italicized explanation of why the change was suggested)
+   - Source context tags (character names, world bible entries that informed the suggestion)
+5. Click any suggestion to open its full diff in the **Diff Viewer** tab
+
+**Example walkthrough:** After running a Developmental Review on Chapter 1, you see 6 suggestions grouped under "ms-1". You accept 3 and reject 2. Later, switch to the History tab, filter by "Accepted", and review which changes were applied. Click a rejected suggestion to re-examine its diff — you decide it was worth reconsidering, so you accept it from the diff view.
+
+### Step 6h: Project Notes in Writing Mode
+
+The Notes panel appears below the Aids Panel in the right sidebar. Notes are available in all workspace modes and persist across sessions.
+
+1. In the **Notes** section, type a note in the "Add a note..." text box
+2. Click **Add** — the note appears in the list below with a timestamp
+3. Notes are stored in your browser's local storage
+4. Notes are project-specific — switching projects shows a different set
+
+**Example walkthrough:** While editing Chapter 1, you add a note: "Elena defers to CERES calculations — keep this consistent through Act 2." The note persists when you switch to Planning mode to adjust character arcs, then back to Writing. When you start Chapter 2, the note is still there as a reminder.
+
 ---
 
-## Phase 6g: State-Aware Narrative Controller (Automatic)
+## Phase 6i: State-Aware Narrative Controller (Automatic)
 
 When you launch a **P-300 Drafter** job, the State-Aware Narrative Controller runs three automatic quality checks. These run in the background and never block or fail your pipeline.
 
@@ -1133,6 +1230,107 @@ The ZIP contains:
 
 ---
 
+## Phase 13: Iterate and Refine
+
+> **Bridge from Phase 12 (Export/Import):** After completing the full lifecycle, you'll want to iterate on your story — modify characters, add new ones, edit generated prose, and regenerate with updated canon. This phase covers the core refinement loop.
+
+**Routes**: `/workspace/:projectId/plan` (Characters tab), `/workspace/:projectId/write` (Writing workspace)
+
+### Step 13a: Modify an Existing Character
+
+Characters evolve as your story develops. The Characters editor supports full in-place editing of any field, with partial updates — you only need to change what you want to modify.
+
+1. Navigate to `/workspace/:projectId/plan` (Planning workspace)
+2. Click the **Characters** tab
+3. Find the character you want to modify and click their card to open the editor
+4. Edit any field — for example, change the **Fatal Flaw** or **Voice Notes**
+5. Click **"Save"** — a confirmation toast appears
+6. Verify the change persisted by re-opening the character card
+
+**What you see:**
+- The character's updated profile is immediately reflected in the card view
+- Field completion counter updates if you fill previously empty fields
+- Character relationships are preserved during edits
+- Only the fields you changed are sent in the PATCH request; blank optional fields are ignored
+
+**Behind the scenes:**
+- The PATCH request sends only non-empty fields to `PATCH /story-development/characters/{id}`
+- Empty strings (`""`) in optional fields are treated as "not provided" and filtered out before validation
+- The backend merges updated fields with existing data, then upserts the complete record into `bible.db`
+- Next P-300 Drafter run will inject the updated profile into Scene Context
+- Consistency Critic will use the new Voice Notes for dialogue checking
+
+**Partial update behavior (verified fix):** Characters created with only the 3 required fields (ID, Display Name, Role) can be edited later without filling all optional fields. The backend's `CharacterProfileUpdateRequest` schema no longer rejects empty strings on optional fields like `external_goal`, `internal_need`, `misbelief_or_wound`, `core_fear`, `primary_strength`, `backstory_summary`, `voice_notes`, or `change_axis`.
+
+### Step 13b: Add a New Character After Initial Setup
+
+You can add characters at any point — before drafting, between drafts, or after generation.
+
+1. In the **Characters** tab, click **"+ New Character"**
+2. Fill in required fields:
+   - **Character ID \*** — stable identifier (lowercase, hyphens for spaces)
+   - **Display Name \*** — how the character appears in UI and generated text
+   - **Role in Story \*** — e.g., "Secondary — Colony Ship Liaison"
+3. Fill optional fields as needed (Voice Notes is most important for generation quality)
+4. Click **"Save"**
+
+**What you see:**
+- The new character appears in the character list immediately
+- The character is available for Scene Context Injection on the next P-300 run
+- If you have ChapterPlan entries, you can add the new character to `active_character_ids`
+
+### Step 13c: Edit a Generated Chapter Manually
+
+Direct manuscript editing lets you establish tone and direction before regenerating.
+
+1. Navigate to `/workspace/:projectId/write` (Writing workspace)
+2. In the left sidebar, click a manuscript document to open it
+3. Click **"Edit"** to enter edit mode (if not already editable)
+4. Click and drag to select text, then type to replace
+5. Changes **auto-save** via PATCH — a save indicator confirms persistence
+
+**What you see:**
+- Live word count and character count update as you edit
+- The manuscript list reflects the updated content
+- Your edits don't overwrite the draft artifacts — they coexist
+
+### Step 13d: Regenerate with Updated Canon
+
+After modifying characters, world bible entries, or the foundation, re-run the generation pipeline.
+
+1. Navigate to `/workspace/:projectId/plan` (Planning workspace)
+2. In the right sidebar, find the **Launch Job** panel
+3. Click the **Drafter** phase button to select it
+4. Click the **play icon** to launch P-300
+
+**What you see:**
+- Job status cycles: `PENDING` → `PROCESSING` → `COMPLETED` (or `FAILED`)
+- Drafting takes 1-5 minutes per chapter depending on model speed
+- The new draft incorporates all updated canon:
+  - Modified character profiles influence behavior and dialogue
+  - New characters are available for Scene Context Injection
+  - Updated world bible entries change the generated world details
+
+**Compare results:**
+1. Switch to **Writing** mode (`/workspace/:projectId/write`)
+2. Open the regenerated chapter from the manuscript list
+3. Compare against your manual edits and previous draft:
+   - Does character behavior reflect profile changes?
+   - Is the tone consistent with your direction?
+   - Are there new passages you prefer over manual edits?
+
+### Troubleshooting Iteration
+
+| Issue | Solution |
+|-------|----------|
+| Character save fails with 422 error on optional fields | **Fixed in v1.7.0.** Earlier builds rejected empty strings (`""`) on optional character fields like `external_goal`, `internal_need`, etc. due to `min_length=1` validation. The fix treats empty strings as "not provided" and skips them. Update your backend if you still see this. |
+| Regenerated chapter doesn't reflect character changes | Verify the character was saved (check for confirmation toast). Clear browser cache if needed. |
+| New character doesn't appear in generated prose | Ensure the character is listed in `active_character_ids` for the relevant ChapterPlan, or leave empty to include all characters. |
+| Manual edits are overwritten by regeneration | Manual edits to manuscripts and draft artifacts are separate. Regeneration creates new draft artifacts; your edited manuscript persists. |
+| P-300 fails after canon changes | Check that foundation Premise and Logline are still filled. Run P-100 Architect first if you made structural changes. |
+
+---
+
 ## Advanced Workflows
 
 ### Workflow A: Full Story Pipeline (Automated Generation)
@@ -1229,7 +1427,7 @@ The right panel includes a notes area:
 ### Job Monitor
 
 The bottom utility layer shows:
-- Active job status (PENDING, RUNNING, COMPLETED, FAILED)
+- Active job status (PENDING, PROCESSING, COMPLETED, FAILED)
 - Progress indicator for long-running jobs
 - Toggle to show/hide the job monitor bar
 
@@ -1311,6 +1509,13 @@ If the inference backend (llama.cpp, LM Studio, vLLM) is not running:
 - **Suggestion shows "blocking" canon risk.** Proposed text contradicts a locked canon fact. Relax the locked field or reject the suggestion.
 - **Fork from Selection creates empty branch.** Ensure selected text is meaningful (at least a paragraph).
 - **Assist runs stay "queued".** Check `GET /health/ready` and verify your inference backend is running.
+
+### AI Draft Generation Issues
+
+- **Draft stays on "Generating..." indefinitely.** Model server may be slow or unreachable. Check `NARRATIVE_INFERENCE_BASE_URL` and model server status. The system polls every 3 seconds.
+- **Generation fails with error banner.** LLM returned invalid JSON or timed out. Click **Retry** — the job resubmits with the same brief. If it fails repeatedly, verify your model supports at least 8000 output tokens.
+- **Generated draft is generic or off-tone.** Your brief was too vague (e.g., "write a scene"). Include character names, setting details, and the emotional beat you want. Also check that your Foundation's Tone and Voice Direction fields are filled out — the AI uses them as context.
+- **Draft doesn't reference established canon.** Ensure your characters have voice notes and world bible entries have canonical facts. The AI pulls from these sources when generating.
 
 ### Branch State Management
 

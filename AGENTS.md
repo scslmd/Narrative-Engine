@@ -40,6 +40,12 @@
 - Prefer the smallest complete change that satisfies the requested contract and validation requirements.
 - When a task is documentation or review only, keep code untouched unless the task explicitly calls for code changes.
 
+## Browser
+
+- **Edge only** — this machine has Microsoft Edge (`msedge.exe`), NOT Google Chrome.
+- Use Playwright browser tools for UI testing/navigation (auto-detects Edge).
+- Do NOT use `chrome-devtools-*` tools — they hardcode paths to `chrome.exe` and will fail, even though Edge is Chromium-based.
+
 ## Quick Start Commands
 
 ### Frontend
