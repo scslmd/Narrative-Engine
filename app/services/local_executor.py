@@ -22,6 +22,7 @@ from .projects import ProjectService
 from .role_model_check_manager import RoleModelCheckManager
 from .role_model_checker import RoleModelCheckerService
 from .runtime_prompts import (
+    build_m500_draft_generation_request,
     build_m500_manuscript_assist_request,
     build_m550_manuscript_repair_request,
     build_g200_story_generation_plan_request,
@@ -1157,6 +1158,31 @@ class LocalExecutor:
             project_artifact_name=artifact_role,
         )
 
+        # Auto-create ManuscriptDocument for single-chapter draft
+        try:
+            effective_chapter_id = chapter_id or "1"
+            from .drafting import DraftingService
+            _ms_drafting = DraftingService(repository=_repo)
+            chapter_title = f"Chapter {effective_chapter_id}"
+            linked_chapter_id = None
+            if _repo and chapter_id:
+                try:
+                    _cp = _repo.get_chapter_plan(chapter_id)
+                    chapter_title = _cp.title or chapter_title
+                    linked_chapter_id = chapter_id
+                except KeyError:
+                    pass
+
+            _ms_drafting.save_manuscript_document(
+                project_id=project_id,
+                document_id=f"ms-{effective_chapter_id}",
+                content=output_text,
+                title=chapter_title,
+                chapter_id=linked_chapter_id,
+            )
+        except Exception as exc:
+            logger.warning("ManuscriptDocument creation failed for single-chapter draft: %s", exc)
+
     def _run_multi_chapter_draft(
         self,
         *,
@@ -2089,6 +2115,7 @@ class LocalExecutor:
         from app.schemas.manuscript_assist import (
             AssistSuggestionStatus,
             LLMRevisionSuggestion,
+            ManuscriptAssistKind,
             ManuscriptAssistPacket,
             ManuscriptAssistRequest,
             TextRange,
@@ -2117,8 +2144,141 @@ class LocalExecutor:
             temperature=request.temperature,
             max_tokens=request.max_tokens,
         )
-        inference_request = build_m500_manuscript_assist_request(packet, default_model=None)
+        # Draft generation path — uses full-content prompt instead of suggestions prompt
+        if request.create_draft_artifact and request.assist_kind == ManuscriptAssistKind.AI_GENERATE_DRAFT:
+            inference_request = build_m500_draft_generation_request(packet, default_model=None)
+        else:
+            inference_request = build_m500_manuscript_assist_request(packet, default_model=None)
+
         inference_response = self._inferencer.generate_text(inference_request)
+
+        # Draft artifact creation path (NEW)
+        if request.create_draft_artifact and request.assist_kind == ManuscriptAssistKind.AI_GENERATE_DRAFT:
+            from app.services.drafting import DraftingService
+
+            extracted = extract_json(inference_response.content)
+            parsed: dict[str, Any] = extracted if isinstance(extracted, dict) else {}
+            full_content = str(parsed.get("full_content") or "").strip()
+            summary = str(parsed.get("summary") or "").strip()
+            warnings = [str(item) for item in parsed.get("warnings", []) if isinstance(item, str)]
+
+            if not full_content:
+                self._story_repository.upsert_manuscript_assist_run(
+                    assist_id=run.assist_id,
+                    project_id=run.project_id,
+                    document_id=run.document_id,
+                    assist_kind=run.assist_kind,
+                    request_json=run.request_json,
+                    status="failed",
+                    summary="LLM response did not contain full_content.",
+                    created_draft_artifact_id=None,
+                    created_branch_id=run.created_branch_id,
+                    created_manuscript_document_id=run.created_manuscript_document_id,
+                    job_ids=run.job_ids,
+                    warnings=warnings,
+                    idempotency_key=run.idempotency_key,
+                    request_hash=run.request_hash,
+                )
+                finished_at = _utcnow()
+                self._step_records.create_step_record(
+                    logical_run_id=str(attempt["logical_run_id"]),
+                    run_id=job_id,
+                    run_kind="pipeline_job",
+                    attempt_number=int(attempt["attempt_number"]),
+                    step_name="manuscript_assist",
+                    step_index=1,
+                    state="FAILED",
+                    project_id=project_id,
+                    model_id=inference_response.model or inference_request.model,
+                    critic_profile=None,
+                    backend_name=self._inferencer.descriptor.display_name,
+                    backend_version=_provider_backend_version(inference_response.raw_response),
+                    input_hash=stable_hash_payload(request_payload),
+                    output_hash=stable_hash_payload({"error": "no full_content in LLM response"}),
+                    prompt_hash=stable_hash_payload(inference_request.model_dump(mode="json")),
+                    input_artifact_refs=["manuscript_document"],
+                    output_artifact_refs=[],
+                    started_at=started_at,
+                    finished_at=finished_at,
+                    finish_reason="invalid_llm_response",
+                    error_code="missing_full_content",
+                    error_category="llm_output",
+                    executor_id="job-worker-local",
+                    lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+                )
+                self._job_manager.update_job(
+                    job_id, status="FAILED", current_phase=current_phase,
+                    current_step="manuscript_assist", error="missing_full_content",
+                    error_category="llm_output", detail="LLM response did not contain full_content key.",
+                    finish_reason="invalid_llm_response", failure_stage="parsing", retryable=True,
+                )
+                return
+
+            title = (document.title or request.instruction.split("\n")[0]).strip()[:255] or "Generated Draft"
+            draft_id = f"draft-{stable_hash_text(f'{run.project_id}:{title}')[:16]}"
+
+            _drafting_repo = StoryDevelopmentRepository(settings.operations_db_path)
+            drafting_svc = DraftingService(repository=_drafting_repo)
+            drafting_svc.register_draft_artifact(
+                project_id=run.project_id,
+                artifact_id=draft_id,
+                title=title,
+                content=full_content,
+                provenance_note=f"AI-generated via assist {assist_id}",
+                status="DRAFT",
+            )
+
+            self._story_repository.upsert_manuscript_assist_run(
+                assist_id=run.assist_id,
+                project_id=run.project_id,
+                document_id=run.document_id,
+                assist_kind=run.assist_kind,
+                request_json=run.request_json,
+                status="completed",
+                summary=summary,
+                created_draft_artifact_id=draft_id,
+                created_branch_id=run.created_branch_id,
+                created_manuscript_document_id=run.created_manuscript_document_id,
+                job_ids=run.job_ids,
+                warnings=warnings,
+                idempotency_key=run.idempotency_key,
+                request_hash=run.request_hash,
+            )
+            finished_at = _utcnow()
+            self._step_records.create_step_record(
+                logical_run_id=str(attempt["logical_run_id"]),
+                run_id=job_id,
+                run_kind="pipeline_job",
+                attempt_number=int(attempt["attempt_number"]),
+                step_name="manuscript_assist",
+                step_index=1,
+                state="COMPLETED",
+                project_id=project_id,
+                model_id=inference_response.model or inference_request.model,
+                critic_profile=None,
+                backend_name=self._inferencer.descriptor.display_name,
+                backend_version=_provider_backend_version(inference_response.raw_response),
+                input_hash=stable_hash_payload(request_payload),
+                output_hash=stable_hash_payload({"draft_artifact_id": draft_id}),
+                prompt_hash=stable_hash_payload(inference_request.model_dump(mode="json")),
+                input_artifact_refs=["manuscript_document"],
+                output_artifact_refs=["draft_artifact"],
+                started_at=started_at,
+                finished_at=finished_at,
+                finish_reason=inference_response.finish_reason or "completed",
+                error_code=None,
+                error_category=None,
+                executor_id="job-worker-local",
+                lease_owner=str(attempt.get("lease_owner") or "job-worker-local"),
+            )
+            self._job_manager.update_job(
+                job_id, status="COMPLETED", current_phase=current_phase,
+                current_step="manuscript_assist",
+                detail=f"Draft artifact {draft_id} created via AI generation.",
+                finish_reason=inference_response.finish_reason or "completed",
+            )
+            return
+
         extracted = extract_json(inference_response.content)
         parsed: dict[str, Any] = extracted if isinstance(extracted, dict) else {}
         summary = str(parsed.get("summary") or "").strip()

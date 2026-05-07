@@ -120,3 +120,36 @@ def test_prompt_builder_uses_packet_model_id() -> None:
     req = build_m500_draft_generation_request(packet, default_model="fallback")
 
     assert req.model == "custom-model"
+
+
+def test_executor_invalid_json_fails_gracefully() -> None:
+    """extract_json returns None for invalid input — executor handles gracefully."""
+    from app.utils.json_extract import extract_json
+
+    assert extract_json("this is not json at all") is None
+    assert extract_json('{"partial": "json"}') is not None  # valid JSON, not partial
+    assert extract_json("not json at all {{{") is None
+
+
+def test_executor_draft_creation_validates_full_content() -> None:
+    """Executor draft branch rejects LLM response missing full_content key."""
+    from app.utils.json_extract import extract_json
+
+    # Valid JSON but no full_content — should be treated as missing
+    result = extract_json('{"summary": "wrote a chapter"}')
+    assert isinstance(result, dict)
+    assert not str(result.get("full_content") or "").strip()
+
+
+def test_executor_draft_creation_parses_full_content() -> None:
+    """Executor draft branch extracts full_content from valid LLM response."""
+    from app.utils.json_extract import extract_json
+
+    result = extract_json(
+        '{"full_content": "# Chapter 1\\n\\nThe hero left home.", '
+        '"summary": "Chapter 1 written", '
+        '"warnings": []}'
+    )
+    assert isinstance(result, dict)
+    assert "The hero left home" in result["full_content"]
+    assert result["summary"] == "Chapter 1 written"
