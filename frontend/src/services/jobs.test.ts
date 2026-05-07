@@ -106,16 +106,16 @@ describe('jobs', () => {
       expect(result.status).toBe('COMPLETED');
     });
 
-    it('returns RUNNING status', async () => {
+    it('returns PROCESSING status', async () => {
       server.use(
         http.get('/jobs/job-running/status', () => {
-          return HttpResponse.json({ ...mockJobStatus, id: 'job-running', status: 'RUNNING' });
+          return HttpResponse.json({ ...mockJobStatus, id: 'job-running', status: 'PROCESSING' });
         }),
       );
 
       const result = await getStatus('job-running');
 
-      expect(result.status).toBe('RUNNING');
+      expect(result.status).toBe('PROCESSING');
     });
 
     it('throws on 404 not found', async () => {
@@ -416,7 +416,7 @@ describe('jobs', () => {
         http.post('/jobs/job-failed/retry', () => {
           return HttpResponse.json({
             run_id: 'job-retry-1',
-            status: 'QUEUED',
+            status: 'PENDING',
           });
         }),
       );
@@ -424,7 +424,7 @@ describe('jobs', () => {
       const result = await retryJob('job-failed');
 
       expect(result.run_id).toBe('job-retry-1');
-      expect(result.status).toBe('QUEUED');
+      expect(result.status).toBe('PENDING');
     });
 
     it('throws on 404 not found', async () => {
