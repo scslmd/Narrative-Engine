@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { DraftList } from './DraftList';
+import { DraftForm } from './DraftForm';
 
 function createProps(overrides = {}) {
   return {
@@ -69,5 +70,54 @@ describe('DraftList', () => {
     }]} />);
     expect(screen.getByText('Existing Draft')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generate with AI/i })).toBeInTheDocument();
+  });
+});
+
+describe('DraftForm AI mode', () => {
+  const baseFormProps = {
+    title: '',
+    content: '',
+    brief: '',
+    isPending: false,
+    mode: 'ai' as const,
+    onTitleChange: vi.fn(),
+    onContentChange: vi.fn(),
+    onBriefChange: vi.fn(),
+    onSubmit: vi.fn(),
+    onCancel: vi.fn(),
+    isDark: false,
+  };
+
+  it('shows brief textarea instead of content textarea in AI mode', () => {
+    render(<DraftForm {...baseFormProps} />);
+    expect(screen.getByPlaceholderText(/Describe what this draft should cover/i)).toBeInTheDocument();
+    const contentTextareas = screen.queryAllByPlaceholderText(/Draft content/i);
+    expect(contentTextareas).toHaveLength(0);
+  });
+
+  it('shows Generate button in AI mode', () => {
+    render(<DraftForm {...baseFormProps} title="Test" />);
+    expect(screen.getByRole('button', { name: /Generate/i })).toBeInTheDocument();
+  });
+
+  it('disables Generate when brief is empty', () => {
+    render(<DraftForm {...baseFormProps} title="Test" />);
+    expect(screen.getByRole('button', { name: /Generate/i })).toBeDisabled();
+  });
+
+  it('enables Generate when brief has content', () => {
+    render(<DraftForm {...baseFormProps} title="Test" brief="Write a chapter" />);
+    expect(screen.getByRole('button', { name: /Generate/i })).toBeEnabled();
+  });
+
+  it('shows content textarea in manual mode (unchanged)', () => {
+    render(<DraftForm {...baseFormProps} mode="manual" />);
+    expect(screen.getByPlaceholderText(/Draft content/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create/i })).toBeInTheDocument();
+  });
+
+  it('displays chapter plan hint when provided', () => {
+    render(<DraftForm {...baseFormProps} chapterPlanHint="The hero journeys to the dark forest." />);
+    expect(screen.getByText(/The hero journeys to the dark forest/i)).toBeInTheDocument();
   });
 });
