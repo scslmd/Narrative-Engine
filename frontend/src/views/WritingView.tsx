@@ -133,6 +133,7 @@ export function WritingView() {
               onPromoteDraft={promoteDraft}
               onContinueDraft={continueDraftAction}
               onAlternateVariant={alternateVariantAction}
+              onGenerateAIDraft={() => {}}
             />
           </div>
         </div>
