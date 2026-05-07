@@ -444,6 +444,59 @@ def build_m550_manuscript_repair_request(
     )
 
 
+def build_m500_draft_generation_request(
+    packet: ManuscriptAssistPacket,
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for full-content draft generation.
+
+    Produces a creative prompt that generates complete prose content
+    matching the brief and canon context. Returns strict JSON with
+    full_content, summary, and warnings keys.
+    """
+    payload = {
+        "assist_id": packet.assist_id,
+        "project_id": packet.project_id,
+        "document_id": packet.document_id,
+        "instruction": packet.instruction,
+        "document_title": packet.document_title,
+        "document_content": packet.document_content,
+    }
+
+    system_prompt = (
+        "You are a draft generator for narrative fiction. "
+        "Generate complete prose content matching the brief and context provided.\n\n"
+        "Return strict JSON only with these keys:\n"
+        "{\n"
+        '  "full_content": "<complete chapter prose in markdown>",\n'
+        '  "summary": "<1-2 sentence summary of what was written>",\n'
+        '  "warnings": ["<any continuity or quality concerns>"]\n'
+        "}\n\n"
+        "Write engaging, complete prose. Do not outline or summarize — write the actual draft.\n"
+        "Use markdown formatting for dialogue and scene breaks."
+    )
+
+    return InferenceRequest(
+        model=packet.model_id or default_model,
+        temperature=packet.temperature if packet.temperature is not None else 0.7,
+        max_tokens=packet.max_tokens if packet.max_tokens is not None else 8000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(
+                role="user",
+                content=json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True),
+            ),
+        ],
+        metadata={
+            "mode": "manuscript_assist_phase",
+            "phase": "M-500",
+            "role": "draft_generator",
+            "assist_id": packet.assist_id,
+            "document_id": packet.document_id,
+        },
+    )
+
+
 def build_import_analysis_request(
     *,
     story_text: str,
