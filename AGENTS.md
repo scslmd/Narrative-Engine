@@ -78,6 +78,49 @@ start_narrative_core.cmd --dev
 - Both modes accept `--host` and `--port` flags.
 - `--skip-build` uses existing `frontend/dist/` without rebuilding.
 
+### Starting the Backend Server (Tool-Based Testing)
+
+Start the backend as a detached background process using `scripts/start-detached.ps1`:
+
+```powershell
+# Start server as a detached process (no freeze)
+# manage-server.ps1 is called automatically — kills orphaned processes, refuses if server is alive
+powershell -ExecutionPolicy Bypass -File scripts\start-detached.ps1 -Command "python -m app.main"
+
+# Wait for server to be ready
+Start-Sleep 4
+
+# Verify (use curl.exe, not PowerShell's curl alias)
+curl.exe -s http://127.0.0.1:8000/health/
+```
+
+- **Use `scripts/start-detached.ps1`** — spawns the server via `WScript.Shell` COM object, which creates a truly independent process outside opencode's process tree. This avoids the child-process tracking freeze (opencode issues #25306, #25360).
+- **Do NOT use** `Start-Process`, `cmd /c start`, or `nohup` — all create tracked child processes that cause opencode to hang waiting for them.
+- Use `curl.exe` (not `curl`, which is PowerShell's `Invoke-WebRequest` alias).
+- Logs go to `C:\Users\SLuh\AppData\Local\Temp\opencode\bg-out.log`.
+- After code changes, kill existing Python processes and restart.
+
+### Server Lifecycle Management
+
+`scripts/manage-server.ps1` manages server instances — detects running servers, kills orphaned processes, and prevents duplicate startups.
+
+```powershell
+# Check server status (running / orphaned / stopped)
+powershell -ExecutionPolicy Bypass -File scripts\manage-server.ps1 -Action check -Port 8000
+
+# Kill server processes (safe — verifies via health endpoint before killing)
+powershell -ExecutionPolicy Bypass -File scripts\manage-server.ps1 -Action kill -Port 8000
+
+# Ensure clean state: kills orphans, refuses if live server exists (exit code 3)
+powershell -ExecutionPolicy Bypass -File scripts\manage-server.ps1 -Action ensure -Port 8000
+```
+
+- **Detection**: Finds Python processes with `-m app.main` in command line, verifies via `/health/` endpoint.
+- **Orphan cleanup**: If a process exists but health check fails, it's killed automatically (`ensure` action).
+- **Live server protection**: If the health endpoint responds, `ensure` exits with code 3 and refuses to start a second instance.
+- **PID file**: `data/state/.narrative_server.pid` (gitignored) — used as a fast-path, but not required for detection.
+- Both `start_narrative_core.cmd` and `start-detached.ps1` call `manage-server.ps1 -Action ensure` automatically before starting.
+
 ### Security and Reliability Focused Tests
 ```bash
 python -m pytest tests/test_input_validation.py

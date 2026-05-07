@@ -95,15 +95,20 @@ if not exist "%ROOT%frontend\dist\index.html" (
 )
 :continue_build
 
-:: Check if port is already in use
-netstat -ano | findstr ":%PORT%.*LISTENING" >nul 2>&1
-if not errorlevel 1 (
+:: Check for existing server instances (kills orphans, refuses if alive)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%scripts\manage-server.ps1" -Action ensure -Port %PORT%
+if errorlevel 3 (
     echo.
-    echo ERROR: Port %PORT% is already in use.
-    echo   - Stop the existing server, or use --port to specify a different port.
-    echo   - Find the process: netstat -ano | findstr ":%PORT%"
+    echo ERROR: Server already running on port %PORT%.
+    echo   - Stop it: powershell -ExecutionPolicy Bypass -File scripts\manage-server.ps1 -Action kill -Port %PORT%
+    echo   - Or use --port to specify a different port.
     echo.
     exit /b 1
+)
+if errorlevel 1 (
+    echo.
+    echo WARNING: Orphaned server process was cleaned up.
+    echo.
 )
 
 :: Start uvicorn in current window
@@ -125,6 +130,16 @@ goto :eof
 echo.
 echo Starting in development mode (hot-reload enabled) ...
 echo.
+
+:: Check for existing server on backend port
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%scripts\manage-server.ps1" -Action ensure -Port %PORT%
+if errorlevel 3 (
+    echo.
+    echo ERROR: Server already running on port %PORT%. Stop it before dev mode.
+    echo   powershell -ExecutionPolicy Bypass -File scripts\manage-server.ps1 -Action kill -Port %PORT%
+    echo.
+    exit /b 1
+)
 
 :: Check npm availability for frontend dev server
 where npm >nul 2>&1
