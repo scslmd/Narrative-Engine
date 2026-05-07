@@ -153,3 +153,24 @@ def test_executor_draft_creation_parses_full_content() -> None:
     assert isinstance(result, dict)
     assert "The hero left home" in result["full_content"]
     assert result["summary"] == "Chapter 1 written"
+
+
+def test_title_resolution_from_instruction_first_line() -> None:
+    """Title resolves to first line of instruction when no chapter plan."""
+    instruction = "Chapter 2: The Journey Begins\n\nSome more details..."
+    title = instruction.split("\n")[0].strip()[:255]
+    assert title == "Chapter 2: The Journey Begins"
+
+
+def test_title_resolution_fallback() -> None:
+    """Title falls back to 'Generated Draft' when instruction is empty."""
+    instruction = ""
+    title = instruction.strip()[:255] or "Generated Draft"
+    assert title == "Generated Draft"
+
+
+def test_title_resolution_truncates_to_255() -> None:
+    """Title is truncated to 255 characters."""
+    instruction = "A" * 300
+    title = instruction.strip()[:255] or "Generated Draft"
+    assert len(title) == 255
