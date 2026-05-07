@@ -23,6 +23,7 @@ export type ManuscriptAssistKind =
   | 'fork_from_selection'
   | 'generate_next_chapter'
   | 'generate_alternate_chapter'
+  | 'ai_generate_draft'
   | 'continuity_repair';
 
 export interface ManuscriptAssistRequest {

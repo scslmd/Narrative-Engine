@@ -6,7 +6,7 @@ export interface DraftArtifact {
   source_plan_ids: string[];
   source_context: string[];
   provenance_note: string | null;
-  status: 'DRAFT' | 'PROPOSED' | 'CANONICAL' | 'SUPERSEDED' | 'REJECTED' | 'ARCHIVED';
+  status: 'DRAFT' | 'PROPOSED' | 'CANONICAL' | 'SUPERSEDED' | 'REJECTED' | 'ARCHIVED' | 'PENDING';
 }
 
 export interface ManuscriptDocument {

@@ -200,7 +200,7 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
       return submitManuscriptAssist({
         project_id: projectId,
         document_id: selectedDocumentId,
-        assist_kind: 'generate_next_chapter',
+        assist_kind: 'ai_generate_draft',
         instruction: data.brief,
         create_draft_artifact: true,
       });
