@@ -1186,6 +1186,35 @@ def _configure_connection(connection: sqlite3.Connection) -> None:
     connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
 
 
+def _drop_tables_with_stale_legacy_fks(connection: sqlite3.Connection) -> None:
+    """Drop tables whose CREATE SQL references dropped __legacy tables.
+
+    After a schema rebuild, dependent tables may retain FOREIGN KEY clauses
+    pointing to the old *__legacy* names.  Because those tables no longer
+    exist, every INSERT/UPDATE on the stale table fails with
+    ``OperationalError: no such table: main.<name>__legacy``.
+
+    This is a one-time repair: the tables are dropped so that the subsequent
+    ``CREATE TABLE IF NOT EXISTS`` from OPERATIONS_SCHEMA recreates them
+    with correct FK targets.  Data in affected tables is lost, but those
+    tables were unusable anyway.
+    """
+    rows = connection.execute(
+        "SELECT name, sql FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE '%__legacy'"
+    ).fetchall()
+    stale = [name for name, sql in rows if sql and "__legacy" in sql]
+    if not stale:
+        return
+    # Disable FK enforcement so DROP works even when referenced tables are gone
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        for name in stale:
+            connection.execute(f"DROP TABLE IF EXISTS {name}")
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
+
+
 def _migrate_operations_db(connection: sqlite3.Connection) -> None:
     version = _get_user_version(connection)
     if version == 0:
@@ -1199,6 +1228,7 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
         _set_user_version(connection, OPERATIONS_DB_VERSION)
         return
 
+    _drop_tables_with_stale_legacy_fks(connection)
     _migrate_chapter_plans_add_target_word_count(connection)
     _migrate_character_profiles_add_deep_analysis(connection)
     _migrate_planning_artifacts_add_provenance_fields(connection)
@@ -1208,6 +1238,8 @@ def _migrate_operations_db(connection: sqlite3.Connection) -> None:
 
 
 def _migrate_chapter_plans_add_target_word_count(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "chapter_plans"):
+        return
     if not _column_exists(connection, "chapter_plans", "target_word_count"):
         connection.execute("ALTER TABLE chapter_plans ADD COLUMN target_word_count INTEGER")
         connection.commit()
@@ -1215,6 +1247,8 @@ def _migrate_chapter_plans_add_target_word_count(connection: sqlite3.Connection)
 
 def _migrate_character_profiles_add_deep_analysis(connection: sqlite3.Connection) -> None:
     """Add deep character analysis columns for multi-pass story import."""
+    if not _table_exists(connection, "character_profiles"):
+        return
     columns = [
         ("aliases_json", "TEXT NOT NULL DEFAULT '[]'"),
         ("physical_description", "TEXT"),
@@ -1250,6 +1284,8 @@ def _migrate_planning_artifacts_add_provenance_fields(connection: sqlite3.Connec
     )
     added = False
     for table_name in planning_tables:
+        if not _table_exists(connection, table_name):
+            continue
         if not _column_exists(connection, table_name, "provenance_note"):
             connection.execute(f"ALTER TABLE {table_name} ADD COLUMN provenance_note TEXT")
             added = True

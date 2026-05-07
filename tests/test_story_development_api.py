@@ -589,6 +589,51 @@ def test_story_development_api_character_endpoints(tmp_path: Path) -> None:
     assert not_found_response.status_code == 404
 
 
+def test_character_update_with_empty_optional_fields(tmp_path: Path) -> None:
+    """PATCH with empty strings for optional fields must not fail with 422.
+
+    Regression test: CharacterProfileUpdateRequest had min_length=1 on all
+    str | None fields, which rejected empty strings from the frontend form.
+    Optional fields should accept empty strings (treated as no-change).
+    """
+    client, _repository = _build_client(tmp_path)
+    project_id = "story-dev-api"
+
+    # Create character with only required fields
+    create_payload = {
+        "project_id": project_id,
+        "character_id": "minimal-char",
+        "display_name": "Minimal Character",
+        "role_in_story": "Supporting",
+    }
+    create_response = client.post("/story-development/characters", json=create_payload)
+    assert create_response.status_code == 201
+
+    # Update one field while sending empty strings for other optional fields
+    update_payload = {
+        "display_name": "",
+        "role_in_story": "",
+        "archetype": "",
+        "external_goal": "",
+        "internal_need": "",
+        "misbelief_or_wound": "",
+        "core_fear": "",
+        "primary_strength": "",
+        "fatal_flaw_or_limitation": "New flaw value",
+        "backstory_summary": "",
+        "voice_notes": "",
+        "change_axis": "",
+    }
+    update_response = client.patch(
+        f"/story-development/characters/minimal-char?project_id={project_id}",
+        json=update_payload,
+    )
+    assert update_response.status_code == 200, (
+        f"Expected 200 but got {update_response.status_code}: {update_response.text}"
+    )
+    assert update_response.json()["fatal_flaw_or_limitation"] == "New flaw value"
+
+
 def test_story_development_api_relationship_endpoints(tmp_path: Path) -> None:
     """Test relationship create and list endpoints."""
     client, repository = _build_client(tmp_path)

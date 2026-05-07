@@ -229,13 +229,13 @@ class FoundationProfile(StrictSchemaModel):
     project_id: str = Field(min_length=1)
     premise: str = Field(min_length=1)
     logline: str = Field(min_length=1)
-    thematic_spine: str = Field(min_length=1)
-    emotional_promise: str = Field(min_length=1)
-    tone_and_voice_direction: str = Field(min_length=1)
-    target_audience: str = Field(min_length=1)
+    thematic_spine: str = ""
+    emotional_promise: str = ""
+    tone_and_voice_direction: str = ""
+    target_audience: str = ""
     narrative_constraints: list[str] = Field(default_factory=list)
-    complexity_level: str = Field(min_length=1)
-    success_definition: str = Field(min_length=1)
+    complexity_level: str = ""
+    success_definition: str = ""
     version: int = Field(default=1, ge=1)
 
     @model_validator(mode="before")
@@ -250,6 +250,10 @@ class FoundationProfile(StrictSchemaModel):
             "project_id",
             "premise",
             "logline",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in (
             "thematic_spine",
             "emotional_promise",
             "tone_and_voice_direction",
@@ -257,8 +261,8 @@ class FoundationProfile(StrictSchemaModel):
             "complexity_level",
             "success_definition",
         ):
-            if field_name in payload:
-                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+            if field_name in payload and isinstance(payload[field_name], str):
+                payload[field_name] = payload[field_name].strip()
         payload["narrative_constraints"] = _normalize_text_list(
             payload.get("narrative_constraints", []),
             field_name="narrative_constraints",
@@ -323,21 +327,21 @@ class CharacterProfile(StrictSchemaModel):
     project_id: str = Field(min_length=1)
     display_name: str = Field(min_length=1)
     role_in_story: str = Field(min_length=1)
-    archetype: str = Field(min_length=1)
-    external_goal: str = Field(min_length=1)
-    internal_need: str = Field(min_length=1)
-    misbelief_or_wound: str = Field(min_length=1)
-    core_fear: str = Field(min_length=1)
-    primary_strength: str = Field(min_length=1)
-    fatal_flaw_or_limitation: str = Field(min_length=1)
+    archetype: str = ""
+    external_goal: str = ""
+    internal_need: str = ""
+    misbelief_or_wound: str = ""
+    core_fear: str = ""
+    primary_strength: str = ""
+    fatal_flaw_or_limitation: str = ""
     contradictions: list[str] = Field(default_factory=list)
-    backstory_summary: str = Field(min_length=1)
-    voice_notes: str = Field(min_length=1)
+    backstory_summary: str = ""
+    voice_notes: str = ""
     relationship_edges: list[RelationshipEdge] = Field(default_factory=list)
     secrets: list[str] = Field(default_factory=list)
     values: list[str] = Field(default_factory=list)
     taboos: list[str] = Field(default_factory=list)
-    change_axis: str = Field(min_length=1)
+    change_axis: str = ""
     arc_stage_notes: list[str] = Field(default_factory=list)
     continuity_facts: list[str] = Field(default_factory=list)
     writer_notes: str | None = None
@@ -354,6 +358,10 @@ class CharacterProfile(StrictSchemaModel):
             "project_id",
             "display_name",
             "role_in_story",
+        ):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in (
             "archetype",
             "external_goal",
             "internal_need",
@@ -365,8 +373,8 @@ class CharacterProfile(StrictSchemaModel):
             "voice_notes",
             "change_axis",
         ):
-            if field_name in payload:
-                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+            if field_name in payload and isinstance(payload[field_name], str):
+                payload[field_name] = payload[field_name].strip()
         for field_name in ("contradictions", "secrets", "values", "taboos", "arc_stage_notes", "continuity_facts"):
             payload[field_name] = _normalize_text_list(payload.get(field_name, []), field_name=field_name)
         if "writer_notes" in payload:

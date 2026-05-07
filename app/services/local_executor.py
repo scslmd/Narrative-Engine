@@ -1175,7 +1175,7 @@ class LocalExecutor:
 
             _ms_drafting.save_manuscript_document(
                 project_id=project_id,
-                document_id=f"ms-{effective_chapter_id}",
+                document_id=f"ms-{project_id}-ch{effective_chapter_id}",
                 content=output_text,
                 title=chapter_title,
                 chapter_id=linked_chapter_id,
@@ -1437,7 +1437,7 @@ class LocalExecutor:
 
                 _drafting_service.save_manuscript_document(
                     project_id=project_id,
-                    document_id=f"ms-{safe_chapter_id}",
+                    document_id=f"ms-{project_id}-ch{safe_chapter_id}",
                     content=output_text,
                     title=chapter_title,
                     chapter_id=safe_chapter_id,

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.persistence import ProjectProjection, ProjectRepository
+from app.schemas.manifest import Manifest
 from app.schemas.projects import (
     ProjectArtifactResponse,
     ProjectCreateRequest,
@@ -198,6 +199,29 @@ class ProjectService:
 
     def register_generated_artifact(self, project_id: str, artifact_name: str, artifact_path: Path) -> None:
         self.repository.register_artifact_path(project_id, artifact_name, artifact_path)
+
+    def load_manifest(self, project_id: str) -> dict:
+        """Read and parse the manifest.json file, returning a dict with updated_at.
+        
+        Returns a dict matching the frontend ManifestData interface:
+        { project_id, project_name, config, constraints, premise_text, updated_at }
+        
+        Raises:
+            FileNotFoundError: If manifest doesn't exist
+        """
+        projection = self._require_projection(project_id)
+        manifest_path = projection.manifest_path
+        
+        if manifest_path is None or not manifest_path.exists():
+            raise FileNotFoundError(f"Manifest not found for project_id={project_id}")
+        
+        content = manifest_path.read_text(encoding="utf-8")
+        parsed = json.loads(content)
+        manifest = Manifest(**parsed)
+        
+        result = manifest.model_dump()
+        result["updated_at"] = _file_timestamp(manifest_path).isoformat()
+        return result
 
     def _require_projection(self, project_id: str) -> ProjectProjection:
         projection = self.repository.get_project_projection(project_id)

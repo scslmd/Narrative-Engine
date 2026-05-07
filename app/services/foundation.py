@@ -50,6 +50,12 @@ def _normalize_optional_text(value: object | None, *, field_name: str) -> str | 
     return _normalize_text(value, field_name=field_name)
 
 
+def _lenient_text(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+    return value.strip()
+
+
 def _normalize_text_list(value: object, *, field_name: str) -> tuple[str, ...]:
     if value is None:
         return ()
@@ -114,15 +120,15 @@ class FoundationProfileInput:
         return cls(
             premise=_normalize_text(payload["premise"], field_name="premise"),
             logline=_normalize_text(payload["logline"], field_name="logline"),
-            thematic_spine=_normalize_text(payload["thematic_spine"], field_name="thematic_spine"),
-            emotional_promise=_normalize_text(payload["emotional_promise"], field_name="emotional_promise"),
-            tone_and_voice_direction=_normalize_text(
-                payload["tone_and_voice_direction"], field_name="tone_and_voice_direction"
+            thematic_spine=_lenient_text(payload.get("thematic_spine", ""), field_name="thematic_spine"),
+            emotional_promise=_lenient_text(payload.get("emotional_promise", ""), field_name="emotional_promise"),
+            tone_and_voice_direction=_lenient_text(
+                payload.get("tone_and_voice_direction", ""), field_name="tone_and_voice_direction"
             ),
-            target_audience=_normalize_text(payload["target_audience"], field_name="target_audience"),
+            target_audience=_lenient_text(payload.get("target_audience", ""), field_name="target_audience"),
             narrative_constraints=_normalize_text_list(payload.get("narrative_constraints", ()), field_name="narrative_constraints"),
-            complexity_level=_normalize_text(payload["complexity_level"], field_name="complexity_level"),
-            success_definition=_normalize_text(payload["success_definition"], field_name="success_definition"),
+            complexity_level=_lenient_text(payload.get("complexity_level", ""), field_name="complexity_level"),
+            success_definition=_lenient_text(payload.get("success_definition", ""), field_name="success_definition"),
         )
 
     @classmethod

@@ -467,13 +467,6 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
         except Exception as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @app.get('/projects/{project_id}/manifest', response_model=ProjectArtifactResponse)
-    def get_manifest(project_id: str) -> ProjectArtifactResponse:
-        try:
-            return project_service.read_artifact(project_id, 'manifest')
-        except Exception as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
     @app.get('/projects/{project_id}/sequence', response_model=ProjectArtifactResponse)
     def get_sequence(project_id: str) -> ProjectArtifactResponse:
         try:
@@ -578,3 +571,12 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
         app.middleware('http')(spa_catch_all_middleware)
 
     return app
+
+
+app = build_app()
+
+
+if __name__ == '__main__':
+    import uvicorn
+
+    uvicorn.run(app, host='127.0.0.1', port=8000)

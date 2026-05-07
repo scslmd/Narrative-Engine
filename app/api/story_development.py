@@ -402,13 +402,13 @@ class FoundationCreateRequest(StrictModel):
     project_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
     premise: str = Field(..., min_length=1, max_length=10000)
     logline: str = Field(..., min_length=1, max_length=500)
-    thematic_spine: str = Field(..., min_length=1, max_length=2000)
-    emotional_promise: str = Field(..., min_length=1, max_length=2000)
-    tone_and_voice_direction: str = Field(..., min_length=1, max_length=2000)
-    target_audience: str = Field(..., min_length=1, max_length=500)
+    thematic_spine: str = Field(default="", max_length=2000)
+    emotional_promise: str = Field(default="", max_length=2000)
+    tone_and_voice_direction: str = Field(default="", max_length=2000)
+    target_audience: str = Field(default="", max_length=500)
     narrative_constraints: list[str] = Field(default_factory=list)
-    complexity_level: str = Field(..., min_length=1, max_length=50)
-    success_definition: str = Field(..., min_length=1, max_length=2000)
+    complexity_level: str = Field(default="", max_length=50)
+    success_definition: str = Field(default="", max_length=2000)
 
 
 class FoundationUpdateRequest(StrictModel):
@@ -665,42 +665,42 @@ class CharacterProfileCreateRequest(StrictModel):
     character_id: str = Field(..., min_length=1, max_length=255, pattern=r'^[a-zA-Z0-9_-]+$')
     display_name: str = Field(..., min_length=1, max_length=255)
     role_in_story: str = Field(..., min_length=1, max_length=255)
-    archetype: str = Field(..., min_length=1, max_length=100)
-    external_goal: str = Field(..., min_length=1, max_length=2000)
-    internal_need: str = Field(..., min_length=1, max_length=2000)
-    misbelief_or_wound: str = Field(..., min_length=1, max_length=2000)
-    core_fear: str = Field(..., min_length=1, max_length=1000)
-    primary_strength: str = Field(..., min_length=1, max_length=1000)
-    fatal_flaw_or_limitation: str = Field(..., min_length=1, max_length=1000)
+    archetype: str = Field(default="", max_length=100)
+    external_goal: str = Field(default="", max_length=2000)
+    internal_need: str = Field(default="", max_length=2000)
+    misbelief_or_wound: str = Field(default="", max_length=2000)
+    core_fear: str = Field(default="", max_length=1000)
+    primary_strength: str = Field(default="", max_length=1000)
+    fatal_flaw_or_limitation: str = Field(default="", max_length=1000)
     contradictions: list[str] = Field(default_factory=list)
-    backstory_summary: str = Field(..., min_length=1, max_length=5000)
-    voice_notes: str = Field(..., min_length=1, max_length=2000)
+    backstory_summary: str = Field(default="", max_length=5000)
+    voice_notes: str = Field(default="", max_length=2000)
     secrets: list[str] = Field(default_factory=list)
     values: list[str] = Field(default_factory=list)
     taboos: list[str] = Field(default_factory=list)
-    change_axis: str = Field(..., min_length=1, max_length=1000)
+    change_axis: str = Field(default="", max_length=1000)
     arc_stage_notes: list[str] = Field(default_factory=list)
     continuity_facts: list[str] = Field(default_factory=list)
     writer_notes: str | None = Field(None, max_length=5000)
 
 
 class CharacterProfileUpdateRequest(StrictModel):
-    display_name: str | None = Field(None, min_length=1, max_length=255)
-    role_in_story: str | None = Field(None, min_length=1, max_length=255)
-    archetype: str | None = Field(None, min_length=1, max_length=100)
-    external_goal: str | None = Field(None, min_length=1, max_length=2000)
-    internal_need: str | None = Field(None, min_length=1, max_length=2000)
-    misbelief_or_wound: str | None = Field(None, min_length=1, max_length=2000)
-    core_fear: str | None = Field(None, min_length=1, max_length=1000)
-    primary_strength: str | None = Field(None, min_length=1, max_length=1000)
-    fatal_flaw_or_limitation: str | None = Field(None, min_length=1, max_length=1000)
+    display_name: str | None = Field(None, max_length=255)
+    role_in_story: str | None = Field(None, max_length=255)
+    archetype: str | None = Field(None, max_length=100)
+    external_goal: str | None = Field(None, max_length=2000)
+    internal_need: str | None = Field(None, max_length=2000)
+    misbelief_or_wound: str | None = Field(None, max_length=2000)
+    core_fear: str | None = Field(None, max_length=1000)
+    primary_strength: str | None = Field(None, max_length=1000)
+    fatal_flaw_or_limitation: str | None = Field(None, max_length=1000)
     contradictions: list[str] | None = None
-    backstory_summary: str | None = Field(None, min_length=1, max_length=5000)
-    voice_notes: str | None = Field(None, min_length=1, max_length=2000)
+    backstory_summary: str | None = Field(None, max_length=5000)
+    voice_notes: str | None = Field(None, max_length=2000)
     secrets: list[str] | None = None
     values: list[str] | None = None
     taboos: list[str] | None = None
-    change_axis: str | None = Field(None, min_length=1, max_length=1000)
+    change_axis: str | None = Field(None, max_length=1000)
     arc_stage_notes: list[str] | None = None
     continuity_facts: list[str] | None = None
     writer_notes: str | None = Field(None, max_length=5000)
@@ -2180,7 +2180,7 @@ def build_story_development_router(
                 ],
                 created_revision=result.created_revision,
             )
-        except FoundationValidationError as exc:
+        except (FoundationValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.patch("/foundation", response_model=FoundationWriteResponse)
@@ -2222,7 +2222,7 @@ def build_story_development_router(
             )
         except FoundationNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Foundation not found.") from exc
-        except FoundationValidationError as exc:
+        except (FoundationValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/foundation/revisions", response_model=FoundationRevisionListResponse)
@@ -2302,7 +2302,7 @@ def build_story_development_router(
                 continuity_facts=payload.continuity_facts,
                 writer_notes=payload.writer_notes,
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.patch("/characters/{character_id}", response_model=CharacterProfile)
@@ -2330,7 +2330,7 @@ def build_story_development_router(
                     ("arc_stage_notes", payload.arc_stage_notes),
                     ("continuity_facts", payload.continuity_facts),
                     ("writer_notes", payload.writer_notes),
-                ) if value is not None
+                ) if value is not None and not (isinstance(value, str) and not value.strip())
             }
             if not updates:
                 raise HTTPException(status_code=400, detail="At least one field must be provided for update.")
@@ -2351,7 +2351,7 @@ def build_story_development_router(
             return story_knowledge_service.upsert_character_profile(project_id, **upsert_fields)
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Character not found.") from exc
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/characters/{character_id}/relationships", response_model=RelationshipEdgeListResponse)
@@ -2364,7 +2364,7 @@ def build_story_development_router(
                 items=relationships,
                 meta={"ordered_by": "edge_id_asc"},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/relationships", response_model=RelationshipEdge, status_code=201)
@@ -2381,7 +2381,7 @@ def build_story_development_router(
                 tension=payload.tension,
                 notes=payload.notes,
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/relationships", response_model=RelationshipEdgeListResponse)
@@ -2394,7 +2394,7 @@ def build_story_development_router(
                 items=relationships,
                 meta={"ordered_by": "edge_id_asc"},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.patch("/relationships/{edge_id}", response_model=RelationshipEdge)
@@ -2421,7 +2421,7 @@ def build_story_development_router(
             )
         except HTTPException:
             raise
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.delete("/relationships/{edge_id}", status_code=200)
@@ -2432,7 +2432,7 @@ def build_story_development_router(
             return {"status": "deleted", "edge_id": edge_id}
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Relationship not found.") from exc
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # ============================================================================
@@ -2478,7 +2478,7 @@ def build_story_development_router(
                 continuity_warnings=payload.continuity_warnings,
                 writer_notes=payload.writer_notes,
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.patch("/world-bible/{entry_type}/{title}", response_model=WorldBibleEntry)
@@ -2527,7 +2527,7 @@ def build_story_development_router(
             )
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="World bible entry not found.") from exc
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # ============================================================================
@@ -2544,7 +2544,7 @@ def build_story_development_router(
                 items=candidates,
                 meta={"ordered_by": "candidate_id_asc"},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/arcs/selections", response_model=ArcSelectionListResponse)
@@ -2567,7 +2567,7 @@ def build_story_development_router(
                 items=stage_maps,
                 meta={"ordered_by": "stage_id_asc"},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.get("/arcs/comparisons", response_model=ArcComparisonListResponse)
@@ -2585,7 +2585,7 @@ def build_story_development_router(
                 items=flat,
                 meta={"ordered_by": "created_at_desc"},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/arcs/candidates", response_model=ArcCandidate, status_code=201)
@@ -2602,7 +2602,7 @@ def build_story_development_router(
                 tags=payload.tags,
             )
             return candidate
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/arcs/comparisons", response_model=ArcCandidateListResponse)
@@ -2633,7 +2633,7 @@ def build_story_development_router(
                 items=[c.candidate for c in ranked_candidates],
                 meta={"comparison_count": str(len(comparisons))},
             )
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/arcs/selections", response_model=ArcSelection, status_code=201)
@@ -2668,7 +2668,7 @@ def build_story_development_router(
                 stage_map=stage_map,
             )
             return selection
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.patch("/arcs/selections/{selection_id}", response_model=ArcSelection)
@@ -2698,7 +2698,7 @@ def build_story_development_router(
             return updated
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Arc selection not found.") from exc
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.delete("/arcs/selections/{selection_id}", status_code=200)
@@ -2723,7 +2723,7 @@ def build_story_development_router(
             return stage_map
         except StoryKnowledgeNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Arc candidate not found for stage map.") from exc
-        except StoryKnowledgeValidationError as exc:
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # ============================================================================

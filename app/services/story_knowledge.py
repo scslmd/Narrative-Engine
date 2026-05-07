@@ -75,19 +75,19 @@ class StoryKnowledgeService:
             character_id=normalized_character_id,
             display_name=self._normalize_text(display_name, field_name="display_name"),
             role_in_story=self._normalize_text(role_in_story, field_name="role_in_story"),
-            archetype=self._normalize_text(archetype, field_name="archetype"),
-            external_goal=self._normalize_text(external_goal, field_name="external_goal"),
-            internal_need=self._normalize_text(internal_need, field_name="internal_need"),
-            misbelief_or_wound=self._normalize_text(misbelief_or_wound, field_name="misbelief_or_wound"),
-            core_fear=self._normalize_text(core_fear, field_name="core_fear"),
-            primary_strength=self._normalize_text(primary_strength, field_name="primary_strength"),
-            fatal_flaw_or_limitation=self._normalize_text(
+            archetype=self._lenient_text(archetype, field_name="archetype"),
+            external_goal=self._lenient_text(external_goal, field_name="external_goal"),
+            internal_need=self._lenient_text(internal_need, field_name="internal_need"),
+            misbelief_or_wound=self._lenient_text(misbelief_or_wound, field_name="misbelief_or_wound"),
+            core_fear=self._lenient_text(core_fear, field_name="core_fear"),
+            primary_strength=self._lenient_text(primary_strength, field_name="primary_strength"),
+            fatal_flaw_or_limitation=self._lenient_text(
                 fatal_flaw_or_limitation,
                 field_name="fatal_flaw_or_limitation",
             ),
             contradictions=self._normalize_text_list(contradictions, field_name="contradictions"),
-            backstory_summary=self._normalize_text(backstory_summary, field_name="backstory_summary"),
-            voice_notes=self._normalize_text(voice_notes, field_name="voice_notes"),
+            backstory_summary=self._lenient_text(backstory_summary, field_name="backstory_summary"),
+            voice_notes=self._lenient_text(voice_notes, field_name="voice_notes"),
             relationship_map=[
                 edge.edge_id
                 for edge in self.repository.list_relationship_edges_for_character(normalized_project_id, normalized_character_id)
@@ -95,7 +95,7 @@ class StoryKnowledgeService:
             secrets=self._normalize_text_list(secrets, field_name="secrets"),
             values=self._normalize_text_list(values, field_name="values"),
             taboos=self._normalize_text_list(taboos, field_name="taboos"),
-            change_axis=self._normalize_text(change_axis, field_name="change_axis"),
+            change_axis=self._lenient_text(change_axis, field_name="change_axis"),
             arc_stage_notes="\n".join(normalized_arc_stage_notes) if normalized_arc_stage_notes else None,
             continuity_facts=self._normalize_text_list(continuity_facts, field_name="continuity_facts"),
             writer_notes=self._normalize_optional_text(writer_notes, field_name="writer_notes"),
@@ -873,7 +873,14 @@ class StoryKnowledgeService:
     def _normalize_optional_text(self, value: object | None, *, field_name: str) -> str | None:
         if value is None:
             return None
+        if isinstance(value, str) and not value.strip():
+            return None
         return self._normalize_text(value, field_name=field_name)
+
+    def _lenient_text(self, value: object, *, field_name: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError(f"{field_name} must be a string")
+        return value.strip()
 
     def _normalize_text_list(self, values: Sequence[str] | None, *, field_name: str) -> list[str]:
         if values is None:

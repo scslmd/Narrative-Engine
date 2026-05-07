@@ -132,10 +132,10 @@ def build_projects_router(
         except Exception as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    @router.get("/{project_id}/manifest", response_model=ProjectArtifactResponse)
-    def get_manifest(project_id: str) -> ProjectArtifactResponse:
+    @router.get("/{project_id}/manifest")
+    def get_manifest(project_id: str) -> dict:
         try:
-            return project_service.read_artifact(project_id, "manifest")
+            return project_service.load_manifest(project_id)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
