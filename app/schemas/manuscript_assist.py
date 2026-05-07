@@ -25,6 +25,7 @@ class ManuscriptAssistKind(str, Enum):
     GENERATE_NEXT_CHAPTER = "generate_next_chapter"
     GENERATE_ALTERNATE_CHAPTER = "generate_alternate_chapter"
     CONTINUITY_REPAIR = "continuity_repair"
+    AI_GENERATE_DRAFT = "ai_generate_draft"
 
 
 class ManuscriptAssistStatus(str, Enum):
