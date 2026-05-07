@@ -3,6 +3,7 @@ import { FileText, BookOpen, Code } from 'lucide-react';
 import { AidsPanel } from '../components/aids/AidsPanel';
 import { ManuscriptList } from '../components/writing/ManuscriptList';
 import { DraftList } from '../components/writing/DraftList';
+import { DraftForm } from '../components/writing/DraftForm';
 import { ManuscriptEditor } from '../components/writing/ManuscriptEditor';
 import { useWritingView } from '../hooks/useWritingView';
 import { useManuscriptAssist } from '../hooks/useManuscriptAssist';
@@ -49,6 +50,12 @@ export function WritingView() {
     continueDraftAction,
     alternateVariantAction,
     createDraftPending,
+    draftFormAI,
+    pendingDrafts,
+    setDraftFormAI,
+    handleGenerateDraftForm,
+    handleGenerateDraft,
+    generateDraftPending,
   } = useWritingView(isDark);
   const assist = useManuscriptAssist({
     projectId,
@@ -133,8 +140,39 @@ export function WritingView() {
               onPromoteDraft={promoteDraft}
               onContinueDraft={continueDraftAction}
               onAlternateVariant={alternateVariantAction}
-              onGenerateAIDraft={() => {}}
+              onGenerateAIDraft={handleGenerateDraftForm}
             />
+
+            {Object.keys(pendingDrafts).length > 0 && (
+              <div className={`text-[10px] px-1.5 py-1 rounded ${isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                {Object.values(pendingDrafts).map((pd) => (
+                  <div key={pd.assistId} className="flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
+                    {pd.error ? (
+                      <span className="text-red-400">{pd.title} — {pd.error}</span>
+                    ) : (
+                      <span>{pd.title}...</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {draftFormAI && (
+              <DraftForm
+                title={draftFormAI.title}
+                content=""
+                brief={draftFormAI.brief}
+                isPending={generateDraftPending}
+                mode="ai"
+                onTitleChange={(title) => setDraftFormAI({ ...draftFormAI, title })}
+                onContentChange={() => {}}
+                onBriefChange={(brief) => setDraftFormAI({ ...draftFormAI, brief })}
+                onSubmit={handleGenerateDraft}
+                onCancel={() => setDraftFormAI(null)}
+                isDark={isDark}
+              />
+            )}
           </div>
         </div>
       </div>

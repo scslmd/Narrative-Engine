@@ -13,6 +13,7 @@ import {
   continueDraft,
   createAlternateVariant,
 } from '../services/drafting';
+import { submitManuscriptAssist } from '../services/manuscriptAssist';
 import type { ManuscriptDocument, DraftArtifact } from '../types/drafting';
 import type { RevisionSuggestion } from '../types/aids';
 import { toast } from '../lib/toast';
@@ -20,6 +21,19 @@ import { toast } from '../lib/toast';
 export interface DraftFormState {
   title: string;
   content: string;
+}
+
+export interface DraftFormAIState {
+  title: string;
+  brief: string;
+  mode: 'ai';
+}
+
+export interface PendingDraftInfo {
+  artifact_id: string;
+  title: string;
+  assistId: string;
+  error?: string;
 }
 
 export interface WritingViewHookResult {
@@ -60,6 +74,12 @@ export interface WritingViewHookResult {
   alternatePending: boolean;
   continueDraftAction: (artifactId: string) => void;
   alternateVariantAction: (artifactId: string) => void;
+  draftFormAI: DraftFormAIState | null;
+  pendingDrafts: Record<string, PendingDraftInfo>;
+  setDraftFormAI: (form: DraftFormAIState | null) => void;
+  handleGenerateDraftForm: () => void;
+  handleGenerateDraft: () => void;
+  generateDraftPending: boolean;
 }
 
 export function useWritingView(isDark: boolean): WritingViewHookResult {
@@ -68,6 +88,8 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
   const [draftForm, setDraftForm] = useState<DraftFormState | null>(null);
+  const [draftFormAI, setDraftFormAI] = useState<DraftFormAIState | null>(null);
+  const [pendingDrafts, setPendingDrafts] = useState<Record<string, PendingDraftInfo>>({});
   const [expandedDraft, setExpandedDraft] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -172,6 +194,36 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     },
   });
 
+  const generateDraftMutation = useMutation({
+    mutationFn: (data: { title: string; brief: string }) => {
+      if (!projectId || !selectedDocumentId) throw new Error('Missing project or document');
+      return submitManuscriptAssist({
+        project_id: projectId,
+        document_id: selectedDocumentId,
+        assist_kind: 'generate_next_chapter',
+        instruction: data.brief,
+        create_draft_artifact: true,
+      });
+    },
+    onSuccess: (result) => {
+      const optimisticId = `pending-${Date.now()}`;
+      setPendingDrafts((prev) => ({
+        ...prev,
+        [result.assist_id]: {
+          artifact_id: optimisticId,
+          title: result.summary || 'Generating...',
+          assistId: result.assist_id,
+        },
+      }));
+      setDraftFormAI(null);
+      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+      toast.success('Draft generation started');
+    },
+    onError: () => {
+      toast.error('Failed to start draft generation');
+    },
+  });
+
   useEffect(() => {
     if (manuscriptDocuments.length === 0) {
       setSelectedDocumentId(null);
@@ -199,6 +251,39 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
       setSelectedDocumentId(manuscriptDocuments[0].document_id);
     }
   }, [manuscriptDocuments, chapterId, selectedDocumentId]);
+
+  useEffect(() => {
+    const assistIds = Object.keys(pendingDrafts);
+    if (assistIds.length === 0) return;
+
+    const interval = setInterval(async () => {
+      for (const assistId of Object.keys(pendingDrafts)) {
+        try {
+          const { getManuscriptAssist } = await import('../services/manuscriptAssist');
+          const run = await getManuscriptAssist(assistId);
+
+          if (run.status === 'completed') {
+            setPendingDrafts((prev) => {
+              const next = { ...prev };
+              delete next[assistId];
+              return next;
+            });
+            void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+            toast.success('Draft generation complete');
+          } else if (run.status === 'failed') {
+            setPendingDrafts((prev) => ({
+              ...prev,
+              [assistId]: { ...prev[assistId], error: run.summary || 'Generation failed' },
+            }));
+          }
+        } catch {
+          // Keep polling on error
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [pendingDrafts, projectId, queryClient]);
 
   const selectedDocument = manuscriptDocuments.find(
     (doc: ManuscriptDocument) => doc.document_id === selectedDocumentId,
@@ -336,6 +421,18 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     alternateMutation.mutate(artifactId);
   }, [alternateMutation]);
 
+  const handleGenerateDraftForm = useCallback(() => {
+    setDraftFormAI({ title: '', brief: '', mode: 'ai' });
+  }, []);
+
+  const handleGenerateDraft = useCallback(async () => {
+    if (!draftFormAI || !draftFormAI.title.trim() || !draftFormAI.brief.trim()) return;
+    generateDraftMutation.mutate({
+      title: draftFormAI.title.trim(),
+      brief: draftFormAI.brief.trim(),
+    });
+  }, [draftFormAI, generateDraftMutation]);
+
   return {
     projectId,
     selectedDocumentId,
@@ -374,5 +471,11 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     alternatePending: alternateMutation.isPending,
     continueDraftAction,
     alternateVariantAction,
+    draftFormAI,
+    pendingDrafts,
+    setDraftFormAI,
+    handleGenerateDraftForm,
+    handleGenerateDraft,
+    generateDraftPending: generateDraftMutation.isPending,
   };
 }
