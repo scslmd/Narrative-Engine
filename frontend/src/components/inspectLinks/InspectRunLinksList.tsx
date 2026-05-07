@@ -94,7 +94,7 @@ export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
           )}
         </div>
 
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           Showing {filteredLinks.length} of {linksQuery.data?.length || 0} links
         </div>
 
@@ -104,8 +104,8 @@ export function InspectRunLinksList({ projectId }: InspectRunLinksListProps) {
             description="Inspect run links are created when jobs or checker runs are associated with project artifacts."
           />
         ) : filteredLinks.length === 0 ? (
-          <div className="border rounded-lg p-8 text-center bg-gray-50">
-            <p className="text-gray-600">No inspect run links match your current filters. Try clearing filters to see all available links.</p>
+          <div className="border rounded-lg p-8 text-center bg-gray-50 dark:bg-slate-900">
+            <p className="text-gray-600 dark:text-slate-400">No inspect run links match your current filters. Try clearing filters to see all available links.</p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

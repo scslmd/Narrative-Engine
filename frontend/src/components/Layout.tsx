@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react'
-import { matchPath, useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, Grid3x3, LayoutList, Lightbulb, Moon, Search, Sparkles, Sun, Settings } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { BookOpen, ChevronRight, Lightbulb, Moon, Search, Sun, Settings } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { useUIStore } from '../stores/uiStore'
 import { useProjects } from '../hooks/useProjects'
 import { useSettingsStore } from '../stores/settingsStore'
-import type { WorkspaceMode } from '../routes'
+import { modeToStage, type WorkspaceMode } from '../routes'
 import { useRouteSync } from '../hooks/useRouteSync'
 import { SettingsPanel } from './SettingsPanel'
 
@@ -13,35 +13,19 @@ interface LayoutProps {
   children: ReactNode
 }
 
-const stageMap: Record<WorkspaceMode, 'planning' | 'writing' | 'review' | 'inspect'> = {
-  plan: 'planning',
-  braindump: 'planning',
-  canon: 'planning',
-  generate: 'planning',
-  write: 'writing',
+type StageId = 'planning' | 'writing' | 'review'
+
+const STAGE_DEFAULT_MODE: Record<StageId, string> = {
+  planning: 'plan',
+  writing: 'write',
   review: 'review',
-  inspect: 'inspect',
 }
 
-const modeIcons: Record<WorkspaceMode, typeof Grid3x3> = {
-  plan: LayoutList,
-  braindump: Lightbulb,
-  canon: BookOpen,
-  generate: Sparkles,
-  write: BookOpen,
-  review: Search,
-  inspect: Sparkles,
-}
-
-const modeLabels: Record<WorkspaceMode, string> = {
-  plan: 'Planning',
-  braindump: 'Brain Dump',
-  canon: 'Canon',
-  generate: 'Generate',
-  write: 'Writing',
-  review: 'Review',
-  inspect: 'Inspect',
-}
+const stageButtons: { id: StageId; label: string; icon: typeof Lightbulb; shadow: string; border: string }[] = [
+  { id: 'planning', label: 'Planning', icon: Lightbulb, shadow: 'shadow-amber-500/30', border: 'border-amber-500' },
+  { id: 'writing', label: 'Writing', icon: BookOpen, shadow: 'shadow-blue-500/30', border: 'border-blue-500' },
+  { id: 'review', label: 'Review', icon: Search, shadow: 'shadow-emerald-500/30', border: 'border-emerald-500' },
+]
 
 export function Layout({ children }: LayoutProps) {
   const { mode, toggleMode, setStage } = useThemeStore()
@@ -57,40 +41,39 @@ export function Layout({ children }: LayoutProps) {
   const currentProject = projects?.find((p) => p.project_id === projectId)
 
   useEffect(() => {
-    setStage(stageMap[uiMode])
+    setStage(modeToStage[uiMode])
   }, [setStage, uiMode])
 
-  const handleModeChange = (nextMode: WorkspaceMode) => {
+ const handleStageChange = (stageId: StageId) => {
+    const nextMode = STAGE_DEFAULT_MODE[stageId] as WorkspaceMode
     setMode(nextMode)
-
-    const workspaceMatch = matchPath('/workspace/:projectId/*', location.pathname)
-    const matchedProjectId = workspaceMatch?.params.projectId
-
-    if (!matchedProjectId) {
-      return
-    }
-
-    navigate(`/workspace/${matchedProjectId}/${nextMode}`)
+    if (!projectId) return
+    navigate(`/workspace/${projectId}/${nextMode}`)
   }
 
+  const activeStage = modeToStage[uiMode]
   const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
   const isWorkspace = location.pathname.startsWith('/workspace/')
   const iconsOnly = iconMode !== 'labels'
-  const showIcons = iconsOnly || window.innerWidth < 640
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-base)]" data-icon-mode={iconsOnly ? iconMode : ''}>
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-base)]" data-icon-mode={iconsOnly ? iconMode : ''}>
       <div className="stage-bar" />
       <header className="border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 glass sticky top-0 z-[200]">
         <div className="flex items-center justify-between px-4 lg:px-6 py-2.5">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm">
-                <span className="text-white font-bold text-sm">N</span>
-              </div>
-              <h1 className="text-base font-semibold tracking-tight text-[var(--text-primary)] hidden sm:block">
-                Narrative Engine
-              </h1>
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm">
+                  <span className="text-white font-bold text-sm">N</span>
+                </div>
+                <h1 className="text-base font-semibold tracking-tight text-[var(--text-primary)] hidden sm:block">
+                  Narrative Engine
+                </h1>
+              </button>
             </div>
 
             {isWorkspace && currentProject && (
@@ -110,22 +93,21 @@ export function Layout({ children }: LayoutProps) {
 
           <div className="flex items-center gap-1.5">
             {isWorkspace && (
-              <div className="hidden sm:flex items-center rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50">
-                {(Object.keys(modeIcons) as WorkspaceMode[]).map((m) => {
-                  const Icon = modeIcons[m]
-                  const isActive = uiMode === m
+              <div className="hidden sm:flex items-center gap-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 p-0.5">
+                {stageButtons.map(({ id, label, icon: Icon, shadow }) => {
+                  const isActive = activeStage === id
                   return (
                     <button
-                      key={m}
-                      onClick={() => handleModeChange(m)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+                      key={id}
+                      onClick={() => handleStageChange(id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md ${
                         isActive
-                          ? 'text-[var(--text-primary)] bg-[var(--bg-elevated)] shadow-sm'
-                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                          ? `bg-white text-gray-900 shadow-lg ${shadow}`
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]/50'
                       }`}
                     >
                       <Icon className="w-3.5 h-3.5" />
-                      {showIcons && <span className="hidden lg:inline">{modeLabels[m]}</span>}
+                      <span className="hidden md:inline">{label}</span>
                     </button>
                   )
                 })}
@@ -152,28 +134,27 @@ export function Layout({ children }: LayoutProps) {
 
         {isWorkspace && (
           <div className="sm:hidden flex border-t border-[var(--border-primary)]">
-            {(Object.keys(modeIcons) as WorkspaceMode[]).map((m) => {
-              const Icon = modeIcons[m]
-              const isActive = uiMode === m
+            {stageButtons.map(({ id, label, icon: Icon, border }) => {
+              const isActive = activeStage === id
               return (
                 <button
-                  key={m}
-                  onClick={() => handleModeChange(m)}
+                  key={id}
+                  onClick={() => handleStageChange(id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors ${
                     isActive
-                      ? 'text-[var(--text-primary)] border-b-2 border-[var(--color-primary)]'
+                      ? `text-[var(--text-primary)] border-b-2 ${border}`
                       : 'text-[var(--text-secondary)]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  <span>{modeLabels[m]}</span>
+                  <span>{label}</span>
                 </button>
               )
             })}
           </div>
         )}
       </header>
-      <main className="flex-1 p-4 lg:p-6">
+      <main className="flex-1 overflow-auto p-4 lg:p-6">
         {children}
       </main>
 

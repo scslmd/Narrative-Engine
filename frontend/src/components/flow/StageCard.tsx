@@ -14,7 +14,7 @@ const KIND_COLORS: Record<string, string> = {
 const STATE_COLORS: Record<string, string> = {
   ENABLED: 'bg-green-50 text-green-600 border-green-200',
   ACTIVE: 'bg-green-50 text-green-600 border-green-200',
-  DISABLED: 'bg-gray-50 text-gray-400 border-gray-200',
+  DISABLED: 'bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700',
   OPTIONAL: 'bg-yellow-50 text-yellow-600 border-yellow-200',
   ARCHIVED: 'bg-red-50 text-red-400 border-red-200',
 };
@@ -30,12 +30,12 @@ export default function StageCard({ stage, position, isUpdating }: StageCardProp
   const stateColor = STATE_COLORS[stage.stage_configuration_state];
 
   return (
-    <div className={`p-4 rounded-lg border ${isUpdating ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'} transition-all`}>
+    <div className={`p-4 rounded-lg border ${isUpdating ? 'border-blue-300 bg-blue-50' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'} transition-all`}>
       <div className="flex items-center gap-3">
-        <span className="text-sm font-mono text-gray-400 w-6">{position + 1}</span>
+        <span className="text-sm font-mono text-gray-400 dark:text-slate-500 w-6">{position + 1}</span>
 
         <div className="flex-1 min-w-0">
-          <h4 className={`font-semibold truncate ${isUpdating ? 'text-blue-900' : 'text-gray-900'}`}>
+          <h4 className={`font-semibold truncate ${isUpdating ? 'text-blue-900' : 'text-gray-900 dark:text-slate-100'}`}>
             {stage.display_name}
             {isUpdating && <span className="ml-2 text-sm text-blue-600">Updating...</span>}
           </h4>
@@ -53,7 +53,7 @@ export default function StageCard({ stage, position, isUpdating }: StageCardProp
       </div>
 
       {stage.description && (
-        <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+        <p className="mt-2 text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
           {stage.description}
         </p>
       )}

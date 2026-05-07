@@ -35,7 +35,7 @@ export function CanonAnnotationToolbar({
   );
 
   return (
-    <div className="mt-2 rounded border border-slate-200 bg-slate-50 p-2 space-y-2">
+    <div className="mt-2 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         {matching.map((item) => (
           <CanonLockBadge key={item.annotation_id} kind={item.annotation_kind} />
@@ -73,7 +73,7 @@ export function CanonAnnotationToolbar({
         value={note}
         onChange={(event) => setNote(event.target.value)}
         placeholder="Optional canon note"
-        className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+        className="w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1 text-xs"
       />
     </div>
   );

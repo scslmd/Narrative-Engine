@@ -68,23 +68,23 @@ export function DecisionHistory({ findingId }: DecisionHistoryProps) {
   }
 
   return (
-    <div className="border-t border-gray-200 p-4 bg-white">
-      <h3 className="font-medium text-gray-900 mb-3">Decision History ({decisions.length})</h3>
+    <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
+      <h3 className="font-medium text-gray-900 dark:text-slate-100 mb-3">Decision History ({decisions.length})</h3>
       
       <div className="space-y-3 max-h-64 overflow-y-auto">
         {decisions.map((decision) => (
-          <div key={decision.decision_id} className="border rounded p-3 bg-gray-50">
+          <div key={decision.decision_id} className="border rounded p-3 bg-gray-50 dark:bg-slate-700">
             <div className="flex items-center justify-between mb-2">
               <span className={`px-2 py-1 rounded text-xs font-medium ${getActionColor(decision.decision)}`}>
                 {decision.decision.toUpperCase()}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-slate-400">
                 {new Date(decision.created_at).toLocaleString()}
               </span>
             </div>
             
             {decision.notes && (
-              <p className="text-sm text-gray-700">{decision.notes}</p>
+              <p className="text-sm text-gray-700 dark:text-slate-300">{decision.notes}</p>
             )}
           </div>
         ))}

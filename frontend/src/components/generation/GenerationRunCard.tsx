@@ -10,7 +10,7 @@ export function GenerationRunCard({ run, onRetry, isRetrying }: GenerationRunCar
   const isFailed = run.status === 'failed';
 
   return (
-    <div className="rounded border border-slate-300 p-3 text-sm">
+    <div className="rounded border border-slate-300 dark:border-slate-600 p-3 text-sm">
       <p className="font-semibold">{run.generation_id || 'Pending Generation'}</p>
       <p>Status: {run.status}</p>
       <p>Jobs: {run.job_ids.length}</p>
@@ -25,7 +25,7 @@ export function GenerationRunCard({ run, onRetry, isRetrying }: GenerationRunCar
           disabled={isRetrying}
           className={`mt-2 rounded px-3 py-1 text-xs font-medium ${
             isRetrying
-              ? 'cursor-not-allowed bg-slate-200 text-slate-400'
+              ? 'cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
               : 'bg-red-600 text-white hover:bg-red-700'
           }`}
         >

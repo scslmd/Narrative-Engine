@@ -9,7 +9,7 @@ export function ForkPreviewPanel({ preview }: ForkPreviewPanelProps) {
     return null;
   }
   return (
-    <div className="rounded border border-slate-300 p-3 text-sm">
+    <div className="rounded border border-slate-300 dark:border-slate-600 p-3 text-sm">
       <p className="font-semibold mb-1">Fork Preview</p>
       <p>Characters: {preview.selected_character_ids.length}</p>
       <p>World Entries: {preview.selected_world_bible_refs.length}</p>

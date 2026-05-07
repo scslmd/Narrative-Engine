@@ -6,7 +6,6 @@ import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { Layout } from './Layout';
 import { useUIStore } from '../stores/uiStore';
-import { useSettingsStore } from '../stores/settingsStore';
 
 vi.mock('../hooks/useRouteSync', () => ({
   useRouteSync: vi.fn(),
@@ -28,6 +27,15 @@ function renderLayout(route = '/workspace/test-project/plan') {
   return render(<Layout><div data-testid="main-content">Page Content</div></Layout>, {
     route,
   });
+}
+
+// Both desktop and mobile stage navs render in jsdom (no CSS media queries).
+// Each label appears twice; pick the first button containing the text.
+function getStageButton(label: string) {
+  const els = screen.getAllByText(label);
+  const btn = els.find((el) => el.parentElement?.tagName === 'BUTTON');
+  expect(btn).toBeDefined();
+  return btn as Element;
 }
 
 describe('Layout', () => {
@@ -97,22 +105,20 @@ describe('Layout', () => {
     });
   });
 
-  it('renders mode navigation buttons in workspace', async () => {
+  it('renders 3 stage buttons in header within workspace', async () => {
     act(() => {
       useUIStore.getState().setProjectId('test-project');
-      useSettingsStore.getState().setIconMode('labels');
     });
     renderLayout('/workspace/test-project/plan');
 
     await vi.waitFor(() => {
-      expect(screen.getByText('Planning')).toBeInTheDocument();
-      expect(screen.getByText('Writing')).toBeInTheDocument();
-      expect(screen.getByText('Review')).toBeInTheDocument();
-      expect(screen.getByText('Inspect')).toBeInTheDocument();
+      expect(screen.getAllByText('Planning')).toHaveLength(2);
+      expect(screen.getAllByText('Writing')).toHaveLength(2);
+      expect(screen.getAllByText('Review')).toHaveLength(2);
     });
   });
 
-  it('does not render mode navigation outside workspace', async () => {
+  it('does not render stage buttons outside workspace', async () => {
     act(() => {
       useUIStore.getState().setProjectId(null);
     });
@@ -123,23 +129,94 @@ describe('Layout', () => {
     });
   });
 
-  it('highlights active mode in sidebar', async () => {
+  it('clicking Planning stage button navigates to plan mode', async () => {
+    const user = userEvent.setup();
     act(() => {
       useUIStore.getState().setProjectId('test-project');
       useUIStore.getState().setMode('write');
-      useSettingsStore.getState().setIconMode('labels');
     });
     renderLayout('/workspace/test-project/write');
 
     await vi.waitFor(() => {
-      // Desktop nav uses bg-[var(--bg-elevated)], mobile nav uses border-b-2
-      const writeBtns = screen.getAllByRole('button', { name: /Writing/ });
-      const isActive = writeBtns.some(
-        (btn) =>
-          btn.classList.contains('bg-[var(--bg-elevated)]') ||
-          btn.classList.contains('border-b-2'),
+      expect(screen.getAllByText('Planning').length).toBeGreaterThanOrEqual(1);
+    });
+
+    await user.click(getStageButton('Planning'));
+
+    expect(useUIStore.getState().mode).toBe('plan');
+  });
+
+  it('clicking Writing stage button navigates to write mode', async () => {
+    const user = userEvent.setup();
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+      useUIStore.getState().setMode('plan');
+    });
+    renderLayout('/workspace/test-project/plan');
+
+    await vi.waitFor(() => {
+      expect(screen.getAllByText('Writing').length).toBeGreaterThanOrEqual(1);
+    });
+
+    await user.click(getStageButton('Writing'));
+
+    expect(useUIStore.getState().mode).toBe('write');
+  });
+
+  it('clicking Review stage button navigates to review mode', async () => {
+    const user = userEvent.setup();
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+      useUIStore.getState().setMode('plan');
+    });
+    renderLayout('/workspace/test-project/plan');
+
+    await vi.waitFor(() => {
+      expect(screen.getAllByText('Review').length).toBeGreaterThanOrEqual(1);
+    });
+
+    await user.click(getStageButton('Review'));
+
+    expect(useUIStore.getState().mode).toBe('review');
+  });
+
+  it('highlights active stage button with distinct styling', async () => {
+    act(() => {
+      useUIStore.getState().setProjectId('test-project');
+      useUIStore.getState().setMode('write');
+    });
+    renderLayout('/workspace/test-project/write');
+
+    await vi.waitFor(() => {
+      const writingEls = screen.getAllByText('Writing');
+      expect(writingEls.length).toBeGreaterThanOrEqual(1);
+
+      const planningEls = screen.getAllByText('Planning');
+      expect(planningEls.length).toBeGreaterThanOrEqual(1);
+
+      // Find button parents for each label
+      const writingBtns = writingEls.filter(
+        (el) => el.parentElement?.tagName === 'BUTTON',
       );
-      expect(isActive).toBe(true);
+      const planningBtns = planningEls.filter(
+        (el) => el.parentElement?.tagName === 'BUTTON',
+      );
+
+      // Active Writing button should have bg-white (desktop) or border-b-2 (mobile)
+      const activeWriting = writingBtns.some((btn) => {
+        const parent = btn.parentElement;
+        return parent?.classList.contains('bg-white') || parent?.classList.contains('border-b-2');
+      });
+
+      // Inactive Planning button should NOT have active styling
+      const inactivePlanning = planningBtns.every((btn) => {
+        const parent = btn.parentElement;
+        return !(parent?.classList.contains('bg-white') && parent?.classList.contains('text-gray-900'))
+          && !parent?.classList.contains('border-b-2');
+      });
+
+      expect(activeWriting).toBe(true);
+      expect(inactivePlanning).toBe(true);
     });
   });
 

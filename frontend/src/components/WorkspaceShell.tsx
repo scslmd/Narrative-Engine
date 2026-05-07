@@ -1,7 +1,9 @@
 import { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { LayoutList, BookOpen, Search, Sparkles, Lightbulb } from 'lucide-react'
+import { modeToStage } from '../routes'
+import { LayoutList, BookOpen, Search, Sparkles, Lightbulb, Scroll, Zap } from 'lucide-react'
 
 interface WorkspaceShellProps {
   children: ReactNode
@@ -13,34 +15,47 @@ interface NavItem {
   icon: typeof LayoutList
   gradient: string
   glow: string
+  stage: 'planning' | 'writing' | 'review'
 }
 
 const navItems: NavItem[] = [
-  { key: 'braindump', label: 'Brain Dump', icon: Lightbulb, gradient: 'from-amber-500 to-amber-600', glow: 'glow-braindump' },
-  { key: 'plan', label: 'Planning', icon: LayoutList, gradient: 'from-blue-500 to-blue-600', glow: 'glow-planning' },
-  { key: 'write', label: 'Writing', icon: BookOpen, gradient: 'from-emerald-500 to-emerald-600', glow: 'glow-writing' },
-  { key: 'review', label: 'Review', icon: Search, gradient: 'from-amber-500 to-amber-600', glow: 'glow-review' },
-  { key: 'inspect', label: 'Inspect', icon: Sparkles, gradient: 'from-violet-500 to-violet-600', glow: 'glow-inspect' },
+  { key: 'braindump', label: 'Brain Dump', icon: Lightbulb, gradient: 'from-amber-500 to-amber-600', glow: 'glow-braindump', stage: 'planning' },
+  { key: 'plan', label: 'Planning', icon: LayoutList, gradient: 'from-blue-500 to-blue-600', glow: 'glow-planning', stage: 'planning' },
+  { key: 'canon', label: 'Canon', icon: Scroll, gradient: 'from-indigo-500 to-indigo-600', glow: 'glow-canon', stage: 'planning' },
+  { key: 'generate', label: 'Generate', icon: Zap, gradient: 'from-purple-500 to-purple-600', glow: 'glow-generate', stage: 'planning' },
+  { key: 'write', label: 'Writing', icon: BookOpen, gradient: 'from-emerald-500 to-emerald-600', glow: 'glow-writing', stage: 'writing' },
+  { key: 'review', label: 'Review', icon: Search, gradient: 'from-amber-500 to-amber-600', glow: 'glow-review', stage: 'review' },
+  { key: 'inspect', label: 'Inspect', icon: Sparkles, gradient: 'from-violet-500 to-violet-600', glow: 'glow-inspect', stage: 'review' },
 ]
 
 export function WorkspaceShell({ children }: WorkspaceShellProps) {
-  const { mode, setMode } = useUIStore()
+  const { mode, setMode, projectId } = useUIStore()
+  const navigate = useNavigate()
   const { iconMode, showTooltips } = useSettingsStore()
   const iconsOnly = iconMode !== 'labels'
   const showTooltipsEnabled = showTooltips && iconsOnly
+  const activeStage = modeToStage[mode]
+  const visibleItems = navItems.filter((item) => item.stage === activeStage)
+
+  const handleNavClick = (key: string) => {
+    setMode(key as typeof mode)
+    if (projectId) {
+      navigate(`/workspace/${projectId}/${key}`)
+    }
+  }
 
   return (
-    <div className="flex gap-5">
+    <div className="flex gap-5 h-full">
       <aside className="w-52 flex-shrink-0">
         <nav className="space-y-0.5 py-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = mode === item.key
             const Icon = item.icon
             const tooltipText = showTooltipsEnabled ? item.label : undefined
             return (
               <button
                 key={item.key}
-                onClick={() => setMode(item.key as typeof mode)}
+                onClick={() => handleNavClick(item.key)}
                 data-tooltip={tooltipText}
                 className={`w-full nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
                   isActive

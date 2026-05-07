@@ -31,11 +31,13 @@ export function CanonView() {
     queryKey: ['planning', 'characters', projectId],
     queryFn: () => getCharacters(projectId || ''),
     enabled: Boolean(projectId),
+    retry: false,
   });
   const worldQuery = useQuery({
     queryKey: ['planning', 'world-bible', projectId],
     queryFn: () => getWorldBibleEntries(projectId || ''),
     enabled: Boolean(projectId),
+    retry: false,
   });
   const { entries: mythosEntries, deleteEntry: deleteMythosEntry } = useMythosLibrary(projectId || '');
   const { entries: patternEntries, deleteEntry: deletePatternEntry } = usePatternLibrary(projectId || '');
@@ -43,11 +45,13 @@ export function CanonView() {
     queryKey: ['canon', 'annotations', projectId],
     queryFn: () => getCanonAnnotations(projectId || ''),
     enabled: Boolean(projectId),
+    retry: false,
   });
   const profilesQuery = useQuery({
     queryKey: ['canon', 'profiles', projectId],
     queryFn: () => getCanonProfiles(projectId || ''),
     enabled: Boolean(projectId),
+    retry: false,
   });
 
   const createProfileMutation = useMutation({

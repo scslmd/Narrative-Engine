@@ -76,13 +76,13 @@ export function WorldBibleWorkspace({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="p-4 bg-white border-b border-gray-200">
+      <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">World Bible</h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">World Bible</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
               Track locations, characters, concepts, and world details
             </p>
           </div>
@@ -95,19 +95,19 @@ export function WorldBibleWorkspace({
             value={newEntryTitle}
             onChange={(e) => setNewEntryTitle(e.target.value)}
             placeholder="Enter entry title"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="text"
             value={newEntrySummary}
             onChange={(e) => setNewEntrySummary(e.target.value)}
             placeholder="Brief summary"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <select
             value={newEntryType}
             onChange={(e) => setNewEntryType(e.target.value as WorldBibleEntryType)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="concept">Concept</option>
             <option value="location">Location</option>
@@ -131,7 +131,7 @@ export function WorldBibleWorkspace({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 bg-white">
+      <div className="flex border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         {(['all', 'location', 'organization', 'artifact', 'event', 'concept', 'creature', 'magic_system', 'technology', 'culture', 'history'] as const).map(
           (tab) => (
             <button
@@ -140,7 +140,7 @@ export function WorldBibleWorkspace({
               className={`px-4 py-2 text-sm font-medium capitalize ${
                 activeTab === tab
                   ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100'
               }`}
             >
               {tab === 'all' ? 'All' : entryTypeLabels[tab]}
@@ -183,7 +183,7 @@ export function WorldBibleWorkspace({
             </div>
 
             {filteredEntries.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-500 dark:text-slate-400">
                 <p>No entries in this category</p>
                 <p className="text-sm mt-2">Add entries using the form above</p>
               </div>
@@ -202,21 +202,21 @@ interface WorldBibleEntryCardProps {
 
 function WorldBibleEntryCard({ entry, onClick }: WorldBibleEntryCardProps) {
   const typeColors: Record<WorldBibleEntryType, string> = {
-    location: 'bg-green-100 text-green-800',
-    organization: 'bg-purple-100 text-purple-800',
-    artifact: 'bg-yellow-100 text-yellow-800',
-    event: 'bg-red-100 text-red-800',
-    concept: 'bg-blue-100 text-blue-800',
-    creature: 'bg-orange-100 text-orange-800',
-    magic_system: 'bg-indigo-100 text-indigo-800',
-    technology: 'bg-cyan-100 text-cyan-800',
-    culture: 'bg-pink-100 text-pink-800',
-    history: 'bg-gray-100 text-gray-800',
+    location: 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300',
+    organization: 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300',
+    artifact: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300',
+    event: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300',
+    concept: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300',
+    creature: 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300',
+    magic_system: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300',
+    technology: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300',
+    culture: 'bg-pink-100 dark:bg-pink-900/40 text-pink-800 dark:text-pink-300',
+    history: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300',
   };
 
   return (
     <div
-      className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all"
+      className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all"
       onClick={onClick}
     >
       <div className="flex items-start justify-between mb-2">
@@ -224,8 +224,8 @@ function WorldBibleEntryCard({ entry, onClick }: WorldBibleEntryCardProps) {
           {entry.entry_type.replace('_', ' ')}
         </span>
       </div>
-      <h3 className="font-medium text-gray-900 mb-1">{entry.title}</h3>
-      <p className="text-sm text-gray-600 line-clamp-2">{entry.summary || 'No summary yet'}</p>
+      <h3 className="font-medium text-gray-900 dark:text-slate-100 mb-1">{entry.title}</h3>
+      <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">{entry.summary || 'No summary yet'}</p>
     </div>
   );
 }
@@ -280,11 +280,11 @@ function WorldBibleEntryEditor({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 bg-white">
+    <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded capitalize">
+            <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 dark:text-slate-300 rounded capitalize">
               {entry.entry_type.replace('_', ' ')}
             </span>
           </div>
@@ -296,7 +296,7 @@ function WorldBibleEntryEditor({
             >
               Save & Close
             </button>
-            <button onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+            <button onClick={onCancel} className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">
               Cancel
             </button>
           </div>
@@ -304,12 +304,12 @@ function WorldBibleEntryEditor({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Title</label>
             <input
               type="text"
               value={entry.title}
               onChange={(e) => handleUpdate('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
             />
             {onAnnotateField && (
               <CanonAnnotationToolbar
@@ -326,12 +326,12 @@ function WorldBibleEntryEditor({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Summary</label>
             <textarea
               value={entry.summary}
               onChange={(e) => handleUpdate('summary', e.target.value)}
               placeholder="A brief summary of this entry..."
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
             {onAnnotateField && (
               <CanonAnnotationToolbar
@@ -348,7 +348,7 @@ function WorldBibleEntryEditor({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Canonical Facts</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Canonical Facts</label>
             <div className="space-y-2">
               {entry.canonical_facts.map((fact, index) => (
                 <div key={index} className="flex gap-2">
@@ -357,7 +357,7 @@ function WorldBibleEntryEditor({
                     value={fact}
                     onChange={(e) => handleArrayChange('canonical_facts', index, e.target.value)}
                     placeholder="Canonical fact"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleRemoveArrayItem('canonical_facts', index)}
@@ -389,7 +389,7 @@ function WorldBibleEntryEditor({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Continuity Warnings</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Continuity Warnings</label>
             <div className="space-y-2">
               {entry.continuity_warnings.map((warning, index) => (
                 <div key={index} className="flex gap-2">
@@ -398,7 +398,7 @@ function WorldBibleEntryEditor({
                     value={warning}
                     onChange={(e) => handleArrayChange('continuity_warnings', index, e.target.value)}
                     placeholder="Continuity warning"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleRemoveArrayItem('continuity_warnings', index)}
@@ -430,12 +430,12 @@ function WorldBibleEntryEditor({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Writer Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Writer Notes</label>
             <textarea
               value={entry.writer_notes || ''}
               onChange={(e) => handleUpdate('writer_notes', e.target.value)}
               placeholder="Private notes about this entry..."
-              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </div>
         </div>

@@ -42,10 +42,10 @@ function useNotesPanelStyles(isDark: boolean) {
     headerBg: isDark ? 'border-slate-800' : 'border-slate-200',
     headerColor: isDark ? 'text-amber-400' : 'text-amber-500',
     headingColor: isDark ? 'text-slate-200' : 'text-slate-800',
-    noteCountColor: isDark ? 'text-slate-600' : 'text-slate-400',
+    noteCountColor: isDark ? 'text-slate-400' : 'text-slate-400',
     addNoteBg: isDark ? 'bg-slate-800/50 border-slate-700/60' : 'bg-slate-50 border-slate-200',
     textareaColor: isDark ? 'text-slate-200 placeholder-slate-600' : 'text-slate-800 placeholder-slate-400',
-    emptyStateColor: isDark ? 'text-slate-600' : 'text-slate-400',
+    emptyStateColor: isDark ? 'text-slate-400' : 'text-slate-400',
   };
 }
 

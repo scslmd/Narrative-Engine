@@ -2,6 +2,77 @@ import { Edit3, Save, X, Sparkles } from 'lucide-react';
 import type { ManuscriptDocument, RevisionSuggestion } from '../../types/drafting';
 import type { ManuscriptAssistKind, TextRange } from '../../types/manuscriptAssist';
 
+interface MarkdownRenderProps {
+  content: string;
+  isDark: boolean;
+}
+
+/** Lightweight markdown renderer for manuscript read mode. Handles headings, inline code, and paragraphs. */
+function renderMarkdown({ content, isDark }: MarkdownRenderProps) {
+  if (!content) return <span className={isDark ? 'text-slate-600' : 'text-slate-400'}>(No content)</span>;
+
+  const headingBase = isDark ? 'text-slate-100 font-semibold' : 'text-slate-900 font-semibold';
+  const codeBg = isDark ? 'bg-slate-800 text-amber-300' : 'bg-slate-100 text-amber-700';
+
+  const renderInlineCode = (line: string, keyPrefix: string) => {
+    const parts = line.split(/(`[^`]+`)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code key={keyPrefix + '-' + i} className={`px-1.5 py-0.5 rounded text-xs font-mono ${codeBg}`}>
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      return <span key={keyPrefix + '-' + i}>{part}</span>;
+    });
+  };
+
+  const paragraphs = content.split(/\n\n+/);
+  const elements: JSX.Element[] = [];
+  let idx = 0;
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+
+    // Heading: # ## ###
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/m);
+    if (headingMatch) {
+      const level = headingMatch[1].length as 1 | 2 | 3;
+      const text = headingMatch[2];
+      const sizes: Record<number, string> = {
+        1: 'text-xl mt-6 mb-3',
+        2: 'text-lg mt-5 mb-2',
+        3: 'text-base mt-4 mb-2',
+      };
+      elements.push(
+        <p key={idx} className={`${headingBase} ${sizes[level]}`}>
+          {renderInlineCode(text, `h${idx}`)}
+        </p>,
+      );
+      idx++;
+      continue;
+    }
+
+    // Regular paragraph (may contain newlines within)
+    const lines = trimmed.split('\n');
+    elements.push(
+      <p key={idx} className={`text-sm leading-relaxed mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+        {lines.map((line, li) => (
+          <span key={li}>
+            {renderInlineCode(line, `p${idx}-${li}`)}
+            {li < lines.length - 1 && <br />}
+          </span>
+        ))}
+      </p>,
+    );
+    idx++;
+  }
+
+  return <>{elements}</>;
+}
+
 interface ManuscriptEditorProps {
   document: ManuscriptDocument;
   isEditing: boolean;
@@ -147,10 +218,8 @@ export function ManuscriptEditor({
         </>
       ) : (
         <main className={`flex-1 overflow-y-auto p-6`}>
-          <div className={`prose max-w-none ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>
-            <pre className={`whitespace-pre-wrap font-sans text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-              {document.content || <span className={isDark ? 'text-slate-600' : 'text-slate-400'}>(No content)</span>}
-            </pre>
+          <div className="max-w-none">
+            {renderMarkdown({ content: document.content, isDark })}
           </div>
         </main>
       )}

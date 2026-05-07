@@ -135,14 +135,14 @@ export function CharacterBuilder({
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
-      <div className="p-4 bg-white border-b border-gray-200">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-slate-900">
+      <div className="p-4 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
               {character ? 'Edit Character' : 'New Character'}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
               Build and refine your characters
             </p>
           </div>
@@ -157,7 +157,7 @@ export function CharacterBuilder({
             {onCancel && (
               <button
                 onClick={onCancel}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
@@ -175,7 +175,7 @@ export function CharacterBuilder({
               onChange={(e) => setCharacterId(e.target.value)}
               placeholder="Enter character id"
               readOnly={Boolean(character)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg disabled:bg-gray-100 dark:disabled:bg-slate-700"
             />
           </Section>
 
@@ -186,7 +186,7 @@ export function CharacterBuilder({
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter character name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
               />
               {characterId && onAnnotateField && (
                 <CanonAnnotationToolbar
@@ -208,7 +208,7 @@ export function CharacterBuilder({
                 value={roleInStory}
                 onChange={(e) => setRoleInStory(e.target.value)}
                 placeholder="e.g., Protagonist, Antagonist, Mentor"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </Section>
           </div>
@@ -219,7 +219,7 @@ export function CharacterBuilder({
               value={archetype}
               onChange={(e) => setArchetype(e.target.value)}
               placeholder="e.g., The Creator, The Sage, The Hero"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </Section>
 
@@ -229,7 +229,7 @@ export function CharacterBuilder({
                 value={externalGoal}
                 onChange={(e) => setExternalGoal(e.target.value)}
                 placeholder="What does this character want to achieve?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
 
@@ -238,7 +238,7 @@ export function CharacterBuilder({
                 value={internalNeed}
                 onChange={(e) => setInternalNeed(e.target.value)}
                 placeholder="What does this character need for growth?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
           </div>
@@ -249,7 +249,7 @@ export function CharacterBuilder({
                 value={misbeliefOrWound}
                 onChange={(e) => setMisbeliefOrWound(e.target.value)}
                 placeholder="What false belief holds this character back?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
 
@@ -258,7 +258,7 @@ export function CharacterBuilder({
                 value={coreFear}
                 onChange={(e) => setCoreFear(e.target.value)}
                 placeholder="What is this character's deepest fear?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
           </div>
@@ -269,7 +269,7 @@ export function CharacterBuilder({
                 value={primaryStrength}
                 onChange={(e) => setPrimaryStrength(e.target.value)}
                 placeholder="What is this character's greatest strength?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
 
@@ -278,7 +278,7 @@ export function CharacterBuilder({
                 value={fatalFlaw}
                 onChange={(e) => setFatalFlaw(e.target.value)}
                 placeholder="What flaw holds this character back?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
             </Section>
           </div>
@@ -292,7 +292,7 @@ export function CharacterBuilder({
                     value={item}
                     onChange={(e) => handleArrayChange(setContradictions, index, e.target.value)}
                     placeholder={`Contradiction ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleRemoveArrayItem(setContradictions, index)}
@@ -316,7 +316,7 @@ export function CharacterBuilder({
               value={backstorySummary}
               onChange={(e) => setBackstorySummary(e.target.value)}
               placeholder="What happened in this character's past?"
-              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </Section>
 
@@ -325,7 +325,7 @@ export function CharacterBuilder({
               value={voiceNotes}
               onChange={(e) => setVoiceNotes(e.target.value)}
               placeholder="How does this character speak? What's their voice like?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
             {characterId && onAnnotateField && (
               <CanonAnnotationToolbar
@@ -351,7 +351,7 @@ export function CharacterBuilder({
                       value={item}
                       onChange={(e) => handleArrayChange(setSecrets, index, e.target.value)}
                       placeholder="Secret"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     <button
                       onClick={() => handleRemoveArrayItem(setSecrets, index)}
@@ -379,7 +379,7 @@ export function CharacterBuilder({
                       value={item}
                       onChange={(e) => handleArrayChange(setValues, index, e.target.value)}
                       placeholder="Value"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     <button
                       onClick={() => handleRemoveArrayItem(setValues, index)}
@@ -407,7 +407,7 @@ export function CharacterBuilder({
                       value={item}
                       onChange={(e) => handleArrayChange(setTaboos, index, e.target.value)}
                       placeholder="Taboo"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     <button
                       onClick={() => handleRemoveArrayItem(setTaboos, index)}
@@ -432,7 +432,7 @@ export function CharacterBuilder({
               value={changeAxis}
               onChange={(e) => setChangeAxis(e.target.value)}
               placeholder="How does this character change? From what to what?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </Section>
 
@@ -445,7 +445,7 @@ export function CharacterBuilder({
                     value={item}
                     onChange={(e) => handleArrayChange(setArcStageNotes, index, e.target.value)}
                     placeholder={`Arc stage ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleRemoveArrayItem(setArcStageNotes, index)}
@@ -473,7 +473,7 @@ export function CharacterBuilder({
                     value={item}
                     onChange={(e) => handleArrayChange(setContinuityFacts, index, e.target.value)}
                     placeholder="Continuity fact"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => handleRemoveArrayItem(setContinuityFacts, index)}
@@ -509,7 +509,7 @@ export function CharacterBuilder({
               value={writerNotes}
               onChange={(e) => setWriterNotes(e.target.value)}
               placeholder="Private notes about this character..."
-              className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
             />
           </Section>
         </div>
@@ -526,10 +526,10 @@ interface SectionProps {
 
 function Section({ title, description, children }: SectionProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-500">{description}</p>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
+        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
       </div>
       {children}
     </div>

@@ -22,15 +22,15 @@ export function CanonProfileEditor({
   const [brief, setBrief] = useState('Generate a canon-congruent story.');
 
   return (
-    <div className="rounded border border-slate-200 bg-white p-3 space-y-2">
-      <div className="text-sm font-semibold text-slate-900">Profile Editor</div>
+    <div className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 space-y-2">
+      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Profile Editor</div>
       <input
-        className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+        className="w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm"
         value={profileName}
         onChange={(event) => setProfileName(event.target.value)}
       />
       <textarea
-        className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm min-h-20"
+        className="w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm min-h-20"
         value={brief}
         onChange={(event) => setBrief(event.target.value)}
       />

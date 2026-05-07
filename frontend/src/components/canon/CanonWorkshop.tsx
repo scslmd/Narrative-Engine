@@ -144,10 +144,10 @@ export function CanonWorkshop({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => setActiveTab('overview')}>Overview</button>
-        <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => setActiveTab('mythos')}>Mythos</button>
-        <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => setActiveTab('patterns')}>Patterns</button>
-        <button type="button" className="rounded border px-2 py-1 text-xs" onClick={() => setActiveTab('packet')}>Packet Preview</button>
+        <button type="button" className="rounded border px-2 py-1 text-xs text-slate-900 dark:text-slate-100" onClick={() => setActiveTab('overview')}>Overview</button>
+        <button type="button" className="rounded border px-2 py-1 text-xs text-slate-900 dark:text-slate-100" onClick={() => setActiveTab('mythos')}>Mythos</button>
+        <button type="button" className="rounded border px-2 py-1 text-xs text-slate-900 dark:text-slate-100" onClick={() => setActiveTab('patterns')}>Patterns</button>
+        <button type="button" className="rounded border px-2 py-1 text-xs text-slate-900 dark:text-slate-100" onClick={() => setActiveTab('packet')}>Packet Preview</button>
       </div>
 
       <CanonOverviewPanel
@@ -179,21 +179,21 @@ export function CanonWorkshop({
       {activeTab === 'packet' && <CanonPacketPreview packet={packetPreview} />}
       {activeTab === 'overview' && (
         <>
-      <div className="rounded-md border border-slate-200 bg-white p-4 space-y-3">
-        <h2 className="text-base font-semibold text-slate-900">Canon Workshop</h2>
+      <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Canon Workshop</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <label className="text-sm text-slate-700">
+          <label className="text-sm text-slate-700 dark:text-slate-300">
             Profile Name
             <input
-              className="mt-1 block w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm"
               value={profileName}
               onChange={(event) => setProfileName(event.target.value)}
             />
           </label>
-          <label className="text-sm text-slate-700">
+          <label className="text-sm text-slate-700 dark:text-slate-300">
             Active Profile
             <select
-              className="mt-1 block w-full rounded border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm"
               value={selectedProfileId}
               onChange={(event) => setSelectedProfileId(event.target.value)}
             >
@@ -206,10 +206,10 @@ export function CanonWorkshop({
             </select>
           </label>
         </div>
-        <label className="text-sm text-slate-700 block">
+        <label className="text-sm text-slate-700 dark:text-slate-300 block">
           Generation Brief
           <textarea
-            className="mt-1 block w-full rounded border border-slate-300 px-2 py-1.5 text-sm min-h-20"
+            className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm min-h-20"
             value={generationBrief}
             onChange={(event) => setGenerationBrief(event.target.value)}
           />
@@ -217,8 +217,8 @@ export function CanonWorkshop({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-md border border-slate-200 bg-white p-3">
-          <h3 className="text-sm font-semibold mb-2">Characters</h3>
+        <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+          <h3 className="text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">Characters</h3>
           <div className="space-y-1 max-h-48 overflow-auto">
             {characters.map((item) => (
               <label key={item.character_id} className="flex items-center gap-2 text-sm">
@@ -227,13 +227,12 @@ export function CanonWorkshop({
                   checked={selectedCharacterIds.includes(item.character_id)}
                   onChange={() => setSelectedCharacterIds(toggleString(selectedCharacterIds, item.character_id))}
                 />
-                <span>{item.display_name}</span>
-              </label>
+                               <span className="text-slate-700 dark:text-slate-300">{item.display_name}</span>              </label>
             ))}
           </div>
         </div>
-        <div className="rounded-md border border-slate-200 bg-white p-3">
-          <h3 className="text-sm font-semibold mb-2">World Entries</h3>
+        <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+          <h3 className="text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">World Entries</h3>
           <div className="space-y-1 max-h-48 overflow-auto">
             {worldEntries.map((item) => (
               <label key={`${item.entry_type}:${item.title}`} className="flex items-center gap-2 text-sm">
@@ -242,13 +241,12 @@ export function CanonWorkshop({
                   checked={selectedWorldRefs.some((ref) => ref.entry_type === item.entry_type && ref.title === item.title)}
                   onChange={() => setSelectedWorldRefs(toggleWorldRef(item))}
                 />
-                <span>{item.entry_type}: {item.title}</span>
-              </label>
+                               <span className="text-slate-700 dark:text-slate-300">{item.entry_type}: {item.title}</span>              </label>
             ))}
           </div>
         </div>
-        <div className="rounded-md border border-slate-200 bg-white p-3">
-          <h3 className="text-sm font-semibold mb-2">Mythos</h3>
+        <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+          <h3 className="text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">Mythos</h3>
           <div className="space-y-1 max-h-48 overflow-auto">
             {mythosEntries.map((item) => (
               <label key={item.mythos_id} className="flex items-center gap-2 text-sm">
@@ -257,13 +255,12 @@ export function CanonWorkshop({
                   checked={selectedMythosIds.includes(item.mythos_id)}
                   onChange={() => setSelectedMythosIds(toggleString(selectedMythosIds, item.mythos_id))}
                 />
-                <span>{item.entry_type}: {item.name}</span>
-              </label>
+                               <span className="text-slate-700 dark:text-slate-300">{item.entry_type}: {item.name}</span>              </label>
             ))}
           </div>
         </div>
-        <div className="rounded-md border border-slate-200 bg-white p-3">
-          <h3 className="text-sm font-semibold mb-2">Patterns</h3>
+        <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+          <h3 className="text-sm font-semibold mb-2 text-slate-900 dark:text-slate-100">Patterns</h3>
           <div className="space-y-1 max-h-48 overflow-auto">
             {patternEntries.map((item) => (
               <label key={item.pattern_id} className="flex items-center gap-2 text-sm">
@@ -272,14 +269,13 @@ export function CanonWorkshop({
                   checked={selectedPatternIds.includes(item.pattern_id)}
                   onChange={() => setSelectedPatternIds(toggleString(selectedPatternIds, item.pattern_id))}
                 />
-                <span>{item.pattern_type}: {item.name}</span>
-              </label>
+                               <span className="text-slate-700 dark:text-slate-300">{item.pattern_type}: {item.name}</span>              </label>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-white p-4 flex flex-wrap gap-2">
+      <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 flex flex-wrap gap-2">
         <button
           type="button"
           className="rounded bg-slate-900 text-white px-3 py-1.5 text-sm"

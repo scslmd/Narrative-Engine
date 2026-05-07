@@ -42,30 +42,30 @@ export default function PromotionModal({ artifact, projectId, onClose, onSuccess
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+       <div className="p-6">
           <h2 className="text-xl font-semibold mb-4">Promote Draft to Manuscript</h2>
 
           <div className="mb-4">
-            <h3 className="font-medium text-gray-900">{artifact.title}</h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <h3 className="font-medium text-gray-900 dark:text-slate-100">{artifact.title}</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
               This will create a new manuscript document from this draft artifact.
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded p-4 mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Preview (first 500 characters)</h4>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{previewContent}</p>
+          <div className="bg-gray-50 dark:bg-slate-700 rounded p-4 mb-4">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Preview (first 500 characters)</h4>
+            <p className="text-sm text-gray-600 dark:text-slate-400 whitespace-pre-wrap">{previewContent}</p>
           </div>
 
-          <div className="bg-blue-50 rounded p-4 mb-4">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Artifact Information</h4>
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded p-4 mb-4">
+            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">Artifact Information</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <span className="text-gray-600">Artifact ID:</span>
-              <span className="font-mono text-gray-900">{artifact.artifact_id}</span>
-              
-              <span className="text-gray-600">Status:</span>
-              <span className="text-gray-900">{artifact.status}</span>
+              <span className="text-gray-600 dark:text-slate-400">Artifact ID:</span>
+              <span className="font-mono text-gray-900 dark:text-slate-100">{artifact.artifact_id}</span>
+
+              <span className="text-gray-600 dark:text-slate-400">Status:</span>
+              <span className="text-gray-900 dark:text-slate-100">{artifact.status}</span>
             </div>
           </div>
 
@@ -79,7 +79,7 @@ export default function PromotionModal({ artifact, projectId, onClose, onSuccess
             <button
               onClick={onClose}
               disabled={isPromoting}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

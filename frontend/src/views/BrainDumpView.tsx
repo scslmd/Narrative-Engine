@@ -147,16 +147,7 @@ export function BrainDumpView() {
     );
   }
 
-  // Loading state
-  if (isLoading || !activeSession) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-[var(--text-secondary)]">Loading brain dump session...</p>
-      </div>
-    );
-  }
-
-  // Error state
+  // Error state (check before loading, so auth errors aren't hidden by !activeSession)
   if (error) {
     const isAuthError = error instanceof Error && 'status' in error && error.status === 401;
     return (
@@ -173,6 +164,32 @@ export function BrainDumpView() {
         ) : (
           <p className="text-red-400">Failed to load brain dump session.</p>
         )}
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-[var(--text-secondary)]">Loading brain dump session...</p>
+      </div>
+    );
+  }
+
+  // No sessions yet — show creation prompt (auto-create is already triggered by useEffect)
+  if (!activeSession) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-3">
+          <p className="text-[var(--text-secondary)]">No brain dump sessions yet.</p>
+          <button
+            onClick={() => createMutation.mutate({ project_id: resolvedProjectId })}
+            className="px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-primary)] text-sm font-medium hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors"
+          >
+            + New Session
+          </button>
+        </div>
       </div>
     );
   }

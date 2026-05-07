@@ -145,8 +145,8 @@ export function PlanningView() {
   });
 
   const foundationSaveMutation = useMutation({
-    mutationFn: (foundation: Partial<FoundationProfile>) => {
-      const payload = omitKeys(foundation, ['project_id', 'foundation_id', 'version']);
+    mutationFn: (data: Partial<FoundationProfile>) => {
+      const payload = omitKeys(data, ['project_id', 'foundation_id', 'version']);
 
       if (foundation) {
         return foundationUpdate(payload as FoundationUpdateRequest);
@@ -159,6 +159,8 @@ export function PlanningView() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['foundation', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['foundation-revisions', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['foundation-review-cues', projectId] });
     },
   });
 

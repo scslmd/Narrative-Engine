@@ -60,7 +60,7 @@ export default function ProjectList({ onSelectProject }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center p-8">
-        <p className="text-gray-500 mb-4">No projects found</p>
+        <p className="text-gray-500 dark:text-slate-400 mb-4">No projects found</p>
         <button
           onClick={() => onSelectProject('')}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
@@ -77,26 +77,26 @@ export default function ProjectList({ onSelectProject }: ProjectListProps) {
         <ErrorBoundary key={project.project_id}>
           <button
             onClick={() => onSelectProject(project.project_id)}
-            className="w-full text-left bg-white hover:bg-gray-50 border rounded-lg p-4 transition-colors shadow-sm"
+            className="w-full text-left bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border rounded-lg p-4 transition-colors shadow-sm"
           >
-            <h3 className="font-semibold text-gray-900 mb-1">
+            <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">
               {project.project_name}
             </h3>
-            
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 mb-2">
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
                 {project.genre}
               </span>
             </div>
 
-            <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+            <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2 mb-2">
               Tone: {project.tone_profile.primary_tone}
               {project.tone_profile.secondary_tones.length > 0 && (
                 <span>, {project.tone_profile.secondary_tones.join(', ')}</span>
               )}
             </p>
 
-            <div className="flex items-center justify-between text-xs text-gray-400">
+            <div className="flex items-center justify-between text-xs text-gray-400 dark:text-slate-500">
               <span>{project.story_structure.structure_type.replace('_', ' ')}</span>
               <span>Created {formatDate(project.created_at)}</span>
             </div>

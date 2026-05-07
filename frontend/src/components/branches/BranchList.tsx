@@ -35,15 +35,15 @@ export function BranchList({ projectId }: BranchListProps) {
   };
 
   if (isLoading) {
-    return <div className="text-gray-500">Loading branches...</div>;
+    return <div className="text-gray-500 dark:text-slate-400">Loading branches...</div>;
   }
 
   return (
     <div className="space-y-4">
       {branches.length === 0 ? (
-        <div className="border rounded-lg p-8 text-center bg-gray-50">
-          <p className="text-gray-600 mb-4">No branches yet</p>
-          <p className="text-sm text-gray-500">
+        <div className="border rounded-lg p-8 text-center bg-gray-50 dark:bg-slate-900">
+          <p className="text-gray-600 dark:text-slate-400 mb-4">No branches yet</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Branch creation is unavailable in the UI until branch points are exposed by the API.
           </p>
         </div>

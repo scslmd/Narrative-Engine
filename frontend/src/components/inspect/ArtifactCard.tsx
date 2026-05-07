@@ -36,9 +36,9 @@ export default function ArtifactCard({ artifact }: ArtifactCardProps) {
   const formattedDate = new Date(created_at).toLocaleString();
 
   return (
-    <div className="bg-white rounded-lg p-4 border shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border shadow-sm">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <h4 className="font-medium text-gray-900 flex-1">
+        <h4 className="font-medium text-gray-900 dark:text-slate-100 flex-1">
           {KIND_LABELS[artifact_kind] || artifact_kind}
         </h4>
         
@@ -47,7 +47,7 @@ export default function ArtifactCard({ artifact }: ArtifactCardProps) {
         </span>
       </div>
 
-      <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400 mb-2">
         <span>Step: {step_name}</span>
         <span>•</span>
         <span>{formattedDate}</span>
@@ -65,7 +65,7 @@ export default function ArtifactCard({ artifact }: ArtifactCardProps) {
       </button>
 
       {expanded && (
-        <div className="mt-2 p-3 bg-gray-50 rounded text-xs text-gray-700 max-h-48 overflow-y-auto">
+        <div className="mt-2 p-3 bg-gray-50 dark:bg-slate-700 rounded text-xs text-gray-700 dark:text-slate-300 max-h-48 overflow-y-auto">
           <p className="font-medium mb-1">Artifact ID: {artifact.artifact_id}</p>
           <p>Run ID: {artifact.run_id}</p>
         </div>

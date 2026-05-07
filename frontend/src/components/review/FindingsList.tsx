@@ -34,9 +34,9 @@ export function FindingsList({ projectId }: FindingsListProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="border-b px-4 py-3 bg-white">
+      <header className="border-b dark:border-slate-700 px-4 py-3 bg-white dark:bg-slate-800">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Findings</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Findings</h2>
 
           <button
             onClick={() => void findingsQuery.refetch()}
@@ -84,7 +84,7 @@ export function FindingsList({ projectId }: FindingsListProps) {
             />
           ) : (
             <>
-              <p className="text-sm text-gray-500 mb-2">{findingsQuery.data?.length || 0} finding(s)</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">{findingsQuery.data?.length || 0} finding(s)</p>
               {(findingsQuery.data || []).map((finding) => (
                 <FindingCard
                   key={finding.finding_id}

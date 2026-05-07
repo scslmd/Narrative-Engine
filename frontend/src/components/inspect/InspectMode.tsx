@@ -89,7 +89,7 @@ export default function InspectMode() {
   if (isResolvingContext) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-sm text-gray-500">Loading inspection data for job from route...</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Loading inspection data for job from route...</p>
       </div>
     );
   }
@@ -105,24 +105,24 @@ export default function InspectMode() {
   if (!inspectContext?.jobId) {
     return (
       <div className="h-full flex items-center justify-center">
-        <p className="text-sm text-gray-500">No inspection context active. Navigate to review or jobs view to select a job.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">No inspection context active. Navigate to review or jobs view to select a job.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      <header className="border-b px-4 py-3 bg-white">
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-slate-900">
+      <header className="border-b px-4 py-3 bg-white dark:bg-slate-800">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Inspect Run</h2>
-            <p className="text-sm text-gray-500">Run ID: {inspectContext.jobId}</p>
-            <p className="text-sm text-gray-500">Run Kind: {inspectContext.runKind}</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Inspect Run</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Run ID: {inspectContext.jobId}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Run Kind: {inspectContext.runKind}</p>
           </div>
 
           <button
             onClick={handleBackToManuscript}
-            className="px-4 py-2 bg-white border rounded hover:bg-gray-50 text-sm"
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-50 dark:hover:bg-slate-700 text-sm"
           >
             Back to Manuscript
           </button>

@@ -8,7 +8,7 @@ export default function DraftPreview({ artifact }: DraftPreviewProps) {
   const getStatusColor = () => {
     switch (artifact.status) {
       case 'DRAFT':
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300';
       case 'PROPOSED':
         return 'bg-blue-100 text-blue-700';
       case 'CANONICAL':
@@ -18,18 +18,18 @@ export default function DraftPreview({ artifact }: DraftPreviewProps) {
       case 'REJECTED':
         return 'bg-red-100 text-red-700';
       case 'ARCHIVED':
-        return 'bg-gray-200 text-gray-500';
+        return 'bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-400';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300';
     }
   };
 
   const previewContent = artifact.content.substring(0, 500);
 
   return (
-    <div className="border rounded-lg p-4 bg-white">
+    <div className="border rounded-lg p-4 bg-white dark:bg-slate-800">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900">{artifact.title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-slate-100">{artifact.title}</h3>
         <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor()}`}>
           {artifact.status}
         </span>
@@ -48,14 +48,14 @@ export default function DraftPreview({ artifact }: DraftPreviewProps) {
         )}
       </div>
 
-      <div className="bg-gray-50 rounded p-3 mb-3">
-        <p className="text-sm text-gray-600 line-clamp-4">{previewContent}</p>
+      <div className="bg-gray-50 dark:bg-slate-700 rounded p-3 mb-3">
+        <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-4">{previewContent}</p>
         {artifact.content.length > 500 && (
-          <p className="text-xs text-gray-400 mt-1">...more content available</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">...more content available</p>
         )}
       </div>
 
-      <div className="text-xs text-gray-500 font-mono">
+      <div className="text-xs text-gray-500 dark:text-slate-400 font-mono">
         ID: {artifact.artifact_id}
       </div>
     </div>

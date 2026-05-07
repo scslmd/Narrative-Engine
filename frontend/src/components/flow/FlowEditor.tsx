@@ -143,7 +143,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
   if (isError) {
     return (
       <div className="p-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/40 p-4 text-sm text-red-700 dark:text-red-300">
           Failed to load flow stages
         </div>
       </div>
@@ -154,8 +154,8 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     <div className="h-full flex flex-col">
       <div className="p-4 border-b flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Flow Stages</h2>
-          <p className="text-sm text-gray-500">Current routed stage overview for this project</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Flow Stages</h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Current routed stage overview for this project</p>
         </div>
         <button
           onClick={() => setShowAddDialog(true)}
@@ -166,7 +166,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
       </div>
 
       {error && (
-        <div className="mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mx-4 mt-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/40 p-3 text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
@@ -187,15 +187,15 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
 
       {showAddDialog && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Stage</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Add New Stage</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stage Kind</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Stage Kind</label>
                 <select
                   value={addStageKind}
                   onChange={(e) => setAddStageKind(e.target.value as StageKind)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                 >
                   {STAGE_KIND_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -205,13 +205,13 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stage Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Stage Name</label>
                 <input
                   type="text"
                   value={newStageName}
                   onChange={(e) => setNewStageName(e.target.value)}
                   placeholder="Enter stage name..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && handleAddStage()}
                 />
@@ -219,7 +219,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => { setShowAddDialog(false); setError(null); }}
-                  className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                  className="px-3 py-1.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
                 >
                   Cancel
                 </button>
@@ -238,16 +238,16 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
 
       {editingStageId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Rename Stage</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Rename Stage</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stage Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Stage Name</label>
                 <input
                   type="text"
                   value={editingName}
                   onChange={(e) => setEditingName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && submitRename()}
                 />
@@ -255,7 +255,7 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => { setEditingStageId(null); setError(null); }}
-                  className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                  className="px-3 py-1.5 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
                 >
                   Cancel
                 </button>

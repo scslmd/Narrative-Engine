@@ -55,8 +55,8 @@ export default function JobLaunchForm({ onJobCreated }: JobLaunchFormProps) {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-900">Launch Job</h2>
-        <p className="text-sm text-gray-500 mt-1">Configure and submit a backend job for execution</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Launch Job</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Configure and submit a backend job for execution</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -73,14 +73,14 @@ export default function JobLaunchForm({ onJobCreated }: JobLaunchFormProps) {
         )}
       </form>
 
-      <div className="p-4 border-t bg-gray-50">
+      <div className="p-4 border-t bg-gray-50 dark:bg-slate-900">
         <button
           type="submit"
           onClick={handleSubmit}
           disabled={!selectedPhase || isSubmitting}
           className={`w-full py-2.5 rounded-lg font-medium transition-all ${
             !selectedPhase || isSubmitting
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400 cursor-not-allowed'
               : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
@@ -95,7 +95,7 @@ export default function JobLaunchForm({ onJobCreated }: JobLaunchFormProps) {
         </button>
 
         {!selectedPhase && (
-          <p className="text-xs text-gray-500 text-center mt-2">
+          <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-2">
             Select a phase and configure payload to enable launch
           </p>
         )}

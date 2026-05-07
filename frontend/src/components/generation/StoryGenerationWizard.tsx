@@ -49,7 +49,7 @@ export function StoryGenerationWizard({
   });
   const [scope, setScope] = useState<CanonScope>({
     source_project_id: projectId,
-    scope_mode: 'selected',
+    scope_mode: 'full_project',
     character_ids: [],
     world_bible_refs: [],
     continuity_thread_ids: [],
@@ -81,8 +81,8 @@ export function StoryGenerationWizard({
   );
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-300 p-4">
-      <h2 className="text-lg font-semibold">Story Generation Wizard</h2>
+    <div data-generation-wizard className="space-y-4 rounded-xl border border-slate-300 p-4">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Story Generation Wizard</h2>
       <GenerationModeSelector value={mode} onChange={setMode} />
       <GenerationDestinationSelector destination={destination} onChange={setDestination} />
       <CanonScopeSelector scope={scope} characters={characters} worldEntries={worldEntries} onChange={setScope} />
@@ -91,7 +91,7 @@ export function StoryGenerationWizard({
         value={generationBrief}
         onChange={(event) => setGenerationBrief(event.target.value)}
         placeholder="Generation brief"
-        className="w-full rounded border border-slate-300 px-3 py-2 text-sm min-h-[120px]"
+        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 px-3 py-2 text-sm min-h-[120px]"
       />
       <input
         type="number"
@@ -99,13 +99,13 @@ export function StoryGenerationWizard({
         max={100}
         value={chapterCount}
         onChange={(event) => setChapterCount(Number(event.target.value))}
-        className="w-32 rounded border border-slate-300 px-3 py-2 text-sm"
+        className="w-32 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 px-3 py-2 text-sm"
       />
       <div className="flex gap-2">
         <button
           type="button"
           onClick={async () => setPreview(await onPreview(request))}
-          className="px-3 py-2 rounded border border-slate-300 text-sm"
+          className="px-3 py-2 rounded border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm transition-colors hover:border-slate-400 dark:hover:border-slate-600"
           disabled={!canSubmit || isSubmitting}
         >
           Preview Fork

@@ -24,8 +24,8 @@ export function GenerationModeSelector({ value, onChange }: GenerationModeSelect
           key={mode.value}
           type="button"
           onClick={() => onChange(mode.value)}
-          className={`px-3 py-2 rounded border text-sm ${
-            value === mode.value ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-300'
+          className={`px-3 py-2 rounded border text-sm transition-colors ${
+            value === mode.value ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
           }`}
         >
           {mode.label}

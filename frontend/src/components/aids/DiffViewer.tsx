@@ -79,24 +79,24 @@ function SideBySideDiff({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-3">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-3">
         <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-600">{summary.additions} additions</span>
-          <span className="text-gray-600">{summary.deletions} deletions</span>
-          <span className="text-gray-600">{summary.replacements} replacements</span>
+          <span className="text-gray-600 dark:text-slate-400">{summary.additions} additions</span>
+          <span className="text-gray-600 dark:text-slate-400">{summary.deletions} deletions</span>
+          <span className="text-gray-600 dark:text-slate-400">{summary.replacements} replacements</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-2 border-b border-gray-200 bg-gray-100 text-sm font-medium text-gray-700">
-          <div className="border-r border-gray-200 px-3 py-2">{originalLabel}</div>
+        <div className="grid grid-cols-2 border-b border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300">
+          <div className="border-r border-gray-200 dark:border-slate-600 px-3 py-2">{originalLabel}</div>
           <div className="px-3 py-2">{modifiedLabel}</div>
         </div>
 
-        <div className="divide-y divide-gray-100 font-mono text-sm">
+        <div className="divide-y divide-gray-100 dark:divide-slate-700 font-mono text-sm">
           {diff.changes.map((change, index) => (
             <div key={`${change.type}-${index}`} className="grid grid-cols-2">
-              <div className={`min-h-[2.5rem] border-r border-gray-100 px-3 py-2 ${getCellClass(change.type, 'original')}`}>
+              <div className={`min-h-[2.5rem] border-r border-gray-100 dark:border-slate-700 px-3 py-2 ${getCellClass(change.type, 'original')}`}>
                 <pre className="whitespace-pre-wrap break-words">{change.originalText || '\u00A0'}</pre>
               </div>
               <div className={`min-h-[2.5rem] px-3 py-2 ${getCellClass(change.type, 'modified')}`}>
@@ -119,7 +119,7 @@ function InlineDiff({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-4 border-b border-gray-200 bg-gray-50 p-3 text-sm">
+      <div className="flex items-center gap-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-3 text-sm">
         <span className="text-green-600">+{summary.additions}</span>
         <span className="text-red-600">-{summary.deletions}</span>
         <span className="text-yellow-600">~{summary.replacements}</span>
@@ -140,9 +140,9 @@ function InlineDiff({
 
 function EmptyDiffState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="flex h-full items-center justify-center p-6 text-center text-gray-500">
+    <div className="flex h-full items-center justify-center p-6 text-center text-gray-500 dark:text-slate-400">
       <div className="max-w-sm">
-        <p className="text-sm font-medium text-gray-700">{title}</p>
+        <p className="text-sm font-medium text-gray-700 dark:text-slate-300">{title}</p>
         <p className="mt-2 text-sm">{description}</p>
       </div>
     </div>
@@ -152,13 +152,13 @@ function EmptyDiffState({ title, description }: { title: string; description: st
 function getChangeClass(type: DiffChange['type']): string {
   switch (type) {
     case 'delete':
-      return 'bg-red-100 text-red-800 line-through';
+      return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 line-through';
     case 'insert':
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300';
     case 'replace':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300';
     default:
-      return 'text-gray-700';
+      return 'text-gray-700 dark:text-slate-300';
   }
 }
 
@@ -177,16 +177,16 @@ function formatInlineChange(change: DiffChange): string {
 
 function getCellClass(type: DiffChange['type'], side: 'original' | 'modified'): string {
   if (type === 'equal') {
-    return 'text-gray-700';
+    return 'text-gray-700 dark:text-slate-300';
   }
 
   if (type === 'replace') {
-    return 'bg-yellow-100 text-yellow-800';
+    return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300';
   }
 
   if (type === 'delete') {
-    return side === 'original' ? 'bg-red-100 text-red-800 line-through' : 'bg-gray-50 text-gray-400';
+    return side === 'original' ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 line-through' : 'bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500';
   }
 
-  return side === 'modified' ? 'bg-green-100 text-green-800' : 'bg-gray-50 text-gray-400';
+  return side === 'modified' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' : 'bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500';
 }

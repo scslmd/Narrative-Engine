@@ -47,9 +47,9 @@ export default function JobLogsViewer({ jobId }: JobLogsViewerProps) {
       <div className="space-y-2">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex gap-3 py-2 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-24" />
-            <div className="h-4 bg-gray-200 rounded w-16" />
-            <div className="flex-1 h-4 bg-gray-200 rounded" />
+            <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-24" />
+            <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-16" />
+            <div className="flex-1 h-4 bg-gray-200 dark:bg-slate-600 rounded" />
           </div>
         ))}
       </div>
@@ -91,20 +91,20 @@ export default function JobLogsViewer({ jobId }: JobLogsViewerProps) {
           <button
             onClick={exportLogs}
             disabled={logs.length === 0}
-            className="px-3 py-1 text-sm bg-gray-100 border rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 border rounded hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50"
           >
             Export Logs
           </button>
         </div>
 
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-slate-400">
           {filteredLogs.length} of {logs.length} entries shown
         </p>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 bg-gray-50">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 bg-gray-50 dark:bg-slate-900">
         {filteredLogs.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-gray-500 dark:text-slate-400 py-8">
             No logs available yet
           </div>
         ) : (

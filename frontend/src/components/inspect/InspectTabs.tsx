@@ -59,7 +59,7 @@ export default function InspectTabs({ context }: InspectTabsProps) {
               className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 hover:dark:text-slate-300'
               }`}
             >
               {tab.label}
@@ -76,9 +76,9 @@ export default function InspectTabs({ context }: InspectTabsProps) {
             {attemptsLoading && (
               <div className="space-y-3">
                 {[1, 2].map((i) => (
-                  <div key={i} className="bg-white rounded-lg p-4 border animate-pulse">
-                    <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                  <div key={i} className="bg-white dark:bg-slate-800 rounded-lg p-4 border animate-pulse">
+                    <div className="h-5 bg-gray-200 dark:bg-slate-600 rounded w-1/3 mb-2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-2/3"></div>
                   </div>
                 ))}
               </div>
@@ -91,7 +91,7 @@ export default function InspectTabs({ context }: InspectTabsProps) {
             )}
             
             {!attemptsLoading && !attemptsError && attempts.length === 0 && (
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-sm text-gray-500 dark:text-slate-400">
                 No execution attempts found for this job. Run the job to see attempt history.
               </div>
             )}
@@ -99,12 +99,12 @@ export default function InspectTabs({ context }: InspectTabsProps) {
             {!attemptsLoading && !attemptsError && attempts.length > 0 && (
               <div className="space-y-3">
                 {attempts.map((attempt) => (
-                  <div key={attempt.attempt_number} className="bg-white rounded-lg p-4 border">
-                    <h4 className="font-medium text-gray-900 mb-2">
+                  <div key={attempt.attempt_number} className="bg-white dark:bg-slate-800 rounded-lg p-4 border">
+                    <h4 className="font-medium text-gray-900 dark:text-slate-100 mb-2">
                       Attempt #{attempt.attempt_number}
                     </h4>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                      <span className="text-gray-500">Status:</span>
+                      <span className="text-gray-500 dark:text-slate-400">Status:</span>
                       <span className={`font-medium ${
                         attempt.status === 'COMPLETED' ? 'text-green-600' :
                         attempt.status === 'FAILED' ? 'text-red-600' :
@@ -115,28 +115,28 @@ export default function InspectTabs({ context }: InspectTabsProps) {
                       
                       {attempt.started_at && (
                         <>
-                          <span className="text-gray-500">Started:</span>
-                          <span className="text-gray-700">{new Date(attempt.started_at).toLocaleString()}</span>
+                          <span className="text-gray-500 dark:text-slate-400">Started:</span>
+                          <span className="text-gray-700 dark:text-slate-300">{new Date(attempt.started_at).toLocaleString()}</span>
                         </>
                       )}
                       
                       {attempt.finished_at && (
                         <>
-                          <span className="text-gray-500">Finished:</span>
-                          <span className="text-gray-700">{new Date(attempt.finished_at).toLocaleString()}</span>
+                          <span className="text-gray-500 dark:text-slate-400">Finished:</span>
+                          <span className="text-gray-700 dark:text-slate-300">{new Date(attempt.finished_at).toLocaleString()}</span>
                         </>
                       )}
                       
                       {attempt.finish_reason && (
                         <>
-                          <span className="text-gray-500">Finish Reason:</span>
-                          <span className="text-gray-700">{attempt.finish_reason}</span>
+                          <span className="text-gray-500 dark:text-slate-400">Finish Reason:</span>
+                          <span className="text-gray-700 dark:text-slate-300">{attempt.finish_reason}</span>
                         </>
                       )}
                       
                       {attempt.error_code && (
                         <>
-                          <span className="text-gray-500">Error Code:</span>
+                          <span className="text-gray-500 dark:text-slate-400">Error Code:</span>
                           <span className="text-red-600">{attempt.error_code}</span>
                         </>
                       )}

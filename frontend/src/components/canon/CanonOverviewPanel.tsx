@@ -26,9 +26,9 @@ export function CanonOverviewPanel({
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded border border-slate-200 bg-white px-3 py-2">
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className="text-lg font-semibold text-slate-900">{value}</div>
+    <div className="rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2">
+      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">{value}</div>
     </div>
   );
 }

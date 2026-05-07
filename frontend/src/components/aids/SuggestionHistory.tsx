@@ -28,7 +28,7 @@ export function SuggestionHistory({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap border-b border-gray-200 bg-white">
+      <div className="flex flex-wrap border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         {(['all', 'requested', 'pending', 'accepted', 'rejected', 'superseded'] as const).map((value) => (
           <button
             key={value}
@@ -37,11 +37,11 @@ export function SuggestionHistory({
             className={`px-4 py-2 text-sm font-medium capitalize ${
               filter === value
                 ? 'border-b-2 border-blue-600 text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 hover:dark:text-slate-200'
             }`}
           >
             {value}
-            <span className="ml-1 text-gray-400">
+            <span className="ml-1 text-gray-400 dark:text-slate-500">
               ({suggestions.filter((suggestion) => value === 'all' || suggestion.status.toLowerCase() === value).length})
             </span>
           </button>
@@ -51,9 +51,9 @@ export function SuggestionHistory({
       <div className="flex-1 space-y-6 overflow-y-auto p-4">
         {Object.entries(groupedByDocument).map(([documentId, documentSuggestions]) => (
           <div key={documentId}>
-            <h3 className="mb-2 text-sm font-medium text-gray-500">
+            <h3 className="mb-2 text-sm font-medium text-gray-500 dark:text-slate-400">
               {documentId}
-              <span className="ml-2 text-gray-400">({documentSuggestions.length})</span>
+              <span className="ml-2 text-gray-400 dark:text-slate-500">({documentSuggestions.length})</span>
             </h3>
             <div className="space-y-2">
               {documentSuggestions.map((suggestion) => (
@@ -69,7 +69,7 @@ export function SuggestionHistory({
         ))}
 
         {filteredSuggestions.length === 0 && (
-          <div className="py-8 text-center text-gray-500">
+          <div className="py-8 text-center text-gray-500 dark:text-slate-400">
             <p>No suggestions found</p>
           </div>
         )}
@@ -98,27 +98,27 @@ function SuggestionItem({
   return (
     <button
       type="button"
-      className={`w-full rounded-lg border bg-white p-3 text-left transition-colors ${
-        selected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
+      className={`w-full rounded-lg border bg-white dark:bg-slate-800 p-3 text-left transition-colors ${
+        selected ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 hover:dark:border-slate-600'
       }`}
       onClick={onClick}
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <span className={`rounded px-2 py-0.5 text-xs ${stateColor}`}>{suggestion.status}</span>
-        <span className="text-xs text-gray-400">{suggestion.target_document_id}</span>
+        <span className="text-xs text-gray-400 dark:text-slate-500">{suggestion.target_document_id}</span>
       </div>
 
-      <div className="mb-2 text-sm text-gray-700">
+      <div className="mb-2 text-sm text-gray-700 dark:text-slate-300">
         <span className="mr-2 text-red-600 line-through">{truncate(suggestion.source_text, 40)}</span>
         <span className="text-green-600">{truncate(suggestion.proposed_text, 48)}</span>
       </div>
 
-      <p className="text-xs italic text-gray-500">{suggestion.rationale}</p>
+      <p className="text-xs italic text-gray-500 dark:text-slate-400">{suggestion.rationale}</p>
 
       {suggestion.source_context.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {suggestion.source_context.slice(0, 4).map((context) => (
-            <span key={context} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+            <span key={context} className="rounded bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 text-xs text-gray-600 dark:text-slate-400">
               {context}
             </span>
           ))}

@@ -10,7 +10,7 @@ const types: Array<MythosEntryType | 'all'> = ['all', 'archetype', 'motif', 'cos
 export function MythosTypeFilter({ value, onChange }: MythosTypeFilterProps) {
   return (
     <select
-      className="rounded border border-slate-300 px-2 py-1.5 text-sm"
+      className="rounded border border-slate-300 dark:border-slate-600 px-2 py-1.5 text-sm"
       value={value}
       onChange={(event) => onChange(event.target.value as MythosEntryType | 'all')}
     >

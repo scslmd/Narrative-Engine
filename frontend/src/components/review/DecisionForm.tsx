@@ -50,17 +50,17 @@ export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
   };
 
   return (
-    <div className="border-t border-gray-200 p-4 bg-gray-50">
+    <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Finding Summary
           </label>
-          <p className="text-sm text-gray-600">{finding.summary}</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400">{finding.summary}</p>
         </div>
 
         <div>
-          <label htmlFor="decision-action" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="decision-action" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Decision Action
           </label>
           <select
@@ -78,7 +78,7 @@ export function DecisionForm({ finding, onSuccess }: DecisionFormProps) {
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Notes *
           </label>
           <textarea

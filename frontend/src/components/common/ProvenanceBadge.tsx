@@ -20,14 +20,14 @@ export default function ProvenanceBadge({ provenance, compact = false }: Provena
   }
 
   return (
-    <div className="flex flex-col gap-1 p-2 bg-gray-50 rounded border text-xs">
+    <div className="flex flex-col gap-1 p-2 bg-gray-50 dark:bg-slate-900 rounded border text-xs">
       <div className="flex items-center gap-2">
         <ProviderBadge provider={provider} />
         {model && <ModelBadge model={model} />}
       </div>
 
       {(backendName || backendVersion) && (
-        <div className="text-gray-500">
+        <div className="text-gray-500 dark:text-slate-400">
           {backendName && <span>{backendName}</span>}
           {backendName && backendVersion && <span> • </span>}
           {backendVersion && <span>v{backendVersion}</span>}
