@@ -9,6 +9,7 @@ export function usePatternLibrary(projectId: string) {
     queryKey: ['pattern-entries', projectId],
     queryFn: () => getPatternEntries(projectId),
     enabled: Boolean(projectId),
+    retry: false,
   });
 
   const createMutation = useMutation({

@@ -8,7 +8,7 @@ export interface JobCreateRequest {
 export interface JobStatusResponse {
   id: string;
   phase: JobPhase;
-  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   attempt_number?: number;
   current_phase?: string;
   current_step?: string;

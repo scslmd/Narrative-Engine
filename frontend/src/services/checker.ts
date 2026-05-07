@@ -3,12 +3,43 @@ import api from '../lib/api';
 
 export async function getModelCatalog(): Promise<ModelCatalog> {
   const response = await api.get('/models');
-  
+
   if (response.status !== 200) {
     throw new Error(`Failed to fetch model catalog: ${response.status}`);
   }
 
-  return response.data;
+  const raw = response.data;
+
+  // Backend returns discovered_models as list[str] (model ID strings).
+  // Transform into Array<{role, model_id, name}> expected by the component.
+  // Already-shaped objects (from tests/legacy) pass through unchanged.
+  const rawModels = Array.isArray(raw.discovered_models) ? raw.discovered_models : [];
+  const roles = Array.isArray(raw.workflow_order) ? raw.workflow_order : [];
+
+  if (rawModels.length > 0 && typeof rawModels[0] === 'object' && 'model_id' in rawModels[0]) {
+    return {
+      workflow_order: roles,
+      discovered_models: rawModels as Array<{ role: string; model_id: string; name: string }>,
+    };
+  }
+
+  // Backend format: list of model ID strings. Expand into per-role entries.
+  const models: Array<{ role: string; model_id: string; name: string }> = [];
+  for (const roleId of roles) {
+    for (const modelId of rawModels) {
+      const id = String(modelId);
+      models.push({
+        role: roleId,
+        model_id: id,
+        name: id.replace(/\.gguf$/i, '').replace(/[-_]/g, ' '),
+      });
+    }
+  }
+
+  return {
+    workflow_order: roles,
+    discovered_models: models,
+  };
 }
 
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {

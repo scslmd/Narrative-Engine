@@ -1,29 +1,30 @@
 import { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import type { ToastVariant } from '../../hooks/useToast';
-import { useToast } from '../../hooks/useToast';
+import { X, CheckCircle, AlertCircle, Info, TriangleAlert } from 'lucide-react';
+import { useToastStore, type ToastType } from '../../stores/toastStore';
 
-const VARIANT_STYLES: Record<ToastVariant, string> = {
+const VARIANT_STYLES: Record<ToastType, string> = {
   success: 'bg-green-50 border-green-200 text-green-800',
   error: 'bg-red-50 border-red-200 text-red-800',
+  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
   info: 'bg-blue-50 border-blue-200 text-blue-800',
 };
 
-const VARIANT_ICON: Record<ToastVariant, React.ReactNode> = {
+const VARIANT_ICON: Record<ToastType, React.ReactNode> = {
   success: <CheckCircle className="w-5 h-5 text-green-500" />,
   error: <AlertCircle className="w-5 h-5 text-red-500" />,
+  warning: <TriangleAlert className="w-5 h-5 text-yellow-500" />,
   info: <Info className="w-5 h-5 text-blue-500" />,
 };
 
 export function ToastContainer(): React.ReactElement {
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast } = useToastStore();
 
   if (toasts.length === 0) {
     return <></>;
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+    <div className="fixed top-4 right-4 z-[300] flex flex-col gap-2">
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onDismiss={removeToast} />
       ))}
@@ -32,7 +33,7 @@ export function ToastContainer(): React.ReactElement {
 }
 
 interface ToastProps {
-  toast: { id: string; message: string; variant: ToastVariant };
+  toast: { id: string; message: string; type: ToastType };
   onDismiss: (id: string) => void;
 }
 
@@ -51,9 +52,9 @@ function Toast({ toast, onDismiss }: ToastProps): React.ReactElement {
     <div
       className={`flex items-center gap-3 px-4 py-3 border rounded-lg shadow-lg transition-opacity duration-300 ${
         visible ? 'opacity-100' : 'opacity-0'
-      } ${VARIANT_STYLES[toast.variant]}`}
+      } ${VARIANT_STYLES[toast.type]}`}
     >
-      {VARIANT_ICON[toast.variant]}
+      {VARIANT_ICON[toast.type]}
       <span className="text-sm flex-1">{toast.message}</span>
       <button
         onClick={() => onDismiss(toast.id)}

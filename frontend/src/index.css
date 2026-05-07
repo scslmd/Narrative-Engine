@@ -120,6 +120,24 @@
   }
 }
 
+/* === Form input dark mode text colors === */
+.dark input,
+.dark textarea,
+.dark select {
+  color-scheme: dark;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+  color: #f1f5f9;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
 /* === Print styles === */
 @media print {
   .no-print {

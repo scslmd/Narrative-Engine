@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi, ProjectCreateRequest } from '../lib/projectsApi';
 import { useToastStore } from '../stores/toastStore';
@@ -18,14 +19,16 @@ export function useProject(projectId: string) {
 }
 
 export function useCreateProject() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
     mutationFn: (data: ProjectCreateRequest) => projectsApi.create(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       addToast('Project created successfully', 'success');
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      navigate(`/workspace/${result.project_id}`);
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : 'Failed to create project';

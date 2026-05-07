@@ -43,7 +43,7 @@ describe('useJob', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-100',
-          status: 'RUNNING',
+          status: 'PROCESSING',
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
         });
@@ -106,7 +106,7 @@ describe('useCreateJob', () => {
         return HttpResponse.json({
           id: 'j-new',
           phase: body.phase,
-          status: 'QUEUED',
+          status: 'PENDING',
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
         });

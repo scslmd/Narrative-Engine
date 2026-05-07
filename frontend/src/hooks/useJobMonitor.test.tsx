@@ -79,7 +79,7 @@ describe('useJobMonitor', () => {
   it('fetches status when active job is set', async () => {
     vi.mocked(useJobStatus).mockReturnValue({
       phase: 'P-100',
-      status: 'RUNNING',
+      status: 'PROCESSING',
       progress: null,
       error: null,
       isPolling: true,
@@ -95,7 +95,7 @@ describe('useJobMonitor', () => {
     const { result, unmount } = renderHook(() => useJobMonitor(), { wrapper: WithProviders });
 
     await waitFor(() => {
-      expect(result.current.status).toBe('RUNNING');
+      expect(result.current.status).toBe('PROCESSING');
     });
 
     expect(result.current.jobId).toBe('j1');

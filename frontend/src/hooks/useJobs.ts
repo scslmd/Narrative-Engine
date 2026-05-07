@@ -12,7 +12,7 @@ export function useJobs(projectId: string | undefined) {
       if (!data || data.length === 0) return false;
       
       const hasProcessingJob = data.some(
-        (job) => job.status === 'RUNNING' || job.status === 'QUEUED'
+        (job) => job.status === 'PROCESSING' || job.status === 'PENDING'
       );
       return hasProcessingJob ? 2000 : false;
     },
@@ -28,7 +28,7 @@ export function useJob(jobId: string | undefined) {
       const data = query.state.data;
       if (!data) return false;
       
-      if (data.status === 'RUNNING' || data.status === 'QUEUED') {
+      if (data.status === 'PROCESSING' || data.status === 'PENDING') {
         return 1000;
       }
       return false;

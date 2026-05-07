@@ -35,7 +35,7 @@ describe('useJobStatus', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-100',
-          status: 'RUNNING',
+          status: 'PROCESSING',
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
         });
@@ -52,7 +52,7 @@ describe('useJobStatus', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-200',
-          status: 'RUNNING',
+          status: 'PROCESSING',
           current_step: 'sequencing',
           current_phase: 'P-200',
           attempt_number: 1,
@@ -65,7 +65,7 @@ describe('useJobStatus', () => {
     const { result } = renderHook(() => useJobStatus('j1'), { wrapper: WithProviders });
 
     await waitFor(() => {
-      expect(result.current.status).toBe('RUNNING');
+      expect(result.current.status).toBe('PROCESSING');
     });
 
     expect(result.current.phase).toBe('P-200');
@@ -124,7 +124,7 @@ describe('useJobStatus', () => {
         return HttpResponse.json({
           id: 'j4',
           phase: 'P-100',
-          status: 'QUEUED',
+          status: 'PENDING',
         });
       }),
     );
@@ -132,7 +132,7 @@ describe('useJobStatus', () => {
     const { result } = renderHook(() => useJobStatus('j4'), { wrapper: WithProviders });
 
     await waitFor(() => {
-      expect(result.current.status).toBe('QUEUED');
+      expect(result.current.status).toBe('PENDING');
     });
 
     expect(result.current.progress).toBeNull();

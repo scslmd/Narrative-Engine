@@ -9,6 +9,7 @@ export function useMythosLibrary(projectId: string) {
     queryKey: ['mythos-entries', projectId],
     queryFn: () => getMythosEntries(projectId),
     enabled: Boolean(projectId),
+    retry: false,
   });
 
   const createMutation = useMutation({

@@ -50,7 +50,14 @@ export const applyTheme = (config: ThemeConfig): void => {
   const root = document.documentElement
   root.setAttribute('data-theme', config.mode)
   root.setAttribute('data-stage', config.stage)
-  
+
+  // Tailwind darkMode: 'class' requires 'dark' class on <html>
+  if (config.mode !== 'light') {
+    root.classList.add('dark')
+  } else {
+    root.classList.remove('dark')
+  }
+
   const colors = stageColors[config.stage]
   root.style.setProperty('--color-primary', colors.primary)
   root.style.setProperty('--color-secondary', colors.secondary)

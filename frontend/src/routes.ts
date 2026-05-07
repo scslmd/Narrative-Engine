@@ -6,6 +6,16 @@ export interface RouteState {
   chapterId: string | null
 }
 
+export const modeToStage: Record<WorkspaceMode, 'planning' | 'writing' | 'review'> = {
+  braindump: 'planning',
+  plan: 'planning',
+  canon: 'planning',
+  generate: 'planning',
+  write: 'writing',
+  review: 'review',
+  inspect: 'review',
+}
+
 export const routes = {
   home: '/',
   workspace: (projectId: string) => `/workspace/${projectId}`,
