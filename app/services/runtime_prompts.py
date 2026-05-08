@@ -197,7 +197,7 @@ def build_p400_compiler_request(
         prompt_context["chapter_output"] = chapter_output
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
-        temperature=_coerce_float(payload.get("temperature"), default=0.1),
+        temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-400")),
         max_tokens=_coerce_int(payload.get("max_tokens"), default=1400),
         messages=[
             InferenceMessage(
@@ -313,7 +313,7 @@ def build_g350_canon_repair_request(
 ) -> InferenceRequest:
     return InferenceRequest(
         model=default_model,
-        temperature=0.1,
+        temperature=settings.inference_temperature("G-350"),
         max_tokens=4000,
         messages=[
             InferenceMessage(
@@ -348,7 +348,7 @@ def build_g400_manuscript_assembly_request(
 ) -> InferenceRequest:
     return InferenceRequest(
         model=default_model,
-        temperature=0.1,
+        temperature=settings.inference_temperature("G-400"),
         max_tokens=6000,
         messages=[
             InferenceMessage(
@@ -387,7 +387,7 @@ def build_m500_manuscript_assist_request(
     payload = packet.model_dump(mode="json")
     return InferenceRequest(
         model=packet.model_id or default_model,
-        temperature=packet.temperature if packet.temperature is not None else settings.inference_temperature("G-300"),
+        temperature=packet.temperature if packet.temperature is not None else settings.inference_temperature("M-500"),
         max_tokens=packet.max_tokens if packet.max_tokens is not None else 4000,
         messages=[
             InferenceMessage(
@@ -420,7 +420,7 @@ def build_m550_manuscript_repair_request(
 ) -> InferenceRequest:
     return InferenceRequest(
         model=packet.model_id or default_model,
-        temperature=0.1,
+        temperature=settings.inference_temperature("M-550"),
         max_tokens=3000,
         messages=[
             InferenceMessage(
@@ -497,7 +497,7 @@ def build_m500_draft_generation_request(
 
     return InferenceRequest(
         model=packet.model_id or default_model,
-        temperature=packet.temperature if packet.temperature is not None else 0.7,
+        temperature=packet.temperature if packet.temperature is not None else settings.inference_temperature("M-500"),
         max_tokens=packet.max_tokens if packet.max_tokens is not None else 8000,
         messages=[
             InferenceMessage(role="system", content=system_prompt),
@@ -2043,7 +2043,7 @@ def build_generate_description_request(
 
     return InferenceRequest(
         model=str(default_model or "").strip() or None,
-        temperature=0.3,
+        temperature=settings.inference_temperature("GUIDED_SETUP"),
         max_tokens=256,
         messages=[
             InferenceMessage(

@@ -133,8 +133,14 @@ class Settings:
           NARRATIVE_TEMPERATURE_ARCHITECT   (P-100, default 1.0)
           NARRATIVE_TEMPERATURE_SEQUENCER   (P-200, default 0.6)
           NARRATIVE_TEMPERATURE_DRAFTER     (P-300, default 1.0)
+          NARRATIVE_TEMPERATURE_COMPILER    (P-400, default 0.1)
           NARRATIVE_TEMPERATURE_PLANNER     (G-200, default 0.6)
           NARRATIVE_TEMPERATURE_CHAPTER     (G-300, default 1.0)
+          NARRATIVE_TEMPERATURE_CANON_REPAIR (G-350, default 0.1)
+          NARRATIVE_TEMPERATURE_ASSEMBLER   (G-400, default 0.1)
+          NARRATIVE_TEMPERATURE_ASSIST      (M-500, default 0.7)
+          NARRATIVE_TEMPERATURE_ASSIST_REPAIR (M-550, default 0.1)
+          NARRATIVE_TEMPERATURE_GUIDED_SETUP (GUIDED_SETUP, default 0.3)
 
         Fallback env var for all phases: NARRATIVE_TEMPERATURE_DEFAULT (0.7).
         """
@@ -142,8 +148,14 @@ class Settings:
             "P-100": "ARCHITECT",
             "P-200": "SEQUENCER",
             "P-300": "DRAFTER",
+            "P-400": "COMPILER",
             "G-200": "PLANNER",
             "G-300": "CHAPTER",
+            "G-350": "CANON_REPAIR",
+            "G-400": "ASSEMBLER",
+            "M-500": "ASSIST",
+            "M-550": "ASSIST_REPAIR",
+            "GUIDED_SETUP": "GUIDED_SETUP",
         }.get(phase.upper(), phase.upper())
 
         env_value = os.getenv(f"NARRATIVE_TEMPERATURE_{phase_key}", "").strip()
@@ -164,8 +176,14 @@ class Settings:
             "ARCHITECT": 1.0,
             "SEQUENCER": 0.6,
             "DRAFTER": 1.0,
+            "COMPILER": 0.1,
             "PLANNER": 0.6,
             "CHAPTER": 1.0,
+            "CANON_REPAIR": 0.1,
+            "ASSEMBLER": 0.1,
+            "ASSIST": 0.7,
+            "ASSIST_REPAIR": 0.1,
+            "GUIDED_SETUP": 0.3,
         }
         return defaults.get(phase_key, 0.7)
 
