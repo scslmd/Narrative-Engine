@@ -16,6 +16,7 @@ interface GuidedSetupState {
   confidence: number;
   readyToCreate: boolean;
   categoryProgress: CategoryProgress[];
+  wasReadyBefore: boolean;
   isAnalyzing: boolean;
   isCreating: boolean;
   error: string | null;
@@ -46,6 +47,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
   confidence: 0,
   readyToCreate: false,
   categoryProgress: [],
+  wasReadyBefore: false,
   isAnalyzing: false,
   isCreating: false,
   error: null,
@@ -106,6 +108,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
     confidence: 0,
     readyToCreate: false,
     categoryProgress: [],
+    wasReadyBefore: false,
     isAnalyzing: false,
     isCreating: false,
     error: null,
@@ -133,7 +136,19 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
 
       const response = await analyzeTurn(request);
 
+      const wasReady = get().wasReadyBefore;
+      const newlyReady = response.ready_to_create && !wasReady;
+
       const currentTurn = get().turnCount;
+      const extraMessages: ChatMessage[] = [];
+      if (newlyReady) {
+        extraMessages.push({
+          role: 'system' as const,
+          content: "I think we have enough to create your project. You can review the fields on the right and save whenever you're ready.",
+          turn: currentTurn + 2,
+        });
+      }
+
       set({
         accumulatedFields: response.extracted_fields,
         nextQuestion: response.next_question,
@@ -141,11 +156,13 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
         confidence: response.confidence,
         readyToCreate: response.ready_to_create,
         categoryProgress: response.category_progress,
+        wasReadyBefore: response.ready_to_create || wasReady,
         conversationHistory: [
           ...get().conversationHistory,
           { role: 'system' as const, content: response.next_question, turn: currentTurn + 1 },
+          ...extraMessages,
         ],
-        turnCount: currentTurn + 1,
+        turnCount: currentTurn + 1 + extraMessages.length,
       });
     } catch (error) {
       const errorMessage = "Sorry, I'm having trouble connecting. Make sure the backend server and LLM are running.";
