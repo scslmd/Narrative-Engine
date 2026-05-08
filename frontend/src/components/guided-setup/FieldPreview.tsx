@@ -42,8 +42,8 @@ function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen
               <div
                 role="progressbar"
                 aria-valuenow={Math.round(completeness * 100)}
-                aria-valuemin="0"
-                aria-valuemax="100"
+                aria-valuemin={0}
+                aria-valuemax={100}
                 aria-label={`${title} ${Math.round(completeness * 100)}% complete`}
                 data-testid="completeness-bar"
                 className={`h-full rounded-full transition-all duration-300 ${
