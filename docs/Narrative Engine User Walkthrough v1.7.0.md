@@ -6,7 +6,7 @@
 >
 > Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.7.0.md`) for feature reference and detailed explanations.
 >
-> **v1.7.0 update:** Added Phase 13 (Iterate and Refine). Added Guided Setup Wizard (Phase 1, Option D) — conversational project creation with LLM-generated sequences and chapters. Fixed character PATCH 422 bug — optional fields with empty values no longer block saving edits to minimally-created characters.
+> **v1.7.0 update:** Added Phase 13 (Iterate and Refine). Added Guided Setup Wizard (Phase 1, Option D) — conversational project creation with LLM-generated sequences and chapters, readiness indicators (completeness bars, missing field tags, dynamic progress), and dual-state save button. Fixed character PATCH 422 bug — optional fields with empty values no longer block saving edits to minimally-created characters.
 
 ---
 
@@ -256,7 +256,7 @@ Pattern Extraction lets you paste any story or mythology text and extract its st
 
 #### Option D: Guided Setup Wizard (Conversational)
 
-The Guided Setup Wizard lets you create a project through conversation with an LLM, rather than filling out forms. It extracts all project data — config, foundation, characters, world bible, arcs, sequences, and chapters — through natural dialogue.
+The Guided Setup Wizard lets you create a project through conversation with an LLM, rather than filling out forms. It extracts all project data — config, foundation, characters, world bible, arcs, sequences, and chapters — through natural dialogue. Visual readiness indicators tell you exactly how close you are to creating a complete project.
 
 1. Navigate to `/setup-wizard`
 2. You'll see two panels:
@@ -273,15 +273,26 @@ The Guided Setup Wizard lets you create a project through conversation with an L
    - Finally **story structure** — sequences and chapters with objectives, conflicts, and stakes
 5. As data is extracted, the Field Preview panel updates in real time:
    - Each category has a collapsible section showing what's been collected so far
+   - **Per-category completeness bars** show progress for each category:
+     - **Green** (≥70%): Enough data for project creation
+     - **Amber** (30–70%): Partial data — keep talking to fill it in
+     - **Gray** (<30%): Mostly empty
+   - Categories that aren't yet ready show **missing field tags** listing what's still needed (e.g., "needs: logline, thematic_spine")
    - The **Sequences** and **Chapters** panels auto-open when the LLM first generates planning data, so you can review the proposed outline
    - You can see character cards, world entry summaries, arc types, and chapter plans as they're built
-6. You can adjust anything naturally during the conversation:
+6. Watch the **readiness indicators** in the Chat Panel:
+   - **Progress bar color**: Shifts from gray (early) → amber (midway) → green (ready) as categories fill in
+   - **Category count**: Shows "X/5 categories ready" — a category counts as ready at 70%+ completeness
+   - **"Ready" badge**: Appears in the chat panel header when all 5 core categories are ready and sequences/chapters are present
+7. You can adjust anything naturally during the conversation:
    - "Make it three acts instead of two"
    - "Add a character who is the colony ship's engineer"
    - "The second chapter should focus on the AI revealing its secret"
-7. When all categories reach sufficient completeness, the wizard shows **"Ready to Create"** with a progress bar at 100%
-8. Click the create button — your project is created with all extracted data populated
-9. You'll be redirected to the new project's workspace
+8. **Save options:**
+   - **Before readiness**: The save button reads **"Save What You Have"** — creates a partial project with whatever data has been collected so far. Useful if you want to stop early and refine later.
+   - **After readiness**: The save button changes to **"Save Project ✓"** — creates a fully-populated project with all categories complete.
+9. Click the save button — your project is created with all extracted data populated
+10. You'll be redirected to the new project's workspace
 
 **What gets created:**
 - Project directory with manifest, database, and configuration
@@ -294,8 +305,9 @@ The Guided Setup Wizard lets you create a project through conversation with an L
 
 **Tips for the Guided Setup Wizard:**
 - Be specific in your initial description — "dark sci-fi about isolation and moral dilemmas" produces better results than "a space story"
-- Review the Field Preview panel as you go — it shows exactly what data has been extracted
+- Review the Field Preview panel as you go — the completeness bars and missing field tags tell you exactly what to discuss next
 - The Sequences and Chapters panels give you a complete narrative outline before project creation, so you can adjust structure early
+- You don't have to wait for "Ready" — click "Save What You Have" at any time to create a partial project and refine it later in the Planning workspace
 - You can always refine any field after creation in the Planning workspace
 - If the LLM misses something, just ask for it: "What about the world? The station is called Meridian and has been abandoned for 8 years"
 

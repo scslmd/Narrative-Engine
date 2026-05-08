@@ -2,7 +2,7 @@
 
 This guide walks you through generating a short story from scratch and then iterating on it. Follow **Chapter 1** (Steps 1-7) to go from zero to a generated chapter in about 15 minutes. **Chapter 2** (Steps 8-11) shows how to modify characters, edit the story, and regenerate with updated canon. The remaining sections cover advanced features and reference material.
 
-**Version 1.7.0 changes:** Added "Iterate and Refine" chapter (Steps 8-11): modify existing characters, add new characters after initial setup, manually edit generated manuscripts, and re-run the generation pipeline with updated canon. Added AI Draft Generation: generate full chapter drafts from a brief description via the "⚡ AI" button in the Writing workspace's draft list, without running the P-300 pipeline. Added Guided Setup Wizard at `/setup-wizard`: conversational project creation that extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue with the LLM. Fixed character PATCH 422 bug where optional fields with empty values blocked saving edits to minimally-created characters.
+**Version 1.7.0 changes:** Added "Iterate and Refine" chapter (Steps 8-11): modify existing characters, add new characters after initial setup, manually edit generated manuscripts, and re-run the generation pipeline with updated canon. Added AI Draft Generation: generate full chapter drafts from a brief description via the "⚡ AI" button in the Writing workspace's draft list, without running the P-300 pipeline. Added Guided Setup Wizard at `/setup-wizard`: conversational project creation that extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue with the LLM. Added readiness indicators to the wizard: green "Ready" badge, per-category completeness bars (green/amber/gray), missing field tags showing what's still needed, category count display, dynamic progress bar color shifts, and dual-state save button ("Save What You Have" → "Save Project ✓"). Fixed character PATCH 422 bug where optional fields with empty values blocked saving edits to minimally-created characters.
 
 ---
 
@@ -67,13 +67,30 @@ If you'd rather describe your story in plain language than fill out forms, use t
 5. As data is extracted, the **field preview panel** updates in real time with collapsible sections for each category
 6. The Sequences and Chapters panels **auto-open** when the LLM first generates planning data, so you can review the proposed outline
 7. You can adjust anything naturally — say "make it three acts instead of two" or "add a character who is the colony ship's engineer"
-8. When the wizard shows **"Ready to Create"** (progress bar reaches 100%), click the button to create your project
+8. When all categories reach sufficient completeness, the wizard shows a green **"Ready"** badge and the save button changes to **"Save Project ✓"**. Click it to create your project
 9. You'll be redirected to the new project's workspace with all data populated
+
+**Understanding the readiness indicators:**
+
+The wizard provides visual feedback so you know how close you are to creating a complete project:
+
+- **Progress bar color**: Shifts from gray (early) → amber (midway) → green (ready). The bar fills as more categories reach sufficient completeness.
+- **Category count**: Shows how many of the 5 core categories are ready (e.g., "3/5 categories ready"). A category is "ready" when its completeness reaches 70% or higher.
+- **Per-category completeness bars** (in Field Preview): Each category has a small progress bar:
+  - **Green** (≥70%): Category has enough data for project creation
+  - **Amber** (30–70%): Category has partial data — keep talking to fill it in
+  - **Gray** (<30%): Category is mostly empty
+- **Missing field tags**: Categories that aren't yet ready show small tags listing what's still needed (e.g., "needs: logline, thematic_spine"). This tells you exactly what to discuss next.
+- **"Ready" badge**: Appears in the chat panel header when all categories are ready and the project can be created.
+- **Save button states**:
+  - Before readiness: Shows **"Save What You Have"** — lets you create a partial project with whatever data has been collected so far
+  - After readiness: Shows **"Save Project ✓"** — creates a fully-populated project
 
 **Tips:**
 - Be specific in your descriptions — "dark sci-fi about isolation and moral dilemmas" produces better results than "a space story"
-- Review the field preview panel as you go — you can see exactly what data has been extracted
+- Review the field preview panel as you go — the completeness bars and missing field tags tell you what to discuss next
 - The Sequences and Chapters panels give you a complete narrative outline before you create the project, so you can adjust structure early
+- You don't have to wait for "Ready" — click "Save What You Have" at any time to create a partial project and refine it later
 - You can always go back and refine any field after creation in the Planning workspace
 
 ---
@@ -778,4 +795,4 @@ The system runs a 4-phase pipeline:
 | **Manuscript Assist** | Interactive editing: select text → request AI assistance → apply/reject suggestions |
 | **Branch** | Alternate version of your story; like Git branches for narrative |
 | **Inspect** | Debug view showing job execution steps, artifact lineage, and attempt history |
-| **Guided Setup Wizard** | Conversational project creation at `/setup-wizard`. LLM extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue. Field preview panel updates in real time. |
+| **Guided Setup Wizard** | Conversational project creation at `/setup-wizard`. LLM extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue. Readiness indicators (completeness bars, missing field tags, category count, progress bar color) show how close you are to creating a complete project. "Save What You Have" creates partial projects; "Save Project ✓" appears when all categories are ready. |
