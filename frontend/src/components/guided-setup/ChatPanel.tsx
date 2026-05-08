@@ -83,7 +83,7 @@ export function ChatPanel({ onSend, isLoading, readyToCreate, progress, category
               </span>
             ) : categoryProgress.length > 0 ? (
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {categoryProgress.filter(c => c.completeness >= 0.7).length}/5 categories ready
+                {categoryProgress.filter(c => c.completeness >= 0.7).length}/{categoryProgress.length} categories ready
               </span>
             ) : (
               <span className="text-sm text-gray-500 dark:text-gray-400">
