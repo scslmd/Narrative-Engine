@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '../../__tests__/test-utils';
+import { render, screen, within } from '../../__tests__/test-utils';
 import { FieldPreview } from './FieldPreview';
 import { useGuidedSetupStore } from '../../stores/guidedSetupStore';
 import type { CategoryProgress } from '../../services/guidedSetup';
@@ -22,9 +22,9 @@ describe('FieldPreview completeness bars', () => {
 
     const arcsBar = screen.getByRole('button', { name: /Arcs/ });
     expect(arcsBar).toBeInTheDocument();
-    const arcFill = arcsBar.querySelector('[style*="width: 80%"]');
+    const arcFill = within(arcsBar).getByRole('progressbar', { name: /Arcs.*80% complete/ });
     expect(arcFill).toBeInTheDocument();
-    expect(arcFill?.classList.contains('bg-emerald-500')).toBe(true);
+    expect(arcFill.classList.contains('bg-emerald-500')).toBe(true);
   });
 
   it('renders amber completeness bar when completeness between 0.3 and 0.7', () => {
@@ -32,9 +32,9 @@ describe('FieldPreview completeness bars', () => {
 
     const foundationBar = screen.getByRole('button', { name: /Foundation/ });
     expect(foundationBar).toBeInTheDocument();
-    const foundationFill = foundationBar.querySelector('[style*="width: 50%"]');
+    const foundationFill = within(foundationBar).getByRole('progressbar', { name: /Foundation.*50% complete/ });
     expect(foundationFill).toBeInTheDocument();
-    expect(foundationFill?.classList.contains('bg-amber-500')).toBe(true);
+    expect(foundationFill.classList.contains('bg-amber-500')).toBe(true);
   });
 
   it('renders gray completeness bar when completeness < 0.3', () => {
@@ -42,17 +42,16 @@ describe('FieldPreview completeness bars', () => {
 
     const charsBar = screen.getByRole('button', { name: /Characters/ });
     expect(charsBar).toBeInTheDocument();
-    const charFill = charsBar.querySelector('[style*="width: 20%"]');
+    const charFill = within(charsBar).getByRole('progressbar', { name: /Characters.*20% complete/ });
     expect(charFill).toBeInTheDocument();
-    expect(charFill?.classList.contains('bg-gray-400')).toBe(true);
+    expect(charFill.classList.contains('bg-gray-400')).toBe(true);
   });
 
   it('renders no completeness bars when categoryProgress is not provided', () => {
     render(<FieldPreview />);
 
     const configBar = screen.getByRole('button', { name: /Project Config/ });
-    const fills = configBar.querySelectorAll('[style*="width"]');
-    expect(fills.length).toBe(0);
+    expect(() => within(configBar).getByRole('progressbar')).toThrow();
   });
 
   it('renders missing field tags when fields_missing is non-empty', () => {
@@ -81,7 +80,7 @@ describe('FieldPreview completeness bars', () => {
 
     render(<FieldPreview categoryProgress={progress} />);
 
-    const tags = document.querySelectorAll('.bg-amber-50');
+    const tags = document.querySelectorAll('[data-testid="missing-field-tag"]');
     expect(tags.length).toBe(0);
   });
 
@@ -89,17 +88,17 @@ describe('FieldPreview completeness bars', () => {
     render(<FieldPreview categoryProgress={baseProgress} />);
 
     const configBar = screen.getByRole('button', { name: /Project Config/ });
-    const configFill = configBar.querySelector('[style*="width: 100%"]');
+    const configFill = within(configBar).getByRole('progressbar', { name: /Project Config.*100% complete/ });
     expect(configFill).toBeInTheDocument();
-    expect(configFill?.classList.contains('bg-emerald-500')).toBe(true);
+    expect(configFill.classList.contains('bg-emerald-500')).toBe(true);
   });
 
   it('renders completeness bar for world_bible section at 0%', () => {
     render(<FieldPreview categoryProgress={baseProgress} />);
 
     const worldBar = screen.getByRole('button', { name: /World/ });
-    const worldFill = worldBar.querySelector('[style*="width: 0%"]');
+    const worldFill = within(worldBar).getByRole('progressbar', { name: /World.*0% complete/ });
     expect(worldFill).toBeInTheDocument();
-    expect(worldFill?.classList.contains('bg-gray-400')).toBe(true);
+    expect(worldFill.classList.contains('bg-gray-400')).toBe(true);
   });
 });

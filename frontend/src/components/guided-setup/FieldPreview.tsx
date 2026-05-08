@@ -40,6 +40,12 @@ function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen
           {completeness !== undefined && (
             <div className="w-10 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
+                role="progressbar"
+                aria-valuenow={Math.round(completeness * 100)}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-label={`${title} ${Math.round(completeness * 100)}% complete`}
+                data-testid="completeness-bar"
                 className={`h-full rounded-full transition-all duration-300 ${
                   completeness >= 0.7
                     ? 'bg-emerald-500'
@@ -127,6 +133,19 @@ function ArcCard({ arc }: { arc: GuidedArc }) {
   );
 }
 
+function MissingFieldTags({ fields }: { fields: string[] }) {
+  if (fields.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mb-2 px-1">
+      {fields.map(f => (
+        <span key={f} data-testid="missing-field-tag" className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          {f}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 interface FieldPreviewProps {
   categoryProgress?: CategoryProgress[];
 }
@@ -176,15 +195,7 @@ export function FieldPreview({ categoryProgress }: FieldPreviewProps): React.Rea
         <FieldRow label="Language" value={config.primary_language} />
         {config.constraints.length > 0 && <FieldRow label="Constraints" value={config.constraints} />}
       </CollapsibleSection>
-      {getMissingFields('config').length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2 px-1">
-          {getMissingFields('config').map(f => (
-            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
+      <MissingFieldTags fields={getMissingFields('config')} />
 
       <CollapsibleSection title="Foundation" icon={<BookOpen className="w-4 h-4" />} defaultOpen completeness={getCompleteness('foundation')}>
         <FieldRow label="Premise" value={foundation.premise_text} />
@@ -192,57 +203,25 @@ export function FieldPreview({ categoryProgress }: FieldPreviewProps): React.Rea
         <FieldRow label="Theme" value={foundation.thematic_spine} />
         <FieldRow label="Audience" value={foundation.target_audience} />
       </CollapsibleSection>
-      {getMissingFields('foundation').length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2 px-1">
-          {getMissingFields('foundation').map(f => (
-            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
+      <MissingFieldTags fields={getMissingFields('foundation')} />
 
       <CollapsibleSection title={`Characters (${characters.length})`} icon={<Users className="w-4 h-4" />} completeness={getCompleteness('characters')}>
         {characters.length === 0 && <p className="text-sm text-gray-400">No characters yet</p>}
         {characters.map((c, i) => <CharacterCard key={i} char={c} />)}
       </CollapsibleSection>
-      {getMissingFields('characters').length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2 px-1">
-          {getMissingFields('characters').map(f => (
-            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
+      <MissingFieldTags fields={getMissingFields('characters')} />
 
       <CollapsibleSection title={`World (${world_bible.length})`} icon={<Globe className="w-4 h-4" />} completeness={getCompleteness('world_bible')}>
         {world_bible.length === 0 && <p className="text-sm text-gray-400">No world entries yet</p>}
         {world_bible.map((w, i) => <WorldCard key={i} entry={w} />)}
       </CollapsibleSection>
-      {getMissingFields('world_bible').length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2 px-1">
-          {getMissingFields('world_bible').map(f => (
-            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
+      <MissingFieldTags fields={getMissingFields('world_bible')} />
 
       <CollapsibleSection title={`Arcs (${arcs.length})`} icon={<GitBranch className="w-4 h-4" />} completeness={getCompleteness('arcs')}>
         {arcs.length === 0 && <p className="text-sm text-gray-400">No arcs yet</p>}
         {arcs.map((a, i) => <ArcCard key={i} arc={a} />)}
       </CollapsibleSection>
-      {getMissingFields('arcs').length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2 px-1">
-          {getMissingFields('arcs').map(f => (
-            <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
+      <MissingFieldTags fields={getMissingFields('arcs')} />
 
       <CollapsibleSection
         title={`Sequences (${sequences.length})`}
