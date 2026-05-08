@@ -192,7 +192,6 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
   - [`tests/test_projection_endpoints_impl.py`](tests/test_projection_endpoints_impl.py)
   - [`tests/test_projection_runtime_failure_modes.py`](tests/test_projection_runtime_failure_modes.py)
   - [`tests/test_attempt_lineage.py`](tests/test_attempt_lineage.py)
-  - [`tests/test_attempt_persistence.py`](tests/test_attempt_persistence.py)
   - [`tests/test_attempt_history_endpoints.py`](tests/test_attempt_history_endpoints.py)
   - [`tests/test_lineage_artifact_reads.py`](tests/test_lineage_artifact_reads.py)
   - [`tests/test_story_bible_lineage.py`](tests/test_story_bible_lineage.py)
@@ -253,7 +252,6 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
 - Health and quality:
   - [`tests/test_smoke.py`](tests/test_smoke.py)
   - [`tests/test_failure_modes.py`](tests/test_failure_modes.py)
-  - [`tests/test_health_api.py`](tests/test_health_api.py)
   - [`tests/test_jobs_schemas.py`](tests/test_jobs_schemas.py)
   - [`tests/test_qc.py`](tests/test_qc.py)
   - [`tests/test_quality_check_skill.py`](tests/test_quality_check_skill.py)

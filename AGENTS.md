@@ -5,13 +5,12 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1471 passed, 7 skipped, 2 pre-existing failures (~33s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~32s)
-  - Full baseline: ~1522 tests, ~65s total (parallel + serial)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1468 passed, 1 skipped, 1 xdist-isolation failure (~32s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~27s)
+  - Full baseline: ~1519 tests, ~59s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - Previously flagged intermittent tests now pass when run directly (verified 2026-05-07):
-    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases`
-    - `tests/test_request_size_limits.py::TestRequestSizeLimits::test_normal_request_accepted`
+  - xdist-isolation failures (pass when run directly, verified 2026-05-08):
+    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails only under parallel xdist; passes in isolation
   - `cd frontend && npm run lint` -> passed, 0 errors (2026-05-05)
   - `cd frontend && npm run typecheck` -> passed (2026-05-05)
   - `cd frontend && npm run build` -> passed, 2025 modules (2026-05-05)
@@ -162,16 +161,16 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 
 ### Clustered Parallel Execution (Recommended)
 ```bash
-# Step 1: Run parallel-safe tests in clusters (fast, ~35s, ~1448 tests)
+# Step 1: Run parallel-safe tests in clusters (fast, ~32s, ~1469 tests)
 python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py
 
-# Step 2: Run serial-only tests last with extended timeout (~31s, ~51 tests)
+# Step 2: Run serial-only tests last with extended timeout (~27s, ~51 tests)
 python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
 ```
 
 - Parallel cluster runs first because it's fast and catches most failures immediately.
 - Serial tests run last because they share global state (log file, executor threads) and time out if mixed with parallel workers.
-- Full baseline: ~1499 tests, ~65s total (vs. ~250s sequential).
+- Full baseline: ~1519 tests, ~59s total (vs. ~250s sequential).
 
 ### Quality Review Helper
 ```bash
