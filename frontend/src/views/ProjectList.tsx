@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
-import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download, Search } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download, Search, Tags, SwatchBook, CalendarPlus, Clock3 } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
 import { resolveEffectiveMode } from '../theme/theme';
 import { StoryImportModal } from '../components/projects/StoryImportModal';
@@ -259,9 +259,27 @@ export function ProjectList(): React.ReactElement {
                       </Link>
                     </div>
                     <div className={`flex items-center justify-between gap-2 mt-3 pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                      <div className={`flex flex-col text-[10px] leading-tight ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-                        <span>Created {formatProjectDate(project.created_at)}</span>
-                        <span>Modified {formatProjectDate(project.updated_at)}</span>
+                      <div className="flex flex-col gap-1">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                            isDark
+                              ? 'border-slate-700 bg-slate-800 text-slate-200'
+                              : 'border-slate-200 bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <CalendarPlus className="h-3 w-3" />
+                          Created {formatProjectDate(project.created_at)}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                            isDark
+                              ? 'border-teal-500/30 bg-teal-500/10 text-teal-200'
+                              : 'border-teal-200 bg-teal-50 text-teal-700'
+                          }`}
+                        >
+                          <Clock3 className="h-3 w-3" />
+                          Modified {formatProjectDate(project.updated_at)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <button

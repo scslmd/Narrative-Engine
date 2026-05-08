@@ -9,7 +9,9 @@
   - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~32s)
   - Full baseline: ~1522 tests, ~65s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - Pre-existing failures: `test_local_executor_runs_generation_phases` (flaky G-400 compiler), `TestRequestSizeLimits::test_normal_request_accepted` (SQLite path issue)
+  - Previously flagged intermittent tests now pass when run directly (verified 2026-05-07):
+    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases`
+    - `tests/test_request_size_limits.py::TestRequestSizeLimits::test_normal_request_accepted`
   - `cd frontend && npm run lint` -> passed, 0 errors (2026-05-05)
   - `cd frontend && npm run typecheck` -> passed (2026-05-05)
   - `cd frontend && npm run build` -> passed, 2025 modules (2026-05-05)

@@ -24,6 +24,12 @@ Narrative-Engine supports:
 - canon workshop: annotate source material, create reusable generation profiles, manage mythos/pattern libraries
 - manuscript LLM assist: AI-powered line edits, expansions, rewrites, and developmental checks with version conflict protection
 
+## Runtime Requirements
+
+For real writing/generation output, configure a non-stub inference backend (`llama.cpp`, LM Studio, `vLLM`, or a compatible cloud provider).
+
+When inference is set to `stub`, the app remains functional for UI and integration testing, but generated narrative output is placeholder-grade.
+
 ## Current Architecture
 
 The current codebase includes:
