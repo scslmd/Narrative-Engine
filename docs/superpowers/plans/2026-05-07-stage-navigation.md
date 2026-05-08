@@ -1,5 +1,12 @@
 # Stage-Based Navigation Implementation Plan
 
+> Date: 2026-05-07  
+> Status: Implemented  
+> Evidence commits:
+> - `4a271c5` (design/spec baseline)
+> - `25648b9` (UI/UX modernization wave with stage navigation updates)
+> - `d41ccef` (follow-up project-card/nav polish in same surface)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace duplicated header pill + sidebar navigation with stage-based header selector and context-filtered sidebar.

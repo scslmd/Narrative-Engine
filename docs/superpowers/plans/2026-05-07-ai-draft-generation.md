@@ -2,8 +2,12 @@
 
 > Date: 2026-05-07
 > Source spec: `docs/superpowers/specs/2026-05-07-ai-draft-generation-design.md`
-> Status: Ready for execution
+> Status: Implemented
 > Delivery: 10 TDD tasks, ~425 lines new code
+> Evidence commits:
+> - `ad7eef2` (guided setup baseline in same delivery wave)
+> - `c2be57b` (LLM-generated planning integration)
+> - `4a271c5` and subsequent frontend integration commits in this branch
 
 ---
 
