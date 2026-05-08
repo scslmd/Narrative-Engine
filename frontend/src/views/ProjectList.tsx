@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
@@ -32,6 +32,7 @@ export function ProjectList(): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
+  const formatProjectDate = (value: string): string => new Date(value).toLocaleDateString();
 
   // Keyboard shortcut: Ctrl+K / Cmd+K to focus search
   useEffect(() => {
@@ -89,7 +90,7 @@ export function ProjectList(): React.ReactElement {
           queryClient.invalidateQueries({ queryKey: ['projects'] });
         })
         .catch(() => {
-          // LLM unavailable — not a blocker, description can be added manually later
+          // LLM unavailable - not a blocker, description can be added manually later
         });
     }
   }, [createMutation.data, queryClient]);
@@ -120,17 +121,17 @@ export function ProjectList(): React.ReactElement {
   };
 
   const POV_DESCRIPTIONS: Record<string, string> = {
-    First: '"I" — narrator is a character in the story',
-    Second: '"You" — narrator addresses the reader as a character',
-    Third_Limited: '"He/She" — follows one character\'s thoughts and perceptions',
-    Third_Omni: '"He/She" — narrator knows all characters\' thoughts and feelings',
-    Third_Objective: '"He/She" — camera-like, reports only observable actions and dialogue',
-    Third_Multiple: '"He/She" — alternates limited POV across multiple characters',
+    First: '"I" - narrator is a character in the story',
+    Second: '"You" - narrator addresses the reader as a character',
+    Third_Limited: '"He/She" - follows one character\'s thoughts and perceptions',
+    Third_Omni: '"He/She" - narrator knows all characters\' thoughts and feelings',
+    Third_Objective: '"He/She" - camera-like, reports only observable actions and dialogue',
+    Third_Multiple: '"He/She" - alternates limited POV across multiple characters',
     Other: 'Custom point of view not listed above',
   };
 
   const STRUCTURE_DESCRIPTIONS: Record<string, string> = {
-    THREE_ACT: 'Setup, Confrontation, Resolution — the classic three-act dramatic arc',
+    THREE_ACT: 'Setup, Confrontation, Resolution - the classic three-act dramatic arc',
     SAVE_THE_CAT: "Blake Snyder's 15-beat sheet for screenwriting and prose",
     HERO_JOURNEY: "Campbell's monomyth: Departure, Initiation, Return with 17 stages",
     FREYTAGS_PYRAMID: 'Five-act arc: Introduction, Rising Action, Climax, Falling Action, Catastrophe',
@@ -167,8 +168,9 @@ export function ProjectList(): React.ReactElement {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center py-4">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <section className={`rounded-2xl border px-6 py-6 ${isDark ? 'border-slate-800 bg-slate-900/70' : 'border-slate-200 bg-white/80'} shadow-card`}>
+        <div className="text-center py-2">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-violet-500/10 border border-indigo-500/20 mb-4">
           <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
           <span className={`text-xs font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>AI-Powered Story Development</span>
@@ -179,20 +181,21 @@ export function ProjectList(): React.ReactElement {
        <p className={`text-sm mt-1.5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
            Create a new project to start developing your story
          </p>
-      </div>
+        </div>
+      </section>
 
- <div>
-        <div className="flex items-center justify-between mb-4">
+      <section className={`rounded-2xl border p-5 ${isDark ? 'border-slate-800 bg-slate-900/70' : 'border-slate-200 bg-white'} shadow-card`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <h2 className={`text-lg font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
           <div className="relative">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search projects… (Ctrl+K)"
+              placeholder="Search projects... (Ctrl+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`pl-9 pr-8 py-1.5 text-sm rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 w-64 ${
+              className={`pl-9 pr-8 py-1.5 text-sm rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 w-full sm:w-72 ${
                 isDark
                   ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600'
                   : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
@@ -232,9 +235,9 @@ export function ProjectList(): React.ReactElement {
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <a
-                        href={`/workspace/${project.project_id}`}
-                        className="flex-1 min-w-0"
+                      <Link
+                        to={`/workspace/${project.project_id}`}
+                        className="flex-1 min-w-0 text-left"
                       >
                         <h3 className={`font-semibold group-hover:text-indigo-500 transition-colors ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                           {project.project_name}
@@ -253,12 +256,13 @@ export function ProjectList(): React.ReactElement {
                             No description yet
                           </p>
                         )}
-                      </a>
+                      </Link>
                     </div>
-                    <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-400'}`}>
-                        {new Date(project.updated_at).toLocaleDateString()}
-                      </span>
+                    <div className={`flex items-center justify-between gap-2 mt-3 pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                      <div className={`flex flex-col text-[10px] leading-tight ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                        <span>Created {formatProjectDate(project.created_at)}</span>
+                        <span>Modified {formatProjectDate(project.updated_at)}</span>
+                      </div>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
@@ -306,9 +310,9 @@ export function ProjectList(): React.ReactElement {
             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>No projects yet. Create your first project below!</p>
           </div>
         )}
-      </div>
+      </section>
 
-      <form onSubmit={handleSubmit} className={`rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card p-6 space-y-5`}>
+      <form onSubmit={handleSubmit} className={`rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card p-6 space-y-5`}>
         <div className="flex items-center gap-2.5 mb-1">
           <BookOpen className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} />
           <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>New Project</h2>
@@ -369,7 +373,7 @@ export function ProjectList(): React.ReactElement {
               <option value="SAVE_THE_CAT">Save the Cat</option>
               <option value="HERO_JOURNEY">Hero's Journey</option>
               <option value="FREYTAGS_PYRAMID">Freytag's Pyramid</option>
-              <option value="KISHOTENKETSU">Kishōtenketsu</option>
+              <option value="KISHOTENKETSU">Kishotenketsu</option>
               <option value="FICHTEAN_CURVE">Fichtean Curve</option>
               <option value="SEVEN_POINT_STRUCTURE">Seven-Point Structure</option>
               <option value="SEVEN_KEY_STEPS">Seven Key Steps</option>
@@ -570,3 +574,4 @@ function Field({
     </div>
   );
 }
+
