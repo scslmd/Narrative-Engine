@@ -8,6 +8,8 @@ import {
   type CategoryProgress,
 } from '../services/guidedSetup';
 
+const READINESS_NOTIFICATION = "I think we have enough to create your project. You can review the fields on the right and save whenever you're ready.";
+
 interface GuidedSetupState {
   conversationHistory: ChatMessage[];
   accumulatedFields: ExtractedFields;
@@ -16,7 +18,7 @@ interface GuidedSetupState {
   confidence: number;
   readyToCreate: boolean;
   categoryProgress: CategoryProgress[];
-  wasReadyBefore: boolean;
+  hasBeenReady: boolean;
   isAnalyzing: boolean;
   isCreating: boolean;
   error: string | null;
@@ -47,7 +49,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
   confidence: 0,
   readyToCreate: false,
   categoryProgress: [],
-  wasReadyBefore: false,
+  hasBeenReady: false,
   isAnalyzing: false,
   isCreating: false,
   error: null,
@@ -108,7 +110,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
     confidence: 0,
     readyToCreate: false,
     categoryProgress: [],
-    wasReadyBefore: false,
+    hasBeenReady: false,
     isAnalyzing: false,
     isCreating: false,
     error: null,
@@ -136,7 +138,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
 
       const response = await analyzeTurn(request);
 
-      const wasReady = get().wasReadyBefore;
+      const wasReady = get().hasBeenReady;
       const newlyReady = response.ready_to_create && !wasReady;
 
       const currentTurn = get().turnCount;
@@ -144,7 +146,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
       if (newlyReady) {
         extraMessages.push({
           role: 'system' as const,
-          content: "I think we have enough to create your project. You can review the fields on the right and save whenever you're ready.",
+          content: READINESS_NOTIFICATION,
           turn: currentTurn + 2,
         });
       }
@@ -156,7 +158,7 @@ export const useGuidedSetupStore = create<GuidedSetupState>((set, get) => ({
         confidence: response.confidence,
         readyToCreate: response.ready_to_create,
         categoryProgress: response.category_progress,
-        wasReadyBefore: response.ready_to_create || wasReady,
+        hasBeenReady: response.ready_to_create || wasReady,
         conversationHistory: [
           ...get().conversationHistory,
           { role: 'system' as const, content: response.next_question, turn: currentTurn + 1 },

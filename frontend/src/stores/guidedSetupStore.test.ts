@@ -56,7 +56,7 @@ describe('guidedSetupStore', () => {
     const state = useGuidedSetupStore.getState();
     const systemMessages = state.conversationHistory.filter(m => m.role === 'system');
     const readinessMessage = systemMessages.find(m =>
-      m.content.includes('enough to create') || m.content.includes('ready')
+      m.content.includes('enough to create your project')
     );
     expect(readinessMessage).toBeDefined();
   });
@@ -79,7 +79,7 @@ describe('guidedSetupStore', () => {
 
     const notificationsAfterFirst = useGuidedSetupStore.getState()
       .conversationHistory.filter(m =>
-        m.role === 'system' && (m.content.includes('enough to create') || m.content.includes('ready'))
+        m.role === 'system' && m.content.includes('enough to create your project')
       ).length;
 
     await act(async () => {
@@ -88,7 +88,7 @@ describe('guidedSetupStore', () => {
 
     const notificationsAfterSecond = useGuidedSetupStore.getState()
       .conversationHistory.filter(m =>
-        m.role === 'system' && (m.content.includes('enough to create') || m.content.includes('ready'))
+        m.role === 'system' && m.content.includes('enough to create your project')
       ).length;
 
     expect(notificationsAfterSecond).toBe(notificationsAfterFirst);
