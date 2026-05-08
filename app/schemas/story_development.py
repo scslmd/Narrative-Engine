@@ -261,8 +261,9 @@ class FoundationProfile(StrictSchemaModel):
             "complexity_level",
             "success_definition",
         ):
-            if field_name in payload and isinstance(payload[field_name], str):
-                payload[field_name] = payload[field_name].strip()
+            if field_name in payload:
+                val = payload[field_name]
+                payload[field_name] = val.strip() if isinstance(val, str) else ""
         payload["narrative_constraints"] = _normalize_text_list(
             payload.get("narrative_constraints", []),
             field_name="narrative_constraints",
