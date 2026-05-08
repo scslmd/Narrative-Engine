@@ -15,7 +15,7 @@ interface CollapsibleSectionProps {
 function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen: isOpenProp, onToggle }: CollapsibleSectionProps) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isControlled = isOpenProp !== undefined;
-  const isOpen = isControlled ? (isOpenProp as boolean) : internalOpen;
+  const isOpen = isOpenProp ?? internalOpen;
 
   const handleClick = () => {
     if (isControlled) {

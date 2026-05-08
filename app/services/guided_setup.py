@@ -206,7 +206,7 @@ class GuidedSetupService:
                 char_id = hash_id("guided-character", f"{project_id}:{char_data.name}")
                 character_name_to_id[char_data.name.strip().lower()] = char_id
 
-            # Insert sequences (first pass — chapter_ids_json is empty placeholder)
+            # Insert sequences (first pass - chapter_ids_json is empty placeholder)
             persisted_sequence_ids: list[str | None] = []
             sequence_id_map: dict[str, str] = {}
             for position, seq in enumerate(fields.sequences):

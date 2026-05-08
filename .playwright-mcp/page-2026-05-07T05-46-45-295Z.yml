@@ -1,0 +1,107 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - generic [ref=e10]: "N"
+        - heading "Narrative Engine" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+          - button [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+        - button "Toggle theme" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - complementary [ref=e52]:
+        - navigation [ref=e53]:
+          - button "Brain Dump" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e58]: Brain Dump
+          - button "Planning" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e64]: Planning
+          - button "Writing" [ref=e65] [cursor=pointer]:
+            - img [ref=e67]
+            - generic [ref=e69]: Writing
+          - button "Review" [ref=e71] [cursor=pointer]:
+            - img [ref=e73]
+            - generic [ref=e76]: Review
+          - button "Inspect" [ref=e77] [cursor=pointer]:
+            - img [ref=e79]
+            - generic [ref=e82]: Inspect
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - img [ref=e89]
+                - heading "Manuscripts" [level=3] [ref=e92]
+              - generic [ref=e100]:
+                - img [ref=e101]
+                - heading "Drafts" [level=3] [ref=e104]
+                - generic [ref=e105]: (0)
+            - generic [ref=e112]:
+              - img [ref=e113]
+              - paragraph [ref=e115]: Select a manuscript from the sidebar
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Manuscript Aids" [level=2] [ref=e118]
+                - paragraph [ref=e119]: 0 open suggestions
+              - generic [ref=e120]:
+                - button "Suggestions" [ref=e121] [cursor=pointer]
+                - button "Diff Viewer" [ref=e122] [cursor=pointer]
+                - button "History" [ref=e123] [cursor=pointer]
+              - generic [ref=e126]:
+                - paragraph [ref=e127]: No open suggestions
+                - paragraph [ref=e128]: Open manuscript suggestions will appear here.
+          - generic [ref=e129]:
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - img [ref=e133]
+                - heading "Notes" [level=3] [ref=e136]
+                - generic [ref=e137]: "0"
+              - generic [ref=e138]:
+                - textbox "Add a note..." [ref=e139]
+                - button "Add" [disabled] [ref=e141]:
+                  - img [ref=e142]
+                  - text: Add
+              - generic [ref=e144]:
+                - img [ref=e145]
+                - paragraph [ref=e148]: No notes yet
+            - generic [ref=e150]:
+              - generic [ref=e151]:
+                - img [ref=e152]
+                - heading "Launch Job" [level=3] [ref=e157]
+              - generic [ref=e158]:
+                - generic [ref=e159]:
+                  - generic [ref=e160]: Phase
+                  - generic [ref=e161]:
+                    - button "Architect" [ref=e162] [cursor=pointer]:
+                      - img [ref=e163]
+                      - generic [ref=e168]: Architect
+                    - button "Sequencer" [ref=e169] [cursor=pointer]:
+                      - img [ref=e170]
+                      - generic [ref=e174]: Sequencer
+                    - button "Drafter" [ref=e175] [cursor=pointer]:
+                      - img [ref=e176]
+                      - generic [ref=e179]: Drafter
+                    - button "Compiler" [ref=e180] [cursor=pointer]:
+                      - img [ref=e181]
+                      - generic [ref=e184]: Compiler
+                - paragraph [ref=e185]: Build project architecture
+                - button [ref=e186] [cursor=pointer]:
+                  - img [ref=e187]

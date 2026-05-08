@@ -1,0 +1,248 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e438]
+        - generic [ref=e440]:
+          - generic [ref=e441]: MCP Walkthrough Test
+          - generic [ref=e442]: Science Fiction
+      - generic [ref=e12]:
+        - generic [ref=e443]:
+          - button [ref=e444] [cursor=pointer]:
+            - img [ref=e445]
+          - button [ref=e448] [cursor=pointer]:
+            - img [ref=e449]
+          - button [ref=e451] [cursor=pointer]:
+            - img [ref=e452]
+          - button [ref=e454] [cursor=pointer]:
+            - img [ref=e455]
+          - button [ref=e458] [cursor=pointer]:
+            - img [ref=e459]
+          - button [ref=e461] [cursor=pointer]:
+            - img [ref=e462]
+          - button [ref=e465] [cursor=pointer]:
+            - img [ref=e466]
+        - button "Toggle theme" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - button "Settings" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+  - main [ref=e24]:
+    - generic [ref=e469]:
+      - complementary [ref=e470]:
+        - navigation [ref=e471]:
+          - button "Brain Dump" [ref=e472] [cursor=pointer]:
+            - img [ref=e474]
+            - generic [ref=e476]: Brain Dump
+          - button "Planning" [ref=e477] [cursor=pointer]:
+            - img [ref=e479]
+            - generic [ref=e482]: Planning
+          - button "Writing" [ref=e484] [cursor=pointer]:
+            - img [ref=e486]
+            - generic [ref=e488]: Writing
+          - button "Review" [ref=e489] [cursor=pointer]:
+            - img [ref=e491]
+            - generic [ref=e494]: Review
+          - button "Inspect" [ref=e495] [cursor=pointer]:
+            - img [ref=e497]
+            - generic [ref=e500]: Inspect
+      - main [ref=e501]:
+        - generic [ref=e502]:
+          - generic [ref=e504]:
+            - generic [ref=e506]:
+              - button "Generate Story" [ref=e507] [cursor=pointer]
+              - generic [ref=e508]:
+                - generic [ref=e509]:
+                  - button "Manifest" [ref=e510] [cursor=pointer]:
+                    - img [ref=e511]
+                    - generic [ref=e514]: Manifest
+                  - button "Planning" [ref=e515] [cursor=pointer]:
+                    - img [ref=e516]
+                    - generic [ref=e518]: Planning
+                  - button "Flow" [ref=e519] [cursor=pointer]:
+                    - img [ref=e520]
+                    - generic [ref=e524]: Flow
+                  - button "Arcs" [ref=e525] [cursor=pointer]:
+                    - img [ref=e526]
+                    - generic [ref=e531]: Arcs
+                  - button "Branches" [ref=e532] [cursor=pointer]:
+                    - img [ref=e533]
+                    - generic [ref=e537]: Branches
+                  - button "Decisions" [ref=e538] [cursor=pointer]:
+                    - img [ref=e539]
+                    - generic [ref=e542]: Decisions
+                  - button "Checker" [ref=e543] [cursor=pointer]:
+                    - img [ref=e544]
+                    - generic [ref=e548]: Checker
+                - img [ref=e549]
+                - generic [ref=e551]:
+                  - button "Brainstorm" [ref=e552] [cursor=pointer]:
+                    - img [ref=e553]
+                    - generic [ref=e555]: Brainstorm
+                  - button "Foundation" [ref=e556] [cursor=pointer]:
+                    - img [ref=e557]
+                    - generic [ref=e560]: Foundation
+                  - button "Characters" [ref=e561] [cursor=pointer]:
+                    - img [ref=e562]
+                    - generic [ref=e565]: Characters
+                  - button "World Bible" [ref=e566] [cursor=pointer]:
+                    - img [ref=e567]
+                    - generic [ref=e569]: World Bible
+                  - button "Relationships" [ref=e570] [cursor=pointer]:
+                    - img [ref=e571]
+                    - generic [ref=e576]: Relationships
+            - main [ref=e577]:
+              - generic [ref=e743]:
+                - generic [ref=e745]:
+                  - generic [ref=e746]:
+                    - heading "New Character" [level=2] [ref=e747]
+                    - paragraph [ref=e748]: Build and refine your characters
+                  - generic [ref=e749]:
+                    - generic [ref=e750]: 0/3 required · 0/10 optional
+                    - button "Save" [disabled] [ref=e751]
+                    - button "Cancel" [ref=e752] [cursor=pointer]
+                - generic [ref=e754]:
+                  - generic [ref=e755]:
+                    - generic [ref=e756]:
+                      - heading "Character ID *" [level=3] [ref=e757]
+                      - paragraph [ref=e758]: Stable backend identifier for this character
+                    - textbox "Enter character id" [ref=e759]
+                  - generic [ref=e760]:
+                    - generic [ref=e761]:
+                      - generic [ref=e762]:
+                        - heading "Display Name *" [level=3] [ref=e763]
+                        - paragraph [ref=e764]: The character's name
+                      - textbox "Enter character name" [ref=e765]
+                    - generic [ref=e766]:
+                      - generic [ref=e767]:
+                        - heading "Role in Story *" [level=3] [ref=e768]
+                        - paragraph [ref=e769]: Character's narrative function
+                      - textbox "e.g., Protagonist, Antagonist, Mentor" [ref=e770]
+                  - generic [ref=e771]:
+                    - generic [ref=e772]:
+                      - heading "Archetype" [level=3] [ref=e773]
+                      - paragraph [ref=e774]: Character archetype
+                    - textbox "e.g., The Creator, The Sage, The Hero" [ref=e775]
+                  - generic [ref=e776]:
+                    - generic [ref=e777]:
+                      - generic [ref=e778]:
+                        - heading "External Goal" [level=3] [ref=e779]
+                        - paragraph [ref=e780]: What the character wants
+                      - textbox "What does this character want to achieve?" [ref=e781]
+                    - generic [ref=e782]:
+                      - generic [ref=e783]:
+                        - heading "Internal Need" [level=3] [ref=e784]
+                        - paragraph [ref=e785]: What the character truly needs
+                      - textbox "What does this character need for growth?" [ref=e786]
+                  - generic [ref=e787]:
+                    - generic [ref=e788]:
+                      - generic [ref=e789]:
+                        - heading "Misbelief or Wound" [level=3] [ref=e790]
+                        - paragraph [ref=e791]: The character's limiting belief
+                      - textbox "What false belief holds this character back?" [ref=e792]
+                    - generic [ref=e793]:
+                      - generic [ref=e794]:
+                        - heading "Core Fear" [level=3] [ref=e795]
+                        - paragraph [ref=e796]: What the character fears most
+                      - textbox "What is this character's deepest fear?" [ref=e797]
+                  - generic [ref=e798]:
+                    - generic [ref=e799]:
+                      - generic [ref=e800]:
+                        - heading "Primary Strength" [level=3] [ref=e801]
+                        - paragraph [ref=e802]: The character's greatest asset
+                      - textbox "What is this character's greatest strength?" [ref=e803]
+                    - generic [ref=e804]:
+                      - generic [ref=e805]:
+                        - heading "Fatal Flaw" [level=3] [ref=e806]
+                        - paragraph [ref=e807]: The character's limiting weakness
+                      - textbox "What flaw holds this character back?" [ref=e808]
+                  - generic [ref=e809]:
+                    - generic [ref=e810]:
+                      - heading "Contradictions" [level=3] [ref=e811]
+                      - paragraph [ref=e812]: Paradoxical traits
+                    - button "+ Add Contradiction" [ref=e814] [cursor=pointer]
+                  - generic [ref=e815]:
+                    - generic [ref=e816]:
+                      - heading "Backstory Summary" [level=3] [ref=e817]
+                      - paragraph [ref=e818]: The character's past
+                    - textbox "What happened in this character's past?" [ref=e819]
+                  - generic [ref=e820]:
+                    - generic [ref=e821]:
+                      - heading "Voice Notes" [level=3] [ref=e822]
+                      - paragraph [ref=e823]: How the character speaks
+                    - textbox "How does this character speak? What's their voice like?" [ref=e824]
+                  - generic [ref=e825]:
+                    - generic [ref=e826]:
+                      - generic [ref=e827]:
+                        - heading "Secrets" [level=3] [ref=e828]
+                        - paragraph [ref=e829]: Hidden truths
+                      - button "+ Add" [ref=e831] [cursor=pointer]
+                    - generic [ref=e832]:
+                      - generic [ref=e833]:
+                        - heading "Values" [level=3] [ref=e834]
+                        - paragraph [ref=e835]: What the character holds dear
+                      - button "+ Add" [ref=e837] [cursor=pointer]
+                    - generic [ref=e838]:
+                      - generic [ref=e839]:
+                        - heading "Taboos" [level=3] [ref=e840]
+                        - paragraph [ref=e841]: What the character rejects
+                      - button "+ Add" [ref=e843] [cursor=pointer]
+                  - generic [ref=e844]:
+                    - generic [ref=e845]:
+                      - heading "Change Axis" [level=3] [ref=e846]
+                      - paragraph [ref=e847]: Character arc trajectory
+                    - textbox "How does this character change? From what to what?" [ref=e848]
+                  - generic [ref=e849]:
+                    - generic [ref=e850]:
+                      - heading "Arc Stage Notes" [level=3] [ref=e851]
+                      - paragraph [ref=e852]: Key moments in character development
+                    - button "+ Add Stage" [ref=e854] [cursor=pointer]
+                  - generic [ref=e855]:
+                    - generic [ref=e856]:
+                      - heading "Continuity Facts" [level=3] [ref=e857]
+                      - paragraph [ref=e858]: Details to track
+                    - button "+ Add Fact" [ref=e860] [cursor=pointer]
+                  - generic [ref=e861]:
+                    - generic [ref=e862]:
+                      - heading "Writer Notes" [level=3] [ref=e863]
+                      - paragraph [ref=e864]: Private notes for the author
+                    - textbox "Private notes about this character..." [ref=e865]
+          - generic [ref=e604]:
+            - generic [ref=e606]:
+              - generic [ref=e607]:
+                - img [ref=e608]
+                - heading "Notes" [level=3] [ref=e611]
+                - generic [ref=e612]: "0"
+              - generic [ref=e613]:
+                - textbox "Add a note..." [ref=e614]
+                - button "Add" [disabled] [ref=e616]:
+                  - img [ref=e617]
+                  - text: Add
+              - generic [ref=e619]:
+                - img [ref=e620]
+                - paragraph [ref=e623]: No notes yet
+            - generic [ref=e625]:
+              - generic [ref=e626]:
+                - img [ref=e627]
+                - heading "Launch Job" [level=3] [ref=e632]
+              - generic [ref=e633]:
+                - generic [ref=e634]:
+                  - generic [ref=e635]: Phase
+                  - generic [ref=e636]:
+                    - button "Architect" [ref=e637] [cursor=pointer]:
+                      - img [ref=e638]
+                      - generic [ref=e643]: Architect
+                    - button "Sequencer" [ref=e644] [cursor=pointer]:
+                      - img [ref=e645]
+                      - generic [ref=e649]: Sequencer
+                    - button "Drafter" [ref=e650] [cursor=pointer]:
+                      - img [ref=e651]
+                      - generic [ref=e654]: Drafter
+                    - button "Compiler" [ref=e655] [cursor=pointer]:
+                      - img [ref=e656]
+                      - generic [ref=e659]: Compiler
+                - paragraph [ref=e660]: Build project architecture
+                - button [ref=e661] [cursor=pointer]:
+                  - img [ref=e662]

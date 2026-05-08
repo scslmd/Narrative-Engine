@@ -21,13 +21,11 @@ export function GuidedSetupView(): React.ReactElement {
   useEffect(() => {
     const check = async () => setLlmHealth(await checkLlmHealth());
     check();
-    // Re-check every 30 seconds
     const interval = setInterval(check, 30_000);
     return () => clearInterval(interval);
   }, []);
 
   const isCreating = createMutation.isPending;
-  // Allow creating when user has answered at least one question (beyond the initial seed)
   const hasContent = accumulatedFields.config.project_name || accumulatedFields.foundation.premise_text || conversationHistory.length > 2;
 
   const handleSend = async (message: string) => {
@@ -47,16 +45,15 @@ export function GuidedSetupView(): React.ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div className="h-full rounded-2xl border border-[var(--border-primary)] bg-[var(--bg-base)] overflow-hidden">
+      <header className="bg-[var(--bg-primary)] border-b border-[var(--border-primary)] px-5 py-4">
         {llmHealth && !llmHealth.ok && (
           <div className="max-w-7xl mx-auto mb-3 flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-300 text-sm">
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>LLM unavailable ({llmHealth.backend}). Conversational features won't work — you can still fill in fields manually and create a project.</span>
+            <span>LLM unavailable ({llmHealth.backend}). Conversational features will not work - you can still fill fields manually and create a project.</span>
           </div>
         )}
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
@@ -65,9 +62,7 @@ export function GuidedSetupView(): React.ReactElement {
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              Story Architect
-            </h1>
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">Story Architect</h1>
             {llmHealth && (
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                 llmHealth.ok
@@ -99,15 +94,14 @@ export function GuidedSetupView(): React.ReactElement {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
-          <div className="lg:col-span-2 h-full">
+      <main className="max-w-7xl mx-auto p-4 lg:p-6 h-[calc(100%-5.5rem)]">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem] gap-4 h-full">
+          <section className="h-full min-h-0 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] overflow-hidden">
             <ChatPanel onSend={handleSend} isLoading={isAnalyzing} />
-          </div>
-          <div className="hidden lg:block">
+          </section>
+          <aside className="hidden xl:block h-full min-h-0 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] overflow-hidden">
             <FieldPreview />
-          </div>
+          </aside>
         </div>
       </main>
     </div>

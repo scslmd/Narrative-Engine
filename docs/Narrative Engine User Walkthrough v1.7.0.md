@@ -46,7 +46,20 @@ This walkthrough follows the **creative lifecycle**: seed your project, ideate, 
 - **"What you see"** — what the UI shows after each action
 - **Troubleshooting** — common issues and fixes (at the end)
 
-For deeper feature explanations, cross-reference the **User Guide** (`User Guide v1.6.0.md`).
+For deeper feature explanations, cross-reference the **User Guide** (`User Guide v1.7.0.md`).
+
+### Recommended Route Flow (Current UI)
+
+Use this route-first sequence for the shortest path through the product:
+
+1. `/` — Create, import, or extract a project
+2. `/workspace/:projectId/braindump` — Capture raw ideas (brain dump projects)
+3. `/workspace/:projectId/plan` — Foundation, characters, world bible, and planning hierarchy
+4. `/workspace/:projectId/write` or `/workspace/:projectId/write/:chapterId` — Drafting and manuscript editing
+5. `/workspace/:projectId/review` — Review findings and decisions
+6. `/workspace/:projectId/inspect/:jobId` — Inspect run details and artifacts
+7. `/workspace/:projectId/canon` — Canon workshop and packet preview
+8. `/workspace/:projectId/generate` — Story generation and forking workflows
 
 ---
 

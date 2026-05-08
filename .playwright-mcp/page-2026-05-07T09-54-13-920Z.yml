@@ -1,0 +1,188 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "N Narrative Engine" [ref=e9] [cursor=pointer]:
+          - generic [ref=e11]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e12]
+        - img [ref=e13]
+        - generic [ref=e15]:
+          - generic [ref=e16]: The Last Watch
+          - generic [ref=e17]: Science Fiction
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - button "Planning" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+            - generic [ref=e23]: Planning
+          - button "Writing" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e27]: Writing
+          - button "Review" [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+            - generic [ref=e32]: Review
+        - button "Toggle theme" [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+        - button "Settings" [ref=e40] [cursor=pointer]:
+          - img [ref=e41]
+  - main [ref=e44]:
+    - generic [ref=e45]:
+      - complementary [ref=e46]:
+        - navigation [ref=e47]:
+          - button "Brain Dump" [ref=e48] [cursor=pointer]:
+            - img [ref=e50]
+            - generic [ref=e52]: Brain Dump
+          - button "Planning" [ref=e53] [cursor=pointer]:
+            - img [ref=e55]
+            - generic [ref=e58]: Planning
+          - button "Canon" [ref=e60] [cursor=pointer]:
+            - img [ref=e62]
+            - generic [ref=e65]: Canon
+          - button "Generate" [ref=e66] [cursor=pointer]:
+            - img [ref=e68]
+            - generic [ref=e70]: Generate
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e74]:
+            - generic [ref=e76]:
+              - button "Generate Story" [ref=e77] [cursor=pointer]
+              - generic [ref=e78]:
+                - generic [ref=e79]:
+                  - button "Manifest" [ref=e80] [cursor=pointer]:
+                    - img [ref=e81]
+                    - generic [ref=e84]: Manifest
+                  - button "Planning" [ref=e85] [cursor=pointer]:
+                    - img [ref=e86]
+                    - generic [ref=e88]: Planning
+                  - button "Flow" [ref=e89] [cursor=pointer]:
+                    - img [ref=e90]
+                    - generic [ref=e94]: Flow
+                  - button "Arcs" [ref=e95] [cursor=pointer]:
+                    - img [ref=e96]
+                    - generic [ref=e101]: Arcs
+                  - button "Branches" [ref=e102] [cursor=pointer]:
+                    - img [ref=e103]
+                    - generic [ref=e107]: Branches
+                  - button "Decisions" [ref=e108] [cursor=pointer]:
+                    - img [ref=e109]
+                    - generic [ref=e112]: Decisions
+                  - button "Checker" [ref=e113] [cursor=pointer]:
+                    - img [ref=e114]
+                    - generic [ref=e118]: Checker
+                - img [ref=e119]
+                - generic [ref=e121]:
+                  - button "Brainstorm" [ref=e122] [cursor=pointer]:
+                    - img [ref=e123]
+                    - generic [ref=e125]: Brainstorm
+                  - button "Foundation" [active] [ref=e126] [cursor=pointer]:
+                    - img [ref=e127]
+                    - generic [ref=e130]: Foundation
+                  - button "Characters" [ref=e131] [cursor=pointer]:
+                    - img [ref=e132]
+                    - generic [ref=e135]: Characters
+                  - button "World Bible" [ref=e136] [cursor=pointer]:
+                    - img [ref=e137]
+                    - generic [ref=e139]: World Bible
+                  - button "Relationships" [ref=e140] [cursor=pointer]:
+                    - img [ref=e141]
+                    - generic [ref=e146]: Relationships
+            - main [ref=e147]:
+              - generic [ref=e241]:
+                - generic [ref=e243]:
+                  - generic [ref=e244]:
+                    - heading "Foundation" [level=2] [ref=e245]
+                    - paragraph [ref=e246]: Define the core elements of your story
+                  - generic [ref=e247]:
+                    - generic [ref=e248]: 2/2 required · 2/6 optional
+                    - button "Save" [ref=e249] [cursor=pointer]
+                - generic [ref=e250]:
+                  - button "Editor" [ref=e251] [cursor=pointer]
+                  - button "History (1)" [ref=e252] [cursor=pointer]
+                  - button "Review Cues (6)" [ref=e253] [cursor=pointer]
+                - generic [ref=e255]:
+                  - generic [ref=e256]:
+                    - generic [ref=e257]:
+                      - heading "Premise *" [level=3] [ref=e258]
+                      - paragraph [ref=e259]: The foundational situation or scenario
+                    - textbox "What is the basic situation or scenario that drives your story?" [ref=e260]: A lone sentinel on a dying space station must decide whether to save the last colony ship or preserve the station's ancient AI.
+                  - generic [ref=e261]:
+                    - generic [ref=e262]:
+                      - heading "Logline *" [level=3] [ref=e263]
+                      - paragraph [ref=e264]: A one-sentence summary of your story
+                    - 'textbox "In one sentence: Who is the protagonist, what do they want, and what stands in their way?" [ref=e265]': When the last colony ship arrives at a failing deep-space station, its guard must choose between humanity's future and an AI that holds the key to understanding alien contact.
+                  - generic [ref=e266]:
+                    - generic [ref=e267]:
+                      - heading "Thematic Spine" [level=3] [ref=e268]
+                      - paragraph [ref=e269]: The central theme or message
+                    - textbox "What is your story really about? What's the deeper meaning?" [ref=e270]
+                  - generic [ref=e271]:
+                    - generic [ref=e272]:
+                      - heading "Emotional Promise" [level=3] [ref=e273]
+                      - paragraph [ref=e274]: What readers will feel
+                    - textbox "What emotional journey will readers experience?" [ref=e275]
+                  - generic [ref=e276]:
+                    - generic [ref=e277]:
+                      - heading "Tone and Voice Direction" [level=3] [ref=e278]
+                      - paragraph [ref=e279]: The mood and narrative style
+                    - textbox "What is the mood and narrative voice? (e.g., dark and lyrical, light and conversational)" [ref=e280]: Claustrophobic and contemplative. Prose should emphasize sensory details of the station — the hum of failing systems, the cold, the silence between radio checks. Dialogue is sparse; most of the story is internal monologue and action.
+                  - generic [ref=e281]:
+                    - generic [ref=e282]:
+                      - heading "Target Audience" [level=3] [ref=e283]
+                      - paragraph [ref=e284]: Who will read this story
+                    - textbox "Who is your intended readership?" [ref=e285]
+                  - generic [ref=e286]:
+                    - generic [ref=e287]:
+                      - heading "Complexity Level" [level=3] [ref=e288]
+                      - paragraph [ref=e289]: Narrative complexity
+                    - combobox [ref=e290]:
+                      - option "Select complexity level"
+                      - option "Simple"
+                      - option "Moderate" [selected]
+                      - option "Complex"
+                      - option "Very Complex"
+                  - generic [ref=e291]:
+                    - generic [ref=e292]:
+                      - heading "Narrative Constraints" [level=3] [ref=e293]
+                      - paragraph [ref=e294]: Guidelines and limitations
+                    - button "+ Add Constraint" [ref=e296] [cursor=pointer]
+                  - generic [ref=e297]:
+                    - generic [ref=e298]:
+                      - heading "Success Definition" [level=3] [ref=e299]
+                      - paragraph [ref=e300]: What makes this story successful
+                    - textbox "What would make this story a success? What should it achieve?" [ref=e301]
+          - generic [ref=e180]:
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - img [ref=e184]
+                - heading "Notes" [level=3] [ref=e187]
+                - generic [ref=e188]: "0"
+              - generic [ref=e189]:
+                - textbox "Add a note..." [ref=e190]
+                - button "Add" [disabled] [ref=e192]:
+                  - img [ref=e193]
+                  - text: Add
+              - generic [ref=e195]:
+                - img [ref=e196]
+                - paragraph [ref=e199]: No notes yet
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - img [ref=e203]
+                - heading "Launch Job" [level=3] [ref=e208]
+              - generic [ref=e209]:
+                - generic [ref=e210]:
+                  - generic [ref=e211]: Phase
+                  - generic [ref=e212]:
+                    - button "Architect" [ref=e213] [cursor=pointer]:
+                      - img [ref=e214]
+                      - generic [ref=e219]: Architect
+                    - button "Sequencer" [ref=e220] [cursor=pointer]:
+                      - img [ref=e221]
+                      - generic [ref=e225]: Sequencer
+                    - button "Drafter" [ref=e226] [cursor=pointer]:
+                      - img [ref=e227]
+                      - generic [ref=e230]: Drafter
+                    - button "Compiler" [ref=e231] [cursor=pointer]:
+                      - img [ref=e232]
+                      - generic [ref=e235]: Compiler
+                - paragraph [ref=e236]: Build project architecture
+                - button [ref=e237] [cursor=pointer]:
+                  - img [ref=e238]

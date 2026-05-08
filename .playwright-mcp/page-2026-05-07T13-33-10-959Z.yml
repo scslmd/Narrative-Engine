@@ -1,0 +1,77 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - button "N Narrative Engine" [ref=e9] [cursor=pointer]:
+        - generic [ref=e11]: "N"
+        - heading "Narrative Engine" [level=1] [ref=e12]
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - button "Planning" [ref=e15] [cursor=pointer]:
+            - img [ref=e16]
+            - generic [ref=e18]: Planning
+          - button "Writing" [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+            - generic [ref=e22]: Writing
+          - button "Review" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e27]: Review
+        - button "Toggle theme" [ref=e28] [cursor=pointer]:
+          - img [ref=e29]
+        - button "Settings" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+  - main [ref=e39]:
+    - generic [ref=e40]:
+      - complementary [ref=e41]:
+        - navigation [ref=e42]:
+          - button "Brain Dump" [ref=e43] [cursor=pointer]:
+            - img [ref=e45]
+            - generic [ref=e47]: Brain Dump
+          - button "Planning" [ref=e48] [cursor=pointer]:
+            - img [ref=e50]
+            - generic [ref=e53]: Planning
+          - button "Canon" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e59]: Canon
+          - button "Generate" [ref=e61] [cursor=pointer]:
+            - img [ref=e63]
+            - generic [ref=e65]: Generate
+      - main [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e69]: Loading canon workspace...
+          - generic [ref=e70]:
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - img [ref=e74]
+                - heading "Notes" [level=3] [ref=e77]
+                - generic [ref=e78]: "0"
+              - generic [ref=e79]:
+                - textbox "Add a note..." [ref=e80]
+                - button "Add" [disabled] [ref=e82]:
+                  - img [ref=e83]
+                  - text: Add
+              - generic [ref=e85]:
+                - img [ref=e86]
+                - paragraph [ref=e89]: No notes yet
+            - generic [ref=e91]:
+              - generic [ref=e92]:
+                - img [ref=e93]
+                - heading "Launch Job" [level=3] [ref=e98]
+              - generic [ref=e99]:
+                - generic [ref=e100]:
+                  - generic [ref=e101]: Phase
+                  - generic [ref=e102]:
+                    - button "Architect" [ref=e103] [cursor=pointer]:
+                      - img [ref=e104]
+                      - generic [ref=e109]: Architect
+                    - button "Sequencer" [ref=e110] [cursor=pointer]:
+                      - img [ref=e111]
+                      - generic [ref=e115]: Sequencer
+                    - button "Drafter" [ref=e116] [cursor=pointer]:
+                      - img [ref=e117]
+                      - generic [ref=e120]: Drafter
+                    - button "Compiler" [ref=e121] [cursor=pointer]:
+                      - img [ref=e122]
+                      - generic [ref=e125]: Compiler
+                - paragraph [ref=e126]: Build project architecture
+                - button [ref=e127] [cursor=pointer]:
+                  - img [ref=e128]

@@ -1,0 +1,58 @@
+[     199ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:21550
+[     283ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b28fb8d7:4435
+[     283ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b28fb8d7:4435
+[     302ms] TypeError: projects?.find is not a function
+    at Layout (http://localhost:5173/src/components/Layout.tsx:64:36)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3733:39)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19765:15)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19137:13)
+[     304ms] TypeError: projects?.find is not a function
+    at Layout (http://localhost:5173/src/components/Layout.tsx:64:36)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:3733:39)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19765:15)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19137:13)
+[     310ms] [ERROR] The above error occurred in the <Layout> component:
+
+    at Layout (http://localhost:5173/src/components/Layout.tsx:54:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b28fb8d7:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=b28fb8d7:5290:5)
+    at AppInner (http://localhost:5173/src/App.tsx:43:3)
+    at ToastProvider (http://localhost:5173/src/hooks/useToast.tsx:20:33)
+    at QueryClientProvider (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=3ea89693:3194:3)
+    at App
+    at RootErrorBoundary (http://localhost:5173/src/main.tsx:10:1)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RootErrorBoundary. @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:14031
+[     310ms] [ERROR] ErrorBoundary caught an error: TypeError: projects?.find is not a function
+    at Layout (http://localhost:5173/src/components/Layout.tsx:64:36)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:15924:22)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19753:22)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19137:13)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:19116:15)
+    at recoverFromConcurrentError (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:18736:28)
+    at performSyncWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=ff5ee1dd:18879:28) {componentStack: 
+    at Layout (http://localhost:5173/src/componen…oundary (http://localhost:5173/src/main.tsx:10:1)} @ http://localhost:5173/src/main.tsx:18
+[   76160ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:559
+[   77278ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:21550
+[   77336ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435
+[   77336ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435
+[   93215ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:559
+[   95544ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[   97571ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:21550
+[   97586ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435
+[   97586ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435

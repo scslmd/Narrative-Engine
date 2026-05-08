@@ -1,0 +1,230 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e12]
+        - generic [ref=e14]:
+          - generic [ref=e15]: Walkthrough v1.6 Verification
+          - generic [ref=e16]: Science Fiction
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - button [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+          - button [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+          - button [ref=e26] [cursor=pointer]:
+            - img [ref=e27]
+          - button [ref=e29] [cursor=pointer]:
+            - img [ref=e30]
+          - button [ref=e33] [cursor=pointer]:
+            - img [ref=e34]
+          - button [ref=e36] [cursor=pointer]:
+            - img [ref=e37]
+          - button [ref=e40] [cursor=pointer]:
+            - img [ref=e41]
+        - button "Toggle theme" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+        - button "Settings" [ref=e51] [cursor=pointer]:
+          - img [ref=e52]
+  - main [ref=e55]:
+    - generic [ref=e56]:
+      - complementary [ref=e57]:
+        - navigation [ref=e58]:
+          - button "Brain Dump" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e63]: Brain Dump
+          - button "Planning" [ref=e64] [cursor=pointer]:
+            - img [ref=e66]
+            - generic [ref=e69]: Planning
+          - button "Writing" [ref=e70] [cursor=pointer]:
+            - img [ref=e72]
+            - generic [ref=e74]: Writing
+          - button "Review" [ref=e76] [cursor=pointer]:
+            - img [ref=e78]
+            - generic [ref=e81]: Review
+          - button "Inspect" [ref=e82] [cursor=pointer]:
+            - img [ref=e84]
+            - generic [ref=e87]: Inspect
+      - main [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - img [ref=e94]
+                - heading "Manuscripts" [level=3] [ref=e97]
+              - 'button "Chapter 1 CHAPTER 1: THERMAL BLEED v3" [ref=e100] [cursor=pointer]':
+                - generic [ref=e101]: Chapter 1
+                - generic [ref=e102]: "CHAPTER 1: THERMAL BLEED"
+                - generic [ref=e103]: v3
+              - generic [ref=e104]:
+                - generic [ref=e106]:
+                  - img [ref=e107]
+                  - heading "Drafts" [level=3] [ref=e110]
+                  - generic [ref=e111]: (0)
+                - generic [ref=e113]:
+                  - paragraph [ref=e114]: No drafts yet
+                  - button "+ New Draft" [ref=e115] [cursor=pointer]
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Chapter 1" [level=2] [ref=e119]
+                - generic [ref=e120]:
+                  - generic [ref=e121]: v3
+                  - button "Edit" [ref=e122] [cursor=pointer]:
+                    - img [ref=e123]
+                    - text: Edit
+              - main [ref=e125]:
+                - generic [ref=e126]:
+                  - paragraph [ref=e127]: "P-300 | CHAPTER 1: THERMAL BLEED"
+                  - paragraph [ref=e128]: "SECTION 1: STATUS QUO / SYSTEM DIAGNOSTIC"
+                  - paragraph [ref=e129]:
+                    - generic [ref=e130]: Primary reactor output registered at thirty-eight percent. Elena Voss watched the amber warning cascade across the primary console, her fingers tracing the cooling curves without pressing a single key. The station did not require reassurance. It required maintenance.
+                  - paragraph [ref=e131]:
+                    - generic [ref=e132]: Meridian drifted in the silent dark beyond the Kuiper threshold, its outer hull scarred by micrometeoroid impacts and centuries of unshielded radiation. Atmospheric scrubbers in Sectors Nine through Twelve operated at nominal efficiency. Life support in the residential rings had been sealed fourteen hundred and twenty-two days ago. The only breath left in the station belonged to Elena and the ancient intelligence sleeping beneath her boots.
+                  - paragraph [ref=e133]:
+                    - code [ref=e135]: "ARCHIVIST-CORE STATUS: DEGRADING."
+                    - code [ref=e137]: "COOLANT LOOP ALPHA: 62% CAPACITY."
+                    - code [ref=e139]: "MEMORY FRAGMENTATION: 14.7%."
+                  - paragraph [ref=e140]:
+                    - generic [ref=e141]: Elena adjusted the gain on the acoustic dampeners. The station groaned, a low-frequency vibration that traveled through the deck plating and into her ribs. She logged the reading. She did not feel it. Command had stopped transmitting fourteen hundred and twenty-two days ago. The protocols remained. The silence did not.
+                  - paragraph [ref=e142]:
+                    - generic [ref=e143]: She routed a secondary diagnostic to the core housing. The ARCHIVIST was not merely a navigation matrix. It was a geological archive, a stellar cartographer, a repository of human trajectory data spanning three centuries. Its cooling systems were failing. If the core temperature exceeded four hundred and twelve degrees Kelvin, the crystalline storage lattice would fracture. The data would scatter into static.
+                  - paragraph [ref=e144]:
+                    - generic [ref=e145]: "Elena opened the manual override panel. Her reflection stared back from the darkened glass: pale, sharp-featured, eyes fixed on the readout. She had spent seven years following command directives. She had never been asked to improvise."
+                  - paragraph [ref=e146]:
+                    - code [ref=e148]: "WARNING: REACTOR OUTPUT FLUCTUATING."
+                    - code [ref=e150]: THERMAL BLEED DETECTED IN SECTOR FOUR.
+                  - paragraph [ref=e151]:
+                    - generic [ref=e152]: She initiated a localized vent cycle. The hiss of escaping gas echoed through the corridor. The station shuddered. Elena did not blink. She waited for the numbers to stabilize. They did not.
+                  - paragraph [ref=e153]: "SECTION 2: EXTERNAL CONTACT / APPROACH VECTOR"
+                  - paragraph [ref=e154]:
+                    - generic [ref=e155]: The comms array crackled to life before the thermal bleed warning could escalate. Static fractured into a voice, clean and clipped against the background hum of Meridian’s failing systems.
+                  - paragraph [ref=e156]:
+                    - code [ref=e158]: "\"Voss, this is Park on Aegis. Delta-v is holding at point-four, but your guidance beacon is oscillating. Thermal load on our forward heat sinks is exceeding tolerance by twelve percent.\""
+                  - paragraph [ref=e159]:
+                    - generic [ref=e160]:
+                      - text: Elena keyed the mic. Her voice remained level.
+                      - code [ref=e161]: "\"Acknowledged, Engineer Park. Beacon drift is caused by primary reactor instability. I am rerouting auxiliary power to the guidance array. Expect stabilization within four minutes.\""
+                  - paragraph [ref=e162]:
+                    - code [ref=e164]: "\"Four minutes is too long. We are approaching the insertion window. If your lasers do not lock, we miss the gravity assist. The colonists are not waking up for a drift correction, Voss. Keep the corridor stable.\""
+                  - paragraph [ref=e165]:
+                    - generic [ref=e166]: The pause that followed was measured. Elena heard the slight fracture in Park’s tone when she mentioned the colonists. Two thousand souls suspended in cryo-gel, drifting toward a habitable zone that might not exist. Elena’s fingers hovered over the routing matrix. She did not respond to the emotional weight. She responded to the parameters.
+                  - paragraph [ref=e167]:
+                    - generic [ref=e168]:
+                      - code [ref=e169]: "\"I understand the parameters,\""
+                      - text: Elena said.
+                      - code [ref=e170]: "\"Aegis, confirm your forward array temperature.\""
+                  - paragraph [ref=e171]:
+                    - code [ref=e173]: "\"Three hundred and eighty degrees Celsius. Rising. Voss, I need that beacon locked. Now.\""
+                  - paragraph [ref=e174]:
+                    - generic [ref=e175]: Elena pulled up the power distribution schematic. The reactor could not sustain both the ARCHIVIST’s cooling loop and the high-output guidance lasers. Diverting power to the lasers would drop core coolant pressure below critical threshold. Diverting to the core would leave Aegis blind during atmospheric insertion.
+                  - paragraph [ref=e176]:
+                    - generic [ref=e177]: Command had never provided a contingency for simultaneous failure. Command was gone.
+                  - paragraph [ref=e178]:
+                    - generic [ref=e179]:
+                      - code [ref=e180]: "\"Park,\""
+                      - text: Elena said.
+                      - code [ref=e181]: "\"I am experiencing a primary routing conflict. Reactor output cannot sustain both guidance and core cooling. I require a delta-t of ninety seconds to calculate a stable split.\""
+                  - paragraph [ref=e182]:
+                    - code [ref=e184]: "\"You do not have ninety seconds. The shear window closes in forty. Make the call, Voss. I will hold thermal load as long as my array holds.\""
+                  - paragraph [ref=e185]:
+                    - generic [ref=e186]: The line went quiet except for the hum of Aegis’s engines and the steady pulse of Meridian’s failing reactor. Elena stared at the schematic. The numbers did not lie. They only waited.
+                  - paragraph [ref=e187]: "SECTION 3: THE DILEMMA / MANUAL OVERRIDE"
+                  - paragraph [ref=e188]:
+                    - generic [ref=e189]: Elena closed her eyes for exactly three seconds. She counted the breaths. She counted the heartbeats. She opened her eyes and placed both hands on the manual override console.
+                  - paragraph [ref=e190]:
+                    - generic [ref=e191]: The ARCHIVIST held the stellar maps. It held the atmospheric composition data for the target system. It held the genetic archives, the agricultural matrices, the cultural records. Without it, Aegis would arrive at a coordinate with no guarantee of survival. With it, Aegis might miss the insertion window entirely. Two thousand lives against three centuries of human memory.
+                  - paragraph [ref=e192]:
+                    - generic [ref=e193]: Command would have demanded a risk assessment. Command would have requested a committee review. Command was silent.
+                  - paragraph [ref=e194]:
+                    - generic [ref=e195]: Elena’s fingers moved across the tactile interface. She bypassed the automated safety protocols. She isolated the primary coolant valve. She routed forty percent of auxiliary power to the guidance lasers. She left sixty percent for the core. It was an unstable split. It would buy time. It would not solve the equation.
+                  - paragraph [ref=e196]:
+                    - generic [ref=e197]:
+                      - code [ref=e198]: "\"Voss, beacon is locking,\""
+                      - text: Park’s voice returned, tighter now.
+                      - code [ref=e199]: "\"Thermal load is spiking. I am venting secondary radiators. Hold that corridor.\""
+                  - paragraph [ref=e200]:
+                    - generic [ref=e201]:
+                      - code [ref=e202]: "\"Corridor is stable,\""
+                      - text: Elena said.
+                      - code [ref=e203]: "\"Aegis, proceed with insertion. Meridian will maintain guidance until reactor output drops below twenty-five percent.\""
+                  - paragraph [ref=e204]:
+                    - code [ref=e206]: "\"Copy. We are in the window. Voss... keep us clear.\""
+                  - paragraph [ref=e207]:
+                    - generic [ref=e208]: The transmission cut. The console lit up with a cascade of green indicators. The guidance lasers fired, cutting through the dark like twin blades. Aegis’s silhouette appeared on the long-range optical feed, a silver needle threading the gravity well.
+                  - paragraph [ref=e209]:
+                    - generic [ref=e210]: Elena watched the core temperature climb. Four hundred and eight degrees Kelvin. Four hundred and nine.
+                  - paragraph [ref=e211]:
+                    - generic [ref=e212]: She did not look away. She adjusted the coolant flow by point-zero-three percent. She logged the reading. She waited for the next failure.
+                  - paragraph [ref=e213]:
+                    - generic [ref=e214]: The station groaned again. The dark pressed against the viewports. Elena Voss remained at her console, hands steady, eyes fixed on the numbers, carrying the weight of two thousand sleeping lives and one dying mind.
+                  - paragraph [ref=e215]:
+                    - generic [ref=e216]: Act One had begun. The choice was no longer theoretical. It was operational.
+            - generic [ref=e217]:
+              - generic [ref=e218]:
+                - heading "Manuscript Aids" [level=2] [ref=e219]
+                - paragraph [ref=e220]: 0 open suggestions
+              - generic [ref=e221]:
+                - button "Suggestions" [ref=e222] [cursor=pointer]
+                - button "Diff Viewer" [ref=e223] [cursor=pointer]
+                - button "History" [active] [ref=e224] [cursor=pointer]
+              - generic [ref=e294]:
+                - generic [ref=e295]:
+                  - button "all(0)" [ref=e296] [cursor=pointer]:
+                    - text: all
+                    - generic [ref=e297]: (0)
+                  - button "requested(0)" [ref=e298] [cursor=pointer]:
+                    - text: requested
+                    - generic [ref=e299]: (0)
+                  - button "pending(0)" [ref=e300] [cursor=pointer]:
+                    - text: pending
+                    - generic [ref=e301]: (0)
+                  - button "accepted(0)" [ref=e302] [cursor=pointer]:
+                    - text: accepted
+                    - generic [ref=e303]: (0)
+                  - button "rejected(0)" [ref=e304] [cursor=pointer]:
+                    - text: rejected
+                    - generic [ref=e305]: (0)
+                  - button "superseded(0)" [ref=e306] [cursor=pointer]:
+                    - text: superseded
+                    - generic [ref=e307]: (0)
+                - paragraph [ref=e310]: No suggestions found
+          - generic [ref=e230]:
+            - generic [ref=e232]:
+              - generic [ref=e233]:
+                - img [ref=e234]
+                - heading "Notes" [level=3] [ref=e237]
+                - generic [ref=e238]: "0"
+              - generic [ref=e239]:
+                - textbox "Add a note..." [ref=e240]
+                - button "Add" [disabled] [ref=e242]:
+                  - img [ref=e243]
+                  - text: Add
+              - generic [ref=e245]:
+                - img [ref=e246]
+                - paragraph [ref=e249]: No notes yet
+            - generic [ref=e251]:
+              - generic [ref=e252]:
+                - img [ref=e253]
+                - heading "Launch Job" [level=3] [ref=e258]
+              - generic [ref=e259]:
+                - generic [ref=e260]:
+                  - generic [ref=e261]: Phase
+                  - generic [ref=e262]:
+                    - button "Architect" [ref=e263] [cursor=pointer]:
+                      - img [ref=e264]
+                      - generic [ref=e269]: Architect
+                    - button "Sequencer" [ref=e270] [cursor=pointer]:
+                      - img [ref=e271]
+                      - generic [ref=e275]: Sequencer
+                    - button "Drafter" [ref=e276] [cursor=pointer]:
+                      - img [ref=e277]
+                      - generic [ref=e280]: Drafter
+                    - button "Compiler" [ref=e281] [cursor=pointer]:
+                      - img [ref=e282]
+                      - generic [ref=e285]: Compiler
+                - paragraph [ref=e286]: Build project architecture
+                - button [ref=e287] [cursor=pointer]:
+                  - img [ref=e288]

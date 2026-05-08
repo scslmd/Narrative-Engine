@@ -35,6 +35,7 @@ describe('WorkspaceShell', () => {
     renderShell('plan');
 
     expect(screen.getByRole('navigation')).toBeInTheDocument();
+    expect(screen.getByText('Workspace sections')).toBeInTheDocument();
     const navItems = screen.getAllByRole('button', { hidden: false }).filter(
       (btn) => btn.parentElement?.tagName !== 'BUTTON' && btn.classList.contains('nav-item'),
     );

@@ -457,6 +457,7 @@ class TestPromptBuilder:
 
     def test_build_guided_setup_request_structure(self) -> None:
         from app.services.runtime_prompts import build_guided_setup_request
+        from app.settings import settings
 
         req = build_guided_setup_request(
             conversation_history=[
@@ -469,7 +470,7 @@ class TestPromptBuilder:
         )
 
         assert req.temperature == 0.3
-        assert req.max_tokens == 4096
+        assert req.max_tokens == settings.inference_max_tokens("GUIDED_SETUP")
         assert len(req.messages) == 2
         assert req.messages[0].role == "system"
         assert req.messages[1].role == "user"

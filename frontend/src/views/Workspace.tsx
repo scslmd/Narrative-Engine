@@ -14,18 +14,18 @@ export function Workspace() {
   return (
     <>
       <WorkspaceShell>
-        <div className="flex h-full gap-4">
-          <div className="flex-1 h-full overflow-hidden">
+        <div className="grid h-full grid-cols-1 xl:grid-cols-[minmax(0,1fr)_20rem] gap-4">
+          <section className="min-h-0 h-full overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
             <Outlet />
-          </div>
-          <div className="w-80 flex-shrink-0 h-full overflow-hidden flex flex-col gap-4">
-            <div className="flex-1 overflow-hidden">
+          </section>
+          <aside className="min-h-0 h-full overflow-hidden flex flex-col gap-4">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
               <NotesPanel projectId={projectId} />
             </div>
-            <div className="flex-1 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
               <JobLaunchPanel projectId={projectId} />
             </div>
-          </div>
+          </aside>
         </div>
       </WorkspaceShell>
       <BottomUtilityLayer projectId={projectId} />

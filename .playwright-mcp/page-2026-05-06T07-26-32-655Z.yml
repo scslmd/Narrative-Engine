@@ -1,0 +1,161 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e384]
+        - generic [ref=e386]:
+          - generic [ref=e387]: The Last Watch
+          - generic [ref=e388]: Science Fiction
+      - generic [ref=e12]:
+        - generic [ref=e389]:
+          - button [ref=e390] [cursor=pointer]:
+            - img [ref=e391]
+          - button [ref=e394] [cursor=pointer]:
+            - img [ref=e395]
+          - button [ref=e397] [cursor=pointer]:
+            - img [ref=e398]
+          - button [ref=e400] [cursor=pointer]:
+            - img [ref=e401]
+          - button [ref=e404] [cursor=pointer]:
+            - img [ref=e405]
+          - button [ref=e407] [cursor=pointer]:
+            - img [ref=e408]
+          - button [ref=e411] [cursor=pointer]:
+            - img [ref=e412]
+        - button "Toggle theme" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - button "Settings" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+  - main [ref=e24]:
+    - generic [ref=e415]:
+      - complementary [ref=e416]:
+        - navigation [ref=e417]:
+          - button "Brain Dump" [ref=e418] [cursor=pointer]:
+            - img [ref=e420]
+            - generic [ref=e422]: Brain Dump
+          - button "Planning" [ref=e423] [cursor=pointer]:
+            - img [ref=e425]
+            - generic [ref=e428]: Planning
+          - button "Writing" [ref=e430] [cursor=pointer]:
+            - img [ref=e432]
+            - generic [ref=e434]: Writing
+          - button "Review" [ref=e435] [cursor=pointer]:
+            - img [ref=e437]
+            - generic [ref=e440]: Review
+          - button "Inspect" [ref=e441] [cursor=pointer]:
+            - img [ref=e443]
+            - generic [ref=e446]: Inspect
+      - main [ref=e447]:
+        - generic [ref=e448]:
+          - generic [ref=e450]:
+            - generic [ref=e452]:
+              - button "Generate Story" [ref=e453] [cursor=pointer]
+              - generic [ref=e454]:
+                - generic [ref=e455]:
+                  - button "Manifest" [ref=e456] [cursor=pointer]:
+                    - img [ref=e457]
+                    - generic [ref=e460]: Manifest
+                  - button "Planning" [ref=e461] [cursor=pointer]:
+                    - img [ref=e462]
+                    - generic [ref=e464]: Planning
+                  - button "Flow" [ref=e465] [cursor=pointer]:
+                    - img [ref=e466]
+                    - generic [ref=e470]: Flow
+                  - button "Arcs" [ref=e471] [cursor=pointer]:
+                    - img [ref=e472]
+                    - generic [ref=e477]: Arcs
+                  - button "Branches" [ref=e478] [cursor=pointer]:
+                    - img [ref=e479]
+                    - generic [ref=e483]: Branches
+                  - button "Decisions" [ref=e484] [cursor=pointer]:
+                    - img [ref=e485]
+                    - generic [ref=e488]: Decisions
+                  - button "Checker" [ref=e489] [cursor=pointer]:
+                    - img [ref=e490]
+                    - generic [ref=e494]: Checker
+                - img [ref=e495]
+                - generic [ref=e497]:
+                  - button "Brainstorm" [ref=e498] [cursor=pointer]:
+                    - img [ref=e499]
+                    - generic [ref=e501]: Brainstorm
+                  - button "Foundation" [ref=e502] [cursor=pointer]:
+                    - img [ref=e503]
+                    - generic [ref=e506]: Foundation
+                  - button "Characters" [ref=e507] [cursor=pointer]:
+                    - img [ref=e508]
+                    - generic [ref=e511]: Characters
+                  - button "World Bible" [ref=e512] [cursor=pointer]:
+                    - img [ref=e513]
+                    - generic [ref=e515]: World Bible
+                  - button "Relationships" [ref=e516] [cursor=pointer]:
+                    - img [ref=e517]
+                    - generic [ref=e522]: Relationships
+            - main [ref=e523]:
+              - generic [ref=e524]:
+                - heading "Project Manifest" [level=2] [ref=e525]
+                - generic [ref=e526]:
+                  - generic [ref=e527]:
+                    - generic [ref=e528]: Project ID
+                    - paragraph [ref=e529]: 938dd08a-c13d-4c5f-b454-7d6c91f5291a
+                  - generic [ref=e530]:
+                    - generic [ref=e531]: Project Name
+                    - paragraph
+                  - generic [ref=e532]:
+                    - generic [ref=e533]: Genre
+                    - paragraph [ref=e534]: N/A
+                  - generic [ref=e535]:
+                    - generic [ref=e536]: Tone Profile
+                    - paragraph [ref=e537]: N/A
+                  - generic [ref=e538]:
+                    - generic [ref=e539]: Point of View
+                    - paragraph
+                  - generic [ref=e540]:
+                    - generic [ref=e541]: Story Structure
+                    - paragraph
+                  - generic [ref=e542]:
+                    - generic [ref=e543]: Primary Language
+                    - paragraph [ref=e544]: N/A
+                  - generic [ref=e545]:
+                    - generic [ref=e546]: Secondary Language
+                    - paragraph [ref=e547]: N/A
+                - paragraph [ref=e549]: "Last updated: 5/6/2026, 12:26:30 AM"
+          - generic [ref=e550]:
+            - generic [ref=e552]:
+              - generic [ref=e553]:
+                - img [ref=e554]
+                - heading "Notes" [level=3] [ref=e557]
+                - generic [ref=e558]: "0"
+              - generic [ref=e559]:
+                - textbox "Add a note..." [ref=e560]
+                - button "Add" [disabled] [ref=e562]:
+                  - img [ref=e563]
+                  - text: Add
+              - generic [ref=e565]:
+                - img [ref=e566]
+                - paragraph [ref=e569]: No notes yet
+            - generic [ref=e571]:
+              - generic [ref=e572]:
+                - img [ref=e573]
+                - heading "Launch Job" [level=3] [ref=e578]
+              - generic [ref=e579]:
+                - generic [ref=e580]:
+                  - generic [ref=e581]: Phase
+                  - generic [ref=e582]:
+                    - button "Architect" [ref=e583] [cursor=pointer]:
+                      - img [ref=e584]
+                      - generic [ref=e589]: Architect
+                    - button "Sequencer" [ref=e590] [cursor=pointer]:
+                      - img [ref=e591]
+                      - generic [ref=e595]: Sequencer
+                    - button "Drafter" [ref=e596] [cursor=pointer]:
+                      - img [ref=e597]
+                      - generic [ref=e600]: Drafter
+                    - button "Compiler" [ref=e601] [cursor=pointer]:
+                      - img [ref=e602]
+                      - generic [ref=e605]: Compiler
+                - paragraph [ref=e606]: Build project architecture
+                - button [ref=e607] [cursor=pointer]:
+                  - img [ref=e608]

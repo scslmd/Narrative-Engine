@@ -1,0 +1,140 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e438]
+        - generic [ref=e440]:
+          - generic [ref=e441]: MCP Walkthrough Test
+          - generic [ref=e442]: Science Fiction
+      - generic [ref=e12]:
+        - generic [ref=e443]:
+          - button [ref=e444] [cursor=pointer]:
+            - img [ref=e445]
+          - button [ref=e448] [cursor=pointer]:
+            - img [ref=e449]
+          - button [ref=e451] [cursor=pointer]:
+            - img [ref=e452]
+          - button [ref=e454] [cursor=pointer]:
+            - img [ref=e455]
+          - button [ref=e458] [cursor=pointer]:
+            - img [ref=e459]
+          - button [ref=e461] [cursor=pointer]:
+            - img [ref=e462]
+          - button [ref=e465] [cursor=pointer]:
+            - img [ref=e466]
+        - button "Toggle theme" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - button "Settings" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+  - main [ref=e24]:
+    - generic [ref=e469]:
+      - complementary [ref=e470]:
+        - navigation [ref=e471]:
+          - button "Brain Dump" [ref=e472] [cursor=pointer]:
+            - img [ref=e474]
+            - generic [ref=e476]: Brain Dump
+          - button "Planning" [ref=e477] [cursor=pointer]:
+            - img [ref=e479]
+            - generic [ref=e482]: Planning
+          - button "Writing" [ref=e484] [cursor=pointer]:
+            - img [ref=e486]
+            - generic [ref=e488]: Writing
+          - button "Review" [ref=e489] [cursor=pointer]:
+            - img [ref=e491]
+            - generic [ref=e494]: Review
+          - button "Inspect" [ref=e495] [cursor=pointer]:
+            - img [ref=e497]
+            - generic [ref=e500]: Inspect
+      - main [ref=e501]:
+        - generic [ref=e502]:
+          - generic [ref=e504]:
+            - generic [ref=e506]:
+              - button "Generate Story" [ref=e507] [cursor=pointer]
+              - generic [ref=e508]:
+                - generic [ref=e509]:
+                  - button "Manifest" [ref=e510] [cursor=pointer]:
+                    - img [ref=e511]
+                    - generic [ref=e514]: Manifest
+                  - button "Planning" [ref=e515] [cursor=pointer]:
+                    - img [ref=e516]
+                    - generic [ref=e518]: Planning
+                  - button "Flow" [ref=e519] [cursor=pointer]:
+                    - img [ref=e520]
+                    - generic [ref=e524]: Flow
+                  - button "Arcs" [ref=e525] [cursor=pointer]:
+                    - img [ref=e526]
+                    - generic [ref=e531]: Arcs
+                  - button "Branches" [ref=e532] [cursor=pointer]:
+                    - img [ref=e533]
+                    - generic [ref=e537]: Branches
+                  - button "Decisions" [ref=e538] [cursor=pointer]:
+                    - img [ref=e539]
+                    - generic [ref=e542]: Decisions
+                  - button "Checker" [ref=e543] [cursor=pointer]:
+                    - img [ref=e544]
+                    - generic [ref=e548]: Checker
+                - img [ref=e549]
+                - generic [ref=e551]:
+                  - button "Brainstorm" [ref=e552] [cursor=pointer]:
+                    - img [ref=e553]
+                    - generic [ref=e555]: Brainstorm
+                  - button "Foundation" [ref=e556] [cursor=pointer]:
+                    - img [ref=e557]
+                    - generic [ref=e560]: Foundation
+                  - button "Characters" [active] [ref=e561] [cursor=pointer]:
+                    - img [ref=e562]
+                    - generic [ref=e565]: Characters
+                  - button "World Bible" [ref=e566] [cursor=pointer]:
+                    - img [ref=e567]
+                    - generic [ref=e569]: World Bible
+                  - button "Relationships" [ref=e570] [cursor=pointer]:
+                    - img [ref=e571]
+                    - generic [ref=e576]: Relationships
+            - main [ref=e577]:
+              - generic [ref=e736]:
+                - generic [ref=e737]:
+                  - generic [ref=e738]:
+                    - heading "Characters" [level=2] [ref=e739]
+                    - paragraph [ref=e740]: 0 profiles in this project
+                  - button "+ New Character" [ref=e741] [cursor=pointer]
+                - paragraph [ref=e742]: No character profiles configured. Create a character to start building the cast.
+          - generic [ref=e604]:
+            - generic [ref=e606]:
+              - generic [ref=e607]:
+                - img [ref=e608]
+                - heading "Notes" [level=3] [ref=e611]
+                - generic [ref=e612]: "0"
+              - generic [ref=e613]:
+                - textbox "Add a note..." [ref=e614]
+                - button "Add" [disabled] [ref=e616]:
+                  - img [ref=e617]
+                  - text: Add
+              - generic [ref=e619]:
+                - img [ref=e620]
+                - paragraph [ref=e623]: No notes yet
+            - generic [ref=e625]:
+              - generic [ref=e626]:
+                - img [ref=e627]
+                - heading "Launch Job" [level=3] [ref=e632]
+              - generic [ref=e633]:
+                - generic [ref=e634]:
+                  - generic [ref=e635]: Phase
+                  - generic [ref=e636]:
+                    - button "Architect" [ref=e637] [cursor=pointer]:
+                      - img [ref=e638]
+                      - generic [ref=e643]: Architect
+                    - button "Sequencer" [ref=e644] [cursor=pointer]:
+                      - img [ref=e645]
+                      - generic [ref=e649]: Sequencer
+                    - button "Drafter" [ref=e650] [cursor=pointer]:
+                      - img [ref=e651]
+                      - generic [ref=e654]: Drafter
+                    - button "Compiler" [ref=e655] [cursor=pointer]:
+                      - img [ref=e656]
+                      - generic [ref=e659]: Compiler
+                - paragraph [ref=e660]: Build project architecture
+                - button [ref=e661] [cursor=pointer]:
+                  - img [ref=e662]

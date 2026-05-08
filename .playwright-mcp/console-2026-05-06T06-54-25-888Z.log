@@ -1,0 +1,83 @@
+[     309ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:21550
+[     377ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435
+[     377ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4435
+[  204164ms] [ERROR] Warning: React has detected a change in the order of Hooks called by %s. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+%s   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+%s ProjectList 1. useContext                 useContext
+2. useContext                 useContext
+3. useContext                 useContext
+4. useEffect                  useEffect
+5. useState                   useState
+6. useCallback                useCallback
+7. useSyncExternalStore       useSyncExternalStore
+8. useEffect                  useEffect
+9. useContext                 useContext
+10. useRef                    useContext
+ 
+    at ProjectList (http://localhost:5173/src/views/ProjectList.tsx?t=1778050669966:31:41)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4601:5)
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1778050669966:54:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:5290:5)
+    at AppInner (http://localhost:5173/src/App.tsx?t=1778049634689:43:3)
+    at ToastProvider (http://localhost:5173/src/hooks/useToast.tsx:20:33)
+    at QueryClientProvider (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=f48ef99d:3194:3)
+    at App
+    at RootErrorBoundary (http://localhost:5173/src/main.tsx:10:1) @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:520
+[  204165ms] TypeError: Cannot read properties of undefined (reading 'next')
+    at updateReducer (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11752:35)
+    at updateState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12021:18)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12753:24)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-3TFVT2CW.js?v=f48ef99d:1066:29)
+    at useMutation (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=f48ef99d:3661:30)
+    at useCreateProject (http://localhost:5173/src/hooks/useProjects.ts?t=1778050669966:22:10)
+    at ProjectList (http://localhost:5173/src/views/ProjectList.tsx?t=1778050669966:32:26)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:15924:22)
+[  204165ms] TypeError: Cannot read properties of undefined (reading 'next')
+    at updateReducer (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11752:35)
+    at updateState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12021:18)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12753:24)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-3TFVT2CW.js?v=f48ef99d:1066:29)
+    at useMutation (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=f48ef99d:3661:30)
+    at useCreateProject (http://localhost:5173/src/hooks/useProjects.ts?t=1778050669966:22:10)
+    at ProjectList (http://localhost:5173/src/views/ProjectList.tsx?t=1778050669966:32:26)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:15924:22)
+[  204167ms] [ERROR] The above error occurred in the <ProjectList> component:
+
+    at ProjectList (http://localhost:5173/src/views/ProjectList.tsx?t=1778050669966:31:41)
+    at RenderedRoute (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4131:5)
+    at Routes (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4601:5)
+    at main
+    at div
+    at Layout (http://localhost:5173/src/components/Layout.tsx?t=1778050669966:54:26)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:4544:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=f48ef99d:5290:5)
+    at AppInner (http://localhost:5173/src/App.tsx?t=1778049634689:43:3)
+    at ToastProvider (http://localhost:5173/src/hooks/useToast.tsx:20:33)
+    at QueryClientProvider (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=f48ef99d:3194:3)
+    at App
+    at RootErrorBoundary (http://localhost:5173/src/main.tsx:10:1)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RootErrorBoundary. @ http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:14031
+[  204167ms] [ERROR] ErrorBoundary caught an error: TypeError: Cannot read properties of undefined (reading 'next')
+    at updateReducer (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11752:35)
+    at updateState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12021:18)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:12753:24)
+    at Object.useState (http://localhost:5173/node_modules/.vite/deps/chunk-3TFVT2CW.js?v=f48ef99d:1066:29)
+    at useMutation (http://localhost:5173/node_modules/.vite/deps/@tanstack_react-query.js?v=f48ef99d:3661:30)
+    at useCreateProject (http://localhost:5173/src/hooks/useProjects.ts?t=1778050669966:22:10)
+    at ProjectList (http://localhost:5173/src/views/ProjectList.tsx?t=1778050669966:32:26)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-WERSD76P.js?v=f48ef99d:15924:22) {componentStack: 
+    at ProjectList (http://localhost:5173/src/vie…oundary (http://localhost:5173/src/main.tsx:10:1)} @ http://localhost:5173/src/main.tsx:18

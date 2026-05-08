@@ -20,6 +20,22 @@ This guide walks you through generating a short story from scratch and then iter
 
 ---
 
+## Recommended User Journey (Current UI)
+
+Use this order for the smoothest first run:
+
+1. Create/import project at `/`
+2. Define canon and planning in `/workspace/:projectId/plan`
+3. Draft and edit in `/workspace/:projectId/write`
+4. Validate outcomes in `/workspace/:projectId/review`
+5. Deep inspect run traces in `/workspace/:projectId/inspect/:jobId`
+6. Curate canon and packet behavior in `/workspace/:projectId/canon`
+7. Run orchestration/forks in `/workspace/:projectId/generate`
+
+For brain dump projects, include `/workspace/:projectId/braindump` before planning.
+
+---
+
 ## Quick Start: Generate Your First Short Story
 
 This chapter walks you through creating a project, defining your story's foundation and characters, then launching the AI generation pipeline to produce a drafted chapter. Follow each step in order.

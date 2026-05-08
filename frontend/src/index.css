@@ -89,6 +89,23 @@
   }
 }
 
+@layer components {
+  .page-shell {
+    @apply max-w-7xl mx-auto space-y-6;
+  }
+
+  .page-section {
+    @apply rounded-2xl border shadow-card;
+    border-color: var(--border-primary);
+    background: var(--bg-primary);
+  }
+
+  .page-header {
+    @apply px-5 py-4 border-b;
+    border-color: var(--border-primary);
+  }
+}
+
 /* === Skeleton loading === */
 @layer components {
   .skeleton {

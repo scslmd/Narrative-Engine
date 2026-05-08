@@ -45,9 +45,13 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   }
 
   return (
-    <div className="flex gap-5 h-full">
-      <aside className="w-52 flex-shrink-0">
-        <nav className="space-y-0.5 py-1">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full">
+      <aside className="lg:w-60 lg:flex-shrink-0">
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card p-3 lg:sticky lg:top-0">
+          <p className="text-[11px] uppercase tracking-wide font-semibold text-[var(--text-tertiary)] px-1 pb-2">
+            Workspace sections
+          </p>
+          <nav aria-label="Workspace sections" className="space-y-1">
           {visibleItems.map((item) => {
             const isActive = mode === item.key
             const Icon = item.icon
@@ -57,6 +61,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                 key={item.key}
                 onClick={() => handleNavClick(item.key)}
                 data-tooltip={tooltipText}
+                aria-current={isActive ? 'page' : undefined}
                 className={`w-full nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
                   isActive
                     ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-card'
@@ -77,7 +82,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               </button>
             )
           })}
-        </nav>
+          </nav>
+        </div>
       </aside>
       <main className="flex-1 min-w-0">{children}</main>
     </div>

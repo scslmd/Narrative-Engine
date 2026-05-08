@@ -1,0 +1,125 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "N Narrative Engine" [ref=e9] [cursor=pointer]:
+          - generic [ref=e11]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e12]
+        - img [ref=e162]
+        - generic [ref=e164]:
+          - generic [ref=e165]: The Last Watch
+          - generic [ref=e166]: Science Fiction
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - button "Planning" [ref=e15] [cursor=pointer]:
+            - img [ref=e16]
+            - generic [ref=e18]: Planning
+          - button "Writing" [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+            - generic [ref=e22]: Writing
+          - button "Review" [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+            - generic [ref=e27]: Review
+        - button "Toggle theme" [ref=e28] [cursor=pointer]:
+          - img [ref=e29]
+        - button "Settings" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+  - main [ref=e39]:
+    - generic [ref=e40]:
+      - complementary [ref=e41]:
+        - navigation [ref=e42]:
+          - button "Brain Dump" [ref=e43] [cursor=pointer]:
+            - img [ref=e45]
+            - generic [ref=e47]: Brain Dump
+          - button "Planning" [ref=e48] [cursor=pointer]:
+            - img [ref=e50]
+            - generic [ref=e53]: Planning
+          - button "Canon" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e59]: Canon
+          - button "Generate" [ref=e60] [cursor=pointer]:
+            - img [ref=e62]
+            - generic [ref=e64]: Generate
+      - main [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - heading "Story Generation Wizard" [level=2] [ref=e71]
+              - generic [ref=e72]:
+                - button "New Arc" [ref=e73] [cursor=pointer]
+                - button "Sequel" [ref=e74] [cursor=pointer]
+                - button "Prequel" [ref=e75] [cursor=pointer]
+                - button "Side Story" [ref=e76] [cursor=pointer]
+                - button "Alternate Route" [ref=e77] [cursor=pointer]
+                - button "Character Fork" [ref=e78] [cursor=pointer]
+                - button "World Fork" [ref=e79] [cursor=pointer]
+                - button "Hybrid Fork" [ref=e80] [cursor=pointer]
+              - generic [ref=e82]:
+                - button "Same Project" [active] [ref=e83] [cursor=pointer]
+                - button "New Project" [ref=e84] [cursor=pointer]
+              - generic [ref=e85]:
+                - generic [ref=e86]:
+                  - heading "Characters" [level=3] [ref=e87]
+                  - generic [ref=e167]:
+                    - button "CASSANDRA" [ref=e168] [cursor=pointer]
+                    - button "Elena Voss" [ref=e169] [cursor=pointer]
+                    - button "Lena Park" [ref=e170] [cursor=pointer]
+                - generic [ref=e88]:
+                  - heading "World Bible" [level=3] [ref=e89]
+                  - generic [ref=e171]:
+                    - button "Colony Ship Aethelstan" [ref=e172] [cursor=pointer]
+                    - button "The Artifact" [ref=e173] [cursor=pointer]
+                    - button "Station Meridian" [ref=e174] [cursor=pointer]
+              - generic [ref=e90]:
+                - text: Continuity Strictness
+                - combobox [ref=e91]:
+                  - option "Warn"
+                  - option "Block"
+                  - option "Repair Once" [selected]
+                  - option "Repair Twice"
+              - textbox "Generation brief" [ref=e92]
+              - spinbutton [ref=e93]: "3"
+              - generic [ref=e94]:
+                - button "Preview Fork" [disabled] [ref=e95]
+                - button "Start Generation" [disabled] [ref=e96]
+            - generic [ref=e175]:
+              - heading "No generation runs yet" [level=3] [ref=e176]
+              - paragraph [ref=e177]: Start the wizard above to create your first generation run.
+              - button "Start Generation Wizard" [ref=e178] [cursor=pointer]
+          - generic [ref=e102]:
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - img [ref=e106]
+                - heading "Notes" [level=3] [ref=e109]
+                - generic [ref=e110]: "0"
+              - generic [ref=e111]:
+                - textbox "Add a note..." [ref=e112]
+                - button "Add" [disabled] [ref=e114]:
+                  - img [ref=e115]
+                  - text: Add
+              - generic [ref=e117]:
+                - img [ref=e118]
+                - paragraph [ref=e121]: No notes yet
+            - generic [ref=e123]:
+              - generic [ref=e124]:
+                - img [ref=e125]
+                - heading "Launch Job" [level=3] [ref=e130]
+              - generic [ref=e131]:
+                - generic [ref=e132]:
+                  - generic [ref=e133]: Phase
+                  - generic [ref=e134]:
+                    - button "Architect" [ref=e135] [cursor=pointer]:
+                      - img [ref=e136]
+                      - generic [ref=e141]: Architect
+                    - button "Sequencer" [ref=e142] [cursor=pointer]:
+                      - img [ref=e143]
+                      - generic [ref=e147]: Sequencer
+                    - button "Drafter" [ref=e148] [cursor=pointer]:
+                      - img [ref=e149]
+                      - generic [ref=e152]: Drafter
+                    - button "Compiler" [ref=e153] [cursor=pointer]:
+                      - img [ref=e154]
+                      - generic [ref=e157]: Compiler
+                - paragraph [ref=e158]: Build project architecture
+                - button [ref=e159] [cursor=pointer]:
+                  - img [ref=e160]

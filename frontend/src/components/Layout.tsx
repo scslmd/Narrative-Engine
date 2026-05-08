@@ -61,8 +61,8 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[var(--bg-base)]" data-icon-mode={iconsOnly ? iconMode : ''}>
       <div className="stage-bar" />
-      <header className="border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 glass sticky top-0 z-[200]">
-        <div className="flex items-center justify-between px-4 lg:px-6 py-2.5">
+      <header className="border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/90 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-primary)]/80 sticky top-0 z-[200]">
+        <div className="flex items-center justify-between px-4 lg:px-6 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2.5 flex-shrink-0">
               <button
@@ -81,13 +81,16 @@ export function Layout({ children }: LayoutProps) {
             {isWorkspace && currentProject && (
               <>
                 <ChevronRight className="w-4 h-4 flex-shrink-0 text-[var(--text-tertiary)]" />
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm font-medium truncate text-[var(--text-primary)]">
-                    {currentProject.project_name}
-                  </span>
-                  <span className="hidden md:inline text-xs px-2 py-0.5 rounded-full font-medium text-[var(--text-secondary)] bg-[var(--bg-secondary)]">
-                    {currentProject.genre}
-                  </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wide text-[var(--text-tertiary)]">Current Project</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold truncate text-[var(--text-primary)]">
+                      {currentProject.project_name}
+                    </span>
+                    <span className="hidden md:inline text-xs px-2 py-0.5 rounded-full font-medium text-[var(--text-secondary)] bg-[var(--bg-secondary)]">
+                      {currentProject.genre}
+                    </span>
+                  </div>
                 </div>
               </>
             )}
@@ -95,13 +98,18 @@ export function Layout({ children }: LayoutProps) {
 
           <div className="flex items-center gap-1.5">
             {isWorkspace && (
-              <div className="hidden sm:flex items-center gap-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 p-0.5">
+              <div
+                role="group"
+                aria-label="Workflow stages"
+                className="hidden sm:flex items-center gap-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]/50 p-0.5"
+              >
                 {stageButtons.map(({ id, label, icon: Icon, shadow }) => {
                   const isActive = activeStage === id
                   return (
                     <button
                       key={id}
                       onClick={() => handleStageChange(id)}
+                      aria-current={isActive ? 'page' : undefined}
                       className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md ${
                         isActive
                           ? `bg-white text-gray-900 shadow-lg ${shadow}`
@@ -135,13 +143,14 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         {isWorkspace && (
-          <div className="sm:hidden flex border-t border-[var(--border-primary)]">
+          <div role="group" aria-label="Workflow stages" className="sm:hidden flex border-t border-[var(--border-primary)]">
             {stageButtons.map(({ id, label, icon: Icon, border }) => {
               const isActive = activeStage === id
               return (
                 <button
                   key={id}
                   onClick={() => handleStageChange(id)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors ${
                     isActive
                       ? `text-[var(--text-primary)] border-b-2 ${border}`
@@ -156,7 +165,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         )}
       </header>
-      <main className="flex-1 overflow-auto p-4 lg:p-6">
+      <main className="flex-1 overflow-auto px-4 py-4 lg:px-6 lg:py-5">
         {children}
       </main>
 

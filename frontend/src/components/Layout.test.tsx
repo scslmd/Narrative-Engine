@@ -112,6 +112,7 @@ describe('Layout', () => {
     renderLayout('/workspace/test-project/plan');
 
     await vi.waitFor(() => {
+      expect(screen.getAllByRole('group', { name: 'Workflow stages' })).toHaveLength(2);
       expect(screen.getAllByText('Planning')).toHaveLength(2);
       expect(screen.getAllByText('Writing')).toHaveLength(2);
       expect(screen.getAllByText('Review')).toHaveLength(2);

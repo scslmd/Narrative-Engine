@@ -1,0 +1,269 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e12]
+        - generic [ref=e14]:
+          - generic [ref=e15]: Walkthrough v1.6 Verification
+          - generic [ref=e16]: Science Fiction
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - button [ref=e19] [cursor=pointer]:
+            - img [ref=e20]
+          - button [ref=e23] [cursor=pointer]:
+            - img [ref=e24]
+          - button [ref=e26] [cursor=pointer]:
+            - img [ref=e27]
+          - button [ref=e29] [cursor=pointer]:
+            - img [ref=e30]
+          - button [ref=e33] [cursor=pointer]:
+            - img [ref=e34]
+          - button [ref=e36] [cursor=pointer]:
+            - img [ref=e37]
+          - button [ref=e40] [cursor=pointer]:
+            - img [ref=e41]
+        - button "Toggle theme" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+        - button "Settings" [ref=e51] [cursor=pointer]:
+          - img [ref=e52]
+  - main [ref=e55]:
+    - generic [ref=e56]:
+      - complementary [ref=e57]:
+        - navigation [ref=e58]:
+          - button "Brain Dump" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e63]: Brain Dump
+          - button "Planning" [ref=e64] [cursor=pointer]:
+            - img [ref=e66]
+            - generic [ref=e69]: Planning
+          - button "Writing" [ref=e71] [cursor=pointer]:
+            - img [ref=e73]
+            - generic [ref=e75]: Writing
+          - button "Review" [ref=e76] [cursor=pointer]:
+            - img [ref=e78]
+            - generic [ref=e81]: Review
+          - button "Inspect" [ref=e82] [cursor=pointer]:
+            - img [ref=e84]
+            - generic [ref=e87]: Inspect
+      - main [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e654]:
+            - generic [ref=e656]:
+              - button "Generate Story" [ref=e657] [cursor=pointer]
+              - generic [ref=e658]:
+                - generic [ref=e659]:
+                  - button "Manifest" [ref=e660] [cursor=pointer]:
+                    - img [ref=e661]
+                    - generic [ref=e664]: Manifest
+                  - button "Planning" [ref=e665] [cursor=pointer]:
+                    - img [ref=e666]
+                    - generic [ref=e668]: Planning
+                  - button "Flow" [ref=e669] [cursor=pointer]:
+                    - img [ref=e670]
+                    - generic [ref=e674]: Flow
+                  - button "Arcs" [ref=e675] [cursor=pointer]:
+                    - img [ref=e676]
+                    - generic [ref=e681]: Arcs
+                  - button "Branches" [ref=e682] [cursor=pointer]:
+                    - img [ref=e683]
+                    - generic [ref=e687]: Branches
+                  - button "Decisions" [ref=e688] [cursor=pointer]:
+                    - img [ref=e689]
+                    - generic [ref=e692]: Decisions
+                  - button "Checker" [ref=e693] [cursor=pointer]:
+                    - img [ref=e694]
+                    - generic [ref=e698]: Checker
+                - img [ref=e699]
+                - generic [ref=e701]:
+                  - button "Brainstorm" [ref=e702] [cursor=pointer]:
+                    - img [ref=e703]
+                    - generic [ref=e705]: Brainstorm
+                  - button "Foundation" [ref=e706] [cursor=pointer]:
+                    - img [ref=e707]
+                    - generic [ref=e710]: Foundation
+                  - button "Characters" [ref=e711] [cursor=pointer]:
+                    - img [ref=e712]
+                    - generic [ref=e715]: Characters
+                  - button "World Bible" [ref=e716] [cursor=pointer]:
+                    - img [ref=e717]
+                    - generic [ref=e719]: World Bible
+                  - button "Relationships" [ref=e720] [cursor=pointer]:
+                    - img [ref=e721]
+                    - generic [ref=e726]: Relationships
+            - main [ref=e727]:
+              - generic [ref=e776]:
+                - generic [ref=e778]:
+                  - generic [ref=e779]:
+                    - heading "Edit Character" [level=2] [ref=e780]
+                    - paragraph [ref=e781]: Build and refine your characters
+                  - generic [ref=e782]:
+                    - generic [ref=e783]: 3/3 required · 10/10 optional
+                    - button "Save" [ref=e784] [cursor=pointer]
+                    - button "Cancel" [ref=e785] [cursor=pointer]
+                - generic [ref=e787]:
+                  - generic [ref=e788]:
+                    - generic [ref=e789]:
+                      - heading "Character ID *" [level=3] [ref=e790]
+                      - paragraph [ref=e791]: Stable backend identifier for this character
+                    - textbox "Enter character id" [ref=e792]: elena-voss
+                  - generic [ref=e793]:
+                    - generic [ref=e794]:
+                      - generic [ref=e795]:
+                        - heading "Display Name *" [level=3] [ref=e796]
+                        - paragraph [ref=e797]: The character's name
+                      - textbox "Enter character name" [ref=e798]: Elena Voss
+                      - generic [ref=e799]:
+                        - generic [ref=e800]:
+                          - button "Lock" [ref=e801] [cursor=pointer]
+                          - button "Soft" [ref=e802] [cursor=pointer]
+                          - button "Mutable" [ref=e803] [cursor=pointer]
+                          - button "Forbidden" [ref=e804] [cursor=pointer]
+                        - textbox "Optional canon note" [ref=e805]
+                    - generic [ref=e806]:
+                      - generic [ref=e807]:
+                        - heading "Role in Story *" [level=3] [ref=e808]
+                        - paragraph [ref=e809]: Character's narrative function
+                      - textbox "e.g., Protagonist, Antagonist, Mentor" [ref=e810]: Protagonist
+                  - generic [ref=e811]:
+                    - generic [ref=e812]:
+                      - heading "Archetype" [level=3] [ref=e813]
+                      - paragraph [ref=e814]: Character archetype
+                    - textbox "e.g., The Creator, The Sage, The Hero" [ref=e815]: The Guardian
+                  - generic [ref=e816]:
+                    - generic [ref=e817]:
+                      - generic [ref=e818]:
+                        - heading "External Goal" [level=3] [ref=e819]
+                        - paragraph [ref=e820]: What the character wants
+                      - textbox "What does this character want to achieve?" [ref=e821]: Maintain Station Meridian's systems long enough to guide the colony ship to safety or extract the AI's core data
+                    - generic [ref=e822]:
+                      - generic [ref=e823]:
+                        - heading "Internal Need" [level=3] [ref=e824]
+                        - paragraph [ref=e825]: What the character truly needs
+                      - textbox "What does this character need for growth?" [ref=e826]: To trust her own judgment after years of following orders from a command center that abandoned her
+                  - generic [ref=e827]:
+                    - generic [ref=e828]:
+                      - generic [ref=e829]:
+                        - heading "Misbelief or Wound" [level=3] [ref=e830]
+                        - paragraph [ref=e831]: The character's limiting belief
+                      - textbox "What false belief holds this character back?" [ref=e832]: Believes she must follow protocol perfectly, even when protocol fails. Haunted by a past mission where breaking rules caused casualties.
+                    - generic [ref=e833]:
+                      - generic [ref=e834]:
+                        - heading "Core Fear" [level=3] [ref=e835]
+                        - paragraph [ref=e836]: What the character fears most
+                      - textbox "What is this character's deepest fear?" [ref=e837]: Making the wrong choice and being solely responsible for the deaths of 2000 colonists
+                  - generic [ref=e838]:
+                    - generic [ref=e839]:
+                      - generic [ref=e840]:
+                        - heading "Primary Strength" [level=3] [ref=e841]
+                        - paragraph [ref=e842]: The character's greatest asset
+                      - textbox "What is this character's greatest strength?" [ref=e843]: Exceptional systems knowledge and calm under pressure
+                    - generic [ref=e844]:
+                      - generic [ref=e845]:
+                        - heading "Fatal Flaw" [level=3] [ref=e846]
+                        - paragraph [ref=e847]: The character's limiting weakness
+                      - textbox "What flaw holds this character back?" [ref=e848]: She trusts machines over people. After Command abandoned her, human judgment feels unreliable. She defers to CERES calculations even when her gut says otherwise.
+                  - generic [ref=e849]:
+                    - generic [ref=e850]:
+                      - heading "Contradictions" [level=3] [ref=e851]
+                      - paragraph [ref=e852]: Paradoxical traits
+                    - button "+ Add Contradiction" [ref=e854] [cursor=pointer]
+                  - generic [ref=e855]:
+                    - generic [ref=e856]:
+                      - heading "Backstory Summary" [level=3] [ref=e857]
+                      - paragraph [ref=e858]: The character's past
+                    - textbox "What happened in this character's past?" [ref=e859]: Former military communications officer. Assigned to Station Meridian 8 years ago for a 2-year tour. Her tour was extended when funding cuts reduced rotations. She has not heard from Command in 14 months.
+                  - generic [ref=e860]:
+                    - generic [ref=e861]:
+                      - heading "Voice Notes" [level=3] [ref=e862]
+                      - paragraph [ref=e863]: How the character speaks
+                    - textbox "How does this character speak? What's their voice like?" [ref=e864]: Speaks in measured, technical language. Uses precise numbers and system names. Rarely uses contractions when stressed.
+                    - generic [ref=e865]:
+                      - generic [ref=e866]:
+                        - button "Lock" [ref=e867] [cursor=pointer]
+                        - button "Soft" [ref=e868] [cursor=pointer]
+                        - button "Mutable" [ref=e869] [cursor=pointer]
+                        - button "Forbidden" [ref=e870] [cursor=pointer]
+                      - textbox "Optional canon note" [ref=e871]
+                  - generic [ref=e872]:
+                    - generic [ref=e873]:
+                      - generic [ref=e874]:
+                        - heading "Secrets" [level=3] [ref=e875]
+                        - paragraph [ref=e876]: Hidden truths
+                      - button "+ Add" [ref=e878] [cursor=pointer]
+                    - generic [ref=e879]:
+                      - generic [ref=e880]:
+                        - heading "Values" [level=3] [ref=e881]
+                        - paragraph [ref=e882]: What the character holds dear
+                      - button "+ Add" [ref=e884] [cursor=pointer]
+                    - generic [ref=e885]:
+                      - generic [ref=e886]:
+                        - heading "Taboos" [level=3] [ref=e887]
+                        - paragraph [ref=e888]: What the character rejects
+                      - button "+ Add" [ref=e890] [cursor=pointer]
+                  - generic [ref=e891]:
+                    - generic [ref=e892]:
+                      - heading "Change Axis" [level=3] [ref=e893]
+                      - paragraph [ref=e894]: Character arc trajectory
+                    - textbox "How does this character change? From what to what?" [ref=e895]: From obedient follower to moral actor who takes ownership of impossible choices
+                  - generic [ref=e896]:
+                    - generic [ref=e897]:
+                      - heading "Arc Stage Notes" [level=3] [ref=e898]
+                      - paragraph [ref=e899]: Key moments in character development
+                    - button "+ Add Stage" [ref=e901] [cursor=pointer]
+                  - generic [ref=e902]:
+                    - generic [ref=e903]:
+                      - heading "Continuity Facts" [level=3] [ref=e904]
+                      - paragraph [ref=e905]: Details to track
+                    - button "+ Add Fact" [ref=e907] [cursor=pointer]
+                    - generic [ref=e908]:
+                      - generic [ref=e909]:
+                        - button "Lock" [ref=e910] [cursor=pointer]
+                        - button "Soft" [ref=e911] [cursor=pointer]
+                        - button "Mutable" [ref=e912] [cursor=pointer]
+                        - button "Forbidden" [ref=e913] [cursor=pointer]
+                      - textbox "Optional canon note" [ref=e914]
+                  - generic [ref=e915]:
+                    - generic [ref=e916]:
+                      - heading "Writer Notes" [level=3] [ref=e917]
+                      - paragraph [ref=e918]: Private notes for the author
+                    - textbox "Private notes about this character..." [ref=e919]
+          - generic [ref=e197]:
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - img [ref=e201]
+                - heading "Notes" [level=3] [ref=e204]
+                - generic [ref=e205]: "0"
+              - generic [ref=e206]:
+                - textbox "Add a note..." [ref=e207]
+                - button "Add" [disabled] [ref=e209]:
+                  - img [ref=e210]
+                  - text: Add
+              - generic [ref=e212]:
+                - img [ref=e213]
+                - paragraph [ref=e216]: No notes yet
+            - generic [ref=e218]:
+              - generic [ref=e219]:
+                - img [ref=e220]
+                - heading "Launch Job" [level=3] [ref=e225]
+              - generic [ref=e226]:
+                - generic [ref=e227]:
+                  - generic [ref=e228]: Phase
+                  - generic [ref=e229]:
+                    - button "Architect" [ref=e230] [cursor=pointer]:
+                      - img [ref=e231]
+                      - generic [ref=e236]: Architect
+                    - button "Sequencer" [ref=e237] [cursor=pointer]:
+                      - img [ref=e238]
+                      - generic [ref=e242]: Sequencer
+                    - button "Drafter" [ref=e243] [cursor=pointer]:
+                      - img [ref=e244]
+                      - generic [ref=e247]: Drafter
+                    - button "Compiler" [ref=e248] [cursor=pointer]:
+                      - img [ref=e249]
+                      - generic [ref=e252]: Compiler
+                - paragraph [ref=e253]: Draft narrative content
+                - button [ref=e254] [cursor=pointer]:
+                  - img [ref=e760]

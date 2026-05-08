@@ -1,0 +1,85 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - generic [ref=e10]: "N"
+        - heading "Narrative Engine" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+          - button [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+        - button "Toggle theme" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - complementary [ref=e52]:
+        - navigation [ref=e53]:
+          - button "Brain Dump" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e58]: Brain Dump
+          - button "Planning" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e64]: Planning
+          - button "Writing" [ref=e65] [cursor=pointer]:
+            - img [ref=e67]
+            - generic [ref=e69]: Writing
+          - button "Review" [ref=e70] [cursor=pointer]:
+            - img [ref=e72]
+            - generic [ref=e75]: Review
+          - button "Inspect" [ref=e76] [cursor=pointer]:
+            - img [ref=e78]
+            - generic [ref=e81]: Inspect
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - paragraph [ref=e88]: No inspection context active. Navigate to review or jobs view to select a job.
+          - generic [ref=e89]:
+            - generic [ref=e91]:
+              - generic [ref=e92]:
+                - img [ref=e93]
+                - heading "Notes" [level=3] [ref=e96]
+                - generic [ref=e97]: "0"
+              - generic [ref=e98]:
+                - textbox "Add a note..." [ref=e99]
+                - button "Add" [disabled] [ref=e101]:
+                  - img [ref=e102]
+                  - text: Add
+              - generic [ref=e104]:
+                - img [ref=e105]
+                - paragraph [ref=e108]: No notes yet
+            - generic [ref=e110]:
+              - generic [ref=e111]:
+                - img [ref=e112]
+                - heading "Launch Job" [level=3] [ref=e117]
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - generic [ref=e120]: Phase
+                  - generic [ref=e121]:
+                    - button "Architect" [ref=e122] [cursor=pointer]:
+                      - img [ref=e123]
+                      - generic [ref=e128]: Architect
+                    - button "Sequencer" [ref=e129] [cursor=pointer]:
+                      - img [ref=e130]
+                      - generic [ref=e134]: Sequencer
+                    - button "Drafter" [ref=e135] [cursor=pointer]:
+                      - img [ref=e136]
+                      - generic [ref=e139]: Drafter
+                    - button "Compiler" [ref=e140] [cursor=pointer]:
+                      - img [ref=e141]
+                      - generic [ref=e144]: Compiler
+                - paragraph [ref=e145]: Build project architecture
+                - button [ref=e146] [cursor=pointer]:
+                  - img [ref=e147]

@@ -1,0 +1,12 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - generic [ref=e10]: "N"
+        - heading "Narrative Engine" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - button "Toggle theme" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - button "Settings" [ref=e16] [cursor=pointer]:
+          - img [ref=e17]
+  - main [ref=e20]

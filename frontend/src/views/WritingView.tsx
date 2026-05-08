@@ -92,8 +92,11 @@ export function WritingView() {
   }
 
   return (
-    <div className="h-full flex gap-4">
-      <div className={`w-72 flex-shrink-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}>
+    <div className="h-full grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)_20rem] gap-4">
+      <section
+        aria-label="Manuscript and drafts panel"
+        className={`min-h-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}
+      >
         <div className={`flex items-center gap-2 px-4 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <FileText className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
           <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Manuscripts</h3>
@@ -151,7 +154,7 @@ export function WritingView() {
                   <div key={pd.assistId} className="flex items-center gap-1">
                     <span className="inline-block w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
                     {pd.error ? (
-                      <span className="text-red-400">{pd.title} — {pd.error}</span>
+                      <span className="text-red-400">{pd.title} - {pd.error}</span>
                     ) : (
                       <span>{pd.title}...</span>
                     )}
@@ -177,9 +180,16 @@ export function WritingView() {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className={`flex-1 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}>
+      <section
+        aria-label="Manuscript editor panel"
+        className={`min-h-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}
+      >
+        <div className={`px-4 py-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} flex items-center justify-between`}>
+          <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
+          <span className="text-xs text-muted">{selectedDocument ? selectedDocument.title : 'No manuscript selected'}</span>
+        </div>
         {selectedDocument ? (
           <ManuscriptEditor
             document={selectedDocument}
@@ -211,35 +221,37 @@ export function WritingView() {
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      <AidsPanel
-        projectId={projectId}
-        suggestions={mergedSuggestions}
-        onSuggestionAccept={(suggestionId) => {
-          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-          if (llm) {
-            void assist.applySuggestion(suggestionId);
-            return;
-          }
-          void handleSuggestionAccept(suggestionId);
-        }}
-        onSuggestionReject={(suggestionId) => {
-          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-          if (llm) {
-            void assist.rejectSuggestion(suggestionId);
-            return;
-          }
-          void handleSuggestionReject(suggestionId);
-        }}
-        onSuggestionArchive={(suggestionId) => {
-          const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-          if (llm) {
-            void assist.archiveSuggestion(suggestionId);
-            return;
-          }
-        }}
-      />
+      <section aria-label="Revision suggestions panel" className="min-h-0">
+        <AidsPanel
+          projectId={projectId}
+          suggestions={mergedSuggestions}
+          onSuggestionAccept={(suggestionId) => {
+            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+            if (llm) {
+              void assist.applySuggestion(suggestionId);
+              return;
+            }
+            void handleSuggestionAccept(suggestionId);
+          }}
+          onSuggestionReject={(suggestionId) => {
+            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+            if (llm) {
+              void assist.rejectSuggestion(suggestionId);
+              return;
+            }
+            void handleSuggestionReject(suggestionId);
+          }}
+          onSuggestionArchive={(suggestionId) => {
+            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
+            if (llm) {
+              void assist.archiveSuggestion(suggestionId);
+              return;
+            }
+          }}
+        />
+      </section>
     </div>
   );
 }

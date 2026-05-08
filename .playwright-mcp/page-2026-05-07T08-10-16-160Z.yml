@@ -1,0 +1,18 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - button "N Narrative Engine" [ref=e9] [cursor=pointer]:
+          - generic [ref=e11]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e12]
+        - generic [ref=e13]:
+          - button "Toggle theme" [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+          - button "Settings" [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+    - main [ref=e25]
+  - generic [ref=e49]:
+    - img [ref=e50]
+    - generic [ref=e52]: No LLM backend detected — imports and extractions will fail. Configure NARRATIVE_INFERENCE_URL to enable.
+    - button "Dismiss" [ref=e53] [cursor=pointer]:
+      - img [ref=e54]

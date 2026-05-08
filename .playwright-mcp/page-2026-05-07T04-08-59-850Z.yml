@@ -1,0 +1,96 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e8]:
+        - generic [ref=e10]: "N"
+        - heading "Narrative Engine" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+          - button [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+        - button "Toggle theme" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - complementary [ref=e52]:
+        - navigation [ref=e53]:
+          - button "Brain Dump" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e58]: Brain Dump
+          - button "Planning" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e64]: Planning
+          - button "Writing" [ref=e65] [cursor=pointer]:
+            - img [ref=e67]
+            - generic [ref=e69]: Writing
+          - button "Review" [ref=e70] [cursor=pointer]:
+            - img [ref=e72]
+            - generic [ref=e75]: Review
+          - button "Inspect" [ref=e76] [cursor=pointer]:
+            - img [ref=e78]
+            - generic [ref=e81]: Inspect
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e87]:
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - heading "Inspect Run" [level=2] [ref=e91]
+                - paragraph [ref=e92]: "Run ID: 99f0b92c-1bf3-463a-b385-acb5384cc129"
+                - paragraph [ref=e93]: "Run Kind: role_model_check"
+              - button "Back to Manuscript" [ref=e94] [cursor=pointer]
+            - main [ref=e95]:
+              - navigation [ref=e98]:
+                - button "Steps" [ref=e99] [cursor=pointer]
+                - button "Lineage" [ref=e100] [cursor=pointer]
+                - button "Attempts" [ref=e101] [cursor=pointer]
+          - generic [ref=e113]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - img [ref=e117]
+                - heading "Notes" [level=3] [ref=e120]
+                - generic [ref=e121]: "0"
+              - generic [ref=e122]:
+                - textbox "Add a note..." [ref=e123]
+                - button "Add" [disabled] [ref=e125]:
+                  - img [ref=e126]
+                  - text: Add
+              - generic [ref=e128]:
+                - img [ref=e129]
+                - paragraph [ref=e132]: No notes yet
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - img [ref=e136]
+                - heading "Launch Job" [level=3] [ref=e141]
+              - generic [ref=e142]:
+                - generic [ref=e143]:
+                  - generic [ref=e144]: Phase
+                  - generic [ref=e145]:
+                    - button "Architect" [ref=e146] [cursor=pointer]:
+                      - img [ref=e147]
+                      - generic [ref=e152]: Architect
+                    - button "Sequencer" [ref=e153] [cursor=pointer]:
+                      - img [ref=e154]
+                      - generic [ref=e158]: Sequencer
+                    - button "Drafter" [ref=e159] [cursor=pointer]:
+                      - img [ref=e160]
+                      - generic [ref=e163]: Drafter
+                    - button "Compiler" [ref=e164] [cursor=pointer]:
+                      - img [ref=e165]
+                      - generic [ref=e168]: Compiler
+                - paragraph [ref=e169]: Build project architecture
+                - button [ref=e170] [cursor=pointer]:
+                  - img [ref=e171]

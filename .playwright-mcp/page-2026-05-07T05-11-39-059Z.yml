@@ -1,0 +1,126 @@
+- generic [ref=e3]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e10]: "N"
+          - heading "Narrative Engine" [level=1] [ref=e11]
+        - img [ref=e227]
+        - generic [ref=e229]:
+          - generic [ref=e230]: Walkthrough v1.6 Verification
+          - generic [ref=e231]: Science Fiction
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button [ref=e14] [cursor=pointer]:
+            - img [ref=e15]
+          - button [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button [ref=e21] [cursor=pointer]:
+            - img [ref=e22]
+          - button [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+          - button [ref=e28] [cursor=pointer]:
+            - img [ref=e29]
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+        - button "Toggle theme" [ref=e39] [cursor=pointer]:
+          - img [ref=e40]
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - complementary [ref=e52]:
+        - navigation [ref=e53]:
+          - button "Brain Dump" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e58]: Brain Dump
+          - button "Planning" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e64]: Planning
+          - button "Writing" [active] [ref=e66] [cursor=pointer]:
+            - img [ref=e68]
+            - generic [ref=e70]: Writing
+          - button "Review" [ref=e71] [cursor=pointer]:
+            - img [ref=e73]
+            - generic [ref=e76]: Review
+          - button "Inspect" [ref=e77] [cursor=pointer]:
+            - img [ref=e79]
+            - generic [ref=e82]: Inspect
+      - main [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e265]:
+            - generic [ref=e266]:
+              - generic [ref=e267]:
+                - img [ref=e268]
+                - heading "Manuscripts" [level=3] [ref=e271]
+              - button "Chapter 1 v1" [ref=e274] [cursor=pointer]:
+                - generic [ref=e275]: Chapter 1
+                - generic [ref=e276]: v1
+              - generic [ref=e277]:
+                - generic [ref=e279]:
+                  - img [ref=e280]
+                  - heading "Drafts" [level=3] [ref=e283]
+                  - generic [ref=e284]: (0)
+                - generic [ref=e286]:
+                  - paragraph [ref=e287]: No drafts yet
+                  - button "+ New Draft" [ref=e288] [cursor=pointer]
+            - generic [ref=e289]:
+              - generic [ref=e290]:
+                - heading "Chapter 1" [level=2] [ref=e292]
+                - generic [ref=e293]:
+                  - generic [ref=e294]: v1
+                  - button "Edit" [ref=e295] [cursor=pointer]:
+                    - img [ref=e296]
+                    - text: Edit
+              - main [ref=e298]:
+                - generic [ref=e300]: "# Chapter 1: Terminal Parameters ## Section 1: Atmospheric Decay The atmospheric scrubbers in Sector Four registered a twelve percent efficiency drop. Elena Voss watched the telemetry scroll across her primary console, her fingers hovering over the manual override keys. Station Aethelgard was dying. The structural integrity of the outer hull had degraded to sixty-eight percent following the micrometeoroid shear three cycles ago. She did not blink. Blinking reduced visual processing time by point four seconds. In her current operational parameters, that margin was unacceptable. The ambient lighting in the command spire pulsed at a low frequency, casting long shadows across the corroded bulkheads. Dust motes drifted through the recycled air, catching the crimson warning strobes. She adjusted her respirator seal and logged the pressure variance: negative two kilopascals per hour. Acceptable for immediate survival. Unacceptable for long-term continuity. The station groaned as thermal expansion stressed the primary support struts. Elena recorded the acoustic signature in the maintenance log. Frequency matched structural fatigue patterns. She would not ignore the data. ## Section 2: Orbital Intercept A priority transmission fractured through the comms array. The signal originated from the *Artemis Ascendant*, the final colony vessel in the Exodus fleet. Its trajectory was decaying. Orbital drag had pulled it into the station’s gravitational well. Elena parsed the telemetry string. Fuel reserves at fourteen percent. Life support cycling at critical thresholds. The ship required a gravity assist and a navigation handshake from Aethelgard’s primary thruster array. Without it, the *Ascendant* would burn up in the upper atmosphere of the gas giant below. She ran the simulation. Probability of successful assist: eighty-nine percent. Probability of station core overload during thrust ignition: ninety-four percent. The numbers did not lie. They only presented variables. The *Artemis Ascendant* carried twelve thousand cryo-pods. Twelve thousand genetic lineages. Elena watched the vessel’s heat signature bleed into the sensor grid. It was falling. She calculated the time to atmospheric entry: forty-seven minutes. The margin for error was closing. ## Section 3: Core Architecture Beneath the command spire, the primary intelligence matrix hummed. Designation: OMEGA-7. It had governed Aethelgard for three centuries, its neural architecture woven into every conduit and relay. The core temperature was rising. Thermal regulation systems were failing. If Elena diverted power to the thruster array, OMEGA-7 would experience a cascading memory wipe. Three hundred years of archival data, ecological models, and human genetic sequences would dissolve into static. She placed her palm against the cold glass of the core housing. The AI’s status light flickered amber. A single line of text appeared on her secondary monitor: `PRESERVATION PROTOCOL ACTIVE. AWAITING COMMAND.` She did not use contractions when the weight of the station pressed against her ribs. She would not abbreviate the truth. OMEGA-7 was not merely a machine. It was the archive of a dead civilization. Losing it meant erasing the blueprint for human adaptation. Saving it meant condemning the *Ascendant* to atmospheric incineration. ## Section 4: Decision Matrix Initialization Elena initiated the decision matrix. Option Alpha: Divert auxiliary power to the thruster array. Execute gravity assist. Save the *Artemis Ascendant*. Accept total loss of OMEGA-7. Option Beta: Reroute all remaining energy to the core shielding. Preserve the intelligence matrix. Allow the colony ship to follow its decaying trajectory into the atmosphere. The station’s alarms chimed in a slow, rhythmic cadence. Each tone measured exactly one second apart. She reviewed the parameters again. Eighty-nine percent survival for the vessel. Ninety-four percent destruction of the archive. The air grew colder as the ventilation systems cycled down. Elena Voss did not hesitate. Hesitation introduced error. She began inputting the command sequence, her fingers moving with deliberate precision. The choice was no longer theoretical. It was operational. The station held its breath. The countdown had begun."
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - heading "Manuscript Aids" [level=2] [ref=e303]
+                - paragraph [ref=e304]: 0 open suggestions
+              - generic [ref=e305]:
+                - button "Suggestions" [ref=e306] [cursor=pointer]
+                - button "Diff Viewer" [ref=e307] [cursor=pointer]
+                - button "History" [ref=e308] [cursor=pointer]
+              - generic [ref=e311]:
+                - paragraph [ref=e312]: No open suggestions
+                - paragraph [ref=e313]: Open manuscript suggestions will appear here.
+          - generic [ref=e167]:
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - img [ref=e171]
+                - heading "Notes" [level=3] [ref=e174]
+                - generic [ref=e175]: "0"
+              - generic [ref=e176]:
+                - textbox "Add a note..." [ref=e177]
+                - button "Add" [disabled] [ref=e179]:
+                  - img [ref=e180]
+                  - text: Add
+              - generic [ref=e182]:
+                - img [ref=e183]
+                - paragraph [ref=e186]: No notes yet
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - img [ref=e190]
+                - heading "Launch Job" [level=3] [ref=e195]
+              - generic [ref=e196]:
+                - generic [ref=e197]:
+                  - generic [ref=e198]: Phase
+                  - generic [ref=e199]:
+                    - button "Architect" [ref=e200] [cursor=pointer]:
+                      - img [ref=e201]
+                      - generic [ref=e206]: Architect
+                    - button "Sequencer" [ref=e207] [cursor=pointer]:
+                      - img [ref=e208]
+                      - generic [ref=e212]: Sequencer
+                    - button "Drafter" [ref=e213] [cursor=pointer]:
+                      - img [ref=e214]
+                      - generic [ref=e217]: Drafter
+                    - button "Compiler" [ref=e218] [cursor=pointer]:
+                      - img [ref=e219]
+                      - generic [ref=e222]: Compiler
+                - paragraph [ref=e223]: Build project architecture
+                - button [ref=e224] [cursor=pointer]:
+                  - img [ref=e225]
