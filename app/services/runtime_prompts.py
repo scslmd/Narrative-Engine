@@ -88,7 +88,8 @@ def build_p200_sequencer_request(
                 content=(
                     "You are the Sequencer role for Narrative-Engine. "
                     "Produce the P-200 sequence foundation as deterministic JSON. "
-                    "Return an ordered sequence plan with stable item ordering and explicit dependencies."
+                    "Return an ordered sequence plan with stable item ordering and explicit dependencies. "
+                    "Return ONLY one valid JSON object. No markdown, no code fences, no commentary."
                 ),
             ),
             InferenceMessage(
@@ -134,7 +135,8 @@ def build_p300_drafter_request(
     system_content = (
         f"You are the Drafter role for Narrative-Engine. "
         f"Produce the P-300 {chapter_label} draft as deterministic markdown. "
-        f"Preserve chapter flow, continuity, and stable section ordering."
+        f"Preserve chapter flow, continuity, and stable section ordering. "
+        "Return ONLY the chapter markdown text with no preamble and no code fences."
     )
     if target_words is not None:
         system_content += (
@@ -204,7 +206,8 @@ def build_p400_compiler_request(
                     "You are the Compiler role for Narrative-Engine. "
                     "Produce the P-400 story bible snapshot as deterministic JSON. "
                     "Return one JSON object with these top-level keys in stable order: "
-                    "project, premise, world_anchors, character_threads, continuity_notes, open_questions."
+                    "project, premise, world_anchors, character_threads, continuity_notes, open_questions. "
+                    "Return ONLY valid JSON (no markdown/code fences/comments)."
                 ),
             ),
             InferenceMessage(
@@ -238,7 +241,8 @@ def build_g200_story_generation_plan_request(
                 role="system",
                 content=(
                     "You are the generation planner. Produce deterministic JSON with premise, logline, "
-                    "chapter plans, canon obligations, and intentional differences."
+                    "chapter plans, canon obligations, and intentional differences. "
+                    "Return ONLY one valid JSON object."
                 ),
             ),
             InferenceMessage(
@@ -281,7 +285,10 @@ def build_g300_chapter_generation_request(
         messages=[
             InferenceMessage(
                 role="system",
-                content="Draft the chapter as markdown while preserving locked canon constraints.",
+                content=(
+                    "Draft the chapter as markdown while preserving locked canon constraints. "
+                    "Return ONLY chapter prose markdown with no analysis/preamble/code fences."
+                ),
             ),
             InferenceMessage(
                 role="user",
@@ -311,7 +318,10 @@ def build_g350_canon_repair_request(
         messages=[
             InferenceMessage(
                 role="system",
-                content="Repair canon contradictions while preserving intended story intent.",
+                content=(
+                    "Repair canon contradictions while preserving intended story intent. "
+                    "Return ONLY the repaired artifact markdown text (no JSON, no explanations, no code fences)."
+                ),
             ),
             InferenceMessage(
                 role="user",
@@ -343,7 +353,10 @@ def build_g400_manuscript_assembly_request(
         messages=[
             InferenceMessage(
                 role="system",
-                content="Assemble the chapter artifacts into a cohesive manuscript.",
+                content=(
+                    "Assemble the chapter artifacts into a cohesive manuscript. "
+                    "Return ONLY manuscript markdown text with consistent chapter ordering and transitions."
+                ),
             ),
             InferenceMessage(
                 role="user",
@@ -381,7 +394,8 @@ def build_m500_manuscript_assist_request(
                 role="system",
                 content=(
                     "You are a manuscript assistant for narrative editing. "
-                    "Return strict JSON only: summary, suggestions[], created_branch_brief, warnings."
+                    "Return strict JSON only: summary, suggestions[], created_branch_brief, warnings. "
+                    "No markdown code fences, no explanatory prose."
                 ),
             ),
             InferenceMessage(
@@ -411,7 +425,11 @@ def build_m550_manuscript_repair_request(
         messages=[
             InferenceMessage(
                 role="system",
-                content="Repair manuscript assist output to satisfy canon and continuity constraints.",
+                content=(
+                    "Repair manuscript assist output to satisfy canon and continuity constraints. "
+                    "Return strict JSON only with keys: summary, suggestions, created_branch_brief, warnings. "
+                    "Do not include markdown or explanatory text."
+                ),
             ),
             InferenceMessage(
                 role="user",
@@ -2161,7 +2179,7 @@ Output ONLY the raw JSON object. Do not wrap it in markdown code fences or expla
 7. **Core conflict**: What's the central tension or mystery driving the plot?
 8. **Arcs**: How do the main characters change over the course of the story?
 9. **Constraints & preferences**: Any specific requirements, themes to include/avoid, word count goals.
-10. **Story structure**: Once core elements are collected, organize the story into
+10. **Planning structure**: Once core elements are collected, organize the story into
     sequences and chapters. Ask about pacing, chapter count, and major turning points.
     Propose a sequence/chapter outline for the user to confirm or adjust.
 
@@ -2195,11 +2213,13 @@ Return ONLY a JSON object with these exact keys:
 ## RULES
 - Only populate fields you can extract with reasonable confidence from the conversation.
 - Leave fields empty ("" or []) if you don't have enough information yet.
-When config, foundation, characters, world_bible, and arcs all reach 0.7+ completeness,
-shift focus to structuring the story into sequences and chapters. Present a proposed
-outline and ask if it works or needs adjustment. Do not set ready_to_create until the
-user has confirmed the story structure.
-- Set ready_to_create to true only when all 5 categories reach at least 0.7 completeness.
+- When config, foundation, characters, world_bible, and arcs all reach 0.7+ completeness,
+  shift focus to structuring the story into sequences and chapters. Present a proposed
+  outline and ask if it works or needs adjustment.
+- Do not set ready_to_create until the user has confirmed the story structure.
+- Set ready_to_create to true only when:
+  - the 5 core categories (config/foundation/characters/world_bible/arcs) are each >= 0.7
+  - and sequences/chapters are present and user-confirmed.
 - Progress should be the average of all category completeness values, multiplied by 100.
 - Confidence reflects how sure you are about the extracted values (0.0 to 1.0).
 - No markdown code fences. Return raw JSON only.
