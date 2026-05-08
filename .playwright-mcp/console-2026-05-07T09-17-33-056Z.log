@@ -1,3 +1,0 @@
-[ 1058045ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/v1/canon/annotations?project_id=a4c64507-0470-4ab7-8594-f70ee3c29c22:0
-[ 1059054ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/v1/canon/annotations?project_id=a4c64507-0470-4ab7-8594-f70ee3c29c22:0
-[ 1521708ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/v1/story-generation/runs?project_id=a4c64507-0470-4ab7-8594-f70ee3c29c22:0

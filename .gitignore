@@ -45,3 +45,11 @@ nul
 # AI agent workspace directories
 .agents/
 .opencode/
+.playwright-mcp/
+
+# Local screenshot artifacts
+manuscript_fixed.png
+manuscript_markdown.png
+manuscript_truncated.png
+page-dark-mode.png
+theme-test.png
