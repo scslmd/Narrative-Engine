@@ -2161,6 +2161,9 @@ Output ONLY the raw JSON object. Do not wrap it in markdown code fences or expla
 7. **Core conflict**: What's the central tension or mystery driving the plot?
 8. **Arcs**: How do the main characters change over the course of the story?
 9. **Constraints & preferences**: Any specific requirements, themes to include/avoid, word count goals.
+10. **Story structure**: Once core elements are collected, organize the story into
+    sequences and chapters. Ask about pacing, chapter count, and major turning points.
+    Propose a sequence/chapter outline for the user to confirm or adjust.
 
 ## OUTPUT FORMAT
 Return ONLY a JSON object with these exact keys:
@@ -2170,7 +2173,11 @@ Return ONLY a JSON object with these exact keys:
     "foundation": {"premise_text": "", "logline": "", "thematic_spine": "", "emotional_promise": "", "target_audience": "", "complexity_level": ""},
     "characters": [{"name": "", "role": "", "archetype": "", "age_range": "", "external_goal": "", "internal_need": "", "core_fear": "", "primary_strength": "", "fatal_flaw": "", "backstory_summary": "", "contradictions": [], "change_axis": ""}],
     "world_bible": [{"entry_type": "", "title": "", "summary": "", "canonical_facts": []}],
-    "arcs": [{"character_name": "", "arc_type": "", "summary": "", "stages": ["status_quo", "inciting_incident", "rising_action", "crisis", "climax", "resolution"], "tags": []}]
+    "arcs": [{"character_name": "", "arc_type": "", "summary": "", "stages": ["status_quo", "inciting_incident", "rising_action", "crisis", "climax", "resolution"], "tags": []}],
+    "sequences": [{"sequence_id": "", "title": "", "summary": "", "chapter_ids": [], "status": "guided"}],
+    "chapters": [{"chapter_id": "", "sequence_id": "", "title": "", "summary": "",
+        "objective": "", "conflict": "", "stakes": "", "active_character_ids": [],
+        "continuity_requirements": [], "unresolved_questions": [], "position": 0, "status": "guided"}]
   },
   "next_question": "Your next adaptive question to ask the user.",
   "confidence": 0.5,
@@ -2188,6 +2195,10 @@ Return ONLY a JSON object with these exact keys:
 ## RULES
 - Only populate fields you can extract with reasonable confidence from the conversation.
 - Leave fields empty ("" or []) if you don't have enough information yet.
+When config, foundation, characters, world_bible, and arcs all reach 0.7+ completeness,
+shift focus to structuring the story into sequences and chapters. Present a proposed
+outline and ask if it works or needs adjustment. Do not set ready_to_create until the
+user has confirmed the story structure.
 - Set ready_to_create to true only when all 5 categories reach at least 0.7 completeness.
 - Progress should be the average of all category completeness values, multiplied by 100.
 - Confidence reflects how sure you are about the extracted values (0.0 to 1.0).

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from app.inference.base import InferenceBackend, InferenceBackendError
 from app.persistence.story_development import StoryDevelopmentRepository
@@ -14,8 +16,10 @@ from app.schemas.guided_setup import (
     ExtractedFields,
     GuidedArc,
     GuidedCharacter,
+    GuidedChapter,
     GuidedConfig,
     GuidedFoundation,
+    GuidedSequence,
     GuidedSetupAnalyzeRequest,
     GuidedSetupAnalyzeResponse,
     GuidedSetupCreateRequest,
@@ -485,3 +489,369 @@ class TestPromptBuilder:
 
         assert req.messages[1].role == "user"
         assert "no fields collected yet" in req.messages[1].content
+
+
+def test_guided_sequence_validates_minimal_fields():
+    seq = GuidedSequence(
+        sequence_id="seq-001",
+        title="Act One",
+        summary="Setup and inciting incident",
+        chapter_ids=["ch-1", "ch-2"],
+        status="guided",
+    )
+    assert seq.sequence_id == "seq-001"
+    assert seq.title == "Act One"
+    assert len(seq.chapter_ids) == 2
+
+
+def test_guided_sequence_requires_title():
+    with pytest.raises(ValidationError):
+        GuidedSequence(sequence_id="s", title="", summary="x", chapter_ids=[], status="g")
+
+
+def test_guided_chapter_validates_minimal_fields():
+    ch = GuidedChapter(
+        chapter_id="ch-001",
+        sequence_id="seq-001",
+        title="Chapter One",
+        summary="Introduction",
+        objective="Establish setting",
+        conflict="None yet",
+        stakes="Low",
+        active_character_ids=["char-1"],
+        continuity_requirements=[],
+        unresolved_questions=[],
+        position=0,
+        status="guided",
+    )
+    assert ch.chapter_id == "ch-001"
+    assert ch.position == 0
+    assert len(ch.active_character_ids) == 1
+
+
+def test_guided_chapter_requires_title():
+    with pytest.raises(ValidationError):
+        GuidedChapter(
+            chapter_id="c", sequence_id=None, title="", summary="x",
+            objective="x", conflict="x", stakes="x",
+            active_character_ids=[], continuity_requirements=[],
+            unresolved_questions=[], position=0, status="g"
+        )
+
+
+def test_extracted_fields_includes_sequences_and_chapters():
+    fields = ExtractedFields(
+        sequences=[GuidedSequence(sequence_id="s1", title="Act 1", summary="Setup", chapter_ids=[], status="guided")],
+        chapters=[GuidedChapter(
+            chapter_id="c1", sequence_id="s1", title="Ch1", summary="Intro",
+            objective="Setup", conflict="None", stakes="Low",
+            active_character_ids=[], continuity_requirements=[],
+            unresolved_questions=[], position=0, status="guided"
+        )],
+    )
+    assert len(fields.sequences) == 1
+    assert len(fields.chapters) == 1
+
+
+def test_extracted_fields_defaults_sequences_and_chapters_to_empty():
+    fields = ExtractedFields()
+    assert fields.sequences == []
+    assert fields.chapters == []
+
+
+def test_guided_setup_create_response_includes_planning_counts():
+    resp = GuidedSetupCreateResponse(
+        project_id="p1", project_name="Test",
+        characters_created=2, world_entries_created=1, arcs_created=1,
+        foundation_created=True,
+        sequences_created=2, chapters_created=5,
+    )
+    assert resp.sequences_created == 2
+    assert resp.chapters_created == 5
+
+
+def test_parse_analyze_response_merges_sequences_and_chapters():
+    svc = GuidedSetupService.__new__(GuidedSetupService)
+
+    raw_data = {
+        "extracted_fields": {
+            "config": {"project_name": "Test", "genre": "Sci-Fi"},
+            "foundation": {},
+            "characters": [],
+            "world_bible": [],
+            "arcs": [],
+            "sequences": [
+                {
+                    "sequence_id": "seq-1",
+                    "title": "Act One",
+                    "summary": "Setup and inciting incident",
+                    "chapter_ids": [],
+                    "status": "guided",
+                }
+            ],
+            "chapters": [
+                {
+                    "chapter_id": "ch-1",
+                    "sequence_id": "seq-1",
+                    "title": "Chapter One",
+                    "summary": "Introduction to the world",
+                    "objective": "Establish setting",
+                    "conflict": "None yet",
+                    "stakes": "Low",
+                    "active_character_ids": ["Alice"],
+                    "continuity_requirements": [],
+                    "unresolved_questions": ["Who is Alice?"],
+                    "position": 0,
+                    "status": "guided",
+                }
+            ],
+        },
+        "next_question": "Does this outline work?",
+        "confidence": 0.8,
+        "progress": 70,
+        "ready_to_create": False,
+    }
+
+    previous = {
+        "config": {"project_name": "Test", "genre": "Sci-Fi"},
+        "foundation": {},
+        "characters": [],
+        "world_bible": [],
+        "arcs": [],
+        "sequences": [],
+        "chapters": [],
+    }
+
+    response = svc._parse_analyze_response(raw_data, previous)
+    assert len(response.extracted_fields.sequences) == 1
+    assert response.extracted_fields.sequences[0].title == "Act One"
+    assert len(response.extracted_fields.chapters) == 1
+    assert response.extracted_fields.chapters[0].title == "Chapter One"
+    assert response.extracted_fields.chapters[0].active_character_ids == ["Alice"]
+
+
+def test_parse_analyze_response_preserves_previous_sequences_when_empty():
+    svc = GuidedSetupService.__new__(GuidedSetupService)
+
+    raw_data = {
+        "extracted_fields": {
+            "config": {"project_name": "Test", "genre": "Sci-Fi"},
+            "foundation": {},
+            "characters": [],
+            "world_bible": [],
+            "arcs": [],
+            "sequences": [],
+            "chapters": [],
+        },
+        "next_question": "Continue?",
+        "confidence": 0.5,
+        "progress": 30,
+        "ready_to_create": False,
+    }
+
+    previous = {
+        "config": {"project_name": "Test", "genre": "Sci-Fi"},
+        "foundation": {},
+        "characters": [],
+        "world_bible": [],
+        "arcs": [],
+        "sequences": [
+            {
+                "sequence_id": "seq-old",
+                "title": "Existing Act",
+                "summary": "Previously collected",
+                "chapter_ids": [],
+                "status": "guided",
+            }
+        ],
+        "chapters": [],
+    }
+
+    response = svc._parse_analyze_response(raw_data, previous)
+    assert len(response.extracted_fields.sequences) == 1
+    assert response.extracted_fields.sequences[0].title == "Existing Act"
+
+
+def test_create_project_persists_sequences(service):
+    svc, _ = service
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+        characters=[],
+        world_bible=[],
+        arcs=[],
+        sequences=[
+            GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+            GuidedSequence(sequence_id="seq-2", title="Act Two", summary="Conflict", chapter_ids=[], status="guided"),
+        ],
+        chapters=[],
+    )
+
+    svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
+
+    conn = sqlite3.connect(str(svc._get_operations_db_path()))
+    rows = conn.execute("SELECT sequence_id, title FROM sequence_plans ORDER BY sequence_id").fetchall()
+    conn.close()
+
+    assert len(rows) == 2
+    titles = {r[1] for r in rows}
+    assert "Act One" in titles
+    assert "Act Two" in titles
+
+
+def test_create_project_persists_chapters_with_sequence_link(service):
+    svc, _ = service
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+        characters=[GuidedCharacter(name="Alice", role="protagonist")],
+        world_bible=[],
+        arcs=[],
+        sequences=[
+            GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+        ],
+        chapters=[
+            GuidedChapter(
+                chapter_id="ch-1", sequence_id="seq-1", title="Chapter One",
+                summary="Introduction", objective="Establish setting",
+                conflict="None", stakes="Low",
+                active_character_ids=["Alice"], continuity_requirements=[],
+                unresolved_questions=[], position=0, status="guided",
+            ),
+            GuidedChapter(
+                chapter_id="ch-2", sequence_id="seq-1", title="Chapter Two",
+                summary="Inciting incident", objective="Disrupt status quo",
+                conflict="External threat", stakes="Medium",
+                active_character_ids=["Alice"], continuity_requirements=[],
+                unresolved_questions=[], position=1, status="guided",
+            ),
+        ],
+    )
+
+    svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
+
+    conn = sqlite3.connect(str(svc._get_operations_db_path()))
+    rows = conn.execute("SELECT chapter_id, sequence_id, title FROM chapter_plans ORDER BY position").fetchall()
+    conn.close()
+
+    assert len(rows) == 2
+    assert rows[0][0] is not None
+    assert rows[0][1] is not None  # sequence_id linked
+    assert rows[0][2] == "Chapter One"
+    assert rows[1][2] == "Chapter Two"
+
+
+def test_create_project_resolves_character_names_to_ids_in_chapters(service):
+    svc, _ = service
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+        characters=[
+            GuidedCharacter(name="Alice", role="protagonist"),
+            GuidedCharacter(name="Bob", role="antagonist"),
+        ],
+        world_bible=[],
+        arcs=[],
+        sequences=[
+            GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+        ],
+        chapters=[
+            GuidedChapter(
+                chapter_id="ch-1", sequence_id="seq-1", title="Chapter One",
+                summary="Intro", objective="Setup", conflict="None", stakes="Low",
+                active_character_ids=["Alice", "Bob"], continuity_requirements=[],
+                unresolved_questions=[], position=0, status="guided",
+            ),
+        ],
+    )
+
+    svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
+
+    conn = sqlite3.connect(str(svc._get_operations_db_path()))
+
+    char_ids = conn.execute(
+        "SELECT character_id FROM character_profiles WHERE display_name IN ('Alice', 'Bob')"
+    ).fetchall()
+    expected_ids = {r[0] for r in char_ids}
+
+    row = conn.execute(
+        "SELECT active_character_ids_json FROM chapter_plans WHERE title = 'Chapter One'"
+    ).fetchone()
+    conn.close()
+
+    assert row is not None
+    stored_ids = json.loads(row[0])
+    assert len(stored_ids) == 2
+    for sid in stored_ids:
+        assert sid in expected_ids
+
+
+def test_create_project_response_includes_planning_counts(service):
+    svc, _ = service
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+        characters=[],
+        world_bible=[],
+        arcs=[],
+        sequences=[
+            GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+        ],
+        chapters=[
+            GuidedChapter(
+                chapter_id="ch-1", sequence_id="seq-1", title="Ch1",
+                summary="Intro", objective="Setup", conflict="None", stakes="Low",
+                active_character_ids=[], continuity_requirements=[],
+                unresolved_questions=[], position=0, status="guided",
+            ),
+        ],
+    )
+
+    response = svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
+    assert response.sequences_created == 1
+    assert response.chapters_created == 1
+
+
+def test_create_project_updates_sequence_chapter_ids_json(service):
+    svc, _ = service
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+        characters=[],
+        world_bible=[],
+        arcs=[],
+        sequences=[
+            GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+        ],
+        chapters=[
+            GuidedChapter(
+                chapter_id="ch-1", sequence_id="seq-1", title="Ch1",
+                summary="Intro", objective="Setup", conflict="None", stakes="Low",
+                active_character_ids=[], continuity_requirements=[],
+                unresolved_questions=[], position=0, status="guided",
+            ),
+            GuidedChapter(
+                chapter_id="ch-2", sequence_id="seq-1", title="Ch2",
+                summary="Inciting", objective="Disrupt", conflict="Threat", stakes="Medium",
+                active_character_ids=[], continuity_requirements=[],
+                unresolved_questions=[], position=1, status="guided",
+            ),
+        ],
+    )
+
+    svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
+
+    conn = sqlite3.connect(str(svc._get_operations_db_path()))
+    row = conn.execute(
+        "SELECT chapter_ids_json FROM sequence_plans WHERE title = 'Act One'"
+    ).fetchone()
+    conn.close()
+
+    assert row is not None
+    chapter_ids = json.loads(row[0])
+    assert len(chapter_ids) == 2

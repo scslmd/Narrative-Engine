@@ -6,7 +6,7 @@
 >
 > Recommended reading order: Follow the phases sequentially. Use the **User Guide** (`User Guide v1.7.0.md`) for feature reference and detailed explanations.
 >
-> **v1.7.0 update:** Added Phase 13 (Iterate and Refine). Fixed character PATCH 422 bug — optional fields with empty values no longer block saving edits to minimally-created characters.
+> **v1.7.0 update:** Added Phase 13 (Iterate and Refine). Added Guided Setup Wizard (Phase 1, Option D) — conversational project creation with LLM-generated sequences and chapters. Fixed character PATCH 422 bug — optional fields with empty values no longer block saving edits to minimally-created characters.
 
 ---
 
@@ -17,6 +17,7 @@ The Narrative Engine is a narrative compilation system for long-form fiction dev
 - **Pattern Extraction** -- paste any story or mythology text and extract storytelling DNA to seed a new project
 - **Story Import** -- paste an existing story and have the LLM auto-extract structured data
 - **Project Export/Import** -- create ZIP archive backups and restore projects on other installations
+- **Guided Setup Wizard** -- conversational project creation at `/setup-wizard`; LLM extracts config, foundation, characters, world bible, arcs, sequences, and chapters through dialogue
 - **Project Creation** -- manual project setup with genre, tone, POV, structure
 - **Brain Dump** -- freeform ideation with AI-powered categorization
 - **Planning** -- hierarchical story planning (sequences, chapters, scenes, beats)
@@ -58,6 +59,7 @@ For deeper feature explanations, cross-reference the **User Guide** (`User Guide
   - [Option A: Create Project (Manual)](#option-a-create-project-manual)
   - [Option B: Import Story (LLM-Assisted)](#option-b-import-story-llm-assisted)
   - [Option C: Extract Patterns (Pattern-Based Seed)](#option-c-extract-patterns-pattern-based-seed)
+  - [Option D: Guided Setup Wizard (Conversational)](#option-d-guided-setup-wizard-conversational)
 - [Phase 1b: Extraction Results](#phase-1b-extraction-results-optional)
 
 ### Ideation
@@ -177,7 +179,7 @@ After importing a sample story, you'll be in the project workspace. Proceed to [
 
 **Route**: `/`
 
-The home screen shows three ways to start a project:
+The home screen shows the ways to start a project. You can also access the **Guided Setup Wizard** at `/setup-wizard` for conversational project creation.
 
 #### Option A: Create Project (Manual)
 
@@ -238,6 +240,53 @@ Pattern Extraction lets you paste any story or mythology text and extract its st
 5. On success, you are redirected to the project workspace
 
 **Note**: Pattern Extraction requires a configured inference backend. Source type determines which extraction pipeline is used: Narrative for fiction stories with voice profile extraction, Mythology for mythological texts.
+
+#### Option D: Guided Setup Wizard (Conversational)
+
+The Guided Setup Wizard lets you create a project through conversation with an LLM, rather than filling out forms. It extracts all project data — config, foundation, characters, world bible, arcs, sequences, and chapters — through natural dialogue.
+
+1. Navigate to `/setup-wizard`
+2. You'll see two panels:
+   - **Chat Panel** (left) — conversation history with the LLM, progress bar, and input field
+   - **Field Preview** (right) — collapsible sections showing extracted data in real time: Config, Foundation, Characters, World Bible, Arcs, Sequences, Chapters
+3. Start describing your story idea in natural language. For example:
+   > "I want to write a dark sci-fi story about a lone sentinel on a dying space station who must decide whether to save a colony ship or preserve the station's ancient AI."
+4. The LLM asks follow-up questions one at a time:
+   - First it collects **config** details (project name, genre, tone, POV, structure)
+   - Then **foundation** elements (premise, logline, thematic spine, emotional promise)
+   - Then **characters** (names, roles, archetypes, goals, fears, voice notes)
+   - Then **world bible** entries (locations, technology, rules)
+   - Then **arcs** (character development trajectories)
+   - Finally **story structure** — sequences and chapters with objectives, conflicts, and stakes
+5. As data is extracted, the Field Preview panel updates in real time:
+   - Each category has a collapsible section showing what's been collected so far
+   - The **Sequences** and **Chapters** panels auto-open when the LLM first generates planning data, so you can review the proposed outline
+   - You can see character cards, world entry summaries, arc types, and chapter plans as they're built
+6. You can adjust anything naturally during the conversation:
+   - "Make it three acts instead of two"
+   - "Add a character who is the colony ship's engineer"
+   - "The second chapter should focus on the AI revealing its secret"
+7. When all categories reach sufficient completeness, the wizard shows **"Ready to Create"** with a progress bar at 100%
+8. Click the create button — your project is created with all extracted data populated
+9. You'll be redirected to the new project's workspace
+
+**What gets created:**
+- Project directory with manifest, database, and configuration
+- Foundation profile with premise, logline, thematic spine, etc.
+- Character profiles with roles, archetypes, goals, fears, voice notes
+- World bible entries with types, summaries, and canonical facts
+- Arc candidates with stage maps
+- **Sequence plans** with titles, summaries, and chapter associations (NEW)
+- **Chapter plans** with objectives, conflicts, stakes, active character IDs, and continuity requirements (NEW)
+
+**Tips for the Guided Setup Wizard:**
+- Be specific in your initial description — "dark sci-fi about isolation and moral dilemmas" produces better results than "a space story"
+- Review the Field Preview panel as you go — it shows exactly what data has been extracted
+- The Sequences and Chapters panels give you a complete narrative outline before project creation, so you can adjust structure early
+- You can always refine any field after creation in the Planning workspace
+- If the LLM misses something, just ask for it: "What about the world? The station is called Meridian and has been abandoned for 8 years"
+
+**Note**: Guided Setup requires a configured inference backend (llama.cpp, LM Studio, vLLM, etc.). Without one, the wizard cannot run.
 
 ---
 

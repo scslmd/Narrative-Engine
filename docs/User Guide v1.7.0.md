@@ -2,13 +2,15 @@
 
 This guide walks you through generating a short story from scratch and then iterating on it. Follow **Chapter 1** (Steps 1-7) to go from zero to a generated chapter in about 15 minutes. **Chapter 2** (Steps 8-11) shows how to modify characters, edit the story, and regenerate with updated canon. The remaining sections cover advanced features and reference material.
 
-**Version 1.7.0 changes:** Added "Iterate and Refine" chapter (Steps 8-11): modify existing characters, add new characters after initial setup, manually edit generated manuscripts, and re-run the generation pipeline with updated canon. Added AI Draft Generation: generate full chapter drafts from a brief description via the "⚡ AI" button in the Writing workspace's draft list, without running the P-300 pipeline. Fixed character PATCH 422 bug where optional fields with empty values blocked saving edits to minimally-created characters.
+**Version 1.7.0 changes:** Added "Iterate and Refine" chapter (Steps 8-11): modify existing characters, add new characters after initial setup, manually edit generated manuscripts, and re-run the generation pipeline with updated canon. Added AI Draft Generation: generate full chapter drafts from a brief description via the "⚡ AI" button in the Writing workspace's draft list, without running the P-300 pipeline. Added Guided Setup Wizard at `/setup-wizard`: conversational project creation that extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue with the LLM. Fixed character PATCH 422 bug where optional fields with empty values blocked saving edits to minimally-created characters.
 
 ---
 
 ## Table of Contents
 
 1. [Quick Start: Generate Your First Short Story](#quick-start-generate-your-first-short-story)
+   - [Guided Setup Wizard (Conversational)](#alternative-guided-setup-wizard-conversational)
+   - [Step 1: Create Your Project (Manual Form)](#step-1-create-your-project-manual-form)
 2. [Quick Start Chapter 2: Iterate and Refine](#quick-start-chapter-2-iterate-and-refine)
 3. [Setup and Configuration](#setup-and-configuration)
 4. [Workspace Tour](#workspace-tour)
@@ -29,7 +31,38 @@ This chapter walks you through creating a project, defining your story's foundat
 
 ---
 
-### Step 1: Create Your Project
+### Alternative: Guided Setup Wizard (Conversational)
+
+If you'd rather describe your story in plain language than fill out forms, use the **Guided Setup Wizard** at `/setup-wizard`. The wizard converses with you through an LLM to extract all project data — config, foundation, characters, world bible, arcs, sequences, and chapters — then creates the project in one step.
+
+**How it works:**
+
+1. Navigate to `/setup-wizard`
+2. You'll see a **chat panel** (left) and a **field preview panel** (right)
+3. Start describing your story idea in natural language — e.g., "I want to write a dark sci-fi story about a lone sentinel on a dying space station"
+4. The LLM asks follow-up questions one at a time, building up your project data:
+   - **Config**: project name, genre, tone, POV, story structure
+   - **Foundation**: premise, logline, thematic spine, emotional promise
+   - **Characters**: names, roles, archetypes, goals, fears, voice notes
+   - **World Bible**: locations, technology, organizations, rules
+   - **Arcs**: character arcs with stages and transformation types
+   - **Sequences**: story structure divided into acts/sections (NEW in v1.7.0)
+   - **Chapters**: chapter plans with objectives, conflicts, stakes, active characters (NEW in v1.7.0)
+5. As data is extracted, the **field preview panel** updates in real time with collapsible sections for each category
+6. The Sequences and Chapters panels **auto-open** when the LLM first generates planning data, so you can review the proposed outline
+7. You can adjust anything naturally — say "make it three acts instead of two" or "add a character who is the colony ship's engineer"
+8. When the wizard shows **"Ready to Create"** (progress bar reaches 100%), click the button to create your project
+9. You'll be redirected to the new project's workspace with all data populated
+
+**Tips:**
+- Be specific in your descriptions — "dark sci-fi about isolation and moral dilemmas" produces better results than "a space story"
+- Review the field preview panel as you go — you can see exactly what data has been extracted
+- The Sequences and Chapters panels give you a complete narrative outline before you create the project, so you can adjust structure early
+- You can always go back and refine any field after creation in the Planning workspace
+
+---
+
+### Step 1: Create Your Project (Manual Form)
 
 1. Open the app — you'll see the **Project List** page with a "New Project" form at the top
 2. Fill in the form:
@@ -460,6 +493,7 @@ The left sidebar shows 5 navigation modes. Additional modes are accessible throu
 
 | Mode | How to Access | Purpose |
 |------|---------------|---------|
+| **Guided Setup** | `/setup-wizard` (before project creation) | Conversational project setup — LLM extracts all project data through dialogue |
 | **Planning** | Sidebar button | Foundation, Characters, World Bible, story structure, job launching |
 | **Brain Dump** | Sidebar button | Free-form idea capture with AI organization |
 | **Writing** | Sidebar button | Read and edit manuscripts, use Manuscript Assist |
@@ -728,3 +762,4 @@ The system runs a 4-phase pipeline:
 | **Manuscript Assist** | Interactive editing: select text → request AI assistance → apply/reject suggestions |
 | **Branch** | Alternate version of your story; like Git branches for narrative |
 | **Inspect** | Debug view showing job execution steps, artifact lineage, and attempt history |
+| **Guided Setup Wizard** | Conversational project creation at `/setup-wizard`. LLM extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue. Field preview panel updates in real time. |

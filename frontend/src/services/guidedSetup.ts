@@ -62,12 +62,37 @@ export interface GuidedArc {
   tags: string[];
 }
 
+export interface GuidedSequence {
+  sequence_id: string;
+  title: string;
+  summary: string;
+  chapter_ids: string[];
+  status: string;
+}
+
+export interface GuidedChapter {
+  chapter_id: string;
+  sequence_id: string | null;
+  title: string;
+  summary: string;
+  objective: string;
+  conflict: string;
+  stakes: string;
+  active_character_ids: string[];
+  continuity_requirements: string[];
+  unresolved_questions: string[];
+  position: number;
+  status: string;
+}
+
 export interface ExtractedFields {
   config: GuidedConfig;
   foundation: GuidedFoundation;
   characters: GuidedCharacter[];
   world_bible: GuidedWorldEntry[];
   arcs: GuidedArc[];
+  sequences: GuidedSequence[];
+  chapters: GuidedChapter[];
 }
 
 export interface CategoryProgress {
@@ -104,6 +129,8 @@ export interface GuidedSetupCreateResponse {
   world_entries_created: number;
   arcs_created: number;
   foundation_created: boolean;
+  sequences_created: number;
+  chapters_created: number;
   message: string;
 }
 
@@ -132,6 +159,8 @@ export function emptyExtractedFields(): ExtractedFields {
     characters: [],
     world_bible: [],
     arcs: [],
+    sequences: [],
+    chapters: [],
   };
 }
 

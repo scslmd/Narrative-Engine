@@ -104,6 +104,31 @@ class GuidedArc(StrictModel):
         return self
 
 
+class GuidedSequence(StrictModel):
+    """Sequence (act/section) extracted from conversation."""
+    sequence_id: str = Field(..., min_length=1, max_length=255)
+    title: str = Field(..., min_length=1, max_length=255)
+    summary: str = Field(default="", max_length=5000)
+    chapter_ids: list[str] = Field(default_factory=list)
+    status: str = Field(default="guided", max_length=50)
+
+
+class GuidedChapter(StrictModel):
+    """Chapter plan extracted from conversation."""
+    chapter_id: str = Field(..., min_length=1, max_length=255)
+    sequence_id: str | None = None
+    title: str = Field(..., min_length=1, max_length=255)
+    summary: str = Field(default="", max_length=5000)
+    objective: str = Field(default="", max_length=2000)
+    conflict: str = Field(default="", max_length=2000)
+    stakes: str = Field(default="", max_length=2000)
+    active_character_ids: list[str] = Field(default_factory=list)
+    continuity_requirements: list[str] = Field(default_factory=list)
+    unresolved_questions: list[str] = Field(default_factory=list)
+    position: int = Field(default=0, ge=0)
+    status: str = Field(default="guided", max_length=50)
+
+
 class GuidedConfig(StrictModel):
     """Project configuration extracted from conversation."""
     project_name: str = Field(default="", max_length=255)
@@ -165,6 +190,8 @@ class ExtractedFields(StrictModel):
     characters: list[GuidedCharacter] = Field(default_factory=list)
     world_bible: list[GuidedWorldEntry] = Field(default_factory=list)
     arcs: list[GuidedArc] = Field(default_factory=list)
+    sequences: list[GuidedSequence] = Field(default_factory=list)
+    chapters: list[GuidedChapter] = Field(default_factory=list)
 
 
 class CategoryProgress(StrictModel):
@@ -215,4 +242,6 @@ class GuidedSetupCreateResponse(StrictModel):
     world_entries_created: int = Field(ge=0)
     arcs_created: int = Field(ge=0)
     foundation_created: bool = False
+    sequences_created: int = Field(ge=0, default=0)
+    chapters_created: int = Field(ge=0, default=0)
     message: str = Field(default="Project created successfully")

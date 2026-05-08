@@ -3,10 +3,10 @@
 ## Current Truth
 
 - The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
-- Latest verified validation baseline (2026-05-05):
-  - Backend parallel: 1413 passed, 10 skipped, 2 pre-existing failures (~35s)
-  - Backend serial: 51 passed (~32s)
-  - Frontend tests: 522 passed (~13s)
+- Latest verified validation baseline (2026-05-08):
+  - Backend parallel: 1471 passed, 7 skipped, 2 pre-existing failures (~33s)
+  - Backend serial: 51 passed (~2s)
+  - Frontend tests: 554 passed (~13s)
   - Frontend lint/typecheck/build: all green (2025 modules)
 - The React frontend is merged and is now the default shipped frontend surface.
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
@@ -50,6 +50,15 @@
 ## Completed Milestones (Summary)
 
 Full details archived in `docs/archive/TODO_Completed_Milestones_Archive.md`.
+
+### Guided Setup Planning Extension (2026-05-08)
+
+- Conversational project creation wizard at `/setup-wizard` now generates story planning (sequences + chapters) alongside config, foundation, characters, world bible, and arcs
+- Backend: `GuidedSequence` / `GuidedChapter` Pydantic schemas; `_parse_analyze_response` merge logic for sequences/chapters; `_insert_sequence`, `_insert_chapter` persistence with character name→ID resolution and sequence chapter_ids backfill; extended `_GUIDED_SETUP_SYSTEM_PROMPT` with category 10 (story structure)
+- Frontend: `GuidedSequence` / `GuidedChapter` TypeScript interfaces; extended `ExtractedFields`, `emptyExtractedFields`, `GuidedSetupCreateResponse`; FieldPreview Sequences/Chapters collapsible panels with auto-open-on-first-data behavior
+- Test coverage: 14 new tests across schema validation, parsing merge, persistence, FK resolution, response counts
+- Design spec: `docs/superpowers/specs/2026-05-08-guided-setup-planning-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-05-08-guided-setup-planning.md`
 
 ### Extraction Services Consolidation (2026-04-28)
 

@@ -29,8 +29,10 @@ from ..schemas.guided_setup import (
     ExtractedFields,
     GuidedArc,
     GuidedCharacter,
+    GuidedChapter,
     GuidedConfig,
     GuidedFoundation,
+    GuidedSequence,
     GuidedSetupAnalyzeRequest,
     GuidedSetupAnalyzeResponse,
     GuidedSetupCreateRequest,
@@ -177,6 +179,8 @@ class GuidedSetupService:
         world_created = 0
         arcs_created = 0
         foundation_created = False
+        sequences_created = 0
+        chapters_created = 0
 
         try:
             conn.execute("BEGIN IMMEDIATE")
@@ -196,6 +200,45 @@ class GuidedSetupService:
                 self._insert_arc(conn, project_id, arc_data, fields.characters)
                 arcs_created += 1
 
+            # Build character name -> ID map for chapter resolution
+            character_name_to_id: dict[str, str] = {}
+            for char_data in fields.characters:
+                char_id = hash_id("guided-character", f"{project_id}:{char_data.name}")
+                character_name_to_id[char_data.name.strip().lower()] = char_id
+
+            # Insert sequences (first pass — chapter_ids_json is empty placeholder)
+            persisted_sequence_ids: list[str | None] = []
+            sequence_id_map: dict[str, str] = {}
+            for position, seq in enumerate(fields.sequences):
+                seq_id = self._insert_sequence(conn, project_id, seq, position)
+                persisted_sequence_ids.append(seq_id)
+                if seq_id and seq.sequence_id:
+                    sequence_id_map[seq.sequence_id] = seq_id
+
+            # Insert chapters
+            persisted_chapter_ids: list[str | None] = []
+            for chapter in fields.chapters:
+                ch_id = self._insert_chapter(conn, project_id, chapter, character_name_to_id, sequence_id_map)
+                persisted_chapter_ids.append(ch_id)
+
+            # Second pass: update sequences with actual chapter IDs
+            for seq_idx, seq in enumerate(fields.sequences):
+                current_seq_id = persisted_sequence_ids[seq_idx]
+                if current_seq_id is None:
+                    continue
+                seq_chapter_ids = [
+                    cid for cid, ch in zip(persisted_chapter_ids, fields.chapters)
+                    if cid is not None and ch.sequence_id == seq.sequence_id
+                ]
+                if seq_chapter_ids:
+                    conn.execute(
+                        "UPDATE sequence_plans SET chapter_ids_json = ?, updated_at = ? WHERE sequence_id = ?",
+                        (json_safe(seq_chapter_ids), datetime.now(timezone.utc).isoformat(), current_seq_id),
+                    )
+
+            sequences_created = len(fields.sequences)
+            chapters_created = len(fields.chapters)
+
             conn.commit()
         except Exception:
             conn.rollback()
@@ -211,10 +254,12 @@ class GuidedSetupService:
             world_entries_created=world_created,
             arcs_created=arcs_created,
             foundation_created=foundation_created,
+            sequences_created=sequences_created,
+            chapters_created=chapters_created,
             message=(
                 f"Project '{config.project_name}' created with "
                 f"{characters_created} characters, {world_created} world entries, "
-                f"{arcs_created} arcs"
+                f"{arcs_created} arcs, {sequences_created} sequences, {chapters_created} chapters"
             ),
         )
 
@@ -265,6 +310,8 @@ class GuidedSetupService:
         merged_characters = extracted_raw.get("characters") or previous_fields.get("characters", [])
         merged_world = extracted_raw.get("world_bible") or previous_fields.get("world_bible", [])
         merged_arcs = extracted_raw.get("arcs") or previous_fields.get("arcs", [])
+        merged_sequences = extracted_raw.get("sequences") or previous_fields.get("sequences", [])
+        merged_chapters = extracted_raw.get("chapters") or previous_fields.get("chapters", [])
 
         try:
             extracted = ExtractedFields(
@@ -273,6 +320,8 @@ class GuidedSetupService:
                 characters=[GuidedCharacter(**c) for c in merged_characters] if merged_characters else [],
                 world_bible=[GuidedWorldEntry(**w) for w in merged_world] if merged_world else [],
                 arcs=[GuidedArc(**a) for a in merged_arcs] if merged_arcs else [],
+                sequences=[GuidedSequence(**s) for s in merged_sequences] if merged_sequences else [],
+                chapters=[GuidedChapter(**c) for c in merged_chapters] if merged_chapters else [],
             )
         except ValidationError as exc:
             raise GuidedSetupValidationError(f"Invalid extracted fields: {exc}") from exc
@@ -388,3 +437,118 @@ class GuidedSetupService:
                 now,
             ),
         )
+
+    def _insert_sequence(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        sequence: GuidedSequence,
+        position: int,
+    ) -> str | None:
+        now = datetime.now(timezone.utc).isoformat()
+        seq_id = hash_id("guided-sequence", f"{project_id}:{sequence.title}")
+
+        conn.execute(
+            """
+            INSERT INTO sequence_plans (
+                sequence_id, project_id, title, summary, beat_ids_json, chapter_ids_json,
+                status, position, provenance_note, confidence_score, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(sequence_id) DO UPDATE SET
+                project_id = excluded.project_id,
+                title = excluded.title,
+                summary = excluded.summary,
+                status = excluded.status,
+                position = excluded.position,
+                confidence_score = excluded.confidence_score,
+                updated_at = excluded.updated_at
+            """,
+            (
+                seq_id,
+                project_id,
+                sequence.title,
+                _to_none(sequence.summary),
+                json_safe([]),
+                json_safe([]),
+                sequence.status or "guided",
+                position,
+                "guided setup wizard",
+                0.75,
+                now,
+                now,
+            ),
+        )
+
+        return seq_id
+
+    def _insert_chapter(
+        self,
+        conn: sqlite3.Connection,
+        project_id: str,
+        chapter: GuidedChapter,
+        character_name_to_id: dict[str, str],
+        sequence_id_map: dict[str, str],
+    ) -> str | None:
+        now = datetime.now(timezone.utc).isoformat()
+        ch_id = hash_id("guided-chapter", f"{project_id}:{chapter.chapter_id}")
+
+        resolved_characters: list[str] = []
+        for name in chapter.active_character_ids:
+            stripped = name.strip()
+            if not stripped:
+                continue
+            resolved = character_name_to_id.get(stripped.lower())
+            if resolved:
+                resolved_characters.append(resolved)
+
+        # Resolve original sequence_id to persisted sequence_id for FK reference
+        resolved_sequence_id = None
+        if chapter.sequence_id:
+            resolved_sequence_id = sequence_id_map.get(chapter.sequence_id)
+
+        conn.execute(
+            """
+            INSERT INTO chapter_plans (
+                chapter_id, project_id, sequence_id, title, summary, objective, conflict, stakes,
+                active_character_ids_json, continuity_requirements_json, unresolved_questions_json,
+                status, position, provenance_note, confidence_score, created_at, updated_at, target_word_count
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(chapter_id) DO UPDATE SET
+                project_id = excluded.project_id,
+                sequence_id = excluded.sequence_id,
+                title = excluded.title,
+                summary = excluded.summary,
+                objective = excluded.objective,
+                conflict = excluded.conflict,
+                stakes = excluded.stakes,
+                active_character_ids_json = excluded.active_character_ids_json,
+                continuity_requirements_json = excluded.continuity_requirements_json,
+                unresolved_questions_json = excluded.unresolved_questions_json,
+                status = excluded.status,
+                position = excluded.position,
+                confidence_score = excluded.confidence_score,
+                updated_at = excluded.updated_at
+            """,
+            (
+                ch_id,
+                project_id,
+                resolved_sequence_id,
+                chapter.title,
+                _to_none(chapter.summary),
+                _to_none(chapter.objective),
+                _to_none(chapter.conflict),
+                _to_none(chapter.stakes),
+                json_safe(resolved_characters),
+                json_safe(chapter.continuity_requirements or []),
+                json_safe(chapter.unresolved_questions or []),
+                chapter.status or "guided",
+                chapter.position,
+                "guided setup wizard",
+                0.75,
+                now,
+                now,
+                None,
+            ),
+        )
+
+        return ch_id

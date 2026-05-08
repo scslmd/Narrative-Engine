@@ -15,6 +15,7 @@ Narrative-Engine supports:
 - critic and checker feedback loops
 - exact backend progress and status monitoring for long-running work
 - story import from existing completed stories (single-pass and multi-pass for large works)
+- guided setup wizard: conversational project creation at `/setup-wizard` — LLM extracts config, foundation, characters, world bible, arcs, sequences, and chapters through natural dialogue
 - pattern extraction: extract storytelling DNA (voice, structure, archetypes) from any text to seed new projects
 - beat-level planning and storyboard card management
 - brain dump with LLM-powered text categorization
@@ -80,6 +81,7 @@ Implemented and working now:
 - story generation orchestration: canon packet builder, project forking, consistency gates, 4-phase executor pipeline (G-200/G-300/G-350/G-400), wizard UI at `/workspace/:projectId/generate`
 - canon workshop: field-level annotations (locked/mutable/forbidden), customization profiles, mythos/pattern libraries with materiality process, packet preview before submission
 - manuscript LLM assist: selection-aware actions (line edits, expansion, compression, rewrites, continuations, forks), document-wide actions (developmental review, canon checks, voice checks, pacing, theme, continuity repair), version conflict protection with offset-based patching
+- guided setup wizard with planning: conversational project creation at `/setup-wizard` generates sequences and chapters alongside config, foundation, characters, world bible, and arcs through natural dialogue
 - pattern extraction: generalized extraction of archetypal patterns, narrative structure, voice profile, thematic constraints, and entities from any story text; supports Same World / New Characters / Transposed generation modes
 - multi-pass story import: large stories (>30K chars) automatically chunked and analyzed per-chapter with LLM consolidation for characters, world bible, arcs, and planning
 - sample stories: 4 curated stories (2 public domain from Project Gutenberg, 2 original) in `docs/sample-stories/` for walkthrough testing and feature demonstration
@@ -96,9 +98,9 @@ Implemented and working now:
 
 Current verified baseline:
 
-- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py` -> ~1427 passed (~51s)
-- Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` -> ~43 passed (~16s)
-- Full baseline: ~1470 tests, ~67s total
+- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1471 passed, 7 skipped (~33s)
+- Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~2s)
+- Full baseline: ~1522 tests, ~65s total
 
 ### Frontend
 
@@ -130,21 +132,21 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- Parallel cluster: ~1427 passed (~51s)
-- Serial tests: ~43 passed (~16s)
+- Parallel cluster: 1471 passed, 7 skipped (~33s)
+- Serial tests: 51 passed (~2s)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed
-- `cd frontend && npm run build` -> passed, 1977 modules
-- `cd frontend && npm run test` -> 315 passed (~19s)
+- `cd frontend && npm run build` -> passed, 2025 modules
+- `cd frontend && npm run test` -> 554 passed (~13s)
 
-**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard. 2026-05-02: added Canon Workshop and Manuscript Assist, all 17/17 feature areas linked.
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard. 2026-05-02: added Canon Workshop and Manuscript Assist, all 17/17 feature areas linked. 2026-05-08: added Guided Setup Wizard with LLM-generated story planning (sequences + chapters).
 
 ## Core Docs
 
 - [AGENTS.md](AGENTS.md) - development guidelines, API patterns, feature documentation, and merge readiness checks (single source of truth)
 - [docs/STRUCTURE.md](docs/STRUCTURE.md) - project structure overview
-- [docs/User Guide v1.5.1.md](docs/User%20Guide%20v1.5.1.md) - user-facing guide
-- [docs/Narrative Engine User Walkthrough v1.5.1.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.5.1.md) - complete step-by-step walkthrough of all features (includes Phase 0 sample stories)
+- [docs/User Guide v1.7.0.md](docs/User%20Guide%20v1.7.0.md) - user-facing guide
+- [docs/Narrative Engine User Walkthrough v1.7.0.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.7.0.md) - complete step-by-step walkthrough of all features (includes Phase 0 sample stories)
 - [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md) - code review scoring rubrics
 
 ## Planning Docs

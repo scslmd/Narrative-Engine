@@ -1,21 +1,34 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, BookOpen, Users, Globe, GitBranch, Settings } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, Users, Globe, GitBranch, Settings, ListTree, FileText } from 'lucide-react';
 import { useGuidedSetupStore } from '../../stores/guidedSetupStore';
-import type { GuidedCharacter, GuidedWorldEntry, GuidedArc } from '../../services/guidedSetup';
+import type { GuidedCharacter, GuidedWorldEntry, GuidedArc, GuidedSequence, GuidedChapter } from '../../services/guidedSetup';
 
 interface CollapsibleSectionProps {
   title: string;
   icon: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
+  isOpen?: boolean | undefined;
+  onToggle?: (isOpen: boolean) => void;
 }
 
-function CollapsibleSection({ title, icon, defaultOpen = false, children }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen: isOpenProp, onToggle }: CollapsibleSectionProps) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isControlled = isOpenProp !== undefined;
+  const isOpen = isControlled ? (isOpenProp as boolean) : internalOpen;
+
+  const handleClick = () => {
+    if (isControlled) {
+      onToggle?.(!isOpen);
+    } else {
+      setInternalOpen(!internalOpen);
+    }
+  };
+
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg mb-2">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleClick}
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
       >
         <span className="flex items-center gap-2">
@@ -99,7 +112,25 @@ function ArcCard({ arc }: { arc: GuidedArc }) {
 
 export function FieldPreview(): React.ReactElement {
   const { accumulatedFields, updateFields } = useGuidedSetupStore();
-  const { config, foundation, characters, world_bible, arcs } = accumulatedFields;
+  const { config, foundation, characters, world_bible, arcs, sequences, chapters } = accumulatedFields;
+
+  // Auto-open when data first appears, respect user collapse
+  const [seqOpen, setSeqOpen] = useState(sequences.length > 0);
+  const [chOpen, setChOpen] = useState(chapters.length > 0);
+  const [seqCollapsed, setSeqCollapsed] = useState(false);
+  const [chCollapsed, setChCollapsed] = useState(false);
+
+  const handleSeqToggle = (open: boolean) => {
+    setSeqOpen(open);
+    if (!open) setSeqCollapsed(true);
+  };
+  const handleChToggle = (open: boolean) => {
+    setChOpen(open);
+    if (!open) setChCollapsed(true);
+  };
+
+  const finalSeqOpen = seqCollapsed ? seqOpen : sequences.length > 0;
+  const finalChOpen = chCollapsed ? chOpen : chapters.length > 0;
 
   return (
     <div className="h-full overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
@@ -134,6 +165,55 @@ export function FieldPreview(): React.ReactElement {
         {arcs.length === 0 && <p className="text-sm text-gray-400">No arcs yet</p>}
         {arcs.map((a, i) => <ArcCard key={i} arc={a} />)}
       </CollapsibleSection>
+
+      <CollapsibleSection
+        title={`Sequences (${sequences.length})`}
+        icon={<ListTree className="w-4 h-4" />}
+        isOpen={finalSeqOpen}
+        onToggle={handleSeqToggle}
+      >
+        {sequences.length === 0 && <p className="text-sm text-gray-400">No sequences yet</p>}
+        {sequences.map((s, i) => <SequenceCard key={i} seq={s} />)}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title={`Chapters (${chapters.length})`}
+        icon={<FileText className="w-4 h-4" />}
+        isOpen={finalChOpen}
+        onToggle={handleChToggle}
+      >
+        {chapters.length === 0 && <p className="text-sm text-gray-400">No chapters yet</p>}
+        {chapters.map((c, i) => <ChapterCard key={i} ch={c} />)}
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+function SequenceCard({ seq }: { seq: GuidedSequence }) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 mb-1 text-sm">
+      <div className="font-medium text-gray-800 dark:text-gray-200">
+        {seq.title} <span className="text-gray-400">({seq.chapter_ids.length} chapters)</span>
+      </div>
+      {seq.summary && (
+        <div className="text-gray-600 dark:text-gray-400 text-xs mt-1">{seq.summary}</div>
+      )}
+    </div>
+  );
+}
+
+function ChapterCard({ ch }: { ch: GuidedChapter }) {
+  return (
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 mb-1 text-sm">
+      <div className="font-medium text-gray-800 dark:text-gray-200">
+        {ch.title} <span className="text-gray-400">[{ch.position}]</span>
+      </div>
+      {ch.summary && (
+        <div className="text-gray-600 dark:text-gray-400 text-xs mt-1">{ch.summary}</div>
+      )}
+      {ch.objective && (
+        <div className="text-gray-600 dark:text-gray-400 text-xs">Objective: {ch.objective}</div>
+      )}
     </div>
   );
 }
