@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { BookOpen, ChevronRight, Lightbulb, Moon, Search, Sun, Settings } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
+import { resolveEffectiveMode } from '../theme/theme'
 import { useUIStore } from '../stores/uiStore'
 import { useProjects } from '../hooks/useProjects'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -28,7 +29,8 @@ const stageButtons: { id: StageId; label: string; icon: typeof Lightbulb; shadow
 ]
 
 export function Layout({ children }: LayoutProps) {
-  const { mode, toggleMode, setStage } = useThemeStore()
+  const { mode, _systemTick, toggleMode, setStage } = useThemeStore()
+  void _systemTick;
   const { mode: uiMode, setMode, projectId } = useUIStore()
   const { iconMode } = useSettingsStore()
   const location = useLocation()
@@ -52,7 +54,7 @@ export function Layout({ children }: LayoutProps) {
   }
 
   const activeStage = modeToStage[uiMode]
-  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
+  const isDark = resolveEffectiveMode(mode) === 'dark'
   const isWorkspace = location.pathname.startsWith('/workspace/')
   const iconsOnly = iconMode !== 'labels'
 

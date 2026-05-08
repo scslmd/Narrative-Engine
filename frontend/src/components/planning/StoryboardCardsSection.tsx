@@ -224,7 +224,7 @@ export function StoryboardCardsSection({
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium">{card.title}</div>
-                        {card.content && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{card.content}</p>}
+                        {card.content && <p className="text-sm mt-1 text-body">{card.content}</p>}
                         {card.tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {card.tags.map((tag) => (

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Component, ErrorInfo, ReactNode } from 'react'
 import './index.css'
 import App from './App.tsx'
-import { getThemeConfig, applyTheme } from './theme/theme'
+import { getThemeConfig, applyTheme, watchSystemTheme } from './theme/theme'
 
 interface Props {
   children: ReactNode
@@ -44,6 +44,13 @@ class RootErrorBoundary extends Component<Props, State> {
 
 const config = getThemeConfig()
 applyTheme(config)
+
+// Set up system theme listener if user prefers system theme
+if (config.mode === 'system') {
+  watchSystemTheme(() => {
+    applyTheme(config)
+  })
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

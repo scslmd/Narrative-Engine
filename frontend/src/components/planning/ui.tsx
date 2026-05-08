@@ -18,7 +18,7 @@ export function Section({
         <h3 className={`font-semibold text-sm uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
           {title}
           {count !== undefined && (
-            <span className={`ml-2 font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>({count})</span>
+            <span className="ml-2 font-normal text-subtle">({count})</span>
           )}
         </h3>
         {actions}
@@ -29,9 +29,8 @@ export function Section({
 }
 
 export function EmptyState({ text }: { text: string }) {
-  const isDark = useIsDark();
   return (
-    <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{text}</p>
+    <p className="text-sm text-subtle">{text}</p>
   );
 }
 
@@ -53,7 +52,7 @@ export function WorkspaceStatus({
           : isDark ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-700'
       }`}>
         <p className="text-sm font-semibold">{title}</p>
-        <p className={`mt-1.5 text-xs ${tone === 'error' ? (isDark ? 'text-red-400/80' : 'text-red-600') : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{detail}</p>
+        <p className={`mt-1.5 text-xs ${tone === 'error' ? (isDark ? 'text-red-400/80' : 'text-red-600') : 'text-subtle'}`}>{detail}</p>
       </div>
     </div>
   );

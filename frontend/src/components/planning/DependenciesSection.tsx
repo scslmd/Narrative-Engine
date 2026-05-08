@@ -33,10 +33,10 @@ export function DependenciesSection({
               {dependencies.map((dep) => (
                 <div key={dep.dependency_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} text-sm`}>
                   <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.upstream_id}</span>
-                  <span className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>→</span>
+                  <span className="mx-2 text-muted">→</span>
                   <span className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{dep.downstream_id}</span>
                   {dep.reason && (
-                    <div className={`mt-1 text-xs italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{dep.reason}</div>
+                    <div className="mt-1 text-xs italic text-subtle">{dep.reason}</div>
                   )}
                 </div>
               ))}

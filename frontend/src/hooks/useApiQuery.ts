@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ApiError } from '../lib/api';
-import { useToast } from './useToast';
+import { useToast, type ToastItem } from './useToast';
 
 export interface UseApiQueryOptions<T> {
   queryKey: string[];
@@ -17,7 +17,7 @@ export interface UseApiQueryReturn<T> {
   error: ApiError | null;
   retry: () => Promise<void>;
   refetch: () => Promise<void>;
-  allToasts: Array<{ id: string; message: string; variant: 'success' | 'error' | 'info' }>;
+  allToasts: ToastItem[];
 }
 
 function getErrorMessage(error: unknown): string {

@@ -28,7 +28,7 @@ export function ManuscriptList({ documents, selectedDocumentId, isLoading, onSel
 
   if (documents.length === 0) {
     return (
-      <div className={`text-center py-6 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+      <div className="text-center py-6 text-muted">
         <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-40" />
         <p className="text-xs">No manuscript records yet</p>
         <p className="text-xs mt-1">Create manuscripts via the drafting workflow.</p>
@@ -58,7 +58,7 @@ export function ManuscriptList({ documents, selectedDocumentId, isLoading, onSel
             {heading && (
               <div className={`text-xs mt-0.5 truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{heading}</div>
             )}
-            <div className={`text-xs mt-0.5 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>v{doc.version}</div>
+            <div className="text-xs mt-0.5 text-muted">v{doc.version}</div>
           </button>
         );
       })}

@@ -1,4 +1,5 @@
-export type ThemeMode = 'light' | 'dark' | 'midnight' | 'forest' | 'ocean'
+export type ThemeMode = 'light' | 'dark' | 'midnight' | 'forest' | 'ocean' | 'system'
+export type ResolvedTheme = 'light' | 'dark'
 export type StageTheme = 'planning' | 'writing' | 'review' | 'inspect'
 
 export interface ThemeConfig {
@@ -21,9 +22,33 @@ export const themeMeta: Record<ThemeMode, { label: string; icon: string }> = {
   midnight: { label: 'Midnight', icon: '🌌' },
   forest: { label: 'Forest', icon: '🌲' },
   ocean: { label: 'Ocean', icon: '🌊' },
+  system: { label: 'System', icon: '⚙' },
 }
 
-const allThemes: ThemeMode[] = ['light', 'dark', 'midnight', 'forest', 'ocean']
+const allThemes: ThemeMode[] = ['light', 'dark', 'midnight', 'forest', 'ocean', 'system']
+
+// System theme resolution via OS preference
+export function resolveSystemTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+export function resolveEffectiveMode(mode: ThemeMode): ResolvedTheme {
+  if (mode === 'system') return resolveSystemTheme()
+  return mode === 'light' ? 'light' : 'dark'
+}
+
+export function watchSystemTheme(callback: (isDark: boolean) => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+
+  const mq = window.matchMedia('(prefers-color-scheme: dark)')
+  const handler = (e: MediaQueryListEvent) => callback(e.matches)
+  mq.addEventListener('change', handler)
+
+  return () => {
+    mq.removeEventListener('change', handler)
+  }
+}
 const allStages: StageTheme[] = ['planning', 'writing', 'review', 'inspect']
 
 export const getThemeConfig = (): ThemeConfig => {
@@ -52,7 +77,8 @@ export const applyTheme = (config: ThemeConfig): void => {
   root.setAttribute('data-stage', config.stage)
 
   // Tailwind darkMode: 'class' requires 'dark' class on <html>
-  if (config.mode !== 'light') {
+  const effectiveDark = resolveEffectiveMode(config.mode) === 'dark'
+  if (effectiveDark) {
     root.classList.add('dark')
   } else {
     root.classList.remove('dark')

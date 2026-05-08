@@ -84,7 +84,7 @@ export function ChapterPacketsSection({
               {packets.map((packet) => (
                 <div key={packet.packet_id} className={`p-3 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                   <div className="font-medium">{packet.chapter_id}</div>
-                  <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{packet.included_reference_ids.length} references included</span>
+                  <span className="text-xs text-subtle">{packet.included_reference_ids.length} references included</span>
                 </div>
               ))}
             </div>

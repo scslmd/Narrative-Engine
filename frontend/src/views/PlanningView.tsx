@@ -31,6 +31,7 @@ import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateReques
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
 
 import { useThemeStore } from '../stores/themeStore';
+import { resolveEffectiveMode } from '../theme/theme';
 import { EmptyState, WorkspaceStatus } from '../components/planning/ui';
 import { getErrorMessage } from '../components/planning/utils';
 
@@ -105,8 +106,9 @@ export function PlanningView() {
   const [activeTab, setActiveTab] = useState<PlanningTab>('manifest');
   const [characterEditorMode, setCharacterEditorMode] = useState<CharacterEditorMode>('list');
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const { mode } = useThemeStore();
-  const isDark = mode === 'dark';
+  const { mode, _systemTick } = useThemeStore();
+  void _systemTick;
+  const isDark = resolveEffectiveMode(mode) === 'dark';
 
   const { items: brainstormItems, isLoading: brainstormLoading, addItem: addBrainstormItem, clusterItems: clusterBrainstormItems, promoteItem: promoteBrainstormItem } = useBrainstorm(projectId || '');
 
@@ -242,7 +244,7 @@ export function PlanningView() {
   const relationships = relationshipsQuery.data ?? [];
 
   if (!projectId) {
-    return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
+    return <div className="text-sm text-subtle">No project selected</div>;
   }
 
   const selectedCharacter = selectedCharacterId
@@ -289,7 +291,7 @@ export function PlanningView() {
           <div className="flex items-center gap-1">
             {coreTabs.map((tab) => renderTabButton(tab, true))}
           </div>
-          <ChevronRight className={`w-3.5 h-3.5 mx-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`} />
+          <ChevronRight className="w-3.5 h-3.5 mx-1 text-muted" />
           <div className="flex items-center gap-1">
             {contentTabs.map((tab) => renderTabButton(tab, false))}
           </div>
@@ -405,7 +407,7 @@ export function PlanningView() {
                       }`}
                     >
                       <h3 className={`font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{character.display_name}</h3>
-                      <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{character.role_in_story}</p>
+                      <p className="text-sm mt-1 text-body">{character.role_in_story}</p>
                     </button>
                   ))}
                 </div>
@@ -477,7 +479,7 @@ export function PlanningView() {
                   <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                     Relationship Map
                   </h2>
-                  <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className="text-xs text-subtle">
                     {relationships.length} relationships
                   </span>
                 </div>

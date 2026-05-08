@@ -131,7 +131,7 @@ export function ScenePlanSection({
                       <input type="text" value={editObjective} onChange={(e) => onEditObjectiveChange(e.target.value)} className={inputClass} placeholder="Objective" />
                       <input type="text" value={editConflict} onChange={(e) => onEditConflictChange(e.target.value)} className={inputClass} placeholder="Conflict" />
                       <input type="text" value={editStakes} onChange={(e) => onEditStakesChange(e.target.value)} className={inputClass} placeholder="Stakes" />
-                      {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+                      {scene.chapter_id && <span className="text-xs text-subtle">Chapter: {scene.chapter_id}</span>}
                       <div className="flex gap-2">
                         <button onClick={() => onUpdate(scene.scene_id)} disabled={!editTitle.trim() || !editObjective.trim() || onUpdateButtonDisabled} className="text-xs px-3 py-1 rounded bg-green-600 text-white disabled:opacity-50">Save</button>
                         <button onClick={onEditClose} className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600">Cancel</button>
@@ -141,7 +141,7 @@ export function ScenePlanSection({
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{scene.title}</div>
-                        {scene.chapter_id && <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {scene.chapter_id}</span>}
+        {scene.chapter_id && <span className="text-xs text-subtle">Chapter: {scene.chapter_id}</span>}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '../lib/api';
-import { useToast } from './useToast';
+import { useToast, type ToastItem } from './useToast';
 
 interface UseApiMutationOptions<TVariables, TData> {
   mutationFn: (variables: TVariables) => Promise<TData>;
@@ -15,7 +15,7 @@ interface UseApiMutationReturn<TVariables, TData> {
   isPending: boolean;
   error: ApiError | null;
   resetError: () => void;
-  allToasts: Array<{ id: string; message: string; variant: 'success' | 'error' | 'info' }>;
+  allToasts: ToastItem[];
 }
 
 function getErrorMessage(error: unknown): string {

@@ -8,12 +8,14 @@ import { ManuscriptEditor } from '../components/writing/ManuscriptEditor';
 import { useWritingView } from '../hooks/useWritingView';
 import { useManuscriptAssist } from '../hooks/useManuscriptAssist';
 import { useThemeStore } from '../stores/themeStore';
+import { resolveEffectiveMode } from '../theme/theme';
 import type { RevisionSuggestion } from '../types/aids';
 
 export function WritingView() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { mode } = useThemeStore();
-  const isDark = mode === 'dark';
+  const { mode, _systemTick } = useThemeStore();
+  void _systemTick;
+  const isDark = resolveEffectiveMode(mode) === 'dark';
 
   const {
     manuscriptDocuments,
@@ -113,10 +115,10 @@ export function WritingView() {
 
         <div className={`border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
           <div className={`px-4 py-2.5 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-            <div className={`flex items-center gap-2 mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <div className="flex items-center gap-2 mb-2 text-body">
               <Code className="w-3.5 h-3.5" />
-              <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Drafts</h3>
-              <span className={`ml-auto text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>({draftArtifacts.length})</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-body">Drafts</h3>
+              <span className="ml-auto text-xs text-muted">({draftArtifacts.length})</span>
             </div>
           </div>
 
@@ -205,7 +207,7 @@ export function WritingView() {
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <BookOpen className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
-              <p className={`text-sm ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Select a manuscript from the sidebar</p>
+              <p className="text-sm text-muted">Select a manuscript from the sidebar</p>
             </div>
           </div>
         )}

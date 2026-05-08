@@ -9,7 +9,7 @@ interface MarkdownRenderProps {
 
 /** Lightweight markdown renderer for manuscript read mode. Handles headings, inline code, and paragraphs. */
 function renderMarkdown({ content, isDark }: MarkdownRenderProps) {
-  if (!content) return <span className={isDark ? 'text-slate-600' : 'text-slate-400'}>(No content)</span>;
+  if (!content) return <span className="text-muted">(No content)</span>;
 
   const headingBase = isDark ? 'text-slate-100 font-semibold' : 'text-slate-900 font-semibold';
   const codeBg = isDark ? 'bg-slate-800 text-amber-300' : 'bg-slate-100 text-amber-700';
@@ -112,12 +112,12 @@ export function ManuscriptEditor({
         <div>
           <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{document.title}</h2>
           {document.chapter_id && (
-            <p className={`text-xs mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chapter: {document.chapter_id}</p>
+            <p className="text-xs mt-0.5 text-subtle">Chapter: {document.chapter_id}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
           {isEditing && (
-            <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            <span className="text-xs text-subtle">
               {wordCount} words / {charCount} chars
             </span>
           )}

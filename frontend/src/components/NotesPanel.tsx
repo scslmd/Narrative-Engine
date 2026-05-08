@@ -72,7 +72,7 @@ interface AddNoteFormProps {
 function AddNoteForm({ value, onChange, onAdd, isDark, styles }: AddNoteFormProps): React.ReactElement {
   const hasContent = value.trim().length > 0;
   const disabledClass = ['flex items-center gap-1 px-2.5 py-1', 'bg-gradient-to-r from-amber-500 to-amber-600', 'text-white text-xs font-medium rounded-md', 'hover:from-amber-600 hover:to-amber-700 transition-all', 'disabled:opacity-40 disabled:cursor-not-allowed'].join(' ');
-  const charCountColor = isDark ? 'text-slate-600' : 'text-slate-400';
+  const charCountColor = isDark ? 'text-slate-400' : 'text-slate-500';
   const textareaClass = ['w-full bg-transparent rounded-lg border-none text-xs px-3 py-2 resize-none', 'focus:outline-none focus:ring-1 focus:ring-amber-500/40', styles.textareaColor].join(' ');
   const inputRowBorder = isDark ? 'border-slate-700/60' : 'border-slate-200';
 
@@ -123,7 +123,7 @@ function useNoteItemStyles(isDark: boolean) {
   return {
     itemBg: isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-200',
     textColor: isDark ? 'text-slate-300' : 'text-slate-700',
-    timestampColor: isDark ? 'text-slate-600' : 'text-slate-400',
+    timestampColor: isDark ? 'text-slate-400' : 'text-slate-500',
     editTextareaBg: isDark ? 'bg-slate-800 border-slate-600 text-slate-200' : 'bg-white border-slate-300 text-slate-800',
     cancelBtnBg: isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-200 text-slate-600 hover:bg-slate-300',
     editBtnColor: isDark ? 'text-slate-500 hover:text-amber-400 hover:bg-slate-700/50' : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50',

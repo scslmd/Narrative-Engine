@@ -148,6 +148,46 @@ def build_projects_router(
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @router.post("/{project_id}/generate-description")
+    def generate_description(project_id: str) -> dict:
+        """Generate a short LLM description for a project and save it to premise_text."""
+        try:
+            manifest = project_service.load_manifest(project_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+        from app.inference.factory import build_inference_backend
+        from app.services.runtime_prompts import build_generate_description_request
+        from app.settings import settings
+
+        request = build_generate_description_request(
+            project_name=manifest.get("project_name", ""),
+            genre=manifest.get("config", {}).get("genre", "Unknown"),
+            tone_profile=manifest.get("config", {}).get("tone_profile", "Neutral"),
+            story_structure=manifest.get("config", {}).get("story_structure", "THREE_ACT"),
+            premise_text=manifest.get("premise_text"),
+            default_model=settings.inference_model,
+        )
+
+        try:
+            backend = build_inference_backend()
+            response = backend.generate_text(request)
+            description = response.content.strip()
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"LLM unavailable: {exc}") from exc
+
+        # Update manifest with generated description
+        manifest["premise_text"] = description
+        import json as _json
+        from pathlib import Path as _Path
+        manifest_path = _Path(settings.projects_dir) / project_id / "manifest.json"
+        try:
+            manifest_path.write_text(_json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to save description: {exc}") from exc
+
+        return {"premise_text": description}
+
     @router.get("/{project_id}/sequence", response_model=ProjectArtifactResponse)
     def get_sequence(project_id: str) -> ProjectArtifactResponse:
         try:
@@ -524,5 +564,51 @@ def build_projects_router(
                 except OSError:
                     pass
                 raise HTTPException(status_code=500, detail="Failed to create export archive")
+
+    @router.post("/guided-setup/analyze", response_model=dict)
+    def guided_setup_analyze(request: dict) -> dict:
+        """Analyze a conversation turn and return extracted fields + next question."""
+        from app.schemas.guided_setup import GuidedSetupAnalyzeRequest, GuidedSetupAnalyzeResponse
+        from app.services.guided_setup import GuidedSetupService, GuidedSetupError, GuidedSetupLLMError
+
+        try:
+            analyze_request = GuidedSetupAnalyzeRequest(**request)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        service = GuidedSetupService()
+
+        try:
+            response = service.analyze_turn(analyze_request)
+        except GuidedSetupLLMError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except GuidedSetupError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        return response.model_dump(mode="python")
+
+    @router.post("/guided-setup/create", status_code=201, response_model=dict)
+    def guided_setup_create(request: dict) -> dict:
+        """Create a project from accumulated guided setup fields."""
+        from app.schemas.guided_setup import GuidedSetupCreateRequest, GuidedSetupCreateResponse
+        from app.services.guided_setup import GuidedSetupService, GuidedSetupError
+
+        try:
+            create_request = GuidedSetupCreateRequest(**request)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        service = GuidedSetupService()
+
+        try:
+            response = service.create_project_from_fields(create_request)
+        except GuidedSetupError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        return response.model_dump(mode="python")
 
     return router

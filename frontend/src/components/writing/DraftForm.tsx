@@ -40,7 +40,7 @@ export function DraftForm({
         placeholder="Draft title"
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
-        className={`w-full text-xs px-2 py-1.5 rounded border mb-1.5 outline-none focus:border-indigo-500 ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
+        className={`w-full text-xs px-2 py-1.5 rounded border mb-1.5 outline-none focus:border-indigo-500 ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-subtle' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
       />
       {title.length > 255 && (
         <p className="text-[10px] text-red-500 mb-1">Title must be 255 characters or less.</p>
@@ -56,7 +56,7 @@ export function DraftForm({
             placeholder="Describe what this draft should cover..."
             value={brief}
             onChange={(e) => onBriefChange?.(e.target.value)}
-            className={`w-full text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 resize-none ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
+            className={`w-full text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 resize-none ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-subtle' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
             rows={3}
           />
         </>
@@ -65,7 +65,7 @@ export function DraftForm({
           placeholder="Draft content (optional)"
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          className={`w-full text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 resize-none ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
+          className={`w-full text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 resize-none ${isDark ? 'bg-slate-800 border-slate-600 text-slate-200 placeholder:text-subtle' : 'bg-white border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
           rows={3}
         />
       )}

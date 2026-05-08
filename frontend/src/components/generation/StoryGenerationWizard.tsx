@@ -91,7 +91,7 @@ export function StoryGenerationWizard({
         value={generationBrief}
         onChange={(event) => setGenerationBrief(event.target.value)}
         placeholder="Generation brief"
-        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 px-3 py-2 text-sm min-h-[120px]"
+        className="w-full rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-subtle px-3 py-2 text-sm min-h-[120px]"
       />
       <input
         type="number"
@@ -99,7 +99,7 @@ export function StoryGenerationWizard({
         max={100}
         value={chapterCount}
         onChange={(event) => setChapterCount(Number(event.target.value))}
-        className="w-32 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 px-3 py-2 text-sm"
+        className="w-32 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-subtle px-3 py-2 text-sm"
       />
       <div className="flex gap-2">
         <button

@@ -113,11 +113,28 @@
   }
 }
 
-/* === Utility classes === */
+/* === Semantic text color utilities === */
+/* Centralize dark mode contrast — tune these values to adjust all components */
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
   }
+
+  /* Body text: paragraphs, descriptions, card content */
+  .text-body { color: #475569; }
+  html.dark .text-body { color: #cbd5e1; }
+
+  /* Subtle text: labels, metadata, secondary info */
+  .text-subtle { color: #64748b; }
+  html.dark .text-subtle { color: #94a3b8; }
+
+  /* Muted text: hints, tertiary elements, disabled states */
+  .text-muted { color: #94a3b8; }
+  html.dark .text-muted { color: #64748b; }
+
+  /* Placeholder text: empty states, input placeholders */
+  .placeholder-subtle::placeholder { color: #94a3b8; }
+  html.dark .placeholder-subtle::placeholder { color: #64748b; }
 }
 
 /* === Form input dark mode text colors === */

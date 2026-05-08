@@ -101,7 +101,7 @@ export function DraftArtifactCard({
       )}
       {isExpanded && (
         <div className={`px-2 pb-2 space-y-1.5 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-          <p className={`text-[10px] truncate ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className="text-[10px] truncate text-subtle">
             {artifact.content.substring(0, 100)}{artifact.content.length > 100 ? '...' : ''}
           </p>
           {artifact.status !== 'PENDING' && <>

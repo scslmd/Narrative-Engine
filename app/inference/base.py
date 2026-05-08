@@ -15,6 +15,7 @@ RuntimeErrorCategory = Literal[
     "provider_rejected_request",
     "configuration_error",
     "circuit_open",  # REL-01: Circuit breaker is open
+    "truncated_response",  # Response hit max_tokens limit or returned empty content
 ]
 
 

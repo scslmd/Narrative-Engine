@@ -126,6 +126,98 @@ class Settings:
         }
         return aliases.get(self.inference_backend, [])
 
+    def inference_temperature(self, phase: str) -> float:
+        """Get temperature for a pipeline phase.
+
+        Overridable per-phase via env vars:
+          NARRATIVE_TEMPERATURE_ARCHITECT   (P-100, default 1.0)
+          NARRATIVE_TEMPERATURE_SEQUENCER   (P-200, default 0.6)
+          NARRATIVE_TEMPERATURE_DRAFTER     (P-300, default 1.0)
+          NARRATIVE_TEMPERATURE_PLANNER     (G-200, default 0.6)
+          NARRATIVE_TEMPERATURE_CHAPTER     (G-300, default 1.0)
+
+        Fallback env var for all phases: NARRATIVE_TEMPERATURE_DEFAULT (0.7).
+        """
+        phase_key = {
+            "P-100": "ARCHITECT",
+            "P-200": "SEQUENCER",
+            "P-300": "DRAFTER",
+            "G-200": "PLANNER",
+            "G-300": "CHAPTER",
+        }.get(phase.upper(), phase.upper())
+
+        env_value = os.getenv(f"NARRATIVE_TEMPERATURE_{phase_key}", "").strip()
+        if env_value:
+            try:
+                return float(env_value)
+            except ValueError:
+                pass
+
+        fallback_default = os.getenv("NARRATIVE_TEMPERATURE_DEFAULT", "").strip()
+        if fallback_default:
+            try:
+                return float(fallback_default)
+            except ValueError:
+                pass
+
+        defaults = {
+            "ARCHITECT": 1.0,
+            "SEQUENCER": 0.6,
+            "DRAFTER": 1.0,
+            "PLANNER": 0.6,
+            "CHAPTER": 1.0,
+        }
+        return defaults.get(phase_key, 0.7)
+
+    def inference_max_tokens(self, phase: str) -> int:
+        """Get max_tokens for a pipeline phase.
+
+        Overridable per-phase via env vars:
+          NARRATIVE_MAX_TOKENS_ARCHITECT    (P-100, default 4096)
+          NARRATIVE_MAX_TOKENS_SEQUENCER    (P-200, default 4096)
+          NARRATIVE_MAX_TOKENS_DRAFTER      (P-300, default 8000)
+          NARRATIVE_MAX_TOKENS_COMPILER     (P-400, default 4096)
+          NARRATIVE_MAX_TOKENS_PLANNER      (G-200, default 4096)
+          NARRATIVE_MAX_TOKENS_CHAPTER      (G-300, default 8000)
+          NARRATIVE_MAX_TOKENS_GUIDED_SETUP (default 8192)
+
+        Fallback env var for all phases: NARRATIVE_MAX_TOKENS_DEFAULT (4096).
+        """
+        phase_key = {
+            "P-100": "ARCHITECT",
+            "P-200": "SEQUENCER",
+            "P-300": "DRAFTER",
+            "P-400": "COMPILER",
+            "G-200": "PLANNER",
+            "G-300": "CHAPTER",
+            "GUIDED_SETUP": "GUIDED_SETUP",
+        }.get(phase.upper(), phase.upper())
+
+        env_value = os.getenv(f"NARRATIVE_MAX_TOKENS_{phase_key}", "").strip()
+        if env_value:
+            try:
+                return max(64, int(env_value))
+            except ValueError:
+                pass
+
+        fallback_default = os.getenv("NARRATIVE_MAX_TOKENS_DEFAULT", "").strip()
+        if fallback_default:
+            try:
+                return max(64, int(fallback_default))
+            except ValueError:
+                pass
+
+        defaults = {
+            "ARCHITECT": 4096,
+            "SEQUENCER": 4096,
+            "DRAFTER": 8000,
+            "COMPILER": 4096,
+            "PLANNER": 4096,
+            "CHAPTER": 8000,
+            "GUIDED_SETUP": 8192,
+        }
+        return defaults.get(phase_key, 4096)
+
     @property
     def cors_origins(self) -> list[str]:
         raw_value = os.getenv("CORS_ORIGINS", "").strip()

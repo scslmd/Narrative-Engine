@@ -51,6 +51,7 @@ class ProjectService:
                     genre=manifest.config.genre,
                     tone_profile=manifest.config.tone_profile,
                     story_structure=manifest.config.story_structure,
+                    premise_text=manifest.premise_text,
                     created_at=projection.created_at,
                     updated_at=projection.updated_at,
                 )

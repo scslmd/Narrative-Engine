@@ -71,6 +71,7 @@ class ProjectSummaryResponse(StrictSchemaModel):
     genre: str = Field(min_length=1)
     tone_profile: str = Field(min_length=1)
     story_structure: str = Field(min_length=1)
+    premise_text: str | None = None
     created_at: datetime
     updated_at: datetime
 

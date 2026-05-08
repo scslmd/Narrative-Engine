@@ -23,6 +23,7 @@ export interface ProjectSummary {
   genre: string;
   tone_profile: string;
   story_structure: string;
+  premise_text?: string;
   created_at: string;
   updated_at: string;
 }

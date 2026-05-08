@@ -120,7 +120,7 @@ export function ArcsTab({ data, actions, tab }: ArcsTabProps) {
         <Section title="Stage Map">
           <div className="space-y-3">
             <div className="flex flex-col gap-1.5">
-              <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Arc</label>
+              <label className="text-xs font-medium text-body">Arc</label>
               <select
                 value={tab.stageMapCreateArcId}
                 onChange={(e) => tab.onSetStageMapCreateArcId(e.target.value)}
@@ -133,7 +133,7 @@ export function ArcsTab({ data, actions, tab }: ArcsTabProps) {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Stages</label>
+              <label className="text-xs font-medium text-body">Stages</label>
               <div className="flex flex-wrap gap-1.5">
                 {STAGE_OPTIONS.map((stage) => (
                   <button
@@ -147,13 +147,13 @@ export function ArcsTab({ data, actions, tab }: ArcsTabProps) {
                 ))}
               </div>
               {tab.stageMapCreateKinds.length > 0 && (
-                <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <p className="text-xs text-subtle">
                   Order: {tab.stageMapCreateKinds.map((k) => k.replace(/_/g, ' ')).join(' → ')}
                 </p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Notes (optional)</label>
+              <label className="text-xs font-medium text-body">Notes (optional)</label>
               <textarea
                 value={tab.stageMapCreateNotes}
                 onChange={(e) => tab.onSetStageMapCreateNotes(e.target.value)}
@@ -250,7 +250,7 @@ export function ArcsTab({ data, actions, tab }: ArcsTabProps) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium">{candidate.name}</div>
-                      {candidate.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{candidate.summary}</p>}
+                      {candidate.summary && <p className="text-sm mt-1 text-body">{candidate.summary}</p>}
                       {isSelected && (
                         <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
                           Selected

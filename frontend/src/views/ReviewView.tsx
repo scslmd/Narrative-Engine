@@ -6,6 +6,7 @@ import { FindingsList } from '../components/review';
 import { InspectRunLinksList } from '../components/inspectLinks';
 import { createInspectLink } from '../services/inspectLinks';
 import { useThemeStore } from '../stores/themeStore';
+import { resolveEffectiveMode } from '../theme/theme';
 
 interface InspectLinkFormData {
   link_id: string;
@@ -30,8 +31,9 @@ export function ReviewView() {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { mode } = useThemeStore();
-  const isDark = mode === 'dark';
+  const { mode, _systemTick } = useThemeStore();
+  void _systemTick;
+  const isDark = resolveEffectiveMode(mode) === 'dark';
 
   const createMutation = useMutation({
     mutationFn: (data: InspectLinkFormData) =>
@@ -80,7 +82,7 @@ export function ReviewView() {
   }, [formData, createMutation]);
 
   if (!projectId) {
-    return <div className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>No project selected</div>;
+    return <div className="text-sm text-subtle">No project selected</div>;
   }
 
   return (
@@ -144,7 +146,7 @@ export function ReviewView() {
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Link ID</label>
+                      <label className="text-[10px] font-medium text-subtle">Link ID</label>
                       <input
                         type="text"
                         placeholder="link-1"
@@ -154,7 +156,7 @@ export function ReviewView() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Object Kind</label>
+                      <label className="text-[10px] font-medium text-subtle">Object Kind</label>
                       <input
                         type="text"
                         placeholder="chapter-plan"
@@ -164,7 +166,7 @@ export function ReviewView() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Object ID</label>
+                      <label className="text-[10px] font-medium text-subtle">Object ID</label>
                       <input
                         type="text"
                         placeholder="abc-123"
@@ -176,7 +178,7 @@ export function ReviewView() {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Logical Run ID</label>
+                      <label className="text-[10px] font-medium text-subtle">Logical Run ID</label>
                       <input
                         type="text"
                         placeholder="run-001"
@@ -186,7 +188,7 @@ export function ReviewView() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Run ID</label>
+                      <label className="text-[10px] font-medium text-subtle">Run ID</label>
                       <input
                         type="text"
                         placeholder="job-abc"
@@ -196,7 +198,7 @@ export function ReviewView() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Run Kind</label>
+                      <label className="text-[10px] font-medium text-subtle">Run Kind</label>
                       <input
                         type="text"
                         placeholder="pipeline_job"

@@ -59,7 +59,7 @@ export function DraftList({
   if (artifacts.length === 0 && !draftForm) {
     return (
       <div>
-        <p className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>No drafts yet</p>
+        <p className="text-xs text-muted">No drafts yet</p>
         <div className="flex gap-1.5 mt-1.5">
           <button
             onClick={onCreateDraft}

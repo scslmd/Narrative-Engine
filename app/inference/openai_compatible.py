@@ -206,6 +206,7 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
         if not isinstance(choices, list) or not choices:
             raise self._protocol_shape_error(f"{self._descriptor.display_name} returned no choices.")
         first_choice = choices[0] if isinstance(choices[0], dict) else {}
+        finish_reason = first_choice.get("finish_reason") if isinstance(first_choice, dict) else None
         message = first_choice.get("message") if isinstance(first_choice, dict) else {}
         content = ""
         if isinstance(message, dict):
@@ -218,6 +219,20 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
                     for item in message_content
                     if isinstance(item, dict) and isinstance(item.get("text"), str)
                 )
+
+        # Detect truncated or empty responses caused by token budget exhaustion
+        reasoning_content = message.get("reasoning_content", "") if isinstance(message, dict) else ""
+        if finish_reason == "length" or (not content and reasoning_content):
+            raise InferenceBackendError(
+                f"{self._descriptor.display_name} response was truncated or empty "
+                f"(max_tokens={payload['max_tokens']}, finish_reason={finish_reason}). "
+                f"Increase NARRATIVE_MAX_TOKENS_DEFAULT or NARRATIVE_MAX_TOKENS_<PHASE> in your .env file.",
+                category="truncated_response",
+                code="INFERENCE_TRUNCATED",
+                finish_reason="length",
+                retryable=False,
+            )
+
         usage_payload = response_payload.get("usage") if isinstance(response_payload.get("usage"), dict) else {}
         return InferenceResponse(
             backend=self._descriptor.backend,

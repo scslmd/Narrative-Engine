@@ -124,6 +124,35 @@ async def readiness_check() -> dict:
     }
 
 
+@router.get("/llm")
+async def llm_health_check() -> dict:
+    """Check if the configured inference backend is reachable.
+
+    Uses a lightweight /models call to verify connectivity without blocking
+    on inference. Returns 200 with model info if reachable, 503 if not.
+    """
+    try:
+        from ..inference.factory import build_inference_backend
+
+        inferencer = build_inference_backend(settings)
+        models = inferencer.list_models()
+        model_name = settings.inference_default_model or (models[0] if models else "unknown")
+        return {
+            "status": "ok",
+            "backend": settings.inference_backend,
+            "model": model_name,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unavailable",
+                "backend": settings.inference_backend,
+                "error": str(e),
+            },
+        )
+
+
 @router.get("/metrics")
 async def get_metrics() -> dict:
     """Prometheus-style metrics endpoint (REL-05).

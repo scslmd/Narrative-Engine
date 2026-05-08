@@ -3,11 +3,21 @@ import api from '../lib/api';
 
 export async function getProjects(): Promise<ProjectSummaryResponse[]> {
   const response = await api.get('/projects');
-  
+
   if (response.status !== 200) {
     throw new Error(`Failed to fetch projects: ${response.status}`);
   }
-  
+
+  return response.data;
+}
+
+export async function generateProjectDescription(projectId: string): Promise<{ premise_text: string }> {
+  const response = await api.post(`/projects/${projectId}/generate-description`);
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to generate description: ${response.status}`);
+  }
+
   return response.data;
 }
 

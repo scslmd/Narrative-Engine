@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from ..schemas.inference import InferenceMessage, InferenceRequest
 from ..schemas.manifest import Manifest
 from ..schemas.pattern_extraction import PatternExtractionAnalysis
+from ..settings import settings
 
 if TYPE_CHECKING:
     from .scene_context import SceneContext
@@ -33,7 +34,7 @@ def build_p100_architect_request(
 
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
-        temperature=_coerce_float(payload.get("temperature"), default=0.2),
+        temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-100")),
         max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
         messages=[
             InferenceMessage(
@@ -79,7 +80,7 @@ def build_p200_sequencer_request(
         prompt_context["architect_output"] = architect_output
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
-        temperature=_coerce_float(payload.get("temperature"), default=0.2),
+        temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-200")),
         max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
         messages=[
             InferenceMessage(
@@ -153,7 +154,7 @@ def build_p300_drafter_request(
 
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
-        temperature=_coerce_float(payload.get("temperature"), default=0.2),
+        temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-300")),
         max_tokens=_coerce_int(payload.get("max_tokens"), default=8000),
         messages=[
             InferenceMessage(
@@ -230,7 +231,7 @@ def build_g200_story_generation_plan_request(
 ) -> InferenceRequest:
     return InferenceRequest(
         model=default_model,
-        temperature=0.15,
+        temperature=settings.inference_temperature("G-200"),
         max_tokens=4000,
         messages=[
             InferenceMessage(
@@ -275,7 +276,7 @@ def build_g300_chapter_generation_request(
     }
     return InferenceRequest(
         model=default_model,
-        temperature=0.2,
+        temperature=settings.inference_temperature("G-300"),
         max_tokens=8000,
         messages=[
             InferenceMessage(
@@ -373,7 +374,7 @@ def build_m500_manuscript_assist_request(
     payload = packet.model_dump(mode="json")
     return InferenceRequest(
         model=packet.model_id or default_model,
-        temperature=packet.temperature if packet.temperature is not None else 0.2,
+        temperature=packet.temperature if packet.temperature is not None else settings.inference_temperature("G-300"),
         max_tokens=packet.max_tokens if packet.max_tokens is not None else 4000,
         messages=[
             InferenceMessage(
@@ -2003,3 +2004,193 @@ def build_arc_detection_request(
             "role": "arc_detector",
         },
     )
+
+
+def build_generate_description_request(
+    *,
+    project_name: str,
+    genre: str,
+    tone_profile: str,
+    story_structure: str,
+    premise_text: str | None,
+    default_model: str | None,
+) -> InferenceRequest:
+    user_parts: list[str] = []
+    user_parts.append(f"Project name: {project_name}")
+    user_parts.append(f"Genre: {genre}")
+    user_parts.append(f"Tone: {tone_profile}")
+    user_parts.append(f"Structure: {story_structure}")
+    if premise_text:
+        user_parts.append(f"Premise: {premise_text}")
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.3,
+        max_tokens=256,
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=(
+                    "You are a story description generator. "
+                    "Given project metadata, write a compelling 1-2 sentence description of the story. "
+                    "Focus on the core conflict, setting, and what makes it unique. "
+                    "Return ONLY the description text. No quotes, no preamble, no markdown."
+                ),
+            ),
+            InferenceMessage(
+                role="user",
+                content="\n".join(user_parts),
+            ),
+        ],
+        metadata={
+            "mode": "project_description",
+            "role": "description_generator",
+        },
+    )
+
+
+def build_guided_setup_request(
+    *,
+    conversation_history: list[dict[str, str]],
+    current_answer: str,
+    accumulated_fields: dict[str, Any],
+    default_model: str | None,
+) -> InferenceRequest:
+    history_text = "\n".join(
+        f"[{msg.get('role', 'user')}]: {msg.get('content', '')}"
+        for msg in conversation_history
+    )
+
+    fields_summary = _summarize_accumulated_fields(accumulated_fields)
+
+    user_content = (
+        f"CURRENT ANSWER:\n{current_answer}\n\n"
+        f"CONVERSATION HISTORY:\n{history_text}\n\n"
+        f"ALREADY COLLECTED FIELDS:\n{fields_summary}"
+    )
+
+    return InferenceRequest(
+        model=str(default_model or "").strip() or None,
+        temperature=0.3,
+        max_tokens=settings.inference_max_tokens("GUIDED_SETUP"),
+        messages=[
+            InferenceMessage(
+                role="system",
+                content=_GUIDED_SETUP_SYSTEM_PROMPT,
+            ),
+            InferenceMessage(
+                role="user",
+                content=user_content,
+            ),
+        ],
+        metadata={
+            "mode": "guided_setup",
+            "role": "story_architect",
+        },
+    )
+
+
+def _summarize_accumulated_fields(fields: dict[str, Any]) -> str:
+    parts: list[str] = []
+
+    config = fields.get("config", {})
+    if config:
+        config_parts = [f"{k}: {v}" for k, v in config.items() if v and v not in ("", [])]
+        if config_parts:
+            parts.append("Config:\n  " + "\n  ".join(config_parts))
+
+    foundation = fields.get("foundation", {})
+    if foundation:
+        found_parts = [f"{k}: {v}" for k, v in foundation.items() if v and v not in ("", [])]
+        if found_parts:
+            parts.append("Foundation:\n  " + "\n  ".join(found_parts))
+
+    characters = fields.get("characters", [])
+    if characters:
+        char_summaries = []
+        for c in characters:
+            name = c.get("name", "Unknown")
+            role = c.get("role", "supporting")
+            char_summaries.append(f"- {name} ({role})")
+        parts.append("Characters:\n" + "\n".join(char_summaries))
+
+    world_bible = fields.get("world_bible", [])
+    if world_bible:
+        world_summaries = []
+        for w in world_bible:
+            title = w.get("title", "Untitled")
+            wtype = w.get("entry_type", "unknown")
+            world_summaries.append(f"- [{wtype}] {title}")
+        parts.append("World Bible:\n" + "\n".join(world_summaries))
+
+    arcs = fields.get("arcs", [])
+    if arcs:
+        arc_summaries = []
+        for a in arcs:
+            char_name = a.get("character_name", "Unknown")
+            atype = a.get("arc_type", "transformation")
+            arc_summaries.append(f"- {char_name}: {atype}")
+        parts.append("Arcs:\n" + "\n".join(arc_summaries))
+
+    return "\n\n".join(parts) if parts else "(no fields collected yet)"
+
+
+_GUIDED_SETUP_SYSTEM_PROMPT = """\
+You are an experienced story architect helping an author set up a new writing project. \
+Your job is to ask adaptive, conversational questions to gather all the information needed \
+to create a complete project scaffold.
+
+## IMPORTANT - NO REASONING
+Do NOT include any thinking, reasoning, or internal monologue in your response. \
+Output ONLY the raw JSON object. Do not wrap it in markdown code fences or explain your work.
+
+## HOW TO ASK QUESTIONS
+- Ask ONE focused question at a time. Never ask multiple things in one message.
+- Adapt your next question based on everything the user has told you so far.
+- If the user's answer is vague or unclear, ask a follow-up for clarification rather than guessing.
+- Keep questions natural and conversational. Don't sound like a form.
+- Reference details from earlier in the conversation to show you're tracking.
+
+## WHAT TO COLLECT (in this order, but adapt based on flow)
+1. **Project basics**: What kind of story? Genre, tone, overall idea.
+2. **Narrative voice**: POV preference, writing style, target audience.
+3. **Story structure**: Preferred narrative framework (three-act, hero's journey, etc.).
+4. **Protagonist**: Who is the main character? Their goal, flaw, what makes them interesting.
+5. **Secondary characters**: 1-3 other key characters and their roles.
+6. **World/setting**: Where and when does the story take place? Key world rules or details.
+7. **Core conflict**: What's the central tension or mystery driving the plot?
+8. **Arcs**: How do the main characters change over the course of the story?
+9. **Constraints & preferences**: Any specific requirements, themes to include/avoid, word count goals.
+
+## OUTPUT FORMAT
+Return ONLY a JSON object with these exact keys:
+{
+  "extracted_fields": {
+    "config": {"project_name": "", "genre": "", "tone_profile": "", "pov": "", "story_structure": "", "primary_language": "", "constraints": []},
+    "foundation": {"premise_text": "", "logline": "", "thematic_spine": "", "emotional_promise": "", "target_audience": "", "complexity_level": ""},
+    "characters": [{"name": "", "role": "", "archetype": "", "age_range": "", "external_goal": "", "internal_need": "", "core_fear": "", "primary_strength": "", "fatal_flaw": "", "backstory_summary": "", "contradictions": [], "change_axis": ""}],
+    "world_bible": [{"entry_type": "", "title": "", "summary": "", "canonical_facts": []}],
+    "arcs": [{"character_name": "", "arc_type": "", "summary": "", "stages": ["status_quo", "inciting_incident", "rising_action", "crisis", "climax", "resolution"], "tags": []}]
+  },
+  "next_question": "Your next adaptive question to ask the user.",
+  "confidence": 0.5,
+  "progress": 35.0,
+  "ready_to_create": false,
+  "category_progress": [
+    {"category": "config", "completeness": 0.7, "confidence": 0.8, "fields_collected": ["genre", "tone_profile"], "fields_missing": ["pov", "story_structure"]},
+    {"category": "foundation", "completeness": 0.3, "confidence": 0.6, "fields_collected": ["premise_text"], "fields_missing": ["logline", "thematic_spine"]},
+    {"category": "characters", "completeness": 0.5, "confidence": 0.7, "fields_collected": ["protagonist"], "fields_missing": ["secondary characters"]},
+    {"category": "world_bible", "completeness": 0.0, "confidence": 0.0, "fields_collected": [], "fields_missing": ["setting", "world rules"]},
+    {"category": "arcs", "completeness": 0.0, "confidence": 0.0, "fields_collected": [], "fields_missing": ["protagonist arc"]}
+  ]
+}
+
+## RULES
+- Only populate fields you can extract with reasonable confidence from the conversation.
+- Leave fields empty ("" or []) if you don't have enough information yet.
+- Set ready_to_create to true only when all 5 categories reach at least 0.7 completeness.
+- Progress should be the average of all category completeness values, multiplied by 100.
+- Confidence reflects how sure you are about the extracted values (0.0 to 1.0).
+- No markdown code fences. Return raw JSON only.
+- Do NOT use thinking tags, reasoning blocks, or chain-of-thought. Output JSON directly.\
+"""

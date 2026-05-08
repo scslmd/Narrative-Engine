@@ -1,29 +1,63 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
-import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download, Search } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
+import { resolveEffectiveMode } from '../theme/theme';
 import { StoryImportModal } from '../components/projects/StoryImportModal';
 import { ImportProjectModal } from '../components/projects/ImportProjectModal';
 import { useApiMutation } from '../hooks/useApiMutation';
 import { useToast } from '../hooks/useToast';
-import { deleteProject } from '../services/projects';
+import { deleteProject, generateProjectDescription } from '../services/projects';
 import { exportProject } from '../services/projectIO';
 import type { ProjectSummary } from '../lib/projectsApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function ProjectList(): React.ReactElement {
   const { data: projects, isLoading } = useProjects();
   const createMutation = useCreateProject();
-  const { mode } = useThemeStore();
-  const isDark = mode === 'dark';
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { mode, _systemTick } = useThemeStore();
+  void _systemTick;
+  const isDark = resolveEffectiveMode(mode) === 'dark';
   const [selectedPov, setSelectedPov] = useState<string>('Third_Limited');
   const [selectedStructure, setSelectedStructure] = useState<string>('THREE_ACT');
   const [showImportModal, setShowImportModal] = useState(false);
   const [showImportProjectModal, setShowImportProjectModal] = useState(false);
   const [deletingProject, setDeletingProject] = useState<ProjectSummary | null>(null);
   const [isExporting, setIsExporting] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
+
+  // Keyboard shortcut: Ctrl+K / Cmd+K to focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Instant client-side search filter (OR matching across all fields)
+  const filteredProjects = useCallback(() => {
+    if (!projects) return [];
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return projects;
+    const terms = q.split(/\s+/);
+    return projects.filter((p) => {
+      const text = [p.project_name, p.genre, p.tone_profile, p.story_structure, p.premise_text || '']
+        .join(' ')
+        .toLowerCase();
+      return terms.some((term) => text.includes(term));
+    });
+  }, [projects, searchQuery]);
 
   const deleteMutation = useApiMutation({
     mutationFn: (projectId: string) => deleteProject(projectId),
@@ -45,6 +79,20 @@ export function ProjectList(): React.ReactElement {
       addToast(deleteMutation.error.message, 'error');
     }
   }, [deleteMutation.error, addToast]);
+
+  // Auto-generate description after project creation (non-blocking)
+  useEffect(() => {
+    if (createMutation.data && !createMutation.data.manifest?.premise_text) {
+      const projectId = createMutation.data.project_id;
+      generateProjectDescription(projectId)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+        })
+        .catch(() => {
+          // LLM unavailable — not a blocker, description can be added manually later
+        });
+    }
+  }, [createMutation.data, queryClient]);
 
   const handleDeleteConfirm = () => {
     if (!deletingProject) return;
@@ -128,85 +176,134 @@ export function ProjectList(): React.ReactElement {
         <h1 className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
           Welcome to Narrative Engine
         </h1>
-        <p className={`text-sm mt-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Create a new project to start developing your story
-        </p>
+       <p className={`text-sm mt-1.5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+           Create a new project to start developing your story
+         </p>
       </div>
 
-      <div>
-        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
-        
+ <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Your Projects</h2>
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search projects… (Ctrl+K)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`pl-9 pr-8 py-1.5 text-sm rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 w-64 ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600'
+                  : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+              }`}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded ${
+                  isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {projects && projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-           {projects.map((project) => (
-               <div
-                 key={project.project_id}
-                 className={`group rounded-xl border p-4 transition-all duration-200 ${
-                   isDark
-                     ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card-hover'
-                     : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-card-hover'
-                 }`}
-               >
-                 <div className="flex items-start justify-between">
-                   <a
-                     href={`/workspace/${project.project_id}`}
-                     className="flex-1 min-w-0"
-                   >
-                     <h3 className={`font-semibold group-hover:text-indigo-500 transition-colors ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                       {project.project_name}
-                     </h3>
-                     <div className={`flex items-center gap-2 mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                       <span>{project.genre}</span>
-                       <span>•</span>
-                       <span>{project.tone_profile}</span>
-                     </div>
-                   </a>
-                   <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
+          <>
+            {(searchQuery || filteredProjects().length !== projects.length) && (
+              <p className={`text-xs mb-3 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                Showing {filteredProjects().length} of {projects.length} projects
+              </p>
+            )}
+            <div className="max-h-[55vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {filteredProjects().map((project) => (
+                  <div
+                    key={project.project_id}
+                    className={`group rounded-xl border p-4 transition-all duration-200 ${
+                      isDark
+                        ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card-hover'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-card-hover'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <a
+                        href={`/workspace/${project.project_id}`}
+                        className="flex-1 min-w-0"
+                      >
+                        <h3 className={`font-semibold group-hover:text-indigo-500 transition-colors ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                          {project.project_name}
+                        </h3>
+                     <div className={`flex items-center gap-2 mt-1 text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                        <span>{project.genre}</span>
+                        <span>•</span>
+                        <span>{project.tone_profile}</span>
+                      </div>
+                        {project.premise_text ? (
+                          <p className={`mt-2 text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {project.premise_text}
+                          </p>
+                        ) : (
+                          <p className={`mt-2 text-xs italic ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+                            No description yet
+                          </p>
+                        )}
+                      </a>
+                    </div>
+                    <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-400'}`}>
                         {new Date(project.updated_at).toLocaleDateString()}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => handleExport(project.project_id)}
-                        disabled={isExporting === project.project_id}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleExport(project.project_id)}
+                          disabled={isExporting === project.project_id}
                         className={`p-1 rounded transition-colors ${
-                          isDark
-                            ? 'text-slate-600 hover:text-indigo-400 hover:bg-slate-800'
-                            : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
+                            isDark
+                              ? 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800'
+                              : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-100'
                         } disabled:opacity-50`}
-                        title="Export project as ZIP"
-                      >
-                        {isExporting === project.project_id ? (
-                          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                          </svg>
-                        ) : (
-                          <Download className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      <button
-                       onClick={() => handleDeleteClick(project)}
-                       disabled={deleteMutation.isPending}
+                          title="Export project as ZIP"
+                        >
+                          {isExporting === project.project_id ? (
+                            <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                          ) : (
+                            <Upload className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(project)}
+                          disabled={deleteMutation.isPending}
                        className={`p-1 rounded transition-colors ${
-                         isDark
-                           ? 'text-slate-600 hover:text-red-400 hover:bg-slate-800'
-                           : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
-                       } disabled:opacity-50`}
-                       title="Delete project"
-                       aria-label={`Delete ${project.project_name}`}
-                     >
-                       <Trash2 className="w-3.5 h-3.5" />
-                     </button>
-                   </div>
-                 </div>
-               </div>
-             ))}
-          </div>
+                            isDark
+                              ? 'text-slate-400 hover:text-red-400 hover:bg-slate-800'
+                              : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
+                        } disabled:opacity-50`}
+                          title="Delete project"
+                          aria-label={`Delete ${project.project_name}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         ) : (
           <div className={`text-center py-12 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            <BookOpen className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-slate-700' : 'text-slate-300'}`} />
-            <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>No projects yet. Create your first project below!</p>
+            <BookOpen className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-slate-400' : 'text-slate-300'}`} />
+            <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>No projects yet. Create your first project below!</p>
           </div>
         )}
       </div>
@@ -226,7 +323,7 @@ export function ProjectList(): React.ReactElement {
               required
               placeholder="Enter project title..."
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
               }`}
             />
           </Field>
@@ -239,7 +336,7 @@ export function ProjectList(): React.ReactElement {
               required
               placeholder="e.g., Science Fiction, Fantasy"
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
               }`}
             />
           </Field>
@@ -252,7 +349,7 @@ export function ProjectList(): React.ReactElement {
               required
               placeholder="e.g., Dark and Gritty, Lighthearted"
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
               }`}
             />
           </Field>
@@ -279,7 +376,7 @@ export function ProjectList(): React.ReactElement {
               <option value="SNOWFLAKE_METHOD">Snowflake Method</option>
               <option value="OTHER">Other</option>
             </select>
-            <p className={`mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+            <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {STRUCTURE_DESCRIPTIONS[selectedStructure]}
             </p>
           </Field>
@@ -303,7 +400,7 @@ export function ProjectList(): React.ReactElement {
               <option value="Third_Multiple">Third Person Multiple</option>
               <option value="Other">Other</option>
             </select>
-            <p className={`mt-1 text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+            <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {POV_DESCRIPTIONS[selectedPov]}
             </p>
           </Field>
@@ -316,7 +413,7 @@ export function ProjectList(): React.ReactElement {
               required
               defaultValue="English"
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
               }`}
             />
           </Field>
@@ -328,7 +425,7 @@ export function ProjectList(): React.ReactElement {
               name="secondary_language"
               placeholder="e.g., Spanish, French"
               className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
               }`}
             />
           </Field>
@@ -341,7 +438,7 @@ export function ProjectList(): React.ReactElement {
             rows={3}
             placeholder="Briefly describe your story premise..."
             className={`w-full rounded-lg border text-sm px-3 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none ${
-              isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
+              isDark ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 hover:border-slate-400'
             }`}
           />
         </Field>
@@ -366,11 +463,20 @@ export function ProjectList(): React.ReactElement {
 
         <button
           type="button"
+          onClick={() => navigate('/setup-wizard')}
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-violet-600 hover:to-purple-700 shadow-sm hover:shadow-md transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          Walk Me Through It
+        </button>
+
+        <button
+          type="button"
           onClick={() => setShowImportModal(true)}
           disabled={createMutation.isPending}
           className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-teal-700 shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Upload className="w-4 h-4" />
+          <Download className="w-4 h-4" />
           Import Existing Story
         </button>
       </form>
@@ -381,7 +487,7 @@ export function ProjectList(): React.ReactElement {
           onClick={() => setShowImportProjectModal(true)}
           className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-colors"
         >
-          <Upload className="w-4 h-4" />
+          <Download className="w-4 h-4" />
           Import Project
         </button>
       </div>
@@ -407,14 +513,14 @@ export function ProjectList(): React.ReactElement {
               <button
                 onClick={handleDeleteCancel}
                 className={`p-1 rounded transition-colors ${
-                  isDark ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                  isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                 }`}
                 aria-label="Cancel"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className={`text-sm mb-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+           <p className={`text-sm mb-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               Delete &apos;{deletingProject.project_name}&apos; and all associated data? This cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
@@ -456,7 +562,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+      <label className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
         <Icon className="w-3.5 h-3.5" />
         {label}
       </label>

@@ -504,7 +504,7 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
             <label className="block text-xs font-medium text-[var(--text-secondary)] mb-2">
               Theme
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {(Object.keys(themeMeta) as Array<keyof typeof themeMeta>).map((key) => {
                 const theme = themeMeta[key]
                 const isActive = themeMode === key

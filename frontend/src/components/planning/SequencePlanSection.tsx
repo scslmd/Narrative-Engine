@@ -134,7 +134,7 @@ export function SequencePlanSection({
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{seq.title}</div>
-                        {seq.summary && <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{seq.summary}</p>}
+                        {seq.summary && <p className="text-sm mt-1 text-body">{seq.summary}</p>}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button

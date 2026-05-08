@@ -95,8 +95,8 @@ function useJobLaunchPanelStyles(isDark: boolean) {
   const headerBg = isDark ? 'border-slate-800' : 'border-slate-200';
   const headerTextColor = isDark ? 'text-indigo-400' : 'text-indigo-500';
   const headingColor = isDark ? 'text-slate-200' : 'text-slate-800';
-  const labelColor = 'text-slate-500';
-  const phaseDescColor = isDark ? 'text-slate-500' : 'text-slate-400';
+  const labelColor = isDark ? 'text-slate-400' : 'text-slate-500';
+  const phaseDescColor = isDark ? 'text-slate-400' : 'text-slate-500';
   return { cardClass, headerBg, headerTextColor, headingColor, labelColor, phaseDescColor };
 }
 
@@ -254,7 +254,7 @@ function JobItem({ job, isDark }: JobItemProps): React.ReactElement {
 
   return (
     <li className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-md ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
-      <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{job.phase}</span>
+      <span className="text-body">{job.phase}</span>
       <span className={`font-medium ${statusColor}`}>
         {isProcessing ? (
           <span className="flex items-center gap-1">

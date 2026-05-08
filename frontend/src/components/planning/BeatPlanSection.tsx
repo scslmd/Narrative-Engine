@@ -123,8 +123,8 @@ export function BeatPlanSection({
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{beat.objective}</div>
-                        <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Conflict: {beat.conflict}</div>
-                        <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Stakes: {beat.stakes}</div>
+          <div className="text-xs text-subtle">Conflict: {beat.conflict}</div>
+                         <div className="text-xs text-subtle">Stakes: {beat.stakes}</div>
                         {beat.arc_stage && <span className={`text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400`}>{beat.arc_stage}</span>}
                       </div>
                       <button onClick={() => onEditOpen(beat)} className={`text-xs px-2 py-0.5 rounded ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>Edit</button>
