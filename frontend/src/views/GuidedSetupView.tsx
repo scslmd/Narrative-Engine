@@ -16,7 +16,7 @@ export function GuidedSetupView(): React.ReactElement {
     handleAnalyze,
     handleSubmitCreate,
   } = useGuidedSetup();
-  const { accumulatedFields, conversationHistory } = useGuidedSetupStore();
+  const { accumulatedFields, conversationHistory, readyToCreate, progress, categoryProgress } = useGuidedSetupStore();
 
   useEffect(() => {
     const check = async () => setLlmHealth(await checkLlmHealth());
@@ -97,7 +97,7 @@ export function GuidedSetupView(): React.ReactElement {
       <main className="max-w-7xl mx-auto p-4 lg:p-6 h-[calc(100%-5.5rem)]">
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_22rem] gap-4 h-full">
           <section className="h-full min-h-0 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] overflow-hidden">
-            <ChatPanel onSend={handleSend} isLoading={isAnalyzing} />
+            <ChatPanel onSend={handleSend} isLoading={isAnalyzing} readyToCreate={readyToCreate} progress={progress} categoryProgress={categoryProgress} />
           </section>
           <aside className="hidden xl:block h-full min-h-0 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] overflow-hidden">
             <FieldPreview />
