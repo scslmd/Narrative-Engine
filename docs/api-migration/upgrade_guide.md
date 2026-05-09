@@ -1,5 +1,10 @@
 # API Migration Upgrade Guide
 
+Current state (2026-05-09):
+- Canonical API contract is `/v1/*`.
+- Frontend production services, hooks, and tests are synchronized to canonical `/v1` routes.
+- Unversioned endpoints should be treated as exceptions only where explicitly documented below.
+
 ## Canonical API Surface
 
 Use `/v1/*` for all versioned endpoints.

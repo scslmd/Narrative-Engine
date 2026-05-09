@@ -31,7 +31,7 @@ describe('useJobStatus', () => {
 
   it('returns loading state initially', () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-100',
@@ -48,7 +48,7 @@ describe('useJobStatus', () => {
 
   it('fetches and returns job status on mount', async () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-200',
@@ -77,7 +77,7 @@ describe('useJobStatus', () => {
 
   it('returns completed status', async () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j2',
           phase: 'P-300',
@@ -99,7 +99,7 @@ describe('useJobStatus', () => {
 
   it('returns failed status with error', async () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j3',
           phase: 'P-400',
@@ -120,7 +120,7 @@ describe('useJobStatus', () => {
 
   it('returns null progress when progress fields are missing', async () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j4',
           phase: 'P-100',

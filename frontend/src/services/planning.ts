@@ -40,7 +40,7 @@ interface PlanningListResponse<T> {
  * Get all sequence plans for a project
  */
 export async function getSequencePlans(projectId: string): Promise<SequencePlan[]> {
-  const response = await api.get('/story-development/planning/sequence-plans', {
+  const response = await api.get('/v1/story-development/planning/sequence-plans', {
     params: { project_id: projectId },
   });
 
@@ -56,7 +56,7 @@ export async function getSequencePlans(projectId: string): Promise<SequencePlan[
  * Get all chapter plans for a project
  */
 export async function getChapterPlans(projectId: string): Promise<ChapterPlan[]> {
-  const response = await api.get('/story-development/planning/chapter-plans', {
+  const response = await api.get('/v1/story-development/planning/chapter-plans', {
     params: { project_id: projectId },
   });
 
@@ -72,7 +72,7 @@ export async function getChapterPlans(projectId: string): Promise<ChapterPlan[]>
  * Get all scene plans for a project
  */
 export async function getScenePlans(projectId: string): Promise<ScenePlan[]> {
-  const response = await api.get('/story-development/planning/scene-plans', {
+  const response = await api.get('/v1/story-development/planning/scene-plans', {
     params: { project_id: projectId },
   });
 
@@ -88,7 +88,7 @@ export async function getScenePlans(projectId: string): Promise<ScenePlan[]> {
  * Get all planning dependencies for a project
  */
 export async function getPlanningDependencies(projectId: string): Promise<PlanningDependency[]> {
-  const response = await api.get('/story-development/planning/dependencies', {
+  const response = await api.get('/v1/story-development/planning/dependencies', {
     params: { project_id: projectId },
   });
 
@@ -104,7 +104,7 @@ export async function getPlanningDependencies(projectId: string): Promise<Planni
  * Get all chapter packets for a project
  */
 export async function getChapterPackets(projectId: string): Promise<ChapterPacket[]> {
-  const response = await api.get('/story-development/planning/chapter-packets', {
+  const response = await api.get('/v1/story-development/planning/chapter-packets', {
     params: { project_id: projectId },
   });
 
@@ -124,7 +124,7 @@ export async function getSequencePlan(
   projectId: string,
 ): Promise<SequencePlan> {
   const response = await api.get(
-    `/story-development/planning/sequence-plans/${sequenceId}`,
+    `/v1/story-development/planning/sequence-plans/${sequenceId}`,
     { params: { project_id: projectId } },
   );
 
@@ -143,7 +143,7 @@ export async function getChapterPlan(
   projectId: string,
 ): Promise<ChapterPlan> {
   const response = await api.get(
-    `/story-development/planning/chapter-plans/${chapterId}`,
+    `/v1/story-development/planning/chapter-plans/${chapterId}`,
     { params: { project_id: projectId } },
   );
 
@@ -162,7 +162,7 @@ export async function getScenePlan(
   projectId: string,
 ): Promise<ScenePlan> {
   const response = await api.get(
-    `/story-development/planning/scene-plans/${sceneId}`,
+    `/v1/story-development/planning/scene-plans/${sceneId}`,
     { params: { project_id: projectId } },
   );
 
@@ -181,7 +181,7 @@ export async function getBeatPlan(
   projectId: string,
 ): Promise<BeatPlan> {
   const response = await api.get(
-    `/story-development/planning/beat-plans/${beatId}`,
+    `/v1/story-development/planning/beat-plans/${beatId}`,
     { params: { project_id: projectId } },
   );
 
@@ -200,7 +200,7 @@ export async function getChapterPacket(
   projectId: string,
 ): Promise<ChapterPacket> {
   const response = await api.get(
-    `/story-development/planning/chapter-packets/${packetId}`,
+    `/v1/story-development/planning/chapter-packets/${packetId}`,
     { params: { project_id: projectId } },
   );
 
@@ -222,7 +222,7 @@ export async function createSequencePlan(
   projectId: string,
   data: SequencePlanCreateRequest,
 ): Promise<SequencePlan> {
-  const response = await api.post('/story-development/planning/sequence-plans', data, {
+  const response = await api.post('/v1/story-development/planning/sequence-plans', data, {
     params: { project_id: projectId },
   });
 
@@ -242,7 +242,7 @@ export async function updateSequencePlan(
   data: SequencePlanUpdateRequest,
 ): Promise<SequencePlan> {
   const response = await api.patch(
-    `/story-development/planning/sequence-plans/${sequenceId}`,
+    `/v1/story-development/planning/sequence-plans/${sequenceId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -265,7 +265,7 @@ export async function createChapterPlan(
   projectId: string,
   data: ChapterPlanCreateRequest,
 ): Promise<ChapterPlan> {
-  const response = await api.post('/story-development/planning/chapter-plans', data, {
+  const response = await api.post('/v1/story-development/planning/chapter-plans', data, {
     params: { project_id: projectId },
   });
 
@@ -285,7 +285,7 @@ export async function updateChapterPlan(
   data: ChapterPlanUpdateRequest,
 ): Promise<ChapterPlan> {
   const response = await api.patch(
-    `/story-development/planning/chapter-plans/${chapterId}`,
+    `/v1/story-development/planning/chapter-plans/${chapterId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -308,7 +308,7 @@ export async function createScenePlan(
   projectId: string,
   data: ScenePlanCreateRequest,
 ): Promise<ScenePlan> {
-  const response = await api.post('/story-development/planning/scene-plans', data, {
+  const response = await api.post('/v1/story-development/planning/scene-plans', data, {
     params: { project_id: projectId },
   });
 
@@ -328,7 +328,7 @@ export async function updateScenePlan(
   data: ScenePlanUpdateRequest,
 ): Promise<ScenePlan> {
   const response = await api.patch(
-    `/story-development/planning/scene-plans/${sceneId}`,
+    `/v1/story-development/planning/scene-plans/${sceneId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -348,7 +348,7 @@ export async function updateScenePlan(
  * Get all beat plans for a project
  */
 export async function getBeatPlans(projectId: string): Promise<BeatPlan[]> {
-  const response = await api.get('/story-development/planning/beat-plans', {
+  const response = await api.get('/v1/story-development/planning/beat-plans', {
     params: { project_id: projectId },
   });
 
@@ -367,7 +367,7 @@ export async function createBeatPlan(
   projectId: string,
   data: BeatPlanCreateRequest,
 ): Promise<BeatPlan> {
-  const response = await api.post('/story-development/planning/beat-plans', data, {
+  const response = await api.post('/v1/story-development/planning/beat-plans', data, {
     params: { project_id: projectId },
   });
 
@@ -387,7 +387,7 @@ export async function updateBeatPlan(
   data: BeatPlanUpdateRequest,
 ): Promise<BeatPlan> {
   const response = await api.patch(
-    `/story-development/planning/beat-plans/${beatId}`,
+    `/v1/story-development/planning/beat-plans/${beatId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -410,7 +410,7 @@ export async function createChapterPacket(
   projectId: string,
   data: ChapterPacketCreateRequest,
 ): Promise<ChapterPacket> {
-  const response = await api.post('/story-development/planning/chapter-packets', data, {
+  const response = await api.post('/v1/story-development/planning/chapter-packets', data, {
     params: { project_id: projectId },
   });
 
@@ -431,9 +431,10 @@ export async function createChapterPacket(
 export async function reorderPlanObjects(
   data: PlanningReorderRequest,
 ): Promise<void> {
-  const response = await api.post('/story-development/planning/reorder', data);
+  const response = await api.post('/v1/story-development/planning/reorder', data);
 
   if (response.status !== 200) {
     throw new Error(`Failed to reorder ${data.plan_kind} plans: ${response.status}`);
   }
 }
+

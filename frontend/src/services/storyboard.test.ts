@@ -21,7 +21,7 @@ describe('storyboard service', () => {
   describe('getStoryboardCards', () => {
     it('returns list of storyboard cards for a project', async () => {
       server.use(
-        http.get('/storyboard/cards', ({ request }) => {
+        http.get('/v1/story-development/storyboard/cards', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -40,7 +40,7 @@ describe('storyboard service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/storyboard/cards', () => {
+        http.get('/v1/story-development/storyboard/cards', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -52,7 +52,7 @@ describe('storyboard service', () => {
   describe('createStoryboardCard', () => {
     it('creates a storyboard card (201)', async () => {
       server.use(
-        http.post('/storyboard/cards', () => {
+        http.post('/v1/story-development/storyboard/cards', () => {
           return HttpResponse.json({ ...mockCard, title: 'New Card' }, { status: 201 });
         }),
       );
@@ -69,7 +69,7 @@ describe('storyboard service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/storyboard/cards', () => {
+        http.post('/v1/story-development/storyboard/cards', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -86,7 +86,7 @@ describe('storyboard service', () => {
   describe('updateStoryboardCard', () => {
     it('updates a storyboard card via PATCH', async () => {
       server.use(
-        http.patch('/storyboard/cards/:cardId', async ({ params, request }) => {
+        http.patch('/v1/story-development/storyboard/cards/:cardId', async ({ params, request }) => {
           expect(params.cardId).toBe('card-1');
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
@@ -104,7 +104,7 @@ describe('storyboard service', () => {
 
     it('updates card content and type', async () => {
       server.use(
-        http.patch('/storyboard/cards/:cardId', async ({ request }) => {
+        http.patch('/v1/story-development/storyboard/cards/:cardId', async ({ request }) => {
           const body = (await request.json()) as Record<string, unknown>;
           return HttpResponse.json({
             ...mockCard,
@@ -125,7 +125,7 @@ describe('storyboard service', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.patch('/storyboard/cards/:cardId', () => {
+        http.patch('/v1/story-development/storyboard/cards/:cardId', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -137,7 +137,7 @@ describe('storyboard service', () => {
   describe('deleteStoryboardCard', () => {
     it('deletes a storyboard card via DELETE (204)', async () => {
       server.use(
-        http.delete('/storyboard/cards/:cardId', ({ params, request }) => {
+        http.delete('/v1/story-development/storyboard/cards/:cardId', ({ params, request }) => {
           expect(params.cardId).toBe('card-1');
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
@@ -150,7 +150,7 @@ describe('storyboard service', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.delete('/storyboard/cards/:cardId', () => {
+        http.delete('/v1/story-development/storyboard/cards/:cardId', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -168,7 +168,7 @@ describe('storyboard service', () => {
       ];
 
       server.use(
-        http.put('/storyboard/cards/:columnId/reindex', async ({ params, request }) => {
+        http.put('/v1/story-development/storyboard/cards/:columnId/reindex', async ({ params, request }) => {
           expect(params.columnId).toBe('col-1');
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
@@ -193,7 +193,7 @@ describe('storyboard service', () => {
 
     it('handles empty card list', async () => {
       server.use(
-        http.put('/storyboard/cards/:columnId/reindex', async ({ request }) => {
+        http.put('/v1/story-development/storyboard/cards/:columnId/reindex', async ({ request }) => {
           const body = (await request.json()) as Record<string, unknown>;
           expect(body.card_ids).toEqual([]);
           return HttpResponse.json({
@@ -210,7 +210,7 @@ describe('storyboard service', () => {
 
     it('throws on 400 validation error', async () => {
       server.use(
-        http.put('/storyboard/cards/:columnId/reindex', () => {
+        http.put('/v1/story-development/storyboard/cards/:columnId/reindex', () => {
           return HttpResponse.json({ detail: 'Invalid card IDs' }, { status: 400 });
         }),
       );

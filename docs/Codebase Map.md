@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-08
+> Living document. Last updated: 2026-05-09
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -98,7 +98,8 @@ narrative-engine/
 │   │   │   ├── ui/               # Base UI primitives (Toast, etc.)
 │   │   │   ├── workspace/        # Workspace shell & navigation
 │   │   │   └── writing/          # Writing view components
-│   │   ├── hooks/                # Custom React hooks (30 files)
+│   │   ├── hooks/                # Custom React hooks (37 files)
+│   │   ├── domains/              # Domain controllers + shared query keys/invalidation
 │   │   │   ├── useApiMutation.ts # Generic mutation hook with error handling
 │   │   │   ├── useApiQuery.ts    # Generic query hook with caching
 │   │   │   ├── useRouteSync.ts   # Route-to-store sync (59 lines)
@@ -125,7 +126,7 @@ narrative-engine/
 │   │       ├── WritingView.tsx   # Writing workspace
 │   │       └── ... (9 more views)
 │   └── ... (config files: vite, tsconfig, tailwind, etc.)
-├── tests/                        # Pytest suite (126 test files)
+├── tests/                        # Pytest suite (129 test files)
 │   ├── conftest.py               # Shared fixtures + API key injection
 │   ├── fixtures/                 # Test data fixtures
 │   └── test_*.py                 # All test modules
@@ -323,7 +324,7 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
 - Backend field names preserved in snake_case at service/type boundary
 - Shared Axios client with `ApiError` interceptor (handles 400/401/403/404/409/5xx)
 - One service file per API domain, one type file per domain
-- 29 service files, 29 test files, 34 type files
+- 30 service files, 30 test files, 34 type files
 - Frontend service exports are fully wired to hooks/views/components (validated 2026-05-08)
 
 ### Frontend Service Data Transformation (`checker.ts`)
@@ -642,10 +643,10 @@ M-550: Manuscript Repair (if gates fail)
 
 | Prefix | Router | Purpose | Endpoints |
 |--------|--------|---------|-----------|
-| `/auth` | `auth.py` | API key management | POST /keys, GET /keys, DELETE /keys/{prefix} |
-| `/backup` | `backup.py` | Backup operations | POST /create, POST /restore/{id}, GET /list, GET /latest, DELETE /{id} |
+| `/v1/auth` | `auth.py` | API key management | POST /keys, GET /keys, DELETE /keys/{prefix} |
+| `/v1/backup` | `backup.py` | Backup operations | POST /create, POST /restore/{id}, GET /list, GET /latest, DELETE /{id} |
 | `/health` | `health.py` | Health & metrics | GET /, GET /ready, GET /metrics |
-| `/projects` | `projects.py` | Project CRUD + imports | GET /, POST /create, GET /{id}, DELETE /{id}, POST /import-story, POST /import-patterns, POST /{id}/extract-patterns |
+| `/v1/projects` | `projects.py` | Project CRUD + imports | GET /, POST /create, GET /{id}, DELETE /{id}, POST /import-story, POST /import-patterns, POST /{id}/extract-patterns |
 | `/v1/jobs` | `jobs.py` | Job lifecycle | POST /create (202), GET /{id}/status, GET /{id}/logs, GET /{id}/steps, GET /{id}/lineage, GET /{id}/attempts, POST /{id}/retry |
 | `/v1/models` | `models.py` | Model catalog | GET / |
 | `/v1/story-development` | `story_development.py` | Full story development | branches, flow, decisions, review, planning, drafting, brainstorm, braindump, foundation, characters, world-bible, arcs, storyboard, relationships |
@@ -680,7 +681,7 @@ M-550: Manuscript Repair (if gates fail)
 tests/
 ├── conftest.py                  # Shared fixtures, API key injection, pytest isolation
 ├── fixtures/                    # Test data fixtures
-└── test_*.py                    # 126 test files, ~1,499 tests total
+└── test_*.py                    # 129 test files, ~1,519 tests total
 ```
 
 ### Execution Strategy
@@ -706,7 +707,7 @@ pytest -n 0 \
   tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
 ```
 
-**Total baseline: ~1,499 tests, ~65s**
+**Total baseline: ~1,519 tests, ~59s**
 
 ### Test Categories
 
@@ -761,7 +762,7 @@ pytest -n 0 \
 
 | File | Lines |
 |------|-------|
-| `hooks/usePlanningTab.ts` | 1,051 |
+| `domains/planning/usePlanningController.ts` | 474 |
 | `components/projects/StoryImportModal.tsx` | 621 |
 | `views/PlanningView.tsx` | 575 |
 | `components/characters/CharacterBuilder.tsx` | 537 |
@@ -788,12 +789,12 @@ pytest -n 0 \
 | Frontend lines of code | ~34,315 |
 | Total lines of code | ~77,870 |
 | Test files | 126 |
-| Total tests | ~1,499 |
+| Total tests | ~1,519 |
 | API route groups | 12 |
 | Service modules | 57 |
 | Schema files | 21 |
 | Zustand stores | 9 |
-| React Query hooks | 28 |
+| React Query hooks | 37 |
 | Database tables (operations) | 60+ |
 | Database schema version | 22 |
 

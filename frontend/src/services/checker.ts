@@ -39,7 +39,7 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
 }
 
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {
-  const response = await api.post('/role-model-checker/run', request);
+  const response = await api.post('/v1/role-model-checker/run', request);
 
   if (response.status !== 202 && response.status !== 200) {
     throw new Error(`Failed to run checker: ${response.status}`);
@@ -49,7 +49,7 @@ export async function runChecker(request: RoleModelCheckRequest): Promise<RoleMo
 }
 
 export async function getCheckerStatus(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await api.get(`/role-model-checker/${runId}/status`);
+  const response = await api.get(`/v1/role-model-checker/${runId}/status`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker status: ${response.status}`);
@@ -59,7 +59,7 @@ export async function getCheckerStatus(runId: string): Promise<RoleModelCheckSta
 }
 
 export async function retryChecker(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await api.post(`/role-model-checker/${runId}/retry`);
+  const response = await api.post(`/v1/role-model-checker/${runId}/retry`);
 
   if (response.status !== 202) {
     throw new Error(`Failed to retry checker: ${response.status}`);
@@ -69,7 +69,7 @@ export async function retryChecker(runId: string): Promise<RoleModelCheckStatus>
 }
 
 export async function getCheckerAttempts(runId: string): Promise<{ run_id: string; items: AttemptHistoryItem[]; meta: Record<string, string> }> {
-  const response = await api.get(`/role-model-checker/${runId}/attempts`);
+  const response = await api.get(`/v1/role-model-checker/${runId}/attempts`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker attempts: ${response.status}`);
@@ -84,7 +84,7 @@ export async function getCheckerSteps(runId: string, attemptNumber?: number): Pr
     params.attempt = attemptNumber.toString();
   }
 
-  const response = await api.get(`/role-model-checker/${runId}/steps`, { params });
+  const response = await api.get(`/v1/role-model-checker/${runId}/steps`, { params });
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker steps: ${response.status}`);
   }
@@ -98,7 +98,7 @@ export async function getCheckerLineage(runId: string, attemptNumber?: number): 
     params.attempt = attemptNumber.toString();
   }
 
-  const response = await api.get(`/role-model-checker/${runId}/lineage`, { params });
+  const response = await api.get(`/v1/role-model-checker/${runId}/lineage`, { params });
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker lineage: ${response.status}`);
   }
@@ -125,3 +125,4 @@ export interface AttemptHistoryItem {
   error_code: string | null;
   error_category: string | null;
 }
+

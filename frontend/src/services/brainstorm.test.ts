@@ -22,7 +22,7 @@ describe('brainstorm service', () => {
   describe('getBrainstormItems', () => {
     it('returns list of brainstorm items for a project', async () => {
       server.use(
-        http.get('/story-development/brainstorm/items', ({ request }) => {
+        http.get('/v1/story-development/brainstorm/items', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -41,7 +41,7 @@ describe('brainstorm service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/brainstorm/items', () =>
+        http.get('/v1/story-development/brainstorm/items', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -53,7 +53,7 @@ describe('brainstorm service', () => {
   describe('createBrainstormItem', () => {
     it('creates a brainstorm item (201)', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items', () => {
+        http.post('/v1/story-development/brainstorm/items', () => {
           return HttpResponse.json({ ...mockItem, content: 'New idea' }, { status: 201 });
         }),
       );
@@ -68,7 +68,7 @@ describe('brainstorm service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items', () =>
+        http.post('/v1/story-development/brainstorm/items', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -80,7 +80,7 @@ describe('brainstorm service', () => {
   describe('clusterBrainstormItems', () => {
     it('clusters brainstorm items (200)', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items/cluster', () => {
+        http.post('/v1/story-development/brainstorm/items/cluster', () => {
           return HttpResponse.json([
             { ...mockItem, item_id: 'item-1' },
             { ...mockItem, item_id: 'item-2' },
@@ -98,7 +98,7 @@ describe('brainstorm service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items/cluster', () =>
+        http.post('/v1/story-development/brainstorm/items/cluster', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -110,7 +110,7 @@ describe('brainstorm service', () => {
   describe('promoteBrainstormItem', () => {
     it('promotes a brainstorm item to a target type (201)', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items/promote', async ({ request }) => {
+        http.post('/v1/story-development/brainstorm/items/promote', async ({ request }) => {
           const body = (await request.json()) as Record<string, string>;
           expect(body.item_id).toBe('item-1');
           expect(body.project_id).toBe('proj-1');
@@ -130,7 +130,7 @@ describe('brainstorm service', () => {
 
     it('throws on 409 conflict (already promoted)', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items/promote', () =>
+        http.post('/v1/story-development/brainstorm/items/promote', () =>
           HttpResponse.json({ detail: 'Already promoted' }, { status: 409 }),
         ),
       );
@@ -140,7 +140,7 @@ describe('brainstorm service', () => {
 
     it('throws on 400 invalid target type', async () => {
       server.use(
-        http.post('/story-development/brainstorm/items/promote', () =>
+        http.post('/v1/story-development/brainstorm/items/promote', () =>
           HttpResponse.json({ detail: 'Invalid target type' }, { status: 400 }),
         ),
       );
@@ -149,3 +149,4 @@ describe('brainstorm service', () => {
     });
   });
 });
+

@@ -7,9 +7,9 @@
  * - Update foundation profile
  * 
  * Backend endpoints:
- * - GET /story-development/foundation
- * - POST /story-development/foundation
- * - PATCH /story-development/foundation
+ * - GET /v1/story-development/foundation
+ * - POST /v1/story-development/foundation
+ * - PATCH /v1/story-development/foundation
  */
 
 import type {
@@ -26,7 +26,7 @@ import api from '../lib/api';
  * Get the foundation profile for a project
  */
 export async function getFoundation(projectId: string): Promise<FoundationReadResponse> {
-  const response = await api.get('/story-development/foundation', {
+  const response = await api.get('/v1/story-development/foundation', {
     params: { project_id: projectId },
   });
 
@@ -43,7 +43,7 @@ export async function getFoundation(projectId: string): Promise<FoundationReadRe
 export async function createFoundation(
   request: FoundationCreateRequest,
 ): Promise<FoundationWriteResponse> {
-  const response = await api.post('/story-development/foundation', request);
+  const response = await api.post('/v1/story-development/foundation', request);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create foundation: ${response.status}`);
@@ -59,7 +59,7 @@ export async function updateFoundation(
   projectId: string,
   updates: FoundationUpdateRequest,
 ): Promise<FoundationWriteResponse> {
-  const response = await api.patch('/story-development/foundation', updates, {
+  const response = await api.patch('/v1/story-development/foundation', updates, {
     params: { project_id: projectId },
   });
 
@@ -74,7 +74,7 @@ export async function updateFoundation(
  * Get review cues for a project's foundation
  */
 export async function getReviewCues(projectId: string): Promise<FoundationReviewCue[]> {
-  const response = await api.get('/story-development/foundation/review-cues', {
+  const response = await api.get('/v1/story-development/foundation/review-cues', {
     params: { project_id: projectId },
   });
 
@@ -90,7 +90,7 @@ export async function getReviewCues(projectId: string): Promise<FoundationReview
  * Get foundation revisions for a project
  */
 export async function getFoundationRevisions(projectId: string): Promise<FoundationRevision[]> {
-  const response = await api.get('/story-development/foundation/revisions', {
+  const response = await api.get('/v1/story-development/foundation/revisions', {
     params: { project_id: projectId },
   });
 
@@ -101,3 +101,4 @@ export async function getFoundationRevisions(projectId: string): Promise<Foundat
   const data = response.data;
   return data.items;
 }
+

@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { getModelCatalog, runChecker, getCheckerStatus, retryChecker, getCheckerAttempts } from './checker';
@@ -52,7 +52,7 @@ describe('checker service', () => {
   describe('runChecker', () => {
     it('runs a checker and returns 202 response', async () => {
       server.use(
-        http.post('/role-model-checker/run', async ({ request }) => {
+        http.post('/v1/role-model-checker/run', async ({ request }) => {
           const body = (await request.json()) as { project_id?: string };
           return HttpResponse.json(
             { ...mockStatus, run_id: `run-${body.project_id}` },
@@ -69,7 +69,7 @@ describe('checker service', () => {
 
     it('runs a checker and accepts 200 response', async () => {
       server.use(
-        http.post('/role-model-checker/run', () => {
+        http.post('/v1/role-model-checker/run', () => {
           return HttpResponse.json(mockStatus, { status: 200 });
         }),
       );
@@ -81,7 +81,7 @@ describe('checker service', () => {
 
     it('throws on 400 invalid request', async () => {
       server.use(
-        http.post('/role-model-checker/run', () => {
+        http.post('/v1/role-model-checker/run', () => {
           return HttpResponse.json({ detail: 'Invalid project' }, { status: 400 });
         }),
       );
@@ -91,7 +91,7 @@ describe('checker service', () => {
 
     it('throws on 500 server error', async () => {
       server.use(
-        http.post('/role-model-checker/run', () => {
+        http.post('/v1/role-model-checker/run', () => {
           return HttpResponse.json({ detail: 'Internal error' }, { status: 500 });
         }),
       );
@@ -103,7 +103,7 @@ describe('checker service', () => {
   describe('getCheckerStatus', () => {
     it('returns checker status by run ID', async () => {
       server.use(
-        http.get('/role-model-checker/run-123/status', () => {
+        http.get('/v1/role-model-checker/run-123/status', () => {
           return HttpResponse.json(mockStatus);
         }),
       );
@@ -117,7 +117,7 @@ describe('checker service', () => {
 
     it('returns RUNNING status with progress', async () => {
       server.use(
-        http.get('/role-model-checker/run-running/status', () => {
+        http.get('/v1/role-model-checker/run-running/status', () => {
           return HttpResponse.json({
             run_id: 'run-running',
             status: 'RUNNING' as const,
@@ -137,7 +137,7 @@ describe('checker service', () => {
 
     it('returns FAILED status with error', async () => {
       server.use(
-        http.get('/role-model-checker/run-failed/status', () => {
+        http.get('/v1/role-model-checker/run-failed/status', () => {
           return HttpResponse.json({
             run_id: 'run-failed',
             status: 'FAILED' as const,
@@ -155,7 +155,7 @@ describe('checker service', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/role-model-checker/run-missing/status', () => {
+        http.get('/v1/role-model-checker/run-missing/status', () => {
           return HttpResponse.json({ detail: 'Run not found' }, { status: 404 });
         }),
       );
@@ -167,7 +167,7 @@ describe('checker service', () => {
   describe('retryChecker', () => {
     it('retries a failed checker run', async () => {
       server.use(
-        http.post('/role-model-checker/run-123/retry', () => {
+        http.post('/v1/role-model-checker/run-123/retry', () => {
           return HttpResponse.json(
             { ...mockStatus, status: 'QUEUED', attempt_number: 2 },
             { status: 202 },
@@ -183,7 +183,7 @@ describe('checker service', () => {
 
     it('throws on non-202 response', async () => {
       server.use(
-        http.post('/role-model-checker/run-404/retry', () => {
+        http.post('/v1/role-model-checker/run-404/retry', () => {
           return HttpResponse.json({ detail: 'Run not found' }, { status: 404 });
         }),
       );
@@ -193,7 +193,7 @@ describe('checker service', () => {
 
     it('throws on 500 server error', async () => {
       server.use(
-        http.post('/role-model-checker/run-123/retry', () => {
+        http.post('/v1/role-model-checker/run-123/retry', () => {
           return HttpResponse.json({ detail: 'Internal error' }, { status: 500 });
         }),
       );
@@ -231,7 +231,7 @@ describe('checker service', () => {
       };
 
       server.use(
-        http.get('/role-model-checker/run-123/attempts', () => {
+        http.get('/v1/role-model-checker/run-123/attempts', () => {
           return HttpResponse.json(mockAttempts);
         }),
       );
@@ -291,7 +291,7 @@ describe('checker service', () => {
       };
 
       server.use(
-        http.get('/role-model-checker/run-retries/attempts', () => {
+        http.get('/v1/role-model-checker/run-retries/attempts', () => {
           return HttpResponse.json(mockAttempts);
         }),
       );
@@ -306,7 +306,7 @@ describe('checker service', () => {
 
     it('returns empty attempt list', async () => {
       server.use(
-        http.get('/role-model-checker/run-empty/attempts', () => {
+        http.get('/v1/role-model-checker/run-empty/attempts', () => {
           return HttpResponse.json({ run_id: 'run-empty', items: [], meta: {} });
         }),
       );
@@ -318,7 +318,7 @@ describe('checker service', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/role-model-checker/run-missing/attempts', () => {
+        http.get('/v1/role-model-checker/run-missing/attempts', () => {
           return HttpResponse.json({ detail: 'Run not found' }, { status: 404 });
         }),
       );
@@ -327,4 +327,5 @@ describe('checker service', () => {
     });
   });
 });
+
 

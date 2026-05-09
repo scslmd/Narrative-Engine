@@ -38,7 +38,7 @@ describe('characters service', () => {
   describe('getCharacters', () => {
     it('returns list of characters for a project', async () => {
       server.use(
-        http.get('/story-development/characters', ({ request }) => {
+        http.get('/v1/story-development/characters', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -57,7 +57,7 @@ describe('characters service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/characters', () => {
+        http.get('/v1/story-development/characters', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -69,7 +69,7 @@ describe('characters service', () => {
   describe('createCharacter', () => {
     it('creates a character profile (201)', async () => {
       server.use(
-        http.post('/story-development/characters', () => {
+        http.post('/v1/story-development/characters', () => {
           return HttpResponse.json({ ...mockCharacter, display_name: 'New Character' }, { status: 201 });
         }),
       );
@@ -96,7 +96,7 @@ describe('characters service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/characters', () => {
+        http.post('/v1/story-development/characters', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -123,7 +123,7 @@ describe('characters service', () => {
   describe('updateCharacter', () => {
     it('updates a character profile (200)', async () => {
       server.use(
-        http.patch('/story-development/characters/char-1', () => {
+        http.patch('/v1/story-development/characters/char-1', () => {
           return HttpResponse.json({ ...mockCharacter, display_name: 'Updated Name' });
         }),
       );
@@ -135,7 +135,7 @@ describe('characters service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/characters/char-missing', () => {
+        http.patch('/v1/story-development/characters/char-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -147,7 +147,7 @@ describe('characters service', () => {
   describe('getCharacter', () => {
     it('returns a single character profile by id', async () => {
       server.use(
-        http.get('/story-development/characters/char-1', ({ request }) => {
+        http.get('/v1/story-development/characters/char-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json(mockCharacter);
@@ -162,7 +162,7 @@ describe('characters service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/characters/char-missing', () => {
+        http.get('/v1/story-development/characters/char-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -195,7 +195,7 @@ describe('characters service', () => {
       ];
 
       server.use(
-        http.get('/story-development/characters/char-1/relationships', ({ request }) => {
+        http.get('/v1/story-development/characters/char-1/relationships', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -217,7 +217,7 @@ describe('characters service', () => {
 
     it('returns empty array when character has no relationships', async () => {
       server.use(
-        http.get('/story-development/characters/char-solo/relationships', ({ request }) => {
+        http.get('/v1/story-development/characters/char-solo/relationships', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -235,7 +235,7 @@ describe('characters service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/characters/char-missing/relationships', () => {
+        http.get('/v1/story-development/characters/char-missing/relationships', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -244,3 +244,4 @@ describe('characters service', () => {
     });
   });
 });
+

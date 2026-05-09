@@ -7,8 +7,8 @@ import { useJobLineage } from './useJobLineage';
 describe('useJobLineage', () => {
   beforeEach(() => {
     server.use(
-      http.get('/jobs/:id/lineage', () => HttpResponse.json({ items: [] })),
-      http.get('/role-model-checker/:id/lineage', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/jobs/:id/lineage', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/role-model-checker/:id/lineage', () => HttpResponse.json({ items: [] })),
     );
   });
 
@@ -23,7 +23,7 @@ describe('useJobLineage', () => {
 
   it('fetches lineage for pipeline job on mount', async () => {
     server.use(
-      http.get('/jobs/:id/lineage', () => {
+      http.get('/v1/jobs/:id/lineage', () => {
         return HttpResponse.json({
           items: [
             {
@@ -53,7 +53,7 @@ describe('useJobLineage', () => {
 
   it('fetches lineage for role model check on mount', async () => {
     server.use(
-      http.get('/role-model-checker/:id/lineage', () => {
+      http.get('/v1/role-model-checker/:id/lineage', () => {
         return HttpResponse.json({
           items: [
             {
@@ -83,7 +83,7 @@ describe('useJobLineage', () => {
   it('includes attempt number as query param when provided', async () => {
     let receivedAttempt: string | null | undefined;
     server.use(
-      http.get('/jobs/:id/lineage', ({ request }) => {
+      http.get('/v1/jobs/:id/lineage', ({ request }) => {
         const url = new URL(request.url);
         receivedAttempt = url.searchParams.get('attempt');
         return HttpResponse.json({ items: [] });
@@ -103,7 +103,7 @@ describe('useJobLineage', () => {
 
   it('handles empty lineage response', async () => {
     server.use(
-      http.get('/jobs/:id/lineage', () => {
+      http.get('/v1/jobs/:id/lineage', () => {
         return HttpResponse.json({ items: [] });
       }),
     );
@@ -121,7 +121,7 @@ describe('useJobLineage', () => {
 
   it('handles fetch error gracefully', async () => {
     server.use(
-      http.get('/jobs/:id/lineage', () => {
+      http.get('/v1/jobs/:id/lineage', () => {
         return HttpResponse.json({ detail: 'not found' }, { status: 404 });
       }),
     );
@@ -141,7 +141,7 @@ describe('useJobLineage', () => {
   it('exposes refetch function', async () => {
     let callCount = 0;
     server.use(
-      http.get('/jobs/:id/lineage', () => {
+      http.get('/v1/jobs/:id/lineage', () => {
         callCount++;
         return HttpResponse.json({
           items: [

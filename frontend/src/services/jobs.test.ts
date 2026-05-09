@@ -16,7 +16,7 @@ describe('jobs', () => {
   describe('createJob', () => {
     it('creates a job with phase and payload (202)', async () => {
       server.use(
-        http.post('/jobs/create', async ({ request }) => {
+        http.post('/v1/jobs/create', async ({ request }) => {
           const body = (await request.json()) as { phase?: string };
           return HttpResponse.json(
             { ...mockJobStatus, phase: body.phase },
@@ -33,7 +33,7 @@ describe('jobs', () => {
 
     it('creates a job and returns 200 response', async () => {
       server.use(
-        http.post('/jobs/create', () => {
+        http.post('/v1/jobs/create', () => {
           return HttpResponse.json(mockJobStatus, { status: 200 });
         }),
       );
@@ -45,7 +45,7 @@ describe('jobs', () => {
 
     it('throws on 201 (service only accepts 200 or 202)', async () => {
       server.use(
-        http.post('/jobs/create', () => {
+        http.post('/v1/jobs/create', () => {
           return HttpResponse.json(mockJobStatus, { status: 201 });
         }),
       );
@@ -57,7 +57,7 @@ describe('jobs', () => {
 
     it('throws on 400 invalid request', async () => {
       server.use(
-        http.post('/jobs/create', () => {
+        http.post('/v1/jobs/create', () => {
           return HttpResponse.json({ detail: 'Invalid phase' }, { status: 400 });
         }),
       );
@@ -69,7 +69,7 @@ describe('jobs', () => {
 
     it('throws on 409 idempotency conflict', async () => {
       server.use(
-        http.post('/jobs/create', () => {
+        http.post('/v1/jobs/create', () => {
           return HttpResponse.json({ detail: 'Conflict' }, { status: 409 });
         }),
       );
@@ -81,7 +81,7 @@ describe('jobs', () => {
 
     it('throws on 500 server error', async () => {
       server.use(
-        http.post('/jobs/create', () => {
+        http.post('/v1/jobs/create', () => {
           return HttpResponse.json({ detail: 'Internal error' }, { status: 500 });
         }),
       );
@@ -95,7 +95,7 @@ describe('jobs', () => {
   describe('getStatus', () => {
     it('returns job status by ID', async () => {
       server.use(
-        http.get('/jobs/job-123/status', () => {
+        http.get('/v1/jobs/job-123/status', () => {
           return HttpResponse.json(mockJobStatus);
         }),
       );
@@ -108,7 +108,7 @@ describe('jobs', () => {
 
     it('returns PROCESSING status', async () => {
       server.use(
-        http.get('/jobs/job-running/status', () => {
+        http.get('/v1/jobs/job-running/status', () => {
           return HttpResponse.json({ ...mockJobStatus, id: 'job-running', status: 'PROCESSING' });
         }),
       );
@@ -120,7 +120,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/jobs/job-missing/status', () => {
+        http.get('/v1/jobs/job-missing/status', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );
@@ -140,7 +140,7 @@ describe('jobs', () => {
       };
 
       server.use(
-        http.get('/jobs/job-123/logs', () => {
+        http.get('/v1/jobs/job-123/logs', () => {
           return HttpResponse.json(mockLogs);
         }),
       );
@@ -154,7 +154,7 @@ describe('jobs', () => {
 
     it('returns empty log entries', async () => {
       server.use(
-        http.get('/jobs/job-empty/logs', () => {
+        http.get('/v1/jobs/job-empty/logs', () => {
           return HttpResponse.json({ id: 'job-empty', entries: [] });
         }),
       );
@@ -166,7 +166,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/jobs/job-missing/logs', () => {
+        http.get('/v1/jobs/job-missing/logs', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );
@@ -204,7 +204,7 @@ describe('jobs', () => {
       };
 
       server.use(
-        http.get('/jobs/job-123/attempts', () => {
+        http.get('/v1/jobs/job-123/attempts', () => {
           return HttpResponse.json(mockAttempts);
         }),
       );
@@ -264,7 +264,7 @@ describe('jobs', () => {
       };
 
       server.use(
-        http.get('/jobs/job-retries/attempts', () => {
+        http.get('/v1/jobs/job-retries/attempts', () => {
           return HttpResponse.json(mockAttempts);
         }),
       );
@@ -279,7 +279,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/jobs/job-missing/attempts', () => {
+        http.get('/v1/jobs/job-missing/attempts', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );
@@ -316,7 +316,7 @@ describe('jobs', () => {
       ];
 
       server.use(
-        http.get('/jobs/job-123/steps', () => {
+        http.get('/v1/jobs/job-123/steps', () => {
           return HttpResponse.json({ items: mockSteps });
         }),
       );
@@ -331,7 +331,7 @@ describe('jobs', () => {
 
     it('returns empty steps array', async () => {
       server.use(
-        http.get('/jobs/job-empty/steps', () => {
+        http.get('/v1/jobs/job-empty/steps', () => {
           return HttpResponse.json({ items: [] });
         }),
       );
@@ -343,7 +343,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/jobs/job-missing/steps', () => {
+        http.get('/v1/jobs/job-missing/steps', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );
@@ -374,7 +374,7 @@ describe('jobs', () => {
       ];
 
       server.use(
-        http.get('/jobs/job-123/lineage', () => {
+        http.get('/v1/jobs/job-123/lineage', () => {
           return HttpResponse.json({ items: mockArtifacts });
         }),
       );
@@ -389,7 +389,7 @@ describe('jobs', () => {
 
     it('returns empty lineage array', async () => {
       server.use(
-        http.get('/jobs/job-empty/lineage', () => {
+        http.get('/v1/jobs/job-empty/lineage', () => {
           return HttpResponse.json({ items: [] });
         }),
       );
@@ -401,7 +401,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.get('/jobs/job-missing/lineage', () => {
+        http.get('/v1/jobs/job-missing/lineage', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );
@@ -413,7 +413,7 @@ describe('jobs', () => {
   describe('retryJob', () => {
     it('retries a failed job and returns new run info', async () => {
       server.use(
-        http.post('/jobs/job-failed/retry', () => {
+        http.post('/v1/jobs/job-failed/retry', () => {
           return HttpResponse.json({
             run_id: 'job-retry-1',
             status: 'PENDING',
@@ -429,7 +429,7 @@ describe('jobs', () => {
 
     it('throws on 404 not found', async () => {
       server.use(
-        http.post('/jobs/job-missing/retry', () => {
+        http.post('/v1/jobs/job-missing/retry', () => {
           return HttpResponse.json({ detail: 'Job not found' }, { status: 404 });
         }),
       );

@@ -15,7 +15,7 @@ describe('relationships service', () => {
   describe('getRelationships', () => {
     it('returns list of relationships for a project', async () => {
       server.use(
-        http.get('/story-development/relationships', ({ request }) => {
+        http.get('/v1/story-development/relationships', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -34,7 +34,7 @@ describe('relationships service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/relationships', () => {
+        http.get('/v1/story-development/relationships', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -46,7 +46,7 @@ describe('relationships service', () => {
   describe('deleteRelationship', () => {
     it('deletes a relationship edge (200)', async () => {
       server.use(
-        http.delete('/story-development/relationships/edge-1', () => {
+        http.delete('/v1/story-development/relationships/edge-1', () => {
           return HttpResponse.json(null);
         }),
       );
@@ -56,7 +56,7 @@ describe('relationships service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.delete('/story-development/relationships/edge-missing', () => {
+        http.delete('/v1/story-development/relationships/edge-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -68,7 +68,7 @@ describe('relationships service', () => {
   describe('updateRelationship', () => {
     it('updates a relationship edge (200)', async () => {
       server.use(
-        http.patch('/story-development/relationships/edge-1', async ({ request }) => {
+        http.patch('/v1/story-development/relationships/edge-1', async ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           const body = await request.json();
@@ -93,7 +93,7 @@ describe('relationships service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/relationships/edge-missing', () => {
+        http.patch('/v1/story-development/relationships/edge-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -102,3 +102,4 @@ describe('relationships service', () => {
     });
   });
 });
+

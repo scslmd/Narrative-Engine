@@ -8,7 +8,7 @@ interface BranchListResponse {
 }
 
 export async function getBranches(projectId: string): Promise<StoryBranch[]> {
-  const response = await api.get('/story-development/branches', { params: { project_id: projectId } });
+  const response = await api.get('/v1/story-development/branches', { params: { project_id: projectId } });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch branches: ${response.status}`);
@@ -19,7 +19,7 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
 }
 
 export async function setActiveBranch(projectId: string, branchId: string): Promise<StoryBranch> {
-  const response = await api.post('/story-development/branches/active', { 
+  const response = await api.post('/v1/story-development/branches/active', { 
     project_id: projectId, 
     branch_id: branchId 
   });
@@ -36,7 +36,7 @@ export async function createBranchComparison(
   sourceBranchId: string,
   targetBranchId: string,
 ): Promise<BranchComparisonRecord> {
-  const response = await api.post('/story-development/branches/comparisons', {
+  const response = await api.post('/v1/story-development/branches/comparisons', {
     project_id: projectId,
     comparison_id: crypto.randomUUID(),
     source_branch_id: sourceBranchId,
@@ -57,7 +57,7 @@ export async function createMergeDecision(
   targetBranchId: string,
   mergeRationale: string,
 ): Promise<BranchMergeDecision> {
-  const response = await api.post('/story-development/branches/merge-decisions', {
+  const response = await api.post('/v1/story-development/branches/merge-decisions', {
     project_id: projectId,
     merge_decision_id: crypto.randomUUID(),
     source_branch_id: sourceBranchId,
@@ -80,7 +80,7 @@ export async function getBranch(
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;
 
-  const response = await api.get(`/story-development/branches/${branchId}`, { params });
+  const response = await api.get(`/v1/story-development/branches/${branchId}`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch branch: ${response.status}`);
@@ -97,7 +97,7 @@ export async function getBranchComparison(
   if (projectId) params.project_id = projectId;
 
   const response = await api.get(
-    `/story-development/branches/comparisons/${comparisonId}`,
+    `/v1/story-development/branches/comparisons/${comparisonId}`,
     { params },
   );
 
@@ -116,7 +116,7 @@ export async function getMergeDecision(
   if (projectId) params.project_id = projectId;
 
   const response = await api.get(
-    `/story-development/branches/merge-decisions/${decisionId}`,
+    `/v1/story-development/branches/merge-decisions/${decisionId}`,
     { params },
   );
 
@@ -134,7 +134,7 @@ export async function getBranchStateRefs(
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;
 
-  const response = await api.get(`/story-development/branches/${branchId}/state-refs`, { params });
+  const response = await api.get(`/v1/story-development/branches/${branchId}/state-refs`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch state refs: ${response.status}`);
@@ -142,3 +142,4 @@ export async function getBranchStateRefs(
 
   return response.data;
 }
+

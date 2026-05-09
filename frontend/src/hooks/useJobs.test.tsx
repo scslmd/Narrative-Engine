@@ -39,7 +39,7 @@ describe('useJobs', () => {
 describe('useJob', () => {
   it('returns loading state initially', () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-100',
@@ -56,7 +56,7 @@ describe('useJob', () => {
 
   it('fetches job detail on mount', async () => {
     server.use(
-      http.get('/jobs/:id/status', () => {
+      http.get('/v1/jobs/:id/status', () => {
         return HttpResponse.json({
           id: 'j1',
           phase: 'P-100',
@@ -101,7 +101,7 @@ describe('useCreateJob', () => {
 
   it('creates a job and invalidates queries', async () => {
     server.use(
-      http.post('/jobs/create', async ({ request }) => {
+      http.post('/v1/jobs/create', async ({ request }) => {
         const body = (await request.json()) as { phase: string; payload?: Record<string, unknown> };
         return HttpResponse.json({
           id: 'j-new',
@@ -127,7 +127,7 @@ describe('useCreateJob', () => {
 describe('useJobLogs (from useJobs)', () => {
   it('returns loading state initially', () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({
           id: 'j1',
           entries: [
@@ -143,7 +143,7 @@ describe('useJobLogs (from useJobs)', () => {
 
   it('fetches logs on mount', async () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({
           id: 'j1',
           entries: [

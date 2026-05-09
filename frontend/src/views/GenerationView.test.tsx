@@ -33,8 +33,8 @@ const successRun = {
 describe('GenerationView retry integration', () => {
   it('shows retry button on failed generation run', async () => {
     server.use(
-      http.get('/v1/story-development/characters', () => HttpResponse.json([])),
-      http.get('/v1/story-development/world-bible', () => HttpResponse.json([])),
+      http.get('/v1/story-development/characters', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/story-development/world-bible', () => HttpResponse.json({ items: [] })),
       http.get('/v1/story-generation/runs', () => HttpResponse.json([baseRun])),
     );
 
@@ -49,8 +49,8 @@ describe('GenerationView retry integration', () => {
 
   it('calls retry endpoint and shows success toast on retry', async () => {
     server.use(
-      http.get('/v1/story-development/characters', () => HttpResponse.json([])),
-      http.get('/v1/story-development/world-bible', () => HttpResponse.json([])),
+      http.get('/v1/story-development/characters', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/story-development/world-bible', () => HttpResponse.json({ items: [] })),
       http.get('/v1/story-generation/runs', () => HttpResponse.json([baseRun])),
       http.post('/v1/story-generation/runs/gen-1/retry', () =>
         HttpResponse.json(successRun),
@@ -73,8 +73,8 @@ describe('GenerationView retry integration', () => {
 
   it('shows error toast on 409 retry conflict', async () => {
     server.use(
-      http.get('/v1/story-development/characters', () => HttpResponse.json([])),
-      http.get('/v1/story-development/world-bible', () => HttpResponse.json([])),
+      http.get('/v1/story-development/characters', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/story-development/world-bible', () => HttpResponse.json({ items: [] })),
       http.get('/v1/story-generation/runs', () => HttpResponse.json([baseRun])),
       http.post('/v1/story-generation/runs/gen-1/retry', () =>
         HttpResponse.json({ detail: 'Cannot retry non-failed run' }, { status: 409 }),
@@ -96,8 +96,8 @@ describe('GenerationView retry integration', () => {
 
   it('shows error toast on 404 expired packet', async () => {
     server.use(
-      http.get('/v1/story-development/characters', () => HttpResponse.json([])),
-      http.get('/v1/story-development/world-bible', () => HttpResponse.json([])),
+      http.get('/v1/story-development/characters', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/story-development/world-bible', () => HttpResponse.json({ items: [] })),
       http.get('/v1/story-generation/runs', () => HttpResponse.json([baseRun])),
       http.post('/v1/story-generation/runs/gen-1/retry', () =>
         HttpResponse.json({ detail: 'Generation packet not found' }, { status: 404 }),
@@ -122,8 +122,8 @@ describe('GenerationView retry integration', () => {
     const pending = new Promise((resolve) => { resolveFn = resolve; });
 
     server.use(
-      http.get('/v1/story-development/characters', () => HttpResponse.json([])),
-      http.get('/v1/story-development/world-bible', () => HttpResponse.json([])),
+      http.get('/v1/story-development/characters', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/story-development/world-bible', () => HttpResponse.json({ items: [] })),
       http.get('/v1/story-generation/runs', () => HttpResponse.json([baseRun])),
       http.post('/v1/story-generation/runs/gen-1/retry', async () => {
         await pending;

@@ -19,7 +19,7 @@ describe('inspectLinks service', () => {
   describe('getInspectLinks', () => {
     it('returns inspect links with no filters', async () => {
       server.use(
-        http.get('/story-development/review/inspect-links', () =>
+        http.get('/v1/story-development/review/inspect-links', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [mockLink], meta: {} }),
         ),
       );
@@ -30,7 +30,7 @@ describe('inspectLinks service', () => {
 
     it('passes all filters when provided', async () => {
       server.use(
-        http.get('/story-development/review/inspect-links', ({ request }) => {
+        http.get('/v1/story-development/review/inspect-links', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           expect(url.searchParams.get('object_kind')).toBe('draft');
@@ -46,7 +46,7 @@ describe('inspectLinks service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/review/inspect-links', () =>
+        http.get('/v1/story-development/review/inspect-links', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -58,7 +58,7 @@ describe('inspectLinks service', () => {
   describe('createInspectLink', () => {
     it('creates an inspect link (201)', async () => {
       server.use(
-        http.post('/story-development/review/inspect-links', () => {
+        http.post('/v1/story-development/review/inspect-links', () => {
           return HttpResponse.json({ ...mockLink, run_id: 'run-new' }, { status: 201 });
         }),
       );
@@ -78,7 +78,7 @@ describe('inspectLinks service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/review/inspect-links', () =>
+        http.post('/v1/story-development/review/inspect-links', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -95,3 +95,4 @@ describe('inspectLinks service', () => {
     });
   });
 });
+

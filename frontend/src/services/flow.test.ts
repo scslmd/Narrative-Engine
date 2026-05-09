@@ -15,7 +15,7 @@ describe('flow service', () => {
   describe('getStages', () => {
     it('returns list of flow stages for a project', async () => {
       server.use(
-        http.get('/story-development/flow/stages', ({ request }) => {
+        http.get('/v1/story-development/flow/stages', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -34,7 +34,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/flow/stages', () => {
+        http.get('/v1/story-development/flow/stages', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -46,7 +46,7 @@ describe('flow service', () => {
   describe('addStage', () => {
     it('creates a new flow stage (201)', async () => {
       server.use(
-        http.post('/story-development/flow/stages', () => {
+        http.post('/v1/story-development/flow/stages', () => {
           return HttpResponse.json({ ...mockStage, stage_kind: 'drafting' }, { status: 201 });
         }),
       );
@@ -58,7 +58,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/flow/stages', () => {
+        http.post('/v1/story-development/flow/stages', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -70,7 +70,7 @@ describe('flow service', () => {
   describe('updateStageWithProject', () => {
     it('updates a flow stage (200)', async () => {
       server.use(
-        http.patch('/story-development/flow/stages/stage-1', () => {
+        http.patch('/v1/story-development/flow/stages/stage-1', () => {
           return HttpResponse.json({ ...mockStage, display_name: 'Updated Name' });
         }),
       );
@@ -84,7 +84,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/flow/stages/stage-bad', () => {
+        http.patch('/v1/story-development/flow/stages/stage-bad', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -96,7 +96,7 @@ describe('flow service', () => {
   describe('deleteStage', () => {
     it('deletes a flow stage (200)', async () => {
       server.use(
-        http.delete('/story-development/flow/stages/stage-1', () => {
+        http.delete('/v1/story-development/flow/stages/stage-1', () => {
           return HttpResponse.json(null);
         }),
       );
@@ -106,7 +106,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.delete('/story-development/flow/stages/stage-bad', () => {
+        http.delete('/v1/story-development/flow/stages/stage-bad', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -118,7 +118,7 @@ describe('flow service', () => {
   describe('archiveStage', () => {
     it('archives a stage by updating state to ARCHIVED', async () => {
       server.use(
-        http.patch('/story-development/flow/stages/stage-1', () => {
+        http.patch('/v1/story-development/flow/stages/stage-1', () => {
           return HttpResponse.json({ ...mockStage, stage_configuration_state: 'ARCHIVED' });
         }),
       );
@@ -132,7 +132,7 @@ describe('flow service', () => {
   describe('renameStage', () => {
     it('renames a stage by updating display_name', async () => {
       server.use(
-        http.patch('/story-development/flow/stages/stage-1', () => {
+        http.patch('/v1/story-development/flow/stages/stage-1', () => {
           return HttpResponse.json({ ...mockStage, display_name: 'New Name' });
         }),
       );
@@ -146,7 +146,7 @@ describe('flow service', () => {
   describe('initFlow', () => {
     it('initializes flow stages for a project (201)', async () => {
       server.use(
-        http.post('/story-development/flow/stages', ({ request }) => {
+        http.post('/v1/story-development/flow/stages', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -165,7 +165,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/flow/stages', () => {
+        http.post('/v1/story-development/flow/stages', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -177,7 +177,7 @@ describe('flow service', () => {
   describe('reorderFlowStages', () => {
     it('reorders flow stages (200)', async () => {
       server.use(
-        http.post('/story-development/flow/stages/reorder', async ({ request }) => {
+        http.post('/v1/story-development/flow/stages/reorder', async ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           const body = (await request.json()) as { stage_ids: string[] };
@@ -191,7 +191,7 @@ describe('flow service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/flow/stages/reorder', () => {
+        http.post('/v1/story-development/flow/stages/reorder', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -200,3 +200,4 @@ describe('flow service', () => {
     });
   });
 });
+

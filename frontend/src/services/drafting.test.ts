@@ -21,7 +21,7 @@ describe('drafting service', () => {
   describe('getDraftArtifacts', () => {
     it('returns list of draft artifacts', async () => {
       server.use(
-        http.get('/story-development/drafting/draft-artifacts', () =>
+        http.get('/v1/story-development/drafting/draft-artifacts', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ artifact_id: 'art-1' }], meta: {} }),
         ),
       );
@@ -32,7 +32,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/drafting/draft-artifacts', () =>
+        http.get('/v1/story-development/drafting/draft-artifacts', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -44,7 +44,7 @@ describe('drafting service', () => {
   describe('getManuscriptDocuments', () => {
     it('returns list of manuscript documents', async () => {
       server.use(
-        http.get('/story-development/drafting/manuscript-documents', () =>
+        http.get('/v1/story-development/drafting/manuscript-documents', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ document_id: 'doc-1' }], meta: {} }),
         ),
       );
@@ -55,7 +55,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/drafting/manuscript-documents', () =>
+        http.get('/v1/story-development/drafting/manuscript-documents', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -67,7 +67,7 @@ describe('drafting service', () => {
   describe('promoteDraftToManuscript', () => {
     it('promotes a draft to manuscript (201)', async () => {
       server.use(
-        http.post('/story-development/drafting/promote-draft', () =>
+        http.post('/v1/story-development/drafting/promote-draft', () =>
           HttpResponse.json({ document_id: 'ms-1' }, { status: 201 }),
         ),
       );
@@ -83,7 +83,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/drafting/promote-draft', () =>
+        http.post('/v1/story-development/drafting/promote-draft', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -99,7 +99,7 @@ describe('drafting service', () => {
   describe('getRevisionSuggestions', () => {
     it('returns revision suggestions', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions', () =>
+        http.get('/v1/story-development/drafting/revision-suggestions', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ suggestion_id: 'sug-1' }], meta: {} }),
         ),
       );
@@ -110,7 +110,7 @@ describe('drafting service', () => {
 
     it('passes target document filter when provided', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions', ({ request }) => {
+        http.get('/v1/story-development/drafting/revision-suggestions', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('target_document_id')).toBe('doc-1');
           return HttpResponse.json({ project_id: 'proj-1', items: [], meta: {} });
@@ -122,7 +122,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions', () =>
+        http.get('/v1/story-development/drafting/revision-suggestions', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -134,7 +134,7 @@ describe('drafting service', () => {
   describe('createRevisionSuggestion', () => {
     it('creates a revision suggestion (201)', async () => {
       server.use(
-        http.post('/story-development/drafting/revision-suggestions', () =>
+        http.post('/v1/story-development/drafting/revision-suggestions', () =>
           HttpResponse.json({ suggestion_id: 'sug-new' }, { status: 201 }),
         ),
       );
@@ -155,7 +155,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/drafting/revision-suggestions', () =>
+        http.post('/v1/story-development/drafting/revision-suggestions', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -176,7 +176,7 @@ describe('drafting service', () => {
   describe('updateManuscriptContent', () => {
     it('updates manuscript content (200)', async () => {
       server.use(
-        http.patch('/story-development/drafting/manuscript-documents/doc-1', () =>
+        http.patch('/v1/story-development/drafting/manuscript-documents/doc-1', () =>
           HttpResponse.json({ document_id: 'doc-1', content: 'Updated content' }),
         ),
       );
@@ -187,7 +187,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/drafting/manuscript-documents/doc-missing', () =>
+        http.patch('/v1/story-development/drafting/manuscript-documents/doc-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -199,7 +199,7 @@ describe('drafting service', () => {
   describe('triggerManuscriptReview', () => {
     it('triggers a manuscript review (202)', async () => {
       server.use(
-        http.post('/story-development/drafting/manuscript-documents/doc-1/review', () =>
+        http.post('/v1/story-development/drafting/manuscript-documents/doc-1/review', () =>
           HttpResponse.json({ findings: [{ finding_id: 'f-1' }] }, { status: 202 }),
         ),
       );
@@ -210,7 +210,7 @@ describe('drafting service', () => {
 
     it('returns empty array when no findings', async () => {
       server.use(
-        http.post('/story-development/drafting/manuscript-documents/doc-1/review', () =>
+        http.post('/v1/story-development/drafting/manuscript-documents/doc-1/review', () =>
           HttpResponse.json({ findings: [] }, { status: 202 }),
         ),
       );
@@ -221,7 +221,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/drafting/manuscript-documents/doc-missing/review', () =>
+        http.post('/v1/story-development/drafting/manuscript-documents/doc-missing/review', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -233,7 +233,7 @@ describe('drafting service', () => {
   describe('createDraftArtifact', () => {
     it('creates a draft artifact (201)', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts', () =>
           HttpResponse.json({ artifact_id: 'art-new' }, { status: 201 }),
         ),
       );
@@ -250,7 +250,7 @@ describe('drafting service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -267,7 +267,7 @@ describe('drafting service', () => {
   describe('continueDraft', () => {
     it('continues a draft from a prior artifact (201)', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/continue', () =>
           HttpResponse.json(
             { artifact_id: 'art-continued', title: 'Continued Draft', status: 'DRAFT' },
             { status: 201 },
@@ -282,7 +282,7 @@ describe('drafting service', () => {
     it('sends the correct request body', async () => {
       let capturedBody: unknown;
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/continue', async ({ request }) => {
+        http.post('/v1/story-development/drafting/draft-artifacts/continue', async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json(
             { artifact_id: 'art-continued' },
@@ -303,7 +303,7 @@ describe('drafting service', () => {
 
     it('throws 404 when prior draft not found', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/continue', () =>
           HttpResponse.json({ detail: 'Prior draft or manuscript not found.' }, { status: 404 }),
         ),
       );
@@ -313,7 +313,7 @@ describe('drafting service', () => {
 
     it('throws 400 on validation error', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/continue', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/continue', () =>
           HttpResponse.json({ detail: 'Validation error' }, { status: 400 }),
         ),
       );
@@ -325,7 +325,7 @@ describe('drafting service', () => {
   describe('createAlternateVariant', () => {
     it('creates an alternate variant of a draft (201)', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/alternate-variant', () =>
           HttpResponse.json(
             { artifact_id: 'art-variant', title: 'Alternate Draft', status: 'PROPOSED' },
             { status: 201 },
@@ -340,7 +340,7 @@ describe('drafting service', () => {
     it('sends the correct request body', async () => {
       let capturedBody: unknown;
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/alternate-variant', async ({ request }) => {
+        http.post('/v1/story-development/drafting/draft-artifacts/alternate-variant', async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json(
             { artifact_id: 'art-variant' },
@@ -361,7 +361,7 @@ describe('drafting service', () => {
 
     it('throws 404 when base draft not found', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/alternate-variant', () =>
           HttpResponse.json({ detail: 'Base draft or manuscript not found.' }, { status: 404 }),
         ),
       );
@@ -371,7 +371,7 @@ describe('drafting service', () => {
 
     it('throws 400 on validation error', async () => {
       server.use(
-        http.post('/story-development/drafting/draft-artifacts/alternate-variant', () =>
+        http.post('/v1/story-development/drafting/draft-artifacts/alternate-variant', () =>
           HttpResponse.json({ detail: 'Validation error' }, { status: 400 }),
         ),
       );
@@ -383,7 +383,7 @@ describe('drafting service', () => {
   describe('getDraftArtifact', () => {
     it('returns a single draft artifact by id', async () => {
       server.use(
-        http.get('/story-development/drafting/draft-artifacts/art-1', () =>
+        http.get('/v1/story-development/drafting/draft-artifacts/art-1', () =>
           HttpResponse.json({ artifact_id: 'art-1', title: 'Single Draft' }),
         ),
       );
@@ -394,7 +394,7 @@ describe('drafting service', () => {
 
     it('passes project_id as query parameter', async () => {
       server.use(
-        http.get('/story-development/drafting/draft-artifacts/art-1', ({ request }) => {
+        http.get('/v1/story-development/drafting/draft-artifacts/art-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({ artifact_id: 'art-1' });
@@ -406,7 +406,7 @@ describe('drafting service', () => {
 
     it('throws on 404 response', async () => {
       server.use(
-        http.get('/story-development/drafting/draft-artifacts/art-missing', () =>
+        http.get('/v1/story-development/drafting/draft-artifacts/art-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -418,7 +418,7 @@ describe('drafting service', () => {
   describe('getManuscriptDocument', () => {
     it('returns a single manuscript document by id', async () => {
       server.use(
-        http.get('/story-development/drafting/manuscript-documents/doc-1', () =>
+        http.get('/v1/story-development/drafting/manuscript-documents/doc-1', () =>
           HttpResponse.json({ document_id: 'doc-1', title: 'Single Document' }),
         ),
       );
@@ -429,7 +429,7 @@ describe('drafting service', () => {
 
     it('passes project_id as query parameter', async () => {
       server.use(
-        http.get('/story-development/drafting/manuscript-documents/doc-1', ({ request }) => {
+        http.get('/v1/story-development/drafting/manuscript-documents/doc-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({ document_id: 'doc-1' });
@@ -441,7 +441,7 @@ describe('drafting service', () => {
 
     it('throws on 404 response', async () => {
       server.use(
-        http.get('/story-development/drafting/manuscript-documents/doc-missing', () =>
+        http.get('/v1/story-development/drafting/manuscript-documents/doc-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -453,7 +453,7 @@ describe('drafting service', () => {
   describe('getRevisionSuggestion', () => {
     it('returns a single revision suggestion by id', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions/sug-1', () =>
+        http.get('/v1/story-development/drafting/revision-suggestions/sug-1', () =>
           HttpResponse.json({ suggestion_id: 'sug-1', rationale: 'Fix wording' }),
         ),
       );
@@ -464,7 +464,7 @@ describe('drafting service', () => {
 
     it('passes project_id as query parameter', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions/sug-1', ({ request }) => {
+        http.get('/v1/story-development/drafting/revision-suggestions/sug-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({ suggestion_id: 'sug-1' });
@@ -476,7 +476,7 @@ describe('drafting service', () => {
 
     it('throws on 404 response', async () => {
       server.use(
-        http.get('/story-development/drafting/revision-suggestions/sug-missing', () =>
+        http.get('/v1/story-development/drafting/revision-suggestions/sug-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -485,3 +485,4 @@ describe('drafting service', () => {
     });
   });
 });
+

@@ -1,5 +1,9 @@
 # API Migration PR-E: Legacy Removal & Closure Implementation Plan
-Status: Planned
+Status: Completed (2026-05-09)
+
+Completion notes:
+- Legacy unversioned wrappers targeted by the migration were removed from active frontend usage and backend canonical routing now serves `/v1/*` surfaces.
+- Documentation now treats `/v1/*` as authoritative, with policy exceptions for health and internal UI/static routes.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

@@ -1,4 +1,5 @@
 # Architecture Consolidation (Next Iteration) Implementation Plan
+Status: Completed (2026-05-09)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -65,11 +66,11 @@ Each domain folder should include:
 - Modify: `frontend/src/hooks/usePlanningTab.ts`
 - Modify: `frontend/src/views/PlanningView.tsx`
 
-- [ ] Move sequence/chapter/scene/beat query wiring from `usePlanningTab` into `domains/planning/queries.ts`.
-- [ ] Move planning mutations and invalidation policy into `domains/planning/mutations.ts`.
-- [ ] Keep `usePlanningTab` as compatibility facade that delegates to `usePlanningController`.
-- [ ] Remove direct service imports from `PlanningView` except domain controller and route helpers.
-- [ ] Preserve existing query keys to avoid cache bust behavior changes.
+- [x] Move sequence/chapter/scene/beat query wiring from `usePlanningTab` into `domains/planning/queries.ts`.
+- [x] Move planning mutations and invalidation policy into `domains/planning/mutations.ts`.
+- [x] Keep `usePlanningTab` as compatibility facade that delegates to `usePlanningController`.
+- [x] Remove direct service imports from `PlanningView` except domain controller and route helpers.
+- [x] Preserve existing query keys to avoid cache bust behavior changes.
 
 Acceptance:
 - `PlanningView.tsx` no longer imports planning/character/world-bible services directly.
@@ -83,9 +84,9 @@ Acceptance:
 - Modify: `frontend/src/views/CanonView.tsx`
 - Modify: `frontend/src/components/canon/CanonWorkshop.tsx`
 
-- [ ] Centralize profile/annotation/materialization/generation orchestration in `useCanonController`.
-- [ ] Convert `CanonWorkshop` to presentation-first callbacks with narrow prop surface.
-- [ ] Remove duplicate mutation ownership between view and component.
+- [x] Centralize profile/annotation/materialization/generation orchestration in `useCanonController`.
+- [x] Convert `CanonWorkshop` to presentation-first callbacks with narrow prop surface.
+- [x] Remove duplicate mutation ownership between view and component.
 
 Acceptance:
 - `CanonView.tsx` owns route + controller only.
@@ -99,9 +100,9 @@ Acceptance:
 - Modify: `frontend/src/views/GenerationView.tsx`
 - Modify: `frontend/src/components/generation/GeneratedStoryReview.tsx` (if needed for narrowed props)
 
-- [ ] Move run selection, gates, packet hydration, and fork orchestration into controller.
-- [ ] Keep wizard and run-card rendering in view/components.
-- [ ] Standardize retry/fork toast and error mapping in one place.
+- [x] Move run selection, gates, packet hydration, and fork orchestration into controller.
+- [x] Keep wizard and run-card rendering in view/components.
+- [x] Standardize retry/fork toast and error mapping in one place.
 
 Acceptance:
 - `GenerationView.tsx` no longer directly owns query/mutation policy logic.
@@ -116,9 +117,9 @@ Acceptance:
 - Modify: `frontend/src/hooks/useWritingView.ts`
 - Modify: `frontend/src/hooks/useManuscriptAssist.ts`
 
-- [ ] Split manuscript/draft lifecycle from assist polling and suggestion actions.
-- [ ] Replace inline polling loop ownership with dedicated assist controller.
-- [ ] Keep existing public hook return contracts stable for current components.
+- [x] Split manuscript/draft lifecycle from assist polling and suggestion actions.
+- [x] Replace inline polling loop ownership with dedicated assist controller.
+- [x] Keep existing public hook return contracts stable for current components.
 
 Acceptance:
 - `useWritingView.ts` reduced to composition of smaller controllers.
@@ -132,9 +133,9 @@ Acceptance:
 - Create: `frontend/src/domains/shared/queryKeys.ts`
 - Modify: domain controllers created above
 
-- [ ] Extract repeated invalidation patterns into helper utilities.
-- [ ] Extract query key builders for planning/canon/generation/writing domains.
-- [ ] Remove ad hoc string array query keys scattered across views.
+- [x] Extract repeated invalidation patterns into helper utilities.
+- [x] Extract query key builders for planning/canon/generation/writing domains.
+- [x] Remove ad hoc string array query keys scattered across views.
 
 Acceptance:
 - Domain controllers use shared key builders.
@@ -148,9 +149,9 @@ Acceptance:
 - Modify: `AGENTS.md` (only if new architectural rule needs codifying)
 - Modify: relevant test files under `frontend/src/**/*.test.tsx`
 
-- [ ] Add targeted unit tests for each domain controller.
-- [ ] Verify existing integration tests still pass.
-- [ ] Update architecture docs to reflect new domain controller layout.
+- [x] Add targeted unit tests for each domain controller.
+- [x] Verify existing integration tests still pass.
+- [x] Update architecture docs to reflect new domain controller layout.
 
 Acceptance:
 - `cd frontend && npm run lint` passes.

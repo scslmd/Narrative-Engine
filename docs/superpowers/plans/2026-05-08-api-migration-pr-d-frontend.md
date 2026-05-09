@@ -1,5 +1,10 @@
 # API Migration PR-D: Frontend Endpoint Migration to /v1 Implementation Plan
-Status: Planned
+Status: Completed (2026-05-09)
+
+Completion notes:
+- Frontend service layer is canonical `/v1` for migrated families.
+- `/story-development/*` and `/role-model-checker/*` frontend references were synchronized to `/v1/story-development/*` and `/v1/role-model-checker/*`.
+- Service test mocks were updated accordingly.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

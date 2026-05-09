@@ -1,8 +1,8 @@
 # Unwired API Endpoints & Service Functions
 
-> Generated: 2026-05-05
+> Generated: 2026-05-09
 > Scope: Backend endpoints and frontend service functions with no production UI caller
-> Status: All endpoints are functional, tested, and documented in AGENTS.md. Awaiting UI implementation.
+> Status: Current `/v1` routes are functional and tested. This document tracks remaining unwired surfaces only; auth and backup are now reachable from `SettingsPanel`.
 
 ---
 
@@ -12,7 +12,7 @@
 |----------|-------|
 | Unwired service functions (exist, tested, not called) | 40 |
 | Backend endpoints with no frontend caller | ~35 |
-| Backend route groups with zero frontend coverage | 2 (`backup`, `auth`) |
+| Backend route groups with zero frontend coverage | 0 current route groups |
 
 ---
 
@@ -141,35 +141,35 @@
 
 | Method | Path | Status |
 |--------|------|--------|
-| `GET` | `/projects/{project_id}/manifest` | Legacy artifact endpoint, no frontend caller |
-| `GET` | `/projects/{project_id}/sequence` | Legacy artifact endpoint, no frontend caller |
-| `GET` | `/projects/{project_id}/chapter-1` | Legacy artifact endpoint, no frontend caller |
+| `GET` | `/v1/projects/{project_id}/manifest` | Canonical artifact endpoint, no current frontend caller |
+| `GET` | `/v1/projects/{project_id}/sequence` | Canonical artifact endpoint, no current frontend caller |
+| `GET` | `/v1/projects/{project_id}/chapter-1` | Canonical artifact endpoint, no current frontend caller |
 
 ---
 
-## 3. Route Groups With Zero Frontend Coverage
+## 3. Route Coverage Notes
 
 ### Backup (`app/api/backup.py`)
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/backup/create` | Create backup of project data |
-| `POST` | `/backup/restore/{backup_id}` | Restore from backup |
-| `GET` | `/backup/list` | List available backups |
-| `GET` | `/backup/latest` | Get latest backup |
-| `DELETE` | `/backup/{backup_id}` | Delete backup |
+| `POST` | `/v1/backup/create` | Create backup of project data |
+| `POST` | `/v1/backup/restore/{backup_id}` | Restore from backup |
+| `GET` | `/v1/backup/list` | List available backups |
+| `GET` | `/v1/backup/latest` | Get latest backup |
+| `DELETE` | `/v1/backup/{backup_id}` | Delete backup |
 
-**Frontend status:** No service file. No UI. Feature is fully implemented backend-side (REL-04).
+**Frontend status:** Hooked up through `frontend/src/hooks/useBackups.ts` and rendered in `frontend/src/components/SettingsPanel.tsx`.
 
 ### Authentication (`app/api/auth.py`)
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/auth/keys` | Create API key |
-| `GET` | `/auth/keys` | List API keys |
-| `DELETE` | `/auth/keys/{prefix}` | Revoke API key |
+| `POST` | `/v1/auth/keys` | Create API key |
+| `GET` | `/v1/auth/keys` | List API keys |
+| `DELETE` | `/v1/auth/keys/{prefix}` | Revoke API key |
 
-**Frontend status:** No service file. No UI. Feature is fully implemented backend-side (SEC-02).
+**Frontend status:** Hooked up through `frontend/src/hooks/useAuthKeys.ts` and rendered in `frontend/src/components/SettingsPanel.tsx`.
 
 ---
 
@@ -200,9 +200,7 @@
 
 ### Low Priority (admin/operational)
 
-8. **Backup endpoints** — Admin feature, no UI needed for core users.
-9. **Auth key management** — Admin feature, managed via CLI/env vars.
-10. **Legacy artifact endpoints** — Superseded by newer API patterns.
+8. **Project artifact detail endpoints** — Canonical `/v1/projects/*` reads exist, but these artifact-specific reads still have no dedicated workspace surface.
 
 ---
 

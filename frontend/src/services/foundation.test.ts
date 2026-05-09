@@ -36,7 +36,7 @@ describe('foundation service', () => {
   describe('getFoundation', () => {
     it('returns foundation profile for a project', async () => {
       server.use(
-        http.get('/story-development/foundation', ({ request }) => {
+        http.get('/v1/story-development/foundation', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -57,7 +57,7 @@ describe('foundation service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/foundation', () => {
+        http.get('/v1/story-development/foundation', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -69,7 +69,7 @@ describe('foundation service', () => {
   describe('createFoundation', () => {
     it('creates a foundation profile (201)', async () => {
       server.use(
-        http.post('/story-development/foundation', () => {
+        http.post('/v1/story-development/foundation', () => {
           return HttpResponse.json({
             project_id: 'proj-1',
             foundation_id: 'found-1',
@@ -99,7 +99,7 @@ describe('foundation service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/foundation', () => {
+        http.post('/v1/story-development/foundation', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -121,7 +121,7 @@ describe('foundation service', () => {
   describe('updateFoundation', () => {
     it('updates a foundation profile (200)', async () => {
       server.use(
-        http.patch('/story-development/foundation', () => {
+        http.patch('/v1/story-development/foundation', () => {
           return HttpResponse.json({
             project_id: 'proj-1',
             foundation_id: 'found-1',
@@ -141,7 +141,7 @@ describe('foundation service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/foundation', () => {
+        http.patch('/v1/story-development/foundation', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -153,7 +153,7 @@ describe('foundation service', () => {
   describe('getReviewCues', () => {
     it('returns review cues for a project', async () => {
       server.use(
-        http.get('/story-development/foundation/review-cues', ({ request }) => {
+        http.get('/v1/story-development/foundation/review-cues', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -172,7 +172,7 @@ describe('foundation service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/foundation/review-cues', () => {
+        http.get('/v1/story-development/foundation/review-cues', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -184,7 +184,7 @@ describe('foundation service', () => {
   describe('getFoundationRevisions', () => {
     it('returns foundation revisions for a project', async () => {
       server.use(
-        http.get('/story-development/foundation/revisions', ({ request }) => {
+        http.get('/v1/story-development/foundation/revisions', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -203,7 +203,7 @@ describe('foundation service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/foundation/revisions', () => {
+        http.get('/v1/story-development/foundation/revisions', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -212,3 +212,4 @@ describe('foundation service', () => {
     });
   });
 });
+

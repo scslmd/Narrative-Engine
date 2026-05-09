@@ -7,9 +7,9 @@
  * - Update world bible entry
  * 
  * Backend endpoints:
- * - GET /story-development/world-bible
- * - POST /story-development/world-bible
- * - PATCH /story-development/world-bible/{entry_type}/{title}
+ * - GET /v1/story-development/world-bible
+ * - POST /v1/story-development/world-bible
+ * - PATCH /v1/story-development/world-bible/{entry_type}/{title}
  */
 
 import type {
@@ -24,7 +24,7 @@ import api from '../lib/api';
  * Get all world bible entries for a project
  */
 export async function getWorldBibleEntries(projectId: string): Promise<WorldBibleEntry[]> {
-  const response = await api.get('/story-development/world-bible', {
+  const response = await api.get('/v1/story-development/world-bible', {
     params: { project_id: projectId },
   });
 
@@ -42,7 +42,7 @@ export async function getWorldBibleEntries(projectId: string): Promise<WorldBibl
 export async function createWorldBibleEntry(
   request: WorldBibleEntryCreateRequest,
 ): Promise<WorldBibleEntry> {
-  const response = await api.post('/story-development/world-bible', request);
+  const response = await api.post('/v1/story-development/world-bible', request);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create world bible entry: ${response.status}`);
@@ -60,7 +60,7 @@ export async function getWorldBibleEntry(
   projectId: string,
 ): Promise<WorldBibleEntry> {
   const response = await api.get(
-    `/story-development/world-bible/${entryType}/${encodeURIComponent(title)}`,
+    `/v1/story-development/world-bible/${entryType}/${encodeURIComponent(title)}`,
     { params: { project_id: projectId } },
   );
 
@@ -81,7 +81,7 @@ export async function updateWorldBibleEntry(
   updates: WorldBibleEntryUpdateRequest,
 ): Promise<WorldBibleEntry> {
   const response = await api.patch(
-    `/story-development/world-bible/${entryType}/${encodeURIComponent(title)}`,
+    `/v1/story-development/world-bible/${entryType}/${encodeURIComponent(title)}`,
     updates,
     { params: { project_id: projectId } },
   );
@@ -92,3 +92,4 @@ export async function updateWorldBibleEntry(
 
   return response.data;
 }
+

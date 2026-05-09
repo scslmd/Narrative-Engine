@@ -8,11 +8,11 @@ import { CanonView } from './CanonView';
 describe('CanonView', () => {
   it('loads canon workspace data and renders workshop', async () => {
     server.use(
-      http.get('/story-development/characters', () =>
-        HttpResponse.json({ project_id: 'project-1', items: [], meta: {} }),
+      http.get('/v1/story-development/characters', () =>
+        HttpResponse.json({ items: [] }),
       ),
-      http.get('/story-development/world-bible', () =>
-        HttpResponse.json({ project_id: 'project-1', items: [], meta: {} }),
+      http.get('/v1/story-development/world-bible', () =>
+        HttpResponse.json({ items: [] }),
       ),
       http.get('/v1/mythos/entries', () => HttpResponse.json([])),
       http.get('/v1/patterns/entries', () => HttpResponse.json([])),
