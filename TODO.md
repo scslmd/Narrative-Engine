@@ -20,8 +20,8 @@
 
 - [x] Persist chapter-packet, sequence, and storyboard cards through lineage-aware registration.
   - Completed: `ChapterPacketService.register_packet_as_lineage()`, `SequencePlanService.register_plan_as_lineage()`, `StoryboardCardService.register_card_as_lineage()` now tested with 12 integration tests in `tests/test_lineage_aware_artifacts.py`. Bugfixes: added missing `StoryArtifactLifecycleState` import to `storyboard_cards.py`, moved `get_packet` call inside try block in `chapter_packets.py`.
-- [x] Expand manuscript-aid integration tests.
-  - Completed: 15 integration tests in `tests/test_manuscript_aid_integration.py` covering manuscript document CRUD, revision suggestion CRUD, cross-project isolation, and document filtering.
+- [x] Expand manuscript-assist integration tests.
+  - Completed: 15 integration tests in `tests/test_manuscript_assist_integration.py` covering manuscript document CRUD, revision suggestion CRUD, cross-project isolation, and document filtering.
 - [x] Add broader integration coverage for orchestration and runtime behavior.
    - Completed: 14 new E2E tests across `tests/test_executor_e2e_runtime.py` and `tests/test_story_bible_lineage.py` covering: checker report persistence, deterministic critic, P-400 missing upstream artifacts, staged/backup file cleanup, project isolation, job status transitions, job retry attempts, P-400 empty output, full pipeline order guarantee, story-bible content hash stability, fallback file read, and supersession chain verification.
 
@@ -44,7 +44,7 @@
 - Removed 7 duplicate relationship helper functions from both characters.ts and relationships.ts
 - Added Story Import UI: StoryImportModal component with form, validation, loading/error states, integration into ProjectList
 - Verified all 13/13 feature areas backend-to-frontend linked
-- Validation: 802 passed, 9 skipped, typecheck passed, build passed, lint passed, qc.py adverse review passed with 0 findings
+- Validation (at time of completion): 802 passed, 9 skipped, typecheck passed, build passed, lint passed, qc.py adverse review passed with 0 findings
 - Dead code cleanup reduced exports from 112 to 75 across all service files
 
 ## Completed Milestones (Summary)
@@ -78,7 +78,7 @@ Full details archived in `docs/archive/`.
 - Batch multi-chapter mode: `chapter_ids` list payload triggers sequential drafting in single job
 - Prior context propagation: summaries injected into subsequent chapters (capped at 3)
 - ManuscriptDocument auto-creation: persisted after each chapter draft
-- Test coverage: 907 passed, 9 skipped (+7 tests for summarizer + prompt builder)
+- Test coverage (at time of completion): 907 passed, 9 skipped (+7 tests for summarizer + prompt builder)
 
 ### v1.0 Release -- All Complete
 All 14 v1.0 release items (V1-001 through V1-015) completed and scope-verified.
@@ -100,7 +100,7 @@ with real API backing.
 ### Story Development Backend -- All Complete
 - BE-01 through BE-11E: Schemas, persistence, services, and API surface for branching,
   decisions, review, planning, drafting, characters, world bible, arcs, and brainstorm
-- 802 tests passing across the full suite. Bugfix: `create_inspect_link` incorrectly normalized `object_kind` to `StoryObjectType`, rejecting free-form strings like "job", "checker", "manuscript". Rewrote `test_review_routing_post.py` with proper `tmp_path` DB isolation.
+- 802 tests passing across the full suite (at time of completion). Bugfix: `create_inspect_link` incorrectly normalized `object_kind` to `StoryObjectType`, rejecting free-form strings like "job", "checker", "manuscript". Rewrote `test_review_routing_post.py` with proper `tmp_path` DB isolation.
 
 ### FlowEditor Stage Editing -- All Complete
 - Add stage: dialog with kind selector and name input
