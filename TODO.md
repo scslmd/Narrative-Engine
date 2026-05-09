@@ -2,9 +2,9 @@
 
 ## Current Truth
 
-- The active documentation surface is `README.md`, `AGENTS.md`, `docs/BACKEND_API_REFERENCE.md`, and the current docs under `docs/`.
-- Latest verified validation baseline (2026-05-08):
-  - Backend parallel: 1471 passed, 7 skipped, 2 pre-existing failures (~33s)
+- The active documentation surface is `README.md`, `AGENTS.md`, and the current docs under `docs/`.
+- Latest verified validation baseline (2026-05-09):
+  - Backend parallel: 1473 passed, 7 skipped (~34s)
   - Backend serial: 51 passed (~2s)
   - Frontend tests: 554 passed (~13s)
   - Frontend lint/typecheck/build: all green (2025 modules)
@@ -49,7 +49,7 @@
 
 ## Completed Milestones (Summary)
 
-Full details archived in `docs/archive/TODO_Completed_Milestones_Archive.md`.
+Full details archived in `docs/archive/`.
 
 ### Guided Setup Planning Extension (2026-05-08)
 
