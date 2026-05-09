@@ -5,9 +5,9 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1468 passed, 1 skipped, 1 xdist-isolation failure (~32s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~27s)
-  - Full baseline: ~1519 tests, ~59s total (parallel + serial)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1473 passed, 7 skipped (~34s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~2s)
+  - Full baseline: ~1524 tests, ~66s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - xdist-isolation failures (pass when run directly, verified 2026-05-08):
     - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails only under parallel xdist; passes in isolation
@@ -507,6 +507,7 @@ Do not call the repo merge-ready unless all five of these are green:
 | Idempotency conflicts | Same key must have the same payload; otherwise create a new key |
 | Backup restore failures | Verify disk space and backup existence before restore |
 | `input_payload` vs `input_hash` parameter drift | `StepRecordService.create_step_record()` uses `input_hash`/`output_hash`/`prompt_hash`, not `input_payload`/`output_payload`/`prompt_payload` |
+| Updating `docs/archive/` during doc maintenance | Archive is historical — never search or update files in `docs/archive/`. Reference the directory as a whole, don't enumerate contents.
 
 ## API Patterns
 
@@ -714,6 +715,7 @@ Do not call the repo merge-ready unless all five of these are green:
 - `POST /v1/manuscript-assist/suggestions/{suggestion_id}/archive` (archive suggestion)
 
 #### Jobs
+- `GET /v1/jobs?project_id={id}&limit=20` (list jobs for project, newest first)
 - `POST /v1/jobs/create`
 - `GET /v1/jobs/{job_id}/status`
 - `GET /v1/jobs/{job_id}/attempts`
@@ -1016,9 +1018,11 @@ Factory: app/inference/factory.py::build_inference_backend()
 
 **Inference contract** (`app/schemas/inference.py`):
 ```python
-class InferenceRequest: model, system_prompt, user_prompt, temperature=0.2, max_tokens=1200, metadata
+class InferenceRequest: model, system_prompt, user_prompt, temperature=0.2, max_tokens=None, metadata
 class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 ```
+
+Note: `max_tokens` defaults to `None` in the schema; effective per-phase values come from `settings.inference_max_tokens(phase)` (e.g., P-100 gets 4096, P-300 gets 8000). Prompt builders in `runtime_prompts.py` resolve the phase-specific default before building the request.
 
 **Executor pattern** (`app/services/local_executor.py`):
 1. Build inference request via `runtime_prompts.py` helpers
@@ -1031,7 +1035,7 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 
 **Existing prompt builders** (`app/services/runtime_prompts.py`):
 - P-100 Architect (markdown output), P-200 Sequencer (JSON output), P-300 Drafter (markdown), P-400 Compiler (JSON)
-- P-300 default max_tokens: 8000 (supports full-chapter drafts, overridable via payload)
+- All prompt builders resolve `max_tokens` via `settings.inference_max_tokens(phase)`, which checks per-phase env vars first, then falls back to `NARRATIVE_MAX_TOKENS_DEFAULT`. Defaults: P-100=4096, P-200=4096, P-300=8000, P-400=4096.
 
 **Prompt caching research**: `docs/superpowers/research/2026-05-05-prompt-caching-llama-cpp.md` — llama.cpp supports host-memory prompt caching (`--cache-ram`) for prefix reuse across requests. `cache_control` on messages is a Fireworks AI extension, silently ignored by llama.cpp. P-300 prompt restructuring (static/dynamic message split) is planned as P-CACHE-002 through P-CACHE-005 in v1.7 roadmap. **Read this doc before any work on inference performance or prompt restructuring.**
 
