@@ -4,36 +4,36 @@ Generated from `route_classification.csv`.
 
 | legacy_method | legacy_path | v1_method | v1_path | status_parity | schema_parity_notes |
 |---|---|---|---|---|---|
-| DELETE | `/auth/keys/{prefix}` | DELETE | `/v1/auth/keys/{prefix}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| DELETE | `/backup/{backup_id}` | DELETE | `/v1/backup/{backup_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| DELETE | `/projects/maintenance/projects/{project_id}` | DELETE | `/v1/projects/maintenance/projects/{project_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| DELETE | `/projects/{project_id}` | DELETE | `/v1/projects/{project_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
+| DELETE | `/auth/keys/{prefix}` | DELETE | `/v1/auth/keys/{prefix}` | exact | Identical handler or equivalent canonical route exists |
+| DELETE | `/backup/{backup_id}` | DELETE | `/v1/backup/{backup_id}` | exact | Identical handler or equivalent canonical route exists |
+| DELETE | `/projects/maintenance/projects/{project_id}` | DELETE | `/v1/projects/maintenance/projects/{project_id}` | exact | Identical handler or equivalent canonical route exists |
+| DELETE | `/projects/{project_id}` | DELETE | `/v1/projects/{project_id}` | exact | Identical handler or equivalent canonical route exists |
 | DELETE | `/story-development/arcs/selections/{selection_id}` | DELETE | `/v1/story-development/arcs/selections/{selection_id}` | exact | Identical handler or equivalent canonical route exists |
 | DELETE | `/story-development/braindump/sessions/{session_id}` | DELETE | `/v1/story-development/braindump/sessions/{session_id}` | exact | Identical handler or equivalent canonical route exists |
 | DELETE | `/story-development/flow/stages/{stage_id}` | DELETE | `/v1/story-development/flow/stages/{stage_id}` | exact | Identical handler or equivalent canonical route exists |
 | DELETE | `/story-development/relationships/{edge_id}` | DELETE | `/v1/story-development/relationships/{edge_id}` | exact | Identical handler or equivalent canonical route exists |
 | DELETE | `/story-development/storyboard/cards/{card_id}` | DELETE | `/v1/story-development/storyboard/cards/{card_id}` | exact | Identical handler or equivalent canonical route exists |
-| GET | `/auth/keys` | GET | `/v1/auth/keys` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/backup/latest` | GET | `/v1/backup/latest` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/backup/list` | GET | `/v1/backup/list` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
+| GET | `/auth/keys` | GET | `/v1/auth/keys` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/backup/latest` | GET | `/v1/backup/latest` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/backup/list` | GET | `/v1/backup/list` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/jobs/{job_id}/attempts` | GET | `/v1/jobs/{job_id}/attempts` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/jobs/{job_id}/lineage` | GET | `/v1/jobs/{job_id}/lineage` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/jobs/{job_id}/logs` | GET | `/v1/jobs/{job_id}/logs` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/jobs/{job_id}/status` | GET | `/v1/jobs/{job_id}/status` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/jobs/{job_id}/steps` | GET | `/v1/jobs/{job_id}/steps` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/models` | GET | `/v1/models` | exact | Identical handler or equivalent canonical route exists |
-| GET | `/projects` | GET | `/v1/projects` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects` | GET | `/v1/projects` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/export/{import_id}` | GET | `/v1/projects/export/{import_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/extraction/{extraction_id}` | GET | `/v1/projects/extraction/{extraction_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/import/{import_id}` | GET | `/v1/projects/import/{import_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}` | GET | `/v1/projects/{project_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}` | GET | `/v1/projects/{project_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}/chapter-1` | GET | `/v1/projects/{project_id}/chapter-1` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}/chapter-1` | GET | `/v1/projects/{project_id}/chapter-1` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}/manifest` | GET | `/v1/projects/{project_id}/manifest` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}/sequence` | GET | `/v1/projects/{project_id}/sequence` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| GET | `/projects/{project_id}/sequence` | GET | `/v1/projects/{project_id}/sequence` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
+| GET | `/projects` | GET | `/v1/projects` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects` | GET | `/v1/projects` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/export/{import_id}` | GET | `/v1/projects/export/{import_id}` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/extraction/{extraction_id}` | GET | `/v1/projects/extraction/{extraction_id}` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/import/{import_id}` | GET | `/v1/projects/import/{import_id}` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}` | GET | `/v1/projects/{project_id}` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}` | GET | `/v1/projects/{project_id}` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}/chapter-1` | GET | `/v1/projects/{project_id}/chapter-1` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}/chapter-1` | GET | `/v1/projects/{project_id}/chapter-1` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}/manifest` | GET | `/v1/projects/{project_id}/manifest` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}/sequence` | GET | `/v1/projects/{project_id}/sequence` | exact | Identical handler or equivalent canonical route exists |
+| GET | `/projects/{project_id}/sequence` | GET | `/v1/projects/{project_id}/sequence` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/role-model-checker/{run_id}/attempts` | GET | `/v1/role-model-checker/{run_id}/attempts` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/role-model-checker/{run_id}/lineage` | GET | `/v1/role-model-checker/{run_id}/lineage` | exact | Identical handler or equivalent canonical route exists |
 | GET | `/role-model-checker/{run_id}/status` | GET | `/v1/role-model-checker/{run_id}/status` | exact | Identical handler or equivalent canonical route exists |
@@ -107,25 +107,25 @@ Generated from `route_classification.csv`.
 | PATCH | `/story-development/relationships/{edge_id}` | PATCH | `/v1/story-development/relationships/{edge_id}` | exact | Identical handler or equivalent canonical route exists |
 | PATCH | `/story-development/storyboard/cards/{card_id}` | PATCH | `/v1/story-development/storyboard/cards/{card_id}` | exact | Identical handler or equivalent canonical route exists |
 | PATCH | `/story-development/world-bible/{entry_type}/{title}` | PATCH | `/v1/story-development/world-bible/{entry_type}/{title}` | exact | Identical handler or equivalent canonical route exists |
-| POST | `/auth/keys` | POST | `/v1/auth/keys` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/backup/create` | POST | `/v1/backup/create` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/backup/restore/{backup_id}` | POST | `/v1/backup/restore/{backup_id}` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
+| POST | `/auth/keys` | POST | `/v1/auth/keys` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/backup/create` | POST | `/v1/backup/create` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/backup/restore/{backup_id}` | POST | `/v1/backup/restore/{backup_id}` | exact | Identical handler or equivalent canonical route exists |
 | POST | `/jobs/create` | POST | `/v1/jobs/create` | exact | Identical handler or equivalent canonical route exists |
 | POST | `/jobs/{job_id}/retry` | POST | `/v1/jobs/{job_id}/retry` | exact | Identical handler or equivalent canonical route exists |
-| POST | `/projects/create` | POST | `/v1/projects/create` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/guided-setup/analyze` | POST | `/v1/projects/guided-setup/analyze` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/guided-setup/create` | POST | `/v1/projects/guided-setup/create` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/import-export` | POST | `/v1/projects/import-export` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/import-mythos` | POST | `/v1/projects/import-mythos` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/import-patterns` | POST | `/v1/projects/import-patterns` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/import-story` | POST | `/v1/projects/import-story` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/maintenance/audit-log/truncate` | POST | `/v1/projects/maintenance/audit-log/truncate` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/maintenance/cleanup` | POST | `/v1/projects/maintenance/cleanup` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/maintenance/database/compact` | POST | `/v1/projects/maintenance/database/compact` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/maintenance/scan` | POST | `/v1/projects/maintenance/scan` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/{project_id}/export` | POST | `/v1/projects/{project_id}/export` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/{project_id}/extract-patterns` | POST | `/v1/projects/{project_id}/extract-patterns` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
-| POST | `/projects/{project_id}/generate-description` | POST | `/v1/projects/{project_id}/generate-description` | missing | No /v1 counterpart exists; see `v1_gap_checklist.md` |
+| POST | `/projects/create` | POST | `/v1/projects/create` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/guided-setup/analyze` | POST | `/v1/projects/guided-setup/analyze` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/guided-setup/create` | POST | `/v1/projects/guided-setup/create` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/import-export` | POST | `/v1/projects/import-export` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/import-mythos` | POST | `/v1/projects/import-mythos` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/import-patterns` | POST | `/v1/projects/import-patterns` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/import-story` | POST | `/v1/projects/import-story` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/maintenance/audit-log/truncate` | POST | `/v1/projects/maintenance/audit-log/truncate` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/maintenance/cleanup` | POST | `/v1/projects/maintenance/cleanup` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/maintenance/database/compact` | POST | `/v1/projects/maintenance/database/compact` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/maintenance/scan` | POST | `/v1/projects/maintenance/scan` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/{project_id}/export` | POST | `/v1/projects/{project_id}/export` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/{project_id}/extract-patterns` | POST | `/v1/projects/{project_id}/extract-patterns` | exact | Identical handler or equivalent canonical route exists |
+| POST | `/projects/{project_id}/generate-description` | POST | `/v1/projects/{project_id}/generate-description` | exact | Identical handler or equivalent canonical route exists |
 | POST | `/role-model-checker/run` | POST | `/v1/role-model-checker/run` | exact | Identical handler or equivalent canonical route exists |
 | POST | `/role-model-checker/start` | POST | `/v1/role-model-checker/start` | exact | Identical handler or equivalent canonical route exists |
 | POST | `/role-model-checker/{run_id}/retry` | POST | `/v1/role-model-checker/{run_id}/retry` | exact | Identical handler or equivalent canonical route exists |

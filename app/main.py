@@ -24,8 +24,8 @@ from .api import (
     build_story_development_router,
     build_role_model_checker_router,
 )
-from .api.auth import router as auth_router
-from .api.backup import router as backup_router
+from .api.auth import build_auth_router
+from .api.backup import build_backup_router
 from .api.health import router as health_router
 from .schemas.models import ModelCatalogResponse
 from .schemas.projects import (
@@ -485,10 +485,13 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     def get_models() -> ModelCatalogResponse:
         return model_registry.build_catalog()
 
-    app.include_router(auth_router)  # Authentication endpoints (SEC-02)
-    app.include_router(backup_router)  # Backup endpoints (REL-04)
+    app.include_router(build_auth_router())  # Authentication endpoints (SEC-02)
+    app.include_router(build_auth_router(prefix="/v1/auth"))
+    app.include_router(build_backup_router())  # Backup endpoints (REL-04)
+    app.include_router(build_backup_router(prefix="/v1/backup"))
     app.include_router(health_router)  # Health endpoints (REL-05, REL-06)
     app.include_router(build_projects_router(project_service, import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
+    app.include_router(build_projects_router(project_service, prefix="/v1/projects", import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
     app.include_router(build_jobs_router(job_manager))
     app.include_router(build_jobs_router(job_manager, prefix='/v1/jobs'))
     app.include_router(build_models_router(model_registry))

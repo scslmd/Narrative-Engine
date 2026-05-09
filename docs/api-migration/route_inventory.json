@@ -73,6 +73,22 @@
   },
   {
     "method": "DELETE",
+    "path": "/v1/auth/keys/{prefix}",
+    "name": "revoke_api_key",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/backup/{backup_id}",
+    "name": "delete_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "DELETE",
     "path": "/v1/canon/annotations/{annotation_id}",
     "name": "delete_annotation",
     "tags": [
@@ -101,6 +117,22 @@
     "name": "delete_entry",
     "tags": [
       "pattern-library"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/projects/maintenance/projects/{project_id}",
+    "name": "delete_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/projects/{project_id}",
+    "name": "delete_project",
+    "tags": [
+      "projects"
     ]
   },
   {
@@ -843,6 +875,30 @@
   },
   {
     "method": "GET",
+    "path": "/v1/auth/keys",
+    "name": "list_api_keys",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/backup/latest",
+    "name": "get_latest_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/backup/list",
+    "name": "list_backups",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "GET",
     "path": "/v1/canon/annotations",
     "name": "list_annotations",
     "tags": [
@@ -951,6 +1007,70 @@
     "name": "list_entries",
     "tags": [
       "pattern-library"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects",
+    "name": "list_projects",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/export/{import_id}",
+    "name": "get_export_import_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/extraction/{extraction_id}",
+    "name": "get_extraction_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/import/{import_id}",
+    "name": "get_import_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/{project_id}",
+    "name": "get_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/{project_id}/chapter-1",
+    "name": "get_chapter",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/{project_id}/manifest",
+    "name": "get_manifest",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/projects/{project_id}/sequence",
+    "name": "get_sequence",
+    "tags": [
+      "projects"
     ]
   },
   {
@@ -2183,6 +2303,30 @@
   },
   {
     "method": "POST",
+    "path": "/v1/auth/keys",
+    "name": "create_api_key",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/backup/create",
+    "name": "create_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/backup/restore/{backup_id}",
+    "name": "restore_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "POST",
     "path": "/v1/canon/annotations",
     "name": "create_annotation",
     "tags": [
@@ -2291,6 +2435,118 @@
     "name": "materialize_extraction",
     "tags": [
       "pattern-library"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/create",
+    "name": "create_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/guided-setup/analyze",
+    "name": "guided_setup_analyze",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/guided-setup/create",
+    "name": "guided_setup_create",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/import-export",
+    "name": "import_export_zip",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/import-mythos",
+    "name": "import_mythos",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/import-patterns",
+    "name": "import_patterns",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/import-story",
+    "name": "import_story",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/maintenance/audit-log/truncate",
+    "name": "truncate_audit_log",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/maintenance/cleanup",
+    "name": "cleanup",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/maintenance/database/compact",
+    "name": "compact_database",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/maintenance/scan",
+    "name": "scan_orphans",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/{project_id}/export",
+    "name": "export_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/{project_id}/extract-patterns",
+    "name": "extract_patterns",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/projects/{project_id}/generate-description",
+    "name": "generate_description",
+    "tags": [
+      "projects"
     ]
   },
   {

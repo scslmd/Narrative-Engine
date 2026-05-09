@@ -102,6 +102,8 @@ from app.services.project_maintenance import ProjectMaintenanceError
 
 def build_projects_router(
     project_service: ProjectService,
+    *,
+    prefix: str = "/projects",
     import_service: _ImportServiceProtocol | None = None,
     mythos_service: _MythosServiceProtocol | None = None,
     pattern_service: _PatternServiceProtocol | None = None,
@@ -112,7 +114,7 @@ def build_projects_router(
     from ..schemas.story_import import StoryImportRequest, StoryImportResponse
     from ..services.story_import import StoryImportError
 
-    router = APIRouter(prefix="/projects", tags=["projects"])
+    router = APIRouter(prefix=prefix, tags=["projects"])
 
     @router.post("/create", response_model=ProjectDetailResponse, status_code=201)
     def create_project(request: ProjectCreateRequest) -> ProjectDetailResponse:
