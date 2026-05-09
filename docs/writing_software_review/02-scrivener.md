@@ -1,10 +1,16 @@
 # Scrivener: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://www.literatureandlatte.com/scrivener/overview (main overview)
+- https://www.literatureandlatte.com/scrivener/testimonials (testimonials)
+- https://www.literatureandlatte.com/scrivener/faqs/ (FAQ)
+
 ## Overview
 - **Type**: Desktop app (macOS, Windows, iOS)
 - **Price**: $59.99 one-time (Mac/Windows); $23.99 iOS app
 - **Best for**: Detailed planners with complex projects
-- **URL**: https://www.literatureandlatte.com/scrivener/overview
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
@@ -15,12 +21,63 @@
 - **Editor**: Rich text editor with split-view capability
 - **Inspector**: Side panel for metadata, character notes, custom fields
 
-### Key Features
+### Key Features (source: `/scrivener/overview`)
 - **Binder**: Hierarchical file organization; drag-and-drop rearrangement
 - **Corkboard**: Visual scene cards with synopsis summaries
 - **Linguistic Focus Mode**: Highlight specific parts of speech (dialogue tags, adjectives)
 - **Templates**: Free project templates for novels, screenplays, academic papers
 - **Compile**: Multi-format export engine with customizable formatting rules
+
+### Features (source: `/scrivener/testimonials`)
+- Snapshots for version comparison within documents
+- Full-screen writing mode
+- Page view for print-layout editing
+- Scrivenings mode to stitch sections together for continuous editing
+
+### Features (source: `/scrivener/faqs/`)
+- Import from DOCX, RTF, TXT, markdown
+- Export to DOCX, RTF, TXT, HTML, PDF, EPUB, MOBI
+- Custom metadata fields per document
+- Target word count goals
+- Research folder for reference materials
+
+## Complete Feature List
+
+### Planning Features (source: `/scrivener/overview`)
+- Corkboard with visual scene cards and synopsis summaries
+- Binder tree for hierarchical file/folder organization
+- Drag-and-drop manuscript rearrangement
+- Project templates (novels, screenplays, academic papers)
+
+### Writing Features (source: `/scrivener/overview`, `/scrivener/faqs/`)
+- Rich text editor with split-view capability
+- Full-screen distraction-free mode
+- Page view for print-layout editing
+- Scrivenings mode (stitch sections together for continuous editing)
+- Linguistic Focus Mode (highlight dialogue tags, adjectives, etc.)
+- Target word count goals per document
+
+### Organization Features (source: `/scrivener/overview`, `/scrivener/faqs/`)
+- Binder tree with unlimited nesting depth
+- Custom metadata fields per document
+- Research folder for reference materials
+- Tags and labels for categorization
+- Snapshots for version comparison within documents
+
+### Export Features (source: `/scrivener/overview`, `/scrivener/faqs/`)
+- Compile engine with customizable formatting rules
+- Export formats: DOCX, RTF, TXT, HTML, PDF, EPUB, MOBI
+- Multi-format output in single compile operation
+- Custom formatting presets
+
+### Collaboration Features (source: `/scrivener/testimonials`)
+- Share project files manually (no real-time sync)
+- Import/export for handoff between writers
+
+### Pricing (source: `/scrivener/overview`)
+- $59.99 one-time purchase (Mac or Windows)
+- $23.99 iOS app (separate purchase)
+- Free updates within current version line
 
 ## Strengths
 1. **Feature depth**: Comprehensive toolset for every writing stage
@@ -36,15 +93,12 @@
 4. **iOS app is separate purchase**: $23.99 extra for mobile access
 5. **No AI integration**: No writing aids, brainstorming, or analysis tools
 
-## UI/UX Observations
-- **Strength**: Binder provides instant access to any project element; no digging through menus
-- **Strength**: Corkboard gives visual overview of story structure at a glance
-- **Weakness**: Three-pane layout wastes screen real estate on smaller displays
-- **Weakness**: Inspector panel feels cluttered with too many metadata fields
-- **Weakness**: Compile dialog has 10+ options; intimidating for first-time users
-- **Weakness**: No dark mode in Windows version (macOS has it)
+## Unique Differentiators
+- **Binder + Corkboard paradigm** — the gold standard for manual manuscript organization; no competitor matches the depth of hierarchical file management combined with visual scene cards
+- **One-time purchase model** — rare in a subscription-dominated market; $59.99 covers all updates in a version line
+- **Compile engine** — most flexible export system in the category; customizable formatting rules let writers produce publisher-ready output without external tools
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Scrivener | Narrative Engine |
 |--------|-----------|-----------------|

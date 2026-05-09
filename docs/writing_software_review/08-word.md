@@ -1,14 +1,19 @@
 # Microsoft Word: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://www.microsoft.com/en-us/microsoft-365/word (main landing)
+- https://www.microsoft.com/en-us/microsoft-365/buy/compare-all-microsoft-365-products (pricing comparison)
+
 ## Overview
 - **Type**: Desktop app (Windows, macOS), Web-based, Mobile (iOS, Android)
 - **Price**: Free web version; Microsoft 365 Personal $99.99/yr; Family $129.99/yr; Premium $199.99/yr
 - **Best for**: Industry-standard formatting, universal file compatibility, collaboration
-- **URL**: https://www.microsoft.com/en-us/microsoft-365/word
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/microsoft-365/word`)
 - Ribbon toolbar with tabs: Home, Insert, Design, Layout, References, Mailings, Review, View, Help
 - **Home tab**: Font, paragraph formatting, clipboard, styles, editing tools
 - **Insert tab**: Tables, pictures, shapes, headers/footers, page numbers, hyperlinks
@@ -18,7 +23,7 @@
 - **Review tab**: Spell check, thesis check, translate, word count, comments, track changes, compare documents
 - **View tab**: Reading view, print layout, web layout, focus, side-by-side comparison
 
-### Key Features (Verified from actual pages)
+### Key Features (source: `/microsoft-365/word`)
 - **Copilot in Word**: AI drafting assistant; turns thoughts into first drafts; coauthors and iterates directly in Word; requires Microsoft 365 subscription
 - **Editor in Word**: Grammar, spelling, style improvement; intelligent scoring (clarity, editor, grammar metrics); real-time suggestions
 - **Voice-to-text**: Dictation and voice commands for hands-free writing
@@ -27,10 +32,66 @@
 - **Cloud sync**: OneDrive integration; real-time co-authoring; version history
 - **Export formats**: DOCX, PDF, EPUB, MOBI, plain text, RTF, HTML
 
-### Writing Workflow
+### Pricing (source: `/microsoft-365/buy/compare-all-microsoft-365-products`)
 - Free web version: Basic editing, templates, 5GB storage
-- Desktop app: Full feature set, offline access, advanced formatting
-- Mobile apps: Review, edit, create on go; advanced features require subscription
+- Microsoft 365 Personal: $99.99/yr (full desktop app, Copilot, advanced Editor)
+- Microsoft 365 Family: $129.99/yr (up to 6 users)
+- Premium: $199.99/yr (additional features)
+
+## Complete Feature List
+
+### Writing Features (source: `/microsoft-365/word`)
+- Rich text editor with full formatting controls
+- Copilot AI drafting assistant (turns thoughts into first drafts)
+- Editor in Word (grammar, spelling, style improvement with intelligent scoring)
+- Voice-to-text dictation and voice commands
+- Real-time collaboration via OneDrive
+- Track Changes for editing workflows
+
+### Formatting Features (source: `/microsoft-365/word`)
+- Ribbon toolbar with 7+ tabs of formatting tools
+- Font and paragraph formatting controls
+- Document themes and page design options
+- Margins, orientation, columns, page setup
+- Headers/footers, page numbers, hyperlinks
+- Tables, pictures, shapes insertion
+- Section breaks and watermarks
+
+### Organization Features (source: `/microsoft-365/word`)
+- Table of contents generation
+- Footnotes and endnotes
+- Citations and bibliography management
+- Index generation
+- Navigation pane for document structure
+- Document comparison tool
+
+### Collaboration Features (source: `/microsoft-365/word`)
+- Track Changes with accept/reject workflow
+- Comment threads on document sections
+- Compare documents side-by-side
+- Real-time co-authoring via OneDrive
+- Version history and restoration
+- Share links with permission controls
+
+### Template Features (source: `/microsoft-365/word`)
+- Extensive template library
+- Resumes, letters, reports, manuscripts, academic papers
+- Genre-specific templates
+- Custom template creation
+
+### Export Features (source: `/microsoft-365/word`)
+- DOCX (native format)
+- PDF export
+- EPUB ebook export
+- MOBI Kindle export
+- Plain text, RTF, HTML export
+- Print-ready output
+
+### Pricing Plans (source: `/microsoft-365/buy/compare-all-microsoft-365-products`)
+- Free web version: Basic editing, 5GB storage
+- Personal: $99.99/yr (full desktop app, Copilot, advanced Editor)
+- Family: $129.99/yr (up to 6 users)
+- Premium: $199.99/yr (additional features)
 
 ## Strengths
 1. **Universal compatibility**: DOCX is industry standard; every publisher accepts it
@@ -46,15 +107,12 @@
 4. **No visual planning**: No corkboard, timeline, or story mapping capabilities
 5. **Formatting focus**: Optimized for document layout, not creative writing workflow
 
-## UI/UX Observations
-- **Strength**: Track Changes is unmatched; industry standard for professional editing
-- **Strength**: OneDrive sync is seamless; real-time collaboration works flawlessly
-- **Weakness**: Ribbon interface wastes vertical screen space; reduces writing area
-- **Weakness**: No distraction-free mode without hiding entire ribbon (loses access to tools)
-- **Weakness**: Copilot requires separate subscription add-on; not included in base 365
-- **Weakness**: Manuscript formatting requires manual margin/spacing tweaks; no novel-specific templates
+## Unique Differentiators
+- **Track Changes as industry standard** — every professional editor and publishing house uses Word's Track Changes; no competitor matches this universal adoption
+- **OneDrive ecosystem integration** — seamless real-time collaboration with version history; works with every major platform and device
+- **Copilot in familiar interface** — AI drafting built into the tool writers already know; no learning curve for the editor itself
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Microsoft Word | Narrative Engine |
 |--------|----------------|-----------------|

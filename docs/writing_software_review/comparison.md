@@ -1,25 +1,70 @@
 # Writing Software Comparison: 8 Tools vs Narrative Engine Pipeline
 
+## Research Date: 2026-05-09
+## Subjects Covered: Reedsy Studio, Scrivener, Ulysses, The Novel Factory, Plottr, Campfire, Sudowrite, Microsoft Word
+## URLs Visited: See individual reports for full URL lists per subject
+
 ## Executive Summary
 
 This document compares 8 book-writing software tools against each other and the Narrative Engine pipeline. Each tool was researched by visiting their websites, exploring feature pages recursively, and capturing UI screenshots. The comparison focuses on features relevant to novel writing: planning, drafting, worldbuilding, character management, consistency checking, AI integration, and export capabilities.
 
-## Comparison Matrix
+## Feature Matrix (Grouped by Category)
+
+### Planning & Outlining
 
 | Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
 |---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
-| **Price** | Free core; $10.99/mo max | $59.99 one-time | $39.99/yr | $75/yr; $649 lifetime | $60/yr | Free; $14/mo | $264/yr | Free; $99.99/yr | Free (self-hosted) |
-| **Platforms** | Web only | Mac/Win/iOS | Mac/iOS | Web/Mac/Win/iOS/Android | Mac/Win/Web/iOS/Android | Web/Desktop/Mobile | Web | All platforms | Web + local |
-| **Planning** | Boards (kanban) | Corkboard + Binder | Document groups | 15-step Roadmap | Visual timelines | Timeline module | Story Bible | Manual only | P-100 AI Architect |
-| **Writing** | Distraction-free editor | Rich text editor | Markdown editor | Word processor | Export to Word/Scrivener | Basic word processor | AI-assisted editor | Rich text + Copilot | P-300 AI Drafter |
-| **Worldbuilding** | Notes in Boards | Binder notes | Folder notes | Plot templates | Places & Notes | 18 modules | Text docs | None | Structured world bible |
-| **Characters** | Character notes | Character sheets | Folder notes | Character builder | Character sheets | Character builder | Text sheets | None | Full profiles + relationships |
-| **AI Integration** | None | None | None | None | None | None | 9+ AI tools | Copilot add-on | Core LLM pipeline |
-| **Consistency** | Manual | Linguistic Focus | Grammar check | Manual | Manual | Manual | Feedback tool | Editor | G-350 auto-gates |
-| **Multi-chapter** | Independent chapters | Independent files | Independent docs | Roadmap steps | Series planner | Series projects | Project-based | Separate docs | Batch mode + context propagation |
-| **Export** | PDF, EPUB | Multi-format | PDF/EPUB/DOCX | DOCX/PDF | Word/Scrivener | Draft export | Draft export | All formats | P-400 automated compilation |
-| **Story Import** | Import draft | Import files | Import docs | Import projects | Import projects | Import elements | Paste text | Open files | Full LLM analysis pipeline |
-| **Pattern Extraction** | None | None | None | Templates | 40+ templates | 10+ templates | Brainstorm | None | Dedicated AI service |
+| Visual planning | Boards (kanban) | Corkboard + Binder | Document groups | 15-step Roadmap | Visual timelines | Timeline module | Story Bible | Manual only | P-100 AI Architect |
+| Templates | None | Project templates | None | Plot templates | 40+ templates | 10+ templates | None | General docs | AI-generated outlines |
+| Scene organization | Cards | Corkboard cards | Folders | Roadmap steps | Timeline cards | Corkboard scenes | Canvas | Headings | Sequences/chapters/scenes/beats |
+| Multi-timeline tracking | No | No | No | No | Yes | Yes | No | No | Via chapter hierarchy |
+| AI-assisted planning | No | No | No | No | No | No | Story Bible | Copilot | P-100 Architect |
+
+### Writing Experience
+
+| Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
+|---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
+| Editor type | Distraction-free | Rich text | Markdown | Word processor | None (export only) | Basic word processor | AI-assisted editor | Rich text + Copilot | P-300 AI Drafter |
+| Goal tracking | Yes | Per document | Daily goals | Yes | Word count | Yes | No | No | Job-based pipeline |
+| Collaboration | Beta reader links | Manual share | iCloud sync | Cross-platform | Cloud sync | Co-writer links | None | Track Changes | Inspect/lineage tracking |
+| AI writing assistance | None | None | None | None | None | None | 9+ AI tools | Copilot add-on | Core LLM pipeline |
+| Multi-chapter orchestration | Independent chapters | Independent files | Independent docs | Roadmap steps | Series planner | Series projects | Project-based | Separate docs | Batch mode + context propagation |
+
+### Worldbuilding & Characters
+
+| Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
+|---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
+| Character management | Notes in Boards | Character sheets | Folder notes | Character builder | Character sheets | Character builder | Text sheets | None | Full profiles + relationships |
+| Worldbuilding | Notes system | Binder notes | Folder notes | Plot templates | Places & Notes | 18 modules | Text docs | None | Structured world bible |
+| Relationship mapping | Basic | Manual | None | None | Family tree | Flowcharts | None | None | Relationship graphs |
+| Interactive maps | No | No | No | No | No | Yes (Inkarnate) | Visualize AI | No | No |
+| Pattern extraction | No | No | No | Templates | Templates | Templates | Brainstorm | No | Dedicated AI service |
+
+### Consistency & Quality Control
+
+| Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
+|---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
+| Consistency checking | Manual | Linguistic Focus | Grammar check | Manual | Visual timeline | Manual | Feedback tool | Editor | G-350 auto-gates |
+| Version history | 30 days (free) | Snapshots | iCloud versions | Roadmap tracking | Backup system | Module tracking | None | OneDrive history | Job lineage tracking |
+| Automated contradiction detection | No | No | No | No | No | No | No | No | Yes (G-350) |
+| Style/grammar checking | No | Linguistic Focus | 20+ languages | Manual | Manual | Manual | AI Feedback | Editor scoring | Canon packet verification |
+
+### Export & Formatting
+
+| Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
+|---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
+| Print-ready PDF | Yes | Yes | Yes | Yes | No (export to Word) | Draft only | Draft only | Yes | P-400 automated |
+| EPUB export | Yes | Yes | Yes | No | No | No | No | Yes | P-400 automated |
+| Multi-format compile | PDF, EPUB | 7+ formats | 6+ formats | DOCX, PDF | Word/Scrivener | Draft only | Draft only | All formats | P-400 automated |
+| Custom formatting rules | Trim sizes | Compile engine | Export templates | Basic | None | None | None | Ribbon controls | Automated compilation |
+
+### Pricing & Platforms
+
+| Feature | Reedsy Studio | Scrivener | Ulysses | Novel Factory | Plottr | Campfire | Sudowrite | MS Word | Narrative Engine |
+|---------|---------------|-----------|---------|---------------|--------|----------|-----------|---------|-----------------|
+| Price | Free core; $10.99/mo max | $59.99 one-time | $39.99/yr | $75/yr; $649 lifetime | $60/yr; $199 lifetime | Free; $14/mo | $264/yr | Free; $99.99/yr | Free (self-hosted) |
+| Platforms | Web only | Mac/Win/iOS | Mac/iOS | Web/Mac/Win/iOS/Android | Mac/Win/Web/iOS/Android | Web/Desktop/Mobile | Web | All platforms | Web + local |
+| Offline capable | No | Yes | Yes | Desktop app | Desktop/Web | Desktop app | No | Desktop app | Local inference |
 
 ## Feature Deep Dives
 
@@ -172,6 +217,28 @@ This document compares 8 book-writing software tools against each other and the 
 | **AI-assisted writer** | Sudowrite | Most comprehensive AI tools |
 | **Professional editor** | MS Word | Track Changes industry standard |
 | **AI pipeline user** | Narrative Engine | Full LLM-driven workflow |
+
+## Key Takeaways
+
+### Cross-Cutting Patterns
+- **AI is converging**: 7 of 8 tools are either all-manual or adding AI as an afterthought. Only Sudowrite and Word have AI, and both treat it as a feature rather than the core architecture.
+- **Planning is underserved**: No tool combines visual timeline mapping (Plottr) with AI-assisted structure generation. Narrative Engine's P-100 fills this gap.
+- **Worldbuilding is fragmented**: Campfire has 18 modules but they're isolated; no tool offers automated canon management with consistency checking.
+
+### Market Gaps
+- **No tool combines visual timeline + AI planning + automated consistency gates** — Narrative Engine is the only candidate filling all three
+- **Story import workflow is unique** — no competitor offers paste-existing-story → auto-extract-structure pipeline
+- **Multi-chapter orchestration is underserved** — all tools treat chapters as independent; Narrative Engine's batch mode with context propagation is unmatched
+
+### Actionable Opportunities for Narrative Engine
+- **Visual timeline view** (P0): Plottr's color-coded timeline is the category leader; add visual scene mapping to complement P-100 output
+- **Story structure templates** (P1): Plottr has 40+ templates; Novel Factory has 15-step roadmap; integrate template library into P-100
+- **Writing goals dashboard** (P1): Reedsy Studio, Ulysses, and Novel Factory all offer goal tracking; add productivity analytics to pipeline dashboard
+- **Relationship visualizer** (P2): Campfire's flowcharts and Plottr's family tree are strong; add visual relationship graph to character management
+- **Grammar/style editor** (P2): Ulysses has 20+ language support; Word has Editor scoring; integrate grammar checking into P-300 output review
+- **Interactive maps** (P3): Campfire's map pins linking to story elements are unique; consider map module for worldbuilding-heavy projects
+- **Theme/mood integration** (P4): Sudowrite's Visualize and Campfire's moodboards offer visual inspiration; consider theme generation for worldbuilding
+- **Plugin ecosystem** (P4): Sudowrite has 1,000+ plugins; consider extensible plugin architecture for custom AI tools
 
 ## Screenshot Index
 

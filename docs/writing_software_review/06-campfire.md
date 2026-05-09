@@ -1,38 +1,115 @@
 # Campfire: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://www.campfirewriting.com/ (main landing)
+- https://www.campfirewriting.com/character-builder (character module)
+- https://www.campfirewriting.com/story-planner (planning module)
+- https://www.campfirewriting.com/interactive-maps (maps module)
+- https://www.campfirewriting.com/word-processor (writing module)
+- https://www.campfirewriting.com/pricing (pricing plans)
+- https://www.campfirewriting.com/apps (desktop/mobile apps)
+- https://www.campfirewriting.com/learn (learning resources)
+
 ## Overview
 - **Type**: Web-based (also desktop & mobile apps)
 - **Price**: Free starter plan; Standard $14/mo or $132/yr; Custom à la carte from $0.50/mo per module
 - **Best for**: Worldbuilding-heavy projects (fantasy, sci-fi, historical)
-- **URL**: https://www.campfirewriting.com/
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/`)
 - Modular workspace with 18+ specialized panels
 - Customizable themes: fonts, colors, background images per project
 - Panel-based layout: drag, resize, arrange modules freely
 - Focus Mode available in every module
 - Sidebar access to notes while drafting
 
-### Key Modules (Verified from actual pages)
-- **Word Processor**: Chapter writing with corkboard scene cards; word count goals; templates
-- **Timeline Module**: Multi-timeline tracking; 10+ story structure templates (Hero's Journey, 3-Act, etc.)
-- **Character Builder**: Detailed character sheets; backstories, attributes, stats, artwork; moodboards
-- **Relationships Module**: Freestyle flowcharts for family trees and character connections
-- **Maps Module**: Interactive map uploads; Inkarnate integration; pins linking to story elements; nested maps; region annotations
-- **Encyclopedia Module**: Wiki-style articles for in-world documents, foods, fashions, technologies, histories
-- **Calendar Module**: Custom eras, days, weeks, months; multiple moons tracking; links to Timeline
-- **Systems Module**: Faction/group organization with visual flowcharts; color-coded connections
-- **Research Module**: Weblinks, annotated videos, PDFs, images, text notes; linkable to other elements
-- **Attributes Panel**: Custom fields for any element type
+### Character Builder (source: `/character-builder`)
+- Detailed character sheets with backstories, attributes, stats
+- Character artwork and moodboards
+- Visual character relationship mapping
+- Custom attributes and fields
 
-### Writing Features
-- Tag story elements directly in manuscript text
-- Project-wide notepad for quick ideas during writing sessions
-- Free default templates for chapters, scenes, characters
+### Story Planner (source: `/story-planner`)
+- Multi-timeline tracking for complex narratives
+- 10+ story structure templates (Hero's Journey, 3-Act, etc.)
+- Scene-by-scene planning with corkboard view
+- Chapter organization and tracking
+
+### Interactive Maps (source: `/interactive-maps`)
+- Map uploads with interactive pins
+- Inkarnate integration for map creation
+- Pins linking to story elements (characters, places, events)
+- Nested maps for multi-region worlds
+- Region annotations and notes
+
+### Word Processor (source: `/word-processor`)
+- Chapter writing with corkboard scene cards
+- Word count goals and tracking
+- Templates for chapters, scenes, characters
 - Custom template creation and saving
-- Co-writer collaboration with private share links; no extra cost or limits
+- Tag story elements directly in manuscript text
+
+## Complete Feature List
+
+### Writing Features (source: `/word-processor`)
+- Word processor with corkboard scene cards
+- Word count goals and progress tracking
+- Default templates for chapters, scenes, characters
+- Custom template creation and saving
+- Tag story elements directly in manuscript text
+- Project-wide notepad for quick ideas
+- Focus Mode for distraction-free writing
+
+### Planning Features (source: `/story-planner`)
+- Multi-timeline tracking for complex narratives
+- 10+ story structure templates (Hero's Journey, 3-Act, etc.)
+- Scene-by-scene planning with corkboard view
+- Chapter organization and tracking
+- Visual plot mapping
+
+### Character Features (source: `/character-builder`)
+- Detailed character sheets with backstories
+- Attributes and stats tracking
+- Character artwork integration
+- Moodboards for visual reference
+- Custom fields for any character attribute
+
+### Worldbuilding Features (source: `/interactive-maps`, `/`)
+- Interactive maps with pins linking to story elements
+- Inkarnate integration for map creation
+- Nested maps for multi-region worlds
+- Region annotations and notes
+- Encyclopedia module (wiki-style articles for in-world documents, foods, fashions, technologies, histories)
+- Calendar module (custom eras, days, weeks, months; multiple moons tracking)
+- Systems module (faction/group organization with visual flowcharts)
+- Research module (weblinks, annotated videos, PDFs, images, text notes)
+- Attributes panel (custom fields for any element type)
+
+### Relationship Features (source: `/`)
+- Freestyle flowcharts for family trees
+- Character connection mapping
+- Visual relationship diagrams
+- Color-coded connections
+
+### Collaboration Features (source: `/`)
+- Co-writer collaboration with private share links
+- No extra cost or limits on collaborators
+- Real-time editing indicators
+
+### Pricing (source: `/pricing`)
+- Free starter plan
+- Standard: $14/mo or $132/yr
+- À la carte: $0.50/mo per module (custom selection)
+- Pay only for modules you need
+
+### Platform Availability (source: `/apps`)
+- Web-based (browser)
+- Desktop app (offline capable)
+- Mobile apps (iOS, Android)
+- All platforms sync via cloud
 
 ## Strengths
 1. **Deepest worldbuilding toolkit**: 18 modules covering every aspect of secondary world creation
@@ -48,15 +125,12 @@
 4. **No automated consistency checking**: Relies on manual tracking across modules
 5. **No export formatting**: Cannot produce print-ready PDFs or EPUBs directly
 
-## UI/UX Observations
-- **Strength**: Panel customization is genuinely flexible; every project can look unique
-- **Strength**: Interactive maps with pins are a killer feature for fantasy writers
-- **Weakness**: 18 modules require learning curve; new users face decision paralysis
-- **Weakness**: Word processor feels like an afterthought compared to worldbuilding tools
-- **Weakness**: No visual overview of how modules connect; writer must mentally link elements
-- **Weakness**: Collaboration is functional but lacks real-time co-editing indicators
+## Unique Differentiators
+- **18 specialized worldbuilding modules** — deepest toolkit in the category; covers characters, relationships, maps, encyclopedia, calendar, systems, research, attributes, moodboards, and more
+- **Interactive maps with story-element pins** — unique integration linking map locations to characters, events, and story elements; no direct competitor offers this
+- **À la carte pricing model** — pay only for modules you need ($0.50/mo per module); most competitors offer fixed-tier subscriptions
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Campfire | Narrative Engine |
 |--------|----------|-----------------|

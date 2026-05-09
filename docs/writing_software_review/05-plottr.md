@@ -1,20 +1,29 @@
 # Plottr: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://plottr.com/ (main landing)
+- https://plottr.com/features/ (features page)
+- https://plottr.com/pricing/ (pricing plans)
+- https://plottr.com/events/ (training events)
+- https://plottr.com/blog/ (blog/resources)
+- https://plottr.com/support/ (support page)
+
 ## Overview
 - **Type**: Windows, macOS, Web, iOS, Android
 - **Price**: $60/yr or $199 lifetime; 30-day free trial
 - **Best for**: Visual storytellers who map plots with timelines and series bibles
-- **URL**: https://plottr.com/
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/features/`)
 - Visual timeline canvas as primary view
 - Color-coded scene cards arranged chronologically
 - No writing pane — purely a planning/outlining tool
 - Export to Word or Scrivener for drafting
 
-### Key Features (Verified from actual pages)
+### Feature Details (source: `/features/`)
 - **Visual Timeline**: Drag-and-drop scene cards; color-coded plotlines and character arcs; subplot tracking; filter views per character/POV
 - **Templates**: 40+ plot outlining templates (Hero's Journey, Romancing the Beat, Story Genius, 12-Step Mystery, 3-Act Structure, Story Circle, Horror Beat Sheet, etc.)
 - **Character Sheets**: Detailed profiles with templates (Enneagram, Myers-Briggs, DISC, GM/C, Magic System Blueprint, D&D Character Sheet, etc.); tags, filters, search
@@ -24,11 +33,67 @@
 - **Editing Companion**: Editing notes, progress tracking, word count tracking, detail tracking alongside manuscript
 - **Collaboration**: Cloud sync, real-time collaboration (subscription required)
 
-### Writing Workflow
-- Plottr is a planning tool, not a writing app
-- Create outline in Plottr → Export to Word/Scrivener → Write manuscript
-- Keep Plottr open during drafting as reference/editing companion
-- Update timeline as story changes during writing
+### Pricing (source: `/pricing/`)
+- Plottr: $60/yr or $199 lifetime
+- Plottr Pro: includes advanced features, cloud sync, real-time collaboration
+- 30-day free trial
+
+### Training (source: `/events/`)
+- Live training sessions
+- Recorded tutorials
+- Community events
+
+## Complete Feature List
+
+### Planning Features (source: `/features/`)
+- Visual timeline with drag-and-drop scene cards
+- Color-coded plotlines and character arcs
+- Subplot tracking across multiple storylines
+- Filter views per character/POV
+- 40+ plot outlining templates (Hero's Journey, Romancing the Beat, Story Genius, 12-Step Mystery, 3-Act Structure, Story Circle, Horror Beat Sheet, etc.)
+- Custom template creation
+- Series planning across multiple books
+
+### Character Features (source: `/features/`)
+- Detailed character sheets with templates
+- Template library: Enneagram, Myers-Briggs, DISC, GM/C, Magic System Blueprint, D&D Character Sheet, Goal/Motivation/Conflict, Story Genius, Numerology, Biographical Info, Online Dating Profile
+- Tags, filters, and search for character organization
+- Family tree visualizer
+- Character arc tracking on timeline
+
+### Worldbuilding Features (source: `/features/`)
+- Places module for location tracking
+- Notes module for worldbuilding elements
+- Magic systems documentation
+- Cultures and religions tracking
+- Planets, castles, haunted houses documentation
+- Languages tracking
+- Military groups and weapons documentation
+- Backstory storage
+
+### Series Management (source: `/features/`)
+- All books in one project
+- Centralized outlines, characters, places, notes
+- Filter per book for multi-series organization
+- Series View for visual multi-book arc tracking
+- Cross-book continuity tracking
+
+### Editing Companion Features (source: `/features/`)
+- Editing notes alongside manuscript
+- Progress tracking
+- Word count tracking
+- Detail tracking for story elements
+- Outline reference during drafting
+
+### Collaboration Features (source: `/features/`)
+- Cloud sync across devices
+- Real-time collaboration (subscription required)
+- Backup and version history
+
+### Export Features (source: `/features/`)
+- Export to Microsoft Word
+- Export to Scrivener
+- Outline-to-manuscript handoff
 
 ## Strengths
 1. **Best visual timeline**: Color-coded scene cards make plot structure immediately visible; sagging middles and plot holes jump out
@@ -44,15 +109,12 @@
 4. **No AI assistance**: All manual entry; no automated analysis or suggestions
 5. **No consistency checking**: Visual timeline helps spot issues, but no automated verification
 
-## UI/UX Observations
-- **Strength**: Timeline view is immediately intuitive; drag-and-drop feels natural
-- **Strength**: Color-coding system makes complex multi-POV stories manageable at a glance
-- **Weakness**: No writing pane means extra step to export and switch apps
-- **Weakness**: Character sheets, while detailed, lack Campfire's visual moodboards and interactive maps
-- **Weakness**: World building is functional but less immersive than Campfire's 18 modules
-- **Weakness**: Template discovery could be better; 40+ templates need better categorization/search
+## Unique Differentiators
+- **Visual timeline as primary interface** — no competitor makes chronological scene mapping the central UX; color-coded plotlines and character arcs make complex multi-POV stories immediately understandable
+- **40+ story structure templates** — largest template library in the category; covers every major storytelling methodology from Hero's Journey to Horror Beat Sheet
+- **Explicitly AI-free** — in a market racing toward AI, Plottr commits to human-only creative control; appeals to writers who want tools that don't shape their output
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Plottr | Narrative Engine |
 |--------|--------|-----------------|

@@ -1,20 +1,28 @@
 # Sudowrite: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://sudowrite.com/ (main landing)
+- https://sudowrite.com/features/plugins (plugins page)
+- https://sudowrite.com/muse (Muse AI model)
+- https://sudowrite.com/pricing (pricing plans)
+- https://sudowrite.com/faq (FAQ)
+
 ## Overview
 - **Type**: Web-based AI writing assistant
 - **Price**: $10/mo after free trial; $29/mo or $264/yr (from pricing page); 1,000+ plugins available
 - **Best for**: AI-assisted writing, brainstorming, overcoming writer's block
-- **URL**: https://sudowrite.com/
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/`)
 - Clean single-pane editor with AI tool sidebar
 - 8 themes + 5 dark modes for customization
 - Full-screen focus mode
 - Project-based organization: drafts and chapters within projects
 
-### AI Tools (Verified from actual pages)
+### AI Tools (source: `/`)
 - **Write**: Autocomplete-style generation; analyzes characters, tone, plot arc; suggests next 300 words in user's voice; provides multiple options
 - **Rewrite**: Revision tool; takes direction for stylistic changes; infinite iterations without complaint
 - **Describe**: Sensory description expansion; shows-don't-tell alternatives; five-senses and metaphor suggestions
@@ -24,12 +32,58 @@
 - **Canvas**: Magic AI canvas for exploring plot points, character arcs, themes; suggests alternate plot points, secrets, twists; hoards inspiration and references
 - **Visualize**: Art generation from character descriptions and worldbuilding documents
 - **Story Bible**: Step-by-step pipeline from idea → outline → chapter beats → 1,000s of words in user's style
-- **Plugins**: 1,000+ custom AI tools; simulate readers, talk to characters, convert novel to screenplay; user can build own plugins
 
-### Writing Workflow
+### Plugins (source: `/features/plugins`)
+- 1,000+ custom AI tools created by users
+- Simulate readers, talk to characters, convert novel to screenplay
+- User can build own plugins
+- Plugin marketplace for discovery
+
+### Muse Model (source: `/muse`)
 - Muse 1.5: Proprietary AI model built specifically for fiction
 - Style matching: Analyzes user's existing writing to maintain voice consistency
 - Context awareness: Tracks characters, tone, and plot arc across the manuscript
+
+## Complete Feature List
+
+### AI Writing Features (source: `/`)
+- Write: Autocomplete-style generation in user's voice (300-word suggestions)
+- Rewrite: Stylistic revision tool with infinite iterations
+- Describe: Sensory description expansion (five-senses, metaphor suggestions)
+- Expand: Pacing fix for rushed scenes
+- Feedback: Full-draft analysis in ~10 seconds (pacing, tone, structure)
+- Brainstorm: Infinite idea generation (plot points, names, magic items, titles)
+- Canvas: Visual brainstorming space for plot points, character arcs, themes
+- Visualize: Art generation from character/world descriptions
+- Story Bible: Step-by-step pipeline (idea → outline → chapter beats → manuscript)
+
+### AI Model Features (source: `/muse`)
+- Muse 1.5 proprietary fiction-focused AI model
+- Style matching from user's existing writing samples
+- Context awareness across manuscript (characters, tone, plot arc)
+- Voice consistency maintenance
+
+### Plugin Features (source: `/features/plugins`)
+- 1,000+ user-created custom AI tools
+- Reader simulation plugins
+- Character conversation plugins
+- Novel-to-screenplay conversion plugins
+- Custom plugin builder
+- Plugin marketplace with discovery
+
+### Writing Features (source: `/`)
+- Single-pane editor with AI sidebar
+- 8 color themes + 5 dark modes
+- Full-screen focus mode
+- Project-based organization (drafts, chapters)
+- Text-based character sheets
+- Worldbuilding documents
+
+### Pricing (source: `/pricing`)
+- Free trial available
+- Basic: $10/mo after trial
+- Standard: $29/mo or $264/yr
+- 1,000+ plugins included in all plans
 
 ## Strengths
 1. **AI depth**: Most comprehensive AI writing toolkit; 9+ distinct tools for different writing stages
@@ -45,15 +99,12 @@
 4. **No visual planning**: No timeline, corkboard, or story mapping tools
 5. **Subscription only**: No one-time purchase option; $264/yr for full access
 
-## UI/UX Observations
-- **Strength**: AI tools are always one click away; no context switching between apps
-- **Strength**: Canvas tool provides visual brainstorming space; better than scattered notes
-- **Weakness**: Plugin discovery is overwhelming; 1,000+ options create choice paralysis
-- **Weakness**: No visual overview of story structure; writer relies on AI suggestions for plotting
-- **Weakness**: Style matching requires existing text sample; cold start problem for new projects
-- **Weakness**: No collaboration features; cannot share drafts or get human feedback within app
+## Unique Differentiators
+- **Muse 1.5 fiction-specific AI model** — only AI model built specifically for fiction writing; trained on narrative patterns, character arcs, and storytelling structure
+- **1,000+ plugin ecosystem** — most extensible AI writing tool; users can create custom tools for any writing task (reader simulation, character conversations, genre-specific generators)
+- **9 distinct AI tools** — each tool serves a specific writing stage (Write, Rewrite, Describe, Expand, Feedback, Brainstorm, Canvas, Visualize, Story Bible); no competitor offers this breadth of specialized AI assistance
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Sudowrite | Narrative Engine |
 |--------|-----------|-----------------|

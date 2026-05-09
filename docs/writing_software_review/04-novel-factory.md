@@ -1,33 +1,87 @@
 # The Novel Factory: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://www.novel-software.com/ (main landing)
+- https://www.novel-software.com/features/ (features page)
+- https://www.novel-software.com/buy-novel-writing-software/ (pricing)
+- https://www.novel-software.com/knowledge-base/ (help documentation)
+- https://www.novel-software.com/how-to-write-a-novel/ (roadmap guide)
+- https://www.novel-software.com/character-questionnaire/ (character builder)
+
 ## Overview
 - **Type**: Web-based, macOS, Windows, iOS, Android
 - **Price**: Basic $75/yr; Standard $198/yr; Lifetime $649; 30-day free trial
 - **Best for**: Beginner writers needing guided support through the novel-writing process
-- **URL**: https://www.novel-software.com/
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/features/`)
 - Step-by-step Novel-Writing Roadmap (15 stages from idea to manuscript)
 - Dedicated sections for each writing phase: Plot, Characters, Scenes, Drafting
 - Drag-and-drop plot manager with index cards
 - Clean, intuitive panel-based design
 
-### Key Features (Verified from actual pages)
-- **Novel-Writing Roadmap**: 15-step process breaks down writing into manageable tasks; prevents overwhelm
-- **Plot Manager**: Drag-and-drop index cards; integrated plot templates for popular genres; premise and synopsis crafting areas
-- **Character Builder**: Guided character creation with internal conflicts, passions, flaws; Character Viewpoints for supporting characters
-- **Goal Tracking**: Custom goals, progress statistics, writing habit builder
-- **Templates**: Plot outlines, character questionnaires, book writing worksheets
-- **Premise Wheel**: Visual tool for crafting story premises
-- **Cross-platform**: Web, desktop (Mac/Win), mobile (iOS/Android) all sync
-
-### Writing Workflow
-- Roadmap guides writer through: Idea → Planning → Drafting → Revising → Publishing
+### Roadmap (source: `/how-to-write-a-novel/`)
+- 15-step process: Idea → Planning → Drafting → Revising → Publishing
 - Integrated advice and tips at each stage
-- Distraction-minimized writing environment
 - Progress tracking with statistics dashboard
+- Distraction-minimized writing environment
+
+### Character Builder (source: `/character-questionnaire/`)
+- Guided character creation with internal conflicts, passions, flaws
+- Character Viewpoints for supporting characters
+- 200+ character questionnaire prompts
+- Character arcs and development tracking
+
+## Complete Feature List
+
+### Planning Features (source: `/features/`, `/how-to-write-a-novel/`)
+- 15-step Novel-Writing Roadmap
+- Drag-and-drop plot manager with index cards
+- Integrated plot templates for popular genres
+- Premise and synopsis crafting areas
+- Premise Wheel visual tool for story development
+- Scene-by-scene planning
+
+### Character Features (source: `/character-questionnaire/`, `/features/`)
+- Guided character creation wizard
+- Internal conflicts, passions, flaws tracking
+- Character Viewpoints for supporting characters
+- 200+ character questionnaire prompts
+- Character arcs and development tracking
+
+### Writing Features (source: `/features/`)
+- Word processor with goal tracking
+- Progress statistics dashboard
+- Distraction-minimized writing environment
+- Custom writing goals
+- Writing habit builder
+
+### Template Features (source: `/features/`, `/how-to-write-a-novel/`)
+- Plot outlines for popular genres
+- Character questionnaires
+- Book writing worksheets
+- Premise templates
+- Scene planning templates
+
+### Organization Features (source: `/features/`)
+- Project-based workspace
+- Roadmap progress tracking
+- Integrated tips and advice at each stage
+- Cross-platform sync (web, desktop, mobile)
+
+### Export Features (source: `/features/`)
+- DOCX export
+- PDF export
+- Manual formatting options
+
+### Pricing (source: `/buy-novel-writing-software/`)
+- Basic: $75/yr
+- Standard: $198/yr
+- Lifetime: $649
+- 30-day free trial
 
 ## Strengths
 1. **Guided process**: 15-step roadmap is best for beginners; removes "where do I start?" paralysis
@@ -43,15 +97,12 @@
 4. **No automated consistency checking**: Relies on writer vigilance
 5. **Subscription pressure**: $75/yr basic; $649 lifetime is expensive for feature set
 
-## UI/UX Observations
-- **Strength**: Roadmap visualization shows exact progress through writing process
-- **Strength**: Premise Wheel is a unique visual tool for story development
-- **Weakness**: Interface feels somewhat dated compared to modern web apps
-- **Weakness**: Plot manager, while functional, lacks Plottr's visual timeline depth
-- **Weakness**: Character builder is guided but less comprehensive than Campfire's 18 modules
-- **Weakness**: No visual story mapping; relies on card-based organization
+## Unique Differentiators
+- **15-step Novel-Writing Roadmap** — the most structured guided process in the category; breaks novel writing into digestible stages with integrated advice at each step
+- **Premise Wheel** — unique visual tool for crafting story premises; no direct competitor offers this
+- **200+ character questionnaire** — deepest character exploration prompts available; goes beyond basic character sheets
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Novel Factory | Narrative Engine |
 |--------|---------------|-----------------|

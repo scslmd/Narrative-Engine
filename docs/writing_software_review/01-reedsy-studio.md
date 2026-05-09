@@ -1,10 +1,20 @@
 # Reedsy Studio: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://reedsy.com/studio (main landing)
+- https://reedsy.com/studio/write-a-book (writing features)
+- https://reedsy.com/studio/plan-a-book (planning features)
+- https://reedsy.com/studio/format-a-book (formatting features)
+- https://reedsy.com/studio/pricing (pricing plans)
+- https://reedsy.com/studio/resources (writing resources)
+- https://editor.reedsy.com/ (editor app)
+
 ## Overview
 - **Type**: Web-based writing app
-- **Price**: Free core; add-ons $4.99/mo (Craft), $7.99/mo (Outlining), $10.99/mo combined
+- **Price**: Free core; Craft add-on $4.99/mo, Outlining add-on $7.99/mo, combined $10.99/mo
 - **Best for**: Self-publishers who want built-in formatting + planning in one tool
-- **URL**: https://reedsy.com/studio
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
@@ -35,6 +45,49 @@
 - Front/back matter templates (copyright page, TOC, etc.)
 - Live preview of formatted output
 
+## Complete Feature List
+
+### Writing Features (source: `/studio/write-a-book`)
+- Distraction-free editor with word count tracking
+- Chapter/section hierarchy organization
+- Real-time cloud autosave
+- Dark mode (Craft add-on)
+- Beta reader sharing links
+- Writing goals and reminders (Craft add-on)
+- Writing habit analytics (Craft add-on)
+
+### Planning Features (source: `/studio/plan-a-book`)
+- Kanban-style Boards for scene/character/research organization
+- Drag-and-drop card rearrangement
+- Character notes and profiles
+- Worldbuilding notes storage
+- Relationship mapping between story elements
+- Unlimited boards (Outlining add-on)
+
+### Formatting Features (source: `/studio/format-a-book`)
+- Professional book formatting engine
+- Print-ready PDF export with configurable trim sizes
+- EPUB ebook export
+- Front matter templates (copyright, TOC, dedication, etc.)
+- Back matter templates (acknowledgments, about author, etc.)
+- Live preview of formatted output
+
+### Collaboration Features (source: `/studio/write-a-book`)
+- Co-author editing with tracked changes
+- Comment threads on manuscript sections
+- Beta reader share links (online preview)
+- Version history (30 days free; unlimited with Craft add-on)
+
+### Pricing & Plans (source: `/studio/pricing`)
+- Free: 30-day history, basic stats, one manuscript goal, writing features, PDF/EPUB export, unlimited devices, 1 Planning Board (card view only)
+- Craft add-on ($4.99/mo): unlimited history, advanced stats, custom goals, daily check-ins, dark mode
+- Outlining add-on ($7.99/mo): unlimited boards, full board features
+
+### Resources (source: `/studio/resources`)
+- Writing guides and blog articles
+- How-to-write-a-book tutorials
+- Genre-specific advice
+
 ## Strengths
 1. **All-in-one workflow**: Plan → Write → Format in single environment
 2. **Free tier is generous**: Core writing + basic formatting available without payment
@@ -49,14 +102,12 @@
 4. **Add-on fragmentation**: Core features split across free/paid tiers can be confusing
 5. **No AI assistance**: No writing aids, brainstorming, or analysis tools
 
-## UI/UX Observations
-- **Strength**: Mode switching is seamless; no context switching between apps
-- **Strength**: Visual hierarchy is clear; writer always knows where they are
-- **Weakness**: Boards interface feels slightly cramped on smaller screens
-- **Weakness**: Formatting mode requires learning trim size concepts upfront
-- **Weakness**: No keyboard shortcuts visible in UI; discovery relies on help docs
+## Unique Differentiators
+- **Built-in professional formatting engine** — most competitors require separate formatting tools (Vellum, Atticus, etc.); Reedsy produces print-ready PDFs and EPUBs natively
+- **Free core is genuinely usable** — not a trial; full writing + basic formatting is permanently free
+- **Mode-based architecture** — clean separation between Write/Plan/Format reduces cognitive load vs multi-pane layouts
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Reedsy Studio | Narrative Engine |
 |--------|---------------|-----------------|

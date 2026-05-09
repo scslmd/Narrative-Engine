@@ -1,26 +1,79 @@
 # Ulysses: Individual Report
 
+## Research Date: 2026-05-09
+## URLs Visited:
+- https://ulysses.app/ (main landing)
+- https://ulysses.app/en/pricing/ (pricing plans)
+- https://ulysses.app/en/releases/ (feature history)
+- https://help.ulysses.app/ (help documentation)
+
 ## Overview
 - **Type**: Desktop app (macOS, iOS only)
 - **Price**: $5.99/mo or $39.99/yr subscription; 7-day free trial
 - **Best for**: Distraction-free writing with goal tracking
-- **URL**: https://ulysses.app/
+- **Research date**: 2026-05-09
 
 ## UI/UX Layout
 
-### Main Interface
+### Main Interface (source: `/ulysses.app/`)
 - Clean, minimalist single-pane editor
 - Markdown-based writing with live preview
 - Sidebar for document organization (groups, tags, metadata)
 - Distraction-free mode hides all UI chrome
 
-### Key Features
-- **Document Groups**: Nested folder structure for project organization
-- **Daily Goals**: Word count targets with progress tracking
-- **iCloud Sync**: Seamless cross-device sync (macOS ↔ iOS)
-- **Grammar/Style Checkers**: Built-in language tools for multiple languages
-- **Export**: Book layout preview before exporting to PDF, EPUB, DOCX, etc.
-- **Metadata**: Tags, custom fields, document properties
+### Pricing Tiers (source: `/en/pricing/`)
+- Monthly: $5.99/mo
+- Annual: $39.99/yr
+- 7-day free trial
+- All features included in subscription (no tiered add-ons)
+
+### Feature History (source: `/en/releases/`)
+- Regular updates with new export formats, sync improvements, UI refinements
+- Markdown extensions, custom styles, metadata enhancements
+
+### Help Documentation (source: `/help.ulysses.app/`)
+- Comprehensive documentation covering all features
+- Keyboard shortcuts reference
+- Export format guide
+- Sync and backup instructions
+
+## Complete Feature List
+
+### Writing Features (source: `/ulysses.app/`)
+- Markdown-based editor with live preview
+- Distraction-free full-screen mode
+- Syntax highlighting for markdown elements
+- Custom writing styles and themes
+- 8+ color themes including dark modes
+
+### Organization Features (source: `/ulysses.app/`)
+- Document groups (nested folder structure)
+- Tags for categorization
+- Custom metadata fields per document
+- Starred documents for quick access
+- Search across all documents
+
+### Goal Tracking (source: `/ulysses.app/`)
+- Daily word count targets
+- Progress tracking with visual charts
+- Writing statistics dashboard
+- Historical productivity data
+
+### Sync & Backup (source: `/ulysses.app/`, `/en/pricing/`)
+- iCloud sync (macOS ↔ iOS)
+- Automatic cloud backup
+- Export/import for manual backup
+
+### Grammar & Style (source: `/ulysses.app/`)
+- Built-in grammar/style checker for 20+ languages
+- Real-time spelling suggestions
+- Style guide integration
+
+### Export Features (source: `/ulysses.app/`)
+- Book layout preview before export
+- Export formats: PDF, EPUB, DOCX, RTF, HTML, MOBI
+- Custom export templates
+- Print-ready formatting options
 
 ## Strengths
 1. **Distraction-free UI**: Cleanest writing interface in the category
@@ -36,15 +89,12 @@
 4. **Basic planning**: No visual story mapping or character relationship tools
 5. **No AI integration**: No writing aids, brainstorming, or analysis tools
 
-## UI/UX Observations
-- **Strength**: Minimalist design reduces cognitive load; writer focuses on text
-- **Strength**: Group hierarchy is intuitive; drag-and-drop reorganization works smoothly
-- **Weakness**: Sidebar takes up significant screen space on smaller displays
-- **Weakness**: Export dialog has many options; can be overwhelming for simple needs
-- **Weakness**: No keyboard shortcuts visible in UI; discovery relies on help docs
-- **Weakness**: Goal tracking charts are basic; lack detailed analytics
+## Unique Differentiators
+- **Pure markdown workflow** — write in plain text with live preview; no proprietary file formats locking you in
+- **Apple ecosystem mastery** — iCloud sync between Mac and iOS is the most seamless cross-device experience in the category
+- **Minimalist philosophy** — no feature bloat; every screen real estate pixel serves the writing task
 
-## Comparison to Narrative Engine Pipeline
+## Comparison Notes — Narrative Engine
 
 | Aspect | Ulysses | Narrative Engine |
 |--------|---------|-----------------|
