@@ -7,8 +7,8 @@ import { useJobSteps } from './useJobSteps';
 describe('useJobSteps', () => {
   beforeEach(() => {
     server.use(
-      http.get('/jobs/:id/steps', () => HttpResponse.json({ items: [] })),
-      http.get('/role-model-checker/:id/steps', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/jobs/:id/steps', () => HttpResponse.json({ items: [] })),
+      http.get('/v1/role-model-checker/:id/steps', () => HttpResponse.json({ items: [] })),
     );
   });
 
@@ -23,7 +23,7 @@ describe('useJobSteps', () => {
 
   it('fetches steps for pipeline job on mount', async () => {
     server.use(
-      http.get('/jobs/:id/steps', () => {
+      http.get('/v1/jobs/:id/steps', () => {
         return HttpResponse.json({
           items: [
             {
@@ -67,7 +67,7 @@ describe('useJobSteps', () => {
 
   it('fetches steps for role model check on mount', async () => {
     server.use(
-      http.get('/role-model-checker/:id/steps', () => {
+      http.get('/v1/role-model-checker/:id/steps', () => {
         return HttpResponse.json({
           items: [
             {
@@ -100,7 +100,7 @@ describe('useJobSteps', () => {
   it('includes attempt number as query param when provided', async () => {
     let receivedAttempt: string | null | undefined;
     server.use(
-      http.get('/jobs/:id/steps', ({ request }) => {
+      http.get('/v1/jobs/:id/steps', ({ request }) => {
         const url = new URL(request.url);
         receivedAttempt = url.searchParams.get('attempt');
         return HttpResponse.json({ items: [] });
@@ -120,7 +120,7 @@ describe('useJobSteps', () => {
 
   it('handles empty steps response', async () => {
     server.use(
-      http.get('/jobs/:id/steps', () => {
+      http.get('/v1/jobs/:id/steps', () => {
         return HttpResponse.json({ items: [] });
       }),
     );
@@ -138,7 +138,7 @@ describe('useJobSteps', () => {
 
   it('handles fetch error gracefully', async () => {
     server.use(
-      http.get('/jobs/:id/steps', () => {
+      http.get('/v1/jobs/:id/steps', () => {
         return HttpResponse.json({ detail: 'not found' }, { status: 404 });
       }),
     );
@@ -158,7 +158,7 @@ describe('useJobSteps', () => {
   it('exposes refetch function', async () => {
     let callCount = 0;
     server.use(
-      http.get('/jobs/:id/steps', () => {
+      http.get('/v1/jobs/:id/steps', () => {
         callCount++;
         return HttpResponse.json({
           items: [

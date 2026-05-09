@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useProjects, useCreateProject } from '../hooks/useProjects';
 import { SkeletonList } from '../components/skeleton';
 import { ManifestConfig } from '../lib/projectsApi';
-import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download, Search, Tags, SwatchBook, CalendarPlus, Clock3 } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Palette, Compass, Languages, Eye, LayoutTemplate, FileText, Upload, Trash2, X, Download, Search, CalendarPlus, Clock3 } from 'lucide-react';
 import { useThemeStore } from '../stores/themeStore';
 import { resolveEffectiveMode } from '../theme/theme';
 import { StoryImportModal } from '../components/projects/StoryImportModal';

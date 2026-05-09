@@ -22,7 +22,7 @@ interface StoryboardListResponse {
  * Get all storyboard cards for a project
  */
 export async function getStoryboardCards(projectId: string): Promise<StoryboardCard[]> {
-  const response = await api.get('/storyboard/cards', {
+  const response = await api.get('/v1/story-development/storyboard/cards', {
     params: { project_id: projectId },
   });
 
@@ -41,7 +41,7 @@ export async function createStoryboardCard(
   projectId: string,
   data: StoryboardCardCreateRequest,
 ): Promise<StoryboardCard> {
-  const response = await api.post('/storyboard/cards', data, {
+  const response = await api.post('/v1/story-development/storyboard/cards', data, {
     params: { project_id: projectId },
   });
 
@@ -63,7 +63,7 @@ export async function updateStoryboardCard(
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;
 
-  const response = await api.patch(`/storyboard/cards/${cardId}`, data, { params });
+  const response = await api.patch(`/v1/story-development/storyboard/cards/${cardId}`, data, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to update storyboard card ${cardId}: ${response.status}`);
@@ -82,7 +82,7 @@ export async function deleteStoryboardCard(
   const params: Record<string, string> = {};
   if (projectId) params.project_id = projectId;
 
-  const response = await api.delete(`/storyboard/cards/${cardId}`, { params });
+  const response = await api.delete(`/v1/story-development/storyboard/cards/${cardId}`, { params });
 
   if (response.status !== 204) {
     throw new Error(`Failed to delete storyboard card ${cardId}: ${response.status}`);
@@ -101,7 +101,7 @@ export async function reindexColumn(
   if (projectId) params.project_id = projectId;
 
   const response = await api.put(
-    `/storyboard/cards/${columnId}/reindex`,
+    `/v1/story-development/storyboard/cards/${columnId}/reindex`,
     { card_ids: orderedIds },
     { params },
   );

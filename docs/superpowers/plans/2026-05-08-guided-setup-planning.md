@@ -1,4 +1,5 @@
 # Guided Setup Planning Extension — Implementation Plan
+Status: Planned
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -7,6 +8,8 @@
 **Architecture:** Extend existing guided setup flow — single extended prompt with 7 categories (config, foundation, characters, world_bible, arcs, sequences, chapters). Reuses story import's raw SQL persistence pattern with `hash_id` for deterministic IDs. Frontend adds two collapsible panels to FieldPreview.
 
 **Tech Stack:** Python (Pydantic, SQLite), TypeScript (React, Zustand), existing guided setup infrastructure
+
+**Cross-Plan Dependencies:** Depends on `2026-05-08-guided-setup-readiness` completing first (both modify `FieldPreview.tsx`; readiness adds `categoryProgress` prop, then planning adds sequence/chapter panels and refactors `CollapsibleSection`). Must complete BEFORE `2026-05-08-frontend-layout-modernization` Task T7 (which modifies `GuidedSetupView.tsx`).
 
 ---
 
@@ -401,10 +404,40 @@ git commit -m "feat: parse sequences and chapters from guided setup LLM response
 - Test: `tests/test_guided_setup.py`
 
 - [ ] **Step 1: Write failing tests for sequence/chapter persistence**
+- [ ] Include one isolated unit test for `_insert_sequence` return value/type (`str`) to guard against ID propagation regressions.
 
 Add to `tests/test_guided_setup.py`:
 
 ```python
+def test_insert_sequence_returns_str_id(tmp_path):
+    """Isolated unit test: _insert_sequence must return a non-empty str (not None)."""
+    ops_db = tmp_path / "operations.db"
+    projects_dir = tmp_path / "projects"
+    projects_dir.mkdir()
+
+    svc = GuidedSetupService(
+        project_service=ProjectService(projects_dir=projects_dir),
+        operations_db_path=ops_db,
+    )
+
+    fields = ExtractedFields(
+        config=GuidedConfig(project_name="Test Project", genre="Sci-Fi"),
+        foundation=GuidedFoundation(premise_text="A test story"),
+    )
+
+    conn = sqlite3.connect(str(ops_db))
+    seq_id = svc._insert_sequence(
+        conn, "test-project-id",
+        GuidedSequence(sequence_id="seq-1", title="Act One", summary="Setup", chapter_ids=[], status="guided"),
+        position=0,
+    )
+    conn.close()
+
+    assert isinstance(seq_id, str)
+    assert len(seq_id) > 0
+    assert seq_id.startswith("guided-sequence-")
+
+
 def test_create_project_persists_sequences(tmp_path):
     ops_db = tmp_path / "operations.db"
     projects_dir = tmp_path / "projects"
@@ -615,8 +648,10 @@ def test_create_project_updates_sequence_chapter_ids_json(tmp_path):
     svc.create_project_from_fields(GuidedSetupCreateRequest(accumulated_fields=fields))
 
     conn = sqlite3.connect(str(ops_db))
+    # Query by title because _insert_sequence generates a hash-based sequence_id,
+    # not the LLM-provided source ID ('seq-1')
     row = conn.execute(
-        "SELECT chapter_ids_json FROM sequence_plans WHERE sequence_id = 'seq-1'"
+        "SELECT chapter_ids_json FROM sequence_plans WHERE title = 'Act One'"
     ).fetchone()
     conn.close()
 
@@ -641,7 +676,7 @@ def _insert_sequence(
     project_id: str,
     sequence: GuidedSequence,
     position: int,
-) -> None:
+) -> str:
     now = datetime.now(timezone.utc).isoformat()
     seq_id = hash_id("guided-sequence", f"{project_id}:{sequence.title}")
 
@@ -685,7 +720,7 @@ def _insert_chapter(
     project_id: str,
     chapter: GuidedChapter,
     character_name_to_id: dict[str, str],
-) -> str | None:
+) -> str:
     now = datetime.now(timezone.utc).isoformat()
     ch_id = hash_id("guided-chapter", f"{project_id}:{chapter.chapter_id}")
 
@@ -786,30 +821,35 @@ try:
         character_name_to_id[char_data.name.strip().lower()] = char_id
 
     # Insert sequences (first pass — chapter_ids_json is empty placeholder)
-    persisted_sequence_ids: list[str | None] = []
+    persisted_sequence_ids: list[str] = []
+    source_to_persisted_sequence_id: dict[str, str] = {}
     for position, seq in enumerate(fields.sequences):
         seq_id = self._insert_sequence(conn, project_id, seq, position)
         persisted_sequence_ids.append(seq_id)
+        source_to_persisted_sequence_id[seq.sequence_id] = seq_id
 
     # Insert chapters
-    persisted_chapter_ids: list[str | None] = []
+    persisted_chapter_ids: list[str] = []
     for chapter in fields.chapters:
-        ch_id = self._insert_chapter(conn, project_id, chapter, character_name_to_id)
+        persisted_sequence_id = source_to_persisted_sequence_id.get(chapter.sequence_id or "")
+        chapter_for_insert = chapter.model_copy(update={"sequence_id": persisted_sequence_id})
+        ch_id = self._insert_chapter(conn, project_id, chapter_for_insert, character_name_to_id)
         persisted_chapter_ids.append(ch_id)
 
-    # Second pass: update sequences with actual chapter IDs
-    for seq_idx, seq in enumerate(fields.sequences):
+    # Second pass: update sequences with actual chapter IDs using explicit source->persisted mapping
+    for seq in fields.sequences:
+        persisted_seq_id = source_to_persisted_sequence_id.get(seq.sequence_id)
+        if not persisted_seq_id:
+            continue
         seq_chapter_ids = [
-            cid for cid, ch in zip(persisted_chapter_ids, fields.chapters)
-            if cid is not None and (ch.sequence_id == seq.sequence_id or
-                (seq_idx < len(persisted_sequence_ids) and
-                 persisted_sequence_ids[seq_idx] and
-                 ch.sequence_id == persisted_sequence_ids[seq_idx]))
+            cid
+            for cid, ch in zip(persisted_chapter_ids, fields.chapters)
+            if ch.sequence_id == seq.sequence_id
         ]
         if seq_chapter_ids:
             conn.execute(
                 "UPDATE sequence_plans SET chapter_ids_json = ?, updated_at = ? WHERE sequence_id = ?",
-                (json_safe(seq_chapter_ids), datetime.now(timezone.utc).isoformat(), persisted_sequence_ids[seq_idx]),
+                (json_safe(seq_chapter_ids), datetime.now(timezone.utc).isoformat(), persisted_seq_id),
             )
 
     sequences_created = len(fields.sequences)

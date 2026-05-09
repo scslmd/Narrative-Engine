@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -76,8 +76,9 @@ def test_model_registry_merges_local_and_runtime_models(tmp_path: Path) -> None:
 @pytest.mark.integration
 def test_models_endpoint_reports_inference_provider() -> None:
     client = TestClient(build_app())
-    response = client.get("/models")
+    response = client.get("/v1/models")
     assert response.status_code == 200
     payload = response.json()
     assert payload["inference_provider"]["backend"] == "stub"
     assert payload["inference_provider"]["transport"] == "stub"
+

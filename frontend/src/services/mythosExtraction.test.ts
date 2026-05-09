@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { submitMythosExtraction, getExtractionStatus } from './mythosExtraction';
@@ -7,7 +7,7 @@ describe('mythosExtraction service', () => {
   describe('submitMythosExtraction', () => {
     it('submits mythos extraction request', async () => {
       server.use(
-        http.post('/projects/import-mythos', () => {
+        http.post('/v1/projects/import-mythos', () => {
           return HttpResponse.json({
             extraction_id: 'mythos-1',
             status: 'submitted',
@@ -25,7 +25,7 @@ describe('mythosExtraction service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/projects/import-mythos', () => {
+        http.post('/v1/projects/import-mythos', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -37,7 +37,7 @@ describe('mythosExtraction service', () => {
   describe('getExtractionStatus', () => {
     it('re-exports getExtractionStatus from patternExtraction', async () => {
       server.use(
-        http.get('/projects/extraction/mythos-1', () => {
+        http.get('/v1/projects/extraction/mythos-1', () => {
           return HttpResponse.json({
             extraction_id: 'mythos-1',
             status: 'completed',
@@ -51,3 +51,4 @@ describe('mythosExtraction service', () => {
     });
   });
 });
+

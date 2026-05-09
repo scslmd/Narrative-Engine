@@ -48,7 +48,7 @@ export const jobsApi = {
   },
 
   create: async (request: JobCreateRequest): Promise<JobDetail> => {
-    const response = await api.post('/jobs/create', {
+    const response = await api.post('/v1/jobs/create', {
       phase: request.phase,
       payload: {
         project_id: request.project_id,
@@ -90,7 +90,7 @@ export const jobsApi = {
   },
 
   get: async (jobId: string): Promise<JobDetail> => {
-    const response = await api.get(`/jobs/${jobId}/status`);
+    const response = await api.get(`/v1/jobs/${jobId}/status`);
     const data = response.data as {
       id: string;
       phase: JobPhase;
@@ -122,7 +122,7 @@ export const jobsApi = {
   },
 
   getLogs: async (jobId: string): Promise<JobLogsResponse> => {
-    const response = await api.get(`/jobs/${jobId}/logs`);
+    const response = await api.get(`/v1/jobs/${jobId}/logs`);
     const data = response.data as {
       id: string;
       entries: JobLogEntry[];

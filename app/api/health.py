@@ -10,10 +10,18 @@ from ..services.circuit_breaker import get_all_circuit_states, CircuitState
 from ..settings import settings
 
 
-router = APIRouter(prefix="/health", tags=["health"])
+router = APIRouter(
+    prefix="/health",
+    tags=["health"],
+    responses={
+        999: {
+            "description": "Health endpoints are intentionally unversioned per API compatibility policy."
+        }
+    },
+)
 
 
-@router.get("/")
+@router.get("/", deprecated=False, summary="Liveness probe (unversioned by policy)")
 async def health_check() -> dict:
     """Basic liveness probe.
     
@@ -23,7 +31,7 @@ async def health_check() -> dict:
     return {"status": "ok"}
 
 
-@router.get("/ready")
+@router.get("/ready", deprecated=False, summary="Readiness probe (unversioned by policy)")
 async def readiness_check() -> dict:
     """Deep readiness probe (REL-06).
     
@@ -124,7 +132,7 @@ async def readiness_check() -> dict:
     }
 
 
-@router.get("/llm")
+@router.get("/llm", deprecated=False, summary="LLM health probe (unversioned by policy)")
 async def llm_health_check() -> dict:
     """Check if the configured inference backend is reachable.
 
@@ -153,7 +161,7 @@ async def llm_health_check() -> dict:
         )
 
 
-@router.get("/metrics")
+@router.get("/metrics", deprecated=False, summary="Metrics endpoint (unversioned by policy)")
 async def get_metrics() -> dict:
     """Prometheus-style metrics endpoint (REL-05).
     

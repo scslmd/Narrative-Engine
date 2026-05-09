@@ -123,29 +123,4 @@ def count_audit_records() -> int:
         return sum(1 for _ in f)
 
 
-def get_test_job_id() -> UUID | None:
-    """Get an existing job ID from the database for testing."""
-    from uuid import UUID
-    from app.persistence.sqlite import connect
-    from app.settings import settings
-    
-    with connect(settings.operations_db_path) as conn:
-        row = conn.execute('SELECT job_id FROM jobs LIMIT 1').fetchone()
-        if row:
-            return UUID(row['job_id'])
-    return None
 
-
-def get_test_job_with_retries() -> UUID | None:
-    """Get a job ID with multiple attempts for testing."""
-    from uuid import UUID
-    from app.persistence.sqlite import connect
-    from app.settings import settings
-    
-    with connect(settings.operations_db_path) as conn:
-        row = conn.execute(
-            'SELECT job_id FROM jobs WHERE attempt_number > 1 LIMIT 1'
-        ).fetchone()
-        if row:
-            return UUID(row['job_id'])
-    return None

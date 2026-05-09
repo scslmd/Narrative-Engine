@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
@@ -190,3 +190,4 @@ def test_checker_lineage_and_steps_endpoints_return_persisted_rows_in_ascending_
     assert lineage_response.status_code == 200
     assert [item["path"] for item in lineage_response.json()["items"]] == ["reports/a.json", "reports/b.json"]
     assert lineage_response.json()["meta"]["ordered_by"] == "artifact_lineage_id_asc"
+

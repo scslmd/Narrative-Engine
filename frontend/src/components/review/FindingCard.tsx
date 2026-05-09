@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { CheckerFinding } from '../../types/review';
 import { getInspectLinks } from '../../services/inspectLinks';
+import { getFinding } from '../../services/review';
 import { useToastStore } from '../../stores/toastStore';
 import { useUIStore } from '../../stores/uiStore';
 import { SeverityBadge } from './SeverityBadge';
@@ -21,8 +22,14 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
   const [expanded, setExpanded] = useState(false);
   const [showDecisionForm, setShowDecisionForm] = useState(false);
   const [isResolvingInspectRun, setIsResolvingInspectRun] = useState(false);
+  const [hydratedFinding, setHydratedFinding] = useState<CheckerFinding | null>(null);
 
   const handleCardClick = () => {
+    if (!expanded) {
+      void getFinding(finding.finding_id, projectId).then((loaded) => {
+        setHydratedFinding(loaded);
+      });
+    }
     if (onSelect) {
       onSelect(finding);
     }
@@ -90,7 +97,7 @@ export function FindingCard({ finding, projectId, onSelect }: FindingCardProps) 
 
           {expanded && (
             <div className="mt-3 space-y-2">
-              <p className="text-sm text-gray-600">{finding.details}</p>
+              <p className="text-sm text-gray-600">{hydratedFinding?.details ?? finding.details}</p>
               
               {finding.source_context && (
                 <div className="bg-gray-100 rounded p-2 text-xs font-mono overflow-x-auto">

@@ -29,7 +29,7 @@ interface ArcsListResponse<T> {
  * Get all arc candidates for a project
  */
 export async function getArcCandidates(projectId: string): Promise<ArcCandidate[]> {
-  const response = await api.get('/story-development/arcs/candidates', {
+  const response = await api.get('/v1/story-development/arcs/candidates', {
     params: { project_id: projectId },
   });
 
@@ -45,7 +45,7 @@ export async function getArcCandidates(projectId: string): Promise<ArcCandidate[
  * Get all arc comparisons for a project
  */
 export async function getArcComparisons(projectId: string): Promise<ArcComparisonRecord[]> {
-  const response = await api.get('/story-development/arcs/comparisons', {
+  const response = await api.get('/v1/story-development/arcs/comparisons', {
     params: { project_id: projectId },
   });
 
@@ -61,7 +61,7 @@ export async function getArcComparisons(projectId: string): Promise<ArcCompariso
  * Get all arc selections for a project
  */
 export async function getArcSelections(projectId: string): Promise<ArcSelection[]> {
-  const response = await api.get('/story-development/arcs/selections', {
+  const response = await api.get('/v1/story-development/arcs/selections', {
     params: { project_id: projectId },
   });
 
@@ -77,7 +77,7 @@ export async function getArcSelections(projectId: string): Promise<ArcSelection[
  * Get all arc stage mappings for a project
  */
 export async function getArcStageMaps(projectId: string): Promise<ArcStageMap[]> {
-  const response = await api.get('/story-development/arcs/stage-maps', {
+  const response = await api.get('/v1/story-development/arcs/stage-maps', {
     params: { project_id: projectId },
   });
 
@@ -97,7 +97,7 @@ export async function getArcStageMaps(projectId: string): Promise<ArcStageMap[]>
  * Create a new arc candidate
  */
 export async function createArcCandidate(data: ArcCandidateCreateRequest): Promise<ArcCandidate> {
-  const response = await api.post('/story-development/arcs/candidates', data, {
+  const response = await api.post('/v1/story-development/arcs/candidates', data, {
     params: { project_id: data.project_id },
   });
 
@@ -112,7 +112,7 @@ export async function createArcCandidate(data: ArcCandidateCreateRequest): Promi
  * Create an arc selection
  */
 export async function createArcSelection(data: ArcSelectionCreateRequest): Promise<ArcSelection> {
-  const response = await api.post('/story-development/arcs/selections', data, {
+  const response = await api.post('/v1/story-development/arcs/selections', data, {
     params: { project_id: data.project_id },
   });
 
@@ -131,7 +131,7 @@ export async function deleteArcSelection(
   projectId: string,
 ): Promise<void> {
   const response = await api.delete(
-    `/story-development/arcs/selections/${selectionId}`,
+    `/v1/story-development/arcs/selections/${selectionId}`,
     { params: { project_id: projectId } },
   );
 
@@ -144,7 +144,7 @@ export async function deleteArcSelection(
  * Create an arc stage map
  */
 export async function createArcStageMap(data: ArcStageMapCreateRequest): Promise<ArcStageMap> {
-  const response = await api.post('/story-development/arcs/stage-maps', data, {
+  const response = await api.post('/v1/story-development/arcs/stage-maps', data, {
     params: { project_id: data.project_id },
   });
 
@@ -164,7 +164,7 @@ export async function updateArcSelection(
   projectId: string,
 ): Promise<ArcSelection> {
   const response = await api.patch(
-    `/story-development/arcs/selections/${selectionId}`,
+    `/v1/story-development/arcs/selections/${selectionId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -175,3 +175,4 @@ export async function updateArcSelection(
 
   return response.data;
 }
+

@@ -532,3 +532,4 @@ def test_checker_lineage_persistence_under_lock_leaves_checker_state_non_corrupt
 
     after = _checker_snapshot(db_path, run.run_id)
     assert after == before
+

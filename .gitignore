@@ -46,6 +46,7 @@ nul
 .agents/
 .opencode/
 .playwright-mcp/
+.superpowers/
 
 # Local screenshot artifacts
 manuscript_fixed.png

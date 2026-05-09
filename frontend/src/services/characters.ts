@@ -9,11 +9,11 @@
  * - Get character relationships
  *
  * Backend endpoints:
- * - GET /story-development/characters
- * - GET /story-development/characters/{character_id}
- * - POST /story-development/characters
- * - PATCH /story-development/characters/{character_id}
- * - GET /story-development/characters/{character_id}/relationships
+ * - GET /v1/story-development/characters
+ * - GET /v1/story-development/characters/{character_id}
+ * - POST /v1/story-development/characters
+ * - PATCH /v1/story-development/characters/{character_id}
+ * - GET /v1/story-development/characters/{character_id}/relationships
  */
 
 import type {
@@ -30,7 +30,7 @@ import api from '../lib/api';
  * Get all character profiles for a project
  */
 export async function getCharacters(projectId: string): Promise<CharacterProfile[]> {
-  const response = await api.get('/story-development/characters', {
+  const response = await api.get('/v1/story-development/characters', {
     params: { project_id: projectId },
   });
 
@@ -48,7 +48,7 @@ export async function getCharacters(projectId: string): Promise<CharacterProfile
 export async function createCharacter(
   request: CharacterProfileCreateRequest,
 ): Promise<CharacterProfile> {
-  const response = await api.post('/story-development/characters', request);
+  const response = await api.post('/v1/story-development/characters', request);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create character: ${response.status}`);
@@ -66,7 +66,7 @@ export async function updateCharacter(
   updates: CharacterProfileUpdateRequest,
 ): Promise<CharacterProfile> {
   const response = await api.patch(
-    `/story-development/characters/${characterId}`,
+    `/v1/story-development/characters/${characterId}`,
     updates,
     { params: { project_id: projectId } },
   );
@@ -86,7 +86,7 @@ export async function getCharacter(
   projectId: string,
 ): Promise<CharacterProfile> {
   const response = await api.get(
-    `/story-development/characters/${characterId}`,
+    `/v1/story-development/characters/${characterId}`,
     { params: { project_id: projectId } },
   );
 
@@ -105,7 +105,7 @@ export async function getCharacterRelationships(
   projectId: string,
 ): Promise<RelationshipEdge[]> {
   const response = await api.get(
-    `/story-development/characters/${characterId}/relationships`,
+    `/v1/story-development/characters/${characterId}/relationships`,
     { params: { project_id: projectId } },
   );
 
@@ -116,3 +116,4 @@ export async function getCharacterRelationships(
   const data: RelationshipEdgeListResponse = response.data;
   return data.items;
 }
+

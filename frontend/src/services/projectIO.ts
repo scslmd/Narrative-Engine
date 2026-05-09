@@ -1,9 +1,9 @@
-import api from '../lib/api';
+﻿import api from '../lib/api';
 import { downloadBlob } from '../lib/download';
 import type { ExportImportSubmitResponse, ExportImportProgressResponse } from '../types/projectIO';
 
 export async function exportProject(projectId: string): Promise<void> {
-  const response = await api.post(`/projects/${projectId}/export`, null, {
+  const response = await api.post(`/v1/projects/${projectId}/export`, null, {
     responseType: 'blob',
     timeout: 600_000,
   });
@@ -25,7 +25,7 @@ export async function submitExportImport(
     formData.append('project_name', projectName);
   }
 
-  const response = await api.post('/projects/import-export', formData);
+  const response = await api.post('/v1/projects/import-export', formData);
 
   return response.data;
 }
@@ -33,6 +33,7 @@ export async function submitExportImport(
 export async function getExportImportStatus(
   importId: string,
 ): Promise<ExportImportProgressResponse> {
-  const response = await api.get(`/projects/export/${importId}`);
+  const response = await api.get(`/v1/projects/export/${importId}`);
   return response.data;
 }
+

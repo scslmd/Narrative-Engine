@@ -5,13 +5,12 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1471 passed, 7 skipped, 2 pre-existing failures (~33s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~32s)
-  - Full baseline: ~1522 tests, ~65s total (parallel + serial)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1468 passed, 1 skipped, 1 xdist-isolation failure (~32s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~27s)
+  - Full baseline: ~1519 tests, ~59s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - Previously flagged intermittent tests now pass when run directly (verified 2026-05-07):
-    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases`
-    - `tests/test_request_size_limits.py::TestRequestSizeLimits::test_normal_request_accepted`
+  - xdist-isolation failures (pass when run directly, verified 2026-05-08):
+    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails only under parallel xdist; passes in isolation
   - `cd frontend && npm run lint` -> passed, 0 errors (2026-05-05)
   - `cd frontend && npm run typecheck` -> passed (2026-05-05)
   - `cd frontend && npm run build` -> passed, 2025 modules (2026-05-05)
@@ -162,16 +161,16 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 
 ### Clustered Parallel Execution (Recommended)
 ```bash
-# Step 1: Run parallel-safe tests in clusters (fast, ~35s, ~1448 tests)
+# Step 1: Run parallel-safe tests in clusters (fast, ~32s, ~1469 tests)
 python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py
 
-# Step 2: Run serial-only tests last with extended timeout (~31s, ~51 tests)
+# Step 2: Run serial-only tests last with extended timeout (~27s, ~51 tests)
 python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
 ```
 
 - Parallel cluster runs first because it's fast and catches most failures immediately.
 - Serial tests run last because they share global state (log file, executor threads) and time out if mixed with parallel workers.
-- Full baseline: ~1499 tests, ~65s total (vs. ~250s sequential).
+- Full baseline: ~1519 tests, ~59s total (vs. ~250s sequential).
 
 ### Quality Review Helper
 ```bash
@@ -513,35 +512,34 @@ Do not call the repo merge-ready unless all five of these are green:
 
 ### Versioning
 
-- The current HTTP surface is mixed.
-- The shared frontend client points at `/v1` for jobs, models, story-development, and checker routes.
-- Projects, auth, backup, and health routes still exist as unversioned server routes and should be verified before assuming a versioned alias.
+- The canonical HTTP surface is `/v1/*`.
+- Health routes remain intentionally unversioned at `/health/*`.
 
 ### Representative Endpoints
 
 #### Projects
-- `GET /projects`
-- `POST /projects/create`
-- `GET /projects/{project_id}`
-- `DELETE /projects/{project_id}`
-- `POST /projects/import-story` (201 Created, synchronous - parses existing stories and creates full project structure)
-- `POST /projects/import-patterns` (201 Created, synchronous - extracts narrative patterns from text, creates or updates project)
-- `POST /projects/{project_id}/extract-patterns` (201 Created, synchronous - extracts narrative patterns for an existing project)
-- `GET /projects/{project_id}/manifest`
-- `GET /projects/{project_id}/sequence`
-- `GET /projects/{project_id}/chapter-1`
+- `GET /v1/projects`
+- `POST /v1/projects/create`
+- `GET /v1/projects/{project_id}`
+- `DELETE /v1/projects/{project_id}`
+- `POST /v1/projects/import-story` (202 Accepted, async import workflow)
+- `POST /v1/projects/import-patterns` (202 Accepted, async extraction workflow)
+- `POST /v1/projects/{project_id}/extract-patterns` (202 Accepted, async extraction workflow)
+- `GET /v1/projects/{project_id}/manifest`
+- `GET /v1/projects/{project_id}/sequence`
+- `GET /v1/projects/{project_id}/chapter-1`
 
 #### Authentication
-- `POST /auth/keys`
-- `GET /auth/keys`
-- `DELETE /auth/keys/{prefix}`
+- `POST /v1/auth/keys`
+- `GET /v1/auth/keys`
+- `DELETE /v1/auth/keys/{prefix}`
 
 #### Backup
-- `POST /backup/create`
-- `POST /backup/restore/{backup_id}`
-- `GET /backup/list`
-- `GET /backup/latest`
-- `DELETE /backup/{backup_id}`
+- `POST /v1/backup/create`
+- `POST /v1/backup/restore/{backup_id}`
+- `GET /v1/backup/list`
+- `GET /v1/backup/latest`
+- `DELETE /v1/backup/{backup_id}`
 
 #### Role Model Checker
 - `POST /v1/role-model-checker/run`
@@ -1067,8 +1065,8 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 **Workflow**: User pastes story or uploads file -> async job submitted -> LLM analyzes and extracts structured JSON -> Service validates -> Creates project + all entities in single transaction. Client polls for progress/result.
 
 **Entry Points**:
-- `POST /projects/import-story` returns **202 Accepted** with `{import_id, status: "pending"}`. Accepts form data (`story_text`, `project_name`, `genre`, `tone`, `project_id`) or file upload (`.txt`/`.md`). Min 50 characters.
-- `GET /projects/import/{import_id}` returns **200 OK** with `ImportProgressResponse`: status, phase, chapter/chunk counts, result (on completion), error (on failure). 404 if not found or expired.
+- `POST /v1/projects/import-story` returns **202 Accepted** with `{import_id, status: "pending"}`. Accepts form data (`story_text`, `project_name`, `genre`, `tone`, `project_id`) or file upload (`.txt`/`.md`). Min 50 characters.
+- `GET /v1/projects/import/{import_id}` returns **200 OK** with `ImportProgressResponse`: status, phase, chapter/chunk counts, result (on completion), error (on failure). 404 if not found or expired.
 
 **Async Job Management**: `ImportJobManager` in `app/services/import_jobs.py`
 - In-memory job store with thread-safe dict, ThreadPoolExecutor (max 2 workers)
@@ -1101,7 +1099,7 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 
 **Manifest Update**: After successful entity creation, `_update_manifest()` writes LLM-extracted `genre`, `tone`, `pov`, `story_structure`, `premise_text`, and `constraints` to `manifest.json`. Invalid enum values are silently skipped with a warning log.
 
-**API Key Protection**: The `/projects/import-story` endpoint is included in the `versioned_api_key_gate` middleware (gate applies to both `/v1/*` and `/projects/import-story` paths).
+**API Key Protection**: Protected routes are gated through the `versioned_api_key_gate` middleware on `/v1/*` paths.
 
 **LLM Prompt Builders** (`app/services/runtime_prompts.py`):
 - `build_import_analysis_request()` — single-pass: temp=0.1, max_tokens=16000, story truncated to 24K chars
@@ -1122,7 +1120,7 @@ class InferenceResponse: model, content, backend, finish_reason, usage, metadata
 - `app/services/multi_pass_import.py` — `MultiPassImportService`, `CharacterAccumulator`
 - `app/services/import_jobs.py` — `ImportJobManager`, `ImportJob` dataclass
 - `app/schemas/story_import.py` — `StoryImportRequest`, `StoryImportResponse`, `StoryImportAnalysis`, `ImportSubmitResponse`, `ImportProgressResponse` (with POV/structure validators)
-- `app/api/projects.py` — `POST /projects/import-story` and `GET /projects/import/{import_id}` endpoints (guarded by API key middleware)
+- `app/api/projects.py` — `POST /v1/projects/import-story` and `GET /v1/projects/import/{import_id}` endpoints (guarded by API key middleware)
 - `app/services/runtime_prompts.py` — import prompt builders (7 functions)
 - `app/utils/json_extract.py` — `extract_json()` utility (3 strategies)
 - `app/utils/db_inserts.py` — `hash_id()`, `insert_character_profile()`, `insert_foundation_profile()`, `insert_world_bible_entry()`

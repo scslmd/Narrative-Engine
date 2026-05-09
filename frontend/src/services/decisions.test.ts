@@ -14,7 +14,7 @@ describe('decisions service', () => {
   describe('getDecisions', () => {
     it('returns list of decisions for a project', async () => {
       server.use(
-        http.get('/story-development/decisions', ({ request }) => {
+        http.get('/v1/story-development/decisions', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -33,7 +33,7 @@ describe('decisions service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/decisions', () =>
+        http.get('/v1/story-development/decisions', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -45,7 +45,7 @@ describe('decisions service', () => {
   describe('getDecisionPath', () => {
     it('returns decision path with parent nodes', async () => {
       server.use(
-        http.get('/story-development/decisions/node-1/path', () =>
+        http.get('/v1/story-development/decisions/node-1/path', () =>
           HttpResponse.json({
             project_id: 'proj-1',
             node: mockNode,
@@ -62,7 +62,7 @@ describe('decisions service', () => {
 
     it('returns path with single node when no parents', async () => {
       server.use(
-        http.get('/story-development/decisions/node-root/path', () =>
+        http.get('/v1/story-development/decisions/node-root/path', () =>
           HttpResponse.json({
             project_id: 'proj-1',
             node: { ...mockNode, node_id: 'node-root' },
@@ -78,7 +78,7 @@ describe('decisions service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/decisions/node-missing/path', () =>
+        http.get('/v1/story-development/decisions/node-missing/path', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -87,3 +87,4 @@ describe('decisions service', () => {
     });
   });
 });
+

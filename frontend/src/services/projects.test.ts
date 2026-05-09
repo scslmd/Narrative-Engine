@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { getProjects, getProject, createProject, deleteProject } from './projects';
@@ -27,7 +27,7 @@ describe('projects service', () => {
   describe('getProjects', () => {
     it('returns list of projects', async () => {
       server.use(
-        http.get('/projects', () => {
+        http.get('/v1/projects', () => {
           return HttpResponse.json([mockSummary]);
         }),
       );
@@ -40,7 +40,7 @@ describe('projects service', () => {
 
     it('returns empty array when no projects exist', async () => {
       server.use(
-        http.get('/projects', () => {
+        http.get('/v1/projects', () => {
           return HttpResponse.json([]);
         }),
       );
@@ -54,7 +54,7 @@ describe('projects service', () => {
   describe('getProject', () => {
     it('returns project details by ID', async () => {
       server.use(
-        http.get('/projects/proj-1', () => {
+        http.get('/v1/projects/proj-1', () => {
           return HttpResponse.json(mockDetail);
         }),
       );
@@ -67,7 +67,7 @@ describe('projects service', () => {
 
     it('throws ApiError on 404', async () => {
       server.use(
-        http.get('/projects/proj-missing', () => {
+        http.get('/v1/projects/proj-missing', () => {
           return HttpResponse.json({ detail: 'Project not found' }, { status: 404 });
         }),
       );
@@ -79,7 +79,7 @@ describe('projects service', () => {
   describe('createProject', () => {
     it('creates a project with required fields (201)', async () => {
       server.use(
-        http.post('/projects/create', async ({ request }) => {
+        http.post('/v1/projects/create', async ({ request }) => {
           const body = (await request.json()) as { project_name?: string };
           return HttpResponse.json({ ...mockDetail, project_name: body.project_name }, { status: 201 });
         }),
@@ -94,7 +94,7 @@ describe('projects service', () => {
   describe('deleteProject', () => {
     it('deletes a project on 200 response', async () => {
       server.use(
-        http.delete('/projects/proj-1', () => {
+        http.delete('/v1/projects/proj-1', () => {
           return new HttpResponse(null, { status: 200 });
         }),
       );
@@ -104,7 +104,7 @@ describe('projects service', () => {
 
     it('deletes a project on 204 response', async () => {
       server.use(
-        http.delete('/projects/proj-1', () => {
+        http.delete('/v1/projects/proj-1', () => {
           return new HttpResponse(null, { status: 204 });
         }),
       );
@@ -114,7 +114,7 @@ describe('projects service', () => {
 
     it('throws ApiError on 404', async () => {
       server.use(
-        http.delete('/projects/proj-missing', () => {
+        http.delete('/v1/projects/proj-missing', () => {
           return HttpResponse.json({ detail: 'Project not found' }, { status: 404 });
         }),
       );
@@ -124,7 +124,7 @@ describe('projects service', () => {
 
     it('throws ApiError on 409 active jobs', async () => {
       server.use(
-        http.delete('/projects/proj-1', () => {
+        http.delete('/v1/projects/proj-1', () => {
           return HttpResponse.json({ detail: 'Cannot delete project with active jobs' }, { status: 409 });
         }),
       );
@@ -133,3 +133,4 @@ describe('projects service', () => {
     });
   });
 });
+

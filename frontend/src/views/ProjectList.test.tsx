@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+﻿import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '../__tests__/test-utils';
 import userEvent from '@testing-library/user-event';
 import { server } from '../__tests__/setup';
@@ -29,7 +29,7 @@ const mockProjects = [
 describe('ProjectList', () => {
   beforeEach(() => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
       http.get('/health/ready', () =>
         HttpResponse.json({ components: { inference: { backend: 'llama.cpp' } } }),
       ),
@@ -45,7 +45,7 @@ describe('ProjectList', () => {
 
   it('displays projects when loaded', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -58,7 +58,7 @@ describe('ProjectList', () => {
 
   it('shows empty state when no projects exist', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -70,7 +70,7 @@ describe('ProjectList', () => {
 
   it('displays project genre and tone profile', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -83,7 +83,7 @@ describe('ProjectList', () => {
 
   it('renders navigation links for each project', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -98,7 +98,7 @@ describe('ProjectList', () => {
 
   it('renders the new project form', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -113,7 +113,7 @@ describe('ProjectList', () => {
 
   it('renders the create project button', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -125,7 +125,7 @@ describe('ProjectList', () => {
 
   it('renders the import existing story button', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -138,7 +138,7 @@ describe('ProjectList', () => {
   it('opens import modal when import button is clicked', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -159,8 +159,8 @@ describe('ProjectList', () => {
     const user = userEvent.setup({ delay: 10 });
     let receivedBody: { project_name: string; config: { genre: string; tone_profile: object; story_structure: string } } | null = null;
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
-      http.post('/projects/create', async ({ request }) => {
+      http.get('/v1/projects', () => HttpResponse.json([])),
+      http.post('/v1/projects/create', async ({ request }) => {
         const body = (await request.json()) as { project_name: string; config: { genre: string; tone_profile: object; story_structure: string } };
         receivedBody = body;
         return HttpResponse.json({
@@ -206,7 +206,7 @@ describe('ProjectList', () => {
 
   it('shows welcome header', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json([])),
+      http.get('/v1/projects', () => HttpResponse.json([])),
     );
 
     render(<ProjectList />);
@@ -218,7 +218,7 @@ describe('ProjectList', () => {
 
   it('displays your projects section header', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -230,7 +230,7 @@ describe('ProjectList', () => {
 
   it('renders delete button on each project card', async () => {
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -246,7 +246,7 @@ describe('ProjectList', () => {
   it('opens confirmation dialog when delete button is clicked', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -266,7 +266,7 @@ describe('ProjectList', () => {
   it('closes confirmation dialog when cancel is clicked', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
     );
 
     render(<ProjectList />);
@@ -294,8 +294,8 @@ describe('ProjectList', () => {
     const user = userEvent.setup();
     let deleteCalled = false;
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
-      http.delete('/projects/proj-1', () => {
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/v1/projects/proj-1', () => {
         deleteCalled = true;
         return new HttpResponse(null, { status: 200 });
       }),
@@ -330,8 +330,8 @@ describe('ProjectList', () => {
   it('shows error toast on 409 active jobs', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
-      http.delete('/projects/proj-1', () =>
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/v1/projects/proj-1', () =>
         HttpResponse.json({ detail: 'Cannot delete project with active jobs. Complete or cancel jobs first.' }, { status: 409 }),
       ),
     );
@@ -359,8 +359,8 @@ describe('ProjectList', () => {
   it('shows error toast on 404 not found', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
-      http.delete('/projects/proj-1', () =>
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
+      http.delete('/v1/projects/proj-1', () =>
         HttpResponse.json({ detail: 'Project not found' }, { status: 404 }),
       ),
     );
@@ -385,3 +385,4 @@ describe('ProjectList', () => {
     });
   });
 });
+

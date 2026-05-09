@@ -24,7 +24,7 @@ export interface JobAttemptHistoryItem {
 
 export async function createJob(request: JobCreateRequest): Promise<JobStatusResponse> {
   try {
-    const response = await api.post('/jobs/create', request);
+    const response = await api.post('/v1/jobs/create', request);
 
     if (response.status !== 202 && response.status !== 200) {
       throw new Error(`Failed to create job: ${response.status}`);
@@ -48,7 +48,7 @@ export async function createJob(request: JobCreateRequest): Promise<JobStatusRes
 }
 
 export async function getStatus(jobId: string): Promise<JobStatusResponse> {
-  const response = await api.get(`/jobs/${jobId}/status`);
+  const response = await api.get(`/v1/jobs/${jobId}/status`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job status: ${response.status}`);
@@ -58,7 +58,7 @@ export async function getStatus(jobId: string): Promise<JobStatusResponse> {
 }
 
 export async function getLogs(jobId: string): Promise<{ id: string; entries: Array<{ timestamp: string; level: 'INFO' | 'WARNING' | 'ERROR'; message: string }> }> {
-  const response = await api.get(`/jobs/${jobId}/logs`);
+  const response = await api.get(`/v1/jobs/${jobId}/logs`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job logs: ${response.status}`);
@@ -68,7 +68,7 @@ export async function getLogs(jobId: string): Promise<{ id: string; entries: Arr
 }
 
 export async function getAttempts(jobId: string): Promise<{ job_id: string; items: JobAttemptHistoryItem[]; meta: Record<string, string> }> {
-  const response = await api.get(`/jobs/${jobId}/attempts`);
+  const response = await api.get(`/v1/jobs/${jobId}/attempts`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job attempts: ${response.status}`);
@@ -77,8 +77,12 @@ export async function getAttempts(jobId: string): Promise<{ job_id: string; item
   return response.data;
 }
 
-export async function getJobSteps(jobId: string): Promise<{ items: StepRecord[] }> {
-  const response = await api.get(`/jobs/${jobId}/steps`);
+export async function getJobSteps(jobId: string, attemptNumber?: number): Promise<{ items: StepRecord[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+  const response = await api.get(`/v1/jobs/${jobId}/steps`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job steps: ${response.status}`);
@@ -87,8 +91,12 @@ export async function getJobSteps(jobId: string): Promise<{ items: StepRecord[] 
   return response.data;
 }
 
-export async function getJobLineage(jobId: string): Promise<{ items: ArtifactLineageView[] }> {
-  const response = await api.get(`/jobs/${jobId}/lineage`);
+export async function getJobLineage(jobId: string, attemptNumber?: number): Promise<{ items: ArtifactLineageView[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+  const response = await api.get(`/v1/jobs/${jobId}/lineage`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job lineage: ${response.status}`);
@@ -98,7 +106,7 @@ export async function getJobLineage(jobId: string): Promise<{ items: ArtifactLin
 }
 
 export async function retryJob(jobId: string): Promise<{ run_id: string; status: string }> {
-  const response = await api.post(`/jobs/${jobId}/retry`);
+  const response = await api.post(`/v1/jobs/${jobId}/retry`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to retry job: ${response.status}`);

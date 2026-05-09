@@ -15,7 +15,7 @@ describe('worldBible service', () => {
   describe('getWorldBibleEntries', () => {
     it('returns list of world bible entries for a project', async () => {
       server.use(
-        http.get('/story-development/world-bible', ({ request }) => {
+        http.get('/v1/story-development/world-bible', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -34,7 +34,7 @@ describe('worldBible service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/world-bible', () => {
+        http.get('/v1/story-development/world-bible', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -46,7 +46,7 @@ describe('worldBible service', () => {
   describe('getWorldBibleEntry', () => {
     it('returns a single world bible entry by type and title', async () => {
       server.use(
-        http.get('/story-development/world-bible/location/Test%20Location', ({ request }) => {
+        http.get('/v1/story-development/world-bible/location/Test%20Location', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json(mockEntry);
@@ -61,7 +61,7 @@ describe('worldBible service', () => {
 
     it('encodes special characters in title', async () => {
       server.use(
-        http.get('/story-development/world-bible/location/City%20of%20the%20Dead%3A%20Volume%20I', ({ request }) => {
+        http.get('/v1/story-development/world-bible/location/City%20of%20the%20Dead%3A%20Volume%20I', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({ ...mockEntry, title: 'City of the Dead: Volume I' });
@@ -75,7 +75,7 @@ describe('worldBible service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/world-bible/location/Missing', () => {
+        http.get('/v1/story-development/world-bible/location/Missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -87,7 +87,7 @@ describe('worldBible service', () => {
   describe('createWorldBibleEntry', () => {
     it('creates a world bible entry (201)', async () => {
       server.use(
-        http.post('/story-development/world-bible', () => {
+        http.post('/v1/story-development/world-bible', () => {
           return HttpResponse.json({ ...mockEntry, title: 'New Org' }, { status: 201 });
         }),
       );
@@ -104,7 +104,7 @@ describe('worldBible service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/world-bible', () => {
+        http.post('/v1/story-development/world-bible', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -121,7 +121,7 @@ describe('worldBible service', () => {
   describe('updateWorldBibleEntry', () => {
     it('updates a world bible entry (200)', async () => {
       server.use(
-        http.patch('/story-development/world-bible/location/Test%20Location', () => {
+        http.patch('/v1/story-development/world-bible/location/Test%20Location', () => {
           return HttpResponse.json({ ...mockEntry, summary: 'Updated summary' });
         }),
       );
@@ -135,7 +135,7 @@ describe('worldBible service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/world-bible/location/Missing', () => {
+        http.patch('/v1/story-development/world-bible/location/Missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -144,3 +144,4 @@ describe('worldBible service', () => {
     });
   });
 });
+

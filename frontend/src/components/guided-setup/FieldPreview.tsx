@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, BookOpen, Users, Globe, GitBranch, Settings, ListTree, FileText } from 'lucide-react';
 import { useGuidedSetupStore } from '../../stores/guidedSetupStore';
-import type { GuidedCharacter, GuidedWorldEntry, GuidedArc, GuidedSequence, GuidedChapter } from '../../services/guidedSetup';
+import type { CategoryProgress, GuidedCharacter, GuidedWorldEntry, GuidedArc, GuidedSequence, GuidedChapter } from '../../services/guidedSetup';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -10,9 +10,10 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   isOpen?: boolean | undefined;
   onToggle?: (isOpen: boolean) => void;
+  completeness?: number;
 }
 
-function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen: isOpenProp, onToggle }: CollapsibleSectionProps) {
+function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen: isOpenProp, onToggle, completeness }: CollapsibleSectionProps) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isControlled = isOpenProp !== undefined;
   const isOpen = isOpenProp ?? internalOpen;
@@ -35,7 +36,29 @@ function CollapsibleSection({ title, icon, defaultOpen = false, children, isOpen
           {icon}
           {title}
         </span>
-        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <div className="flex items-center gap-2">
+          {completeness !== undefined && (
+            <div className="w-10 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                role="progressbar"
+                aria-valuenow={Math.round(completeness * 100)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${title} ${Math.round(completeness * 100)}% complete`}
+                data-testid="completeness-bar"
+                className={`h-full rounded-full transition-all duration-300 ${
+                  completeness >= 0.7
+                    ? 'bg-emerald-500'
+                    : completeness >= 0.3
+                      ? 'bg-amber-500'
+                      : 'bg-gray-400 dark:bg-gray-500'
+                }`}
+                style={{ width: `${Math.round(completeness * 100)}%` }}
+              />
+            </div>
+          )}
+          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
       </button>
       {isOpen && <div className="px-3 pb-2">{children}</div>}
     </div>
@@ -110,9 +133,38 @@ function ArcCard({ arc }: { arc: GuidedArc }) {
   );
 }
 
-export function FieldPreview(): React.ReactElement {
+function MissingFieldTags({ fields }: { fields: string[] }) {
+  if (fields.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mb-2 px-1">
+      {fields.map(f => (
+        <span key={f} data-testid="missing-field-tag" className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          {f}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+interface FieldPreviewProps {
+  categoryProgress?: CategoryProgress[];
+}
+
+export function FieldPreview({ categoryProgress }: FieldPreviewProps): React.ReactElement {
   const { accumulatedFields, updateFields } = useGuidedSetupStore();
   const { config, foundation, characters, world_bible, arcs, sequences, chapters } = accumulatedFields;
+
+  const getCompleteness = (category: string): number | undefined => {
+    if (!categoryProgress) return undefined;
+    const cp = categoryProgress.find(c => c.category === category);
+    return cp?.completeness;
+  };
+
+  const getMissingFields = (category: string): string[] => {
+    if (!categoryProgress) return [];
+    const cp = categoryProgress.find(c => c.category === category);
+    return cp?.fields_missing || [];
+  };
 
   // Auto-open when data first appears, respect user collapse
   const [seqOpen, setSeqOpen] = useState(sequences.length > 0);
@@ -134,7 +186,7 @@ export function FieldPreview(): React.ReactElement {
 
   return (
     <div className="h-full overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
-      <CollapsibleSection title="Project Config" icon={<Settings className="w-4 h-4" />} defaultOpen>
+      <CollapsibleSection title="Project Config" icon={<Settings className="w-4 h-4" />} defaultOpen completeness={getCompleteness('config')}>
         <FieldRow label="Name" value={config.project_name} editable onChange={(v) => updateFields({ config: { project_name: v } })} />
         <FieldRow label="Genre" value={config.genre} editable onChange={(v) => updateFields({ config: { genre: v } })} />
         <FieldRow label="Tone" value={config.tone_profile} />
@@ -143,28 +195,33 @@ export function FieldPreview(): React.ReactElement {
         <FieldRow label="Language" value={config.primary_language} />
         {config.constraints.length > 0 && <FieldRow label="Constraints" value={config.constraints} />}
       </CollapsibleSection>
+      <MissingFieldTags fields={getMissingFields('config')} />
 
-      <CollapsibleSection title="Foundation" icon={<BookOpen className="w-4 h-4" />} defaultOpen>
+      <CollapsibleSection title="Foundation" icon={<BookOpen className="w-4 h-4" />} defaultOpen completeness={getCompleteness('foundation')}>
         <FieldRow label="Premise" value={foundation.premise_text} />
         <FieldRow label="Logline" value={foundation.logline} />
         <FieldRow label="Theme" value={foundation.thematic_spine} />
         <FieldRow label="Audience" value={foundation.target_audience} />
       </CollapsibleSection>
+      <MissingFieldTags fields={getMissingFields('foundation')} />
 
-      <CollapsibleSection title={`Characters (${characters.length})`} icon={<Users className="w-4 h-4" />}>
+      <CollapsibleSection title={`Characters (${characters.length})`} icon={<Users className="w-4 h-4" />} completeness={getCompleteness('characters')}>
         {characters.length === 0 && <p className="text-sm text-gray-400">No characters yet</p>}
         {characters.map((c, i) => <CharacterCard key={i} char={c} />)}
       </CollapsibleSection>
+      <MissingFieldTags fields={getMissingFields('characters')} />
 
-      <CollapsibleSection title={`World (${world_bible.length})`} icon={<Globe className="w-4 h-4" />}>
+      <CollapsibleSection title={`World (${world_bible.length})`} icon={<Globe className="w-4 h-4" />} completeness={getCompleteness('world_bible')}>
         {world_bible.length === 0 && <p className="text-sm text-gray-400">No world entries yet</p>}
         {world_bible.map((w, i) => <WorldCard key={i} entry={w} />)}
       </CollapsibleSection>
+      <MissingFieldTags fields={getMissingFields('world_bible')} />
 
-      <CollapsibleSection title={`Arcs (${arcs.length})`} icon={<GitBranch className="w-4 h-4" />}>
+      <CollapsibleSection title={`Arcs (${arcs.length})`} icon={<GitBranch className="w-4 h-4" />} completeness={getCompleteness('arcs')}>
         {arcs.length === 0 && <p className="text-sm text-gray-400">No arcs yet</p>}
         {arcs.map((a, i) => <ArcCard key={i} arc={a} />)}
       </CollapsibleSection>
+      <MissingFieldTags fields={getMissingFields('arcs')} />
 
       <CollapsibleSection
         title={`Sequences (${sequences.length})`}

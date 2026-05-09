@@ -29,7 +29,7 @@ describe('planning service', () => {
   describe('getSequencePlans', () => {
     it('returns list of sequence plans', async () => {
       server.use(
-        http.get('/story-development/planning/sequence-plans', () =>
+        http.get('/v1/story-development/planning/sequence-plans', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ sequence_id: 'seq-1' }], meta: {} }),
         ),
       );
@@ -40,7 +40,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/sequence-plans', () =>
+        http.get('/v1/story-development/planning/sequence-plans', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -52,7 +52,7 @@ describe('planning service', () => {
   describe('getChapterPlans', () => {
     it('returns list of chapter plans', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-plans', () =>
+        http.get('/v1/story-development/planning/chapter-plans', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ chapter_id: 'ch-1' }], meta: {} }),
         ),
       );
@@ -63,7 +63,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-plans', () =>
+        http.get('/v1/story-development/planning/chapter-plans', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -75,7 +75,7 @@ describe('planning service', () => {
   describe('getScenePlans', () => {
     it('returns list of scene plans', async () => {
       server.use(
-        http.get('/story-development/planning/scene-plans', () =>
+        http.get('/v1/story-development/planning/scene-plans', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ scene_id: 'sc-1' }], meta: {} }),
         ),
       );
@@ -86,7 +86,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/scene-plans', () =>
+        http.get('/v1/story-development/planning/scene-plans', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -98,7 +98,7 @@ describe('planning service', () => {
   describe('getBeatPlans', () => {
     it('returns list of beat plans', async () => {
       server.use(
-        http.get('/story-development/planning/beat-plans', () =>
+        http.get('/v1/story-development/planning/beat-plans', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ beat_id: 'bt-1' }], meta: {} }),
         ),
       );
@@ -109,7 +109,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/beat-plans', () =>
+        http.get('/v1/story-development/planning/beat-plans', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -121,7 +121,7 @@ describe('planning service', () => {
   describe('getPlanningDependencies', () => {
     it('returns planning dependencies', async () => {
       server.use(
-        http.get('/story-development/planning/dependencies', () =>
+        http.get('/v1/story-development/planning/dependencies', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ dependency_id: 'dep-1' }], meta: {} }),
         ),
       );
@@ -132,7 +132,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/dependencies', () =>
+        http.get('/v1/story-development/planning/dependencies', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -144,7 +144,7 @@ describe('planning service', () => {
   describe('getChapterPackets', () => {
     it('returns chapter packets', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-packets', () =>
+        http.get('/v1/story-development/planning/chapter-packets', () =>
           HttpResponse.json({ project_id: 'proj-1', items: [{ packet_id: 'pkt-1' }], meta: {} }),
         ),
       );
@@ -155,7 +155,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-packets', () =>
+        http.get('/v1/story-development/planning/chapter-packets', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -167,7 +167,7 @@ describe('planning service', () => {
   describe('getSequencePlan', () => {
     it('returns a single sequence plan', async () => {
       server.use(
-        http.get('/story-development/planning/sequence-plans/seq-1', () =>
+        http.get('/v1/story-development/planning/sequence-plans/seq-1', () =>
           HttpResponse.json({ sequence_id: 'seq-1', title: 'Act One' }),
         ),
       );
@@ -178,7 +178,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/sequence-plans/seq-missing', () =>
+        http.get('/v1/story-development/planning/sequence-plans/seq-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -190,7 +190,7 @@ describe('planning service', () => {
   describe('getChapterPlan', () => {
     it('returns a single chapter plan', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-plans/ch-1', () =>
+        http.get('/v1/story-development/planning/chapter-plans/ch-1', () =>
           HttpResponse.json({ chapter_id: 'ch-1', title: 'Chapter One' }),
         ),
       );
@@ -201,7 +201,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-plans/ch-missing', () =>
+        http.get('/v1/story-development/planning/chapter-plans/ch-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -213,7 +213,7 @@ describe('planning service', () => {
   describe('getScenePlan', () => {
     it('returns a single scene plan', async () => {
       server.use(
-        http.get('/story-development/planning/scene-plans/sc-1', () =>
+        http.get('/v1/story-development/planning/scene-plans/sc-1', () =>
           HttpResponse.json({ scene_id: 'sc-1', title: 'Opening Scene' }),
         ),
       );
@@ -224,7 +224,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/scene-plans/sc-missing', () =>
+        http.get('/v1/story-development/planning/scene-plans/sc-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -236,7 +236,7 @@ describe('planning service', () => {
   describe('getBeatPlan', () => {
     it('returns a single beat plan', async () => {
       server.use(
-        http.get('/story-development/planning/beat-plans/bt-1', () =>
+        http.get('/v1/story-development/planning/beat-plans/bt-1', () =>
           HttpResponse.json({ beat_id: 'bt-1', objective: 'Inciting incident' }),
         ),
       );
@@ -247,7 +247,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/beat-plans/bt-missing', () =>
+        http.get('/v1/story-development/planning/beat-plans/bt-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -259,7 +259,7 @@ describe('planning service', () => {
   describe('getChapterPacket', () => {
     it('returns a single chapter packet', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-packets/pkt-1', () =>
+        http.get('/v1/story-development/planning/chapter-packets/pkt-1', () =>
           HttpResponse.json({ packet_id: 'pkt-1', chapter_id: 'ch-1' }),
         ),
       );
@@ -270,7 +270,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/planning/chapter-packets/pkt-missing', () =>
+        http.get('/v1/story-development/planning/chapter-packets/pkt-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -282,7 +282,7 @@ describe('planning service', () => {
   describe('createSequencePlan', () => {
     it('creates a sequence plan (201)', async () => {
       server.use(
-        http.post('/story-development/planning/sequence-plans', () =>
+        http.post('/v1/story-development/planning/sequence-plans', () =>
           HttpResponse.json({ sequence_id: 'seq-new' }, { status: 201 }),
         ),
       );
@@ -297,7 +297,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/sequence-plans', () =>
+        http.post('/v1/story-development/planning/sequence-plans', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -313,7 +313,7 @@ describe('planning service', () => {
   describe('updateSequencePlan', () => {
     it('updates a sequence plan (200)', async () => {
       server.use(
-        http.patch('/story-development/planning/sequence-plans/seq-1', () =>
+        http.patch('/v1/story-development/planning/sequence-plans/seq-1', () =>
           HttpResponse.json({ sequence_id: 'seq-1', title: 'Updated' }),
         ),
       );
@@ -324,7 +324,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/planning/sequence-plans/seq-missing', () =>
+        http.patch('/v1/story-development/planning/sequence-plans/seq-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -336,7 +336,7 @@ describe('planning service', () => {
   describe('createChapterPlan', () => {
     it('creates a chapter plan (201)', async () => {
       server.use(
-        http.post('/story-development/planning/chapter-plans', () =>
+        http.post('/v1/story-development/planning/chapter-plans', () =>
           HttpResponse.json({ chapter_id: 'ch-new' }, { status: 201 }),
         ),
       );
@@ -354,7 +354,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/chapter-plans', () =>
+        http.post('/v1/story-development/planning/chapter-plans', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -373,7 +373,7 @@ describe('planning service', () => {
   describe('updateChapterPlan', () => {
     it('updates a chapter plan (200)', async () => {
       server.use(
-        http.patch('/story-development/planning/chapter-plans/ch-1', () =>
+        http.patch('/v1/story-development/planning/chapter-plans/ch-1', () =>
           HttpResponse.json({ chapter_id: 'ch-1', title: 'Updated' }),
         ),
       );
@@ -384,7 +384,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/planning/chapter-plans/ch-missing', () =>
+        http.patch('/v1/story-development/planning/chapter-plans/ch-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -396,7 +396,7 @@ describe('planning service', () => {
   describe('createScenePlan', () => {
     it('creates a scene plan (201)', async () => {
       server.use(
-        http.post('/story-development/planning/scene-plans', () =>
+        http.post('/v1/story-development/planning/scene-plans', () =>
           HttpResponse.json({ scene_id: 'sc-new' }, { status: 201 }),
         ),
       );
@@ -414,7 +414,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/scene-plans', () =>
+        http.post('/v1/story-development/planning/scene-plans', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -433,7 +433,7 @@ describe('planning service', () => {
   describe('updateScenePlan', () => {
     it('updates a scene plan (200)', async () => {
       server.use(
-        http.patch('/story-development/planning/scene-plans/sc-1', () =>
+        http.patch('/v1/story-development/planning/scene-plans/sc-1', () =>
           HttpResponse.json({ scene_id: 'sc-1', title: 'Updated' }),
         ),
       );
@@ -444,7 +444,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/planning/scene-plans/sc-missing', () =>
+        http.patch('/v1/story-development/planning/scene-plans/sc-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -456,7 +456,7 @@ describe('planning service', () => {
   describe('createBeatPlan', () => {
     it('creates a beat plan (201)', async () => {
       server.use(
-        http.post('/story-development/planning/beat-plans', () =>
+        http.post('/v1/story-development/planning/beat-plans', () =>
           HttpResponse.json({ beat_id: 'bt-new' }, { status: 201 }),
         ),
       );
@@ -473,7 +473,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/beat-plans', () =>
+        http.post('/v1/story-development/planning/beat-plans', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -491,7 +491,7 @@ describe('planning service', () => {
   describe('updateBeatPlan', () => {
     it('updates a beat plan (200)', async () => {
       server.use(
-        http.patch('/story-development/planning/beat-plans/bt-1', () =>
+        http.patch('/v1/story-development/planning/beat-plans/bt-1', () =>
           HttpResponse.json({ beat_id: 'bt-1', objective: 'Updated' }),
         ),
       );
@@ -502,7 +502,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/planning/beat-plans/bt-missing', () =>
+        http.patch('/v1/story-development/planning/beat-plans/bt-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -514,7 +514,7 @@ describe('planning service', () => {
   describe('createChapterPacket', () => {
     it('creates a chapter packet (201)', async () => {
       server.use(
-        http.post('/story-development/planning/chapter-packets', () =>
+        http.post('/v1/story-development/planning/chapter-packets', () =>
           HttpResponse.json({ packet_id: 'pkt-new' }, { status: 201 }),
         ),
       );
@@ -529,7 +529,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/chapter-packets', () =>
+        http.post('/v1/story-development/planning/chapter-packets', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -545,7 +545,7 @@ describe('planning service', () => {
   describe('reorderPlanObjects', () => {
     it('reorders plan objects (200)', async () => {
       server.use(
-        http.post('/story-development/planning/reorder', () => HttpResponse.json(null)),
+        http.post('/v1/story-development/planning/reorder', () => HttpResponse.json(null)),
       );
 
       await expect(reorderPlanObjects({
@@ -557,7 +557,7 @@ describe('planning service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/planning/reorder', () =>
+        http.post('/v1/story-development/planning/reorder', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -570,3 +570,4 @@ describe('planning service', () => {
     });
   });
 });
+

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { StepRecord } from '../types/inspect';
-import api from '../lib/api';
+import { getCheckerSteps } from '../services/checker';
+import { getJobSteps } from '../services/jobs';
 
 interface UseJobStepsResult {
   steps: StepRecord[];
@@ -21,22 +22,10 @@ export function useJobSteps(jobId: string, runKind: 'pipeline_job' | 'role_model
     setError(null);
 
     try {
-      const params: Record<string, string> = {};
-      if (attemptNumber !== undefined) {
-        params.attempt = attemptNumber.toString();
-      }
-
-      const endpoint = runKind === 'pipeline_job' 
-        ? `/jobs/${jobId}/steps`
-        : `/role-model-checker/${jobId}/steps`;
-      
-      const response = await api.get(endpoint, { params });
-      
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch steps: ${response.status}`);
-      }
-
-      setSteps(response.data.items || []);
+      const response = runKind === 'pipeline_job'
+        ? await getJobSteps(jobId, attemptNumber)
+        : await getCheckerSteps(jobId, attemptNumber);
+      setSteps(response.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setSteps([]);

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   StoryImportRequest,
   StoryImportResponse,
   ImportSubmitResponse,
@@ -9,7 +9,7 @@ import api from '../lib/api';
 export async function submitImport(
   formData: FormData,
 ): Promise<ImportSubmitResponse> {
-  const response = await api.post('/projects/import-story', formData, {
+  const response = await api.post('/v1/projects/import-story', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 
@@ -23,7 +23,7 @@ export async function submitImport(
 export async function getImportStatus(
   importId: string,
 ): Promise<ImportProgress> {
-  const response = await api.get(`/projects/import/${importId}`);
+  const response = await api.get(`/v1/projects/import/${importId}`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to get import status: ${response.status}`);
@@ -32,7 +32,7 @@ export async function getImportStatus(
   return response.data;
 }
 
-// Backward compatible — submits and polls until done
+// Backward compatible â€” submits and polls until done
 export async function importStory(
   data: StoryImportRequest,
 ): Promise<StoryImportResponse> {
@@ -68,3 +68,4 @@ async function _pollForCompletion(
 
   throw new Error('Import timed out');
 }
+

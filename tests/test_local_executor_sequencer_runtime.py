@@ -376,3 +376,4 @@ def test_local_executor_persists_mapped_runtime_error_for_p200_failures(tmp_path
     assert sequence_response.json()["detail"] == "Artifact not found: sequence"
     with pytest.raises(FileNotFoundError):
         project_service.read_artifact(project_id, "sequence")
+

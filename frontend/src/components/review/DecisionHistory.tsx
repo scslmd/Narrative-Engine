@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ReviewDecision } from '../../types/review';
-import { getDecisionsForFinding } from '../../services/review';
+import { getDecision, getDecisionsForFinding } from '../../services/review';
 import { useUIStore } from '../../stores/uiStore';
 
 interface DecisionHistoryProps {
@@ -23,7 +23,10 @@ export function DecisionHistory({ findingId }: DecisionHistoryProps) {
       }
 
       const data = await getDecisionsForFinding(projectId, findingId);
-      setDecisions(data.sort((a, b) => 
+      const hydrated = await Promise.all(
+        data.map((decision) => getDecision(decision.decision_id, projectId)),
+      );
+      setDecisions(hydrated.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
     } catch (err) {

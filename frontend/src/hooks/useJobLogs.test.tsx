@@ -26,7 +26,7 @@ describe('useJobLogs', () => {
 
   it('returns loading state initially', () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({
           id: 'j1',
           entries: [
@@ -42,7 +42,7 @@ describe('useJobLogs', () => {
 
   it('fetches logs on mount', async () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({
           id: 'j1',
           entries: [
@@ -67,7 +67,7 @@ describe('useJobLogs', () => {
 
   it('handles empty log entries', async () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({
           id: 'j-empty',
           entries: [],
@@ -86,7 +86,7 @@ describe('useJobLogs', () => {
 
   it('handles fetch error', async () => {
     server.use(
-      http.get('/jobs/:id/logs', () => {
+      http.get('/v1/jobs/:id/logs', () => {
         return HttpResponse.json({ detail: 'not found' }, { status: 404 });
       }),
     );

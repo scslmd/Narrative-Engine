@@ -29,7 +29,7 @@ describe('review service', () => {
   describe('getFindings', () => {
     it('returns findings with basic filter', async () => {
       server.use(
-        http.get('/story-development/review/findings', ({ request }) => {
+        http.get('/v1/story-development/review/findings', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -48,7 +48,7 @@ describe('review service', () => {
 
     it('passes severity filter when provided', async () => {
       server.use(
-        http.get('/story-development/review/findings', ({ request }) => {
+        http.get('/v1/story-development/review/findings', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('severity')).toBe('high,medium');
           return HttpResponse.json({
@@ -67,7 +67,7 @@ describe('review service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/review/findings', () => {
+        http.get('/v1/story-development/review/findings', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -79,7 +79,7 @@ describe('review service', () => {
   describe('getDecisionsForFinding', () => {
     it('returns decisions for a finding', async () => {
       server.use(
-        http.get('/story-development/review/decisions', ({ request }) => {
+        http.get('/v1/story-development/review/decisions', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           expect(url.searchParams.get('target_id')).toBe('finding-1');
@@ -99,7 +99,7 @@ describe('review service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/review/decisions', () => {
+        http.get('/v1/story-development/review/decisions', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -111,7 +111,7 @@ describe('review service', () => {
   describe('createDecision', () => {
     it('creates a review decision (201)', async () => {
       server.use(
-        http.post('/story-development/review/decisions', () => {
+        http.post('/v1/story-development/review/decisions', () => {
           return HttpResponse.json({ ...mockDecision, decision: 'accept' }, { status: 201 });
         }),
       );
@@ -129,7 +129,7 @@ describe('review service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/review/decisions', () => {
+        http.post('/v1/story-development/review/decisions', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -147,7 +147,7 @@ describe('review service', () => {
   describe('getFinding', () => {
     it('returns a single finding by id', async () => {
       server.use(
-        http.get('/story-development/review/findings/finding-1', ({ request }) => {
+        http.get('/v1/story-development/review/findings/finding-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json(mockFinding);
@@ -161,7 +161,7 @@ describe('review service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/review/findings/finding-missing', () => {
+        http.get('/v1/story-development/review/findings/finding-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -173,7 +173,7 @@ describe('review service', () => {
   describe('getDecision', () => {
     it('returns a single decision by id', async () => {
       server.use(
-        http.get('/story-development/review/decisions/decision-1', ({ request }) => {
+        http.get('/v1/story-development/review/decisions/decision-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json(mockDecision);
@@ -187,7 +187,7 @@ describe('review service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/review/decisions/decision-missing', () => {
+        http.get('/v1/story-development/review/decisions/decision-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -196,3 +196,4 @@ describe('review service', () => {
     });
   });
 });
+

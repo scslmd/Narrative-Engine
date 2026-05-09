@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { submitImport, getImportStatus } from '../../services/storyImport';
-import { submitMythosExtraction, getExtractionStatus as getMythosExtractionStatus } from '../../services/mythosExtraction';
-import { submitPatternExtraction, getExtractionStatus as getPatternExtractionStatus } from '../../services/patternExtraction';
+import { getImportStatus, importStory, submitImport } from '../../services/storyImport';
+import { getExtractionStatus as getMythosExtractionStatus, submitMythosExtraction } from '../../services/mythosExtraction';
+import { getExtractionStatus as getPatternExtractionStatus, submitPatternExtraction, submitProjectPatternExtraction } from '../../services/patternExtraction';
 import type { PatternExtractionRequest } from '../../types/patternExtraction';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +30,7 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
   const [generationMode, setGenerationMode] = useState<'same_world' | 'transposed' | 'pure_pattern'>('same_world');
   const [patternSourceType, setPatternSourceType] = useState<'narrative' | 'mythology'>('narrative');
   const [patternGenMode, setPatternGenMode] = useState<'same_world' | 'new_characters' | 'transposed' | 'pure_pattern'>('same_world');
+  const [targetProjectId, setTargetProjectId] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -70,6 +71,15 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
 
     try {
       if (importMode === 'patterns') {
+        if (targetProjectId.trim()) {
+          const submit = await submitProjectPatternExtraction(targetProjectId.trim(), {
+            source_type: patternSourceType,
+            generation_mode: patternGenMode,
+            source_corpus: sourceCorpus.trim() || null,
+          });
+          setExtractionId(submit.extraction_id);
+          setExtractionPhase('Extracting patterns...');
+        }
         const patternRequest: PatternExtractionRequest = {
           text: storyText,
           source_type: patternSourceType,
@@ -146,6 +156,18 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
 
         return;
       } else {
+        if (importMode === 'story' && !genre.trim() && !tone.trim()) {
+          const result = await importStory({
+            story_text: storyText,
+            project_name: projectName.trim(),
+          });
+          setIsImporting(false);
+          addToast('Import completed', 'success');
+          navigate(`/workspace/${result.project_id}`);
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+          onClose();
+          return;
+        }
         const formData = new FormData();
         formData.append('story_text', storyText);
         formData.append('project_name', projectName.trim());
@@ -258,6 +280,20 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
                 ? 'Paste mythology texts and the system will extract archetypal patterns, narrative structures, cosmic rules, and symbolic motifs for pattern-based story generation.'
                 : 'Paste a story or mythological text to extract reusable narrative patterns, then generate a new project using those patterns.'}
           </p>
+          {importMode === 'patterns' && (
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Existing Project ID (optional)
+              </label>
+              <input
+                type="text"
+                value={targetProjectId}
+                onChange={(e) => setTargetProjectId(e.target.value)}
+                placeholder="Project ID for in-place pattern extraction"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2.5 text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
+              />
+            </div>
+          )}
 
           {importMode === 'story' && (
             <>

@@ -1,8 +1,8 @@
-import type { ProjectSummaryResponse, ProjectDetailResponse, ProjectCreateRequest } from '../types/project';
+﻿import type { ProjectSummaryResponse, ProjectDetailResponse, ProjectCreateRequest } from '../types/project';
 import api from '../lib/api';
 
 export async function getProjects(): Promise<ProjectSummaryResponse[]> {
-  const response = await api.get('/projects');
+  const response = await api.get('/v1/projects');
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch projects: ${response.status}`);
@@ -12,7 +12,7 @@ export async function getProjects(): Promise<ProjectSummaryResponse[]> {
 }
 
 export async function generateProjectDescription(projectId: string): Promise<{ premise_text: string }> {
-  const response = await api.post(`/projects/${projectId}/generate-description`);
+  const response = await api.post(`/v1/projects/${projectId}/generate-description`);
 
   if (response.status !== 200) {
     throw new Error(`Failed to generate description: ${response.status}`);
@@ -22,7 +22,7 @@ export async function generateProjectDescription(projectId: string): Promise<{ p
 }
 
 export async function getProject(projectId: string): Promise<ProjectDetailResponse> {
-  const response = await api.get(`/projects/${projectId}`);
+  const response = await api.get(`/v1/projects/${projectId}`);
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch project: ${response.status}`);
@@ -32,7 +32,7 @@ export async function getProject(projectId: string): Promise<ProjectDetailRespon
 }
 
 export async function createProject(data: ProjectCreateRequest): Promise<ProjectDetailResponse> {
-  const response = await api.post('/projects/create', data);
+  const response = await api.post('/v1/projects/create', data);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create project: ${response.status}`);
@@ -42,5 +42,6 @@ export async function createProject(data: ProjectCreateRequest): Promise<Project
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  await api.delete(`/projects/${projectId}`);
+  await api.delete(`/v1/projects/${projectId}`);
 }
+

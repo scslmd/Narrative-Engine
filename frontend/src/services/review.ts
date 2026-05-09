@@ -20,7 +20,7 @@ export async function getFindings(filter: FindingsFilter): Promise<CheckerFindin
     params.severity = filter.severity.join(',');
   }
 
-  const response = await api.get('/story-development/review/findings', { params });
+  const response = await api.get('/v1/story-development/review/findings', { params });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch findings: ${response.status}`);
@@ -37,7 +37,7 @@ interface DecisionListResponse {
 }
 
 export async function getDecisionsForFinding(projectId: string, findingId: string): Promise<ReviewDecision[]> {
-  const response = await api.get('/story-development/review/decisions', {
+  const response = await api.get('/v1/story-development/review/decisions', {
     params: {
       project_id: projectId,
       target_id: findingId,
@@ -53,7 +53,7 @@ export async function getDecisionsForFinding(projectId: string, findingId: strin
 }
 
 export async function createDecision(request: ReviewDecisionCreateRequest): Promise<ReviewDecision> {
-  const response = await api.post('/story-development/review/decisions', request);
+  const response = await api.post('/v1/story-development/review/decisions', request);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create decision: ${response.status}`);
@@ -63,7 +63,7 @@ export async function createDecision(request: ReviewDecisionCreateRequest): Prom
 }
 
 export async function getFinding(findingId: string, projectId: string): Promise<ReviewFinding> {
-  const response = await api.get(`/story-development/review/findings/${findingId}`, {
+  const response = await api.get(`/v1/story-development/review/findings/${findingId}`, {
     params: { project_id: projectId },
   });
 
@@ -75,7 +75,7 @@ export async function getFinding(findingId: string, projectId: string): Promise<
 }
 
 export async function getDecision(decisionId: string, projectId: string): Promise<ReviewDecision> {
-  const response = await api.get(`/story-development/review/decisions/${decisionId}`, {
+  const response = await api.get(`/v1/story-development/review/decisions/${decisionId}`, {
     params: { project_id: projectId },
   });
 
@@ -85,3 +85,4 @@ export async function getDecision(decisionId: string, projectId: string): Promis
 
   return response.data;
 }
+

@@ -1,18 +1,15 @@
-import type { ModelCatalog, RoleModelCheckStatus, RoleModelCheckRequest } from '../types/checker';
+import type { ModelCatalog, RoleModelCheckRequest, RoleModelCheckStatus } from '../types/checker';
+import type { ArtifactLineageView, StepRecord } from '../types/inspect';
 import api from '../lib/api';
 
 export async function getModelCatalog(): Promise<ModelCatalog> {
-  const response = await api.get('/models');
+  const response = await api.get('/v1/models');
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch model catalog: ${response.status}`);
   }
 
   const raw = response.data;
-
-  // Backend returns discovered_models as list[str] (model ID strings).
-  // Transform into Array<{role, model_id, name}> expected by the component.
-  // Already-shaped objects (from tests/legacy) pass through unchanged.
   const rawModels = Array.isArray(raw.discovered_models) ? raw.discovered_models : [];
   const roles = Array.isArray(raw.workflow_order) ? raw.workflow_order : [];
 
@@ -23,7 +20,6 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
     };
   }
 
-  // Backend format: list of model ID strings. Expand into per-role entries.
   const models: Array<{ role: string; model_id: string; name: string }> = [];
   for (const roleId of roles) {
     for (const modelId of rawModels) {
@@ -43,7 +39,7 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
 }
 
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {
-  const response = await api.post('/role-model-checker/run', request);
+  const response = await api.post('/v1/role-model-checker/run', request);
 
   if (response.status !== 202 && response.status !== 200) {
     throw new Error(`Failed to run checker: ${response.status}`);
@@ -53,8 +49,8 @@ export async function runChecker(request: RoleModelCheckRequest): Promise<RoleMo
 }
 
 export async function getCheckerStatus(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await api.get(`/role-model-checker/${runId}/status`);
-  
+  const response = await api.get(`/v1/role-model-checker/${runId}/status`);
+
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker status: ${response.status}`);
   }
@@ -63,7 +59,7 @@ export async function getCheckerStatus(runId: string): Promise<RoleModelCheckSta
 }
 
 export async function retryChecker(runId: string): Promise<RoleModelCheckStatus> {
-  const response = await api.post(`/role-model-checker/${runId}/retry`);
+  const response = await api.post(`/v1/role-model-checker/${runId}/retry`);
 
   if (response.status !== 202) {
     throw new Error(`Failed to retry checker: ${response.status}`);
@@ -73,10 +69,38 @@ export async function retryChecker(runId: string): Promise<RoleModelCheckStatus>
 }
 
 export async function getCheckerAttempts(runId: string): Promise<{ run_id: string; items: AttemptHistoryItem[]; meta: Record<string, string> }> {
-  const response = await api.get(`/role-model-checker/${runId}/attempts`);
-  
+  const response = await api.get(`/v1/role-model-checker/${runId}/attempts`);
+
   if (response.status !== 200) {
     throw new Error(`Failed to fetch checker attempts: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getCheckerSteps(runId: string, attemptNumber?: number): Promise<{ items: StepRecord[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+
+  const response = await api.get(`/v1/role-model-checker/${runId}/steps`, { params });
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch checker steps: ${response.status}`);
+  }
+
+  return response.data;
+}
+
+export async function getCheckerLineage(runId: string, attemptNumber?: number): Promise<{ items: ArtifactLineageView[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+
+  const response = await api.get(`/v1/role-model-checker/${runId}/lineage`, { params });
+  if (response.status !== 200) {
+    throw new Error(`Failed to fetch checker lineage: ${response.status}`);
   }
 
   return response.data;
@@ -101,3 +125,4 @@ export interface AttemptHistoryItem {
   error_code: string | null;
   error_category: string | null;
 }
+

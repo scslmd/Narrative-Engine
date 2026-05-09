@@ -14,7 +14,7 @@ describe('branches service', () => {
   describe('getBranches', () => {
     it('returns list of branches for a project', async () => {
       server.use(
-        http.get('/story-development/branches', ({ request }) => {
+        http.get('/v1/story-development/branches', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -33,7 +33,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/branches', () => {
+        http.get('/v1/story-development/branches', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -45,7 +45,7 @@ describe('branches service', () => {
   describe('setActiveBranch', () => {
     it('sets the active branch (200)', async () => {
       server.use(
-        http.post('/story-development/branches/active', () => {
+        http.post('/v1/story-development/branches/active', () => {
           return HttpResponse.json({ ...mockBranch, branch_id: 'branch-2' });
         }),
       );
@@ -57,7 +57,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/branches/active', () => {
+        http.post('/v1/story-development/branches/active', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -69,7 +69,7 @@ describe('branches service', () => {
   describe('createBranchComparison', () => {
     it('creates a branch comparison (201)', async () => {
       server.use(
-        http.post('/story-development/branches/comparisons', () => {
+        http.post('/v1/story-development/branches/comparisons', () => {
           return HttpResponse.json({
             comparison_id: 'comp-1',
             source_branch_id: 'branch-a',
@@ -85,7 +85,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/branches/comparisons', () => {
+        http.post('/v1/story-development/branches/comparisons', () => {
           return HttpResponse.json({ detail: 'Conflict' }, { status: 409 });
         }),
       );
@@ -97,7 +97,7 @@ describe('branches service', () => {
   describe('createMergeDecision', () => {
     it('creates a merge decision (201)', async () => {
       server.use(
-        http.post('/story-development/branches/merge-decisions', () => {
+        http.post('/v1/story-development/branches/merge-decisions', () => {
           return HttpResponse.json({
             merge_decision_id: 'merge-1',
             merge_rationale: 'because',
@@ -112,7 +112,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/branches/merge-decisions', () => {
+        http.post('/v1/story-development/branches/merge-decisions', () => {
           return HttpResponse.json({ detail: 'Conflict' }, { status: 409 });
         }),
       );
@@ -124,7 +124,7 @@ describe('branches service', () => {
   describe('getBranch', () => {
     it('returns a single branch by id', async () => {
       server.use(
-        http.get('/story-development/branches/branch-1', ({ request }) => {
+        http.get('/v1/story-development/branches/branch-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -145,7 +145,7 @@ describe('branches service', () => {
 
     it('works without projectId', async () => {
       server.use(
-        http.get('/story-development/branches/branch-1', ({ request }) => {
+        http.get('/v1/story-development/branches/branch-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.has('project_id')).toBe(false);
           return HttpResponse.json({
@@ -165,7 +165,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/branches/branch-missing', () => {
+        http.get('/v1/story-development/branches/branch-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -177,7 +177,7 @@ describe('branches service', () => {
   describe('getBranchComparison', () => {
     it('returns a comparison by id', async () => {
       server.use(
-        http.get('/story-development/branches/comparisons/comp-1', ({ request }) => {
+        http.get('/v1/story-development/branches/comparisons/comp-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -198,7 +198,7 @@ describe('branches service', () => {
 
     it('works without projectId', async () => {
       server.use(
-        http.get('/story-development/branches/comparisons/comp-1', ({ request }) => {
+        http.get('/v1/story-development/branches/comparisons/comp-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.has('project_id')).toBe(false);
           return HttpResponse.json({
@@ -218,7 +218,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/branches/comparisons/comp-missing', () => {
+        http.get('/v1/story-development/branches/comparisons/comp-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -230,7 +230,7 @@ describe('branches service', () => {
   describe('getMergeDecision', () => {
     it('returns a merge decision by id', async () => {
       server.use(
-        http.get('/story-development/branches/merge-decisions/merge-1', ({ request }) => {
+        http.get('/v1/story-development/branches/merge-decisions/merge-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -252,7 +252,7 @@ describe('branches service', () => {
 
     it('works without projectId', async () => {
       server.use(
-        http.get('/story-development/branches/merge-decisions/merge-1', ({ request }) => {
+        http.get('/v1/story-development/branches/merge-decisions/merge-1', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.has('project_id')).toBe(false);
           return HttpResponse.json({
@@ -273,7 +273,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/branches/merge-decisions/merge-missing', () => {
+        http.get('/v1/story-development/branches/merge-decisions/merge-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -285,7 +285,7 @@ describe('branches service', () => {
   describe('getBranchStateRefs', () => {
     it('returns state refs for a branch', async () => {
       server.use(
-        http.get('/story-development/branches/branch-1/state-refs', ({ request }) => {
+        http.get('/v1/story-development/branches/branch-1/state-refs', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json([
@@ -310,7 +310,7 @@ describe('branches service', () => {
 
     it('works without projectId', async () => {
       server.use(
-        http.get('/story-development/branches/branch-1/state-refs', ({ request }) => {
+        http.get('/v1/story-development/branches/branch-1/state-refs', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.has('project_id')).toBe(false);
           return HttpResponse.json([]);
@@ -324,7 +324,7 @@ describe('branches service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/branches/branch-missing/state-refs', () => {
+        http.get('/v1/story-development/branches/branch-missing/state-refs', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -333,3 +333,4 @@ describe('branches service', () => {
     });
   });
 });
+

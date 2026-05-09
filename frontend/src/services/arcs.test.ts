@@ -27,7 +27,7 @@ describe('arcs service', () => {
   describe('getArcCandidates', () => {
     it('returns list of arc candidates for a project', async () => {
       server.use(
-        http.get('/story-development/arcs/candidates', ({ request }) => {
+        http.get('/v1/story-development/arcs/candidates', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -44,7 +44,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/arcs/candidates', () =>
+        http.get('/v1/story-development/arcs/candidates', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -56,7 +56,7 @@ describe('arcs service', () => {
   describe('getArcComparisons', () => {
     it('returns list of arc comparisons for a project', async () => {
       server.use(
-        http.get('/story-development/arcs/comparisons', ({ request }) => {
+        http.get('/v1/story-development/arcs/comparisons', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -73,7 +73,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/arcs/comparisons', () =>
+        http.get('/v1/story-development/arcs/comparisons', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -85,7 +85,7 @@ describe('arcs service', () => {
   describe('getArcSelections', () => {
     it('returns list of arc selections for a project', async () => {
       server.use(
-        http.get('/story-development/arcs/selections', ({ request }) => {
+        http.get('/v1/story-development/arcs/selections', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -102,7 +102,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/arcs/selections', () =>
+        http.get('/v1/story-development/arcs/selections', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -114,7 +114,7 @@ describe('arcs service', () => {
   describe('getArcStageMaps', () => {
     it('returns list of arc stage maps for a project', async () => {
       server.use(
-        http.get('/story-development/arcs/stage-maps', ({ request }) => {
+        http.get('/v1/story-development/arcs/stage-maps', ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           return HttpResponse.json({
@@ -131,7 +131,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/story-development/arcs/stage-maps', () =>
+        http.get('/v1/story-development/arcs/stage-maps', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -143,7 +143,7 @@ describe('arcs service', () => {
   describe('createArcCandidate', () => {
     it('creates an arc candidate (201)', async () => {
       server.use(
-        http.post('/story-development/arcs/candidates', () => {
+        http.post('/v1/story-development/arcs/candidates', () => {
           return HttpResponse.json({ ...mockCandidate, arc_id: 'arc-new', name: 'New Arc' }, { status: 201 });
         }),
       );
@@ -160,7 +160,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/arcs/candidates', () =>
+        http.post('/v1/story-development/arcs/candidates', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -177,7 +177,7 @@ describe('arcs service', () => {
   describe('createArcSelection', () => {
     it('creates an arc selection (201)', async () => {
       server.use(
-        http.post('/story-development/arcs/selections', () => {
+        http.post('/v1/story-development/arcs/selections', () => {
           return HttpResponse.json({ selection_id: 'sel-new' }, { status: 201 });
         }),
       );
@@ -192,7 +192,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/arcs/selections', () =>
+        http.post('/v1/story-development/arcs/selections', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -207,7 +207,7 @@ describe('arcs service', () => {
   describe('deleteArcSelection', () => {
     it('deletes an arc selection (200)', async () => {
       server.use(
-        http.delete('/story-development/arcs/selections/sel-1', () =>
+        http.delete('/v1/story-development/arcs/selections/sel-1', () =>
           HttpResponse.json(null),
         ),
       );
@@ -217,7 +217,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.delete('/story-development/arcs/selections/sel-missing', () =>
+        http.delete('/v1/story-development/arcs/selections/sel-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -229,7 +229,7 @@ describe('arcs service', () => {
   describe('createArcStageMap', () => {
     it('creates an arc stage map (201)', async () => {
       server.use(
-        http.post('/story-development/arcs/stage-maps', () => {
+        http.post('/v1/story-development/arcs/stage-maps', () => {
           return HttpResponse.json({ arc_stage_map_id: 'map-new' }, { status: 201 });
         }),
       );
@@ -245,7 +245,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/story-development/arcs/stage-maps', () =>
+        http.post('/v1/story-development/arcs/stage-maps', () =>
           HttpResponse.json({ detail: 'Bad request' }, { status: 400 }),
         ),
       );
@@ -261,7 +261,7 @@ describe('arcs service', () => {
   describe('updateArcSelection', () => {
     it('updates an arc selection (200)', async () => {
       server.use(
-        http.patch('/story-development/arcs/selections/sel-1', async ({ request }) => {
+        http.patch('/v1/story-development/arcs/selections/sel-1', async ({ request }) => {
           const url = new URL(request.url);
           expect(url.searchParams.get('project_id')).toBe('proj-1');
           const body = await request.json();
@@ -282,7 +282,7 @@ describe('arcs service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.patch('/story-development/arcs/selections/sel-missing', () =>
+        http.patch('/v1/story-development/arcs/selections/sel-missing', () =>
           HttpResponse.json({ detail: 'Not found' }, { status: 404 }),
         ),
       );
@@ -291,3 +291,4 @@ describe('arcs service', () => {
     });
   });
 });
+

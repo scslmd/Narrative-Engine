@@ -20,7 +20,7 @@ export async function getInspectLinks(
   if (objectId) params.object_id = objectId;
   if (runId) params.run_id = runId;
 
-  const response = await api.get('/story-development/review/inspect-links', { params });
+  const response = await api.get('/v1/story-development/review/inspect-links', { params });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch inspect links: ${response.status}`);
@@ -31,7 +31,7 @@ export async function getInspectLinks(
 }
 
 export async function createInspectLink(data: InspectRunLinkCreateRequest): Promise<InspectRunLink> {
-  const response = await api.post('/story-development/review/inspect-links', data, {
+  const response = await api.post('/v1/story-development/review/inspect-links', data, {
     params: { project_id: data.project_id },
   });
 
@@ -41,3 +41,4 @@ export async function createInspectLink(data: InspectRunLinkCreateRequest): Prom
 
   return response.data;
 }
+

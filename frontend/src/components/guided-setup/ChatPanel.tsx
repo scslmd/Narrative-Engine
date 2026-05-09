@@ -1,10 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles } from 'lucide-react';
+import type { CategoryProgress } from '../../services/guidedSetup';
 import { useGuidedSetupStore } from '../../stores/guidedSetupStore';
 
 interface ChatPanelProps {
   onSend: (message: string) => Promise<void>;
   isLoading: boolean;
+  readyToCreate: boolean;
+  progress: number;
+  categoryProgress: CategoryProgress[];
 }
 
 function TypingIndicator() {
@@ -24,10 +28,10 @@ function TypingIndicator() {
   );
 }
 
-export function ChatPanel({ onSend, isLoading }: ChatPanelProps): React.ReactElement {
+export function ChatPanel({ onSend, isLoading, readyToCreate, progress, categoryProgress }: ChatPanelProps): React.ReactElement {
   const [input, setInput] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const { conversationHistory, progress } = useGuidedSetupStore();
+  const { conversationHistory } = useGuidedSetupStore();
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -57,7 +61,11 @@ export function ChatPanel({ onSend, isLoading }: ChatPanelProps): React.ReactEle
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className={`px-4 py-3 border-b transition-colors duration-300 ${
+        readyToCreate
+          ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10'
+          : 'border-gray-200 dark:border-gray-700'
+      }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-500" />
@@ -66,12 +74,29 @@ export function ChatPanel({ onSend, isLoading }: ChatPanelProps): React.ReactEle
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {Math.round(progress)}% complete
-            </span>
+            {readyToCreate ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Ready to Save
+              </span>
+            ) : categoryProgress.length > 0 ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {categoryProgress.filter(c => c.completeness >= 0.7).length}/{categoryProgress.length} categories ready
+              </span>
+            ) : (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {Math.round(progress)}% complete
+              </span>
+            )}
             <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-300"
+                className={`h-full rounded-full transition-all duration-300 ${
+                  readyToCreate
+                    ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
+                    : 'bg-gradient-to-r from-violet-500 to-purple-500'
+                }`}
                 style={{ width: `${progress}%` }}
               />
             </div>

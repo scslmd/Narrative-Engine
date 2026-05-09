@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import StepTimeline from './StepTimeline';
 import ArtifactLineage from './ArtifactLineage';
 import type { InspectContext } from '../../types/inspect';
-import { getAttempts } from '../../services/jobs';
+import { getAttempts, retryJob } from '../../services/jobs';
 import { getCheckerAttempts } from '../../services/checker';
 import type { AttemptHistoryItem } from '../../types/inspect';
 
@@ -17,6 +17,7 @@ export default function InspectTabs({ context }: InspectTabsProps) {
   const [attempts, setAttempts] = useState<AttemptHistoryItem[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   const loadAttempts = useCallback(async () => {
     setAttemptsLoading(true);
@@ -98,6 +99,24 @@ export default function InspectTabs({ context }: InspectTabsProps) {
             
             {!attemptsLoading && !attemptsError && attempts.length > 0 && (
               <div className="space-y-3">
+                {context.runKind === 'pipeline_job' && (
+                  <button
+                    type="button"
+                    className="rounded bg-slate-900 text-white px-3 py-1.5 text-xs disabled:opacity-50"
+                    disabled={retrying}
+                    onClick={async () => {
+                      setRetrying(true);
+                      try {
+                        await retryJob(context.jobId);
+                        await loadAttempts();
+                      } finally {
+                        setRetrying(false);
+                      }
+                    }}
+                  >
+                    {retrying ? 'Retrying...' : 'Retry Job'}
+                  </button>
+                )}
                 {attempts.map((attempt) => (
                   <div key={attempt.attempt_number} className="bg-white dark:bg-slate-800 rounded-lg p-4 border">
                     <h4 className="font-medium text-gray-900 dark:text-slate-100 mb-2">

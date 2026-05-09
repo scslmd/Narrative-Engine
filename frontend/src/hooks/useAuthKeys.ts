@@ -7,18 +7,18 @@ export function useAuthKeys() {
 
   const keysQuery = useQuery({
     queryKey: ['auth-keys'],
-    queryFn: () => api.get('/auth/keys').then(r => r.data as ApiKeyInfo[]),
+    queryFn: () => api.get('/v1/auth/keys').then(r => r.data as ApiKeyInfo[]),
   });
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => api.post('/auth/keys', { name }),
+    mutationFn: (name: string) => api.post('/v1/auth/keys', { name }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth-keys'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (prefix: string) => api.delete(`/auth/keys/${prefix}`),
+    mutationFn: (prefix: string) => api.delete(`/v1/auth/keys/${prefix}`),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth-keys'] });
     },

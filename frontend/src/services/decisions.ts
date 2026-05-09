@@ -8,7 +8,7 @@ interface DecisionListResponse {
 }
 
 export async function getDecisions(projectId: string): Promise<StoryDecisionNode[]> {
-  const response = await api.get('/story-development/decisions', { params: { project_id: projectId } });
+  const response = await api.get('/v1/story-development/decisions', { params: { project_id: projectId } });
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch decisions: ${response.status}`);
@@ -25,7 +25,7 @@ interface DecisionPathResponse {
 }
 
 export async function getDecisionPath(nodeId: string): Promise<StoryDecisionPath> {
-  const response = await api.get(`/story-development/decisions/${nodeId}/path`);
+  const response = await api.get(`/v1/story-development/decisions/${nodeId}/path`);
   
   if (response.status !== 200) {
     throw new Error(`Failed to fetch decision path: ${response.status}`);
@@ -39,3 +39,4 @@ export async function getDecisionPath(nodeId: string): Promise<StoryDecisionPath
     created_at: data.node.created_at,
   };
 }
+

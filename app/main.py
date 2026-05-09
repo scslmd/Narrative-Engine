@@ -5,13 +5,14 @@ import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .middleware.path_traversal import PathTraversalMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
+from .middleware.request_telemetry import legacy_route_telemetry_middleware
 from .api import (
     build_canon_customization_router,
     build_jobs_router,
@@ -24,15 +25,9 @@ from .api import (
     build_story_development_router,
     build_role_model_checker_router,
 )
-from .api.auth import router as auth_router
-from .api.backup import router as backup_router
+from .api.auth import build_auth_router
+from .api.backup import build_backup_router
 from .api.health import router as health_router
-from .schemas.models import ModelCatalogResponse
-from .schemas.projects import (
-    ProjectArtifactResponse,
-    ProjectDetailResponse,
-    ProjectSummaryResponse,
-)
 from .constants import MAX_BODY_SIZE
 from .settings import settings
 from .persistence.story_development import StoryDevelopmentRepository
@@ -345,6 +340,8 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
 
     # Add rate limiting middleware (SEC-05)
     app.add_middleware(RateLimitMiddleware)
+    # Track legacy endpoint usage during migration window.
+    app.middleware("http")(legacy_route_telemetry_middleware)
 
     # Add audit logging middleware (REL-10)
     @app.middleware("http")
@@ -430,15 +427,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     if settings.api_key:
         @app.middleware("http")
         async def versioned_api_key_gate(request: Request, call_next):
-            if (
-                request.url.path.startswith('/v1')
-                or request.url.path == '/projects/import-story'
-                or request.url.path.startswith('/projects/import/')
-                or request.url.path.endswith('/export')
-                or request.url.path.startswith('/projects/export/')
-                or request.url.path == '/projects/import-export'
-                or request.url.path.startswith('/projects/maintenance')
-            ):
+            if request.url.path.startswith('/v1'):
                 api_key = request.headers.get('X-API-Key')
                 if api_key is None:
                     return JSONResponse(
@@ -456,50 +445,18 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
                     )
             return await call_next(request)
 
-    @app.get('/projects', response_model=list[ProjectSummaryResponse])
-    def list_projects() -> list[ProjectSummaryResponse]:
-        return project_service.list_projects()
-
-    @app.get('/projects/{project_id}', response_model=ProjectDetailResponse)
-    def get_project(project_id: str) -> ProjectDetailResponse:
-        try:
-            return project_service.get_project(project_id)
-        except Exception as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get('/projects/{project_id}/sequence', response_model=ProjectArtifactResponse)
-    def get_sequence(project_id: str) -> ProjectArtifactResponse:
-        try:
-            return project_service.read_artifact(project_id, 'sequence')
-        except Exception as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get('/projects/{project_id}/chapter-1', response_model=ProjectArtifactResponse)
-    def get_chapter(project_id: str) -> ProjectArtifactResponse:
-        try:
-            return project_service.read_artifact(project_id, 'chapter-1')
-        except Exception as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-
-    @app.get('/models', response_model=ModelCatalogResponse)
-    def get_models() -> ModelCatalogResponse:
-        return model_registry.build_catalog()
-
-    app.include_router(auth_router)  # Authentication endpoints (SEC-02)
-    app.include_router(backup_router)  # Backup endpoints (REL-04)
+    app.include_router(build_auth_router(prefix="/v1/auth"))  # Authentication endpoints (SEC-02)
+    app.include_router(build_backup_router(prefix="/v1/backup"))  # Backup endpoints (REL-04)
     app.include_router(health_router)  # Health endpoints (REL-05, REL-06)
-    app.include_router(build_projects_router(project_service, import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
-    app.include_router(build_jobs_router(job_manager))
+    app.include_router(build_projects_router(project_service, prefix="/v1/projects", import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
     app.include_router(build_jobs_router(job_manager, prefix='/v1/jobs'))
     app.include_router(build_models_router(model_registry))
-    app.include_router(build_story_development_router(story_development_repository))
     app.include_router(build_story_development_router(story_development_repository, prefix='/v1/story-development'))
     app.include_router(build_story_generation_router(story_development_repository, project_service, job_manager))
     app.include_router(build_manuscript_assist_router(story_development_repository, job_manager))
     app.include_router(build_canon_customization_router(story_development_repository))
     app.include_router(build_mythos_library_router(story_development_repository))
     app.include_router(build_pattern_library_router(story_development_repository))
-    app.include_router(build_role_model_checker_router(role_check_manager, role_check_service))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
 
     @app.post('/projects/create/debug', include_in_schema=False)

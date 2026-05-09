@@ -6,8 +6,8 @@
  * - Delete a relationship
  * 
  * Backend endpoints:
- * - GET /story-development/relationships
- * - DELETE /story-development/relationships/{edge_id}
+ * - GET /v1/story-development/relationships
+ * - DELETE /v1/story-development/relationships/{edge_id}
  */
 
 import type {
@@ -27,7 +27,7 @@ import api from '../lib/api';
  * Get all relationships for a project
  */
 export async function getRelationships(projectId: string): Promise<RelationshipEdge[]> {
-  const response = await api.get('/story-development/relationships', {
+  const response = await api.get('/v1/story-development/relationships', {
     params: { project_id: projectId },
   });
 
@@ -47,7 +47,7 @@ export async function deleteRelationship(
   projectId: string,
 ): Promise<void> {
   const response = await api.delete(
-    `/story-development/relationships/${edgeId}`,
+    `/v1/story-development/relationships/${edgeId}`,
     { params: { project_id: projectId } },
   );
 
@@ -65,7 +65,7 @@ export async function updateRelationship(
   projectId: string,
 ): Promise<RelationshipEdge> {
   const response = await api.patch(
-    `/story-development/relationships/${edgeId}`,
+    `/v1/story-development/relationships/${edgeId}`,
     data,
     { params: { project_id: projectId } },
   );
@@ -76,3 +76,4 @@ export async function updateRelationship(
 
   return response.data;
 }
+
