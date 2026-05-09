@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCreateJob, useJobs } from '../hooks/useJobs';
 import { useThemeStore } from '../stores/themeStore';
 import { Rocket, Code, Cpu, Layers, Play, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -133,7 +133,7 @@ function PhaseSelector({
     <>
       <div>
         <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${styles.labelColor}`}>Phase</label>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-1 gap-1.5">
           {phases.map((phase) => (
             <PhaseButton
               key={phase.value}
@@ -276,7 +276,15 @@ function JobItem({ job, isDark }: JobItemProps): React.ReactElement {
   const isFailed = job.status === 'FAILED';
   const isCompleted = job.status === 'COMPLETED';
   const [expanded, setExpanded] = useState(false);
-  const elapsed = formatElapsed(job.created_at, job.updated_at);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!isProcessing) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isProcessing, job.job_id]);
+  const elapsed = isProcessing
+    ? formatElapsedLive(job.created_at, tick)
+    : formatElapsed(job.created_at, job.updated_at);
 
   return (
     <li className={`rounded-md overflow-hidden ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
@@ -333,7 +341,7 @@ const ERROR_MESSAGES: Record<string, { summary: string; detail: (raw?: string, i
       <div className="space-y-1">
         {raw && <p>{raw}</p>}
         <p>
-          Fix: add <code className={`px-1 py-0.5 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-200'}`}>NARRATIVE_MAX_TOKENS_DEFAULT=8192</code> to your .env file, then restart the server.
+          Fix: increase <code className={`px-1 py-0.5 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-200'}`}>NARRATIVE_MAX_TOKENS_DEFAULT</code> in your .env file (current default: 8192), then restart the server.
         </p>
       </div>
     ),
@@ -400,9 +408,21 @@ function formatElapsed(created?: string, updated?: string): string {
   const start = new Date(created).getTime();
   const end = new Date(updated).getTime();
   const seconds = Math.round((end - start) / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+  return formatSeconds(seconds);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function formatElapsedLive(created: string | undefined, _tick: number): string {
+  if (!created) return '—';
+  const start = new Date(created).getTime();
+  const seconds = Math.round((Date.now() - start) / 1000);
+  return formatSeconds(Math.max(0, seconds));
+}
+
+function formatSeconds(total: number): string {
+  if (total < 60) return `${total}s`;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
