@@ -13,7 +13,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 // Mock setInterval/clearInterval to prevent act() warnings from the health-check polling
-vi.spyOn(global, 'setInterval').mockReturnValue(1 as any);
+vi.spyOn(global, 'setInterval').mockReturnValue(1 as unknown as ReturnType<typeof setInterval>);
 vi.spyOn(global, 'clearInterval').mockImplementation(() => {});
 
 const mockHandleAnalyze = vi.fn().mockResolvedValue(undefined);

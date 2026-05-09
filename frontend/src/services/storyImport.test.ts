@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { submitImport, getImportStatus, importStory } from './storyImport';
@@ -7,7 +7,7 @@ describe('storyImport service', () => {
   describe('submitImport', () => {
     it('submits an import and returns submission response (202)', async () => {
       server.use(
-        http.post('/projects/import-story', () => {
+        http.post('/v1/projects/import-story', () => {
           return HttpResponse.json({
             import_id: 'import-1',
             status: 'submitted',
@@ -27,7 +27,7 @@ describe('storyImport service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/projects/import-story', () => {
+        http.post('/v1/projects/import-story', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -41,7 +41,7 @@ describe('storyImport service', () => {
   describe('getImportStatus', () => {
     it('returns import progress', async () => {
       server.use(
-        http.get('/projects/import/import-1', () => {
+        http.get('/v1/projects/import/import-1', () => {
           return HttpResponse.json({
             import_id: 'import-1',
             status: 'in_progress',
@@ -57,7 +57,7 @@ describe('storyImport service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/projects/import/import-missing', () => {
+        http.get('/v1/projects/import/import-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -79,13 +79,13 @@ describe('storyImport service', () => {
       let pollCount = 0;
 
       server.use(
-        http.post('/projects/import-story', () => {
+        http.post('/v1/projects/import-story', () => {
           return HttpResponse.json({
             import_id: 'import-1',
             status: 'submitted',
           }, { status: 202 });
         }),
-        http.get('/projects/import/import-1', () => {
+        http.get('/v1/projects/import/import-1', () => {
           pollCount++;
           if (pollCount < 3) {
             return HttpResponse.json({
@@ -116,13 +116,13 @@ describe('storyImport service', () => {
 
     it('throws when import fails', async () => {
       server.use(
-        http.post('/projects/import-story', () => {
+        http.post('/v1/projects/import-story', () => {
           return HttpResponse.json({
             import_id: 'import-fail',
             status: 'submitted',
           }, { status: 202 });
         }),
-        http.get('/projects/import/import-fail', () => {
+        http.get('/v1/projects/import/import-fail', () => {
           return HttpResponse.json({
             import_id: 'import-fail',
             status: 'failed',
@@ -137,3 +137,4 @@ describe('storyImport service', () => {
     });
   });
 });
+

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { submitPatternExtraction, submitProjectPatternExtraction, getExtractionStatus } from './patternExtraction';
@@ -7,7 +7,7 @@ describe('patternExtraction service', () => {
   describe('submitPatternExtraction', () => {
     it('submits pattern extraction request', async () => {
       server.use(
-        http.post('/projects/import-patterns', () => {
+        http.post('/v1/projects/import-patterns', () => {
           return HttpResponse.json({
             extraction_id: 'extract-1',
             status: 'submitted',
@@ -25,7 +25,7 @@ describe('patternExtraction service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/projects/import-patterns', () => {
+        http.post('/v1/projects/import-patterns', () => {
           return HttpResponse.json({ detail: 'Bad request' }, { status: 400 });
         }),
       );
@@ -37,7 +37,7 @@ describe('patternExtraction service', () => {
   describe('submitProjectPatternExtraction', () => {
     it('submits project-specific pattern extraction', async () => {
       server.use(
-        http.post('/projects/proj-1/extract-patterns', () => {
+        http.post('/v1/projects/proj-1/extract-patterns', () => {
           return HttpResponse.json({
             extraction_id: 'extract-2',
             status: 'submitted',
@@ -54,7 +54,7 @@ describe('patternExtraction service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.post('/projects/proj-missing/extract-patterns', () => {
+        http.post('/v1/projects/proj-missing/extract-patterns', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -66,7 +66,7 @@ describe('patternExtraction service', () => {
   describe('getExtractionStatus', () => {
     it('returns extraction progress', async () => {
       server.use(
-        http.get('/projects/extraction/extract-1', () => {
+        http.get('/v1/projects/extraction/extract-1', () => {
           return HttpResponse.json({
             extraction_id: 'extract-1',
             status: 'completed',
@@ -81,7 +81,7 @@ describe('patternExtraction service', () => {
 
     it('throws on error response', async () => {
       server.use(
-        http.get('/projects/extraction/extract-missing', () => {
+        http.get('/v1/projects/extraction/extract-missing', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -90,3 +90,4 @@ describe('patternExtraction service', () => {
     });
   });
 });
+

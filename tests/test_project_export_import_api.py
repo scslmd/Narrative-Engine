@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -68,13 +68,13 @@ class TestExportAPI:
         """POST /projects/{id}/export returns application/zip."""
         client = TestClient(build_app())
 
-        resp = client.post("/projects/create", json={
+        resp = client.post("/v1/projects/create", json={
             "project_name": "Export Test Project",
         })
         assert resp.status_code == 201
         project_id = resp.json()["project_id"]
 
-        resp = client.post(f"/projects/{project_id}/export")
+        resp = client.post(f"/v1/projects/{project_id}/export")
         assert resp.status_code == 200
         assert resp.headers.get("content-type") == "application/zip"
         assert "attachment" in resp.headers.get("content-disposition", "")
@@ -86,7 +86,7 @@ class TestExportAPI:
 
     def test_export_nonexistent_project_returns_404(self):
         client = TestClient(build_app())
-        resp = client.post("/projects/nonexistent-id/export")
+        resp = client.post("/v1/projects/nonexistent-id/export")
         assert resp.status_code == 404
 
 
@@ -99,7 +99,7 @@ class TestImportAPI:
         client = TestClient(build_app())
         with open(zip_path, "rb") as f:
             resp = client.post(
-                "/projects/import-export",
+                "/v1/projects/import-export",
                 files={"file": ("test_export.zip", f, "application/zip")},
                 data={"project_name": "Imported via API"},
             )
@@ -113,7 +113,7 @@ class TestImportAPI:
         _remove_all_projects_from_runtime()
         client = TestClient(build_app())
         resp = client.post(
-            "/projects/import-export",
+            "/v1/projects/import-export",
             files={"file": ("notazip.txt", b"hello", "text/plain")},
         )
         assert resp.status_code == 422
@@ -126,12 +126,12 @@ class TestImportAPI:
         client = TestClient(build_app())
         with open(zip_path, "rb") as f:
             resp = client.post(
-                "/projects/import-export",
+                "/v1/projects/import-export",
                 files={"file": ("test_export.zip", f, "application/zip")},
             )
         import_id = resp.json()["import_id"]
 
-        resp = client.get(f"/projects/export/{import_id}")
+        resp = client.get(f"/v1/projects/export/{import_id}")
         assert resp.status_code == 200
         data = resp.json()
         assert "status" in data
@@ -139,5 +139,6 @@ class TestImportAPI:
 
     def test_get_export_status_returns_404_for_unknown(self):
         client = TestClient(build_app())
-        resp = client.get("/projects/export/nonexistent-id")
+        resp = client.get("/v1/projects/export/nonexistent-id")
         assert resp.status_code == 404
+

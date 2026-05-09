@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
@@ -662,3 +662,4 @@ def test_projection_endpoints_reject_non_positive_attempt_filter(tmp_path, path_
     response = client.get(path_template.format(id=identifier))
 
     assert response.status_code == 422
+

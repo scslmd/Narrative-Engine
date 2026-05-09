@@ -13,7 +13,7 @@ pytestmark = [
 
 
 def _create_project(client: TestClient, project_name: str) -> str:
-    response = client.post('/projects/create', json={'project_name': project_name})
+    response = client.post('/v1/projects/create', json={'project_name': project_name})
     assert response.status_code == 201
     return response.json()['project_id']
 
@@ -42,7 +42,7 @@ def test_projects_endpoint_lists_projects() -> None:
     first_project_id = _create_project(client, 'Smoke Science Fantasy Project')
     second_project_id = _create_project(client, 'Smoke Romance Project')
 
-    response = client.get('/projects')
+    response = client.get('/v1/projects')
     assert response.status_code == 200
     payload = response.json()
     ids = {item['project_id'] for item in payload}
@@ -52,7 +52,7 @@ def test_projects_endpoint_lists_projects() -> None:
 
 def test_models_endpoint_returns_workflow_preferences() -> None:
     client = TestClient(build_app())
-    response = client.get('/models')
+    response = client.get('/v1/models')
     assert response.status_code == 200
     payload = response.json()
     assert payload['workflow_order'] == ['architect', 'sequencer', 'drafter', 'critic']
@@ -62,7 +62,7 @@ def test_models_endpoint_returns_workflow_preferences() -> None:
 def test_role_model_checker_stub_runs() -> None:
     with TestClient(build_app()) as client:
         response = client.post(
-            '/role-model-checker/run',
+            '/v1/role-model-checker/run',
             json={
                 'roles': ['architect', 'critic'],
                 'model_selection': {},
@@ -73,11 +73,11 @@ def test_role_model_checker_stub_runs() -> None:
         assert response.status_code == 202
         payload = response.json()
         assert payload['status'] == 'PENDING'
-        assert response.headers['Location'].endswith(f"/role-model-checker/{payload['run_id']}/status")
+        assert response.headers['Location'].endswith(f"/v1/role-model-checker/{payload['run_id']}/status")
 
         status_payload = _poll_json(
             client,
-            f"/role-model-checker/{payload['run_id']}/status",
+            f"/v1/role-model-checker/{payload['run_id']}/status",
             terminal_statuses={'COMPLETED', 'FAILED'},
         )
         assert status_payload['status'] == 'COMPLETED'
@@ -89,15 +89,15 @@ def test_role_model_checker_stub_runs() -> None:
 def test_job_stub_runs() -> None:
     with TestClient(build_app()) as client:
         project_id = _create_project(client, 'Smoke Job Project')
-        response = client.post('/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': project_id}})
+        response = client.post('/v1/jobs/create', json={'phase': 'P-100', 'payload': {'project_id': project_id}})
         assert response.status_code == 202
         payload = response.json()
         assert payload['status'] == 'PENDING'
-        assert response.headers['Location'].endswith(f"/jobs/{payload['id']}/status")
+        assert response.headers['Location'].endswith(f"/v1/jobs/{payload['id']}/status")
 
         status_payload = _poll_json(
             client,
-            f"/jobs/{payload['id']}/status",
+            f"/v1/jobs/{payload['id']}/status",
             terminal_statuses={'COMPLETED', 'FAILED'},
         )
         assert status_payload['status'] == 'COMPLETED'

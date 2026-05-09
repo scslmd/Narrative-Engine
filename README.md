@@ -37,7 +37,7 @@ The current codebase includes:
 - a FastAPI backend for projects, jobs, models, role-model checking, auth, backup, and health
 - SQLite-backed persistence for operational state, project artifacts, and story development entities
 - a React + TypeScript frontend rooted at `frontend/` with application code in `frontend/src/`
-- a mixed HTTP surface: versioned `/v1/...` routes for jobs, models, story-development, and checker flows, plus unversioned routes for projects, auth, backup, and health
+- a canonical HTTP surface at `/v1/...` for API routes, with unversioned `/health/*` probes by policy
 - accepted-and-polled job and checker APIs backed by a local lease-claim executor
 - runtime-backed role-model checker execution with inspectable step and lineage projections
 - CORS middleware configured for localhost:5173 and localhost:3000
@@ -76,7 +76,7 @@ Implemented and working now:
 - Brain Dump project type with distraction-free canvas, auto-save, and LLM-powered text categorization into structured brainstorm items via configured inference backend
 - review-driven findings list with accept/reject/defer/escalate/refine decision recording backed by `POST /review/decisions`
 - draft mutation service layer with `createDraftArtifact`, `continueDraft`, `createAlternateVariant`, and `promoteDraftToManuscript` API functions
-- story import workflow (`POST /projects/import-story`) that parses existing stories and creates full project structure with foundation, characters, world bible, arcs, planning, and drafts
+- story import workflow (`POST /v1/projects/import-story`) that parses existing stories and creates full project structure with foundation, characters, world bible, arcs, planning, and drafts
 - beat plan management endpoints for detailed scene-level planning
 - storyboard card management with Kanban-style column reindexing
 - manuscript review and scoring service

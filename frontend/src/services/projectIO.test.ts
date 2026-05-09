@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+﻿import { describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../__tests__/setup';
 import { exportProject, submitExportImport, getExportImportStatus } from './projectIO';
@@ -26,7 +26,7 @@ describe('exportProject', () => {
   it('exports project as blob download (200)', async () => {
     const blob = new Blob(['fake zip'], { type: 'application/zip' });
     server.use(
-      http.post('/projects/proj-1/export', () =>
+      http.post('/v1/projects/proj-1/export', () =>
         new Response(blob, {
           status: 200,
           headers: {
@@ -44,7 +44,7 @@ describe('exportProject', () => {
 describe('submitExportImport', () => {
   it('submits ZIP file and returns import_id (202)', async () => {
     server.use(
-      http.post('/projects/import-export', () =>
+      http.post('/v1/projects/import-export', () =>
         HttpResponse.json(mockSubmitResponse, { status: 202 }),
       ),
     );
@@ -57,7 +57,7 @@ describe('submitExportImport', () => {
 
   it('submits without projectName when omitted (202)', async () => {
     server.use(
-      http.post('/projects/import-export', () =>
+      http.post('/v1/projects/import-export', () =>
         HttpResponse.json(mockSubmitResponse, { status: 202 }),
       ),
     );
@@ -71,7 +71,7 @@ describe('submitExportImport', () => {
 describe('getExportImportStatus', () => {
   it('returns progress state (200)', async () => {
     server.use(
-      http.get('/projects/export/imp-1', () =>
+      http.get('/v1/projects/export/imp-1', () =>
         HttpResponse.json(mockProgressResponse, { status: 200 }),
       ),
     );
@@ -92,7 +92,7 @@ describe('getExportImportStatus', () => {
       result: { project_id: 'imported-proj', project_name: 'Test Project', export_version: 1 },
     };
     server.use(
-      http.get('/projects/export/imp-2', () =>
+      http.get('/v1/projects/export/imp-2', () =>
         HttpResponse.json(completed, { status: 200 }),
       ),
     );
@@ -110,7 +110,7 @@ describe('getExportImportStatus', () => {
       error: 'Invalid ZIP file format',
     };
     server.use(
-      http.get('/projects/export/imp-3', () =>
+      http.get('/v1/projects/export/imp-3', () =>
         HttpResponse.json(failed, { status: 200 }),
       ),
     );
@@ -120,3 +120,4 @@ describe('getExportImportStatus', () => {
     expect(result.error).toBe('Invalid ZIP file format');
   });
 });
+

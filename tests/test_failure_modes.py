@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sqlite3
 from time import sleep
@@ -135,7 +135,7 @@ def test_checker_idempotency_key_rejects_different_payload(tmp_path) -> None:
 
 
 def _create_project(client: TestClient, project_name: str) -> str:
-    response = client.post("/projects/create", json={"project_name": project_name})
+    response = client.post("/v1/projects/create", json={"project_name": project_name})
     assert response.status_code == 201
     return response.json()["project_id"]
 
@@ -143,11 +143,11 @@ def _create_project(client: TestClient, project_name: str) -> str:
 def test_job_start_endpoint_returns_accepted_and_completes_via_status_polling() -> None:
     with TestClient(build_app()) as client:
         project_id = _create_project(client, "Failure Mode Job Test")
-        response = client.post("/jobs/create", json={"phase": "P-100", "payload": {"project_id": project_id}})
+        response = client.post("/v1/jobs/create", json={"phase": "P-100", "payload": {"project_id": project_id}})
 
         assert response.status_code == 202
         payload = response.json()
-        assert response.headers["Location"].endswith(f"/jobs/{payload['id']}/status")
+        assert response.headers["Location"].endswith(f"/v1/jobs/{payload['id']}/status")
 
         status_payload = _poll_json(client, response.headers["Location"], terminal_statuses={"COMPLETED", "FAILED"})
         assert status_payload["status"] == "COMPLETED"
@@ -157,7 +157,7 @@ def test_job_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> 
     with TestClient(build_app()) as client:
         project_id = _create_project(client, "Failure Mode Idempotency Test")
         first = client.post(
-            "/jobs/create",
+            "/v1/jobs/create",
             headers={"Idempotency-Key": "job-api-123"},
             json={"phase": "P-100", "payload": {"project_id": project_id}},
         )
@@ -166,7 +166,7 @@ def test_job_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> 
         assert status_payload["status"] == "COMPLETED"
 
         second = client.post(
-            "/jobs/create",
+            "/v1/jobs/create",
             headers={"Idempotency-Key": "job-api-123"},
             json={"phase": "P-100", "payload": {"project_id": project_id}},
         )
@@ -178,13 +178,13 @@ def test_job_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> 
 def test_job_start_endpoint_rejects_key_reuse_for_different_payload() -> None:
     with TestClient(build_app()) as client:
         client.post(
-            "/jobs/create",
+            "/v1/jobs/create",
             headers={"Idempotency-Key": "job-api-456"},
             json={"phase": "P-100", "payload": {"project_id": "science-fantasy-test"}},
         )
 
         second = client.post(
-            "/jobs/create",
+            "/v1/jobs/create",
             headers={"Idempotency-Key": "job-api-456"},
             json={
                 "phase": "P-100",
@@ -198,7 +198,7 @@ def test_job_start_endpoint_rejects_key_reuse_for_different_payload() -> None:
 def test_checker_start_endpoint_returns_accepted_and_completes_via_status_polling() -> None:
     with TestClient(build_app()) as client:
         response = client.post(
-            "/role-model-checker/start",
+            "/v1/role-model-checker/start",
             json={
                 "roles": ["architect"],
                 "model_selection": {},
@@ -209,7 +209,7 @@ def test_checker_start_endpoint_returns_accepted_and_completes_via_status_pollin
 
         assert response.status_code == 202
         payload = response.json()
-        assert response.headers["Location"].endswith(f"/role-model-checker/{payload['run_id']}/status")
+        assert response.headers["Location"].endswith(f"/v1/role-model-checker/{payload['run_id']}/status")
 
         status_payload = _poll_json(client, response.headers["Location"], terminal_statuses={"COMPLETED", "FAILED"})
         assert status_payload["status"] == "COMPLETED"
@@ -218,7 +218,7 @@ def test_checker_start_endpoint_returns_accepted_and_completes_via_status_pollin
 def test_checker_start_endpoint_replays_terminal_run_with_same_idempotency_key() -> None:
     with TestClient(build_app()) as client:
         first = client.post(
-            "/role-model-checker/start",
+            "/v1/role-model-checker/start",
             headers={"Idempotency-Key": "checker-api-123"},
             json={
                 "roles": ["architect"],
@@ -232,7 +232,7 @@ def test_checker_start_endpoint_replays_terminal_run_with_same_idempotency_key()
         assert status_payload["status"] == "COMPLETED"
 
         second = client.post(
-            "/role-model-checker/start",
+            "/v1/role-model-checker/start",
             headers={"Idempotency-Key": "checker-api-123"},
             json={
                 "roles": ["architect"],
@@ -249,7 +249,7 @@ def test_checker_start_endpoint_replays_terminal_run_with_same_idempotency_key()
 def test_checker_start_endpoint_rejects_key_reuse_for_different_payload() -> None:
     with TestClient(build_app()) as client:
         client.post(
-            "/role-model-checker/start",
+            "/v1/role-model-checker/start",
             headers={"Idempotency-Key": "checker-api-456"},
             json={
                 "roles": ["architect"],
@@ -260,7 +260,7 @@ def test_checker_start_endpoint_rejects_key_reuse_for_different_payload() -> Non
         )
 
         second = client.post(
-            "/role-model-checker/start",
+            "/v1/role-model-checker/start",
             headers={"Idempotency-Key": "checker-api-456"},
             json={
                 "roles": ["architect"],
@@ -457,3 +457,4 @@ def test_checker_accept_under_sqlite_lock_leaves_no_partial_rows(tmp_path, monke
     assert run_rows == 0
     assert event_rows == 0
     assert attempt_rows == 0
+

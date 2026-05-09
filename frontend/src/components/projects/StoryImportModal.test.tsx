@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '../../__tests__/test-utils';
 import userEvent from '@testing-library/user-event';
 import { server } from '../../__tests__/setup';
@@ -65,13 +65,13 @@ describe('StoryImportModal', () => {
   it('submits import and shows loading state', async () => {
     const user = userEvent.setup({ delay: 10 });
     server.use(
-      http.post('/projects/import-story', () => {
+      http.post('/v1/projects/import-story', () => {
         return HttpResponse.json({
           import_id: 'test-import-1',
           status: 'pending',
         });
       }),
-      http.get('/projects/import/test-import-1', () => {
+      http.get('/v1/projects/import/test-import-1', () => {
         return HttpResponse.json({
           import_id: 'test-import-1',
           status: 'running',
@@ -105,7 +105,7 @@ describe('StoryImportModal', () => {
   it('displays error on failed import submission', async () => {
     const user = userEvent.setup();
     server.use(
-      http.post('/projects/import-story', () => {
+      http.post('/v1/projects/import-story', () => {
         return HttpResponse.json(
           { detail: 'Server error' },
           { status: 500 },
@@ -189,13 +189,13 @@ describe('StoryImportModal', () => {
   it('disables submit button during import', async () => {
     const user = userEvent.setup({ delay: 10 });
     server.use(
-      http.post('/projects/import-story', () => {
+      http.post('/v1/projects/import-story', () => {
         return HttpResponse.json({
           import_id: 'test-import-2',
           status: 'pending',
         });
       }),
-      http.get('/projects/import/test-import-2', () => {
+      http.get('/v1/projects/import/test-import-2', () => {
         return HttpResponse.json({
           import_id: 'test-import-2',
           status: 'running',
@@ -230,10 +230,10 @@ describe('StoryImportModal', () => {
   it('does not require project name in mythos mode', async () => {
     const user = userEvent.setup({ delay: 10 });
     server.use(
-      http.post('/projects/import-mythos', () => {
+      http.post('/v1/projects/import-mythos', () => {
         return HttpResponse.json({ extraction_id: 'mythos-1' });
       }),
-      http.get('/projects/extraction/mythos-1', () => {
+      http.get('/v1/projects/extraction/mythos-1', () => {
         return HttpResponse.json({
           extraction_id: 'mythos-1',
           status: 'running',
@@ -259,3 +259,4 @@ describe('StoryImportModal', () => {
     });
   });
 });
+

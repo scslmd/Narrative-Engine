@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from '@testing-library/react';
 import { render, screen } from '../__tests__/test-utils';
 import userEvent from '@testing-library/user-event';
@@ -44,7 +44,7 @@ describe('Layout', () => {
       useUIStore.setState({ mode: 'plan', projectId: null, chapterId: null, jobId: null, inspectContext: null });
     });
     server.use(
-      http.get('/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
       http.get('/health/ready', () =>
         HttpResponse.json({ components: { inference: { backend: 'llama.cpp' } } }),
       ),
@@ -240,3 +240,4 @@ describe('Layout', () => {
     });
   });
 });
+

@@ -1,4 +1,4 @@
-"""Tests for phase-specific payload validation (REL-08)."""
+﻿"""Tests for phase-specific payload validation (REL-08)."""
 
 from __future__ import annotations
 
@@ -146,7 +146,7 @@ class TestJobCreateEndpointValidation:
     def test_valid_payload_returns_202(self) -> None:
         """Valid payload should return 202 Accepted."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-100', 'payload': {'project_id': 'test-project'}}
         )
         assert response.status_code == 202
@@ -154,7 +154,7 @@ class TestJobCreateEndpointValidation:
     def test_missing_project_id_returns_422(self) -> None:
         """Missing project_id should return 422 Unprocessable Entity."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-100', 'payload': {}}
         )
         assert response.status_code == 422
@@ -165,7 +165,7 @@ class TestJobCreateEndpointValidation:
     def test_empty_project_id_returns_422(self) -> None:
         """Empty project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-100', 'payload': {'project_id': ''}}
         )
         assert response.status_code == 422
@@ -173,7 +173,7 @@ class TestJobCreateEndpointValidation:
     def test_whitespace_project_id_returns_422(self) -> None:
         """Whitespace project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-100', 'payload': {'project_id': '   '}}
         )
         assert response.status_code == 422
@@ -181,7 +181,7 @@ class TestJobCreateEndpointValidation:
     def test_non_string_project_id_returns_422(self) -> None:
         """Non-string project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-100', 'payload': {'project_id': 123}}
         )
         assert response.status_code == 422
@@ -189,7 +189,7 @@ class TestJobCreateEndpointValidation:
     def test_p200_missing_project_id_returns_422(self) -> None:
         """P-200 with missing project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-200', 'payload': {}}
         )
         assert response.status_code == 422
@@ -197,7 +197,7 @@ class TestJobCreateEndpointValidation:
     def test_p300_missing_project_id_returns_422(self) -> None:
         """P-300 with missing project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-300', 'payload': {}}
         )
         assert response.status_code == 422
@@ -205,7 +205,7 @@ class TestJobCreateEndpointValidation:
     def test_p400_missing_project_id_returns_422(self) -> None:
         """P-400 with missing project_id should return 422."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-400', 'payload': {}}
         )
         assert response.status_code == 422
@@ -213,7 +213,7 @@ class TestJobCreateEndpointValidation:
     def test_valid_p200_payload_returns_202(self) -> None:
         """Valid P-200 payload should return 202."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-200', 'payload': {'project_id': 'test-project'}}
         )
         assert response.status_code == 202
@@ -221,7 +221,7 @@ class TestJobCreateEndpointValidation:
     def test_valid_p300_payload_returns_202(self) -> None:
         """Valid P-300 payload should return 202."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-300', 'payload': {'project_id': 'test-project'}}
         )
         assert response.status_code == 202
@@ -229,7 +229,7 @@ class TestJobCreateEndpointValidation:
     def test_valid_p400_payload_returns_202(self) -> None:
         """Valid P-400 payload should return 202."""
         response = self.client.post(
-            '/jobs/create',
+            '/v1/jobs/create',
             json={'phase': 'P-400', 'payload': {'project_id': 'test-project'}}
         )
         assert response.status_code == 202
@@ -295,3 +295,4 @@ class TestManuscriptAssistJobCreateRequestValidation:
             payload={"assist_id": "assist-1", "gate_result_id": "gate-1"},
         )
         assert req.payload["assist_id"] == "assist-1"
+

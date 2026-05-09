@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { scanOrphans, cleanupOrphans, truncateAuditLog, compactDatabase } from './maintenance';
@@ -43,7 +43,7 @@ describe('maintenance service', () => {
   describe('scanOrphans', () => {
     it('returns scan result with summary', async () => {
       server.use(
-        http.get('/projects/maintenance/scan', () => {
+        http.get('/v1/projects/maintenance/scan', () => {
           return HttpResponse.json(mockScanResult);
         }),
       );
@@ -59,7 +59,7 @@ describe('maintenance service', () => {
 
     it('throws ApiError on 500 error', async () => {
       server.use(
-        http.get('/projects/maintenance/scan', () => {
+        http.get('/v1/projects/maintenance/scan', () => {
           return HttpResponse.json({ detail: 'Internal server error' }, { status: 500 });
         }),
       );
@@ -71,7 +71,7 @@ describe('maintenance service', () => {
   describe('cleanupOrphans', () => {
     it('sends project_ids and returns cleanup result', async () => {
       server.use(
-        http.post('/projects/maintenance/cleanup', async ({ request }) => {
+        http.post('/v1/projects/maintenance/cleanup', async ({ request }) => {
           const body = (await request.json()) as { project_ids: string[] };
           expect(body.project_ids).toEqual(['proj-1', 'proj-2']);
           return HttpResponse.json(mockCleanupResult);
@@ -88,7 +88,7 @@ describe('maintenance service', () => {
   describe('truncateAuditLog', () => {
     it('sends retain_lines and returns truncation result', async () => {
       server.use(
-        http.post('/projects/maintenance/audit-log/truncate', async ({ request }) => {
+        http.post('/v1/projects/maintenance/audit-log/truncate', async ({ request }) => {
           const body = (await request.json()) as { retain_lines?: number };
           expect(body.retain_lines).toBe(5000);
           return HttpResponse.json(mockTruncateResult);
@@ -105,7 +105,7 @@ describe('maintenance service', () => {
   describe('compactDatabase', () => {
     it('sends empty body and returns compaction result', async () => {
       server.use(
-        http.post('/projects/maintenance/database/compact', async ({ request }) => {
+        http.post('/v1/projects/maintenance/database/compact', async ({ request }) => {
           const text = await request.text();
           expect(text).toBe('');
           return HttpResponse.json(mockCompactResult);
@@ -119,3 +119,4 @@ describe('maintenance service', () => {
     });
   });
 });
+

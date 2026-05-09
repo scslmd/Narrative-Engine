@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { getModelCatalog, runChecker, getCheckerStatus, retryChecker, getCheckerAttempts } from './checker';
@@ -27,7 +27,7 @@ describe('checker service', () => {
   describe('getModelCatalog', () => {
     it('returns the model catalog on 200', async () => {
       server.use(
-        http.get('/models', () => {
+        http.get('/v1/models', () => {
           return HttpResponse.json(mockCatalog);
         }),
       );
@@ -40,7 +40,7 @@ describe('checker service', () => {
 
     it('throws on non-200 response', async () => {
       server.use(
-        http.get('/models', () => {
+        http.get('/v1/models', () => {
           return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
         }),
       );
@@ -327,3 +327,4 @@ describe('checker service', () => {
     });
   });
 });
+

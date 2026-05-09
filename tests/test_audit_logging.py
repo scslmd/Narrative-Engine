@@ -1,4 +1,4 @@
-"""Tests for audit logging (REL-10)."""
+﻿"""Tests for audit logging (REL-10)."""
 
 from __future__ import annotations
 
@@ -108,7 +108,7 @@ class TestAuditLogging:
     def test_non_versioned_requests_not_logged(self, audit_client: TestClient) -> None:
         """Requests to non-/v1 endpoints should not create audit records."""
         audit_client.get('/health/')
-        audit_client.get('/models')
+        audit_client.get('/health/live')
 
         log_path = settings.audit_log_path
         if log_path.exists():
@@ -389,3 +389,4 @@ class TestAuditLoggingOperationField:
         record = read_last_audit_record()
         assert record is not None
         assert record['operation'] == 'job.status.read'
+

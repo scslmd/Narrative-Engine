@@ -1,8 +1,8 @@
-import type { ModelCatalog, RoleModelCheckStatus, RoleModelCheckRequest } from '../types/checker';
+﻿import type { ModelCatalog, RoleModelCheckStatus, RoleModelCheckRequest } from '../types/checker';
 import api from '../lib/api';
 
 export async function getModelCatalog(): Promise<ModelCatalog> {
-  const response = await api.get('/models');
+  const response = await api.get('/v1/models');
 
   if (response.status !== 200) {
     throw new Error(`Failed to fetch model catalog: ${response.status}`);
@@ -101,3 +101,4 @@ export interface AttemptHistoryItem {
   error_code: string | null;
   error_category: string | null;
 }
+

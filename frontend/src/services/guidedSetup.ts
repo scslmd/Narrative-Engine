@@ -1,4 +1,4 @@
-import api from '../lib/api';
+﻿import api from '../lib/api';
 
 export interface ChatMessage {
   role: string;
@@ -167,7 +167,7 @@ export function emptyExtractedFields(): ExtractedFields {
 export async function analyzeTurn(
   request: GuidedSetupAnalyzeRequest,
 ): Promise<GuidedSetupAnalyzeResponse> {
-  const response = await api.post('/projects/guided-setup/analyze', request);
+  const response = await api.post('/v1/projects/guided-setup/analyze', request);
 
   if (response.status !== 200) {
     throw new Error(`Failed to analyze turn: ${response.status}`);
@@ -179,7 +179,7 @@ export async function analyzeTurn(
 export async function createFromFields(
   request: GuidedSetupCreateRequest,
 ): Promise<GuidedSetupCreateResponse> {
-  const response = await api.post('/projects/guided-setup/create', request);
+  const response = await api.post('/v1/projects/guided-setup/create', request);
 
   if (response.status !== 201) {
     throw new Error(`Failed to create project: ${response.status}`);
@@ -206,3 +206,4 @@ export async function checkLlmHealth(): Promise<LlmHealthStatus> {
     return { ok: false, backend: 'unknown', error: 'LLM service unreachable' };
   }
 }
+

@@ -635,3 +635,4 @@ def test_multi_chapter_pipeline_generates_sequential_chapters(tmp_path: Path) ->
     ch2_path = tmp_path / "data" / "projects" / project_id / "chapters" / "ch-002.md"
     assert ch1_path.exists(), f"Expected chapter 1 at {ch1_path}"
     assert ch2_path.exists(), f"Expected chapter 2 at {ch2_path}"
+

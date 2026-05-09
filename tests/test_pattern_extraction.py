@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -642,7 +642,7 @@ class TestBuildAnalysis:
                     "source": "Aragorn",
                     "target": "Gandalf",
                     "relationship_type": "mentorship",
-                    "description": "Guide and protégé",
+                    "description": "Guide and protÃ©gÃ©",
                 }
             ],
         }
@@ -1128,7 +1128,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "Once upon a time",
                     "source_type": "narrative",
@@ -1151,7 +1151,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "This is a sufficiently long story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
@@ -1165,7 +1165,7 @@ class TestImportPatternsEndpoint:
             extraction_id = body["extraction_id"]
             for _ in range(30):
                 time.sleep(0.5)
-                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                status_resp = client.get(f"/v1/projects/extraction/{extraction_id}")
                 assert status_resp.status_code == 200
                 if status_resp.json()["status"] in ("completed", "failed"):
                     break
@@ -1178,7 +1178,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "Once upon a time",
                     "source_type": "invalid_type",
@@ -1195,7 +1195,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "Once upon a time",
                     "source_type": "narrative",
@@ -1213,7 +1213,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "This is a sufficiently long story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
@@ -1235,7 +1235,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "source_type": "narrative",
                     "generation_mode": "same_world",
@@ -1252,7 +1252,7 @@ class TestImportPatternsEndpoint:
 
             client = TestClient(build_app())
             response = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "",
                     "source_type": "narrative",
@@ -1389,14 +1389,14 @@ class TestExtractPatternsEndpoint:
             client = TestClient(build_app())
             # Create a project first
             create_resp = client.post(
-                "/projects/create",
+                "/v1/projects/create",
                 json={"project_name": "Extract Test"},
             )
             assert create_resp.status_code == 201
             project_id = create_resp.json()["project_id"]
 
             response = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={
                     "source_type": "narrative",
                     "generation_mode": "same_world",
@@ -1418,14 +1418,14 @@ class TestExtractPatternsEndpoint:
 
             client = TestClient(build_app())
             create_resp = client.post(
-                "/projects/create",
+                "/v1/projects/create",
                 json={"project_name": "Extract Test 2"},
             )
             assert create_resp.status_code == 201
             project_id = create_resp.json()["project_id"]
 
             response = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={
                     "source_type": "narrative",
                     "generation_mode": "same_world",
@@ -1438,7 +1438,7 @@ class TestExtractPatternsEndpoint:
             extraction_id = body["extraction_id"]
             for _ in range(30):
                 time.sleep(0.5)
-                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                status_resp = client.get(f"/v1/projects/extraction/{extraction_id}")
                 assert status_resp.status_code == 200
                 if status_resp.json()["status"] == "failed":
                     break
@@ -1454,14 +1454,14 @@ class TestExtractPatternsEndpoint:
 
             client = TestClient(build_app())
             create_resp = client.post(
-                "/projects/create",
+                "/v1/projects/create",
                 json={"project_name": "No Docs Project"},
             )
             assert create_resp.status_code == 201
             project_id = create_resp.json()["project_id"]
 
             response = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={
                     "source_type": "narrative",
                     "generation_mode": "same_world",
@@ -1472,7 +1472,7 @@ class TestExtractPatternsEndpoint:
             # Poll until failed
             for _ in range(30):
                 time.sleep(0.5)
-                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                status_resp = client.get(f"/v1/projects/extraction/{extraction_id}")
                 assert status_resp.status_code == 200
                 data = status_resp.json()
                 if data["status"] == "failed":
@@ -1494,7 +1494,7 @@ class TestExtractPatternsEndpoint:
 
             client = TestClient(build_app())
             create_resp = client.post(
-                "/projects/create",
+                "/v1/projects/create",
                 json={"project_name": "With Docs Project"},
             )
             assert create_resp.status_code == 201
@@ -1520,7 +1520,7 @@ class TestExtractPatternsEndpoint:
                 conn.close()
 
             response = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={
                     "source_type": "narrative",
                     "generation_mode": "same_world",
@@ -1531,7 +1531,7 @@ class TestExtractPatternsEndpoint:
             # Poll until terminal state
             for _ in range(30):
                 time.sleep(0.5)
-                status_resp = client.get(f"/projects/extraction/{extraction_id}")
+                status_resp = client.get(f"/v1/projects/extraction/{extraction_id}")
                 assert status_resp.status_code == 200
                 data = status_resp.json()
                 if data["status"] in ("completed", "failed"):
@@ -1549,14 +1549,14 @@ class TestExtractPatternsEndpoint:
 
             client = TestClient(build_app())
             create_resp = client.post(
-                "/projects/create",
+                "/v1/projects/create",
                 json={"project_name": "Validation Project"},
             )
             assert create_resp.status_code == 201
             project_id = create_resp.json()["project_id"]
 
             response = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={
                     "source_type": "invalid_type",
                     "generation_mode": "same_world",
@@ -1591,7 +1591,7 @@ class TestMainPyWiring:
 
             # import-patterns route should be registered (not 404/405)
             resp = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={"text": "", "source_type": "narrative"},
             )
             assert resp.status_code not in (404, 405), (
@@ -1600,13 +1600,13 @@ class TestMainPyWiring:
 
             # extract-patterns route should be registered
             create_resp = client.post(
-                "/projects/create", json={"project_name": "Wiring Test"}
+                "/v1/projects/create", json={"project_name": "Wiring Test"}
             )
             assert create_resp.status_code == 201
             project_id = create_resp.json()["project_id"]
 
             resp = client.post(
-                f"/projects/{project_id}/extract-patterns",
+                f"/v1/projects/{project_id}/extract-patterns",
                 json={"source_type": "narrative"},
             )
             assert resp.status_code not in (404, 405), (
@@ -1645,14 +1645,14 @@ class TestMythosBackwardCompatibility:
 
             client = TestClient(build_app())
             resp = client.post(
-                "/projects/import-mythos",
+                "/v1/projects/import-mythos",
                 json={
                     "text": "The gods of Olympus waged war against the titans in an epic battle that shaped the cosmos.",
                     "source_corpus": "Greek Mythology",
                     "generation_mode": "same_world",
                 },
             )
-            # Should not be 404 or 405 — endpoint still registered
+            # Should not be 404 or 405 â€” endpoint still registered
             assert resp.status_code not in (404, 405), (
                 f"import-mythos endpoint broken: {resp.status_code}"
             )
@@ -1757,7 +1757,7 @@ class TestServiceWiringIntegration:
             client = TestClient(build_app())
 
             mythos_resp = client.post(
-                "/projects/import-mythos",
+                "/v1/projects/import-mythos",
                 json={
                     "text": "The Norse myths tell of Odin and Thor, the gods who shaped the world and fought eternal battles against chaos.",
                     "source_corpus": "Norse Mythology",
@@ -1767,7 +1767,7 @@ class TestServiceWiringIntegration:
             assert mythos_resp.status_code == 202
 
             pattern_resp = client.post(
-                "/projects/import-patterns",
+                "/v1/projects/import-patterns",
                 json={
                     "text": "This is a sufficiently long narrative story text for testing purposes that exceeds the minimum character requirement.",
                     "source_type": "narrative",
@@ -2092,3 +2092,4 @@ def patch_env_tmpdir(tmp_path: Path):
         "NARRATIVE_INFERENCE_BACKEND": "stub",
     }
     return patch.dict(os.environ, env)
+

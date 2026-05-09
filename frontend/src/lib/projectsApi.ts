@@ -1,4 +1,4 @@
-import api from './api';
+﻿import api from './api';
 
 export interface ManifestConfig {
   genre: string;
@@ -86,37 +86,37 @@ export interface ChapterContent {
 
 export const projectsApi = {
   list: async (): Promise<ProjectSummary[]> => {
-    const response = await api.get('/projects');
+    const response = await api.get('/v1/projects');
     return response.data;
   },
 
   create: async (request: ProjectCreateRequest): Promise<ProjectDetail> => {
-    const response = await api.post('/projects/create', request);
+    const response = await api.post('/v1/projects/create', request);
     return response.data;
   },
 
   get: async (projectId: string): Promise<ProjectDetail> => {
-    const response = await api.get(`/projects/${projectId}`);
+    const response = await api.get(`/v1/projects/${projectId}`);
     return response.data;
   },
 
   getManifest: async (projectId: string): Promise<ManifestData> => {
-    const response = await api.get(`/projects/${projectId}/manifest`);
+    const response = await api.get(`/v1/projects/${projectId}/manifest`);
     return response.data;
   },
 
   getSequence: async (projectId: string): Promise<SequenceData> => {
-    const response = await api.get(`/projects/${projectId}/sequence`);
+    const response = await api.get(`/v1/projects/${projectId}/sequence`);
     return response.data;
   },
 
   getChapter: async (projectId: string): Promise<ProjectArtifact> => {
-    const response = await api.get(`/projects/${projectId}/chapter-1`);
+    const response = await api.get(`/v1/projects/${projectId}/chapter-1`);
     return response.data;
   },
 
   getChapters: async (projectId: string): Promise<ChapterSummary[]> => {
-    const response = await api.get(`/projects/${projectId}/chapters`);
+    const response = await api.get(`/v1/projects/${projectId}/chapters`);
     return response.data;
   },
 
@@ -125,3 +125,4 @@ export const projectsApi = {
     return response.data;
   },
 };
+
