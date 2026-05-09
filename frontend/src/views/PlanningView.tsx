@@ -17,13 +17,13 @@ import { RelationshipList } from '../components/characters/RelationshipList';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { PlanningTab } from '../components/planning/PlanningTab';
-import { usePlanningTab } from '../hooks/usePlanningTab';
+import { usePlanningController } from '../domains/planning/usePlanningController';
 import { useFoundation } from '../hooks/useFoundation';
 import { useBrainstorm } from '../hooks/useBrainstorm';
 import { createFoundation } from '../services/foundation';
-import { getCharacters, createCharacter, updateCharacter } from '../services/characters';
+import { getCharacters, createCharacter, getCharacter, getCharacterRelationships, updateCharacter } from '../services/characters';
 import { getRelationships, deleteRelationship } from '../services/relationships';
-import { getWorldBibleEntries, createWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
+import { getWorldBibleEntries, createWorldBibleEntry, getWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
 import { createCanonAnnotation, getCanonAnnotations } from '../services/canonCustomization';
 
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
@@ -126,7 +126,7 @@ export function PlanningView() {
     enabled: Boolean(projectId) && activeTab === 'world-bible',
   });
 
-  const planning = usePlanningTab(activeTab);
+  const planning = usePlanningController(activeTab);
   const canonAnnotationsQuery = useQuery({
     queryKey: ['canon', 'annotations', projectId],
     queryFn: () => getCanonAnnotations(projectId || ''),
@@ -137,6 +137,25 @@ export function PlanningView() {
     queryKey: ['planning', 'relationships', projectId],
     queryFn: () => getRelationships(projectId || ''),
     enabled: Boolean(projectId) && activeTab === 'relationships',
+  });
+  const selectedCharacterQuery = useQuery({
+    queryKey: ['planning', 'character', projectId, selectedCharacterId],
+    queryFn: () => getCharacter(selectedCharacterId || '', projectId || ''),
+    enabled: Boolean(projectId) && Boolean(selectedCharacterId) && activeTab === 'characters',
+  });
+  const selectedCharacterRelationshipsQuery = useQuery({
+    queryKey: ['planning', 'character-relationships', projectId, selectedCharacterId],
+    queryFn: () => getCharacterRelationships(selectedCharacterId || '', projectId || ''),
+    enabled: Boolean(projectId) && Boolean(selectedCharacterId) && activeTab === 'characters',
+  });
+  const firstWorldEntryQuery = useQuery({
+    queryKey: ['planning', 'world-bible-first', projectId],
+    queryFn: async () => {
+      const firstEntry = (worldBibleQuery.data ?? [])[0];
+      if (!firstEntry) return null;
+      return getWorldBibleEntry(firstEntry.entry_type, firstEntry.title, projectId || '');
+    },
+    enabled: Boolean(projectId) && activeTab === 'world-bible' && (worldBibleQuery.data ?? []).length > 0,
   });
 
   const relationshipDeleteMutation = useMutation({
@@ -448,7 +467,7 @@ export function PlanningView() {
             ) : selectedCharacter ? (
               <CharacterBuilder
                 projectId={projectId}
-                character={selectedCharacter}
+                character={selectedCharacterQuery.data ?? selectedCharacter}
                 onSave={(character) => characterSaveMutation.mutate(character)}
                 canonAnnotations={canonAnnotations}
                 onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
@@ -472,6 +491,11 @@ export function PlanningView() {
                 detail="The selected character is no longer available. Return to the list and pick another profile."
                 tone="error"
               />
+            )}
+            {selectedCharacterRelationshipsQuery.data && selectedCharacterRelationshipsQuery.data.length > 0 && (
+              <p className="px-4 pb-2 text-xs text-subtle">
+                Selected character relationships: {selectedCharacterRelationshipsQuery.data.length}
+              </p>
             )}
           </div>
         )}
@@ -526,25 +550,32 @@ export function PlanningView() {
             ) : worldBibleQuery.error ? (
               <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" />
             ) : (
-              <WorldBibleWorkspace
-                projectId={projectId}
-                entries={worldBibleEntries}
-                canonAnnotations={canonAnnotations}
-                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
-                  await canonAnnotationMutation.mutateAsync({
-                    project_id: projectId,
-                    target_kind: 'world_bible',
-                    target_id: targetId,
-                    field_path: fieldPath,
-                    annotation_kind: annotationKind,
-                    note,
-                  });
-                }}
-                onEntryAdd={(request) => worldBibleAddMutation.mutate(request)}
-                onEntryUpdate={(entry, originalTitle) =>
-                  worldBibleUpdateMutation.mutate({ entry, originalTitle })
-                }
-              />
+              <>
+                <WorldBibleWorkspace
+                  projectId={projectId}
+                  entries={worldBibleEntries}
+                  canonAnnotations={canonAnnotations}
+                  onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                    await canonAnnotationMutation.mutateAsync({
+                      project_id: projectId,
+                      target_kind: 'world_bible',
+                      target_id: targetId,
+                      field_path: fieldPath,
+                      annotation_kind: annotationKind,
+                      note,
+                    });
+                  }}
+                  onEntryAdd={(request) => worldBibleAddMutation.mutate(request)}
+                  onEntryUpdate={(entry, originalTitle) =>
+                    worldBibleUpdateMutation.mutate({ entry, originalTitle })
+                  }
+                />
+                {firstWorldEntryQuery.data && (
+                  <p className="px-4 pb-2 text-xs text-subtle">
+                    Loaded world entry detail: {firstWorldEntryQuery.data.title}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
