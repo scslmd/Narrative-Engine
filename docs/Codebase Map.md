@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-07
+> Living document. Last updated: 2026-05-08
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -98,11 +98,11 @@ narrative-engine/
 │   │   │   ├── ui/               # Base UI primitives (Toast, etc.)
 │   │   │   ├── workspace/        # Workspace shell & navigation
 │   │   │   └── writing/          # Writing view components
-│   │   ├── hooks/                # Custom React hooks (28 files)
+│   │   ├── hooks/                # Custom React hooks (30 files)
 │   │   │   ├── useApiMutation.ts # Generic mutation hook with error handling
 │   │   │   ├── useApiQuery.ts    # Generic query hook with caching
 │   │   │   ├── useRouteSync.ts   # Route-to-store sync (59 lines)
-│   │   │   └── ... (24 more hooks)
+│   │   │   └── ... (26 more hooks)
 │   │   ├── lib/                  # Shared utilities (11 files)
 │   │   │   ├── api.ts            # Axios client + ApiError class (62 lines)
 │   │   │   ├── queryClient.ts    # React Query client config
@@ -324,6 +324,7 @@ export async function getBranches(projectId: string): Promise<StoryBranch[]> {
 - Shared Axios client with `ApiError` interceptor (handles 400/401/403/404/409/5xx)
 - One service file per API domain, one type file per domain
 - 29 service files, 29 test files, 34 type files
+- Frontend service exports are fully wired to hooks/views/components (validated 2026-05-08)
 
 ### Frontend Service Data Transformation (`checker.ts`)
 
@@ -795,3 +796,4 @@ pytest -n 0 \
 | React Query hooks | 28 |
 | Database tables (operations) | 60+ |
 | Database schema version | 22 |
+
