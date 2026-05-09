@@ -35,7 +35,7 @@ def build_p100_architect_request(
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-100")),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=settings.inference_max_tokens("P-100")),
         messages=[
             InferenceMessage(
                 role="system",
@@ -81,7 +81,7 @@ def build_p200_sequencer_request(
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-200")),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=1200),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=settings.inference_max_tokens("P-200")),
         messages=[
             InferenceMessage(
                 role="system",
@@ -157,7 +157,7 @@ def build_p300_drafter_request(
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-300")),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=8000),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=settings.inference_max_tokens("P-300")),
         messages=[
             InferenceMessage(
                 role="system",
@@ -198,7 +198,7 @@ def build_p400_compiler_request(
     return InferenceRequest(
         model=str(payload.get("model_id") or payload.get("model") or default_model or "").strip() or None,
         temperature=_coerce_float(payload.get("temperature"), default=settings.inference_temperature("P-400")),
-        max_tokens=_coerce_int(payload.get("max_tokens"), default=1400),
+        max_tokens=_coerce_int(payload.get("max_tokens"), default=settings.inference_max_tokens("P-400")),
         messages=[
             InferenceMessage(
                 role="system",
@@ -281,7 +281,7 @@ def build_g300_chapter_generation_request(
     return InferenceRequest(
         model=default_model,
         temperature=settings.inference_temperature("G-300"),
-        max_tokens=8000,
+        max_tokens=settings.inference_max_tokens("G-300"),
         messages=[
             InferenceMessage(
                 role="system",

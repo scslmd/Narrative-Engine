@@ -18,6 +18,13 @@ def build_jobs_router(job_manager: JobManager, prefix: str = '/jobs') -> APIRout
     route_prefix = prefix.rstrip('/') if prefix else ''
     router = APIRouter(prefix=route_prefix, tags=['jobs'])
 
+    @router.get('/', response_model=list[JobStatusResponse])
+    def list_jobs(
+        project_id: str = Query(..., min_length=1),
+        limit: int = Query(default=20, ge=1, le=100),
+    ) -> list[JobStatusResponse]:
+        return job_manager.list_jobs(project_id, limit)
+
     @router.post('/create', response_model=JobStatusResponse, status_code=202)
     def create_job(
         request: JobCreateRequest,

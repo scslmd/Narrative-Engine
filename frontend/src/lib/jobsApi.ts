@@ -14,19 +14,20 @@ export interface JobSummary {
   phase: JobPhase;
   status: string;
   created_at: string;
+  updated_at: string;
   started_at?: string;
   completed_at?: string;
-}
-
-export interface JobDetail extends JobSummary {
   attempt_number?: number;
   current_phase?: string;
   current_step?: string;
   detail?: string;
   progress_current?: number;
   progress_total?: number;
+  heartbeat_at?: string;
   error?: string;
 }
+
+export type JobDetail = JobSummary;
 
 export interface JobLogEntry {
   timestamp: string;
@@ -41,10 +42,36 @@ export interface JobLogsResponse {
 
 export const jobsApi = {
   list: async (projectId: string): Promise<JobSummary[]> => {
-    // The backend does not expose a job-list projection yet.
-    // Return an empty collection rather than calling a missing endpoint.
-    void projectId;
-    return [];
+    const response = await api.get('/v1/jobs', { params: { project_id: projectId, limit: 20 } });
+    return (response.data as Array<{
+      id: string;
+      phase: JobPhase;
+      status: string;
+      attempt_number?: number;
+      created_at: string;
+      updated_at: string;
+      current_phase?: string;
+      current_step?: string;
+      detail?: string;
+      progress_current?: number;
+      progress_total?: number;
+      heartbeat_at?: string;
+      error?: string;
+    }>).map((j) => ({
+      job_id: j.id,
+      phase: j.phase,
+      status: j.status,
+      created_at: j.created_at,
+      updated_at: j.updated_at,
+      attempt_number: j.attempt_number,
+      current_phase: j.current_phase,
+      current_step: j.current_step,
+      detail: j.detail,
+      progress_current: j.progress_current,
+      progress_total: j.progress_total,
+      heartbeat_at: j.heartbeat_at,
+      error: j.error,
+    }));
   },
 
   create: async (request: JobCreateRequest): Promise<JobDetail> => {
@@ -77,14 +104,14 @@ export const jobsApi = {
       phase: data.phase,
       status: data.status,
       created_at: data.created_at,
-      started_at: undefined,
-      completed_at: undefined,
+      updated_at: data.updated_at,
       attempt_number: data.attempt_number,
       current_phase: data.current_phase,
       current_step: data.current_step,
       detail: data.detail,
       progress_current: data.progress_current,
       progress_total: data.progress_total,
+      heartbeat_at: undefined,
       error: data.error,
     };
   },
@@ -103,6 +130,7 @@ export const jobsApi = {
       detail?: string;
       progress_current?: number;
       progress_total?: number;
+      heartbeat_at?: string;
       error?: string;
     };
 
@@ -111,12 +139,14 @@ export const jobsApi = {
       phase: data.phase,
       status: data.status,
       created_at: data.created_at,
+      updated_at: data.updated_at,
       attempt_number: data.attempt_number,
       current_phase: data.current_phase,
       current_step: data.current_step,
       detail: data.detail,
       progress_current: data.progress_current,
       progress_total: data.progress_total,
+      heartbeat_at: data.heartbeat_at,
       error: data.error,
     };
   },

@@ -137,6 +137,9 @@ class JobManager:
     def get_status(self, job_id: UUID) -> JobStatusResponse:
         return self._jobs.get_job(job_id)
 
+    def list_jobs(self, project_id: str, limit: int = 20) -> list[JobStatusResponse]:
+        return self._jobs.list_jobs_by_project(project_id, limit)
+
     def get_logs(self, job_id: UUID) -> JobLogsResponse:
         return self._logs.list_for_job(job_id)
 

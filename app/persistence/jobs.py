@@ -274,6 +274,38 @@ class JobRepository:
             error=row["error"],
         )
 
+    def list_jobs_by_project(self, project_id: str, limit: int = 20) -> list[JobStatusResponse]:
+        with connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                SELECT job_id, phase, status, attempt_number, created_at, updated_at,
+                       current_phase, current_step, detail, progress_current, progress_total, heartbeat_at, error
+                FROM jobs
+                WHERE project_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (project_id, limit),
+            ).fetchall()
+        return [
+            JobStatusResponse(
+                id=UUID(row["job_id"]),
+                phase=_normalize_phase(row["phase"]),
+                status=row["status"],
+                attempt_number=int(row["attempt_number"]),
+                created_at=datetime.fromisoformat(row["created_at"]),
+                updated_at=datetime.fromisoformat(row["updated_at"]),
+                current_phase=row["current_phase"],
+                current_step=row["current_step"],
+                detail=row["detail"],
+                progress_current=row["progress_current"],
+                progress_total=row["progress_total"],
+                heartbeat_at=_parse_datetime(row["heartbeat_at"]),
+                error=row["error"],
+            )
+            for row in rows
+        ]
+
     def get_request_payload(self, job_id: UUID) -> dict[str, object]:
         with connect(self.db_path) as connection:
             row = connection.execute(

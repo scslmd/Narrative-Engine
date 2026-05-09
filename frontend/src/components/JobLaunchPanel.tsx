@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCreateJob, useJobs } from '../hooks/useJobs';
 import { useThemeStore } from '../stores/themeStore';
-import { Rocket, Code, Cpu, Layers, Play } from 'lucide-react';
+import { Rocket, Code, Cpu, Layers, Play, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   projectId: string;
@@ -226,7 +226,18 @@ function getLaunchButtonContent(isLaunching: boolean, hasProcessingJob: boolean)
 }
 
 interface RecentJobsListProps {
-  jobs: Array<{ job_id: string; phase: string; status: string }>;
+  jobs: Array<{
+    job_id: string;
+    phase: string;
+    status: string;
+    created_at?: string;
+    updated_at?: string;
+    current_step?: string;
+    detail?: string;
+    progress_current?: number;
+    progress_total?: number;
+    error?: string;
+  }>;
   isDark: boolean;
 }
 
@@ -244,29 +255,155 @@ function RecentJobsList({ jobs, isDark }: RecentJobsListProps): React.ReactEleme
 }
 
 interface JobItemProps {
-  job: { job_id: string; phase: string; status: string };
+  job: {
+    job_id: string;
+    phase: string;
+    status: string;
+    created_at?: string;
+    updated_at?: string;
+    current_step?: string;
+    detail?: string;
+    progress_current?: number;
+    progress_total?: number;
+    error?: string;
+  };
   isDark: boolean;
 }
 
 function JobItem({ job, isDark }: JobItemProps): React.ReactElement {
   const statusColor = getStatusColor(job.status, isDark);
   const isProcessing = job.status === 'PROCESSING';
+  const isFailed = job.status === 'FAILED';
+  const isCompleted = job.status === 'COMPLETED';
+  const [expanded, setExpanded] = useState(false);
+  const elapsed = formatElapsed(job.created_at, job.updated_at);
 
   return (
-    <li className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-md ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
-      <span className="text-body">{job.phase}</span>
-      <span className={`font-medium ${statusColor}`}>
-        {isProcessing ? (
-          <span className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            {job.status}
-          </span>
-        ) : (
-          job.status
-        )}
-      </span>
+    <li className={`rounded-md overflow-hidden ${isDark ? 'bg-slate-800/40' : 'bg-slate-50'}`}>
+      <div className="flex items-center justify-between text-xs px-2 py-1.5">
+        <span className="text-body">{job.phase}</span>
+        <span className={`font-medium ${statusColor}`}>
+          {isProcessing ? (
+            <span className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              {job.status}
+            </span>
+          ) : (
+            job.status
+          )}
+        </span>
+      </div>
+      {(isFailed || isCompleted) && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className={`w-full flex items-center gap-1.5 px-2 py-1 text-xs transition-colors ${isFailed ? (isDark ? 'text-amber-400 hover:bg-slate-700/50' : 'text-amber-600 hover:bg-slate-100') : (isDark ? 'text-slate-500 hover:bg-slate-700/50' : 'text-slate-400 hover:bg-slate-100')}`}
+        >
+          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {isFailed && <AlertTriangle className="w-3 h-3" />}
+          {isFailed ? getErrorSummary(job.error) : `Details · ${elapsed}`}
+        </button>
+      )}
+      {expanded && (
+        <div className={`px-2 pb-2 text-xs space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+          {isFailed && getErrorDetail(job.error, job.detail, isDark)}
+          {isCompleted && (
+            <>
+              <div>{job.detail || 'Phase completed.'}</div>
+              <div>Processed in {elapsed}{job.current_step ? ` (${job.current_step})` : ''}</div>
+            </>
+          )}
+        </div>
+      )}
+      {isProcessing && job.current_step && (
+        <div className={`px-2 pb-1.5 text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+          Step: {job.current_step} · Running for {elapsed}
+          {job.progress_total && job.progress_current !== undefined && (
+            <span className="ml-1">({job.progress_current}/{job.progress_total})</span>
+          )}
+        </div>
+      )}
     </li>
   );
+}
+
+const ERROR_MESSAGES: Record<string, { summary: string; detail: (raw?: string, isDark?: boolean) => React.ReactNode }> = {
+  INFERENCE_TRUNCATED: {
+    summary: 'Response truncated — increase max_tokens',
+    detail: (raw, isDark) => (
+      <div className="space-y-1">
+        {raw && <p>{raw}</p>}
+        <p>
+          Fix: add <code className={`px-1 py-0.5 rounded ${isDark ? 'bg-slate-600' : 'bg-slate-200'}`}>NARRATIVE_MAX_TOKENS_DEFAULT=8192</code> to your .env file, then restart the server.
+        </p>
+      </div>
+    ),
+  },
+  INFERENCE_TIMEOUT: {
+    summary: 'LLM request timed out',
+    detail: (raw) => (
+      <div className="space-y-1">
+        {raw && <p>{raw}</p>}
+        <p>Increase NARRATIVE_INFERENCE_TIMEOUT_SECONDS in .env (default: 120s).</p>
+      </div>
+    ),
+  },
+  INFERENCE_TRANSPORT_FAILURE: {
+    summary: 'Cannot reach LLM server',
+    detail: (raw) => (
+      <div className="space-y-1">
+        {raw && <p>{raw}</p>}
+        <p>Check that llama.cpp is running and NARRATIVE_INFERENCE_BASE_URL in .env is correct.</p>
+      </div>
+    ),
+  },
+  INFERENCE_CIRCUIT_OPEN: {
+    summary: 'LLM circuit breaker open — too many failures',
+    detail: (raw) => (
+      <div className="space-y-1">
+        {raw && <p>{raw}</p>}
+        <p>LLM server has been failing repeatedly. Fix the underlying issue and wait for the circuit to reset, or restart the server.</p>
+      </div>
+    ),
+  },
+  INVALID_RESPONSE_SHAPE: {
+    summary: 'LLM returned unexpected response format',
+    detail: (raw) => raw ? <p>{raw}</p> : null,
+  },
+  INVALID_JSON_RESPONSE: {
+    summary: 'LLM returned invalid JSON',
+    detail: (raw) => raw ? <p>{raw}</p> : null,
+  },
+  RUNTIME_CONFIGURATION_ERROR: {
+    summary: 'Inference backend not configured',
+    detail: (raw) => (
+      <div className="space-y-1">
+        {raw && <p>{raw}</p>}
+        <p>Set NARRATIVE_INFERENCE_BACKEND and NARRATIVE_INFERENCE_BASE_URL in .env.</p>
+      </div>
+    ),
+  },
+};
+
+function getErrorSummary(error?: string): string {
+  if (error && ERROR_MESSAGES[error]) return ERROR_MESSAGES[error].summary;
+  if (error) return error.replace(/_/g, ' ');
+  return 'Unknown error';
+}
+
+function getErrorDetail(error?: string, detail?: string, isDark = false): React.ReactNode {
+  if (error && ERROR_MESSAGES[error]) return ERROR_MESSAGES[error].detail(detail, isDark);
+  return detail ? <p>{detail}</p> : <p>No error details available.</p>;
+}
+
+function formatElapsed(created?: string, updated?: string): string {
+  if (!created || !updated) return '—';
+  const start = new Date(created).getTime();
+  const end = new Date(updated).getTime();
+  const seconds = Math.round((end - start) / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
 function getStatusColor(status: string, isDark: boolean): string {
