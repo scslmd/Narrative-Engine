@@ -77,8 +77,12 @@ export async function getAttempts(jobId: string): Promise<{ job_id: string; item
   return response.data;
 }
 
-export async function getJobSteps(jobId: string): Promise<{ items: StepRecord[] }> {
-  const response = await api.get(`/jobs/${jobId}/steps`);
+export async function getJobSteps(jobId: string, attemptNumber?: number): Promise<{ items: StepRecord[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+  const response = await api.get(`/jobs/${jobId}/steps`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job steps: ${response.status}`);
@@ -87,8 +91,12 @@ export async function getJobSteps(jobId: string): Promise<{ items: StepRecord[] 
   return response.data;
 }
 
-export async function getJobLineage(jobId: string): Promise<{ items: ArtifactLineageView[] }> {
-  const response = await api.get(`/jobs/${jobId}/lineage`);
+export async function getJobLineage(jobId: string, attemptNumber?: number): Promise<{ items: ArtifactLineageView[] }> {
+  const params: Record<string, string> = {};
+  if (attemptNumber !== undefined) {
+    params.attempt = attemptNumber.toString();
+  }
+  const response = await api.get(`/jobs/${jobId}/lineage`, { params });
 
   if (response.status !== 200) {
     throw new Error(`Failed to get job lineage: ${response.status}`);

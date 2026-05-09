@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ArtifactLineageView } from '../types/inspect';
-import api from '../lib/api';
+import { getCheckerLineage } from '../services/checker';
+import { getJobLineage } from '../services/jobs';
 
 interface UseJobLineageResult {
   artifacts: ArtifactLineageView[];
@@ -21,22 +22,10 @@ export function useJobLineage(jobId: string, runKind: 'pipeline_job' | 'role_mod
     setError(null);
 
     try {
-      const params: Record<string, string> = {};
-      if (attemptNumber !== undefined) {
-        params.attempt = attemptNumber.toString();
-      }
-
-      const endpoint = runKind === 'pipeline_job' 
-        ? `/jobs/${jobId}/lineage`
-        : `/role-model-checker/${jobId}/lineage`;
-      
-      const response = await api.get(endpoint, { params });
-      
-      if (response.status !== 200) {
-        throw new Error(`Failed to fetch lineage: ${response.status}`);
-      }
-
-      setArtifacts(response.data.items || []);
+      const response = runKind === 'pipeline_job'
+        ? await getJobLineage(jobId, attemptNumber)
+        : await getCheckerLineage(jobId, attemptNumber);
+      setArtifacts(response.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setArtifacts([]);

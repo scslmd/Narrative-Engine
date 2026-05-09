@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { BranchComparisonRecord, BranchMergeDecision, StoryBranch } from '../../types/branches';
-import { createBranchComparison, createMergeDecision } from '../../services/branches';
+import { createBranchComparison, createMergeDecision, getBranch, getBranchComparison, getBranchStateRefs, getMergeDecision } from '../../services/branches';
 import { useToastStore } from '../../stores/toastStore';
 import { MergeDecisionForm } from './MergeDecisionForm';
 
@@ -17,6 +17,7 @@ export function BranchComparison({ projectId, branches, onClose }: BranchCompari
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMergeForm, setShowMergeForm] = useState(false);
+  const [stateRefCount, setStateRefCount] = useState<number>(0);
   const addToast = useToastStore((state) => state.addToast);
 
   const handleCompare = async () => {
@@ -27,7 +28,11 @@ export function BranchComparison({ projectId, branches, onClose }: BranchCompari
 
     try {
       const result = await createBranchComparison(projectId, selectedA, selectedB);
-      setComparison(result);
+      const hydrated = await getBranchComparison(result.comparison_id, projectId);
+      await Promise.all([getBranch(selectedA, projectId), getBranch(selectedB, projectId)]);
+      const refs = await getBranchStateRefs(selectedA, projectId);
+      setStateRefCount(refs.length);
+      setComparison(hydrated);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to compare branches');
     } finally {
@@ -39,12 +44,13 @@ export function BranchComparison({ projectId, branches, onClose }: BranchCompari
     decisionData: Omit<BranchMergeDecision, 'merge_decision_id' | 'resulting_decision_node_ids'>,
   ) => {
     try {
-      await createMergeDecision(
+      const decision = await createMergeDecision(
         projectId,
         decisionData.source_branch_id,
         decisionData.target_branch_id,
         decisionData.merge_rationale,
       );
+      await getMergeDecision(decision.merge_decision_id, projectId);
       addToast('Merge decision recorded', 'success');
       setShowMergeForm(false);
     } catch (err) {
@@ -132,6 +138,7 @@ export function BranchComparison({ projectId, branches, onClose }: BranchCompari
                 <span>{branchA?.branch_name}</span>
                 <span>vs</span>
                 <span>{branchB?.branch_name}</span>
+                <span className="ml-auto text-xs text-gray-500">State refs: {stateRefCount}</span>
               </div>
 
               <div className="border rounded-lg divide-y">

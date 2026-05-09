@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StoryFlowStage, StageKind } from '../../types/flow';
-import { getStages, addStage, renameStage, deleteStage, updateStageWithProject, archiveStage } from '../../services/flow';
+import { getStages, addStage, renameStage, deleteStage, updateStageWithProject, archiveStage, initFlow, reorderFlowStages } from '../../services/flow';
 import StageList from './StageList';
 import { useState } from 'react';
 
@@ -103,6 +103,27 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
     },
   });
 
+  const initMutation = useMutation({
+    mutationFn: () => initFlow(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
+      setError(null);
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  const normalizeOrderMutation = useMutation({
+    mutationFn: () => {
+      const orderedIds = (stages ?? []).map((stage) => stage.stage_id);
+      return reorderFlowStages(orderedIds, projectId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['flow-stages', projectId] });
+      setError(null);
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
   const handleAddStage = () => {
     if (!newStageName.trim()) {
       setError('Stage name is required');
@@ -163,6 +184,22 @@ export default function FlowEditor({ projectId }: FlowEditorProps) {
         >
           Add Stage
         </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => initMutation.mutate()}
+            disabled={initMutation.isPending}
+            className="px-3 py-1.5 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors disabled:opacity-50"
+          >
+            {initMutation.isPending ? 'Initializing...' : 'Initialize Defaults'}
+          </button>
+          <button
+            onClick={() => normalizeOrderMutation.mutate()}
+            disabled={normalizeOrderMutation.isPending || !stages || stages.length < 2}
+            className="px-3 py-1.5 text-sm bg-slate-700 text-white rounded hover:bg-slate-800 transition-colors disabled:opacity-50"
+          >
+            {normalizeOrderMutation.isPending ? 'Saving Order...' : 'Sync Order'}
+          </button>
+        </div>
       </div>
 
       {error && (
