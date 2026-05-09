@@ -45,6 +45,10 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/api/health.py`](app/api/health.py): liveness, readiness, and metrics endpoints
 - [`app/api/auth.py`](app/api/auth.py): API key management endpoints
 - [`app/api/backup.py`](app/api/backup.py): database backup and restore endpoints
+- [`app/api/mythos_library.py`](app/api/mythos_library.py): mythos library CRUD and extraction materialization
+- [`app/api/pattern_library.py`](app/api/pattern_library.py): pattern library CRUD and extraction materialization
+- [`app/api/canon_customization.py`](app/api/canon_customization.py): canon annotations and customization profiles
+- [`app/api/manuscript_assist.py`](app/api/manuscript_assist.py): manuscript assist runs, suggestions, and gates
 
 ### Service Layer
 
@@ -87,6 +91,24 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/story_forking.py`](app/services/story_forking.py): project forking, canon copying with ID remapping, provenance tracking
 - [`app/services/story_generation_orchestrator.py`](app/services/story_generation_orchestrator.py): full generation lifecycle orchestration (G-200/G-300/G-350/G-400 job pipeline)
 - [`app/services/generation_gates.py`](app/services/generation_gates.py): canon consistency gate checks, repair prompt builder, policy enforcement
+- [`app/services/multi_pass_import.py`](app/services/multi_pass_import.py): multi-pass story import for large stories (>30K chars) with chunk analysis and consolidation
+- [`app/services/import_jobs.py`](app/services/import_jobs.py): async import job management with progress tracking and TTL expiration
+- [`app/services/pattern_extraction.py`](app/services/pattern_extraction.py): pattern extraction service for archetypal patterns, narrative structure, and voice profiles
+- [`app/services/mythos_extraction.py`](app/services/mythos_extraction.py): mythos extraction service (delegates to pattern extraction with mythos framing)
+- [`app/services/extraction_jobs.py`](app/services/extraction_jobs.py): async extraction job management for pattern/mythos extraction workflows
+- [`app/services/scene_context.py`](app/services/scene_context.py): scene context builder for LLM prompts (character anchors, world constraints, prior summaries, pattern guidance)
+- [`app/services/guided_setup.py`](app/services/guided_setup.py): conversational guided setup wizard service with LLM-assisted project creation and planning
+- [`app/services/project_maintenance.py`](app/services/project_maintenance.py): project maintenance service (orphan detection, cleanup, audit log truncation, database compaction)
+- [`app/services/manuscript_assist.py`](app/services/manuscript_assist.py): manuscript assist orchestrator (runs, suggestions, apply/reject/archive)
+- [`app/services/manuscript_assist_gates.py`](app/services/manuscript_assist_gates.py): manuscript assist gate checks for canon consistency and quality
+- [`app/services/canon_customization.py`](app/services/canon_customization.py): canon customization profiles, annotations, and packet previews
+- [`app/services/mythos_library.py`](app/services/mythos_library.py): mythos library CRUD service
+- [`app/services/pattern_library.py`](app/services/pattern_library.py): pattern library CRUD service
+- [`app/services/project_export.py`](app/services/project_export.py): project export service for packaging project data
+- [`app/services/project_import.py`](app/services/project_import.py): project import service for restoring packaged project data
+- [`app/services/consistency_critic.py`](app/services/consistency_critic.py): deterministic consistency critic for generation and manuscript assist quality checks
+- [`app/services/chapter_orchestrator.py`](app/services/chapter_orchestrator.py): chapter-level orchestration for multi-chapter generation workflows
+- [`app/services/entity_intake.py`](app/services/entity_intake.py): entity intake service for processing LLM-extracted entities into structured records
 
 ### Persistence Layer
 
@@ -110,6 +132,16 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/schemas/role_model_checker.py`](app/schemas/role_model_checker.py): checker-specific request/response models
 - [`app/schemas/story_import.py`](app/schemas/story_import.py): story import request/response schemas
 - [`app/schemas/story_development.py`](app/schemas/story_development.py): canonical story-development objects and typed contracts
+- [`app/schemas/generation.py`](app/schemas/generation.py): canon generation run, packet, gate result, and forking schemas (30 classes/enums)
+- [`app/schemas/pattern_extraction.py`](app/schemas/pattern_extraction.py): pattern extraction request/response/analysis schemas
+- [`app/schemas/mythos_extraction.py`](app/schemas/mythos_extraction.py): mythos extraction analysis schemas
+- [`app/schemas/mythos_library.py`](app/schemas/mythos_library.py): mythos library entry CRUD schemas
+- [`app/schemas/pattern_library.py`](app/schemas/pattern_library.py): pattern library entry CRUD schemas
+- [`app/schemas/canon_customization.py`](app/schemas/canon_customization.py): canon annotation and customization profile schemas
+- [`app/schemas/manuscript_assist.py`](app/schemas/manuscript_assist.py): manuscript assist run, suggestion, and gate result schemas
+- [`app/schemas/guided_setup.py`](app/schemas/guided_setup.py): guided setup wizard request/response schemas
+- [`app/schemas/extraction_progress.py`](app/schemas/extraction_progress.py): extraction job progress tracking schemas
+- [`app/schemas/project_io.py`](app/schemas/project_io.py): project import/export package schemas
 
 ### Inference Layer
 
@@ -126,7 +158,6 @@ The backend code lives under [`app/`](app/). The structure is layered:
 
 ### Utils
 
-- [`app/settings.py`](app/settings.py): environment-driven app settings and path configuration
 - [`app/request_identity.py`](app/request_identity.py): request identity helpers for deterministic tracing
 - [`app/workflow_preferences.py`](app/workflow_preferences.py): workflow-level preference helpers
 - [`app/database.py`](app/database.py): shared raw SQLite connection utility
@@ -221,9 +252,9 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
 
 - Drafting and manuscript tests:
   - [`tests/test_drafter_post_endpoints.py`](tests/test_drafter_post_endpoints.py)
-  - [`tests/test_manuscript_aid_integration.py`](tests/test_manuscript_aid_integration.py)
-  - [`tests/test_manuscript_aid_endpoints.py`](tests/test_manuscript_aid_endpoints.py)
-  - [`tests/test_manuscript_aid_contracts.py`](tests/test_manuscript_aid_contracts.py)
+- [`tests/test_manuscript_assist_integration.py`](tests/test_manuscript_assist_integration.py)
+   - [`tests/test_manuscript_assist_endpoints.py`](tests/test_manuscript_assist_endpoints.py)
+   - [`tests/test_manuscript_assist_contracts.py`](tests/test_manuscript_assist_contracts.py)
   - [`tests/test_manuscript_review_service.py`](tests/test_manuscript_review_service.py)
   - [`tests/test_manuscript_review_api.py`](tests/test_manuscript_review_api.py)
   - [`tests/test_manuscript_update_api.py`](tests/test_manuscript_update_api.py)
@@ -249,6 +280,85 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
 - Deferred mutations and integration:
   - [`tests/test_deferred_mutations.py`](tests/test_deferred_mutations.py)
 
+- Story generation orchestration tests:
+  - [`tests/test_canon_generation_api_error_paths.py`](tests/test_canon_generation_api_error_paths.py)
+  - [`tests/test_canon_generation_route_parity.py`](tests/test_canon_generation_route_parity.py)
+  - [`tests/test_canon_packet_builder.py`](tests/test_canon_packet_builder.py)
+  - [`tests/test_story_forking_service.py`](tests/test/story_forking_service.py)
+  - [`tests/test_story_generation_orchestrator.py`](tests/test_story_generation_orchestrator.py)
+
+- Canon customization tests:
+  - [`tests/test_canon_customization_api.py`](tests/test_canon_customization_api.py)
+  - [`tests/test_canon_customization_contracts.py`](tests/test_canon_customization_contracts.py)
+  - [`tests/test_canon_customization_persistence.py`](tests/test_canon_customization_persistence.py)
+  - [`tests/test_canon_customization_service.py`](tests/test_canon_customization_service.py)
+
+- Manuscript assist tests:
+  - [`tests/test_manuscript_assist_api_error_paths.py`](tests/test_manuscript_assist_api_error_paths.py)
+  - [`tests/test_manuscript_assist_gate_service.py`](tests/test_manuscript_assist_gate_service.py)
+  - [`tests/test_manuscript_assist_schemas.py`](tests/test_manuscript_assist_schemas.py)
+
+- Story import and multi-pass import tests:
+  - [`tests/test_import_job_manager.py`](tests/test_import_job_manager.py)
+  - [`tests/test_multi_pass_import_service.py`](tests/test_multi_pass_import_service.py)
+
+- Pattern and mythos extraction tests:
+  - [`tests/test_extraction_error_handling.py`](tests/test_extraction_error_handling.py)
+  - [`tests/test_extraction_jobs_api.py`](tests/test_extraction_jobs_api.py)
+  - [`tests/test_mythos_extraction_api.py`](tests/test_mythos_extraction_api.py)
+  - [`tests/test_mythos_library_api.py`](tests/test_mythos_library_api.py)
+  - [`tests/test_pattern_extraction.py`](tests/test_pattern_extraction.py)
+
+- Project import/export tests:
+  - [`tests/test_project_export_service.py`](tests/test_project_export_service.py)
+  - [`tests/test_project_import_service.py`](tests/test_project_import_service.py)
+
+- Guided setup tests:
+  - [`tests/test_guided_setup_api.py`](tests/test_guided_setup_api.py)
+  - [`tests/test_guided_setup_contracts.py`](tests/test_guided_setup_contracts.py)
+  - [`tests/test_guided_setup_persistence.py`](tests/test_guided_setup_persistence.py)
+  - [`tests/test_guided_setup_service.py`](tests/test_guided_setup_service.py)
+
+- Chapter orchestration and continuity tests:
+  - [`tests/test_chapter_orchestrator_service.py`](tests/test_chapter_orchestrator_service.py)
+  - [`tests/test_chapter_summarizer_service.py`](tests/test_chapter_summarizer_service.py)
+  - [`tests/test_continuity_drafter_service.py`](tests/test_continuity_drafter_service.py)
+
+- Consistency critic tests:
+  - [`tests/test_consistency_critic_api.py`](tests/test_consistency_critic_api.py)
+  - [`tests/test_consistency_critic_contracts.py`](tests/test_consistency_critic_contracts.py)
+  - [`tests/test_consistency_critic_persistence.py`](tests/test_consistency_critic_persistence.py)
+  - [`tests/test_consistency_critic_service.py`](tests/test_consistency_critic_service.py)
+
+- Entity intake tests:
+  - [`tests/test_entity_intake_api.py`](tests/test_entity_intake_api.py)
+  - [`tests/test_entity_intake_contracts.py`](tests/test_entity_intake_contracts.py)
+  - [`tests/test_entity_intake_service.py`](tests/test_entity_intake_service.py)
+
+- Generation gates tests:
+  - [`tests/test_generation_gates.py`](tests/test_generation_gates.py)
+
+- Health, config, and utility tests:
+  - [`tests/test_circuit_breaker_service.py`](tests/test_circuit_breaker_service.py)
+  - [`tests/test_config_validator_service.py`](tests/test_config_validator_service.py)
+  - [`tests/test_db_inserts.py`](tests/test_db_inserts.py)
+  - [`tests/test_health_api.py`](tests/test_health_api.py)
+  - [`tests/test_json_extract.py`](tests/test_json_extract.py)
+
+- Runtime prompt and draft generation tests:
+  - [`tests/test_critic_location_content.py`](tests/test_critic_location_content.py)
+  - [`tests/test_drafter_prompt_content.py`](tests/test_drafter_prompt_content.py)
+  - [`tests/test_draft_generation_service.py`](tests/test_draft_generation_service.py)
+  - [`tests/test_runtime_prompts.py`](tests/test_runtime_prompts.py)
+
+- Local executor runtime tests:
+  - [`tests/test_local_executor_consistency_critic_runtime.py`](tests/test_local_executor_consistency_critic_runtime.py)
+  - [`tests/test_local_executor_entity_intake_runtime.py`](tests/test_local_executor_entity_intake_runtime.py)
+  - [`tests/test_local_executor_generation_runtime.py`](tests/test_local_executor_generation_runtime.py)
+  - [`tests/test_local_executor_guided_setup_runtime.py`](tests/test_local_executor_guided_setup_runtime.py)
+  - [`tests/test_local_executor_manuscript_assist.py`](tests/test_local_executor_manuscript_assist.py)
+  - [`tests/test_local_executor_multi_phase_runtime.py`](tests/test_local_executor_multi_phase_runtime.py)
+
 - Health and quality:
   - [`tests/test_smoke.py`](tests/test_smoke.py)
   - [`tests/test_failure_modes.py`](tests/test_failure_modes.py)
@@ -267,8 +377,8 @@ The specification and planning docs live under [`docs/`](docs/). The single sour
   - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md) — task decomposition process template
   - [`docs/Frontend Workspace Behavior Contract v0.1.md`](docs/Frontend%20Workspace%20Behavior%20Contract%20v0.1.md) — frontend routing and state rules
 - User-facing:
-  - [`docs/User Guide v1.3.md`](docs/User%20Guide%20v1.3.md) — end-user onboarding guide
-  - [`docs/Narrative Engine User Walkthrough v1.3.md`](docs/Narrative%20Engine%20User%20Walkthrough%20v1.3.md) — interactive walkthrough
+ - [`docs/User Guide v1.7.0.md`](docs/User%20Guide%20v1.7.0.md) — end-user onboarding guide
+   - [`docs/Narrative Engine User Walkthrough v1.7.0.md`](docs/Narrative%20Engine%20User%20Walkthrough%20v1.7.0.md) — interactive walkthrough
 - Future blueprints (not yet implemented):
   - [`docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md`](docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md) — LLM-assisted manuscript editing
   - [`docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md`](docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md) — canon customization UI enhancements
