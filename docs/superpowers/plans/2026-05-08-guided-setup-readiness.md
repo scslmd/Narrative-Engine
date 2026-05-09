@@ -1,4 +1,5 @@
 # Guided Setup Readiness Detection — Implementation Plan
+Status: Planned
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -7,6 +8,8 @@
 **Architecture:** Pure frontend changes across 4 files. Store tracks `wasReadyBefore` flag to fire a one-time readiness notification. ChatPanel shows readiness badge and category count. FieldPreview renders per-category completeness bars. GuidedSetupView button switches between "Save What You Have" and "Save Project" states.
 
 **Tech Stack:** React, TypeScript, Zustand, Vitest, Testing Library, Tailwind CSS
+
+**Cross-Plan Dependencies:** Must complete BEFORE `2026-05-08-guided-setup-planning` (both modify `FieldPreview.tsx`; readiness adds `categoryProgress` prop first, then planning adds sequence/chapter panels). Must complete BEFORE `2026-05-08-frontend-layout-modernization` Task T7 (which modifies `GuidedSetupView.tsx`).
 
 ---
 
@@ -402,6 +405,7 @@ Remove the `progress` import from store since it's now passed as prop. Update li
 ```typescript
 const { conversationHistory } = useGuidedSetupStore();
 ```
+If ChatPanel currently reads other values from the store, keep them. Only remove fields that are fully replaced by props.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -418,6 +422,7 @@ git commit -m "feat: add readiness badge, category count, and dynamic progress b
 ---
 
 ### Task 3: FieldPreview — per-category completeness bars and missing field tags
+Execution order note: Task 3 and Task 4 both touch guided setup wiring. Do not run them in parallel; complete Task 3 first.
 
 **Files:**
 - Modify: `frontend/src/components/guided-setup/FieldPreview.tsx`
@@ -595,8 +600,15 @@ import { useGuidedSetupStore } from '../stores/guidedSetupStore';
 import { useGuidedSetup } from '../hooks/useGuidedSetup';
 import * as guidedSetup from '../services/guidedSetup';
 
+interface MockUseGuidedSetupReturn {
+  isAnalyzing: boolean;
+  createMutation: { isPending: boolean };
+  handleAnalyze: (msg: string) => Promise<void>;
+  handleSubmitCreate: () => void;
+}
+
 vi.mock('../hooks/useGuidedSetup', () => ({
-  useGuidedSetup: vi.fn(),
+  useGuidedSetup: vi.fn<[], MockUseGuidedSetupReturn>(),
 }));
 
 vi.mock('../services/guidedSetup', () => ({
@@ -628,12 +640,12 @@ describe('GuidedSetupView', () => {
       });
     });
 
-    vi.mocked(useGuidedSetup).mockReturnValue({
+   vi.mocked(useGuidedSetup).mockReturnValue({
       isAnalyzing: false,
       createMutation: { isPending: false },
       handleAnalyze: vi.fn().mockResolvedValue(undefined),
       handleSubmitCreate: vi.fn(),
-    } as any);
+    } as MockUseGuidedSetupReturn);
 
     render(<GuidedSetupView />, { route: '/setup-wizard' });
 
@@ -659,12 +671,12 @@ describe('GuidedSetupView', () => {
       });
     });
 
-    vi.mocked(useGuidedSetup).mockReturnValue({
+  vi.mocked(useGuidedSetup).mockReturnValue({
       isAnalyzing: false,
       createMutation: { isPending: false },
       handleAnalyze: vi.fn().mockResolvedValue(undefined),
       handleSubmitCreate: vi.fn(),
-    } as any);
+    } as MockUseGuidedSetupReturn);
 
     render(<GuidedSetupView />, { route: '/setup-wizard' });
 

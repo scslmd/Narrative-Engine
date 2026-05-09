@@ -1,6 +1,15 @@
 # Mixed API Surface Migration Contract (Deterministic / Atomic)
+Status: **Superseded** — split into executable plan files PR-A through PR-E (2026-05-08)
 
-Date: 2026-05-08  
+> **This contract has been superseded by the following plan files.** Execute the plans in order, respecting cross-plan dependencies. Do not implement tasks from this document directly.
+>
+> 1. **[PR-A: Route Inventory & Classification](./2026-05-08-api-migration-pr-a-inventory.md)** — Tasks 001-005 (no dependencies)
+> 2. **[PR-B: Backend Canonical Routes](./2026-05-08-api-migration-pr-b-backend-canonical.md)** — Tasks 006-011 (depends on PR-A)
+> 3. **[PR-C: Parity Tests, Telemetry & Cutover Gates](./2026-05-08-api-migration-pr-c-parity-telemetry.md)** — Tasks 012-013 + 017-018 (depends on PR-B)
+> 4. **[PR-D: Frontend Endpoint Migration](./2026-05-08-api-migration-pr-d-frontend.md)** — Tasks 014-016 (depends on PR-B, parallel with PR-C)
+> 5. **[PR-E: Legacy Removal & Closure](./2026-05-08-api-migration-pr-e-removal-closure.md)** — Tasks 019-022 (depends on PR-C + PR-D)
+
+Date: 2026-05-08
 Scope: Migrate mixed API surface (`/v1` + unversioned) to canonical `/v1` contract with compatibility phase, telemetry, and controlled legacy removal.
 
 ## 1) Objective
@@ -138,7 +147,7 @@ Verification:
 Done when:
 1. Backup tests pass with canonical routes.
 
-### API-SURFACE-009 Health Versioning Decision
+### API-SURFACE-009 Health Versioning Decision (Prerequisite: human policy decision required before implementation execution)
 Purpose: Make health route policy explicit and enforced.
 Write scope:
 1. `app/api/health.py`
@@ -225,9 +234,10 @@ Steps:
 1. Switch all production calls to canonical `/v1` paths.
 2. Keep parameter naming/status handling unchanged.
 Verification:
-1. `rg -n "api\\.(get|post|patch|put|delete)\\('/(?!v1)" frontend/src/services frontend/src/lib -S`
-2. `cd frontend && npm run typecheck`
-3. `cd frontend && npm run test`
+1. `rg -n "api\\.(get|post|patch|put|delete)\\((`|'|\")/(?!v1)" frontend/src/services frontend/src/lib -S`
+2. `rg -n "API_BASE|fetch\\(|axios\\.(get|post|patch|put|delete)\\((`|'|\")/(?!v1)" frontend/src/services frontend/src/lib -S`
+3. `cd frontend && npm run typecheck`
+4. `cd frontend && npm run test`
 Done when:
 1. No legacy endpoint strings remain in production service layer.
 
@@ -247,8 +257,9 @@ Done when:
 ### API-SURFACE-017 Legacy Route Usage Telemetry
 Purpose: Quantify safe removal readiness.
 Write scope:
-1. middleware/helper in `app/` (e.g., existing telemetry layer)
-2. `docs/api-migration/legacy_usage_query.md` (new)
+1. `app/middleware/request_telemetry.py` (or currently active structured logging middleware module if different)
+2. `app/main.py` (middleware registration, if needed)
+3. `docs/api-migration/legacy_usage_query.md` (new)
 Steps:
 1. Emit structured event `legacy_route_hit` with path/method/client info.
 2. Add query instructions for zero-usage checks.
@@ -331,6 +342,16 @@ Done when:
 
 ## 6) Recommended PR Slices
 
+Dependency graph (must honor order):
+1. 001 -> 002 -> 003 -> 004 -> 005
+2. 003 and 005 must complete before 006, 007, 008, 009, 010, 011
+3. 006-011 must complete before 012 and 013
+4. 012, 013, and 017 must complete before 018
+5. 018 must complete before 019 and 020
+6. 014 should run before 015, and 015 before 016
+
+Execution decomposition note: this contract is policy-level. Execute as five separate plan files aligned to PR-A through PR-E before assigning to worker agents.
+
 1. PR-A: `001-005` (inventory/spec/policy)
 2. PR-B: `006-011` (backend canonical + wrappers + OpenAPI)
 3. PR-C: `012-013,017-018` (parity/error/telemetry/gates)
@@ -350,4 +371,3 @@ Done when:
 2. Legacy usage is zero for policy window.
 3. Legacy routes removed (or explicitly excepted).
 4. Full verification suite passes.
-
