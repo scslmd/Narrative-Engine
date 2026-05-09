@@ -1,0 +1,2672 @@
+[
+  {
+    "method": "DELETE",
+    "path": "/auth/keys/{prefix}",
+    "name": "revoke_api_key",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/backup/{backup_id}",
+    "name": "delete_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/projects/maintenance/projects/{project_id}",
+    "name": "delete_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/projects/{project_id}",
+    "name": "delete_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/story-development/arcs/selections/{selection_id}",
+    "name": "delete_arc_selection",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/story-development/braindump/sessions/{session_id}",
+    "name": "delete_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/story-development/flow/stages/{stage_id}",
+    "name": "delete_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/story-development/relationships/{edge_id}",
+    "name": "delete_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/story-development/storyboard/cards/{card_id}",
+    "name": "delete_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/canon/annotations/{annotation_id}",
+    "name": "delete_annotation",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/canon/profiles/{profile_id}",
+    "name": "delete_profile",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/mythos/entries/{mythos_id}",
+    "name": "delete_entry",
+    "tags": [
+      "mythos-library"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/patterns/entries/{pattern_id}",
+    "name": "delete_entry",
+    "tags": [
+      "pattern-library"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/story-development/arcs/selections/{selection_id}",
+    "name": "delete_arc_selection",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/story-development/braindump/sessions/{session_id}",
+    "name": "delete_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/story-development/flow/stages/{stage_id}",
+    "name": "delete_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/story-development/relationships/{edge_id}",
+    "name": "delete_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/story-development/storyboard/cards/{card_id}",
+    "name": "delete_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/",
+    "name": "serve_frontend",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/auth/keys",
+    "name": "list_api_keys",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/backup/latest",
+    "name": "get_latest_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/backup/list",
+    "name": "list_backups",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/docs",
+    "name": "swagger_ui_html",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/docs/oauth2-redirect",
+    "name": "swagger_ui_redirect",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/health/",
+    "name": "health_check",
+    "tags": [
+      "health"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/health/llm",
+    "name": "llm_health_check",
+    "tags": [
+      "health"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/health/metrics",
+    "name": "get_metrics",
+    "tags": [
+      "health"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/health/ready",
+    "name": "readiness_check",
+    "tags": [
+      "health"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/jobs/{job_id}/attempts",
+    "name": "get_attempts",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/jobs/{job_id}/lineage",
+    "name": "get_lineage",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/jobs/{job_id}/logs",
+    "name": "get_logs",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/jobs/{job_id}/status",
+    "name": "get_status",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/jobs/{job_id}/steps",
+    "name": "get_steps",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/models",
+    "name": "get_models",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/openapi.json",
+    "name": "openapi",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/projects",
+    "name": "list_projects",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/projects",
+    "name": "list_projects",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/export/{import_id}",
+    "name": "get_export_import_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/extraction/{extraction_id}",
+    "name": "get_extraction_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/import/{import_id}",
+    "name": "get_import_status",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}",
+    "name": "get_project",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}",
+    "name": "get_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}/chapter-1",
+    "name": "get_chapter",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}/chapter-1",
+    "name": "get_chapter",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}/manifest",
+    "name": "get_manifest",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}/sequence",
+    "name": "get_sequence",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/projects/{project_id}/sequence",
+    "name": "get_sequence",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/redoc",
+    "name": "redoc_html",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/role-model-checker-ui",
+    "name": "serve_frontend",
+    "tags": []
+  },
+  {
+    "method": "GET",
+    "path": "/role-model-checker/{run_id}/attempts",
+    "name": "get_attempts",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/role-model-checker/{run_id}/lineage",
+    "name": "get_lineage",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/role-model-checker/{run_id}/status",
+    "name": "get_status",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/role-model-checker/{run_id}/steps",
+    "name": "get_steps",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/arcs/candidates",
+    "name": "list_arc_candidates",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/arcs/comparisons",
+    "name": "list_arc_comparisons",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/arcs/selections",
+    "name": "list_arc_selections",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/arcs/stage-maps",
+    "name": "list_arc_stage_maps",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/braindump/sessions",
+    "name": "list_brain_dump_sessions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/braindump/sessions/{session_id}",
+    "name": "get_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/brainstorm/items",
+    "name": "list_brainstorm_items",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/brainstorm/promotions",
+    "name": "list_brainstorm_promotions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches",
+    "name": "list_story_branches",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/active",
+    "name": "get_active_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/comparisons",
+    "name": "list_branch_comparisons",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/comparisons/{comparison_id}",
+    "name": "get_branch_comparison",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/merge-decisions",
+    "name": "list_branch_merge_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/merge-decisions/{merge_decision_id}",
+    "name": "get_branch_merge_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/{branch_id}",
+    "name": "get_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/branches/{branch_id}/state-refs",
+    "name": "list_branch_state_refs",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/characters",
+    "name": "list_characters",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/characters/{character_id}",
+    "name": "get_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/characters/{character_id}/relationships",
+    "name": "list_character_relationships",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/decisions",
+    "name": "list_story_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/decisions/{node_id}",
+    "name": "get_story_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/decisions/{node_id}/path",
+    "name": "get_story_decision_path",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/draft-artifacts",
+    "name": "list_draft_artifacts",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/draft-artifacts/{artifact_id}",
+    "name": "get_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/manuscript-documents",
+    "name": "list_manuscript_documents",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/manuscript-documents/{document_id}",
+    "name": "get_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/revision-suggestions",
+    "name": "list_revision_suggestions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/drafting/revision-suggestions/{suggestion_id}",
+    "name": "get_revision_suggestion",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/flow/stages",
+    "name": "list_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/foundation",
+    "name": "get_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/foundation/review-cues",
+    "name": "list_foundation_review_cues",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/foundation/revisions",
+    "name": "list_foundation_revisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/beat-plans",
+    "name": "list_beat_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/beat-plans/{beat_id}",
+    "name": "get_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/chapter-packets",
+    "name": "list_chapter_packets",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/chapter-packets/{packet_id}",
+    "name": "get_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/chapter-plans",
+    "name": "list_chapter_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/chapter-plans/{chapter_id}",
+    "name": "get_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/dependencies",
+    "name": "list_planning_dependencies",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/dependencies/{dependency_id}",
+    "name": "get_planning_dependency",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/scene-plans",
+    "name": "list_scene_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/scene-plans/{scene_id}",
+    "name": "get_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/sequence-plans",
+    "name": "list_sequence_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/planning/sequence-plans/{sequence_id}",
+    "name": "get_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/relationships",
+    "name": "list_all_relationships",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/decisions",
+    "name": "list_review_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/decisions/{decision_id}",
+    "name": "get_review_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/findings",
+    "name": "list_checker_findings",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/findings/{finding_id}",
+    "name": "get_checker_finding",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/inspect-links",
+    "name": "list_inspect_links",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/review/inspect-links/{link_id}",
+    "name": "get_inspect_link",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/storyboard/cards",
+    "name": "list_storyboard_cards",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/storyboard/cards/{card_id}",
+    "name": "get_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/world-bible",
+    "name": "list_world_bible_entries",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/story-development/world-bible/{entry_type}/{title}",
+    "name": "get_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/canon/annotations",
+    "name": "list_annotations",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/canon/profiles",
+    "name": "list_profiles",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/jobs/{job_id}/attempts",
+    "name": "get_attempts",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/jobs/{job_id}/lineage",
+    "name": "get_lineage",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/jobs/{job_id}/logs",
+    "name": "get_logs",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/jobs/{job_id}/status",
+    "name": "get_status",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/jobs/{job_id}/steps",
+    "name": "get_steps",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/manuscript-assist/runs",
+    "name": "list_runs",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/manuscript-assist/runs/{assist_id}",
+    "name": "get_run",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/manuscript-assist/runs/{assist_id}/gates",
+    "name": "list_gates",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/manuscript-assist/suggestions",
+    "name": "list_suggestions",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/models",
+    "name": "get_models",
+    "tags": [
+      "models"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/mythos/entries",
+    "name": "list_entries",
+    "tags": [
+      "mythos-library"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/patterns/entries",
+    "name": "list_entries",
+    "tags": [
+      "pattern-library"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/role-model-checker/{run_id}/attempts",
+    "name": "get_attempts",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/role-model-checker/{run_id}/lineage",
+    "name": "get_lineage",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/role-model-checker/{run_id}/status",
+    "name": "get_status",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/role-model-checker/{run_id}/steps",
+    "name": "get_steps",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/arcs/candidates",
+    "name": "list_arc_candidates",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/arcs/comparisons",
+    "name": "list_arc_comparisons",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/arcs/selections",
+    "name": "list_arc_selections",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/arcs/stage-maps",
+    "name": "list_arc_stage_maps",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/braindump/sessions",
+    "name": "list_brain_dump_sessions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/braindump/sessions/{session_id}",
+    "name": "get_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/brainstorm/items",
+    "name": "list_brainstorm_items",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/brainstorm/promotions",
+    "name": "list_brainstorm_promotions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches",
+    "name": "list_story_branches",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/active",
+    "name": "get_active_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/comparisons",
+    "name": "list_branch_comparisons",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/comparisons/{comparison_id}",
+    "name": "get_branch_comparison",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/merge-decisions",
+    "name": "list_branch_merge_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/merge-decisions/{merge_decision_id}",
+    "name": "get_branch_merge_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/{branch_id}",
+    "name": "get_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/branches/{branch_id}/state-refs",
+    "name": "list_branch_state_refs",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/characters",
+    "name": "list_characters",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/characters/{character_id}",
+    "name": "get_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/characters/{character_id}/relationships",
+    "name": "list_character_relationships",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/decisions",
+    "name": "list_story_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/decisions/{node_id}",
+    "name": "get_story_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/decisions/{node_id}/path",
+    "name": "get_story_decision_path",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/draft-artifacts",
+    "name": "list_draft_artifacts",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/draft-artifacts/{artifact_id}",
+    "name": "get_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/manuscript-documents",
+    "name": "list_manuscript_documents",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/manuscript-documents/{document_id}",
+    "name": "get_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/revision-suggestions",
+    "name": "list_revision_suggestions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/drafting/revision-suggestions/{suggestion_id}",
+    "name": "get_revision_suggestion",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/flow/stages",
+    "name": "list_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/foundation",
+    "name": "get_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/foundation/review-cues",
+    "name": "list_foundation_review_cues",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/foundation/revisions",
+    "name": "list_foundation_revisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/beat-plans",
+    "name": "list_beat_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/beat-plans/{beat_id}",
+    "name": "get_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/chapter-packets",
+    "name": "list_chapter_packets",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/chapter-packets/{packet_id}",
+    "name": "get_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/chapter-plans",
+    "name": "list_chapter_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/chapter-plans/{chapter_id}",
+    "name": "get_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/dependencies",
+    "name": "list_planning_dependencies",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/dependencies/{dependency_id}",
+    "name": "get_planning_dependency",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/scene-plans",
+    "name": "list_scene_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/scene-plans/{scene_id}",
+    "name": "get_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/sequence-plans",
+    "name": "list_sequence_plans",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/planning/sequence-plans/{sequence_id}",
+    "name": "get_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/relationships",
+    "name": "list_all_relationships",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/decisions",
+    "name": "list_review_decisions",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/decisions/{decision_id}",
+    "name": "get_review_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/findings",
+    "name": "list_checker_findings",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/findings/{finding_id}",
+    "name": "get_checker_finding",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/inspect-links",
+    "name": "list_inspect_links",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/review/inspect-links/{link_id}",
+    "name": "get_inspect_link",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/storyboard/cards",
+    "name": "list_storyboard_cards",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/storyboard/cards/{card_id}",
+    "name": "get_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/world-bible",
+    "name": "list_world_bible_entries",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-development/world-bible/{entry_type}/{title}",
+    "name": "get_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-generation/runs",
+    "name": "list_generation_runs",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-generation/runs/{generation_id}",
+    "name": "get_generation_run",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-generation/runs/{generation_id}/gates",
+    "name": "get_generation_gates",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/story-generation/runs/{generation_id}/packet",
+    "name": "get_generation_packet",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/vite.svg",
+    "name": "serve_vite_icon",
+    "tags": []
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/arcs/selections/{selection_id}",
+    "name": "update_arc_selection",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/braindump/sessions/{session_id}",
+    "name": "patch_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/characters/{character_id}",
+    "name": "update_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/drafting/manuscript-documents/{document_id}",
+    "name": "update_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/flow/stages/{stage_id}",
+    "name": "update_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/foundation",
+    "name": "update_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/planning/beat-plans/{beat_id}",
+    "name": "update_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/planning/chapter-packets/{packet_id}",
+    "name": "update_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/planning/chapter-plans/{chapter_id}",
+    "name": "update_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/planning/scene-plans/{scene_id}",
+    "name": "update_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/planning/sequence-plans/{sequence_id}",
+    "name": "update_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/relationships/{edge_id}",
+    "name": "update_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/storyboard/cards/{card_id}",
+    "name": "update_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/story-development/world-bible/{entry_type}/{title}",
+    "name": "update_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/canon/profiles/{profile_id}",
+    "name": "update_profile",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/mythos/entries/{mythos_id}",
+    "name": "update_entry",
+    "tags": [
+      "mythos-library"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/patterns/entries/{pattern_id}",
+    "name": "update_entry",
+    "tags": [
+      "pattern-library"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/arcs/selections/{selection_id}",
+    "name": "update_arc_selection",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/braindump/sessions/{session_id}",
+    "name": "patch_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/characters/{character_id}",
+    "name": "update_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/drafting/manuscript-documents/{document_id}",
+    "name": "update_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/flow/stages/{stage_id}",
+    "name": "update_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/foundation",
+    "name": "update_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/planning/beat-plans/{beat_id}",
+    "name": "update_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/planning/chapter-packets/{packet_id}",
+    "name": "update_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/planning/chapter-plans/{chapter_id}",
+    "name": "update_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/planning/scene-plans/{scene_id}",
+    "name": "update_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/planning/sequence-plans/{sequence_id}",
+    "name": "update_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/relationships/{edge_id}",
+    "name": "update_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/storyboard/cards/{card_id}",
+    "name": "update_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/story-development/world-bible/{entry_type}/{title}",
+    "name": "update_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/auth/keys",
+    "name": "create_api_key",
+    "tags": [
+      "authentication"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/backup/create",
+    "name": "create_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/backup/restore/{backup_id}",
+    "name": "restore_backup",
+    "tags": [
+      "backup"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/jobs/create",
+    "name": "create_job",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/jobs/{job_id}/retry",
+    "name": "retry_job",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/create",
+    "name": "create_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/create/debug",
+    "name": "debug_create_project",
+    "tags": []
+  },
+  {
+    "method": "POST",
+    "path": "/projects/guided-setup/analyze",
+    "name": "guided_setup_analyze",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/guided-setup/create",
+    "name": "guided_setup_create",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/import-export",
+    "name": "import_export_zip",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/import-mythos",
+    "name": "import_mythos",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/import-patterns",
+    "name": "import_patterns",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/import-story",
+    "name": "import_story",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/maintenance/audit-log/truncate",
+    "name": "truncate_audit_log",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/maintenance/cleanup",
+    "name": "cleanup",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/maintenance/database/compact",
+    "name": "compact_database",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/maintenance/scan",
+    "name": "scan_orphans",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/{project_id}/export",
+    "name": "export_project",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/{project_id}/extract-patterns",
+    "name": "extract_patterns",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/projects/{project_id}/generate-description",
+    "name": "generate_description",
+    "tags": [
+      "projects"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/role-model-checker/run",
+    "name": "run_check",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/role-model-checker/start",
+    "name": "start_check",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/role-model-checker/{run_id}/retry",
+    "name": "retry_run",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/arcs/candidates",
+    "name": "create_arc_candidate",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/arcs/comparisons",
+    "name": "compare_arc_candidates_endpoint",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/arcs/selections",
+    "name": "select_arc_candidate_endpoint",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/arcs/stage-maps",
+    "name": "create_arc_stage_map",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/braindump/sessions",
+    "name": "create_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/braindump/sessions/{session_id}/organize",
+    "name": "organize_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/brainstorm/items",
+    "name": "create_brainstorm_item",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/brainstorm/items/cluster",
+    "name": "cluster_brainstorm_items",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/brainstorm/items/promote",
+    "name": "promote_brainstorm_item",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/branches",
+    "name": "create_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/branches/active",
+    "name": "select_active_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/branches/comparisons",
+    "name": "create_branch_comparison",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/branches/merge-decisions",
+    "name": "record_branch_merge_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/characters",
+    "name": "create_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/draft-artifacts",
+    "name": "create_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/draft-artifacts/alternate-variant",
+    "name": "create_alternate_variant",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/draft-artifacts/continue",
+    "name": "continue_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/manuscript-documents",
+    "name": "create_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/manuscript-documents/{document_id}/review",
+    "name": "trigger_manuscript_review",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/promote-draft",
+    "name": "promote_draft_to_manuscript",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/drafting/revision-suggestions",
+    "name": "create_revision_suggestion",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/flow/stages",
+    "name": "create_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/flow/stages/init",
+    "name": "init_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/flow/stages/reorder",
+    "name": "reorder_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/foundation",
+    "name": "create_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/beat-plans",
+    "name": "create_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/chapter-packets",
+    "name": "create_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/chapter-plans",
+    "name": "create_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/reorder",
+    "name": "reorder_plan_objects",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/scene-plans",
+    "name": "create_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/planning/sequence-plans",
+    "name": "create_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/relationships",
+    "name": "create_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/review/decisions",
+    "name": "record_review_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/review/inspect-links",
+    "name": "create_inspect_link",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/storyboard/cards",
+    "name": "create_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/story-development/world-bible",
+    "name": "create_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/canon/annotations",
+    "name": "create_annotation",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/canon/profiles",
+    "name": "create_profile",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/canon/profiles/{profile_id}/packet-preview",
+    "name": "packet_preview",
+    "tags": [
+      "canon-customization"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/jobs/create",
+    "name": "create_job",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/jobs/{job_id}/retry",
+    "name": "retry_job",
+    "tags": [
+      "jobs"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/manuscript-assist/runs",
+    "name": "submit_assist",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/manuscript-assist/runs/{assist_id}/retry",
+    "name": "retry_run",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/manuscript-assist/suggestions/{suggestion_id}/apply",
+    "name": "apply_suggestion",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/manuscript-assist/suggestions/{suggestion_id}/archive",
+    "name": "archive_suggestion",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/manuscript-assist/suggestions/{suggestion_id}/reject",
+    "name": "reject_suggestion",
+    "tags": [
+      "manuscript-assist"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/mythos/entries",
+    "name": "create_entry",
+    "tags": [
+      "mythos-library"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/mythos/materialize-extraction",
+    "name": "materialize_extraction",
+    "tags": [
+      "mythos-library"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/patterns/entries",
+    "name": "create_entry",
+    "tags": [
+      "pattern-library"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/patterns/materialize-extraction",
+    "name": "materialize_extraction",
+    "tags": [
+      "pattern-library"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/role-model-checker/run",
+    "name": "run_check",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/role-model-checker/start",
+    "name": "start_check",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/role-model-checker/{run_id}/retry",
+    "name": "retry_run",
+    "tags": [
+      "role-model-checker"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/arcs/candidates",
+    "name": "create_arc_candidate",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/arcs/comparisons",
+    "name": "compare_arc_candidates_endpoint",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/arcs/selections",
+    "name": "select_arc_candidate_endpoint",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/arcs/stage-maps",
+    "name": "create_arc_stage_map",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/braindump/sessions",
+    "name": "create_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/braindump/sessions/{session_id}/organize",
+    "name": "organize_brain_dump_session",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/brainstorm/items",
+    "name": "create_brainstorm_item",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/brainstorm/items/cluster",
+    "name": "cluster_brainstorm_items",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/brainstorm/items/promote",
+    "name": "promote_brainstorm_item",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/branches",
+    "name": "create_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/branches/active",
+    "name": "select_active_story_branch",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/branches/comparisons",
+    "name": "create_branch_comparison",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/branches/merge-decisions",
+    "name": "record_branch_merge_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/characters",
+    "name": "create_character",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/draft-artifacts",
+    "name": "create_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/draft-artifacts/alternate-variant",
+    "name": "create_alternate_variant",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/draft-artifacts/continue",
+    "name": "continue_draft_artifact",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/manuscript-documents",
+    "name": "create_manuscript_document",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/manuscript-documents/{document_id}/review",
+    "name": "trigger_manuscript_review",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/promote-draft",
+    "name": "promote_draft_to_manuscript",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/drafting/revision-suggestions",
+    "name": "create_revision_suggestion",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/flow/stages",
+    "name": "create_flow_stage",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/flow/stages/init",
+    "name": "init_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/flow/stages/reorder",
+    "name": "reorder_flow_stages",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/foundation",
+    "name": "create_foundation",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/beat-plans",
+    "name": "create_beat_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/chapter-packets",
+    "name": "create_chapter_packet",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/chapter-plans",
+    "name": "create_chapter_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/reorder",
+    "name": "reorder_plan_objects",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/scene-plans",
+    "name": "create_scene_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/planning/sequence-plans",
+    "name": "create_sequence_plan",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/relationships",
+    "name": "create_relationship",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/review/decisions",
+    "name": "record_review_decision",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/review/inspect-links",
+    "name": "create_inspect_link",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/storyboard/cards",
+    "name": "create_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-development/world-bible",
+    "name": "create_world_bible_entry",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-generation/fork-preview",
+    "name": "preview_fork",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-generation/fork-project",
+    "name": "create_fork_project",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-generation/runs",
+    "name": "create_generation_run",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/story-generation/runs/{generation_id}/retry",
+    "name": "retry_generation_run",
+    "tags": [
+      "story-generation"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/story-development/storyboard/cards/{card_id}",
+    "name": "upsert_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/story-development/storyboard/cards/{column_id}/reindex",
+    "name": "reindex_storyboard_column",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/story-development/storyboard/cards/{card_id}",
+    "name": "upsert_storyboard_card",
+    "tags": [
+      "story-development"
+    ]
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/story-development/storyboard/cards/{column_id}/reindex",
+    "name": "reindex_storyboard_column",
+    "tags": [
+      "story-development"
+    ]
+  }
+]
