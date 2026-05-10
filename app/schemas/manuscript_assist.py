@@ -17,6 +17,13 @@ class ManuscriptAssistKind(str, Enum):
     THEME_REVIEW = "theme_review"
     LINE_EDIT_SELECTION = "line_edit_selection"
     EXPAND_SELECTION = "expand_selection"
+    EXPAND_SENSORY_SIGHT = "expand_sensory_sight"
+    EXPAND_SENSORY_SOUND = "expand_sensory_sound"
+    EXPAND_SENSORY_SMELL = "expand_sensory_smell"
+    EXPAND_SENSORY_TEXTURE = "expand_sensory_texture"
+    EXPAND_SENSORY_TASTE = "expand_sensory_taste"
+    EXPAND_METAPHOR = "expand_metaphor"
+    EXPAND_SHOW_DONT_TELL = "expand_show_dont_tell"
     COMPRESS_SELECTION = "compress_selection"
     REWRITE_SELECTION_SAME_VOICE = "rewrite_selection_same_voice"
     ALTERNATE_SELECTION = "alternate_selection"
@@ -95,6 +102,13 @@ class ManuscriptAssistRequest(StrictModel):
         selection_kinds = {
             ManuscriptAssistKind.LINE_EDIT_SELECTION,
             ManuscriptAssistKind.EXPAND_SELECTION,
+            ManuscriptAssistKind.EXPAND_SENSORY_SIGHT,
+            ManuscriptAssistKind.EXPAND_SENSORY_SOUND,
+            ManuscriptAssistKind.EXPAND_SENSORY_SMELL,
+            ManuscriptAssistKind.EXPAND_SENSORY_TEXTURE,
+            ManuscriptAssistKind.EXPAND_SENSORY_TASTE,
+            ManuscriptAssistKind.EXPAND_METAPHOR,
+            ManuscriptAssistKind.EXPAND_SHOW_DONT_TELL,
             ManuscriptAssistKind.COMPRESS_SELECTION,
             ManuscriptAssistKind.REWRITE_SELECTION_SAME_VOICE,
             ManuscriptAssistKind.ALTERNATE_SELECTION,

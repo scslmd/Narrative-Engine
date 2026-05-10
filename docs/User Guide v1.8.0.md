@@ -152,39 +152,77 @@ Global action:
 - `Generate Story` button routes to generation workspace.
 
 ## Brain Dump (`/workspace/:projectId/braindump`)
-- Auto-selects active session.
-- Auto-creates a session when none exists.
-- Save freeform text continuously.
-- Organize session into categorized items.
-- Shows organized result summary and category cards.
+Session-based free writing canvas with AI-powered organization.
+
+### Session Management
+- Auto-selects the active session on load.
+- Auto-creates a session when none exists for the project.
+- `+ New Session` button opens a title prompt overlay ("Name your brain dump"). Enter a name or press Enter to create.
+- Sessions are project-scoped and persist across visits.
+
+### Writing Canvas
+- Full-height textarea for freeform writing.
+- Auto-saves with 2-second debounce after typing stops; "editing..." indicator appears while unsaved changes exist.
+- Word count display in bottom bar.
+- "blank session" indicator when no text has been entered.
+- Hover-reveal controls overlay at bottom of canvas.
+
+### Organize Flow
+- "Organize with AI" button appears when text exceeds 100 characters and a session is active.
+- Submits text to LLM for categorization into structured items.
+- Result display shows:
+  - Total item count.
+  - Category breakdown (e.g., "3 plot_points, 5 character_ideas").
+  - Category cards in grid layout with line-clamped item excerpts.
+- "Continue editing" button returns to canvas for additional passes.
+
+### Auth Behavior
+- If API key auth is enforced and missing, view shows an API key guidance banner.
 
 ## Writing Workspace (`/workspace/:projectId/write`)
-Three-column layout:
-- Left: Manuscripts and Drafts
-- Center: Manuscript Editor
-- Right: Aids panel
+Three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
+
+**Route-aware layout:** When on `/workspace/:projectId/write/:chapterId`, the layout collapses to a single column showing only the Editor. The left sidebar and right aids panel are hidden for focused chapter editing.
 
 ### Manuscripts
-- Select manuscript documents.
+- Select manuscript documents from the list.
 - Enter edit mode, save/cancel edits.
+- Word and character counts update in real-time.
 
 ### Drafts
-- Create manual drafts.
-- Continue draft.
-- Create alternate variant.
-- Promote draft to manuscript.
-- AI draft generation from title + brief.
-- Pending state display for in-flight AI draft jobs.
+Draft artifact lifecycle management in the left column:
+- **Create manual draft** — form with title input and content textarea. Submits a new draft artifact for the selected manuscript.
+- **Continue draft** — per-draft-card button that generates a continuation of the draft's content via LLM.
+- **Alternate variant** — per-draft-card button that generates an alternate version of the same narrative beat.
+- **Promote to manuscript** — per-draft-card button that promotes a finalized draft into a new manuscript document.
+- **AI draft generation** — form with title input and brief textarea. Generates a complete draft from scratch using LLM, guided by the title and brief. Submit button triggers async job; result appears as a pending entry.
+- **Pending state display** — in-flight AI draft jobs show an amber loading indicator with pulsing dots and title text. If the job fails, error message is displayed inline. Completed drafts appear in the list automatically.
 
 ### Editor
-- Read/edit content.
-- Word and character counts.
-- Text selection assist actions through Manuscript Assist:
-- `line_edit`
-- `expand`
-- `compress`
-- `rewrite`
-- `fork_from_selection`
+- Read/edit content toggle.
+- Word and character counts display.
+
+**Floating Selection Toolbar:** When you select text, a floating toolbar appears near the selection with categorized actions:
+- **Sensory detail** (collapsible submenu, inspired by Sudowrite Describe):
+  - `Sight & color` — add visual detail, lighting, color, spatial awareness
+  - `Sound & rhythm` — add auditory detail, ambient noise, silence, cadence
+  - `Smell & atmosphere` — add olfactory detail, scent memory, environmental mood
+  - `Touch & texture` — add tactile detail, temperature, physical sensation
+  - `Taste & flavor` — add gustatory detail, flavor memory, palate
+  - `Metaphor & simile` — add figurative language and symbolic imagery
+  - `Show don't tell` — convert abstract statements into concrete action and observation
+- **Rewrite** actions:
+  - `Tighten & polish` — remove redundancy, improve flow and clarity
+  - `Compress` — reduce word count while preserving meaning
+  - `Rewrite in different voice` — match a specified tone or style
+  - `Alternate version` — generate a different take on the same idea
+- **Continue** actions:
+  - `Continue from here` — generate next passage in current voice
+  - `Fork as draft` — create a new branch or alternate draft artifact
+
+**Assist Dropdown:** Click the Assist button in the editor toolbar for the same action menu. Requires explicit click to open; does not auto-open on selection (floating toolbar handles that).
+
+Each action sends a parameterized instruction to the Manuscript Assist backend (`POST /v1/manuscript-assist/runs`) with the selected text range, anchor context, and kind-specific LLM prompt. The result appears as suggestions in the Aids panel for review, accept, or reject.
 
 ### Aids panel
 - Suggestions: actionable revision suggestions.
@@ -192,71 +230,155 @@ Three-column layout:
 - Accept/reject/archive flows.
 
 ## Review Workspace (`/workspace/:projectId/review`)
-Tabs:
-- Findings
-- Inspect Run Links
+Two-tab interface for reviewing checker findings and maintaining run traceability.
 
-Capabilities:
-- Findings list review and triage workflows.
-- Create inspect links manually (`+ New Link`) for object/run traceability.
+### Findings Tab
+- Renders a list of checker findings for the project, sorted by priority.
+- Each finding shows severity, description, and affected entity.
+- Use findings to identify consistency issues, canon violations, or structural problems detected by the Role Model Checker.
+- Resolve high-priority findings first, then feed corrections back into Planning or Writing tabs.
+
+### Inspect Run Links Tab
+Maintains mappings from review objects to inspectable runs for traceability.
+
+**Creating an inspect link:** Click `+ New Link` to open an inline form with six fields:
+- **Link ID** — unique identifier for this link
+- **Object Kind** — type of the source object (e.g., `chapter-plan`, `draft-artifact`)
+- **Object ID** — identifier of the source object
+- **Logical Run ID** — human-readable run reference (e.g., `run-001`)
+- **Run ID** — actual job or checker run ID to inspect
+- **Run Kind** — `pipeline_job` or `checker_run`
+
+All fields are required. Click "Create" to save the link; "Cancel" to discard. Links enable navigation from review objects directly to the Inspect workspace for runtime evidence.
 
 ## Inspect Workspace (`/workspace/:projectId/inspect`)
-- Supports route-driven deep link resolution by job id.
-- Auto-detects whether id belongs to pipeline job or checker run.
+Runtime inspection interface for pipeline jobs and checker runs.
 
-Tabs:
-- Steps
-- Lineage
-- Attempts
+### Deep-Link Resolution
+- `/workspace/:projectId/inspect` — shows empty state with guidance to navigate from Review or Job Launch panel.
+- `/workspace/:projectId/inspect/:jobId` — auto-resolves the job ID against both checker and jobs services. Displays a loading state during resolution. If the ID is not found in either service, shows an error message with the run ID.
+- Header displays Run ID and Run Kind. "Back to Manuscript" button navigates to Writing workspace.
 
-Attempt features:
-- Attempt history list.
-- Pipeline run retry from attempts tab.
+### Steps Tab
+- Execution timeline view showing each pipeline step in chronological order.
+- Each step displays: step name, status (PENDING, PROCESSING, COMPLETED, FAILED), start time, duration, and output summary.
+- Use this tab to trace where a job succeeded or failed during execution.
+
+### Lineage Tab
+- Artifact ancestry view showing how output artifacts relate to input artifacts across pipeline phases.
+- Displays artifact transitions: which draft produced which manuscript, which plan generated which sequence.
+- Use this tab to trace the provenance of any generated content back to its source inputs.
+
+### Attempts Tab
+- Attempt history list for the selected run.
+- Each attempt shows: attempt number, status (color-coded: green = COMPLETED, red = FAILED, yellow = other), started_at timestamp, finished_at timestamp, finish_reason, and error_code (if failed).
+- "Retry Job" button available for pipeline jobs — submits a new execution attempt with the same configuration.
+- Use this tab to diagnose repeated failures or compare outputs across attempts.
 
 ## Canon Workshop (`/workspace/:projectId/canon`)
-Tabs (including deep link via `?tab=`):
-- `overview`
-- `mythos`
-- `patterns`
-- `packet`
+Four-tab workspace for managing canon scope, profiles, mythos/pattern libraries, and generation packets. Deep-link tabs via `?tab=mythos|patterns|packet`.
 
-Features:
-- Canon annotation and profile operations.
-- Mythos and pattern library management.
-- Packet preview and generation-context control.
+### Overview Tab
+Central control surface for canon profiles and generation configuration:
+- **Profile Name** input field — name a new canon profile.
+- **Active Profile** dropdown — select an existing profile to edit or use.
+- **Generation Brief** textarea — freeform instructions for generation context.
+- **Selection panels** (checkbox lists): Characters, World Entries, Mythos, Patterns — choose which entities to include in the canon packet.
+- **Canon Scope Summary** — displays counts of selected entities per category.
+- **Generation Rules Editor** — policy editor for continuity strictness and constraints.
+- **Actions**: "Save Profile" (persist current selection), "Preview Packet" (disabled unless profile selected), "Generate with Selected" (direct generation submission shortcut).
+- **Profile management**: "Rename Selected Profile", "Delete Selected Profile" buttons for lifecycle management.
 
-Auth behavior:
-- If API key auth is enforced and missing, view shows an API key guidance banner.
+### Mythos Tab
+Mythos library management:
+- **Materialize** — text input + "Materialize" button to convert an extraction ID into editable mythos entries.
+- **Mythos Library Workspace** — grid of MythosEntryCards with type filter dropdown. Each entry shows a "Use in Generation" checkbox and Delete action.
+- Entries are project-scoped and persist across sessions.
+
+### Patterns Tab
+Pattern library management:
+- **Materialize** — text input + "Materialize" button to convert an extraction ID into editable pattern entries.
+- **Pattern Library Workspace** — grid of PatternEntryCards with "Use in Generation" checkbox, generation modes display, and Delete action.
+- Entries capture archetypal patterns, narrative structures, and voice profiles extracted from source text.
+
+### Packet Preview Tab
+Deterministic canon packet preview:
+- Displays the packet structure when a profile is selected and previewed.
+- Shows entity counts for Characters, World Bible, Mythos, and Patterns.
+- Use this tab to validate packet scope size and composition before submitting a generation run.
+
+### Auth Behavior
+- If API key auth is enforced and missing, view shows an API key guidance banner with setup instructions.
 
 ## Story Generation (`/workspace/:projectId/generate`)
-Components:
-- Story Generation Wizard
-- Run list cards
-- Gate panel
-- Generated story review
+Full generation lifecycle: wizard configuration, run monitoring, gate review, and project forking.
 
-Capabilities:
-- Configure generation run and submit.
-- View run history and status.
-- Retry failed/blocked runs.
-- Preview fork.
-- Fork project from selected run.
-- Review gates and packet scope size.
+### Story Generation Wizard
+Multi-step form for configuring a generation run:
+
+**Mode Selector** — 8 generation modes displayed as a grid of buttons:
+- `New Arc` — generate a new story arc from existing canon
+- `Sequel` — continue the narrative forward
+- `Prequel` — generate backstory events
+- `Side Story` — parallel narrative branch
+- `Alternate Route` — different path from current point
+- `Character Fork` — follow a different character's perspective
+- `World Fork` — explore an alternate world state
+- `Hybrid Fork` — combine multiple forking strategies
+
+**Destination Selector** — toggle between:
+- `Same Project` — generate into the current project (requires target project ID)
+- `New Project` — creates a new project; input field appears for `target_project_name`
+
+**Canon Scope Selector** — choose which canon entities to include:
+- Characters section — toggle buttons per character
+- World Bible section — toggle buttons per entry
+- Supports `full_project` mode (include everything) or individual selection
+- Hidden scope fields available for advanced use: continuity threads, arcs, mythos IDs, pattern IDs, relationships, unresolved questions, contradictions as forbidden
+
+**Canon Policy Editor** — controls generation constraints:
+- Continuity Strictness dropdown with 4 levels: `Warn`, `Block`, `Repair Once`, `Repair Twice`
+- Locked fields, allowed changes, and forbidden contradictions arrays (pre-populated defaults)
+
+**Generation Brief** — textarea (min-height 120px) for freeform creative instructions. Required to enable submission.
+
+**Chapter Count** — number input (1-100, default 3). Controls how many chapters the drafter generates in batch mode.
+
+**Actions**: "Preview Fork" button shows entity counts before submission; "Start Generation" submits the run. Both disabled until brief is non-empty AND scope has at least one entity or full_project mode is active.
+
+### Run Management
+- Run cards displayed in a 2-column grid. Each card shows: generation_id, status, job count, warning count.
+- Click a run card to select it — reveals detail panel with latest status, packet entity count, and "Fork Project from Run" button.
+- Failed runs show a "Retry" button (with loading state indicator).
+
+### Gate Results Panel
+- Shows gate results for the selected run.
+- Each gate displays: gate name, pass/fail status (color-coded), severity, and reasons list.
+- Use gates to verify canon consistency and identify contradictions before accepting generated content.
+
+### Generated Story Review
+- Displays the run ID and manuscript artifact ID (if available).
+- Shows the assembled output from successful generation runs.
+- "Fork Project from Run" creates a new project with the generated content, remapping canon IDs and recording provenance.
+
+### Fork Preview Panel
+- "Preview Fork" button in wizard shows counts of selected characters, world entries, arcs, and continuity threads before submitting.
+- Helps validate scope size and composition before committing to generation.
 
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).
 2. Build canon in Planning tabs: Foundation, Characters, World Bible, Relationships, Arcs.
 3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
 4. Shape structure in Planning/Flow tabs.
-4. Capture optional ideation in Brain Dump and Brainstorm.
-5. Draft in Writing (manual, AI, continue, alternate, promote).
-6. Use Manuscript Assist for targeted edits.
-7. Run Checker and review findings.
-8. Inspect problematic runs from deep links or Inspect mode.
-9. Use Canon Workshop to tighten packet and canon behavior.
-10. Launch Story Generation runs and fork when needed.
-11. Iterate via branches, decisions, and additional drafts.
-12. Export project archive for backup and transfer.
+5. Capture optional ideation in Brain Dump and Brainstorm.
+6. Draft in Writing (manual, AI, continue, alternate, promote).
+7. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
+8. Run Checker and review findings in Review workspace. Create inspect links for traceability.
+9. Inspect problematic runs from deep links or Inspect mode to diagnose failures.
+10. Use Canon Workshop to tighten packet scope, manage profiles, and validate generation context.
+11. Launch Story Generation runs: configure wizard, monitor status, review gates, fork successful runs.
+12. Iterate via branches, decisions, and additional drafts.
+13. Export project archive for backup and transfer.
 
 ## API/Auth Notes For Users
 - If backend sets `NARRATIVE_API_KEY`, protected features require matching API key usage.
@@ -274,9 +396,13 @@ Capabilities:
 - Cascade scan returns no entities: ensure manuscript text is at least 50 characters and contains character names, interactions, or descriptive details. Very short or sparse text may yield no discoverable entities.
 
 ## Glossary
+- Assist action: a Manuscript Assist operation triggered by text selection (sensory detail, rewrite, continue).
+- Floating toolbar: MS Word-style ribbon that appears near selected text with categorized assist actions.
 - Canon packet: selected canon payload passed to generation phases.
-- Run: one execution instance of checker or generation pipeline.
-- Draft artifact: intermediate draft output before manuscript promotion.
-- Manuscript document: editable narrative document in writing workspace.
-- Inspect link: mapping from review object to inspectable run.
 - Cascade Discovery: LLM-powered extraction of characters, relationships, and world bible entries from manuscript text, with staged approval workflow.
+- Draft artifact: intermediate draft output before manuscript promotion.
+- Inspect link: mapping from review object to inspectable run.
+- Manuscript Assist: LLM-powered targeted editing system that processes selection context and returns revision suggestions.
+- Manuscript document: editable narrative document in writing workspace.
+- Run: one execution instance of checker or generation pipeline.
+- Sensory detail: expand actions that add sensory-specific description (sight, sound, smell, touch, taste, metaphor, show-don't-tell).

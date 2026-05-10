@@ -143,133 +143,262 @@ The Relationships tab provides an interactive graph visualization with full rela
 ## Phase 4: Brain Dump Workflow
 Route: `/workspace/:projectId/braindump`
 
-1. Open brain dump mode.
-2. Confirm active session or let auto-session creation occur.
-3. Capture freeform text in canvas.
-4. Trigger `Organize` when ready.
-5. Review categorized output summary.
-6. Return to editing for additional passes.
+Session-based free writing canvas with AI-powered organization. Use this mode early for ideation spikes and mid-project for problem solving.
 
-Use this mode early for ideation spikes and mid-project for problem solving.
+### Session Setup
+1. Open brain dump mode. The view auto-selects the active session, or auto-creates one if none exists for the project.
+2. To create a new session, click `+ New Session`. A title prompt overlay appears ("Name your brain dump"). Enter a name and press Enter to confirm.
+3. Sessions are project-scoped and persist across visits.
+
+### Writing
+1. Write freely in the full-height canvas textarea.
+2. Text auto-saves with a 2-second debounce after typing stops. An "editing..." indicator appears while unsaved changes exist, then clears when saved.
+3. Word count updates in real-time in the bottom bar. A "blank session" indicator appears when no text has been entered.
+4. Hover-reveal controls appear at the bottom of the canvas for quick access to actions.
+
+### Organize with AI
+1. Write at least 100 characters — the "Organize with AI" button appears once this threshold is met and a session is active.
+2. Click "Organize with AI" to submit your text to the LLM for categorization.
+3. The organized result display shows:
+   - Total item count.
+   - Category breakdown (e.g., "3 plot_points, 5 character_ideas").
+   - Category cards in a grid layout, each showing line-clamped excerpts of categorized items.
+4. Click "Continue editing" to return to the canvas for additional passes, or review the organized items for promotion into downstream planning entities.
+
+### Auth Behavior
+- If API key auth is enforced and missing, an API key guidance banner appears at the top of the view.
 
 ## Phase 5: Writing Workspace Deep Tour
 Route: `/workspace/:projectId/write`
 
-Three columns define the writing experience.
+Three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
 
-### Left column: Manuscripts + Drafts
-- Choose manuscript documents.
-- View and manage draft artifacts.
-- Create manual draft.
-- Continue draft.
-- Create alternate variant.
-- Promote draft to manuscript.
-- Generate AI draft from title+brief.
-- Monitor pending draft generation entries.
+**Route-aware layout:** When navigating to a specific chapter via `/workspace/:projectId/write/:chapterId`, the layout collapses to a single column showing only the Editor. The left sidebar and right aids panel are hidden for focused chapter editing. Navigate back to `/workspace/:projectId/write` to restore the full three-column view.
 
-### Center column: Manuscript Editor
-- Read mode and edit mode.
-- Save or cancel edits.
-- Word/character counters.
-- Selection-aware assist actions.
+### Left Column: Manuscripts + Drafts
+**Manuscripts section:**
+- Select a manuscript document from the list to open it in the center editor.
+- Click "Edit" to enter edit mode; "Save" or "Cancel" to commit/discard changes.
 
-### Right column: Aids panel
-- Unified suggestions list (standard revisions + assist suggestions).
-- Accept/reject/archive actions.
-- Diff/history support via aids components.
+**Drafts section:**
+- **Create manual draft** — form with title input and content textarea. Submits a new draft artifact for the selected manuscript.
+- **Continue draft** — per-draft-card button that generates a continuation of the draft's content via LLM. The result appears as a new draft artifact.
+- **Alternate variant** — per-draft-card button that generates an alternate version of the same narrative beat from a different angle.
+- **Promote to manuscript** — per-draft-card button that promotes a finalized draft into a new manuscript document, making it editable in the main editor.
+- **AI draft generation** — form with title input and brief textarea. Generates a complete draft from scratch using LLM, guided by the title and creative brief. Click submit to trigger an async job.
+- **Pending state display** — in-flight AI draft jobs show an amber loading indicator with pulsing dots and the draft title. If the job fails, an error message appears inline. Completed drafts appear in the list automatically.
 
-### Assist action flow
-1. Select text.
-2. Trigger assist action (`line_edit`, `expand`, `compress`, `rewrite`, `fork_from_selection`).
-3. Review suggestion output.
-4. Apply or reject.
+### Center Column: Manuscript Editor
+1. Toggle between read mode (formatted markdown rendering) and edit mode (textarea).
+2. Word count and character count display update in real-time.
+3. Select text by clicking and dragging to access assist actions via the floating toolbar or Assist dropdown.
+
+### Right Column: Aids Panel
+- Unified suggestions list combining standard revision suggestions and LLM-powered assist suggestions.
+- Each suggestion shows source text, proposed text, and rationale.
+- Actions per suggestion: "Accept" (apply changes), "Reject" (dismiss), "Archive" (save for later reference).
+- Diff view and history support via aids components for tracking changes over time.
+
+### Assist action flow (Floating Toolbar)
+When you select text in the manuscript editor, a floating toolbar appears near the selection with categorized actions:
+
+**Sensory detail** (collapsible submenu — inspired by Sudowrite Describe):
+- `Sight & color` — add visual detail, lighting, color, spatial awareness
+- `Sound & rhythm` — add auditory detail, ambient noise, silence, cadence
+- `Smell & atmosphere` — add olfactory detail, scent memory, environmental mood
+- `Touch & texture` — add tactile detail, temperature, physical sensation
+- `Taste & flavor` — add gustatory detail, flavor memory, palate
+- `Metaphor & simile` — add figurative language and symbolic imagery
+- `Show don't tell` — convert abstract statements into concrete action and observation
+
+**Rewrite actions:**
+- `Tighten & polish` — remove redundancy, improve flow and clarity
+- `Compress` — reduce word count while preserving meaning
+- `Rewrite in different voice` — match a specified tone or style
+- `Alternate version` — generate a different take on the same idea
+
+**Continue actions:**
+- `Continue from here` — generate next passage in current voice
+- `Fork as draft` — create a new branch or alternate draft artifact
+
+**Assist Dropdown (fallback):** Click the Assist button in the editor toolbar for the same action menu. Requires explicit click; does not auto-open on selection.
+
+Each action sends a parameterized instruction to the Manuscript Assist backend with the selected text range, surrounding anchor context (~120 characters before/after), and kind-specific LLM prompt. The result appears as suggestions in the Aids panel for review, accept, or reject.
+
+### Step-by-step assist workflow
+1. Select text in the manuscript editor by clicking and dragging.
+2. The floating toolbar appears near your selection.
+3. Click an action (e.g., "Sight & color" under Sensory detail).
+4. A toast confirms submission; the request processes via Manuscript Assist.
+5. Review the suggestion output in the Aids panel (right column).
+6. Accept to apply, reject to dismiss, or archive for later reference.
 
 ## Phase 6: Review Workspace
 Route: `/workspace/:projectId/review`
 
-Tabs:
-- Findings
-- Inspect Run Links
+Two-tab interface for reviewing checker findings and maintaining run traceability.
 
-Findings usage:
-1. Review checker findings.
-2. Resolve high-priority issues first.
-3. Feed decisions back into planning/writing.
+### Findings Tab — Triage Workflow
+1. Open the Findings tab to see a list of checker findings for the project, sorted by priority.
+2. Each finding displays severity level, description, and affected entity (character, world entry, arc, etc.).
+3. Resolve high-priority findings first: navigate to Planning or Writing tabs to make corrections, then re-run the Checker to verify fixes.
+4. Findings persist until the underlying issue is resolved by upstream corrections.
 
-Inspect link usage:
-1. Create links from objects to run ids.
-2. Maintain traceability from finding to runtime evidence.
+### Inspect Run Links Tab — Traceability Workflow
+Maintain mappings from review objects to inspectable runs so you can trace any finding back to runtime evidence.
+
+1. Click `+ New Link` to open an inline form with six fields:
+   - **Link ID** — unique identifier for this link (e.g., `finding-ch1-arc`)
+   - **Object Kind** — type of the source object (e.g., `chapter-plan`, `draft-artifact`, `manuscript-document`)
+   - **Object ID** — identifier of the source object (e.g., `ch-001`)
+   - **Logical Run ID** — human-readable run reference (e.g., `run-001`)
+   - **Run ID** — actual job or checker run ID to inspect (e.g., `job-abc123`)
+   - **Run Kind** — `pipeline_job` or `checker_run`
+2. Fill all fields — each is required. Click "Create" to save the link.
+3. Saved links appear in the list and enable navigation from review objects directly to the Inspect workspace (`/workspace/:projectId/inspect/:jobId`).
+4. Use "Cancel" to discard a form without saving.
 
 ## Phase 7: Inspect Workspace
 Routes:
-- `/workspace/:projectId/inspect`
-- `/workspace/:projectId/inspect/:jobId`
+- `/workspace/:projectId/inspect` — empty state with guidance to navigate from Review or Job Launch panel.
+- `/workspace/:projectId/inspect/:jobId` — deep link that auto-resolves the job ID against both checker and jobs services.
 
-Deep-link behavior:
-- Job id is resolved against checker and jobs services.
-- Context initializes run kind automatically.
+### Deep-Link Resolution
+1. Navigate to `/workspace/:projectId/inspect/:jobId` (or follow an inspect link from Review).
+2. The view displays a loading state while resolving the run.
+3. If the ID is found, the header shows Run ID and Run Kind. "Back to Manuscript" button navigates to Writing workspace.
+4. If the ID is not found in either service, an error message displays with the run ID for verification.
 
-Tabs:
-- Steps: execution timeline
-- Lineage: artifact ancestry and transitions
-- Attempts: run attempts and retry controls
+### Steps Tab — Execution Timeline
+1. Switch to the Steps tab to view the execution timeline.
+2. Each step displays: step name, status (PENDING, PROCESSING, COMPLETED, FAILED), start time, duration, and output summary.
+3. Use this tab to trace where a job succeeded or failed during execution. Failed steps highlight the point of failure for diagnosis.
 
-Retry flow:
-1. Open Attempts tab.
-2. Trigger `Retry Job` for pipeline runs.
-3. Re-check attempts list and status transitions.
+### Lineage Tab — Artifact Ancestry
+1. Switch to the Lineage tab to view artifact ancestry.
+2. The view displays how output artifacts relate to input artifacts across pipeline phases: which draft produced which manuscript, which plan generated which sequence.
+3. Use this tab to trace the provenance of any generated content back to its source inputs.
+
+### Attempts Tab — History and Retry
+1. Switch to the Attempts tab to view attempt history for the selected run.
+2. Each attempt shows: attempt number, status (color-coded: green = COMPLETED, red = FAILED, yellow = other), started_at timestamp, finished_at timestamp, finish_reason, and error_code (if failed).
+3. For pipeline jobs, click "Retry Job" to submit a new execution attempt with the same configuration.
+4. The new attempt appears in the list with an incremented attempt number. Use this to diagnose repeated failures or compare outputs across attempts.
 
 ## Phase 8: Canon Workshop
 Route: `/workspace/:projectId/canon`
-Deep-link tab query:
-- `?tab=overview`
-- `?tab=mythos`
-- `?tab=patterns`
-- `?tab=packet`
+Deep-link tab query: `?tab=overview|mythos|patterns|packet`
 
-Primary use:
-- Tune canon interpretation and packet composition before generation.
-- Manage annotations and customization profiles.
-- Materialize and curate mythos/pattern libraries.
-- Validate packet scope for generation quality and guardrails.
+Four-tab workspace for managing canon scope, profiles, mythos/pattern libraries, and generation packets.
 
-Auth note:
-- If API auth is required, this screen provides explicit setup guidance.
+### Overview Tab — Profile Management and Scope Selection
+1. Enter a **Profile Name** to create a new canon profile, or select an existing profile from the **Active Profile** dropdown.
+2. Fill the **Generation Brief** textarea with creative instructions for generation context.
+3. Use the four selection panels (checkbox lists) to choose entities:
+   - **Characters** — toggle individual characters for inclusion in the canon packet.
+   - **World Entries** — toggle world bible entries.
+   - **Mythos** — toggle mythos library entries.
+   - **Patterns** — toggle pattern library entries.
+4. The **Canon Scope Summary** displays counts of selected entities per category.
+5. Configure generation constraints in the **Generation Rules Editor** (continuity strictness, locked fields, allowed changes).
+6. Click "Save Profile" to persist the current selection as a reusable profile.
+7. Click "Preview Packet" to validate packet scope before generation (disabled unless a profile is selected).
+8. Click "Generate with Selected" for a direct generation submission shortcut — bypasses the wizard and submits immediately.
+9. Manage profiles with "Rename Selected Profile" or "Delete Selected Profile".
+
+### Mythos Tab — Library Management
+1. **Materialize extraction:** Paste an extraction ID into the text input and click "Materialize" to convert it into editable mythos entries. This creates project-scoped entries from LLM-extracted content.
+2. Browse the Mythos Library Workspace — a grid of entry cards filtered by type (use the dropdown).
+3. Each entry shows a "Use in Generation" checkbox (controls inclusion in canon packets) and a Delete action.
+4. Entries persist across sessions and are available in the Overview tab's selection panel.
+
+### Patterns Tab — Library Management
+1. **Materialize extraction:** Paste an extraction ID into the text input and click "Materialize" to convert it into editable pattern entries.
+2. Browse the Pattern Library Workspace — a grid of entry cards showing generation modes and a "Use in Generation" checkbox per entry.
+3. Delete unwanted entries. Patterns capture archetypal structures, narrative patterns, and voice profiles extracted from source text.
+
+### Packet Preview Tab — Scope Validation
+1. Select a canon profile in the Overview tab, then switch to Packet Preview.
+2. The view displays the packet structure with entity counts for Characters, World Bible, Mythos, and Patterns.
+3. Use this tab to validate packet scope size and composition before submitting a generation run. Oversized packets may exceed LLM context limits; undersized packets may lack sufficient canon grounding.
+
+### Auth Behavior
+- If API key auth is enforced and missing, an API key guidance banner appears with setup instructions.
 
 ## Phase 9: Story Generation Workspace
 Route: `/workspace/:projectId/generate`
 
-Main elements:
-- Story Generation Wizard
-- Generation run cards
-- Gate panel
-- Generated story review
+Full generation lifecycle: wizard configuration, run monitoring, gate review, and project forking.
 
-Workflow:
-1. Configure and submit run in wizard.
-2. Monitor run list and statuses.
-3. Select run to inspect latest status and packet entity count.
-4. Use retry where needed.
-5. Use `Fork Project from Run` for branch-to-project expansion.
-6. Review gate output and generated story summary.
+### Step-by-Step: Configure a Generation Run
+1. Open the Story Generation Wizard. The form presents multiple configuration sections.
+
+**Select a mode** — choose from 8 generation modes displayed as a grid of buttons:
+- `New Arc` — generate a new story arc from existing canon
+- `Sequel` — continue the narrative forward in time
+- `Prequel` — generate backstory events before the current timeline
+- `Side Story` — create a parallel narrative branch
+- `Alternate Route` — explore a different path from the current point
+- `Character Fork` — follow a different character's perspective
+- `World Fork` — explore an alternate world state or setting change
+- `Hybrid Fork` — combine multiple forking strategies
+
+**Select destination** — toggle between:
+- `Same Project` — generates into the current project (target project ID is auto-populated)
+- `New Project` — creates a new project; an input field appears for `target_project_name`. Enter a name for the new project.
+
+**Configure canon scope** — choose which canon entities to include in the generation context:
+- Characters section: toggle buttons to select/deselect individual characters.
+- World Bible section: toggle buttons to select/deselect world entries.
+- You can select `full_project` mode to include everything, or pick specific entities for a focused packet.
+
+**Set continuity policy** — use the Canon Policy Editor to control generation constraints:
+- Continuity Strictness dropdown: `Warn` (non-blocking warnings), `Block` (stop on contradiction), `Repair Once` (auto-repair one pass), `Repair Twice` (two repair attempts).
+- Locked fields, allowed changes, and forbidden contradictions arrays are pre-populated with sensible defaults. Adjust as needed for your project.
+
+**Write a generation brief** — enter freeform creative instructions in the textarea. This guides the LLM's output direction. The brief is required to enable submission.
+
+**Set chapter count** — number input (1-100, default 3). Controls how many chapters the drafter generates in batch mode. Higher counts produce longer narratives but consume more LLM tokens.
+
+2. Click "Preview Fork" to see entity counts before submitting — validates scope size and composition.
+3. Click "Start Generation" to submit the run. Both buttons are disabled until the brief is non-empty AND the scope has at least one entity or full_project mode is active.
+
+### Monitor Runs
+1. Run cards appear in a 2-column grid below the wizard. Each card shows: generation_id, status, job count, and warning count.
+2. Click a run card to select it — a detail panel reveals latest status, packet entity count, and action buttons.
+3. Failed runs display a "Retry" button (with loading state indicator). Click to resubmit with the same configuration.
+
+### Review Gate Results
+1. Select a completed or in-progress run to view its gate results.
+2. Each gate displays: gate name, pass/fail status (color-coded), severity level, and reasons list.
+3. Gates verify canon consistency — checking for forbidden contradictions, character obligation violations, and continuity errors. Failed gates may trigger auto-repair depending on your policy setting.
+
+### Fork a Project from a Run
+1. Select a completed generation run.
+2. Click "Fork Project from Run" to create a new project with the generated content.
+3. The fork remaps canon IDs, records provenance linking back to the source run, and creates a standalone project you can continue developing independently.
+
+### Review Generated Story
+1. Select a completed run to view the generated story summary.
+2. The review displays the run ID and manuscript artifact ID (if available).
+3. Use this output to evaluate quality before forking or iterating.
 
 ## Phase 10: Full Production Workflow
 Use this order for complete project execution.
 
-1. Create/import project.
-2. Build foundation, characters, world bible.
-3. Build relationships (graph + list) and arcs.
-4. (Optional) Run Cascade Discovery to auto-extract entities from existing manuscript text — review discovered characters, relationships, and world entries before committing.
-5. Structure narrative in planning tabs.
-4. Structure narrative in planning tabs.
-5. Capture side ideas in brain dump/brainstorm.
-6. Draft and revise in writing workspace.
-7. Run checker and resolve findings.
-8. Inspect problematic runs.
-9. Harden canon in canon workshop.
-10. Execute generation runs.
-11. Fork successful runs into new projects where needed.
-12. Export final project snapshots.
+1. Create or import a project (Phase 1).
+2. Build foundation, characters, world bible, and arcs in Planning tabs (Phase 3).
+3. (Optional) Run Cascade Discovery to auto-extract entities from existing manuscript text — review discovered characters, relationships, and world entries before committing.
+4. Structure narrative in planning and flow tabs (Phase 3).
+5. Capture side ideas in brain dump and brainstorm (Phases 3-4).
+6. Draft and revise in writing workspace using the floating toolbar for targeted assist actions (Phase 5).
+7. Use Manuscript Assist sensory detail, rewrite, and continue actions to refine prose (Phase 5).
+8. Run the Role Model Checker and resolve findings in Review workspace (Phase 6).
+9. Inspect problematic runs from deep links or Inspect mode to diagnose failures (Phase 7).
+10. Harden canon scope, manage profiles, and validate packet composition in Canon Workshop (Phase 8).
+11. Execute generation runs: configure wizard, monitor status, review gates, fork successful runs (Phase 9).
+12. Iterate via branches, decisions, and additional drafts.
+13. Export final project archive for backup and transfer.
 
 ## Phase 11: Advanced Iteration Patterns
 ### Pattern A: Canon-tight revision loop
