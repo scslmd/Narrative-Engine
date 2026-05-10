@@ -24,6 +24,7 @@ from .api import (
     build_story_generation_router,
     build_story_development_router,
     build_role_model_checker_router,
+    discovery as discovery_api,
 )
 from .api.auth import build_auth_router
 from .api.backup import build_backup_router
@@ -284,6 +285,12 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     import_job_manager = ImportJobManager(max_workers=4, ttl_seconds=300)
     from .services.extraction_jobs import ExtractionJobManager
     extraction_job_manager = ExtractionJobManager(max_workers=2, ttl_seconds=300)
+    from .services.discovery_jobs import CascadeJobManager
+    discovery_job_manager = CascadeJobManager()
+    from .services.cascade_discovery import CascadeDiscoveryService
+    discovery_service = CascadeDiscoveryService(
+        inferencer=inferencer, job_manager=discovery_job_manager
+    )
     from .services.project_maintenance import ProjectMaintenanceService
     maintenance_service = ProjectMaintenanceService(settings)
     role_check_manager = RoleModelCheckManager(settings.operations_db_path)
@@ -458,6 +465,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(build_mythos_library_router(story_development_repository))
     app.include_router(build_pattern_library_router(story_development_repository))
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
+    app.include_router(discovery_api.init_discovery_router(discovery_service, discovery_job_manager))
 
     @app.post('/projects/create/debug', include_in_schema=False)
     async def debug_create_project(request: Request) -> dict:

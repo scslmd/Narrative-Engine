@@ -263,5 +263,65 @@ class Settings:
                 pass
         return 10000
 
+    @property
+    def discovery_chunk_size(self) -> int:
+        raw = os.getenv("NARRATIVE_DISCOVERY_CHUNK_SIZE", "").strip()
+        if raw:
+            try:
+                return max(1000, int(raw))
+            except ValueError:
+                pass
+        return 8000
+
+    @property
+    def discovery_overlap(self) -> int:
+        raw = os.getenv("NARRATIVE_DISCOVERY_OVERLAP", "").strip()
+        if raw:
+            try:
+                return max(0, min(int(raw), self.discovery_chunk_size))
+            except ValueError:
+                pass
+        return 500
+
+    @property
+    def discovery_max_tokens(self) -> int:
+        raw = os.getenv("NARRATIVE_DISCOVERY_MAX_TOKENS", "").strip()
+        if raw:
+            try:
+                return max(256, int(raw))
+            except ValueError:
+                pass
+        return 12000
+
+    @property
+    def discovery_staging_ttl_hours(self) -> int:
+        raw = os.getenv("NARRATIVE_DISCOVERY_STAGING_TTL_HOURS", "").strip()
+        if raw:
+            try:
+                return max(1, int(raw))
+            except ValueError:
+                pass
+        return 24
+
+    @property
+    def discovery_confidence_threshold_medium(self) -> float:
+        raw = os.getenv("NARRATIVE_DISCOVERY_CONFIDENCE_THRESHOLD_MEDIUM", "").strip()
+        if raw:
+            try:
+                return float(raw)
+            except ValueError:
+                pass
+        return 0.4
+
+    @property
+    def discovery_confidence_threshold_high(self) -> float:
+        raw = os.getenv("NARRATIVE_DISCOVERY_CONFIDENCE_THRESHOLD_HIGH", "").strip()
+        if raw:
+            try:
+                return float(raw)
+            except ValueError:
+                pass
+        return 0.7
+
 
 settings = Settings()

@@ -2278,3 +2278,40 @@ def build_relationship_extraction_request(
         ],
         metadata={"phase": "relationship_extraction"},
     )
+
+
+def build_cascade_extraction_request(
+    manuscript_text: str,
+    existing_characters: list[str] | None = None,
+    max_tokens: int | None = None,
+) -> InferenceRequest:
+    effective_max = max_tokens or settings.discovery_max_tokens
+
+    system_prompt = """You are an expert literary analyst. Extract characters, relationships, and world bible entries from the provided manuscript text.
+
+Output a JSON object with three arrays: "characters", "relationships", "world_entries".
+
+For each character, include: display_name, aliases (array of strings), role_in_story, archetype, external_goal, internal_need, misbelief_or_wound, core_fear, primary_strength, fatal_flaw_or_limitation, backstory_summary, voice_notes, secrets (array), values (array), taboos (array), description. Leave fields as empty string or empty array if not mentioned in text.
+
+For each relationship, include: source_character_name, target_character_name, relation_kind (one of: family, friendship, rivalry, romance, mentorship, alliance, enmity, sibling, parent_child, spouse, colleague, enemy), summary, tension, directionality ("directed" or "bidirectional"), confidence (0-1 float). Only extract direct interactions with significant confidence.
+
+For each world entry, include: entry_type (one of: location, organization, magic_system, technology, creature, concept, object, custom), title, summary, canonical_facts (array), related_character_names (array), confidence (0-1 float).
+
+Self-rate confidence for each entity on a 0-1 scale based on how clearly it appears in the text."""
+
+    context_parts: list[str] = []
+    if existing_characters:
+        context_parts.append("## Existing Characters\n" + "\n".join("- " + c for c in existing_characters))
+    context_parts.append(f"## Manuscript Text\n\n{manuscript_text}")
+    user_prompt = "\n".join(context_parts)
+
+    return InferenceRequest(
+        model="default",
+        temperature=0.1,
+        max_tokens=effective_max,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_prompt),
+        ],
+        metadata={"phase": "cascade_extraction"},
+    )

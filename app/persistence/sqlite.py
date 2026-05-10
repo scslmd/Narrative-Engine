@@ -1037,6 +1037,22 @@ CREATE TABLE IF NOT EXISTS pattern_entries (
     updated_at TEXT NOT NULL,
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS discovery_staging (
+    stage_id TEXT NOT NULL,
+    project_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL CHECK(entity_type IN ('character', 'relationship', 'world_bible')),
+    entity_id TEXT NOT NULL,
+    entity_json TEXT NOT NULL,
+    confidence REAL DEFAULT 0.5 CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    source_excerpt TEXT,
+    source_chunk INTEGER DEFAULT 0,
+    approved INTEGER DEFAULT 0 CHECK(approved IN (-1, 0, 1)),
+    dedup_action TEXT DEFAULT 'new' CHECK(dedup_action IN ('new', 'exact_merge', 'fuzzy_merge', 'enrich')),
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (stage_id, entity_id),
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
 """
 
 
@@ -1135,6 +1151,9 @@ CREATE INDEX IF NOT EXISTS idx_canon_annotations_project_kind ON canon_annotatio
 CREATE INDEX IF NOT EXISTS idx_canon_profiles_project_status ON canon_customization_profiles(project_id, status, updated_at);
 CREATE INDEX IF NOT EXISTS idx_mythos_entries_project_type ON mythos_entries(project_id, entry_type, name);
 CREATE INDEX IF NOT EXISTS idx_pattern_entries_project_type ON pattern_entries(project_id, pattern_type, name);
+CREATE INDEX IF NOT EXISTS idx_discovery_staging_stage ON discovery_staging(stage_id);
+CREATE INDEX IF NOT EXISTS idx_discovery_staging_project ON discovery_staging(project_id);
+CREATE INDEX IF NOT EXISTS idx_discovery_staging_created ON discovery_staging(created_at);
 """
 
 

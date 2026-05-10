@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -29,6 +29,11 @@ import { useRelationships } from '../hooks/useRelationships';
 import api from '../lib/api';
 import { getWorldBibleEntries, createWorldBibleEntry, getWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
 import { createCanonAnnotation, getCanonAnnotations } from '../services/canonCustomization';
+import { useCascadeDiscovery } from '../hooks/useCascadeDiscovery';
+import { ScanDialog } from '../components/discovery/ScanDialog';
+import { ReviewDialog } from '../components/discovery/ReviewDialog';
+import type { CascadeScanRequest } from '../types/discovery';
+import { getJobStatus } from '../services/discovery';
 
 import type { CharacterProfile, RelationshipEdge, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
@@ -113,6 +118,8 @@ export function PlanningView() {
   const [showCreateRelationship, setShowCreateRelationship] = useState(false);
   const [editingRelationship, setEditingRelationship] = useState<RelationshipEdge | null>(null);
   const [extractError, setExtractError] = useState<string | null>(null);
+  const [showScanDialog, setShowScanDialog] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
   const isDark = resolveEffectiveMode(mode) === 'dark';
@@ -173,6 +180,8 @@ export function PlanningView() {
   });
 
   const relationshipHook = useRelationships(projectId || '');
+
+  const { scanMutation, stagingQuery, approvalMutation, applyMutation, currentStageId, setCurrentStageId } = useCascadeDiscovery();
 
   async function handleExtractRelationships() {
     setExtractError(null);
@@ -304,6 +313,55 @@ export function PlanningView() {
       setEditingRelationship(edge);
     }
   }, [relationships]);
+
+  const handleScanSubmit = useCallback(
+    (request: CascadeScanRequest) => {
+      scanMutation.mutate(request, {
+        onSuccess: (data) => {
+          setShowScanDialog(false);
+          setActiveJobId(data.job_id);
+        },
+      });
+    },
+    [scanMutation],
+  );
+
+  const handleToggleApproval = useCallback(
+    (entityId: string, approved: boolean) => {
+      if (!currentStageId) return;
+      approvalMutation.mutate({ stageId: currentStageId, updates: [{ entity_id: entityId, approved }] });
+    },
+    [currentStageId, approvalMutation],
+  );
+
+  const handleApply = useCallback(async () => {
+    if (!currentStageId) return { characters_added: 0, relationships_added: 0, world_bible_added: 0, characters_enriched: 0 };
+    return applyMutation.mutateAsync(currentStageId);
+  }, [currentStageId, applyMutation]);
+
+  const handleReviewClose = useCallback(() => {
+    setCurrentStageId(null);
+    setActiveJobId(null);
+  }, [setCurrentStageId]);
+
+  useEffect(() => {
+    if (!activeJobId) return;
+    const interval = setInterval(async () => {
+      try {
+        const status = await getJobStatus(activeJobId);
+        if (status.status === 'completed' && status.stage_id) {
+          setCurrentStageId(status.stage_id);
+          clearInterval(interval);
+        } else if (status.status === 'failed') {
+          setActiveJobId(null);
+          clearInterval(interval);
+        }
+      } catch {
+        // Ignore polling errors
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [activeJobId, setCurrentStageId]);
 
   if (!projectId) {
     return <div className="text-sm text-subtle">No project selected</div>;
@@ -596,6 +654,12 @@ export function PlanningView() {
                         <Plus className="w-3.5 h-3.5" />
                         Add Relationship
                       </button>
+                      <button
+                        onClick={() => setShowScanDialog(true)}
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                      >
+                        Scan Manuscript
+                      </button>
                     </div>
                 </div>
 
@@ -687,6 +751,32 @@ export function PlanningView() {
               </>
             )}
           </div>
+        )}
+
+        {showScanDialog && (
+          <ScanDialog projectId={projectId} onSubmit={handleScanSubmit} onClose={() => setShowScanDialog(false)} isLoading={scanMutation.isPending} />
+        )}
+
+        {activeJobId && !currentStageId && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
+              <p className="text-lg font-medium text-gray-900 dark:text-white">Scanning manuscript...</p>
+              <p className="text-sm text-gray-500 mt-2">This may take a moment depending on text length.</p>
+            </div>
+          </div>
+        )}
+
+        {currentStageId && stagingQuery.data && (
+          <ReviewDialog
+            stageId={currentStageId}
+            characters={stagingQuery.data.characters}
+            relationships={stagingQuery.data.relationships}
+            worldBible={stagingQuery.data.world_bible}
+            onToggleApproval={handleToggleApproval}
+            onApply={handleApply}
+            onClose={handleReviewClose}
+            applyLoading={applyMutation.isPending}
+          />
         )}
       </main>
     </div>
