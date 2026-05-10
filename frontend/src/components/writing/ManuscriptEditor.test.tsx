@@ -14,7 +14,7 @@ const baseDocument = {
 } as const;
 
 describe('ManuscriptEditor', () => {
-  it('disables selection actions when no range is selected', () => {
+  it('hides assist dropdown when no range is selected', () => {
     const onAssistRequest = vi.fn();
     render(
       <ManuscriptEditor
@@ -30,15 +30,17 @@ describe('ManuscriptEditor', () => {
         onContentChange={() => {}}
         onAssistRequest={onAssistRequest}
         selectedRange={null}
+        scrollTarget={null}
         isDark={false}
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Assist: Selection' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Fork Selection' })).toBeDisabled();
+    // Dropdown actions should not be visible
+    expect(screen.queryByText('Tighten & polish')).toBeNull();
+    expect(screen.queryAllByText('Rewrite')).toHaveLength(0);
   });
 
-  it('captures selection and enables assist actions with selected range', () => {
+  it('opens assist dropdown on click with selected range', () => {
     const onSelectionChange = vi.fn();
     const onAssistRequest = vi.fn();
     render(
@@ -62,6 +64,7 @@ describe('ManuscriptEditor', () => {
           anchor_before: '',
           anchor_after: ' world',
         }}
+        scrollTarget={null}
         isDark={false}
       />,
     );
@@ -70,13 +73,22 @@ describe('ManuscriptEditor', () => {
     fireEvent.select(textarea, { target: { selectionStart: 0, selectionEnd: 5, value: 'Hello world' } });
     expect(onSelectionChange).toHaveBeenCalledWith(0, 5, 'Hello world');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Assist: Selection' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Fork Selection' }));
+    // Find the Assist button (not "Assist: Review")
+    const buttons = screen.getAllByRole('button');
+    const assistButton = buttons.find((btn) => btn.textContent?.includes('Assist') && !btn.textContent?.includes('Review'))!;
+    expect(assistButton).not.toBeDisabled();
 
-    expect(onAssistRequest).toHaveBeenCalledWith(
-      'line_edit_selection',
-      'Tighten and polish this selected passage.',
-    );
+    // Click to open dropdown
+    fireEvent.click(assistButton);
+
+    // Actions should be visible after clicking
+    const tightenElements = screen.getAllByText('Tighten & polish');
+    expect(tightenElements.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Sensory detail').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Continue from here').length).toBeGreaterThanOrEqual(1);
+
+    // Click "Fork as draft" action
+    fireEvent.click(screen.getAllByText('Fork as draft')[0]);
     expect(onAssistRequest).toHaveBeenCalledWith(
       'fork_from_selection',
       'Fork a new variant from this selected passage.',

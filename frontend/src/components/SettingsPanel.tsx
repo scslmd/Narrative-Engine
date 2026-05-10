@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Settings, X, Trash2, Database, FileText, Scan, Loader2, Check, HardDrive, Key } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
-import { useSettingsStore, IconMode } from '../stores/settingsStore'
+import { useSettingsStore, IconMode, OutlineDetail } from '../stores/settingsStore'
 import { themeMeta } from '../theme/theme'
 import { useToast } from '../hooks/useToast'
 import { scanOrphans, cleanupOrphans, truncateAuditLog, compactDatabase } from '../services/maintenance'
@@ -476,7 +476,7 @@ function AuthKeysSection() {
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
   const { mode: themeMode, setMode: setThemeMode, toggleMode } = useThemeStore()
-  const { iconMode, showTooltips, setIconMode, setShowTooltips } = useSettingsStore()
+  const { iconMode, showTooltips, outlineDetail, setIconMode, setShowTooltips, setOutlineDetail } = useSettingsStore()
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center" onClick={onClose}>
@@ -571,6 +571,47 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                     )}
                   </div>
                   <span className="text-[var(--text-primary)]">{mode.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Outline Detail Toggle */}
+          <div>
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-2">
+              Manuscript Outline Detail
+            </label>
+            <div className="space-y-1.5">
+              {([
+                { value: 'headings' as OutlineDetail, label: 'Headings Only', desc: 'Show heading hierarchy from document content' },
+                { value: 'detailed' as OutlineDetail, label: 'Detailed', desc: 'Include paragraphs under each heading' },
+              ]).map((mode) => (
+                <button
+                  key={mode.value}
+                  onClick={() => setOutlineDetail(mode.value)}
+                  className={`
+                    w-full flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all
+                    ${outlineDetail === mode.value
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-subtle)]'
+                      : 'border-[var(--border-primary)] bg-transparent hover:bg-[var(--bg-secondary)]'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0
+                    ${outlineDetail === mode.value
+                      ? 'border-[var(--color-primary)]'
+                      : 'border-[var(--border-secondary)]'
+                    }
+                  `}>
+                    {outlineDetail === mode.value && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[var(--text-primary)]">{mode.label}</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">{mode.desc}</div>
+                  </div>
                 </button>
               ))}
             </div>

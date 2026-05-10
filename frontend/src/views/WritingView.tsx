@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FileText, BookOpen, Code } from 'lucide-react';
 import { AidsPanel } from '../components/aids/AidsPanel';
@@ -7,15 +8,50 @@ import { DraftForm } from '../components/writing/DraftForm';
 import { ManuscriptEditor } from '../components/writing/ManuscriptEditor';
 import { useWritingView } from '../hooks/useWritingView';
 import { useManuscriptAssist } from '../hooks/useManuscriptAssist';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useToastStore } from '../stores/toastStore';
 import { useThemeStore } from '../stores/themeStore';
 import { resolveEffectiveMode } from '../theme/theme';
+import type { ManuscriptAssistKind } from '../types/manuscriptAssist';
 import type { RevisionSuggestion } from '../types/aids';
+
+const ASSIST_LABELS: Record<ManuscriptAssistKind, string> = {
+  developmental_review: 'Developmental review',
+  canon_check: 'Canon check',
+  character_voice_check: 'Character voice check',
+  pacing_review: 'Pacing review',
+  theme_review: 'Theme review',
+  line_edit_selection: 'Line edit selection',
+  expand_sensory_sight: 'Expand: sight & color',
+  expand_sensory_sound: 'Expand: sound & rhythm',
+  expand_sensory_smell: 'Expand: smell & atmosphere',
+  expand_sensory_texture: 'Expand: touch & texture',
+  expand_sensory_taste: 'Expand: taste & flavor',
+  expand_metaphor: 'Expand: metaphor & simile',
+  expand_show_dont_tell: 'Expand: show don\'t tell',
+  compress_selection: 'Compress selection',
+  rewrite_selection_same_voice: 'Rewrite selection (same voice)',
+  alternate_selection: 'Alternate selection',
+  continue_from_selection: 'Continue from selection',
+  fork_from_selection: 'Fork from selection',
+  generate_next_chapter: 'Generate next chapter',
+  generate_alternate_chapter: 'Generate alternate chapter',
+  continuity_repair: 'Continuity repair',
+  ai_generate_draft: 'AI generate draft',
+};
 
 export function WritingView() {
   const { projectId, chapterId } = useParams<{ projectId: string; chapterId: string }>();
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
   const isDark = resolveEffectiveMode(mode) === 'dark';
+  const { outlineDetail } = useSettingsStore();
+
+  const [scrollTarget, setScrollTarget] = useState<{ documentId: string; lineIndex: number } | null>(null);
+
+  const handleOutlineNavigate = useCallback((documentId: string, lineIndex: number) => {
+    setScrollTarget({ documentId, lineIndex });
+  }, []);
 
   const {
     manuscriptDocuments,
@@ -59,6 +95,7 @@ export function WritingView() {
     handleGenerateDraft,
     generateDraftPending,
   } = useWritingView(isDark);
+  const addToast = useToastStore((state) => state.addToast);
   const assist = useManuscriptAssist({
     projectId,
     documentId: selectedDocument?.document_id ?? null,
@@ -92,6 +129,7 @@ export function WritingView() {
   }
 
   const hasChapter = !!chapterId;
+  const includeParagraphs = outlineDetail === 'detailed';
 
   return (
     <div className={`h-full grid gap-4 ${hasChapter ? 'grid-cols-1' : 'xl:grid-cols-[18rem_minmax(0,1fr)_20rem]'}`}>
@@ -110,11 +148,13 @@ export function WritingView() {
             documents={manuscriptDocuments}
             selectedDocumentId={selectedDocumentId}
             isLoading={manuscriptQueryLoading}
+            includeParagraphs={includeParagraphs}
             onSelect={(id) => {
               setSelectedDocumentId(id);
               setIsEditing(false);
               setEditContent('');
             }}
+            onNavigate={handleOutlineNavigate}
             isDark={isDark}
           />
         </div>
@@ -208,12 +248,16 @@ export function WritingView() {
             onSelectionChange={assist.setSelectionFromEditor}
             selectedRange={assist.selectedRange}
             onAssistRequest={(kind, instruction) => {
+              const label = ASSIST_LABELS[kind] ?? kind;
               if (kind === 'fork_from_selection') {
                 void assist.submitAssist(kind, instruction, { create_draft_artifact: true });
+                addToast(`${label} submitted`, 'info');
                 return;
               }
               void assist.submitAssist(kind, instruction);
+              addToast(`${label} submitted`, 'info');
             }}
+            scrollTarget={scrollTarget?.documentId === selectedDocument.document_id ? scrollTarget?.lineIndex : null}
             isDark={isDark}
           />
         ) : (

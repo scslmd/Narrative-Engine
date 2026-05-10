@@ -2,9 +2,12 @@ import { create } from 'zustand'
 
 export type IconMode = 'labels' | 'icons-large' | 'icons-small'
 
+export type OutlineDetail = 'headings' | 'detailed'
+
 export interface UserSettings {
   iconMode: IconMode
   showTooltips: boolean
+  outlineDetail: OutlineDetail
 }
 
 const STORAGE_KEY = 'narrative-engine:settings'
@@ -12,6 +15,7 @@ const STORAGE_KEY = 'narrative-engine:settings'
 const defaultSettings: UserSettings = {
   iconMode: 'labels',
   showTooltips: true,
+  outlineDetail: 'headings',
 }
 
 function loadSettings(): UserSettings {
@@ -36,6 +40,7 @@ function saveSettings(settings: UserSettings): void {
 interface SettingsState extends UserSettings {
   setIconMode: (mode: IconMode) => void
   setShowTooltips: (show: boolean) => void
+  setOutlineDetail: (detail: OutlineDetail) => void
   reset: () => void
 }
 
@@ -48,6 +53,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setShowTooltips: (showTooltips) => {
     const newSettings = { ...get(), showTooltips }
+    set(newSettings)
+    saveSettings(newSettings)
+  },
+  setOutlineDetail: (outlineDetail) => {
+    const newSettings = { ...get(), outlineDetail }
     set(newSettings)
     saveSettings(newSettings)
   },
