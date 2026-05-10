@@ -380,11 +380,119 @@ def build_g400_manuscript_assembly_request(
     )
 
 
+# Instruction templates per assist kind — specific focus areas and granularity guidance.
+_ASSIST_INSTRUCTIONS: dict[str, str] = {
+    "developmental_review": (
+        "Perform a developmental review focusing on pacing, character motivation, plot logic, "
+        "thematic consistency, and emotional beats. Identify specific passages that could be "
+        "improved and propose concrete rewrites as suggestions. For each suggestion, provide "
+        "the exact source_text to replace, the proposed_text replacement, and a rationale explaining "
+        "why the change improves the narrative."
+    ),
+    "canon_check": (
+        "Check the manuscript for canon consistency. Verify that character traits, world rules, "
+        "established facts, and prior events are consistent with the story's canon. Identify "
+        "contradictions and propose corrections. For each suggestion, provide the exact source_text, "
+        "proposed_text, and rationale."
+    ),
+    "character_voice_check": (
+        "Review character voice consistency. Check that dialogue, internal monologue, and narrative "
+        "perspective match each character's established voice, background, and personality. Identify "
+        "passages where voice feels inconsistent or generic and propose rewrites. For each suggestion, "
+        "provide source_text, proposed_text, and rationale."
+    ),
+    "pacing_review": (
+        "Review pacing and rhythm. Check for scenes that rush important moments or linger too long on "
+        "minor details. Identify transitions between scenes and suggest improvements to scene flow. "
+        "For each suggestion, provide source_text, proposed_text, and rationale."
+    ),
+    "theme_review": (
+        "Review thematic development. Check that themes are introduced, developed, and resonated through "
+        "the narrative without being heavy-handed or inconsistent. Identify passages where theme could be "
+        "strengthened or clarified. For each suggestion, provide source_text, proposed_text, and rationale."
+    ),
+    "line_edit_selection": (
+        "Tighten and polish the selected passage. Remove redundancy, improve flow, fix awkward phrasing, "
+        "and enhance clarity while preserving the original meaning and voice. Provide source_text, "
+        "proposed_text, and rationale for each change."
+    ),
+    "expand_sensory_sight": (
+        "Expand the selected passage with vivid visual detail. Focus on lighting, color, shapes, movement, "
+        "spatial relationships, and visual atmosphere. Provide source_text, proposed_text, and rationale."
+    ),
+    "expand_sensory_sound": (
+        "Expand the selected passage with auditory detail. Focus on ambient noise, tones, silence, rhythm, "
+        "cadence of speech, and soundscape. Provide source_text, proposed_text, and rationale."
+    ),
+    "expand_sensory_smell": (
+        "Expand the selected passage with olfactory detail. Focus on scents, odors, atmospheric qualities, "
+        "and how smell shapes mood and memory. Provide source_text, proposed_text, and rationale."
+    ),
+    "expand_sensory_texture": (
+        "Expand the selected passage with tactile detail. Focus on textures, temperature, weight, "
+        "physical sensations, and how touch grounds the scene. Provide source_text, proposed_text, and rationale."
+    ),
+    "expand_sensory_taste": (
+        "Expand the selected passage with gustatory detail. Focus on flavors, palate sensations, "
+        "and taste memories. Provide source_text, proposed_text, and rationale."
+    ),
+    "expand_metaphor": (
+        "Enrich the selected passage with figurative language. Add metaphors and similes that illuminate "
+        "meaning without overwriting or distracting from the narrative. Provide source_text, proposed_text, "
+        "and rationale."
+    ),
+    "expand_show_dont_tell": (
+        "Rewrite the selected passage using show-don't-tell technique. Replace abstract statements with "
+        "concrete actions, observations, behavior, and sensory detail. Provide source_text, proposed_text, "
+        "and rationale."
+    ),
+    "compress_selection": (
+        "Condense the selected passage to roughly half its length while preserving core meaning, tone, "
+        "and character voice. Remove filler and tighten prose. Provide source_text, proposed_text, and rationale."
+    ),
+    "rewrite_selection_same_voice": (
+        "Rewrite the selected passage with fresh phrasing while maintaining the same character voice and "
+        "narrative tone. Provide source_text, proposed_text, and rationale."
+    ),
+    "alternate_selection": (
+        "Produce an alternate version of the selected passage that conveys the same narrative beat but "
+        "approaches it from a different angle. Provide source_text, proposed_text, and rationale."
+    ),
+    "continue_from_selection": (
+        "Continue the narrative from the end of the selection. Maintain established character voice, tone, "
+        "and pacing. Provide source_text (the last sentence of the selection), proposed_text (the continuation), "
+        "and rationale."
+    ),
+    "fork_from_selection": (
+        "Fork a new variant from the selected passage that explores an alternate direction while maintaining "
+        "the same narrative foundation. Provide source_text, proposed_text, and rationale."
+    ),
+}
+
+# Default instruction for unknown kinds.
+_DEFAULT_INSTRUCTION = (
+    "Review the manuscript content and suggest specific improvements. For each suggestion, provide "
+    "the exact source_text to replace, the proposed_text replacement, and a rationale explaining "
+    "why the change improves the narrative."
+)
+
+
+def _resolve_instruction(assist_kind: str, explicit_instruction: str) -> str:
+    """Resolve the final instruction by combining kind-specific guidance with user-provided instruction."""
+    kind = assist_kind if isinstance(assist_kind, str) else str(assist_kind)
+    base = _ASSIST_INSTRUCTIONS.get(kind, _DEFAULT_INSTRUCTION)
+    if explicit_instruction and explicit_instruction.strip():
+        return f"{base} Instruction: {explicit_instruction.strip()}"
+    return base
+
+
 def build_m500_manuscript_assist_request(
     packet: ManuscriptAssistPacket,
     default_model: str | None,
 ) -> InferenceRequest:
     payload = packet.model_dump(mode="json")
+    instruction = _resolve_instruction(packet.assist_kind, payload.get("instruction", ""))
+
     return InferenceRequest(
         model=packet.model_id or default_model,
         temperature=packet.temperature if packet.temperature is not None else settings.inference_temperature("M-500"),
@@ -393,14 +501,29 @@ def build_m500_manuscript_assist_request(
             InferenceMessage(
                 role="system",
                 content=(
-                    "You are a manuscript assistant for narrative editing. "
-                    "Return strict JSON only: summary, suggestions[], created_branch_brief, warnings. "
-                    "No markdown code fences, no explanatory prose."
+                    "You are a manuscript assistant for narrative editing."
+                    "\n\nReturn strict JSON only with this exact structure:"
+                    "\n{"
+                    "  \"summary\": \"string — brief overview of the manuscript's current state\","
+                    "  \"suggestions\": ["
+                    "    {"
+                    "      \"source_text\": \"exact text from the manuscript to replace\","
+                    "      \"proposed_text\": \"the replacement text\","
+                    "      \"rationale\": \"why this change improves the narrative\""
+                    "    }"
+                    "  ],"
+                    "  \"warnings\": [\"string — high-level observations about pacing, continuity, etc.\"],"
+                    "  \"created_branch_brief\": \"optional brief for a forked branch\""
+                    "}"
+                    "\nNo markdown code fences, no explanatory prose outside the JSON."
                 ),
             ),
             InferenceMessage(
                 role="user",
-                content=json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True),
+                content=json.dumps({
+                    **payload,
+                    "instruction": instruction,
+                }, ensure_ascii=True, indent=2, sort_keys=True),
             ),
         ],
         metadata={

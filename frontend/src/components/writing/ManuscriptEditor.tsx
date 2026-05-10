@@ -101,7 +101,7 @@ const SENSORY_KINDS: Set<string> = new Set([
 function AssistDropdown({ selectedRange, isDark, onSelect }: AssistDropdownProps) {
   const hasSelection = !!(selectedRange && selectedRange.end_offset > selectedRange.start_offset);
   const [open, setOpen] = useState(false);
-  const [sensoryOpen, setSensoryOpen] = useState(false);
+  const [sensoryMenu, setSensoryMenu] = useState<{ x: number; y: number } | null>(null);
 
   const renderAction = useCallback((action: AssistAction) => (
     <button
@@ -114,6 +114,7 @@ function AssistDropdown({ selectedRange, isDark, onSelect }: AssistDropdownProps
       onClick={() => {
         onSelect(action.kind, action.instructionTemplate(selectedRange!));
         setOpen(false);
+        setSensoryMenu(null);
       }}
       title={action.description}
     >
@@ -144,7 +145,7 @@ function AssistDropdown({ selectedRange, isDark, onSelect }: AssistDropdownProps
       </button>
       {open && hasSelection && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setSensoryMenu(null); }} />
           <div
             className={`absolute right-0 z-50 mt-1 min-w-[260px] rounded-lg border p-2 shadow-lg ${
               isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'
@@ -167,16 +168,22 @@ function AssistDropdown({ selectedRange, isDark, onSelect }: AssistDropdownProps
                             ? 'text-slate-400 hover:bg-slate-700'
                             : 'text-slate-500 hover:bg-slate-50'
                         }`}
-                        onClick={() => setSensoryOpen((o) => !o)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setSensoryMenu({ x: e.clientX, y: e.clientY });
+                        }}
                       >
-                        {sensoryOpen
-                          ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-                          : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-                        }
+                        <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
                         <span>Sensory detail</span>
+                        <span className={`ml-auto text-[10px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>right-click</span>
                       </button>
-                      {sensoryOpen && (
-                        <div className="ml-4 mt-1 space-y-0.5">
+                      {sensoryMenu && (
+                        <div
+                          className={`fixed z-[60] min-w-[180px] rounded-lg border p-2 shadow-xl ${
+                            isDark ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-white'
+                          }`}
+                          style={{ left: sensoryMenu.x, top: sensoryMenu.y }}
+                        >
                           {sensoryActions.map(renderAction)}
                         </div>
                       )}
@@ -223,13 +230,14 @@ export function ManuscriptEditor({
   onContentChange,
   onSelectionChange,
   onAssistRequest,
-  selectedRange,
   scrollTarget,
   isDark,
 }: ManuscriptEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLElement>(null);
   const [toolbarPosition, setToolbarPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Persist selection across focus changes so toolbar clicks don't lose it
+  const [selectionState, setSelectionState] = useState<{ start: number; end: number } | null>(null);
 
   // Scroll to target line when outline item is clicked
   useEffect(() => {
@@ -255,6 +263,7 @@ export function ManuscriptEditor({
     const target = e.currentTarget;
     const start = target.selectionStart ?? 0;
     const end = target.selectionEnd ?? 0;
+    setSelectionState({ start, end });
     onSelectionChange?.(start, end, target.value);
 
     // Calculate toolbar position above the selection
@@ -340,7 +349,13 @@ export function ManuscriptEditor({
                   Assist: Review
                 </button>
                 <AssistDropdown
-                  selectedRange={selectedRange}
+                  selectedRange={selectionState ? {
+                    start_offset: selectionState.start,
+                    end_offset: selectionState.end,
+                    selected_text: editContent.slice(selectionState.start, selectionState.end),
+                    anchor_before: editContent.slice(Math.max(0, selectionState.start - 120), selectionState.start),
+                    anchor_after: editContent.slice(selectionState.end, selectionState.end + 120),
+                  } : null}
                   isDark={isDark}
                   onSelect={(kind, instruction) => onAssistRequest(kind, instruction)}
                 />
@@ -361,7 +376,7 @@ export function ManuscriptEditor({
               spellCheck
               placeholder="Start writing or paste your content here..."
             />
-            {onAssistRequest && selectedRange && selectedRange.end_offset > selectedRange.start_offset && (
+            {onAssistRequest && selectionState && selectionState.end > selectionState.start && (
               <SelectionToolbar
                 actions={ASSIST_ACTIONS}
                 visible
