@@ -12,7 +12,7 @@ import { resolveEffectiveMode } from '../theme/theme';
 import type { RevisionSuggestion } from '../types/aids';
 
 export function WritingView() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { projectId, chapterId } = useParams<{ projectId: string; chapterId: string }>();
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
   const isDark = resolveEffectiveMode(mode) === 'dark';
@@ -91,8 +91,11 @@ export function WritingView() {
     );
   }
 
+  const hasChapter = !!chapterId;
+
   return (
-    <div className="h-full grid grid-cols-1 xl:grid-cols-[18rem_minmax(0,1fr)_20rem] gap-4">
+    <div className={`h-full grid gap-4 ${hasChapter ? 'grid-cols-1' : 'xl:grid-cols-[18rem_minmax(0,1fr)_20rem]'}`}>
+      {hasChapter ? null : (
       <section
         aria-label="Manuscript and drafts panel"
         className={`min-h-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}
@@ -180,7 +183,7 @@ export function WritingView() {
             )}
           </div>
         </div>
-      </section>
+      </section>)}
 
       <section
         aria-label="Manuscript editor panel"
@@ -223,6 +226,7 @@ export function WritingView() {
         )}
       </section>
 
+      {hasChapter ? null : (
       <section aria-label="Revision suggestions panel" className="min-h-0">
         <AidsPanel
           projectId={projectId}
@@ -251,7 +255,7 @@ export function WritingView() {
             }
           }}
         />
-      </section>
+      </section>)}
     </div>
   );
 }

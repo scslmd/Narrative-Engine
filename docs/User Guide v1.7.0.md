@@ -1,6 +1,6 @@
 # Narrative Engine - User Guide v1.8.0
 
-Last updated: 2026-05-09
+Last updated: 2026-05-10
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
@@ -60,6 +60,14 @@ The workspace shell includes:
 - Right rail cards: Notes panel and Job Launch panel.
 - Bottom utility layer for operational status.
 
+### Job Launch Panel
+- Select pipeline phase (P-100 Architect, P-200 Sequencer, P-300 Drafter, P-400 Compiler).
+- Launch button submits a new job; disabled while another job is running.
+- Recent Jobs list shows up to 4 most recent jobs for the project.
+- Failed jobs show expandable error details with actionable fix guidance for inference errors (truncated responses, timeouts, transport failures, circuit breaker, invalid JSON/response shape, configuration errors).
+- Completed jobs show processing time and step name.
+- Processing jobs show current step, elapsed time, and progress counter.
+
 Mode navigation is stage-aware and may hide some modes depending on current stage:
 - Planning stage: Brain Dump, Planning, Canon, Generate
 - Writing stage: Writing
@@ -92,7 +100,23 @@ Top-level planning tabs:
 - Foundation: premise, logline, thematic spine, constraints, review cues.
 - Characters: character CRUD, profile editing, canon annotations.
 - World Bible: world entry CRUD, updates, canon annotations.
-- Relationships: graph + list views with delete actions.
+- Relationships: interactive graph + list views with create, edit, and delete actions. Double-click a character node to open its profile editor. Double-click a relationship edge or click the edit button to modify an existing relationship via centered modal dialog.
+
+### Relationship Map Interactions
+The Relationships tab provides an interactive graph visualization with full CRUD operations:
+
+**Creating relationships:** Click "Add Relationship" to open the creation form. Select From/To characters, relationship type (19 predefined kinds), summary, optional tension and notes fields.
+
+**Editing relationships:** Three ways to edit an existing relationship:
+- Double-click a relationship edge in the graph — opens a centered modal dialog pre-populated with current data.
+- Click the pencil icon on a relationship card in the list view below the graph.
+- Edit button appears on graph edges when hovering (blue pencil icon next to red delete X).
+
+The edit modal supports: changing relationship type, summary, tension, and notes. From/To characters are displayed as read-only. Save sends a PATCH request; Delete removes the relationship with confirmation.
+
+**Opening character profiles:** Double-click any character node in the graph to jump to the Characters tab with that character's profile editor open. This reuses the existing CharacterBuilder form — no separate character detail view is needed.
+
+**AI Relationship Extraction:** The "AI Extract" button analyzes your manuscript text via LLM and auto-creates relationship edges between characters based on detected interactions, shared themes, and narrative connections. Requires at least 2 characters and generated chapter content.
 
 Global action:
 - `Generate Story` button routes to generation workspace.
@@ -213,6 +237,9 @@ Capabilities:
 - Generation run stuck/failing: check inference backend health and model config.
 - Missing inspect data on deep link: verify job id exists in checker or jobs services.
 - No drafts/manuscripts visible: confirm selected project and completed upstream planning or generation steps.
+- Job fails with "Response truncated" (`INFERENCE_TRUNCATED`): the LLM ran out of token budget mid-response. Fix by adding `NARRATIVE_MAX_TOKENS_DEFAULT=8192` to your `.env` file, or set per-phase overrides (e.g., `NARRATIVE_MAX_TOKENS_DRAFTER=8000`, `NARRATIVE_MAX_TOKENS_ARCHITECT=4096`). Restart the server after changing `.env`. The Job Launch panel shows expandable error details with fix guidance for all inference errors.
+- Job fails with "Cannot reach LLM server" (`INFERENCE_TRANSPORT_FAILURE`): verify llama.cpp (or your configured backend) is running and that `NARRATIVE_INFERENCE_BASE_URL` in `.env` matches the server address.
+- Job fails with "LLM circuit breaker open": the backend has been failing repeatedly. Fix the underlying issue and wait for the circuit to reset, or restart the server.
 
 ## Glossary
 - Canon packet: selected canon payload passed to generation phases.

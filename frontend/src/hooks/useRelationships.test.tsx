@@ -5,11 +5,12 @@ import type { ReactNode } from 'react';
 import { useRelationships } from './useRelationships';
 
 vi.mock('../services/relationships', () => ({
+  createRelationship: vi.fn(),
   updateRelationship: vi.fn(),
   deleteRelationship: vi.fn(),
 }));
 
-const { updateRelationship: mockUpdate, deleteRelationship: mockDelete } = await import(
+const { createRelationship: mockCreate, updateRelationship: mockUpdate, deleteRelationship: mockDelete } = await import(
   '../services/relationships'
 );
 
@@ -26,6 +27,41 @@ const WithProviders = ({ children }: { children: ReactNode }) => (
 );
 
 describe('useRelationships', () => {
+  it('calls create service and invalidates relationships cache', async () => {
+    const mockEdge = {
+      edge_id: 'edge-1',
+      source_character_id: 'char-1',
+      target_character_id: 'char-2',
+      relation_kind: 'ALLY',
+      summary: 'Childhood friends',
+      tension: null,
+      notes: null,
+    };
+    (mockCreate as ReturnType<typeof vi.fn>).mockResolvedValue(mockEdge);
+
+    const { result } = renderHook(() => useRelationships('proj-1'), {
+      wrapper: WithProviders,
+    });
+
+    await act(async () => {
+      await result.current.createRelationship({
+        project_id: 'proj-1',
+        source_character_id: 'char-1',
+        target_character_id: 'char-2',
+        relation_kind: 'ALLY',
+        summary: 'Childhood friends',
+      });
+    });
+
+    expect(mockCreate).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      source_character_id: 'char-1',
+      target_character_id: 'char-2',
+      relation_kind: 'ALLY',
+      summary: 'Childhood friends',
+    });
+  });
+
   it('calls update service and invalidates relationships cache', async () => {
     const mockEdge = {
       edge_id: 'edge-1',

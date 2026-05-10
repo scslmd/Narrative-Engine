@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import {
   continueDraft,
   createAlternateVariant,
@@ -24,6 +24,22 @@ export interface DraftFormState {
   content: string;
 }
 
+interface DocumentState {
+  selectedDocumentId: string | null;
+  isEditing: boolean;
+  editContent: string;
+  draftForm: DraftFormState | null;
+  expandedDraft: string | null;
+}
+
+const initialState: DocumentState = {
+  selectedDocumentId: null,
+  isEditing: false,
+  editContent: '',
+  draftForm: null,
+  expandedDraft: null,
+};
+
 interface UseWritingDocumentControllerArgs {
   projectId?: string;
   chapterId?: string;
@@ -33,110 +49,98 @@ export function useWritingDocumentController({
   projectId,
   chapterId,
 }: UseWritingDocumentControllerArgs) {
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
-  const [draftForm, setDraftForm] = useState<DraftFormState | null>(null);
-  const [expandedDraft, setExpandedDraft] = useState<string | null>(null);
+  const [state, setState] = useState<DocumentState>(initialState);
   const queryClient = useQueryClient();
 
-  const manuscriptQuery = useQuery({
-    queryKey: ['manuscript-documents', projectId],
-    queryFn: () => getManuscriptDocuments(projectId!),
-    enabled: !!projectId,
-  });
+  const setSelectedDocumentId = useCallback((id: string | null) => setState(s => ({ ...s, selectedDocumentId: id })), []);
+  const setIsEditing = useCallback((editing: boolean) => setState(s => ({ ...s, isEditing: editing })), []);
+  const setEditContent = useCallback((content: string) => setState(s => ({ ...s, editContent: content })), []);
+  const setDraftForm = useCallback((form: DraftFormState | null) => setState(s => ({ ...s, draftForm: form })), []);
+  const setExpandedDraft = useCallback((id: string | null) => setState(s => ({ ...s, expandedDraft: id })), []);
 
-  const draftsQuery = useQuery({
-    queryKey: ['draft-artifacts', projectId],
-    queryFn: () => getDraftArtifacts(projectId!),
-    enabled: !!projectId,
-  });
+  const {
+    selectedDocumentId,
+    isEditing,
+    editContent,
+    draftForm,
+    expandedDraft,
+  } = state;
 
-  const suggestionsQuery = useQuery({
-    queryKey: ['revision-suggestions', projectId, selectedDocumentId ?? 'all'],
-    queryFn: () => getRevisionSuggestions(projectId!, selectedDocumentId ?? undefined),
-    enabled: !!projectId && !!selectedDocumentId,
+  const queries = useQueries({
+    queries: [
+      {
+        queryKey: ['manuscript-documents', projectId],
+        queryFn: () => getManuscriptDocuments(projectId!),
+        enabled: !!projectId,
+      },
+      {
+        queryKey: ['draft-artifacts', projectId],
+        queryFn: () => getDraftArtifacts(projectId!),
+        enabled: !!projectId,
+      },
+      {
+        queryKey: ['revision-suggestions', projectId, selectedDocumentId ?? 'all'],
+        queryFn: () => getRevisionSuggestions(projectId!, selectedDocumentId ?? undefined),
+        enabled: !!projectId && !!selectedDocumentId,
+      },
+    ],
   });
 
   const manuscriptDocuments = useMemo(
-    () => (manuscriptQuery.data as ManuscriptDocument[]) ?? [],
-    [manuscriptQuery.data],
+    () => (queries[0].data as ManuscriptDocument[]) ?? [],
+    [queries[0].data],
   );
-  const draftArtifacts = (draftsQuery.data as DraftArtifact[]) ?? [];
+  const draftArtifacts = (queries[1].data as DraftArtifact[]) ?? [];
   const revisionSuggestions = useMemo(
-    () => (suggestionsQuery.data as RevisionSuggestion[]) ?? [],
-    [suggestionsQuery.data],
+    () => (queries[2].data as RevisionSuggestion[]) ?? [],
+    [queries[2].data],
   );
   const openSuggestions = useMemo(
     () => revisionSuggestions.filter((s) => s.status === 'REQUESTED' || s.status === 'PENDING'),
     [revisionSuggestions],
   );
 
-  const createDraftMutation = useMutation({
-    mutationFn: (data: { title: string; content: string }) =>
-      createDraftArtifact({
-        artifact_id: `draft-${Date.now()}`,
-        project_id: projectId!,
-        title: data.title,
-        content: data.content,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
-      setDraftForm(null);
-      toast.success('Draft created');
-    },
-    onError: () => {
-      toast.error('Failed to create draft');
-    },
-  });
+  const mutations = useMemo(() => {
+    return {
+      createDraft: async (data: { title: string; content: string }) => {
+        await createDraftArtifact({
+          artifact_id: `draft-${Date.now()}`,
+          project_id: projectId!,
+          title: data.title,
+          content: data.content,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+        setDraftForm(null);
+        toast.success('Draft created');
+      },
+      promote: async (artifactId: string) => {
+        await promoteDraftToManuscript({
+          project_id: projectId!,
+          document_id: `doc-${Date.now()}`,
+          draft_artifact_id: artifactId,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-documents', projectId] });
+        setExpandedDraft(null);
+        toast.success('Draft promoted to manuscript');
+      },
+      continue: async (artifactId: string) => {
+        await continueDraft(artifactId, projectId!);
+        await queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+        toast.success('Draft continued');
+      },
+      alternate: async (artifactId: string) => {
+        await createAlternateVariant(artifactId, projectId!);
+        await queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
+        toast.success('Alternate variant created');
+      },
+    };
+  }, [projectId, queryClient, setDraftForm, setExpandedDraft]);
 
-  const promoteMutation = useMutation({
-    mutationFn: (artifactId: string) =>
-      promoteDraftToManuscript({
-        project_id: projectId!,
-        document_id: `doc-${Date.now()}`,
-        draft_artifact_id: artifactId,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['manuscript-documents', projectId] });
-      setExpandedDraft(null);
-      toast.success('Draft promoted to manuscript');
-    },
-    onError: () => {
-      toast.error('Failed to promote draft');
-    },
-  });
-
-  const continueMutation = useMutation({
-    mutationFn: (artifactId: string) => continueDraft(artifactId, projectId!),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
-      toast.success('Draft continued');
-    },
-    onError: (err) => {
-      if (err instanceof Error && err.message.includes('404')) {
-        toast.error('No prior content to continue from');
-      } else {
-        toast.error('Failed to continue draft');
-      }
-    },
-  });
-
-  const alternateMutation = useMutation({
-    mutationFn: (artifactId: string) => createAlternateVariant(artifactId, projectId!),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
-      toast.success('Alternate variant created');
-    },
-    onError: (err) => {
-      if (err instanceof Error && err.message.includes('404')) {
-        toast.error('No prior content to create variant from');
-      } else {
-        toast.error('Failed to create alternate variant');
-      }
-    },
-  });
+  const [createDraftPending, setCreateDraftPending] = useState(false);
+  const [promotePending, setPromotePending] = useState(false);
+  const [continuePending, setContinuePending] = useState(false);
+  const [alternatePending, setAlternatePending] = useState(false);
 
   useEffect(() => {
     if (manuscriptDocuments.length === 0) {
@@ -164,7 +168,7 @@ export function useWritingDocumentController({
     if (!selectedDocumentStillExists) {
       setSelectedDocumentId(manuscriptDocuments[0].document_id);
     }
-  }, [manuscriptDocuments, chapterId, selectedDocumentId]);
+  }, [manuscriptDocuments, chapterId, selectedDocumentId, setSelectedDocumentId]);
 
   const selectedDocument = manuscriptDocuments.find(
     (doc: ManuscriptDocument) => doc.document_id === selectedDocumentId,
@@ -180,12 +184,12 @@ export function useWritingDocumentController({
       setEditContent(selectedDocument.content);
       setIsEditing(true);
     }
-  }, [selectedDocument]);
+  }, [selectedDocument, setEditContent, setIsEditing]);
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
     setEditContent('');
-  }, []);
+  }, [setIsEditing, setEditContent]);
 
   const handleSave = useCallback(async () => {
     if (!selectedDocumentId || !projectId) return;
@@ -211,7 +215,7 @@ export function useWritingDocumentController({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save manuscript');
     }
-  }, [selectedDocumentId, projectId, editContent, queryClient]);
+  }, [selectedDocumentId, projectId, editContent, queryClient, setIsEditing, setEditContent]);
 
   const handleSuggestionAccept = useCallback(
     async (suggestionId: string) => {
@@ -240,7 +244,7 @@ export function useWritingDocumentController({
         toast.error('Failed to apply suggestion');
       }
     },
-    [selectedDocument, projectId, revisionSuggestions, queryClient, isEditing],
+    [selectedDocument, projectId, revisionSuggestions, queryClient, isEditing, setEditContent],
   );
 
   const handleSuggestionReject = useCallback(
@@ -287,19 +291,26 @@ export function useWritingDocumentController({
 
   const handleCreateDraft = useCallback(() => {
     setDraftForm({ title: '', content: '' });
-  }, []);
+  }, [setDraftForm]);
 
-  const handleSubmitDraft = useCallback(() => {
+  const handleSubmitDraft = useCallback(async () => {
     if (!draftForm || !draftForm.title.trim()) return;
-    createDraftMutation.mutate({
-      title: draftForm.title.trim(),
-      content: draftForm.content.trim() || 'Untitled draft',
-    });
-  }, [draftForm, createDraftMutation]);
+    setCreateDraftPending(true);
+    try {
+      await mutations.createDraft({
+        title: draftForm.title.trim(),
+        content: draftForm.content.trim() || 'Untitled draft',
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create draft');
+    } finally {
+      setCreateDraftPending(false);
+    }
+  }, [draftForm, mutations, setCreateDraftPending]);
 
   const handleCancelDraft = useCallback(() => {
     setDraftForm(null);
-  }, []);
+  }, [setDraftForm]);
 
   const handleToggleDraft = useCallback(
     (artifactId: string) => {
@@ -308,29 +319,49 @@ export function useWritingDocumentController({
       }
       setExpandedDraft(expandedDraft === artifactId ? null : artifactId);
     },
-    [expandedDraft, projectId],
+    [expandedDraft, projectId, setExpandedDraft],
   );
 
-  const promoteDraft = useCallback(
-    (artifactId: string) => {
-      promoteMutation.mutate(artifactId);
-    },
-    [promoteMutation],
-  );
+  const promoteDraft = useCallback(async (artifactId: string) => {
+    setPromotePending(true);
+    try {
+      await mutations.promote(artifactId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to promote draft');
+    } finally {
+      setPromotePending(false);
+    }
+  }, [mutations, setPromotePending]);
 
-  const continueDraftAction = useCallback(
-    (artifactId: string) => {
-      continueMutation.mutate(artifactId);
-    },
-    [continueMutation],
-  );
+  const continueDraftAction = useCallback(async (artifactId: string) => {
+    setContinuePending(true);
+    try {
+      await mutations.continue(artifactId);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('404')) {
+        toast.error('No prior content to continue from');
+      } else {
+        toast.error(err instanceof Error ? err.message : 'Failed to continue draft');
+      }
+    } finally {
+      setContinuePending(false);
+    }
+  }, [mutations, setContinuePending]);
 
-  const alternateVariantAction = useCallback(
-    (artifactId: string) => {
-      alternateMutation.mutate(artifactId);
-    },
-    [alternateMutation],
-  );
+  const alternateVariantAction = useCallback(async (artifactId: string) => {
+    setAlternatePending(true);
+    try {
+      await mutations.alternate(artifactId);
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('404')) {
+        toast.error('No prior content to create variant from');
+      } else {
+        toast.error(err instanceof Error ? err.message : 'Failed to create alternate variant');
+      }
+    } finally {
+      setAlternatePending(false);
+    }
+  }, [mutations, setAlternatePending]);
 
   return {
     selectedDocumentId,
@@ -348,8 +379,8 @@ export function useWritingDocumentController({
     revisionSuggestions,
     openSuggestions,
     selectedDocument,
-    manuscriptQueryLoading: manuscriptQuery.isLoading,
-    draftsQueryLoading: draftsQuery.isLoading,
+    manuscriptQueryLoading: queries[0].isLoading,
+    draftsQueryLoading: queries[1].isLoading,
     wordCount,
     charCount,
     handleEdit,
@@ -361,11 +392,11 @@ export function useWritingDocumentController({
     handleSubmitDraft,
     handleCancelDraft,
     handleToggleDraft,
-    createDraftPending: createDraftMutation.isPending,
-    promotePending: promoteMutation.isPending,
+    createDraftPending,
+    promotePending,
     promoteDraft,
-    continuePending: continueMutation.isPending,
-    alternatePending: alternateMutation.isPending,
+    continuePending,
+    alternatePending,
     continueDraftAction,
     alternateVariantAction,
   };

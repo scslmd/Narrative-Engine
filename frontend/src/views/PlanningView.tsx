@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  LayoutList, Map, GitBranch, Network, FileCheck,
-  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon
+  LayoutList, Map, GitBranch, Network, FileCheck, Plus,
+  Lightbulb, Anchor, User, Book, Sparkles, ChevronRight, Network as NetworkIcon, Wand2
 } from 'lucide-react';
 import { ManifestViewer } from '../components/ManifestViewer';
 import { RoleModelChecker } from '../components/checker';
@@ -14,6 +14,8 @@ import { FoundationEditor } from '../components/foundation/FoundationEditor';
 import { CharacterBuilder } from '../components/characters/CharacterBuilder';
 import { RelationshipMapGraph } from '../components/characters/RelationshipMapGraph';
 import { RelationshipList } from '../components/characters/RelationshipList';
+import { RelationshipForm } from '../components/characters/RelationshipForm';
+import { RelationshipEditModal } from '../components/characters/RelationshipEditModal';
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { PlanningTab } from '../components/planning/PlanningTab';
@@ -23,10 +25,12 @@ import { useBrainstorm } from '../hooks/useBrainstorm';
 import { createFoundation } from '../services/foundation';
 import { getCharacters, createCharacter, getCharacter, getCharacterRelationships, updateCharacter } from '../services/characters';
 import { getRelationships, deleteRelationship } from '../services/relationships';
+import { useRelationships } from '../hooks/useRelationships';
+import api from '../lib/api';
 import { getWorldBibleEntries, createWorldBibleEntry, getWorldBibleEntry, updateWorldBibleEntry } from '../services/worldBible';
 import { createCanonAnnotation, getCanonAnnotations } from '../services/canonCustomization';
 
-import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
+import type { CharacterProfile, RelationshipEdge, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
 
@@ -106,6 +110,9 @@ export function PlanningView() {
   const [activeTab, setActiveTab] = useState<PlanningTab>('manifest');
   const [characterEditorMode, setCharacterEditorMode] = useState<CharacterEditorMode>('list');
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+  const [showCreateRelationship, setShowCreateRelationship] = useState(false);
+  const [editingRelationship, setEditingRelationship] = useState<RelationshipEdge | null>(null);
+  const [extractError, setExtractError] = useState<string | null>(null);
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
   const isDark = resolveEffectiveMode(mode) === 'dark';
@@ -117,7 +124,7 @@ export function PlanningView() {
   const charactersQuery = useQuery({
     queryKey: ['planning', 'characters', projectId],
     queryFn: () => getCharacters(projectId || ''),
-    enabled: Boolean(projectId) && activeTab === 'characters',
+    enabled: Boolean(projectId) && (activeTab === 'characters' || activeTab === 'relationships'),
   });
 
   const worldBibleQuery = useQuery({
@@ -164,6 +171,29 @@ export function PlanningView() {
       void queryClient.invalidateQueries({ queryKey: ['planning', 'relationships', projectId] });
     },
   });
+
+  const relationshipHook = useRelationships(projectId || '');
+
+  async function handleExtractRelationships() {
+    setExtractError(null);
+    try {
+      // Fetch chapter content from the project
+      const response = await api.get(`/v1/projects/${projectId}/chapter-1`);
+      const chapterText = response.data?.content || '';
+
+      if (!chapterText.trim()) {
+        setExtractError('No manuscript content found. Generate or import a chapter first.');
+        return;
+      }
+
+      await relationshipHook.extractRelationships({
+        manuscript_text: chapterText,
+        character_ids: characters.map((c) => c.character_id),
+      });
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : 'Failed to extract relationships');
+    }
+  }
 
   const foundationSaveMutation = useMutation({
     mutationFn: (data: Partial<FoundationProfile>) => {
@@ -260,7 +290,20 @@ export function PlanningView() {
     return map;
   }, [characters]);
 
-  const relationships = relationshipsQuery.data ?? [];
+  const relationships = useMemo(() => relationshipsQuery.data ?? [], [relationshipsQuery.data]);
+
+  const handleOpenCharacter = useCallback((characterId: string) => {
+    setSelectedCharacterId(characterId);
+    setCharacterEditorMode('edit');
+    setActiveTab('characters');
+  }, []);
+
+  const handleEditRelationship = useCallback((edgeId: string) => {
+    const edge = relationships.find((r) => r.edge_id === edgeId);
+    if (edge) {
+      setEditingRelationship(edge);
+    }
+  }, [relationships]);
 
   if (!projectId) {
     return <div className="text-sm text-subtle">No project selected</div>;
@@ -506,16 +549,61 @@ export function PlanningView() {
               <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." />
             ) : relationshipsQuery.error ? (
               <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" />
+            ) : showCreateRelationship ? (
+              <div className="flex flex-col h-full">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
+                  <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                    New Relationship
+                  </h2>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  <RelationshipForm
+                    characters={characters}
+                    isSubmitting={relationshipHook.isCreating}
+                    isDark={isDark}
+                    onSubmit={async (data) => {
+                      await relationshipHook.createRelationship(data);
+                      setShowCreateRelationship(false);
+                    }}
+                    onCancel={() => setShowCreateRelationship(false)}
+                  />
+                </div>
+              </div>
             ) : (
               <div className="flex flex-col h-full">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
                   <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                     Relationship Map
                   </h2>
-                  <span className="text-xs text-subtle">
-                    {relationships.length} relationships
-                  </span>
+                 <div className="flex items-center gap-2">
+                      <span className="text-xs text-subtle">
+                        {relationships.length} relationships
+                      </span>
+                      <button
+                        onClick={handleExtractRelationships}
+                        disabled={relationshipHook.isExtracting || characters.length < 2}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Wand2 className="w-3.5 h-3.5" />
+                        {relationshipHook.isExtracting ? 'Analyzing...' : 'AI Extract'}
+                      </button>
+                      <button
+                        onClick={() => setShowCreateRelationship(true)}
+                        disabled={characters.length < 2}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Relationship
+                      </button>
+                    </div>
                 </div>
+
+                {extractError && (
+                  <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+                    <p className="text-xs text-red-700 dark:text-red-400">{extractError}</p>
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto p-4">
                   <RelationshipMapGraph
@@ -524,6 +612,8 @@ export function PlanningView() {
                     onDeleteRelationship={(edgeId) => {
                       void relationshipDeleteMutation.mutate(edgeId);
                     }}
+                    onOpenCharacter={handleOpenCharacter}
+                    onEditRelationship={handleEditRelationship}
                     className="h-[350px]"
                   />
                 </div>
@@ -535,9 +625,28 @@ export function PlanningView() {
                     onDeleteRelationship={(edgeId) => {
                       void relationshipDeleteMutation.mutate(edgeId);
                     }}
+                    onUpdateRelationship={handleEditRelationship}
                     className="h-[250px]"
                   />
                 </div>
+
+                {editingRelationship && (
+                  <RelationshipEditModal
+                    relationship={editingRelationship}
+                    characters={characters}
+                    isSaving={relationshipHook.isUpdating}
+                    isDeleting={relationshipHook.isDeleting}
+                    isOpen={!!editingRelationship}
+                    onClose={() => setEditingRelationship(null)}
+                    onSave={async (edgeId, data) => {
+                      await relationshipHook.updateRelationship(edgeId, data);
+                    }}
+                    onDelete={async (edgeId) => {
+                      await relationshipHook.deleteRelationship(edgeId);
+                    }}
+                    isDark={isDark}
+                  />
+                )}
               </div>
             )}
           </div>

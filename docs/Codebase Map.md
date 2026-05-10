@@ -242,6 +242,10 @@ InferenceBackend (ABC)
 
 Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INFERENCE_BACKEND`.
 
+**Per-phase token budget:** Prompt builders resolve `max_tokens` via `settings.inference_max_tokens(phase)`. Checks per-phase env var first (`NARRATIVE_MAX_TOKENS_ARCHITECT`, etc.), falls back to `NARRATIVE_MAX_TOKENS_DEFAULT` (4096). Phase defaults: P-100=4096, P-200=4096, P-300=8000, P-400=4096, G-200=4096, G-300=8000, GUIDED_SETUP=8192.
+
+**Runtime error categories:** `InferenceBackendError` subclasses map to 9 categories: `truncated_response`, `timeout`, `transport_failure`, `circuit_breaker_open`, `invalid_json_response`, `invalid_response_shape`, `runtime_configuration_error`. Errors propagate to job status as `FAILED` with `error` field set. The frontend Job Launch panel renders expandable error details with actionable fix guidance for each category.
+
 ### Database Architecture
 
 **Two SQLite databases:**

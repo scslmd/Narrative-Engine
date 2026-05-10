@@ -43,13 +43,13 @@ def build_p100_architect_request(
                     "You are the Architect role for Narrative-Engine. "
                     "Produce the P-100 story architecture foundation as deterministic markdown.\n\n"
                     "Use these EXACT headings in this EXACT order (no extra headings, no preamble):\n"
-                    "## Logline — One sentence, 20-40 words\n"
-                    "## Core Premise — 2-4 sentences describing the story's engine\n"
-                    "## Story Engine — What drives the plot forward (conflict mechanism)\n"
-                    "## World Anchors — 3-5 immutable world facts the story cannot contradict\n"
-                    "## Character Arcs — Per character: starting state to ending state\n"
-                    "## Constraints — Rules the story must obey (tone, POV, themes)\n"
-                    "## Open Questions — Unresolved questions to guide subsequent chapters\n\n"
+                    "## Logline ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â One sentence, 20-40 words\n"
+                    "## Core Premise ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â 2-4 sentences describing the story's engine\n"
+                    "## Story Engine ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â What drives the plot forward (conflict mechanism)\n"
+                    "## World Anchors ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â 3-5 immutable world facts the story cannot contradict\n"
+                    "## Character Arcs ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Per character: starting state to ending state\n"
+                    "## Constraints ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Rules the story must obey (tone, POV, themes)\n"
+                    "## Open Questions ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Unresolved questions to guide subsequent chapters\n\n"
                     "Return ONLY markdown with these headings. No code fences. No introduction text."
                 ),
             ),
@@ -491,7 +491,7 @@ def build_m500_draft_generation_request(
         '  "summary": "<1-2 sentence summary of what was written>",\n'
         '  "warnings": ["<any continuity or quality concerns>"]\n'
         "}\n\n"
-        "Write engaging, complete prose. Do not outline or summarize — write the actual draft.\n"
+        "Write engaging, complete prose. Do not outline or summarize ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â write the actual draft.\n"
         "Use markdown formatting for dialogue and scene breaks."
     )
 
@@ -539,7 +539,7 @@ def build_import_analysis_request(
     system_prompt = (
         "You are a story analysis AI for Narrative-Engine. You analyze completed stories "
         "and extract high-level structured metadata.\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys. The keys below are the ONLY valid JSON keys.\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys. The keys below are the ONLY valid JSON keys.\n\n"
         '{\n'
         '  "project_name": "<string>",\n'
         '  "genre": "<string>",\n'
@@ -635,10 +635,10 @@ def build_import_analysis_request(
         "- role: exactly one of protagonist, antagonist, mentor, deuteragonist, foil, supporting, minor\n\n"
         'JSON OUTPUT FORMAT:\n'
         '- Return ONLY the raw JSON object. No markdown code fences. No explanation text.\n'
-        '- Use "null" for fields you cannot determine, not empty strings (except for strings that must have content — use "" only when a string is expected but empty).\n'
+        '- Use "null" for fields you cannot determine, not empty strings (except for strings that must have content ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â use "" only when a string is expected but empty).\n'
         '- Every array field must be [] when empty, never omitted.\n'
-        '- Do not use "description" anywhere — use "summary" for world_bible entries and "description" is not a valid key.\n'
-        '- Do not use "name" for sequences — use "title" instead.\n'
+        '- Do not use "description" anywhere ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â use "summary" for world_bible entries and "description" is not a valid key.\n'
+        '- Do not use "name" for sequences ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â use "title" instead.\n'
         '- sequence confidence_score must be between 0.0 and 1.0.\n'
         '- sequence provenance_note should briefly say why you are confident, e.g. "single-pass high-level inference from opening chapters".\n\n'
         "CHARACTER EXTRACTION RULES:\n"
@@ -696,7 +696,7 @@ def build_planning_consolidation_request(
         "1. sequence groupings that cover the full analyzed story without gaps or duplicates\n"
         "2. chapter planning summaries with objective, conflict, stakes, continuity requirements, and unresolved questions\n"
         "3. trust metadata for every synthesized planning artifact\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         "{\n"
         '  "sequences": [\n'
         "    {\n"
@@ -1150,11 +1150,11 @@ def build_narrative_analysis_request(
 
     system_prompt = (
         "You are a narrative analysis AI for Narrative-Engine. You analyze narrative texts "
-        "and extract storytelling DNA — archetypal patterns, narrative structure, voice profile, "
+        "and extract storytelling DNA ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â archetypal patterns, narrative structure, voice profile, "
         "thematic constraints, world rules, and symbolic motifs.\n\n"
         f"{corpus_hint}\n\n"
         f"Generation mode: {generation_mode}\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         '{\n'
         '  "source_type": "narrative",\n'
         '  "source_corpus": "<string - identified tradition or author>",\n'
@@ -1234,7 +1234,7 @@ def build_narrative_analysis_request(
         '  ]\n'
         '}\n\n'
         "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
-        "Extract the storytelling DNA — how stories are told in this tradition, "
+        "Extract the storytelling DNA ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â how stories are told in this tradition, "
         "what narrative rules govern them, what archetypal journeys characters undertake.\n\n"
         'JSON STRUCTURE RULES:\n'
         '- All arrays must be JSON arrays [], not strings.\n'
@@ -1293,7 +1293,7 @@ def build_mythos_analysis_request(
         "and extract archetypal patterns, narrative structures, cosmic rules, and symbolic motifs.\n\n"
         f"{corpus_hint}\n\n"
         f"Generation mode: {generation_mode}\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         '{\n'
         '  "source_corpus": "<string - identified tradition, e.g., Greek Mythology>",\n'
         '  "generation_mode": "<same_world | transposed | pure_pattern>",\n'
@@ -1350,7 +1350,7 @@ def build_mythos_analysis_request(
         '  ]\n'
         '}\n\n'
         "Focus on PATTERNS and STRUCTURES, not just cataloging entities. "
-        "Extract the storytelling DNA — how stories are told in this tradition, "
+        "Extract the storytelling DNA ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â how stories are told in this tradition, "
         "what narrative rules govern them, what archetypal journeys characters undertake.\n\n"
         'JSON STRUCTURE RULES:\n'
         '- All arrays must be JSON arrays [], not strings.\n'
@@ -1411,7 +1411,7 @@ def build_draft_brief_request(
         "5. **Forbidden contradictions**: Things that must NOT happen (based on established continuity)\n"
         "6. **Voice guidance**: Tone, POV, and stylistic direction\n\n"
         "This is a WRITER-FACING BRIEF, not an analysis summary. It should be actionable and specific.\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         "{\n"
         '  "objective": "<string>",\n'
         '  "emotional_turn": "<string>",\n'
@@ -1432,7 +1432,7 @@ def build_draft_brief_request(
     )
 
     user_parts: list[str] = []
-    user_parts.append(f"Chapter: {chapter_id} — {chapter_title}")
+    user_parts.append(f"Chapter: {chapter_id} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â {chapter_title}")
     if chapter_summary.strip():
         user_parts.append(f"Summary: {chapter_summary}")
     user_parts.append("")
@@ -1488,7 +1488,7 @@ def build_continuity_analysis_request(
         "2. State snapshots at each chapter boundary (what's true about characters/world/questions after each chapter)\n"
         "3. Overall contradictions or unresolved questions across the story\n\n"
         "You must NOT invent new chapter IDs or rewrite chapter order. Work only with what is provided.\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         "{\n"
         '  "threads": [\n'
         "    {\n"
@@ -1590,7 +1590,7 @@ def build_structure_detection_request(
         "3. Section types: prologue, chapter, part, epilogue, appendix\n"
         "4. Character names, locations, POV hints from chapter titles/headers\n"
         "5. Estimated word count per section\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         '{\n'
         '  "project_name": "<string>",\n'
         '  "total_estimated_words": <int>,\n'
@@ -1680,7 +1680,7 @@ def build_chunk_analysis_request(
         "- Summarize key events\n"
         "- Note significance: inciting_incident, turning_point, climax, resolution, development\n"
         "- Track unresolved threads opened but not resolved\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         '{\n'
         '  "chapter_id": "<string>",\n'
         '  "chapter_title": "<string>",\n'
@@ -1727,7 +1727,7 @@ def build_chunk_analysis_request(
         "- All arrays must be JSON arrays [], not strings.\n"
         "- Do not include trailing commas.\n"
         '- Role must be one of: protagonist, antagonist, mentor, deuteragonist, foil, supporting, minor.\n'
-        "- If a character was already known (from prior chapters), update their info — don't mark as first introduction.\n"
+        "- If a character was already known (from prior chapters), update their info ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â don't mark as first introduction.\n"
         "- Dialogue samples should be short (1-2 sentences max each), showing distinctive speech patterns.\n"
     )
 
@@ -1797,24 +1797,24 @@ def build_character_consolidation_request(
         "For each character, produce a deep analysis covering:\n\n"
         "1. CHARACTER ARC: How they developed from introduction through the story.\n"
         "   Track their growth, regression, or stasis. What changed and what didn't?\n\n"
-        "2. RELATIONSHIPS: Map their key relationships — alliances, conflicts, mentorships, romances.\n"
+        "2. RELATIONSHIPS: Map their key relationships ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â alliances, conflicts, mentorships, romances.\n"
         "   Note how relationships evolved over the course of the story.\n\n"
-        "3. PSYCHOLOGICAL DEPTH: Their inner life — motivations, fears, desires, contradictions.\n"
+        "3. PSYCHOLOGICAL DEPTH: Their inner life ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â motivations, fears, desires, contradictions.\n"
         "   What drives them beneath the surface? What are their blind spots?\n\n"
         "4. SYMBOLIC/THEMATIC ROLE: What they represent in the story's larger themes.\n"
         "   Are they a symbol of something? Do they embody a theme or idea?\n\n"
         "5. NARRATIVE PURPOSE: What function they serve in the story structure.\n"
         "   Catalyst, foil, mirror, harbinger, etc.\n\n"
-        "6. DIALOGUE PATTERNS: Their distinctive speech style — vocabulary, rhythm, catchphrases.\n\n"
+        "6. DIALOGUE PATTERNS: Their distinctive speech style ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â vocabulary, rhythm, catchphrases.\n\n"
         "7. IMPACT ON OTHERS: How other characters react to them. What effect do they have?\n\n"
-        "8. MOTIVES: The reasons behind their actions — stated and unstated.\n\n"
+        "8. MOTIVES: The reasons behind their actions ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â stated and unstated.\n\n"
         "MERGE RULES:\n"
         "- Characters with aliases (e.g., 'Kvothe', 'Kote', 'The Crimson Fair') are the SAME person.\n"
         "  Merge all data under the primary name, list aliases in the aliases array.\n"
         "- Physical descriptions should be merged into one coherent description.\n"
         "- Personality traits should be deduplicated and consolidated.\n"
         "- Character arc should trace development across ALL chapters they appear in.\n\n"
-        "OUTPUT — Return a JSON array of character profiles. Each profile has EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON array of character profiles. Each profile has EXACTLY these keys:\n\n"
         '{\n'
         '  "name": "<string, primary name>",\n'
         '  "aliases": [],\n'
@@ -1894,7 +1894,7 @@ def build_world_bible_consolidation_request(
         "- Descriptions should be combined into one coherent entry.\n"
         "- Canonical facts should be deduplicated.\n"
         "- Entry types: location, organization, magic_system, technology, custom, creature, concept, other\n\n"
-        "OUTPUT — Return a JSON array of world bible entries. Each has EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON array of world bible entries. Each has EXACTLY these keys:\n\n"
         '{\n'
         '  "entry_type": "<string>",\n'
         '  "title": "<string>",\n'
@@ -1959,7 +1959,7 @@ def build_arc_detection_request(
         "- crisis: The lowest point, greatest uncertainty\n"
         "- climax: The decisive confrontation\n"
         "- resolution: How things settle after the climax\n\n"
-        "OUTPUT — Return a JSON object with EXACTLY these keys:\n\n"
+        "OUTPUT ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Return a JSON object with EXACTLY these keys:\n\n"
         '{\n'
         '  "premise": "<string>",\n'
         '  "logline": "<string>",\n'
@@ -2219,9 +2219,62 @@ Return ONLY a JSON object with these exact keys:
 - Do not set ready_to_create until the user has confirmed the story structure.
 - Set ready_to_create to true only when:
   - the 5 core categories (config/foundation/characters/world_bible/arcs) are each >= 0.7
-  - and sequences/chapters are present and user-confirmed.
-- Progress should be the average of all category completeness values, multiplied by 100.
-- Confidence reflects how sure you are about the extracted values (0.0 to 1.0).
-- No markdown code fences. Return raw JSON only.
-- Do NOT use thinking tags, reasoning blocks, or chain-of-thought. Output JSON directly.\
 """
+
+
+def build_relationship_extraction_request(
+    *,
+    manuscript_text: str,
+    character_ids: list[str],
+    default_model: str | None,
+) -> InferenceRequest:
+    """Build inference request for extracting character relationships from manuscript text."""
+    char_list = json.dumps(character_ids, ensure_ascii=True)
+
+    system_prompt = (
+        "You are a character relationship analyst for Narrative-Engine. "
+        "Your job is to extract character relationships from manuscript text.\n\n"
+        "Analyze the text to identify:\n"
+        "1. Direct interactions between characters (dialogue, shared scenes)\n"
+        "2. Implied relationships (references, memories, emotional connections)\n"
+        "3. Relationship dynamics (power, affection, conflict, rivalry)\n\n"
+        "For each relationship found, determine:\n"
+        "- relation_kind: The type of relationship\n"
+        "- summary: Brief description of the relationship (1-2 sentences)\n"
+        "- tension: Any conflict or strain in the relationship (optional)\n\n"
+        "OUTPUT - Return a JSON array with EXACTLY these keys per relationship:\n\n"
+        '[\n'
+        '  {\n'
+        '    "source_character_id": "<character_id>",\n'
+        '    "target_character_id": "<character_id>",\n'
+        '    "relation_kind": "<string>",\n'
+        '    "summary": "<string>",\n'
+        '    "tension": "<string or null>"\n'
+        "  }\n"
+        "]\n\n"
+        "RULES:\n"
+        "- Only include relationships between the provided character IDs.\n"
+        "- Use the exact character_id values provided - do not invent new IDs.\n"
+        "- relation_kind must be one of: family, friendship, rivalry, romance, mentorship, alliance, enmity, sibling, parent_child, spouse, colleague, enemy\n"
+        "- summary must be 1-2 sentences describing the relationship.\n"
+        "- tension is optional; include only if there is clear conflict or strain.\n"
+        "- Do not include duplicate pairs (A->B and B->A are the same relationship).\n"
+        "- No markdown code fences. Return raw JSON array only.\n"
+        "- Do NOT use thinking tags, reasoning blocks, or chain-of-thought. Output JSON directly.\n"
+    )
+
+    user_content = (
+        f"Available character IDs:\n{char_list}\n\n"
+        f"Manuscript text:\n{manuscript_text}"
+    )
+
+    return InferenceRequest(
+        model=default_model,
+        temperature=0.1,
+        max_tokens=8000,
+        messages=[
+            InferenceMessage(role="system", content=system_prompt),
+            InferenceMessage(role="user", content=user_content),
+        ],
+        metadata={"phase": "relationship_extraction"},
+    )

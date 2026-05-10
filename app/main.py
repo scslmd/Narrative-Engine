@@ -451,7 +451,7 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(build_projects_router(project_service, prefix="/v1/projects", import_service=import_service, mythos_service=mythos_service, pattern_service=pattern_service, import_job_manager=import_job_manager, extraction_job_manager=extraction_job_manager, maintenance_service=maintenance_service))
     app.include_router(build_jobs_router(job_manager, prefix='/v1/jobs'))
     app.include_router(build_models_router(model_registry))
-    app.include_router(build_story_development_router(story_development_repository, prefix='/v1/story-development'))
+    app.include_router(build_story_development_router(story_development_repository, prefix='/v1/story-development', inferencer=inferencer))
     app.include_router(build_story_generation_router(story_development_repository, project_service, job_manager))
     app.include_router(build_manuscript_assist_router(story_development_repository, job_manager))
     app.include_router(build_canon_customization_router(story_development_repository))

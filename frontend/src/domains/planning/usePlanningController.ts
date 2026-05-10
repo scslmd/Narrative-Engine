@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { ApiError } from '../../lib/api';
 import {
@@ -284,35 +284,41 @@ export function usePlanningController(tab: string): {
     chapterPacketsQuery,
   } = planningQueries;
 
-  const storyboardCardsQuery = useQuery({
-    queryKey: ['planning-storyboard-cards', projectId],
-    queryFn: () => getStoryboardCards(projectId || ''),
-    enabled: Boolean(projectId) && tab === 'planning',
+  const arcQueries = useQueries({
+    queries: [
+      {
+        queryKey: ['planning-storyboard-cards', projectId],
+        queryFn: () => getStoryboardCards(projectId || ''),
+        enabled: Boolean(projectId) && tab === 'planning',
+      },
+      {
+        queryKey: ['arc-candidates', projectId],
+        queryFn: () => getArcCandidates(projectId || ''),
+        enabled: Boolean(projectId) && tab === 'arcs',
+      },
+      {
+        queryKey: ['arc-selections', projectId],
+        queryFn: () => getArcSelections(projectId || ''),
+        enabled: Boolean(projectId) && tab === 'arcs',
+      },
+      {
+        queryKey: ['arc-stage-maps', projectId],
+        queryFn: () => getArcStageMaps(projectId || ''),
+        enabled: Boolean(projectId) && tab === 'arcs',
+      },
+      {
+        queryKey: ['arc-comparisons', projectId],
+        queryFn: () => getArcComparisons(projectId || ''),
+        enabled: Boolean(projectId) && tab === 'arcs',
+      },
+    ],
   });
 
-  const arcCandidatesQuery = useQuery({
-    queryKey: ['arc-candidates', projectId],
-    queryFn: () => getArcCandidates(projectId || ''),
-    enabled: Boolean(projectId) && tab === 'arcs',
-  });
-
-  const arcSelectionsQuery = useQuery({
-    queryKey: ['arc-selections', projectId],
-    queryFn: () => getArcSelections(projectId || ''),
-    enabled: Boolean(projectId) && tab === 'arcs',
-  });
-
-  const arcStageMapsQuery = useQuery({
-    queryKey: ['arc-stage-maps', projectId],
-    queryFn: () => getArcStageMaps(projectId || ''),
-    enabled: Boolean(projectId) && tab === 'arcs',
-  });
-
-  const arcComparisonsQuery = useQuery({
-    queryKey: ['arc-comparisons', projectId],
-    queryFn: () => getArcComparisons(projectId || ''),
-    enabled: Boolean(projectId) && tab === 'arcs',
-  });
+  const storyboardCardsQuery = arcQueries[0];
+  const arcCandidatesQuery = arcQueries[1];
+  const arcSelectionsQuery = arcQueries[2];
+  const arcStageMapsQuery = arcQueries[3];
+  const arcComparisonsQuery = arcQueries[4];
 
   const {
     sequencePlanCreateMutation,
@@ -329,170 +335,261 @@ export function usePlanningController(tab: string): {
     sceneReorderMutation,
   } = planningMutations;
 
-  const storyboardCardCreateMutation = useMutation({
-    mutationFn: (data: Parameters<typeof createStoryboardCard>[1]) =>
-      createStoryboardCard(projectId || '', data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
-    },
-  });
+  const mutations = useMemo(() => {
+    const invalidate = (key: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey: key });
+    const cardsKey = ['planning-storyboard-cards', projectId];
+    const arcSelKey = ['arcs', 'selections', projectId ?? ''];
+    const arcCandKey = ['arcs', 'candidates', projectId ?? ''];
+    const arcStageMapsKey = ['arc-stage-maps', projectId];
+    const arcSelectionsKey = ['arc-selections', projectId];
 
-  const storyboardCardUpdateMutation = useMutation({
-    mutationFn: (data: { cardId: string; payload: Parameters<typeof updateStoryboardCard>[1] }) =>
-      updateStoryboardCard(data.cardId, data.payload, projectId || undefined),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
-    },
-  });
+    return {
+      storyboardCardCreateMutation: { mutateAsync: (data: Parameters<typeof createStoryboardCard>[1]) => createStoryboardCard(projectId || '', data).then(() => invalidate(cardsKey)) },
+      storyboardCardUpdateMutation: { mutateAsync: (data: { cardId: string; payload: Parameters<typeof updateStoryboardCard>[1] }) => updateStoryboardCard(data.cardId, data.payload, projectId || undefined).then(() => invalidate(cardsKey)) },
+      storyboardCardDeleteMutation: { mutateAsync: (cardId: string) => deleteStoryboardCard(cardId, projectId || undefined).then(() => invalidate(cardsKey)) },
+      storyboardCardReindexMutation: { mutateAsync: (data: { columnId: string; orderedIds: string[] }) => reindexColumn(data.columnId, data.orderedIds, projectId || undefined).then(() => invalidate(cardsKey)) },
+      selectArcMutation: {
+        mutateAsync: (arcId: string) =>
+          createArcSelection({ project_id: projectId || '', selected_arc: arcId }).then(() => { invalidate(arcSelKey); invalidate(arcCandKey); }),
+      },
+      deselectArcMutation: {
+        mutateAsync: () => {
+          const selections = arcQueries[2].data;
+          const selection = selections?.[0];
+          if (!selection) return Promise.resolve();
+          return deleteArcSelection(selection.selection_id, projectId || '').then(() => { invalidate(arcSelKey); invalidate(arcCandKey); });
+        },
+      },
+      arcCandidateCreateMutation: {
+        mutateAsync: (data: { arc_id: string; project_id: string; name: string; summary: string }) =>
+          createArcCandidate({ arc_id: data.arc_id, project_id: data.project_id, name: data.name, summary: data.summary }).then(() => { invalidate(arcCandKey); invalidate(arcSelKey); }),
+      },
+      stageMapCreateMutation: {
+        mutateAsync: (data: { arc_id: string; project_id: string; stage_kinds: string[]; notes?: string | null }) =>
+          createArcStageMap({ project_id: data.project_id, arc_id: data.arc_id, stage_kinds: data.stage_kinds, notes: data.notes || undefined }).then(() => invalidate(arcStageMapsKey)),
+      },
+      arcSelectionUpdateMutation: {
+        mutateAsync: ({ selectionId, data }: { selectionId: string; data: ArcSelectionUpdateRequest }) =>
+          updateArcSelection(selectionId, data, projectId || '').then(() => invalidate(arcSelectionsKey)),
+      },
+      arcSelectionDeleteMutation: {
+        mutateAsync: (selectionId: string) =>
+          deleteArcSelection(selectionId, projectId || '').then(() => invalidate(arcSelectionsKey)),
+      },
+    };
+  }, [projectId, queryClient, arcQueries]);
 
-  const storyboardCardDeleteMutation = useMutation({
-    mutationFn: (cardId: string) =>
-      deleteStoryboardCard(cardId, projectId || undefined),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
-    },
-  });
+  const {
+    storyboardCardCreateMutation,
+    storyboardCardUpdateMutation,
+    storyboardCardDeleteMutation,
+    storyboardCardReindexMutation,
+    selectArcMutation,
+    deselectArcMutation,
+    arcCandidateCreateMutation,
+    stageMapCreateMutation,
+    arcSelectionUpdateMutation,
+    arcSelectionDeleteMutation,
+  } = mutations;
 
-  const storyboardCardReindexMutation = useMutation({
-    mutationFn: (data: { columnId: string; orderedIds: string[] }) =>
-      reindexColumn(data.columnId, data.orderedIds, projectId || undefined),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['planning-storyboard-cards', projectId] });
-    },
-  });
+  // Form state — single useState to stay under React's 50-hook limit
+  interface FormState {
+    sequenceCreateOpen: boolean;
+    sequenceCreateTitle: string;
+    sequenceCreateSummary: string;
+    sequenceEditOpenId: string | null;
+    sequenceEditTitle: string;
+    sequenceEditSummary: string;
+    chapterCreateOpen: boolean;
+    chapterCreateTitle: string;
+    chapterCreateObjective: string;
+    chapterCreateConflict: string;
+    chapterCreateStakes: string;
+    chapterCreateSequenceId: string;
+    chapterEditOpenId: string | null;
+    chapterEditTitle: string;
+    chapterEditObjective: string;
+    chapterEditConflict: string;
+    chapterEditStakes: string;
+    sceneCreateOpen: boolean;
+    sceneCreateTitle: string;
+    sceneCreateObjective: string;
+    sceneCreateConflict: string;
+    sceneCreateStakes: string;
+    sceneCreateChapterId: string;
+    sceneEditOpenId: string | null;
+    sceneEditTitle: string;
+    sceneEditObjective: string;
+    sceneEditConflict: string;
+    sceneEditStakes: string;
+    beatCreateOpen: boolean;
+    beatCreateObjective: string;
+    beatCreateConflict: string;
+    beatCreateStakes: string;
+    beatEditOpenId: string | null;
+    beatEditObjective: string;
+    beatEditConflict: string;
+    beatEditStakes: string;
+    beatEditArcStage: string;
+    packetCreateOpen: boolean;
+    packetCreateChapterId: string;
+    cardCreateOpen: boolean;
+    cardCreateTitle: string;
+    cardCreateContent: string;
+    cardCreateType: string;
+    cardEditOpenId: string | null;
+    cardEditTitle: string;
+    cardEditContent: string;
+    cardEditType: string;
+    arcCandidateCreateOpen: boolean;
+    arcCandidateCreateId: string;
+    arcCandidateCreateName: string;
+    arcCandidateCreateSummary: string;
+    stageMapCreateOpen: boolean;
+    stageMapCreateArcId: string;
+    stageMapCreateNotes: string;
+    stageMapCreateKinds: string[];
+  }
 
-  const selectArcMutation = useMutation({
-    mutationFn: (arcId: string) =>
-      createArcSelection({
-        project_id: projectId || '',
-        selected_arc: arcId,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-    },
-  });
+  const initialState: FormState = {
+    sequenceCreateOpen: false,
+    sequenceCreateTitle: '',
+    sequenceCreateSummary: '',
+    sequenceEditOpenId: null,
+    sequenceEditTitle: '',
+    sequenceEditSummary: '',
+    chapterCreateOpen: false,
+    chapterCreateTitle: '',
+    chapterCreateObjective: '',
+    chapterCreateConflict: '',
+    chapterCreateStakes: '',
+    chapterCreateSequenceId: '',
+    chapterEditOpenId: null,
+    chapterEditTitle: '',
+    chapterEditObjective: '',
+    chapterEditConflict: '',
+    chapterEditStakes: '',
+    sceneCreateOpen: false,
+    sceneCreateTitle: '',
+    sceneCreateObjective: '',
+    sceneCreateConflict: '',
+    sceneCreateStakes: '',
+    sceneCreateChapterId: '',
+    sceneEditOpenId: null,
+    sceneEditTitle: '',
+    sceneEditObjective: '',
+    sceneEditConflict: '',
+    sceneEditStakes: '',
+    beatCreateOpen: false,
+    beatCreateObjective: '',
+    beatCreateConflict: '',
+    beatCreateStakes: '',
+    beatEditOpenId: null,
+    beatEditObjective: '',
+    beatEditConflict: '',
+    beatEditStakes: '',
+    beatEditArcStage: '',
+    packetCreateOpen: false,
+    packetCreateChapterId: '',
+    cardCreateOpen: false,
+    cardCreateTitle: '',
+    cardCreateContent: '',
+    cardCreateType: 'idea',
+    cardEditOpenId: null,
+    cardEditTitle: '',
+    cardEditContent: '',
+    cardEditType: 'idea',
+    arcCandidateCreateOpen: false,
+    arcCandidateCreateId: '',
+    arcCandidateCreateName: '',
+    arcCandidateCreateSummary: '',
+    stageMapCreateOpen: false,
+    stageMapCreateArcId: '',
+    stageMapCreateNotes: '',
+    stageMapCreateKinds: [],
+  };
 
-  const deselectArcMutation = useMutation({
-    mutationFn: () => {
-      const selections = arcSelectionsQuery.data;
-      const selection = selections?.[0];
-      if (!selection) return Promise.resolve();
-      return deleteArcSelection(selection.selection_id, projectId || '');
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-    },
-  });
+  const [form, setForm] = useState(initialState);
 
-  const arcCandidateCreateMutation = useMutation({
-    mutationFn: (data: { arc_id: string; project_id: string; name: string; summary: string }) =>
-      createArcCandidate({
-        arc_id: data.arc_id,
-        project_id: data.project_id,
-        name: data.name,
-        summary: data.summary,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'candidates', projectId] });
-      void queryClient.invalidateQueries({ queryKey: ['arcs', 'selections', projectId] });
-    },
-  });
+  // Destructure for clarity
+  const {
+    sequenceCreateOpen, sequenceCreateTitle, sequenceCreateSummary,
+    sequenceEditOpenId, sequenceEditTitle, sequenceEditSummary,
+    chapterCreateOpen, chapterCreateTitle, chapterCreateObjective,
+    chapterCreateConflict, chapterCreateStakes, chapterCreateSequenceId,
+    chapterEditOpenId, chapterEditTitle, chapterEditObjective,
+    chapterEditConflict, chapterEditStakes,
+    sceneCreateOpen, sceneCreateTitle, sceneCreateObjective,
+    sceneCreateConflict, sceneCreateStakes, sceneCreateChapterId,
+    sceneEditOpenId, sceneEditTitle, sceneEditObjective,
+    sceneEditConflict, sceneEditStakes,
+    beatCreateOpen, beatCreateObjective, beatCreateConflict,
+    beatCreateStakes, beatEditOpenId, beatEditObjective,
+    beatEditConflict, beatEditStakes, beatEditArcStage,
+    packetCreateOpen, packetCreateChapterId,
+    cardCreateOpen, cardCreateTitle, cardCreateContent, cardCreateType,
+    cardEditOpenId, cardEditTitle, cardEditContent, cardEditType,
+    arcCandidateCreateOpen, arcCandidateCreateId, arcCandidateCreateName,
+    arcCandidateCreateSummary,
+    stageMapCreateOpen, stageMapCreateArcId, stageMapCreateNotes,
+    stageMapCreateKinds,
+  } = form;
 
-  const stageMapCreateMutation = useMutation({
-    mutationFn: (data: { arc_id: string; project_id: string; stage_kinds: string[]; notes?: string | null }) =>
-      createArcStageMap({
-        project_id: data.project_id,
-        arc_id: data.arc_id,
-        stage_kinds: data.stage_kinds,
-        notes: data.notes || undefined,
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arc-stage-maps', projectId] });
-    },
-  });
-
-  const arcSelectionUpdateMutation = useMutation({
-    mutationFn: ({ selectionId, data }: { selectionId: string; data: ArcSelectionUpdateRequest }) =>
-      updateArcSelection(selectionId, data, projectId || ''),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arc-selections', projectId] });
-    },
-  });
-
-  const arcSelectionDeleteMutation = useMutation({
-    mutationFn: (selectionId: string) =>
-      deleteArcSelection(selectionId, projectId || ''),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['arc-selections', projectId] });
-    },
-  });
-
-  // Form state
-  const [sequenceCreateOpen, setSequenceCreateOpen] = useState(false);
-  const [sequenceCreateTitle, setSequenceCreateTitle] = useState('');
-  const [sequenceCreateSummary, setSequenceCreateSummary] = useState('');
-  const [sequenceEditOpenId, setSequenceEditOpenId] = useState<string | null>(null);
-  const [sequenceEditTitle, setSequenceEditTitle] = useState('');
-  const [sequenceEditSummary, setSequenceEditSummary] = useState('');
-
-  const [chapterCreateOpen, setChapterCreateOpen] = useState(false);
-  const [chapterCreateTitle, setChapterCreateTitle] = useState('');
-  const [chapterCreateObjective, setChapterCreateObjective] = useState('');
-  const [chapterCreateConflict, setChapterCreateConflict] = useState('');
-  const [chapterCreateStakes, setChapterCreateStakes] = useState('');
-  const [chapterCreateSequenceId, setChapterCreateSequenceId] = useState('');
-  const [chapterEditOpenId, setChapterEditOpenId] = useState<string | null>(null);
-  const [chapterEditTitle, setChapterEditTitle] = useState('');
-  const [chapterEditObjective, setChapterEditObjective] = useState('');
-  const [chapterEditConflict, setChapterEditConflict] = useState('');
-  const [chapterEditStakes, setChapterEditStakes] = useState('');
-
-  const [sceneCreateOpen, setSceneCreateOpen] = useState(false);
-  const [sceneCreateTitle, setSceneCreateTitle] = useState('');
-  const [sceneCreateObjective, setSceneCreateObjective] = useState('');
-  const [sceneCreateConflict, setSceneCreateConflict] = useState('');
-  const [sceneCreateStakes, setSceneCreateStakes] = useState('');
-  const [sceneCreateChapterId, setSceneCreateChapterId] = useState('');
-  const [sceneEditOpenId, setSceneEditOpenId] = useState<string | null>(null);
-  const [sceneEditTitle, setSceneEditTitle] = useState('');
-  const [sceneEditObjective, setSceneEditObjective] = useState('');
-  const [sceneEditConflict, setSceneEditConflict] = useState('');
-  const [sceneEditStakes, setSceneEditStakes] = useState('');
-
-  const [beatCreateOpen, setBeatCreateOpen] = useState(false);
-  const [beatCreateObjective, setBeatCreateObjective] = useState('');
-  const [beatCreateConflict, setBeatCreateConflict] = useState('');
-  const [beatCreateStakes, setBeatCreateStakes] = useState('');
-  const [beatEditOpenId, setBeatEditOpenId] = useState<string | null>(null);
-  const [beatEditObjective, setBeatEditObjective] = useState('');
-  const [beatEditConflict, setBeatEditConflict] = useState('');
-  const [beatEditStakes, setBeatEditStakes] = useState('');
-  const [beatEditArcStage, setBeatEditArcStage] = useState('');
-
-  const [packetCreateOpen, setPacketCreateOpen] = useState(false);
-  const [packetCreateChapterId, setPacketCreateChapterId] = useState('');
-
-  const [cardCreateOpen, setCardCreateOpen] = useState(false);
-  const [cardCreateTitle, setCardCreateTitle] = useState('');
-  const [cardCreateContent, setCardCreateContent] = useState('');
-  const [cardCreateType, setCardCreateType] = useState('idea');
-
-  const [cardEditOpenId, setCardEditOpenId] = useState<string | null>(null);
-  const [cardEditTitle, setCardEditTitle] = useState('');
-  const [cardEditContent, setCardEditContent] = useState('');
-  const [cardEditType, setCardEditType] = useState('idea');
-
-  const [arcCandidateCreateOpen, setArcCandidateCreateOpen] = useState(false);
-  const [arcCandidateCreateId, setArcCandidateCreateId] = useState('');
-  const [arcCandidateCreateName, setArcCandidateCreateName] = useState('');
-  const [arcCandidateCreateSummary, setArcCandidateCreateSummary] = useState('');
-
-  const [stageMapCreateOpen, setStageMapCreateOpen] = useState(false);
-  const [stageMapCreateArcId, setStageMapCreateArcId] = useState('');
-  const [stageMapCreateNotes, setStageMapCreateNotes] = useState('');
-  const [stageMapCreateKinds, setStageMapCreateKinds] = useState<string[]>([]);
+  const setSequenceCreateOpen = (v: boolean) => setForm(f => ({ ...f, sequenceCreateOpen: v }));
+  const setSequenceCreateTitle = (v: string) => setForm(f => ({ ...f, sequenceCreateTitle: v }));
+  const setSequenceCreateSummary = (v: string) => setForm(f => ({ ...f, sequenceCreateSummary: v }));
+  const setSequenceEditOpenId = (v: string | null) => setForm(f => ({ ...f, sequenceEditOpenId: v }));
+  const setSequenceEditTitle = (v: string) => setForm(f => ({ ...f, sequenceEditTitle: v }));
+  const setSequenceEditSummary = (v: string) => setForm(f => ({ ...f, sequenceEditSummary: v }));
+  const setChapterCreateOpen = (v: boolean) => setForm(f => ({ ...f, chapterCreateOpen: v }));
+  const setChapterCreateTitle = (v: string) => setForm(f => ({ ...f, chapterCreateTitle: v }));
+  const setChapterCreateObjective = (v: string) => setForm(f => ({ ...f, chapterCreateObjective: v }));
+  const setChapterCreateConflict = (v: string) => setForm(f => ({ ...f, chapterCreateConflict: v }));
+  const setChapterCreateStakes = (v: string) => setForm(f => ({ ...f, chapterCreateStakes: v }));
+  const setChapterCreateSequenceId = (v: string) => setForm(f => ({ ...f, chapterCreateSequenceId: v }));
+  const setChapterEditOpenId = (v: string | null) => setForm(f => ({ ...f, chapterEditOpenId: v }));
+  const setChapterEditTitle = (v: string) => setForm(f => ({ ...f, chapterEditTitle: v }));
+  const setChapterEditObjective = (v: string) => setForm(f => ({ ...f, chapterEditObjective: v }));
+  const setChapterEditConflict = (v: string) => setForm(f => ({ ...f, chapterEditConflict: v }));
+  const setChapterEditStakes = (v: string) => setForm(f => ({ ...f, chapterEditStakes: v }));
+  const setSceneCreateOpen = (v: boolean) => setForm(f => ({ ...f, sceneCreateOpen: v }));
+  const setSceneCreateTitle = (v: string) => setForm(f => ({ ...f, sceneCreateTitle: v }));
+  const setSceneCreateObjective = (v: string) => setForm(f => ({ ...f, sceneCreateObjective: v }));
+  const setSceneCreateConflict = (v: string) => setForm(f => ({ ...f, sceneCreateConflict: v }));
+  const setSceneCreateStakes = (v: string) => setForm(f => ({ ...f, sceneCreateStakes: v }));
+  const setSceneCreateChapterId = (v: string) => setForm(f => ({ ...f, sceneCreateChapterId: v }));
+  const setSceneEditOpenId = (v: string | null) => setForm(f => ({ ...f, sceneEditOpenId: v }));
+  const setSceneEditTitle = (v: string) => setForm(f => ({ ...f, sceneEditTitle: v }));
+  const setSceneEditObjective = (v: string) => setForm(f => ({ ...f, sceneEditObjective: v }));
+  const setSceneEditConflict = (v: string) => setForm(f => ({ ...f, sceneEditConflict: v }));
+  const setSceneEditStakes = (v: string) => setForm(f => ({ ...f, sceneEditStakes: v }));
+  const setBeatCreateOpen = (v: boolean) => setForm(f => ({ ...f, beatCreateOpen: v }));
+  const setBeatCreateObjective = (v: string) => setForm(f => ({ ...f, beatCreateObjective: v }));
+  const setBeatCreateConflict = (v: string) => setForm(f => ({ ...f, beatCreateConflict: v }));
+  const setBeatCreateStakes = (v: string) => setForm(f => ({ ...f, beatCreateStakes: v }));
+  const setBeatEditOpenId = (v: string | null) => setForm(f => ({ ...f, beatEditOpenId: v }));
+  const setBeatEditObjective = (v: string) => setForm(f => ({ ...f, beatEditObjective: v }));
+  const setBeatEditConflict = (v: string) => setForm(f => ({ ...f, beatEditConflict: v }));
+  const setBeatEditStakes = (v: string) => setForm(f => ({ ...f, beatEditStakes: v }));
+  const setBeatEditArcStage = (v: string) => setForm(f => ({ ...f, beatEditArcStage: v }));
+  const setPacketCreateOpen = (v: boolean) => setForm(f => ({ ...f, packetCreateOpen: v }));
+  const setPacketCreateChapterId = (v: string) => setForm(f => ({ ...f, packetCreateChapterId: v }));
+  const setCardCreateOpen = (v: boolean) => setForm(f => ({ ...f, cardCreateOpen: v }));
+  const setCardCreateTitle = (v: string) => setForm(f => ({ ...f, cardCreateTitle: v }));
+  const setCardCreateContent = (v: string) => setForm(f => ({ ...f, cardCreateContent: v }));
+  const setCardCreateType = (v: string) => setForm(f => ({ ...f, cardCreateType: v }));
+  const setCardEditOpenId = (v: string | null) => setForm(f => ({ ...f, cardEditOpenId: v }));
+  const setCardEditTitle = (v: string) => setForm(f => ({ ...f, cardEditTitle: v }));
+  const setCardEditContent = (v: string) => setForm(f => ({ ...f, cardEditContent: v }));
+  const setCardEditType = (v: string) => setForm(f => ({ ...f, cardEditType: v }));
+  const setArcCandidateCreateOpen = (v: boolean) => setForm(f => ({ ...f, arcCandidateCreateOpen: v }));
+  const setArcCandidateCreateId = (v: string) => setForm(f => ({ ...f, arcCandidateCreateId: v }));
+  const setArcCandidateCreateName = (v: string) => setForm(f => ({ ...f, arcCandidateCreateName: v }));
+  const setArcCandidateCreateSummary = (v: string) => setForm(f => ({ ...f, arcCandidateCreateSummary: v }));
+  const setStageMapCreateOpen = (v: boolean) => setForm(f => ({ ...f, stageMapCreateOpen: v }));
+  const setStageMapCreateArcId = (v: string) => setForm(f => ({ ...f, stageMapCreateArcId: v }));
+  const setStageMapCreateNotes = (v: string) => setForm(f => ({ ...f, stageMapCreateNotes: v }));
+  const setStageMapCreateKinds = (v: string[]) => setForm(f => ({ ...f, stageMapCreateKinds: v }));
 
   const sequencePlans = sequencePlansQuery.data ?? [];
   const chapterPlans = chapterPlansQuery.data ?? [];
@@ -862,9 +959,12 @@ export function usePlanningController(tab: string): {
       });
     },
     toggleStageKind: (stage) => {
-      setStageMapCreateKinds((prev) =>
-        prev.includes(stage) ? prev.filter((s) => s !== stage) : [...prev, stage]
-      );
+      setForm(f => ({
+        ...f,
+        stageMapCreateKinds: f.stageMapCreateKinds.includes(stage)
+          ? f.stageMapCreateKinds.filter((s) => s !== stage)
+          : [...f.stageMapCreateKinds, stage]
+      }));
     },
 
     // Arc Selection

@@ -470,6 +470,20 @@ The serial test suite (`test_audit_logging.py` + `test_rate_limiting.py`) was ha
 - `npm run build` catches integration and bundling issues that lint can miss.
 - `npm run test` runs the Vitest suite (315 tests, ~19s).
 
+### React Hook Limit (< 50 hooks per component)
+
+React enforces a hard limit of 50 hooks per component instance. Exceeding it throws error #185 ("useMemo called with wrong number of arguments").
+
+**Consolidation patterns** (use when a component calls many hooks):
+
+1. **Multiple `useState` → single `useState` object**: 36 separate `useState` calls become 1 `useState<FormState>` with destructured getters/setters.
+2. **Multiple `useQuery` → `useQueries`**: N individual `useQuery` calls become 1 `useQueries({ queries: [...] })` returning an array.
+3. **Multiple `useMutation` → `useMemo`**: N `useMutation` calls become 1 `useMemo(() => ({ mutateAsync: async ... }), [deps])` with plain `{ mutateAsync }` objects.
+
+**When to consolidate**: If a component or its direct dependencies call > 40 hooks total, consolidate before adding more.
+
+**Counting hooks**: Each `useState`, `useQuery`, `useMutation`, `useMemo`, `useCallback`, custom hook, and provider hook counts as 1. Count all hooks in the render chain: parent component + custom hooks called from it + sub-hook internals.
+
 ## Build Verification
 
 ### Always Run After Changes

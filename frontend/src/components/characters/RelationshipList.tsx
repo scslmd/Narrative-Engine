@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
-import type { RelationshipEdge } from '../../types/characters';
+import { useState, useMemo } from 'react';
+import type { CharacterProfile, RelationshipEdge } from '../../types/characters';
+import { RelationshipEditModal } from './RelationshipEditModal';
 import {
   Users,
   Heart,
@@ -10,18 +11,20 @@ import {
   MapPin,
   AlertCircle,
   Compass,
+  Pencil,
 } from 'lucide-react';
 
 interface RelationshipListProps {
   relationships: RelationshipEdge[];
   characterNames: Record<string, string>;
-  onDeleteRelationship?: (edgeId: string) => void;
+  characters?: CharacterProfile[];
+  onDeleteRelationship?: (edgeId: string) => void | Promise<void>;
   onUpdateRelationship?: (edgeId: string, updates: {
     relation_kind?: string;
     summary?: string;
     tension?: string | null;
     notes?: string | null;
-  }) => void;
+  }) => void | Promise<void>;
   className?: string;
 }
 
@@ -92,9 +95,20 @@ function getStyleForKind(kind: string) {
 export function RelationshipList({
   relationships,
   characterNames,
+  characters = [],
   onDeleteRelationship,
+  onUpdateRelationship,
   className = '',
 }: RelationshipListProps) {
+  const [editingEdge, setEditingEdge] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const editingRel = useMemo(
+    () => relationships.find((r) => r.edge_id === editingEdge) ?? null,
+    [relationships, editingEdge],
+  );
+
   const sortedRelationships = useMemo(
     () => [...relationships].sort((a, b) => a.relation_kind.localeCompare(b.relation_kind)),
     [relationships],
@@ -178,9 +192,18 @@ export function RelationshipList({
                 </div>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  {onUpdateRelationship && (
+                    <button
+                      onClick={() => setEditingEdge(rel.edge_id)}
+                      className="p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                      title="Edit relationship"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {onDeleteRelationship && (
                     <button
-                      onClick={() => onDeleteRelationship(rel.edge_id)}
+                      onClick={async () => await onDeleteRelationship(rel.edge_id)}
                       className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                       title="Delete relationship"
                     >
@@ -193,6 +216,39 @@ export function RelationshipList({
           );
         })}
       </div>
+
+      {editingRel && (
+        <RelationshipEditModal
+          relationship={editingRel}
+          characters={characters}
+          isSaving={isSaving}
+          isDeleting={isDeleting}
+          isOpen={!!editingRel}
+          onClose={() => setEditingEdge(null)}
+          onSave={async (edgeId, data) => {
+            if (onUpdateRelationship) {
+              setIsSaving(true);
+              try {
+                await onUpdateRelationship(edgeId, data);
+                setEditingEdge(null);
+              } finally {
+                setIsSaving(false);
+              }
+            }
+          }}
+          onDelete={async (edgeId) => {
+            if (onDeleteRelationship) {
+              setIsDeleting(true);
+              try {
+                await onDeleteRelationship(edgeId);
+                setEditingEdge(null);
+              } finally {
+                setIsDeleting(false);
+              }
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

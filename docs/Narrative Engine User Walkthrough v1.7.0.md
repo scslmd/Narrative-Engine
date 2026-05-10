@@ -1,6 +1,6 @@
 # Narrative Engine - Complete User Walkthrough v1.8.0
 
-Last updated: 2026-05-09
+Last updated: 2026-05-10
 
 ## Goal
 This walkthrough is the full frontend operating manual. It explains every workspace interface and gives a comprehensive, practical workflow from first launch to advanced generation and iteration.
@@ -57,6 +57,9 @@ The workspace has fixed structure:
 - Right rail: Notes panel and Job Launch panel.
 - Bottom utility layer for runtime/status.
 
+### Job Launch Panel
+The Job Launch panel lets you trigger pipeline phases without leaving the current workspace view. Select a phase (P-100 through P-400), click to launch, and monitor recent jobs below. Failed jobs show expandable error details with fix guidance. Completed jobs display processing time. Running jobs show step progress.
+
 Navigation in left rail is stage-aware:
 - Planning stage: Brain Dump, Planning, Canon, Generate
 - Writing stage: Writing
@@ -108,8 +111,18 @@ Top tab row exposes all planning surfaces.
 - Annotate fields and maintain canonical details.
 
 ### Relationships
-- Inspect relationship graph and list.
-- Remove invalid edges.
+The Relationships tab provides an interactive graph visualization with full relationship management:
+
+**Create:** Click "Add Relationship" to open the creation form. Select From/To characters, relationship type, summary, optional tension and notes.
+
+**Edit:** Three interaction paths to modify an existing relationship:
+- Double-click a relationship edge in the graph — opens a centered modal pre-populated with current data. Save sends PATCH, Delete removes with confirmation.
+- Click the pencil icon on any relationship card in the list view below the graph.
+- Hover over an edge in the graph to reveal edit (blue pencil) and delete (red X) buttons at the edge midpoint.
+
+**Open character profiles:** Double-click a character node to jump to the Characters tab with that character's profile editor open.
+
+**AI Extract:** Click "AI Extract" to analyze your manuscript text via LLM and auto-create relationship edges between characters based on detected interactions and narrative connections. Requires at least 2 characters and generated chapter content.
 
 ### Planning workspace action
 - `Generate Story` sends you directly to generation mode.
@@ -232,7 +245,7 @@ Use this order for complete project execution.
 
 1. Create/import project.
 2. Build foundation, characters, world bible.
-3. Build relationships and arcs.
+3. Build relationships (graph + list) and arcs.
 4. Structure narrative in planning tabs.
 5. Capture side ideas in brain dump/brainstorm.
 6. Draft and revise in writing workspace.
@@ -310,6 +323,9 @@ Use this order for complete project execution.
 - Generation/checker failures: validate inference backend and model readiness.
 - Empty inspect context: use a valid run/job id or navigate from review/job workflows.
 - No writing outputs: ensure upstream planning and draft generation steps completed.
+- **Truncated LLM output** (`INFERENCE_TRUNCATED`): The LLM hit its token budget mid-response. The Job Launch panel displays an expandable error with fix guidance. Resolution: add `NARRATIVE_MAX_TOKENS_DEFAULT=8192` (or higher) to your `.env`, or set per-phase overrides such as `NARRATIVE_MAX_TOKENS_DRAFTER=8000`. Restart the server after changes.
+- **Cannot reach LLM server** (`INFERENCE_TRANSPORT_FAILURE`): Verify llama.cpp is running and `NARRATIVE_INFERENCE_BASE_URL` in `.env` is correct. Default: `http://127.0.0.1:8080`.
+- **LLM circuit breaker open**: The backend has failed repeatedly. Fix the underlying connectivity or configuration issue, then wait for the circuit to reset or restart the server.
 
 ## Completion Checklist
 A project is operationally complete when:

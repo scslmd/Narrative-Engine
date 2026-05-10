@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import {
   applyLLMSuggestion,
   archiveLLMSuggestion,
@@ -38,77 +38,74 @@ export function useManuscriptAssist({
   const queryClient = useQueryClient();
   const [selectedRange, setSelectedRange] = useState<TextRange | null>(null);
 
-  const assistRunsQuery = useQuery({
-    queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null],
-    queryFn: () => listManuscriptAssists(projectId!, documentId ?? undefined),
-    enabled: Boolean(projectId && documentId),
+  const queries = useQueries({
+    queries: [
+      {
+        queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null],
+        queryFn: () => listManuscriptAssists(projectId!, documentId ?? undefined),
+        enabled: Boolean(projectId && documentId),
+      },
+      {
+        queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'],
+        queryFn: () => getLLMSuggestions(projectId!, documentId!, undefined),
+        enabled: Boolean(projectId && documentId),
+      },
+    ],
   });
 
-  const suggestionsQuery = useQuery({
-    queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'],
-    queryFn: () => getLLMSuggestions(projectId!, documentId!, undefined),
-    enabled: Boolean(projectId && documentId),
+  const latestAssistId = (queries[0].data as ManuscriptAssistResult[] | undefined)?.[0]?.assist_id;
+  const gatesQuery = useQueries({
+    queries: [
+      {
+        queryKey: ['manuscript-assist', 'gates', latestAssistId],
+        queryFn: () => getManuscriptAssistGates(latestAssistId!),
+        enabled: Boolean(latestAssistId),
+      },
+    ],
   });
 
-  const submitMutation = useMutation({
-    mutationFn: (args: { kind: ManuscriptAssistKind; instruction: string; options?: SubmitAssistOptions }) =>
-      submitManuscriptAssist({
-        project_id: projectId!,
-        document_id: documentId!,
-        assist_kind: args.kind,
-        instruction: args.instruction,
-        text_range: selectedRange,
-        create_branch: args.options?.create_branch,
-        create_draft_artifact: args.options?.create_draft_artifact,
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null] });
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
-    },
-  });
+  const mutations = useMemo(() => {
+    return {
+      submit: async (args: { kind: ManuscriptAssistKind; instruction: string; options?: SubmitAssistOptions }) => {
+        await submitManuscriptAssist({
+          project_id: projectId!,
+          document_id: documentId!,
+          assist_kind: args.kind,
+          instruction: args.instruction,
+          text_range: selectedRange,
+          create_branch: args.options?.create_branch,
+          create_draft_artifact: args.options?.create_draft_artifact,
+        });
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null] });
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
+      },
+      apply: async (suggestionId: string) => {
+        await applyLLMSuggestion({
+          project_id: projectId!,
+          document_id: documentId!,
+          suggestion_id: suggestionId,
+          expected_document_version: documentVersion ?? 1,
+          apply_mode: 'replace_range',
+        });
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-documents', projectId] });
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
+      },
+      reject: async (suggestionId: string) => {
+        await rejectLLMSuggestion(projectId!, suggestionId);
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
+      },
+      archive: async (suggestionId: string) => {
+        await archiveLLMSuggestion(projectId!, suggestionId);
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
+      },
+      retry: async (assistId: string) => {
+        await retryManuscriptAssist(assistId);
+        await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null] });
+      },
+    };
+  }, [projectId, documentId, documentVersion, selectedRange, queryClient]);
 
-  const applyMutation = useMutation({
-    mutationFn: (suggestionId: string) =>
-      applyLLMSuggestion({
-        project_id: projectId!,
-        document_id: documentId!,
-        suggestion_id: suggestionId,
-        expected_document_version: documentVersion ?? 1,
-        apply_mode: 'replace_range',
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-documents', projectId] });
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: (suggestionId: string) => rejectLLMSuggestion(projectId!, suggestionId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
-    },
-  });
-
-  const archiveMutation = useMutation({
-    mutationFn: (suggestionId: string) =>
-      archiveLLMSuggestion(projectId!, suggestionId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'suggestions', projectId, documentId ?? null, 'open'] });
-    },
-  });
-  const retryMutation = useMutation({
-    mutationFn: (assistId: string) => retryManuscriptAssist(assistId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['manuscript-assist', 'runs', projectId, documentId ?? null] });
-    },
-  });
-
-  const latestAssistId = assistRunsQuery.data?.[0]?.assist_id;
-  const gatesQuery = useQuery({
-    queryKey: ['manuscript-assist', 'gates', latestAssistId],
-    queryFn: () => getManuscriptAssistGates(latestAssistId!),
-    enabled: Boolean(latestAssistId),
-  });
+  const [submitPending, setSubmitPending] = useState(false);
 
   const setSelectionFromEditor = useCallback((start: number, end: number, textContent: string) => {
     if (start === end) {
@@ -128,44 +125,51 @@ export function useManuscriptAssist({
   }, []);
 
   const submitAssist = useCallback(
-    (kind: ManuscriptAssistKind, instruction: string, options?: SubmitAssistOptions) =>
-      submitMutation.mutateAsync({ kind, instruction, options }),
-    [submitMutation],
+    async (kind: ManuscriptAssistKind, instruction: string, options?: SubmitAssistOptions) => {
+      setSubmitPending(true);
+      try {
+        await mutations.submit({ kind, instruction, options });
+      } finally {
+        setSubmitPending(false);
+      }
+    },
+    [mutations],
   );
 
   const applySuggestion = useCallback(
-    (suggestionId: string) => applyMutation.mutateAsync(suggestionId),
-    [applyMutation],
+    async (suggestionId: string) => mutations.apply(suggestionId),
+    [mutations],
   );
 
   const rejectSuggestion = useCallback(
-    (suggestionId: string) => rejectMutation.mutateAsync(suggestionId),
-    [rejectMutation],
+    async (suggestionId: string) => mutations.reject(suggestionId),
+    [mutations],
   );
 
   const archiveSuggestion = useCallback(
-    (suggestionId: string) => archiveMutation.mutateAsync(suggestionId),
-    [archiveMutation],
+    async (suggestionId: string) => mutations.archive(suggestionId),
+    [mutations],
   );
+
   const retryAssist = useCallback(
-    (assistId: string) => retryMutation.mutateAsync(assistId),
-    [retryMutation],
+    async (assistId: string) => mutations.retry(assistId),
+    [mutations],
   );
 
   const assistRuns: ManuscriptAssistResult[] = useMemo(
-    () => assistRunsQuery.data ?? [],
-    [assistRunsQuery.data],
+    () => queries[0].data ?? [],
+    [queries[0].data],
   );
   const llmSuggestions: LLMRevisionSuggestion[] = useMemo(
-    () => suggestionsQuery.data ?? [],
-    [suggestionsQuery.data],
+    () => queries[1].data ?? [],
+    [queries[1].data],
   );
 
   return {
     selectedRange,
     assistRuns,
     llmSuggestions,
-    isSubmittingAssist: submitMutation.isPending,
+    isSubmittingAssist: submitPending,
     submitAssist,
     applySuggestion,
     rejectSuggestion,
@@ -173,6 +177,6 @@ export function useManuscriptAssist({
     setSelectionFromEditor,
     content,
     retryAssist,
-    latestAssistGates: gatesQuery.data ?? [],
+    latestAssistGates: (gatesQuery[0].data ?? []),
   };
 }

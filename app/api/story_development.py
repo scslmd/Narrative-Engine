@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Query
 from pydantic import Field
 
 from app.persistence.story_development import StoryDevelopmentRepository
@@ -54,6 +54,7 @@ from app.services.braindump import (
     BrainDumpValidationError,
 )
 from app.services.brainstorm import BrainstormNotFoundError, BrainstormService, BrainstormValidationError
+from app.services.relationship_extraction import RelationshipExtractionError, RelationshipExtractionService
 from app.services.drafting import DraftingNotFoundError, DraftingService, DraftingValidationError
 from app.services.manuscript_review import ManuscriptReviewError, ManuscriptReviewService
 from app.services.editable_flow import (
@@ -829,6 +830,12 @@ class ArcComparisonRequest(StrictModel):
     candidates: list[str | ArcCandidateCreateRequest] = Field(..., min_length=2)
 
 
+class RelationshipExtractRequest(StrictModel):
+    manuscript_text: str = Field(..., min_length=1, description="Manuscript text to analyze for relationships")
+    character_ids: list[str] | None = Field(None, description="Optional list of character IDs to consider")
+    model: str | None = Field(None, description="Optional model override")
+
+
 def build_story_development_router(
     repository: StoryDevelopmentRepository,
     prefix: str = "/story-development",
@@ -848,6 +855,10 @@ def build_story_development_router(
     braindump_service = BrainDumpService(repository, inferencer=inferencer)
     foundation_service = FoundationService(repository)
     story_knowledge_service = StoryKnowledgeService(repository)
+    relationship_extraction_service = RelationshipExtractionService(
+        story_knowledge_service=story_knowledge_service,
+        inferencer=inferencer,  # type: ignore[arg-type]
+    )
     chapter_packet_service = ChapterPacketService(repository)
     sequence_plan_service = SequencePlanService(repository)
     storyboard_card_service = StoryboardCardService(repository)
@@ -2394,6 +2405,29 @@ def build_story_development_router(
                 items=relationships,
                 meta={"ordered_by": "edge_id_asc"},
             )
+        except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/relationships/extract", response_model=RelationshipEdgeListResponse)
+    def extract_relationships(
+        project_id: str = Query(...),
+        payload: RelationshipExtractRequest = Body(...),
+    ) -> RelationshipEdgeListResponse:
+        """Extract character relationships from manuscript text using AI analysis."""
+        try:
+            edges = relationship_extraction_service.extract_relationships(
+                project_id=project_id,
+                manuscript_text=payload.manuscript_text,
+                character_ids=payload.character_ids or None,
+                model=payload.model or None,
+            )
+            return RelationshipEdgeListResponse(
+                project_id=project_id,
+                items=edges,
+                meta={"ordered_by": "edge_id_asc"},
+            )
+        except RelationshipExtractionError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
         except (StoryKnowledgeValidationError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 

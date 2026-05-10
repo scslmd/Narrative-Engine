@@ -110,11 +110,11 @@ class Settings:
 
     @property
     def inference_timeout_seconds(self) -> float:
-        raw_value = os.getenv("NARRATIVE_INFERENCE_TIMEOUT_SECONDS", "120").strip()
+        raw_value = os.getenv("NARRATIVE_INFERENCE_TIMEOUT_SECONDS", "300").strip()
         try:
             return float(raw_value)
         except ValueError:
-            return 120.0
+            return 300.0
 
     @property
     def inference_aliases(self) -> list[str]:
@@ -226,15 +226,15 @@ class Settings:
                 pass
 
         defaults = {
-            "ARCHITECT": 4096,
-            "SEQUENCER": 4096,
-            "DRAFTER": 8000,
-            "COMPILER": 4096,
-            "PLANNER": 4096,
-            "CHAPTER": 8000,
+            "ARCHITECT": 8192,
+            "SEQUENCER": 8192,
+            "DRAFTER": 8192,
+            "COMPILER": 8192,
+            "PLANNER": 8192,
+            "CHAPTER": 8192,
             "GUIDED_SETUP": 8192,
         }
-        return defaults.get(phase_key, 4096)
+        return defaults.get(phase_key, 8192)
 
     @property
     def cors_origins(self) -> list[str]:

@@ -30,6 +30,32 @@ For real writing/generation output, configure a non-stub inference backend (`lla
 
 When inference is set to `stub`, the app remains functional for UI and integration testing, but generated narrative output is placeholder-grade.
 
+### Inference Configuration
+
+Configure your inference backend via environment variables (in `.env` at project root):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NARRATIVE_INFERENCE_BACKEND` | `llama.cpp` | Backend type: `llama.cpp`, `lmstudio`, `vllm`, `openai_compatible`, or `stub` |
+| `NARRATIVE_INFERENCE_BASE_URL` | `http://127.0.0.1:8080` | URL of the inference server |
+| `NARRATIVE_INFERENCE_MODEL` | *(none)* | Model name to use |
+| `NARRATIVE_INFERENCE_TIMEOUT_SECONDS` | `120` | Request timeout in seconds |
+
+**Token budget (max_tokens):** Each pipeline phase has a default token limit. Override via `.env`:
+
+| Variable | Default | Phase |
+|----------|---------|-------|
+| `NARRATIVE_MAX_TOKENS_DEFAULT` | `4096` | Fallback for all phases |
+| `NARRATIVE_MAX_TOKENS_ARCHITECT` | `4096` | P-100 (architecture) |
+| `NARRATIVE_MAX_TOKENS_SEQUENCER` | `4096` | P-200 (sequencing) |
+| `NARRATIVE_MAX_TOKENS_DRAFTER` | `8000` | P-300 (drafting) |
+| `NARRATIVE_MAX_TOKENS_COMPILER` | `4096` | P-400 (compilation) |
+| `NARRATIVE_MAX_TOKENS_PLANNER` | `4096` | G-200 (generation planning) |
+| `NARRATIVE_MAX_TOKENS_CHAPTER` | `8000` | G-300 (chapter drafting) |
+| `NARRATIVE_MAX_TOKENS_GUIDED_SETUP` | `8192` | Guided setup wizard |
+
+If a job fails with `INFERENCE_TRUNCATED`, increase the relevant `NARRATIVE_MAX_TOKENS_*` value and restart the server. The Job Launch panel shows expandable error details with fix guidance for all inference errors.
+
 ## Current Architecture
 
 The current codebase includes:
@@ -104,9 +130,9 @@ Implemented and working now:
 
 Current verified baseline:
 
-- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1471 passed, 7 skipped (~33s)
+- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1473 passed, 7 skipped (~34s)
 - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~2s)
-- Full baseline: ~1522 tests, ~65s total
+- Full baseline: ~1524 tests, ~66s total
 
 ### Frontend
 
@@ -138,7 +164,7 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- Parallel cluster: 1471 passed, 7 skipped (~33s)
+- Parallel cluster: 1473 passed, 7 skipped (~34s)
 - Serial tests: 51 passed (~2s)
 - `cd frontend && npm run lint` -> passed
 - `cd frontend && npm run typecheck` -> passed

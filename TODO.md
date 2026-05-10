@@ -16,6 +16,82 @@
 
 ### Pending Work
 
+#### AI Relationship Extraction — Frontend JSON Encoding Bug (2026-05-10)
+
+The "AI Extract" button in the Relationships tab works end-to-end but has a subtle frontend encoding issue:
+
+- **Root cause**: `ConvertTo-Json` in PowerShell adds UTF-8 BOM (`\ufeff`) and converts strings to objects with `"value"` keys. The browser's fetch sends malformed JSON, causing 422 errors on the backend.
+- **Symptom**: Clicking "AI Extract" shows "Server error occurred" but the endpoint works via direct API calls (curl).
+- **Fix applied**: Moved `RelationshipExtractRequest` class to module level in `story_development.py` (line 832) to resolve FastAPI's string annotation issue. Added `Body(...)`/`Query(...)` annotations. Passed `inferencer` to router build in `main.py`.
+- **Remaining**: Frontend button may fail intermittently due to JSON encoding. Direct API calls work reliably. The extraction logic, LLM prompt, and persistence all work correctly.
+
+#### Cytoscape.js Graph Visualization (https://js.cytoscape.org/, MIT license)
+
+Replace SVG-based `RelationshipMapGraph` and `ArcStageMapFlow` with Cytoscape.js for interactive, force-directed graph visualization. Cytoscape provides zoom/pan, drag nodes, dynamic layouts, extension ecosystem, and performant rendering for large graphs — all unavailable in hand-rolled SVG.
+
+**Use cases**:
+
+1. **Character Relationship Graph** — replace existing `RelationshipMapGraph` (circular layout, no zoom/pan). Nodes = characters, edges = relationships with `relation_kind` styling. Force-directed layout reveals clusters (family, allies, enemies) organically.
+2. **Story Timeline Graph** — nodes = scenes/chapters arranged chronologically. Edges = narrative dependencies (prerequisite events, concurrent plotlines). Multi-layer tracks per POV/character arc. Color-coded by narrative stage (exposition → climax → resolution).
+3. **Arc Progression Graph** — nodes = story beats/stages per arc. Edges = sequential progression. Parallel arcs visualized as layered paths. Divergence points (branch decisions) shown as fork nodes.
+4. **World Entity Relationship Graph** — nodes = world bible entries (locations, cultures, factions, species, magic systems). Edges = connections (faction A allied with faction B, location X part of culture Y, magic system Z used by species W). Reveals worldbuilding gaps and isolated elements.
+5. **Scene Dependency Graph** — nodes = scenes. Edges = causal dependencies (scene B requires outcome of scene A). Highlights bottlenecks, parallelizable scenes, and ordering constraints for batch drafting.
+6. **Canon Packet Graph** — nodes = characters, world entries, arcs, continuity threads included in generation packet. Edges = cross-references (character appears in arc, location tied to culture). Visualizes packet composition and budget distribution.
+7. **Plotline Convergence Graph** — nodes = plot events. Edges = which plotlines converge/diverge at key moments. Identifies sagging middles (sparse connections) and climax density (high-degree nodes).
+8. **Character Arc-over-Time Graph** — x-axis = chapter/scene position, y-axis = character state (goal progress, relationship changes, internal growth). Multiple characters plotted as paths. Reveals pacing issues where arcs stall or overlap excessively.
+
+**Implementation plan**:
+- `npm install cytoscape` (core library, ~35KB gzipped)
+- Optional extensions: `cytoscape-dagre` (hierarchical layout for timelines), `cytoscape-cola` (force-directed with constraints), `cytoscape-popper` (tooltips)
+- Shared `CytoscapeGraph` component accepting `nodes`, `edges`, `layout`, `extensions` props
+- Replace `RelationshipMapGraph` first (highest impact, existing data model maps directly to Cytoscape)
+- Add timeline graph as new component in PlanningView (no existing equivalent)
+
+**Data models** (existing backend entities map naturally):
+- Characters → nodes with `display_name`, `role_in_story` labels
+- Relationships → edges with `relation_kind` determining color/style
+- World bible entries → nodes grouped by `entry_type`
+- Arc stage maps → sequential node chains with `stage_kind` styling
+- Scenes/chapters → timeline nodes ordered by `sequence_position`
+- Continuity threads → cross-cutting edges linking related elements
+
+#### Feature Tiers: Basic vs Advanced (Onboarding Reduction)
+
+Research showed competitors suffer from feature overload — Scrivener has 20+ features, Campfire has 18 modules, Plottr has 40+ templates. Reduce cognitive load by splitting features into tiers users unlock progressively.
+
+**Basic tier** (minimally needed to generate and edit a story):
+- **Project creation**: Guided setup wizard or manual manifest config (genre, tone, premise)
+- **Foundation**: Core story premise, logline, thematic spine — the "what is this story about" document
+- **Characters**: Character list with display name, role, goal, conflict — enough to populate canon packet
+- **Planning**: Sequences → chapters → scenes hierarchy; ability to create/edit/reorder
+- **Writing**: Draft editor with word count, chapter navigation, autosave
+- **Generation**: Submit generation run (P-100 architect → P-300 drafter → P-400 compiler), view output
+- **Review**: Read generated chapters, make edits, track changes
+
+Hidden from basic users: arcs, branches, decisions, flow editor, world bible, relationships, canon customization, brainstorm, braindump, inspect/job lineage, role-model checker, backup management, API keys, pattern library, mythos library.
+
+**Advanced tier** (unlocked when user needs more control):
+- **World Bible**: Typed entries (locations, cultures, species, magic systems) with continuity tracking
+- **Character Relationships**: Graph visualization showing connections between characters
+- **Arcs**: Character/story arc candidates, stage maps, selection scoring
+- **Story Branching**: Alternative story paths with comparison and merge decisions
+- **Flow Editor**: Custom pipeline phase configuration (reorder, enable/disable stages)
+- **Canon Customization**: Annotation system, profile management, packet preview for generation runs
+- **Brainstorm**: Idea capture, clustering, promote-to-planning workflow
+- **Braindump**: Freeform session capture with AI organization
+- **Inspect/Job Lineage**: Execution timeline, step records, artifact lineage, attempt history
+- **Role-Model Checker**: Per-role quality evaluation with retry and lineage tracking
+- **Pattern Library**: Archetypal pattern extraction, CRUD management, injection into prompts
+- **Mythos Library**: Mythological entry extraction, materialization to editable entries
+- **Backup Management**: Create/list/restore/delete project backups
+- **API Keys**: Key creation, permission management, revocation
+
+**Unlock mechanism** (proposal):
+- Start with 7 basic tabs visible in PlanningView sidebar (Manifest, Foundation, Characters, Planning, Writing, Generate, Review)
+- "Advanced" toggle in settings reveals remaining tabs (World Bible, Relationships, Arcs, Branches, Flow, Canon, Brainstorm, Braindump, Inspect, Checker)
+- Alternatively: auto-unlock advanced tabs when user creates content triggering them (e.g., creating 3+ characters unlocks Relationships tab; creating first world bible entry unlocks World Bible tab)
+- Progress indicator shows "X of Y features unlocked" to encourage exploration without overwhelming
+
 #### Persistence and Runtime Expansion
 
 - [x] Persist chapter-packet, sequence, and storyboard cards through lineage-aware registration.

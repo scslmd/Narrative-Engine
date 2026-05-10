@@ -11,6 +11,7 @@ import {
   Mountain,
   Shield,
   Compass,
+  Pencil,
 } from 'lucide-react';
 import { useRelationships } from '../../hooks/useRelationships';
 
@@ -19,6 +20,8 @@ interface RelationshipMapGraphProps {
   relationships: RelationshipEdge[];
   projectId?: string;
   onDeleteRelationship?: (edgeId: string) => void;
+  onOpenCharacter?: (characterId: string) => void;
+  onEditRelationship?: (edgeId: string) => void;
   className?: string;
 }
 
@@ -190,6 +193,22 @@ function computeEdges(
   return edges;
 }
 
+function useDoubleClickHandler(callback: (id: string) => void, id: string) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleClick = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+      callback(id);
+    } else {
+      timeoutRef.current = setTimeout(() => {
+        timeoutRef.current = null;
+      }, 300);
+    }
+  }, [callback, id]);
+  return handleClick;
+}
+
 const NODE_RADIUS = 28;
 const NODE_STROKE = 2;
 
@@ -198,6 +217,8 @@ export function RelationshipMapGraph({
   relationships,
   projectId,
   onDeleteRelationship,
+  onOpenCharacter,
+  onEditRelationship,
   className = '',
 }: RelationshipMapGraphProps) {
   const relationshipsHook = useRelationships(projectId ?? '');
@@ -342,6 +363,8 @@ export function RelationshipMapGraph({
           const strokeWidth = isHovered ? 2.5 : 1.5;
           const d = `M ${edge.sourceX} ${edge.sourceY} Q ${edge.controlX} ${edge.controlY} ${edge.targetX} ${edge.targetY}`;
 
+          const handleEdgeDblClick = useDoubleClickHandler(onEditRelationship ?? (() => {}), edge.id);
+
           return (
             <g key={edge.id}>
               <path
@@ -351,6 +374,7 @@ export function RelationshipMapGraph({
                 strokeWidth={strokeWidth}
                 onMouseEnter={() => setHoveredEdge(edge.id)}
                 onMouseLeave={() => setHoveredEdge(null)}
+                onDoubleClick={handleEdgeDblClick}
                 className="cursor-pointer transition-all"
               />
               {isHovered && (
@@ -363,9 +387,27 @@ export function RelationshipMapGraph({
                     opacity={0.15}
                     className="pointer-events-none"
                   />
+                  {onEditRelationship && (
+                    <g
+                      transform={`translate(${edge.controlX - 24}, ${edge.controlY - 12})`}
+                      className="cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); onEditRelationship(edge.id); }}
+                    >
+                      <rect
+                        x="-10"
+                        y="-10"
+                        width="20"
+                        height="20"
+                        rx="4"
+                        fill="#3b82f6"
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                      <Pencil className="w-3 h-3 text-white absolute" style={{ top: 4, left: 4 }} />
+                    </g>
+                  )}
                   {onDeleteRelationship && (
                     <g
-                      transform={`translate(${edge.controlX}, ${edge.controlY - 12})`}
+                      transform={`translate(${edge.controlX + (onEditRelationship ? 0 : -24)}, ${edge.controlY - 12})`}
                       className="cursor-pointer"
                       onClick={(e) => handleDeleteEdge(edge.id, e)}
                     >
@@ -408,11 +450,14 @@ export function RelationshipMapGraph({
                 (e.targetId === hoveredNode && e.sourceId === node.id)),
           );
 
+          const handleNodeDblClick = useDoubleClickHandler(onOpenCharacter ?? (() => {}), node.id);
+
           return (
             <g
               key={node.id}
               onMouseEnter={() => setHoveredNode(node.id)}
               onMouseLeave={() => setHoveredNode(null)}
+              onDoubleClick={handleNodeDblClick}
               className="cursor-pointer"
             >
               <circle

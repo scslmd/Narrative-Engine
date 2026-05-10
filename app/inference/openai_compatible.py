@@ -226,7 +226,7 @@ class OpenAICompatibleInferenceBackend(InferenceBackend):
             raise InferenceBackendError(
                 f"{self._descriptor.display_name} response was truncated or empty "
                 f"(max_tokens={payload['max_tokens']}, finish_reason={finish_reason}). "
-                f"Increase NARRATIVE_MAX_TOKENS_DEFAULT or NARRATIVE_MAX_TOKENS_<PHASE> in your .env file.",
+                f"Increase NARRATIVE_MAX_TOKENS_DEFAULT or NARRATIVE_MAX_TOKENS_<PHASE> in your .env file (current minimum: 8192).",
                 category="truncated_response",
                 code="INFERENCE_TRUNCATED",
                 finish_reason="length",
