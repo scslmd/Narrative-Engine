@@ -118,6 +118,36 @@ The edit modal supports: changing relationship type, summary, tension, and notes
 
 **AI Relationship Extraction:** The "AI Extract" button analyzes your manuscript text via LLM and auto-creates relationship edges between characters based on detected interactions, shared themes, and narrative connections. Requires at least 2 characters and generated chapter content.
 
+### Cascade Discovery — AI-Powered Entity Extraction
+The "Scan Manuscript" button (visible in the Relationships toolbar) runs a full cascade analysis of your manuscript text via LLM, discovering characters, relationships, and world bible entries in a single pass.
+
+**How it works:**
+1. Click "Scan Manuscript" to open the scan dialog.
+2. Paste your manuscript or chapter text (minimum 50 characters).
+3. Configure chunk size (default: 8000 words, adjustable for high-context models).
+4. Click "Start Scan" — the engine processes the text asynchronously.
+5. A loading overlay shows progress while the LLM extracts entities.
+6. When complete, the review dialog opens with three tabs: Characters, Relationships, World Bible.
+
+**Reviewing discovered entities:**
+- Each entity shows a confidence badge (High / Medium / Low) based on mention frequency, description richness, interaction density, and LLM self-rating.
+- Low-confidence entities are collapsed by default — expand to review.
+- Source text excerpts are available per entity for context verification.
+- Fuzzy-matched characters show an orange "Fuzzy match" indicator.
+
+**Approving and committing:**
+- Per-entity: click "Approve" or "Reject" on each row.
+- Bulk actions: "Approve All" / "Reject All" per tab.
+- Click "Apply X changes" to commit approved entities to the project database.
+- On success, a summary shows counts of new characters added, existing characters enriched, relationships created, and world entries discovered.
+
+**Undo:** Revert any applied batch by clicking "Undo" in the confirmation summary — all entities from that batch are removed from the database.
+
+**Deduplication behavior:**
+- Exact name matches (case-insensitive) are auto-detected; new details enrich existing profiles.
+- Fuzzy matches (similar names, alias overlap) flag for user review before merge.
+- World bible entries deduplicate by type + title combination.
+
 Global action:
 - `Generate Story` button routes to generation workspace.
 
@@ -216,7 +246,8 @@ Capabilities:
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).
 2. Build canon in Planning tabs: Foundation, Characters, World Bible, Relationships, Arcs.
-3. Shape structure in Planning/Flow tabs.
+3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
+4. Shape structure in Planning/Flow tabs.
 4. Capture optional ideation in Brain Dump and Brainstorm.
 5. Draft in Writing (manual, AI, continue, alternate, promote).
 6. Use Manuscript Assist for targeted edits.
@@ -240,6 +271,7 @@ Capabilities:
 - Job fails with "Response truncated" (`INFERENCE_TRUNCATED`): the LLM ran out of token budget mid-response. Fix by adding `NARRATIVE_MAX_TOKENS_DEFAULT=8192` to your `.env` file, or set per-phase overrides (e.g., `NARRATIVE_MAX_TOKENS_DRAFTER=8000`, `NARRATIVE_MAX_TOKENS_ARCHITECT=4096`). Restart the server after changing `.env`. The Job Launch panel shows expandable error details with fix guidance for all inference errors.
 - Job fails with "Cannot reach LLM server" (`INFERENCE_TRANSPORT_FAILURE`): verify llama.cpp (or your configured backend) is running and that `NARRATIVE_INFERENCE_BASE_URL` in `.env` matches the server address.
 - Job fails with "LLM circuit breaker open": the backend has been failing repeatedly. Fix the underlying issue and wait for the circuit to reset, or restart the server.
+- Cascade scan returns no entities: ensure manuscript text is at least 50 characters and contains character names, interactions, or descriptive details. Very short or sparse text may yield no discoverable entities.
 
 ## Glossary
 - Canon packet: selected canon payload passed to generation phases.
@@ -247,3 +279,4 @@ Capabilities:
 - Draft artifact: intermediate draft output before manuscript promotion.
 - Manuscript document: editable narrative document in writing workspace.
 - Inspect link: mapping from review object to inspectable run.
+- Cascade Discovery: LLM-powered extraction of characters, relationships, and world bible entries from manuscript text, with staged approval workflow.

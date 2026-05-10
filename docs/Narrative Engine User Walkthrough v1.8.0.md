@@ -124,6 +124,19 @@ The Relationships tab provides an interactive graph visualization with full rela
 
 **AI Extract:** Click "AI Extract" to analyze your manuscript text via LLM and auto-create relationship edges between characters based on detected interactions and narrative connections. Requires at least 2 characters and generated chapter content.
 
+**Cascade Discovery (Scan Manuscript):**
+1. Click "Scan Manuscript" in the Relationships toolbar to open the scan dialog.
+2. Paste your manuscript or chapter text into the text area (minimum 50 characters).
+3. Adjust chunk size if needed (default: 8000 words; increase for high-context models).
+4. Click "Start Scan" — the engine submits an async job for LLM processing.
+5. A loading overlay shows progress during extraction.
+6. When complete, the review dialog opens with three tabs: Characters, Relationships, World Bible.
+7. Review each entity: check confidence badges (High/Medium/Low), source excerpts, and fuzzy-match indicators.
+8. Approve or reject entities individually, or use "Approve All" / "Reject All" per tab.
+9. Click "Apply X changes" to commit approved entities to the project database.
+10. Review the summary: new characters added, existing profiles enriched, relationships created, world entries discovered.
+11. Click "Undo" in the summary to revert any batch if needed.
+
 ### Planning workspace action
 - `Generate Story` sends you directly to generation mode.
 
@@ -246,6 +259,8 @@ Use this order for complete project execution.
 1. Create/import project.
 2. Build foundation, characters, world bible.
 3. Build relationships (graph + list) and arcs.
+4. (Optional) Run Cascade Discovery to auto-extract entities from existing manuscript text — review discovered characters, relationships, and world entries before committing.
+5. Structure narrative in planning tabs.
 4. Structure narrative in planning tabs.
 5. Capture side ideas in brain dump/brainstorm.
 6. Draft and revise in writing workspace.
@@ -326,10 +341,11 @@ Use this order for complete project execution.
 - **Truncated LLM output** (`INFERENCE_TRUNCATED`): The LLM hit its token budget mid-response. The Job Launch panel displays an expandable error with fix guidance. Resolution: add `NARRATIVE_MAX_TOKENS_DEFAULT=8192` (or higher) to your `.env`, or set per-phase overrides such as `NARRATIVE_MAX_TOKENS_DRAFTER=8000`. Restart the server after changes.
 - **Cannot reach LLM server** (`INFERENCE_TRANSPORT_FAILURE`): Verify llama.cpp is running and `NARRATIVE_INFERENCE_BASE_URL` in `.env` is correct. Default: `http://127.0.0.1:8080`.
 - **LLM circuit breaker open**: The backend has failed repeatedly. Fix the underlying connectivity or configuration issue, then wait for the circuit to reset or restart the server.
+- **Cascade scan returns no entities**: Ensure manuscript text is at least 50 characters and contains character names, interactions, or descriptive details. Very short or sparse text may yield no discoverable entities. Adjust chunk size upward if using a high-context model.
 
 ## Completion Checklist
 A project is operationally complete when:
-- Foundation, characters, world bible, and relationships are populated.
+- Foundation, characters, world bible, and relationships are populated (manually or via Cascade Discovery).
 - At least one manuscript exists and has been revised.
 - Checker findings have been reviewed.
 - At least one inspectable run is present.
