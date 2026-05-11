@@ -85,6 +85,19 @@ start_narrative_core.cmd --dev
 - Both modes accept `--host` and `--port` flags.
 - `--skip-build` uses existing `frontend/dist/` without rebuilding.
 
+### Tray Launcher (no console window)
+```powershell
+cd narrative-launcher && dotnet run
+```
+Or built executable:
+```powershell
+narrative-launcher\narrative-launcher.exe
+```
+- Starts backend + frontend automatically
+- System tray icon with green/orange status indicator
+- Right-click menu: Open Frontend, API Docs, Restart Services, View Logs, Exit
+- Health monitoring: 5s polling, hysteresis (2 failures), crash notifications
+
 ### Starting the Backend Server (Tool-Based Testing)
 
 Start the backend as a detached background process using `scripts/start-detached.ps1`:

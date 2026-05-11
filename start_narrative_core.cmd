@@ -1,4 +1,5 @@
 @echo off
+REM Or use the tray launcher (no console window): narrative-launcher\narrative-launcher.exe
 setlocal enabledelayedexpansion
 
 set ROOT=%~dp0
