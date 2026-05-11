@@ -41,12 +41,12 @@ tray.OnMenuClick = async (action) =>
     switch (action)
     {
         case "restart-backend":
-            services.Backend.Process?.Kill();
+            RestartService(services.Backend);
             services.StartBackend();
             break;
 
         case "restart-frontend":
-            services.Frontend.Process?.Kill();
+            RestartService(services.Frontend);
             services.StartFrontend();
             break;
     }
@@ -67,4 +67,14 @@ static async Task<bool> PortInUse(int port)
     using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
     try { await client.GetAsync($"http://127.0.0.1:{port}/"); return true; }
     catch { return false; }
+}
+
+static void RestartService(ServiceInfo service)
+{
+    if (service.Process is { HasExited: false } proc)
+    {
+        proc.Kill();
+        proc.WaitForExit(2000);
+    }
+    service.Process = null;
 }

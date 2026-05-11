@@ -14,10 +14,10 @@ public class HealthMonitor
 
     // Hysteresis: require N consecutive failures before marking unhealthy
     const int FailureThreshold = 2;
-    // Grace period: don't poll for first X seconds after launch
-    const int GracePeriodSeconds = 15;
-    // LLM warmup: skip LLM check for first X seconds
-    const int LlmWarmupSeconds = 10;
+    // Grace period: don't poll for first 15s after launch (3 ticks at 5s each)
+    const int GracePeriodTicks = 3;
+    // LLM warmup: skip LLM check for first 10s (2 ticks at 5s each)
+    const int LlmWarmupTicks = 2;
 
     private int _elapsedSeconds = 0;
 
@@ -40,7 +40,7 @@ public class HealthMonitor
         _elapsedSeconds++;
 
         // Grace period: don't poll during startup
-        if (_elapsedSeconds <= GracePeriodSeconds) return;
+        if (_elapsedSeconds <= GracePeriodTicks) return;
 
         var services = new[]
         {
@@ -52,7 +52,7 @@ public class HealthMonitor
         foreach (var (key, info, url) in services)
         {
             // Skip LLM during warmup period
-            if (key == "llm" && _elapsedSeconds < LlmWarmupSeconds) continue;
+            if (key == "llm" && _elapsedSeconds < LlmWarmupTicks) continue;
 
             var healthy = await Ping(url);
             UpdateStatus(key, info, healthy);
