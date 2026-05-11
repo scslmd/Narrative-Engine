@@ -6,8 +6,11 @@ namespace NarrativeLauncher;
 
 public class TrayManager
 {
+    // Hidden control for thread marshaling
+    private readonly Control _marshaler = new();
     private readonly NotifyIcon _tray;
     private readonly ContextMenuStrip _menu;
+    private Icon? _currentIcon;
     public Action<string>? OnMenuClick { get; set; }
 
     public TrayManager()
@@ -30,27 +33,39 @@ public class TrayManager
     {
         _menu.Items.Clear();
 
-        _menu.Items.Add(new ToolStripMenuItem("Open Frontend", null, (_, _) => OpenUrl("http://localhost:5173")));
-        _menu.Items.Add(new ToolStripMenuItem("Open API Docs", null, (_, _) => OpenUrl("http://127.0.0.1:8000/docs")));
+        _menu.Items.Add(new ToolStripMenuItem("Open Frontend", null,
+            (_, _) => OpenUrl("http://localhost:5173")));
+        _menu.Items.Add(new ToolStripMenuItem("Open API Docs", null,
+            (_, _) => OpenUrl("http://127.0.0.1:8000/docs")));
         _menu.Items.Add(new ToolStripSeparator());
 
         if (allHealthy)
-            _menu.Items.Add(new ToolStripMenuItem("Status: All services healthy", null, null, "status"));
+            _menu.Items.Add(new ToolStripMenuItem(
+                "Status: All services healthy", null, null, "status"));
         else
-            _menu.Items.Add(new ToolStripMenuItem($"Status: {string.Join(", ", unhealthy!)} unhealthy", null, null, "status"));
+            _menu.Items.Add(new ToolStripMenuItem(
+                $"Status: {string.Join(", ", unhealthy!)} unhealthy",
+                null, null, "status"));
 
         _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add(new ToolStripMenuItem("Restart Backend", null, (_, _) => OnMenuClick?.Invoke("restart-backend")));
-        _menu.Items.Add(new ToolStripMenuItem("Restart Frontend", null, (_, _) => OnMenuClick?.Invoke("restart-frontend")));
+        _menu.Items.Add(new ToolStripMenuItem("Restart Backend", null,
+            (_, _) => OnMenuClick?.Invoke("restart-backend")));
+        _menu.Items.Add(new ToolStripMenuItem("Restart Frontend", null,
+            (_, _) => OnMenuClick?.Invoke("restart-frontend")));
         _menu.Items.Add(new ToolStripSeparator());
-        _menu.Items.Add(new ToolStripMenuItem("View Logs", null, (_, _) => OpenUrl("file:///C:/Users/SLuh/AppData/Local/Temp/opencode/bg-out.log")));
-        _menu.Items.Add(new ToolStripMenuItem("Exit", null, (_, _) => Application.Exit()));
+        _menu.Items.Add(new ToolStripMenuItem("View Logs", null,
+            (_, _) => OpenUrl("file:///C:/Users/SLuh/AppData/Local/Temp/opencode/bg-out.log")));
+        _menu.Items.Add(new ToolStripMenuItem("Exit", null,
+            (_, _) => Application.Exit()));
     }
 
     public void UpdateIcon(bool allHealthy)
     {
         var color = allHealthy ? Color.LimeGreen : Color.Orange;
-        _tray.Icon = CreateIcon(color);
+        var newIcon = CreateIcon(color);
+        _currentIcon?.Dispose();
+        _currentIcon = newIcon;
+        _tray.Icon = newIcon;
     }
 
     public void ShowBalloonTip(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
@@ -86,5 +101,10 @@ public class TrayManager
         _ = Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
-    public void Dispose() => _tray.Dispose();
+    public void Invoke(Action action) => _marshaler.Invoke(action);
+    public void Dispose()
+    {
+        _currentIcon?.Dispose();
+        _tray.Dispose();
+    }
 }

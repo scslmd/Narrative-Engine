@@ -38,6 +38,10 @@ public class HealthMonitor
     private async void OnTick(object? sender, ElapsedEventArgs e)
     {
         _elapsedSeconds++;
+
+        // Grace period: don't poll during startup
+        if (_elapsedSeconds <= GracePeriodSeconds) return;
+
         var services = new[]
         {
             ("backend", _services.Backend, $"http://127.0.0.1:{_services.Backend.Port}{_services.Backend.CheckUrl}"),
@@ -103,7 +107,11 @@ public class HealthMonitor
         if (!_services.Frontend.Healthy) unhealthy.Add("Frontend");
         if (!_services.Llm.Healthy) unhealthy.Add("LLM");
 
-        _tray.UpdateIcon(allHealthy);
-        _tray.PopulateMenu(allHealthy, unhealthy.ToArray());
+        // Update on UI thread (NotifyIcon lives on main thread)
+        _tray.Invoke(() =>
+        {
+            _tray.UpdateIcon(allHealthy);
+            _tray.PopulateMenu(allHealthy, unhealthy.ToArray());
+        });
     }
 }
