@@ -112,6 +112,7 @@ public class HealthMonitor
         {
             _tray.UpdateIcon(allHealthy);
             _tray.PopulateMenu(allHealthy, unhealthy.ToArray());
+            _tray.UpdateTooltip(_services.Backend, _services.Frontend, _services.Llm);
         });
     }
 }

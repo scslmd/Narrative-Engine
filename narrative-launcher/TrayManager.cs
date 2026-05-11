@@ -12,8 +12,9 @@ public class TrayManager
     private readonly ContextMenuStrip _menu;
     private Icon? _currentIcon;
     public Action<string>? OnMenuClick { get; set; }
+    private StatusWindow? _statusWindow;
 
-    public TrayManager()
+    public TrayManager(ServiceManager services)
     {
         _menu = new ContextMenuStrip();
         PopulateMenu(true);
@@ -26,7 +27,21 @@ public class TrayManager
             Visible = true,
         };
 
-        _tray.DoubleClick += (s, e) => OpenUrl("http://localhost:5173");
+        _tray.DoubleClick += (s, e) => ShowStatusWindow(services);
+    }
+
+    private void ShowStatusWindow(ServiceManager services)
+    {
+        if (_statusWindow == null)
+        {
+            _statusWindow = new StatusWindow(services);
+        }
+        else
+        {
+            _statusWindow.Refresh();
+        }
+        _statusWindow.Show();
+        _statusWindow.BringToFront();
     }
 
     public void PopulateMenu(bool allHealthy, string[]? unhealthy = null)
@@ -66,6 +81,14 @@ public class TrayManager
         _currentIcon?.Dispose();
         _currentIcon = newIcon;
         _tray.Icon = newIcon;
+    }
+
+    public void UpdateTooltip(ServiceInfo backend, ServiceInfo frontend, ServiceInfo llm)
+    {
+        var b = backend.Healthy ? "\u2713" : "\u2717"; // ✓ or ✗
+        var f = frontend.Healthy ? "\u2713" : "\u2717";
+        var l = llm.Healthy ? "\u2713" : "\u2717";
+        _tray.Text = $"Narrative Engine\nBackend {b} | Frontend {f} | LLM {l}";
     }
 
     public void ShowBalloonTip(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
