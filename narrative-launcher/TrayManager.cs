@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace NarrativeLauncher;
@@ -13,14 +14,24 @@ public class TrayManager
     public Action<string>? OnMenuClick { get; set; }
     private StatusWindow? _statusWindow;
 
+    // Frontend-aligned colors
+    private static readonly Color Indigo = Color.FromArgb(99, 102, 241);
+    private static readonly Color Violet = Color.FromArgb(167, 139, 250);
+    private static readonly Color Amber = Color.FromArgb(245, 158, 11);
+    private static readonly Color AmberDark = Color.FromArgb(217, 119, 6);
+    private static readonly Color MenuBg = Color.FromArgb(30, 41, 59);
+    private static readonly Color MenuHover = Color.FromArgb(38, 53, 69);
+    private static readonly Color MenuText = Color.FromArgb(220, 220, 220);
+    private static readonly Color MenuMuted = Color.FromArgb(156, 163, 175);
+
     private static readonly Dictionary<string, Image> MenuIcons = new()
     {
-        ["open"] = CreateGlyph("\uE873"),
-        ["docs"] = CreateGlyph("\uE774"),
-        ["status"] = CreateGlyph("\u2713"),
-        ["restart"] = CreateGlyph("\uE76E"),
-        ["logs"] = CreateGlyph("\uE9FF"),
-        ["exit"] = CreateGlyph("\u2715"),
+        ["open"] = CreateGlyph("\uE873", Indigo),
+        ["docs"] = CreateGlyph("\uE774", Indigo),
+        ["status"] = CreateGlyph("\u2713", Color.FromArgb(52, 211, 153)),
+        ["restart"] = CreateGlyph("\uE76E", Violet),
+        ["logs"] = CreateGlyph("\uE9FF", Color.FromArgb(100, 116, 139)),
+        ["exit"] = CreateGlyph("\u2715", Color.FromArgb(248, 113, 113)),
     };
 
     public TrayManager(ServiceManager services)
@@ -29,15 +40,15 @@ public class TrayManager
         {
             ShowImageMargin = true,
             GripStyle = ToolStripGripStyle.Hidden,
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.FromArgb(220, 220, 220),
+            BackColor = MenuBg,
+            ForeColor = MenuText,
             Renderer = new MenuRenderer(),
         };
         PopulateMenu(true);
 
         _tray = new NotifyIcon
         {
-            Icon = CreateIcon(Color.LimeGreen),
+            Icon = CreateIcon(Indigo, Violet),
             Text = "Narrative Engine",
             ContextMenuStrip = _menu,
             Visible = true,
@@ -89,8 +100,11 @@ public class TrayManager
 
     public void UpdateIcon(bool allHealthy)
     {
-        var color = allHealthy ? Color.LimeGreen : Color.Orange;
-        var newIcon = CreateIcon(color);
+        Icon newIcon;
+        if (allHealthy)
+            newIcon = CreateIcon(Indigo, Violet);
+        else
+            newIcon = CreateIcon(Amber, AmberDark);
         _currentIcon?.Dispose();
         _currentIcon = newIcon;
         _tray.Icon = newIcon;
@@ -111,26 +125,29 @@ public class TrayManager
         _tray.ShowBalloonTip(5000);
     }
 
-    private static Icon CreateIcon(Color color)
+    private static Icon CreateIcon(Color primary, Color secondary)
     {
         using var bmp = new Bitmap(32, 32);
         using var g = Graphics.FromImage(bmp);
         g.Clear(Color.Transparent);
-        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
-        using var gradient = new System.Drawing.Drawing2D.PathGradientBrush(
-            new[] { new PointF(16, 16) })
-        {
-            CenterColor = Lighten(color, 0.3f),
-            SurroundColors = new[] { Darken(color, 0.2f) },
-        };
+        // Gradient fill
+        using var gradient = new LinearGradientBrush(
+            new Rectangle(4, 4, 24, 24), primary, secondary, 135f);
         g.FillEllipse(gradient, 4, 4, 24, 24);
 
-        using var pen = new Pen(Darken(color, 0.4f), 1);
+        // Glow shadow
+        using var glow = new SolidBrush(Color.FromArgb(60, primary.R, primary.G, primary.B));
+        g.FillEllipse(glow, 2, 2, 28, 28);
+
+        // Outer ring
+        using var pen = new Pen(Darken(primary, 0.3f), 1.5f);
         g.DrawEllipse(pen, 3.5f, 3.5f, 25, 25);
 
-        using var font = new Font("Segoe UI", 16F, FontStyle.Bold);
+        // "N" letter with shadow
+        using var font = new Font("Inter", 16F, FontStyle.Bold);
         var text = "N";
         var size = g.MeasureString(text, font);
         var x = (32 - size.Width) / 2;
@@ -145,28 +162,19 @@ public class TrayManager
         return Icon.FromHandle(bmp.GetHicon());
     }
 
-    private static byte Clamp(byte v, float delta) => (byte)Math.Min(255f, Math.Max(0f, v + delta));
-
-    private static Color Lighten(Color c, float factor)
-        => Color.FromArgb(Clamp(c.R, (255 - c.R) * factor),
-                           Clamp(c.G, (255 - c.G) * factor),
-                           Clamp(c.B, (255 - c.B) * factor));
-
-    private static byte ClampDown(byte v, float factor) => (byte)(v * factor);
-
     private static Color Darken(Color c, float factor)
-        => Color.FromArgb(ClampDown(c.R, 1f - factor),
-                           ClampDown(c.G, 1f - factor),
-                           ClampDown(c.B, 1f - factor));
+        => Color.FromArgb((byte)(c.R * (1f - factor)),
+                           (byte)(c.G * (1f - factor)),
+                           (byte)(c.B * (1f - factor)));
 
-    private static Image CreateGlyph(string text)
+    private static Image CreateGlyph(string text, Color color)
     {
         using var bmp = new Bitmap(16, 16);
         using var g = Graphics.FromImage(bmp);
         g.Clear(Color.Transparent);
-        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
         using var font = new Font("Segoe UI Symbol", 12F);
-        using var brush = new SolidBrush(Color.FromArgb(180, 180, 180));
+        using var brush = new SolidBrush(color);
         g.DrawString(text, font, brush, 2f, 1f);
         return (Image)bmp.Clone();
     }
@@ -175,12 +183,12 @@ public class TrayManager
     {
         var item = new ToolStripMenuItem(text, MenuIcons[iconKey], onClick)
         {
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.FromArgb(220, 220, 220),
-            Font = new Font("Segoe UI", 10F),
+            BackColor = MenuBg,
+            ForeColor = MenuText,
+            Font = new Font("Inter", 10F),
         };
-        item.MouseEnter += (s, _) => item.BackColor = Color.FromArgb(50, 50, 50);
-        item.MouseLeave += (s, _) => item.BackColor = Color.FromArgb(30, 30, 30);
+        item.MouseEnter += (s, _) => item.BackColor = MenuHover;
+        item.MouseLeave += (s, _) => item.BackColor = MenuBg;
         return item;
     }
 
@@ -188,9 +196,9 @@ public class TrayManager
     {
         var item = new ToolStripMenuItem(text)
         {
-            BackColor = Color.FromArgb(30, 30, 30),
-            ForeColor = Color.FromArgb(150, 150, 150),
-            Font = new Font("Segoe UI", 9F),
+            BackColor = Color.FromArgb(20, 52, 211, 153),
+            ForeColor = Color.FromArgb(52, 211, 153),
+            Font = new Font("Inter", 9F),
         };
         return item;
     }
@@ -208,5 +216,5 @@ public class TrayManager
         _tray.Dispose();
     }
 
-private class MenuRenderer : ToolStripProfessionalRenderer { }
+    private class MenuRenderer : ToolStripProfessionalRenderer { }
 }
