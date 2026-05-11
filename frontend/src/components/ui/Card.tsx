@@ -1,5 +1,4 @@
 import { HTMLAttributes, ReactNode } from 'react'
-import { useThemeStore } from '../../stores/themeStore'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -20,34 +19,15 @@ export function Card({
   className = '',
   ...props
 }: CardProps) {
-  const { mode } = useThemeStore()
-  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
-  
-  const baseBorder = isDark ? 'border-slate-800' : 'border-slate-200'
-  const baseBg = isDark ? 'bg-slate-900' : 'bg-white'
-  
-  const outlinedBorder = isDark
-    ? 'border-slate-700'
-    : 'border-slate-300'
   const variantStyles: Record<string, string> = {
-    default: `${baseBg} border ${baseBorder}`,
-    elevated: `${baseBg} border ${baseBorder} shadow-card`,
-    outlined: `${baseBg} border ${outlinedBorder}`,
+    default: 'bg-[var(--bg-primary)] border border-[var(--border-primary)]',
+    elevated: 'bg-[var(--bg-primary)] border border-[var(--border-primary)] shadow-card',
+    outlined: 'bg-[var(--bg-primary)] border border-[var(--border-secondary)]',
   }
-  
-  const hoverShadow = isDark
-    ? 'hover:shadow-card-hover hover:border-slate-700'
-    : 'hover:shadow-card-hover hover:border-slate-300'
-  const hoverStyle = hover
-    ? `transition-all duration-150 ${hoverShadow}`
-    : ''
 
-  const titleColor = isDark
-    ? 'text-slate-100'
-    : 'text-slate-900'
-  const subtitleColor = isDark
-    ? 'text-slate-400'
-    : 'text-slate-500'
+  const hoverStyle = hover
+    ? 'transition-shadow duration-200 hover:shadow-card-hover'
+    : ''
 
   return (
     <div
@@ -58,12 +38,12 @@ export function Card({
         <div className="flex items-start justify-between mb-4 gap-4">
           <div>
             {title && (
-              <h3 className={`text-base font-semibold ${titleColor}`}>
+              <h3 className="text-base font-semibold text-[var(--text-primary)] tracking-tight">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className={`text-sm mt-0.5 ${subtitleColor}`}>
+              <p className="text-sm mt-0.5 text-[var(--text-secondary)]">
                 {subtitle}
               </p>
             )}

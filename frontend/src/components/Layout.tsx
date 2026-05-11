@@ -112,7 +112,7 @@ export function Layout({ children }: LayoutProps) {
                       aria-current={isActive ? 'page' : undefined}
                       className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md ${
                         isActive
-                          ? `bg-white text-gray-900 shadow-lg ${shadow}`
+                          ? `bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-lg ${shadow}`
                           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]/50'
                       }`}
                     >

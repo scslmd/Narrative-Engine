@@ -45,12 +45,12 @@
   --border-secondary: #cbd5e1;
   --border-focus: rgba(99, 102, 241, 0.4);
 
-  /* Shadows */
-  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.03);
-  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04);
-  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.1), 0 2px 8px -3px rgb(0 0 0 / 0.05);
+  /* Shadows — multi-layer stack (ambient + border + inner highlight) */
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 0 0 1px var(--border-primary);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04), 0 0 0 1px var(--border-primary);
+  --shadow-card-hover: 0 4px 8px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04), 0 0 0 1px var(--border-secondary);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.08), 0 4px 10px -4px rgb(0 0 0 / 0.04), 0 0 0 1px var(--border-primary);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.1), 0 2px 8px -3px rgb(0 0 0 / 0.05), 0 0 0 1px var(--border-primary);
   --shadow-glow-primary: 0 0 0 3px rgba(99, 102, 241, 0.15);
 
   /* Radius */
@@ -114,11 +114,11 @@
   --border-secondary: #4b5563;
   --border-focus: rgba(129, 140, 248, 0.4);
 
-  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.2);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.2);
-  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.2);
-  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.5), 0 2px 8px -3px rgb(0 0 0 / 0.3);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.2), 0 0 0 1px var(--border-primary);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2), 0 0 0 1px var(--border-primary);
+  --shadow-card-hover: 0 4px 8px 0 rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.2), 0 0 0 1px var(--border-secondary);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.5), 0 4px 10px -4px rgb(0 0 0 / 0.2), 0 0 0 1px var(--border-primary);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.5), 0 2px 8px -3px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
 }
 
 /* === Midnight Theme === */
@@ -141,11 +141,11 @@
   --border-secondary: #4b5563;
   --border-focus: rgba(99, 102, 241, 0.4);
 
-  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3);
-  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card-hover: 0 4px 8px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-secondary);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-primary);
   --shadow-glow-primary: 0 0 0 3px rgba(99, 102, 241, 0.2);
 
   --color-primary: #6366f1;
@@ -176,11 +176,11 @@
   --border-secondary: #16a34a;
   --border-focus: rgba(52, 211, 153, 0.4);
 
-  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3);
-  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card-hover: 0 4px 8px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-secondary);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-primary);
   --shadow-glow-primary: 0 0 0 3px rgba(52, 211, 153, 0.2);
 
   --color-primary: #34d399;
@@ -215,11 +215,11 @@
   --border-secondary: #0ea5e9;
   --border-focus: rgba(56, 189, 248, 0.4);
 
-  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3);
-  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-card-hover: 0 4px 8px 0 rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-secondary);
+  --shadow-elevated: 0 10px 25px -3px rgb(0 0 0 / 0.6), 0 4px 10px -4px rgb(0 0 0 / 0.3), 0 0 0 1px var(--border-primary);
+  --shadow-dropdown: 0 4px 20px -2px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-primary);
   --shadow-glow-primary: 0 0 0 3px rgba(56, 189, 248, 0.2);
 
   --color-primary: #38bdf8;
@@ -325,6 +325,39 @@
   --color-secondary: #c4b5fd;
   --color-secondary-hover: #a78bfa;
   --border-focus: rgba(167, 139, 250, 0.4);
+}
+
+/* === Typography Scale === */
+/* Page title: large, tight tracking */
+.text-page-title {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Section heading: medium, subtle tracking */
+.text-section-heading {
+  font-size: 1.125rem;
+  line-height: 1.33;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Subsection: regular weight, normal tracking */
+.text-subsection {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* Label/caption: small, uppercase, wide tracking */
+.text-label {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 /* === Animations === */

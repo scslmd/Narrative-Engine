@@ -1,6 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import { useThemeStore } from '../../stores/themeStore'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'soft'
@@ -20,46 +19,58 @@ export function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const { mode } = useThemeStore()
-  const isDark = ['dark', 'midnight', 'forest', 'ocean'].includes(mode)
-  
   const baseStyles = [
     'inline-flex items-center justify-center font-medium',
     'rounded-lg',
-    'transition-all duration-150',
-    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    'transition-all duration-200',
+    'focus:outline-none focus:ring-2 focus:ring-offset-1',
     'active:scale-[0.98]',
     'disabled:opacity-60 disabled:cursor-not-allowed',
     'disabled:active:scale-100',
+    'focus:ring-offset-[var(--bg-primary)]',
   ].join(' ')
-  
+
   const variantStyles: Record<string, string> = {
-    primary: isDark
-      ? 'bg-indigo-500 text-white hover:bg-indigo-400 focus:ring-indigo-500/40 shadow-sm shadow-indigo-500/20'
-      : 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500/40 shadow-sm shadow-indigo-500/20',
-    secondary: isDark
-      ? 'bg-slate-700 text-slate-200 hover:bg-slate-600 focus:ring-slate-500/40'
-      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-400/40',
-    danger: isDark
-      ? 'bg-red-500 text-white hover:bg-red-400 focus:ring-red-500/40 shadow-sm shadow-red-500/20'
-      : 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/40 shadow-sm shadow-red-500/20',
-    ghost: isDark
-      ? 'bg-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:ring-slate-500/40'
-      : 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400/40',
-    outline: isDark
-      ? 'border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-slate-100 focus:ring-slate-500/40'
-      : 'border border-slate-300 text-slate-700 hover:bg-slate-50 hover:text-slate-900 focus:ring-slate-400/40',
-    soft: isDark
-      ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700/80 hover:text-slate-100 focus:ring-slate-500/40'
-      : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900 focus:ring-slate-400/40',
+    primary: [
+      'bg-[var(--color-primary)] text-[var(--text-inverse)]',
+      'hover:bg-[var(--color-primary-hover)]',
+      'focus:ring-[var(--color-primary)]/40',
+      'shadow-sm shadow-[var(--color-primary)]/20',
+    ].join(' '),
+    secondary: [
+      'bg-[var(--bg-secondary)] text-[var(--text-secondary)]',
+      'hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]',
+      'focus:ring-[var(--color-primary)]/30',
+    ].join(' '),
+    danger: [
+      'bg-[var(--color-danger)] text-[var(--text-inverse)]',
+      'hover:bg-[var(--color-warning)]',
+      'focus:ring-[var(--color-danger)]/40',
+      'shadow-sm shadow-[var(--color-danger)]/20',
+    ].join(' '),
+    ghost: [
+      'bg-transparent text-[var(--text-secondary)]',
+      'hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]',
+      'focus:ring-[var(--color-primary)]/30',
+    ].join(' '),
+    outline: [
+      'border border-[var(--border-secondary)] text-[var(--text-primary)]',
+      'hover:bg-[var(--bg-secondary)] hover:text-[var(--text-inverse)]',
+      'focus:ring-[var(--color-primary)]/30',
+    ].join(' '),
+    soft: [
+      'bg-[var(--color-primary-subtle)] text-[var(--color-primary)]',
+      'hover:bg-[var(--color-primary-border)] hover:text-[var(--text-inverse)]',
+      'focus:ring-[var(--color-primary)]/30',
+    ].join(' '),
   }
-  
+
   const sizeStyles: Record<string, string> = {
     sm: 'px-3 py-1.5 text-xs gap-1.5',
     md: 'px-4 py-2 text-sm gap-2',
     lg: 'px-6 py-3 text-base gap-2.5',
   }
-  
+
   return (
     <button
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
