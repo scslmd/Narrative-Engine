@@ -50,6 +50,10 @@ nul
 .playwright-mcp/
 .superpowers/
 
+# Design references (keep DESIGN.md, ignore temp files)
+design-references/**/*.backup
+design-references/**/*.tmp
+
 # Local screenshot artifacts
 manuscript_fixed.png
 manuscript_markdown.png
