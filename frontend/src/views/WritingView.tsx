@@ -8,13 +8,12 @@ import { DraftForm } from '../components/writing/DraftForm';
 import { ManuscriptEditor } from '../components/writing/ManuscriptEditor';
 import { useWritingView } from '../hooks/useWritingView';
 import { useManuscriptAssist } from '../hooks/useManuscriptAssist';
+import { useMergedSuggestions } from '../hooks/useMergedSuggestions';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useToastStore } from '../stores/toastStore';
 import { useThemeStore } from '../stores/themeStore';
 import { resolveEffectiveMode } from '../theme/theme';
 import type { ManuscriptAssistKind } from '../types/manuscriptAssist';
-import type { RevisionSuggestion } from '../types/aids';
-
 const ASSIST_LABELS: Record<ManuscriptAssistKind, string> = {
   developmental_review: 'Developmental review',
   canon_check: 'Canon check',
@@ -103,22 +102,15 @@ export function WritingView() {
     content: isEditing ? editContent : selectedDocument?.content,
   });
 
-  const mergedSuggestions: RevisionSuggestion[] = [
-    ...revisionSuggestions,
-    ...assist.llmSuggestions.map((item) => ({
-      suggestion_id: item.suggestion_id,
-      project_id: item.project_id,
-      target_document_id: item.target_document_id,
-      source_text: item.source_text,
-      proposed_text: item.proposed_text,
-      rationale: item.rationale,
-      source_context: item.source_context,
-      status:
-        item.status === 'ARCHIVED'
-          ? 'REJECTED'
-          : item.status,
-    })),
-  ];
+  const mergedSuggestions = useMergedSuggestions({
+    revisionSuggestions,
+    llmSuggestions: assist.llmSuggestions,
+    onRevisionAccept: handleSuggestionAccept,
+    onRevisionReject: handleSuggestionReject,
+    onLlmAccept: assist.applySuggestion,
+    onLlmReject: assist.rejectSuggestion,
+    onLlmArchive: assist.archiveSuggestion,
+  });
 
   if (!projectId) {
     return (
@@ -274,30 +266,10 @@ export function WritingView() {
       <section aria-label="Revision suggestions panel" className="min-h-0">
         <AidsPanel
           projectId={projectId}
-          suggestions={mergedSuggestions}
-          onSuggestionAccept={(suggestionId) => {
-            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-            if (llm) {
-              void assist.applySuggestion(suggestionId);
-              return;
-            }
-            void handleSuggestionAccept(suggestionId);
-          }}
-          onSuggestionReject={(suggestionId) => {
-            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-            if (llm) {
-              void assist.rejectSuggestion(suggestionId);
-              return;
-            }
-            void handleSuggestionReject(suggestionId);
-          }}
-          onSuggestionArchive={(suggestionId) => {
-            const llm = assist.llmSuggestions.find((item) => item.suggestion_id === suggestionId);
-            if (llm) {
-              void assist.archiveSuggestion(suggestionId);
-              return;
-            }
-          }}
+          suggestions={mergedSuggestions.suggestions}
+          onSuggestionAccept={(suggestionId) => void mergedSuggestions.handleSuggestionAccept(suggestionId)}
+          onSuggestionReject={(suggestionId) => void mergedSuggestions.handleSuggestionReject(suggestionId)}
+          onSuggestionArchive={(suggestionId) => void mergedSuggestions.handleSuggestionArchive(suggestionId)}
         />
       </section>)}
     </div>

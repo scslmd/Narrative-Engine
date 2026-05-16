@@ -1,4 +1,4 @@
-import { AidsPanel } from '../aids/AidsPanel';
+import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
 import { GenerationView } from '../../views/GenerationView';
 import { InspectView } from '../../views/InspectView';
 import { JobLaunchPanel } from '../JobLaunchPanel';
@@ -55,7 +55,7 @@ export function StudioContextPanel({ projectId }: StudioContextPanelProps) {
       case 'jobs':
         return <JobLaunchPanel projectId={projectId} />;
       case 'suggestions':
-        return <AidsPanel projectId={projectId} suggestions={[]} />;
+        return <StudioSuggestionsPanel projectId={projectId} />;
     }
   };
 
