@@ -25,6 +25,23 @@ const writingMocks = [
   http.get('/v1/story-development/drafting/revision-suggestions', () =>
     HttpResponse.json({ project_id: 'proj-1', items: [], meta: {} }),
   ),
+  http.get('/v1/canon/annotations', ({ request }) => {
+    const url = new URL(request.url);
+    const targetKind = url.searchParams.get('target_kind');
+    return HttpResponse.json({ target_kind: targetKind, items: [] });
+  }),
+  http.post('/v1/canon/annotations', async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      annotation_id: 'ann-1',
+      project_id: (body as any).project_id,
+      target_kind: (body as any).target_kind,
+      target_id: (body as any).target_id,
+      field_path: (body as any).field_path,
+      annotation_kind: (body as any).annotation_kind,
+      note: (body as any).note,
+    });
+  }),
 ];
 
 describe('StudioView integration', () => {
@@ -120,6 +137,38 @@ describe('StudioView integration', () => {
 
     await waitFor(() => {
       expect(screen.getByText('0 profiles')).toBeInTheDocument();
+    });
+  });
+
+  it('opening Characters panel loads without annotation errors', async () => {
+    server.use(
+      ...writingMocks,
+      http.get('/v1/story-development/characters', () =>
+        HttpResponse.json({ items: [] }),
+      ),
+    );
+    renderWithRoute(<StudioView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /characters/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('0 profiles')).toBeInTheDocument();
+    });
+  });
+
+  it('opening World Bible panel loads without annotation errors', async () => {
+    server.use(
+      ...writingMocks,
+      http.get('/v1/story-development/world-bible', () =>
+        HttpResponse.json({ items: [] }),
+      ),
+    );
+    renderWithRoute(<StudioView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /world/i }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('World Bible').length).toBeGreaterThanOrEqual(1);
     });
   });
 });

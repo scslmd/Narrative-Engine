@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { WorldBibleWorkspace } from '../bible/WorldBibleWorkspace';
 import { WorkspaceStatus } from '../planning/ui';
+import { createCanonAnnotation, getCanonAnnotations } from '../../services/canonCustomization';
 import { createWorldBibleEntry, getWorldBibleEntries, updateWorldBibleEntry } from '../../services/worldBible';
+import type { CanonAnnotationKind } from '../../types/canonCustomization';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../../types/bible';
 
 interface StudioWorldBiblePanelProps {
@@ -21,6 +23,36 @@ export function StudioWorldBiblePanel({ projectId }: StudioWorldBiblePanelProps)
     queryKey: ['studio', 'world-bible', projectId],
     queryFn: () => getWorldBibleEntries(projectId),
   });
+
+  const canonAnnotationsQuery = useQuery({
+    queryKey: ['studio', 'canon', 'annotations', projectId, 'world-bible'],
+    queryFn: () => getCanonAnnotations(projectId, { target_kind: 'world_bible' }),
+  });
+
+  const canonAnnotationMutation = useMutation({
+    mutationFn: createCanonAnnotation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['studio', 'canon', 'annotations', projectId, 'world-bible'],
+      });
+    },
+  });
+
+  const handleAnnotateField = async (
+    targetId: string,
+    fieldPath: string,
+    annotationKind: CanonAnnotationKind,
+    note: string,
+  ) => {
+    await canonAnnotationMutation.mutateAsync({
+      project_id: projectId,
+      target_kind: 'world_bible',
+      target_id: targetId,
+      field_path: fieldPath,
+      annotation_kind: annotationKind,
+      note,
+    });
+  };
 
   const addMutation = useMutation({
     mutationFn: (request: WorldBibleEntryCreateRequest) => createWorldBibleEntry(request),
@@ -68,8 +100,8 @@ export function StudioWorldBiblePanel({ projectId }: StudioWorldBiblePanelProps)
           updates,
         });
       }}
-      canonAnnotations={[]}
-      onAnnotateField={async () => undefined}
+      canonAnnotations={canonAnnotationsQuery.data ?? []}
+      onAnnotateField={handleAnnotateField}
     />
   );
 }

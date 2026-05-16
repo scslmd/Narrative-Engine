@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CharacterBuilder } from '../characters/CharacterBuilder';
 import { WorkspaceStatus } from '../planning/ui';
+import { createCanonAnnotation, getCanonAnnotations } from '../../services/canonCustomization';
 import { createCharacter, getCharacter, getCharacters, updateCharacter } from '../../services/characters';
+import type { CanonAnnotationKind } from '../../types/canonCustomization';
 import type { CharacterProfile, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../../types/characters';
 
 type CharacterEditorMode = 'list' | 'create' | 'edit';
@@ -38,6 +40,37 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
     () => charactersQuery.data ?? [],
     [charactersQuery.data],
   );
+
+  const canonAnnotationsQuery = useQuery({
+    queryKey: ['studio', 'canon', 'annotations', projectId, 'characters'],
+    queryFn: () => getCanonAnnotations(projectId, { target_kind: 'character' }),
+    enabled: Boolean(projectId),
+  });
+
+  const canonAnnotationMutation = useMutation({
+    mutationFn: createCanonAnnotation,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ['studio', 'canon', 'annotations', projectId, 'characters'],
+      });
+    },
+  });
+
+  const handleAnnotateField = async (
+    targetId: string,
+    fieldPath: string,
+    annotationKind: CanonAnnotationKind,
+    note: string,
+  ) => {
+    await canonAnnotationMutation.mutateAsync({
+      project_id: projectId,
+      target_kind: 'character',
+      target_id: targetId,
+      field_path: fieldPath,
+      annotation_kind: annotationKind,
+      note,
+    });
+  };
 
   const saveMutation = useMutation({
     mutationFn: (character: Partial<CharacterProfile>) => {
@@ -134,8 +167,8 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
       <CharacterBuilder
         projectId={projectId}
         onSave={(character) => saveMutation.mutate(character)}
-        canonAnnotations={[]}
-        onAnnotateField={async () => undefined}
+        canonAnnotations={canonAnnotationsQuery.data ?? []}
+        onAnnotateField={handleAnnotateField}
         onCancel={() => {
           setMode('list');
           setSelectedCharacterId(null);
@@ -163,8 +196,8 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
       projectId={projectId}
       character={selectedCharacterQuery.data ?? selectedCharacter ?? undefined}
       onSave={(character) => saveMutation.mutate(character)}
-      canonAnnotations={[]}
-      onAnnotateField={async () => undefined}
+      canonAnnotations={canonAnnotationsQuery.data ?? []}
+      onAnnotateField={handleAnnotateField}
       onCancel={() => {
         setMode('list');
         setSelectedCharacterId(null);
