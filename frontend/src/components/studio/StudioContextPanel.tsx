@@ -1,13 +1,13 @@
+import { StudioGenerationPanel } from './StudioGenerationPanel';
+import { StudioIdeasPanel } from './StudioIdeasPanel';
+import { StudioInspectPanel } from './StudioInspectPanel';
+import { StudioCharactersPanel } from './StudioCharactersPanel';
+import { StudioRelationshipsPanel } from './StudioRelationshipsPanel';
+import { StudioReviewPanel } from './StudioReviewPanel';
 import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
-import { GenerationView } from '../../views/GenerationView';
-import { InspectView } from '../../views/InspectView';
+import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
 import { JobLaunchPanel } from '../JobLaunchPanel';
 import { NotesPanel } from '../NotesPanel';
-import { ReviewView } from '../../views/ReviewView';
-import { StudioCharactersPanel } from './StudioCharactersPanel';
-import { StudioIdeasPanel } from './StudioIdeasPanel';
-import { StudioRelationshipsPanel } from './StudioRelationshipsPanel';
-import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
 
@@ -45,11 +45,11 @@ export function StudioContextPanel({ projectId }: StudioContextPanelProps) {
       case 'relationships':
         return <StudioRelationshipsPanel projectId={projectId} />;
       case 'generation':
-        return <GenerationView />;
+        return <StudioGenerationPanel projectId={projectId} />;
       case 'review':
-        return <ReviewView />;
+        return <StudioReviewPanel projectId={projectId} />;
       case 'inspect':
-        return <InspectView />;
+        return <StudioInspectPanel />;
       case 'notes':
         return <NotesPanel projectId={projectId} />;
       case 'jobs':

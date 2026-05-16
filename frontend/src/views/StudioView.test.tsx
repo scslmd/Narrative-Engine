@@ -58,7 +58,7 @@ describe('StudioView integration', () => {
     ).toBeInTheDocument();
   });
 
-  it('clicking "Generate" opens the generation panel', () => {
+  it('clicking "Generate" opens the compact generation panel', async () => {
     server.use(
       ...writingMocks,
       http.get('/v1/story-development/characters', () =>
@@ -73,8 +73,34 @@ describe('StudioView integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /generate/i }));
 
-    const generationElements = screen.getAllByText('Generation');
-    expect(generationElements.length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => {
+      expect(screen.getAllByText('Generation').length).toBeGreaterThanOrEqual(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('No generation runs yet.')).toBeInTheDocument();
+    });
+  });
+
+  it('clicking "Review" opens the compact review panel with Findings', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /review/i }));
+
+    expect(screen.getAllByText('Findings').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('clicking "Inspect" opens the compact inspect panel with guidance text', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /inspect/i }));
+
+    expect(
+      screen.getByText(
+        'Open a run from Review or the job tray to inspect steps, lineage, and attempts.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('clicking "Characters" opens the characters panel and shows "0 profiles"', async () => {
