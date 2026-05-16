@@ -13,6 +13,7 @@ import { BrainDumpView } from './views/BrainDumpView'
 import { GenerationView } from './views/GenerationView'
 import { CanonView } from './views/CanonView'
 import { GuidedSetupView } from './views/GuidedSetupView'
+import { StudioView } from './views/StudioView'
 import { useHealthCheck } from './hooks/useHealthCheck'
 
 const queryClient = new QueryClient({
@@ -33,7 +34,8 @@ function AppInner() {
           <Route path="/" element={<ProjectList />} />
           <Route path="/setup-wizard" element={<GuidedSetupView />} />
           <Route path="/workspace/:projectId" element={<Workspace />}>
-            <Route index element={<Navigate to="plan" replace />} />
+            <Route index element={<Navigate to="studio" replace />} />
+            <Route path="studio" element={<StudioView />} />
             <Route path="plan" element={<PlanningView />} />
             <Route path="write" element={<WritingView />} />
             <Route path="write/:chapterId" element={<WritingView />} />

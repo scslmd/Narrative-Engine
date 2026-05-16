@@ -1,4 +1,4 @@
-export type WorkspaceMode = 'plan' | 'write' | 'review' | 'inspect' | 'braindump' | 'generate' | 'canon'
+export type WorkspaceMode = 'studio' | 'plan' | 'write' | 'review' | 'inspect' | 'braindump' | 'generate' | 'canon'
 
 export interface RouteState {
   mode: WorkspaceMode
@@ -7,6 +7,7 @@ export interface RouteState {
 }
 
 export const modeToStage: Record<WorkspaceMode, 'planning' | 'writing' | 'review'> = {
+  studio: 'writing',
   braindump: 'planning',
   plan: 'planning',
   canon: 'planning',
@@ -19,6 +20,7 @@ export const modeToStage: Record<WorkspaceMode, 'planning' | 'writing' | 'review
 export const routes = {
   home: '/',
   workspace: (projectId: string) => `/workspace/${projectId}`,
+  studio: (projectId: string) => `/workspace/${projectId}/studio`,
   plan: (projectId: string) => `/workspace/${projectId}/plan`,
   write: (projectId: string, chapterId?: string) => 
     chapterId ? `/workspace/${projectId}/write/${chapterId}` : `/workspace/${projectId}/write`,

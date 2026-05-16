@@ -55,13 +55,25 @@ describe('WorkspaceShell', () => {
     expect(buttons).toHaveLength(4);
   });
 
-  it('renders 1 nav item when mode is in writing stage (write)', () => {
+  it('renders 2 nav items when mode is in writing stage (write)', () => {
     renderShell('write');
 
     const buttons = screen.getAllByRole('button', { hidden: false }).filter(
       (btn) => btn.classList.contains('nav-item'),
     );
-    expect(buttons).toHaveLength(1);
+    expect(buttons).toHaveLength(2);
+    expect(screen.getByText('Studio')).toBeInTheDocument();
+    expect(screen.getByText('Writing')).toBeInTheDocument();
+  });
+
+  it('renders Studio and Writing when mode is studio', () => {
+    renderShell('studio');
+
+    const buttons = screen.getAllByRole('button', { hidden: false }).filter(
+      (btn) => btn.classList.contains('nav-item'),
+    );
+    expect(buttons).toHaveLength(2);
+    expect(screen.getByText('Studio')).toBeInTheDocument();
     expect(screen.getByText('Writing')).toBeInTheDocument();
   });
 
