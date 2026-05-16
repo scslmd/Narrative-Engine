@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '../__tests__/test-utils';
 import { http, HttpResponse } from 'msw';
+import type { CanonAnnotationCreateRequest } from '../types/canonCustomization';
 import { server } from '../__tests__/setup';
 import { useStudioStore } from '../stores/studioStore';
 import { StudioView } from './StudioView';
@@ -31,15 +32,15 @@ const writingMocks = [
     return HttpResponse.json({ target_kind: targetKind, items: [] });
   }),
   http.post('/v1/canon/annotations', async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as CanonAnnotationCreateRequest;
     return HttpResponse.json({
       annotation_id: 'ann-1',
-      project_id: (body as any).project_id,
-      target_kind: (body as any).target_kind,
-      target_id: (body as any).target_id,
-      field_path: (body as any).field_path,
-      annotation_kind: (body as any).annotation_kind,
-      note: (body as any).note,
+      project_id: body.project_id,
+      target_kind: body.target_kind,
+      target_id: body.target_id,
+      field_path: body.field_path,
+      annotation_kind: body.annotation_kind,
+      note: body.note,
     });
   }),
 ];
@@ -71,8 +72,8 @@ describe('StudioView integration', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
     expect(
-      screen.getByRole('navigation', { name: 'Studio project map' }),
-    ).toBeInTheDocument();
+      screen.getAllByRole('navigation', { name: 'Studio project map' }).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it('clicking "Generate" opens the compact generation panel', async () => {
@@ -94,7 +95,7 @@ describe('StudioView integration', () => {
       expect(screen.getAllByText('Generation').length).toBeGreaterThanOrEqual(1);
     });
     await waitFor(() => {
-      expect(screen.getByText('No generation runs yet.')).toBeInTheDocument();
+      expect(screen.getAllByText('No generation runs yet.').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -114,10 +115,10 @@ describe('StudioView integration', () => {
     fireEvent.click(screen.getByRole('button', { name: /inspect/i }));
 
     expect(
-      screen.getByText(
+      screen.getAllByText(
         'Open a run from Review or the job tray to inspect steps, lineage, and attempts.',
-      ),
-    ).toBeInTheDocument();
+      ).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it('clicking "Characters" opens the characters panel and shows "0 profiles"', async () => {
@@ -129,14 +130,14 @@ describe('StudioView integration', () => {
     );
     renderWithRoute(<StudioView />);
 
-    fireEvent.click(screen.getByRole('button', { name: /characters/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /characters/i })[0]);
 
     await waitFor(() => {
       expect(screen.getAllByText('Characters').length).toBeGreaterThanOrEqual(2);
     });
 
     await waitFor(() => {
-      expect(screen.getByText('0 profiles')).toBeInTheDocument();
+      expect(screen.getAllByText('0 profiles').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -149,10 +150,10 @@ describe('StudioView integration', () => {
     );
     renderWithRoute(<StudioView />);
 
-    fireEvent.click(screen.getByRole('button', { name: /characters/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /characters/i })[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('0 profiles')).toBeInTheDocument();
+      expect(screen.getAllByText('0 profiles').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -165,10 +166,39 @@ describe('StudioView integration', () => {
     );
     renderWithRoute(<StudioView />);
 
-    fireEvent.click(screen.getByRole('button', { name: /world/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /world/i })[0]);
 
     await waitFor(() => {
       expect(screen.getAllByText('World Bible').length).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  it('renders Project and Context drawer buttons', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+    expect(screen.getByText('Project')).toBeInTheDocument();
+    expect(screen.getByText('Context')).toBeInTheDocument();
+  });
+
+  it('clicking Project toggles the left rail drawer', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+    fireEvent.click(screen.getByText('Project'));
+    expect(useStudioStore.getState().leftRailOpen).toBe(false);
+  });
+
+  it('clicking Context toggles the context drawer', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+    fireEvent.click(screen.getByText('Context'));
+    expect(useStudioStore.getState().contextPanelOpen).toBe(false);
+  });
+
+  it('clicking "Close Studio drawers" closes both drawers', () => {
+    server.use(...writingMocks);
+    renderWithRoute(<StudioView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Close Studio drawers' }));
+    expect(useStudioStore.getState().leftRailOpen).toBe(false);
+    expect(useStudioStore.getState().contextPanelOpen).toBe(false);
   });
 });

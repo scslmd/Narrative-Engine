@@ -20,6 +20,9 @@ interface StudioState {
   setLeftRailOpen: (open: boolean) => void;
   setContextPanelOpen: (open: boolean) => void;
   openPanel: (panel: StudioPanelKey) => void;
+  toggleLeftRail: () => void;
+  toggleContextPanel: () => void;
+  closeDrawers: () => void;
 }
 
 export const useStudioStore = create<StudioState>((set) => ({
@@ -30,4 +33,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   setLeftRailOpen: (leftRailOpen) => set({ leftRailOpen }),
   setContextPanelOpen: (contextPanelOpen) => set({ contextPanelOpen }),
   openPanel: (activePanel) => set({ activePanel, contextPanelOpen: true }),
+  toggleLeftRail: () => set((state) => ({ leftRailOpen: !state.leftRailOpen })),
+  toggleContextPanel: () => set((state) => ({ contextPanelOpen: !state.contextPanelOpen })),
+  closeDrawers: () => set({ leftRailOpen: false, contextPanelOpen: false }),
 }));
