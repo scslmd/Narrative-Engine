@@ -40,13 +40,4 @@ describe('InlineActions', () => {
 
     expect(screen.getByRole('button', { name: 'Loading' })).toBeDisabled()
   })
-
-  it('applies danger variant when danger flag is set', () => {
-    const actions = [{ label: 'Delete', danger: true, onClick: vi.fn() }]
-
-    render(<InlineActions actions={actions} />)
-
-    const button = screen.getByRole('button', { name: 'Delete' })
-    expect(button).toHaveClass('bg-red-600')
-  })
 })

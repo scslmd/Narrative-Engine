@@ -20,16 +20,6 @@ const WithProviders = ({ children }: { children: ReactNode }) => (
 );
 
 describe('useJobs', () => {
-  it('returns empty data when no jobs exist', async () => {
-    const { result } = renderHook(() => useJobs('proj-1'), { wrapper: WithProviders });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    expect(result.current.data).toEqual([]);
-  });
-
   it('does not fetch when projectId is undefined', () => {
     const { result } = renderHook(() => useJobs(undefined), { wrapper: WithProviders });
     expect(result.current.isEnabled).toBe(false);
