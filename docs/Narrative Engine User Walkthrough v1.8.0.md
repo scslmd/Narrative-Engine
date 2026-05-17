@@ -11,6 +11,16 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 - Inference backend is configured for LLM-dependent features.
 - If `NARRATIVE_API_KEY` is enabled on the server, configure API key usage for protected flows.
 
+## Quick Start: Your First Project in 10 Minutes
+
+1. Open `/` → fill New Project form (name, genre, tone, structure, POV, language) → click **Create Project**
+2. Navigate to **Foundation** tab → fill Premise and Logline → click **Save Foundation**
+3. Navigate to **Characters** tab → click **Add Character** → create one protagonist → click **Save Character**
+4. Open Job Launch panel (right rail) → select **P-100 Architect** → click **Launch** → wait for completion
+5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in Writing workspace
+
+For a complete walkthrough with 12 chapters, 7 characters, and branching, see Phase 11.
+
 ## Frontend Map
 - `/` Project list and creation
 - `/setup-wizard` Conversational setup
@@ -411,6 +421,17 @@ Five command buttons at the top toggle the right context panel:
 5. Launch generation runs directly from the Generation panel without leaving the desk.
 6. Review checker findings and inspect problematic runs from the Review/Inspect panels.
 
+### Example Workflow: Writing with Context
+
+1. Open Studio Desk for your project.
+2. In the Project Map (left rail), select **Characters** — character list appears in left panel.
+3. Click **Write** in the command bar — Suggestions panel opens in the right panel.
+4. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
+5. Review the suggestion in the right panel. Accept to apply, or reject.
+6. Mid-chapter, click **Capture** to switch the right panel to Ideas. Type a new plot idea.
+7. Click **Write** again to return to Suggestions. Continue editing.
+8. When done, click **Generate** to open the compact generation panel. Configure and launch a new generation run without leaving the desk.
+
 ### Responsive Behavior
 On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
 
@@ -584,9 +605,14 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 3. Click **Start Generation**.
 4. Monitor run. Review output in Writing workspace.
 5. Revise with Floating Toolbar:
-   - `Sight & color` on storm descriptions
-   - `Show don't tell` on emotional passages
-   - `Tighten & polish` on repetitive routine descriptions
+    - `Sight & color` on storm descriptions
+    - `Show don't tell` on emotional passages
+    - `Tighten & polish` on repetitive routine descriptions
+
+#### If Act I generation fails:
+- **INFERENCE_TRUNCATED:** Reduce Chapter Count to 2, generate Ch 1-2, then Ch 3-4 in a second run. Increase `NARRATIVE_MAX_TOKENS_DRAFTER=16000` in `.env`.
+- **Canon contradiction (gate failure):** Check gate results panel. Relax continuity strictness to `Warn` or fix the conflicting canon entry.
+- **Generic/flat output:** Improve generation brief with specific voice instructions. Add more world bible entries for richer context.
 
 #### Step 10: Generate Act II
 1. Repeat generation with `Act II Profile`.
@@ -597,6 +623,11 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
    - Canon consistency with Act I (generator readings, log references)
 4. Run checker after generation. Resolve any canon contradictions.
 
+#### If Act II generation fails:
+- **Packet too large:** Split Act II into two runs (Ch 5-6, Ch 7-8). Use prior chapter summaries for context continuity.
+- **Character voice drift:** Check Moreau's Voice Notes field. Annotate it in Characters tab for strict enforcement. Re-run with `Block` continuity.
+- **AURA-7 dialogue not uncanny enough:** Add specific instruction to generation brief: "AURA-7's speech is fragmented, with random pauses and occasional garbled words. It should feel like talking to a broken radio."
+
 #### Step 11: Generate Act III (with branching)
 1. **Main branch:** Generate Act III with `Act III Profile`.
 2. **Alternative branch:** Create a branch for Act III with different Kai resolution:
@@ -605,6 +636,11 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
    - Generate this branch.
 3. **Compare:** Use branch comparison to evaluate both endings.
 4. **Decide:** Merge preferred branch or keep both as alternate versions.
+
+#### If Act III generation fails:
+- **Ambiguity lost in ghost fleet:** Add to generation brief: "Do NOT confirm or deny whether the ghost fleet is real. End on ambiguity."
+- **Kai's emotional impact weak:** Add Kai's relationship edge to canon scope. Increase Kai's presence in generation brief.
+- **Branch comparison takes too long:** Generate main branch first. Only create alternate branch if the ending feels unsatisfactory.
 
 ### Part 8: Review and Polish
 
@@ -662,24 +698,21 @@ A complete 12-chapter novel with:
 - **Cascade Discovery:** Phase 3 (Relationships tab) — auto-extract entities from existing manuscript text
 
 ## Phase 12: Full Production Workflow
-Use this order for complete project execution.
 
-1. Create or import a project (Phase 1).
-2. Build foundation, characters, world bible, and arcs in Planning tabs (Phase 3).
-3. (Optional) Run Cascade Discovery to auto-extract entities from existing manuscript text — review discovered characters, relationships, and world entries before committing.
-4. Structure narrative in planning and flow tabs (Phase 3).
-5. Capture side ideas in brain dump and brainstorm (Phases 3-4).
-6. Draft and revise in writing workspace using the floating toolbar for targeted assist actions (Phase 5).
-7. Use Manuscript Assist sensory detail, rewrite, and continue actions to refine prose (Phase 5).
-8. Run the Role Model Checker and resolve findings in Review workspace (Phase 6).
-9. Inspect problematic runs from deep links or Inspect mode to diagnose failures (Phase 7).
-10. Harden canon scope, manage profiles, and validate packet composition in Canon Workshop (Phase 8).
-11. Execute generation runs: configure wizard, monitor status, review gates, fork successful runs (Phase 9).
-12. Iterate via branches, decisions, and additional drafts.
-13. Export final project archive for backup and transfer.
-14. (Alternative) Use Studio Desk for a compact single-screen workspace that combines writing, planning, generation, and review in one view (Phase 10).
+For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.8.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
+
+## Common Mistakes and Fixes
+
+- **"I clicked Generate but nothing happened"** — The generation brief is empty or no canon entities are selected. Both are required to enable "Start Generation".
+- **"My characters don't appear in the generated output"** — Characters must be selected in the canon scope (Canon Workshop Overview tab or Generation wizard). Being created in the project is not enough.
+- **"Suggestions panel is empty"** — You must select text in the editor and trigger an assist action (floating toolbar or Assist dropdown). The panel doesn't auto-populate.
+- **"Project won't export"** — The project needs at least 1 manuscript or draft artifact. Run P-300 Drafter or promote a draft to manuscript first.
+- **"Cascade scan returns no entities"** — Manuscript text must be at least 50 characters and contain character names, interactions, or descriptive details. Very short or sparse text yields no results.
+- **"Inspect shows 'run not found'"** — The job ID in the URL must match an existing checker run or pipeline job. Navigate from Review → Inspect Run Links or the Job Launch panel to get valid IDs.
+- **"Checker finds no findings"** — The checker needs completed runs to analyze. Run at least one pipeline job (P-100 through P-400) before expecting findings.
 
 ## Phase 13: Advanced Iteration Patterns
+
 ### Pattern A: Canon-tight revision loop
 1. Write draft.
 2. Checker review.
@@ -687,17 +720,23 @@ Use this order for complete project execution.
 4. Annotate canon fields.
 5. Re-run generation.
 
+**Example:** You wrote Ch 5. Checker finds Elara's voice drifted in paragraph 3 (too casual for the established sparse, atmospheric tone). Navigate to Characters → Elara Voss → annotate Voice Notes field for strict enforcement. Re-run P-300 for Ch 5 with `Block` continuity strictness. Checker passes on re-run.
+
 ### Pattern B: Alternate story exploration
 1. Create branch.
 2. Draft alternate variants.
 3. Compare and decide.
 4. Merge preferred direction.
 
+**Example:** Act III ending feels rushed. Create branch `Act III - Extended`. Generate Ch 11-12 with additional world bible entries (Echo Point interior, Reyes's ship log). Compare branch output against main branch using branch comparison tool. Extended version has better pacing. Merge `Act III - Extended` into main.
+
 ### Pattern C: Forked sequel workflow
 1. Select successful generation run.
 2. Fork to new project.
 3. Re-open planning and writing in fork.
 4. Repeat quality loop.
+
+**Example:** Act I-III of *The Last Lighthouse* is complete. Select the final generation run → click "Fork Project from Run" → name new project *The Last Lighthouse: Sequel*. Open fork → update Foundation with sequel premise → add new characters (Kai Voss arrives at the beacon) → generate sequel chapters with Act III canon as grounding context.
 
 ## Interface Reference By Surface
 ### Project List

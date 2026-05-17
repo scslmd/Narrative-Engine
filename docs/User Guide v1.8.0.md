@@ -1,6 +1,6 @@
 # Narrative Engine - User Guide v1.8.0
 
-Last updated: 2026-05-17 (end-to-end walkthrough added)
+Last updated: 2026-05-17 (documentation enhancements: Quick Start, auth consolidation, dependency map, common mistakes)
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
@@ -73,6 +73,23 @@ Mode navigation is stage-aware and may hide some modes depending on current stag
 - Planning stage: Brain Dump, Planning, Canon, Generate
 - Writing stage: Writing
 - Review stage: Review, Inspect
+
+### Feature Dependencies
+
+Some features require upstream data before they can be used:
+
+| Feature | Requires |
+|---------|----------|
+| P-100 Architect | Foundation populated |
+| P-200 Sequencer | P-100 output (sequence plan) |
+| P-300 Drafter | P-200 output + at least 1 character |
+| P-400 Compiler | P-300 output (draft artifacts) |
+| Cascade Discovery | 2+ characters + generated chapter content |
+| Story Generation | 1+ character in canon scope + non-empty brief |
+| Manuscript Assist | Existing manuscript content + text selection |
+| Checker | At least 1 completed run or checker execution |
+| Inspect deep link | Valid job ID or checker run ID |
+| Project Export | At least 1 manuscript or draft artifact |
 
 ## Planning Workspace (`/workspace/:projectId/plan`)
 Top-level planning tabs:
@@ -175,9 +192,6 @@ Session-based free writing canvas with AI-powered organization.
   - Category breakdown (e.g., "3 plot_points, 5 character_ideas").
   - Category cards in grid layout with line-clamped item excerpts.
 - "Continue editing" button returns to canvas for additional passes.
-
-### Auth Behavior
-- If API key auth is enforced and missing, view shows an API key guidance banner.
 
 ## Writing Workspace (`/workspace/:projectId/write`)
 Three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
@@ -307,9 +321,6 @@ Deterministic canon packet preview:
 - Shows entity counts for Characters, World Bible, Mythos, and Patterns.
 - Use this tab to validate packet scope size and composition before submitting a generation run.
 
-### Auth Behavior
-- If API key auth is enforced and missing, view shows an API key guidance banner with setup instructions.
-
 ## Story Generation (`/workspace/:projectId/generate`)
 Full generation lifecycle: wizard configuration, run monitoring, gate review, and project forking.
 
@@ -415,10 +426,19 @@ For a complete, step-by-step walkthrough of generating a novel from project crea
 12. Iterate via branches, decisions, and additional drafts.
 13. Export project archive for backup and transfer.
 
-## API/Auth Notes For Users
-- If backend sets `NARRATIVE_API_KEY`, protected features require matching API key usage.
-- Health/auth errors are shown in-view for Brain Dump and Canon.
-- Generation and assist depend on configured inference backend.
+## Authentication
+
+If the backend is configured with `NARRATIVE_API_KEY`, the following features require a matching API key:
+
+- **Brain Dump** — session creation, AI organize
+- **Canon Workshop** — all four tabs (overview, mythos, patterns, packet)
+- **Story Generation** — wizard submission, run monitoring
+- **Manuscript Assist** — floating toolbar actions, assist dropdown
+
+When API key is required but not configured, the view shows a guidance banner at the top with setup instructions. To configure:
+1. Generate an API key via `POST /v1/auth/keys` or the API key management interface.
+2. Include the key in requests as configured by your backend (typically `Authorization: Bearer <key>` header).
+3. For development, set `NARRATIVE_API_KEY` to an empty string to disable auth entirely.
 
 ## Troubleshooting Quick Map
 - Cannot access canon/brain dump: verify API key setup.
