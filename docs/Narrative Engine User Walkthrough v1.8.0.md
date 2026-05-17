@@ -1,6 +1,6 @@
 # Narrative Engine - Complete User Walkthrough v1.8.0
 
-Last updated: 2026-05-10
+Last updated: 2026-05-17
 
 ## Goal
 This walkthrough is the full frontend operating manual. It explains every workspace interface and gives a comprehensive, practical workflow from first launch to advanced generation and iteration.
@@ -21,6 +21,7 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 - `/workspace/:projectId/inspect` Inspect
 - `/workspace/:projectId/canon` Canon
 - `/workspace/:projectId/generate` Generate
+- `/workspace/:projectId/studio` Studio Desk
 
 ## Phase 1: Start a Project
 Route: `/`
@@ -383,7 +384,37 @@ Full generation lifecycle: wizard configuration, run monitoring, gate review, an
 2. The review displays the run ID and manuscript artifact ID (if available).
 3. Use this output to evaluate quality before forking or iterating.
 
-## Phase 10: Full Production Workflow
+## Phase 10: Studio Desk Workspace
+Route: `/workspace/:projectId/studio`
+
+The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes.
+
+### Layout
+The desk has three columns (desktop) or overlay drawers (below `xl:` breakpoint):
+- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels.
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions.
+- **Right rail (Context Panel):** Switchable panel based on active command.
+
+### Command Bar
+Five command buttons at the top toggle the right context panel:
+- `Capture` — switches to Ideas panel for brainstorm-style ideation
+- `Write` — switches to Suggestions panel for revision suggestions, diff viewer, and history
+- `Generate` — switches to Generation panel for compact story generation wizard
+- `Review` — switches to Review panel for checker findings and inspect links
+- `Inspect` — switches to Inspect panel for job inspection and lineage
+
+### Using the Desk
+1. Open a project and navigate to Studio Desk from the left rail.
+2. Use the Project Map to switch between planning panels (Characters, World Bible, Relationships, etc.).
+3. Click command buttons to change the right context panel.
+4. Write and revise in the center editor while keeping planning context visible.
+5. Launch generation runs directly from the Generation panel without leaving the desk.
+6. Review checker findings and inspect problematic runs from the Review/Inspect panels.
+
+### Responsive Behavior
+On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
+
+## Phase 11: Full Production Workflow
 Use this order for complete project execution.
 
 1. Create or import a project (Phase 1).
@@ -399,8 +430,9 @@ Use this order for complete project execution.
 11. Execute generation runs: configure wizard, monitor status, review gates, fork successful runs (Phase 9).
 12. Iterate via branches, decisions, and additional drafts.
 13. Export final project archive for backup and transfer.
+14. (Alternative) Use Studio Desk for a compact single-screen workspace that combines writing, planning, generation, and review in one view (Phase 10).
 
-## Phase 11: Advanced Iteration Patterns
+## Phase 12: Advanced Iteration Patterns
 ### Pattern A: Canon-tight revision loop
 1. Write draft.
 2. Checker review.
@@ -461,6 +493,13 @@ Use this order for complete project execution.
 ### Generate
 - Run setup, status tracking, gates, fork.
 
+### Studio Desk
+- Three-column layout: Project Map (left), Main Content (center), Context Panel (right).
+- Command bar toggles context panel: Capture, Write, Generate, Review, Inspect.
+- Project Map provides quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, Notes.
+- Context Panel switches between Suggestions, Generation, Review, Inspect panels.
+- Responsive: overlay drawers below `xl:` breakpoint with header toggle buttons.
+
 ## Common Failure Cases and Fixes
 - Missing project context: verify `:projectId` route and selected project.
 - Auth-gated features blocked: configure API key path and server variable.
@@ -481,3 +520,4 @@ A project is operationally complete when:
 - Canon profile/packet has been reviewed.
 - At least one generation run completed (and optionally forked).
 - Export archive captured.
+- (Optional) Studio Desk workspace is configured with preferred panels and command bar layout.

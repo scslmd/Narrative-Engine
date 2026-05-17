@@ -1,6 +1,6 @@
 # Narrative Engine - User Guide v1.8.0
 
-Last updated: 2026-05-10
+Last updated: 2026-05-17
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
@@ -17,6 +17,7 @@ This guide explains the current frontend interface, what each workspace mode doe
 - `/workspace/:projectId/braindump` - Brain Dump workspace
 - `/workspace/:projectId/canon` - Canon Workshop
 - `/workspace/:projectId/generate` - Story Generation workspace
+- `/workspace/:projectId/studio` - Studio Desk (compact single-screen workspace)
 
 ## Home Interface (`/`)
 ### Project list
@@ -365,13 +366,45 @@ Multi-step form for configuring a generation run:
 - "Preview Fork" button in wizard shows counts of selected characters, world entries, arcs, and continuity threads before submitting.
 - Helps validate scope size and composition before committing to generation.
 
+## Studio Desk (`/workspace/:projectId/studio`)
+Compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Designed for users who want a unified desk rather than navigating between separate workspace modes.
+
+**Layout:** Three-column grid (desktop) or overlay drawers (below `xl:` breakpoint).
+- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels.
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions.
+- **Right rail (Context Panel):** Switchable panel based on active command: Suggestions, Generation, Review, or Inspect.
+
+**Command Bar (top):** Five command buttons toggle the right context panel.
+- `Capture` — switches to Ideas panel (brainstorm-style ideation)
+- `Write` — switches to Suggestions panel (revision suggestions, diff viewer, history)
+- `Generate` — switches to Generation panel (compact story generation wizard)
+- `Review` — switches to Review panel (checker findings and inspect links)
+- `Inspect` — switches to Inspect panel (job inspection and lineage)
+
+**Responsive Behavior:** Below `xl:` breakpoint, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. A close-drawer button dismisses both drawers simultaneously.
+
+**Project Rail Panels:**
+- **Ideas:** Brainstorm-style idea capture and clustering
+- **Characters:** Character CRUD with profile editing and canon annotations
+- **World Bible:** World entry CRUD with canon annotations
+- **Relationships:** Relationship graph and list views with CRUD operations
+- **Canon:** Canon profile management and packet preview
+- **Jobs:** Job launch panel with phase selection and recent job monitoring
+- **Notes:** Project-level notes with add/delete functionality
+
+**Context Panel Panels:**
+- **Suggestions:** Merged revision suggestions from Manuscript Assist and LLM sources. Accept/reject/archive flows with diff viewer.
+- **Generation:** Compact story generation wizard with mode selector, destination, canon scope, and policy configuration.
+- **Review:** Tab-based interface for checker findings and inspect links.
+- **Inspect:** Job inspection with guidance text when no run is selected.
+
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).
 2. Build canon in Planning tabs: Foundation, Characters, World Bible, Relationships, Arcs.
 3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
 4. Shape structure in Planning/Flow tabs.
 5. Capture optional ideation in Brain Dump and Brainstorm.
-6. Draft in Writing (manual, AI, continue, alternate, promote).
+6. Draft in Writing (manual, AI, continue, alternate, promote) or use Studio Desk for a compact single-screen workspace.
 7. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
 8. Run Checker and review findings in Review workspace. Create inspect links for traceability.
 9. Inspect problematic runs from deep links or Inspect mode to diagnose failures.
