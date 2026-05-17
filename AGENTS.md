@@ -11,13 +11,14 @@
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
   - xdist-isolation failures (pass when run directly, verified 2026-05-08):
     - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails only under parallel xdist; passes in isolation
-  - `cd frontend && npm run lint` -> passed, 0 errors (2026-05-05)
-  - `cd frontend && npm run typecheck` -> passed (2026-05-05)
-  - `cd frontend && npm run build` -> passed, 2025 modules (2026-05-05)
-  - `cd frontend && npm run test` -> 554 passed (~13s)
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2025 modules in production bundle.
+  - `cd frontend && npm run lint` -> passed, 2 pre-existing errors only (2026-05-17)
+  - `cd frontend && npm run typecheck` -> passed (2026-05-17)
+  - `cd frontend && npm run build` -> passed, 2070 modules (2026-05-17)
+  - `cd frontend && npm run test` -> 627 passed (~13s)
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2070 modules in production bundle.
 - Frontend services: 147 exported functions across 26 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 1 maintenance + 118 existing). All exports wired to components.
-- Frontend hooks: 30 hook files including 10 new hooks from unwired API exposure work (useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery).
+- Frontend hooks: 30 hook files including 10 new hooks from unwired API exposure work (useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery) + 1 Studio Desk hook (useMergedSuggestions).
+- Studio Desk workspace: 11 components in `frontend/src/components/studio/` (StudioCommandBar, StudioProjectRail, StudioContextPanel, StudioIdeasPanel, StudioCharactersPanel, StudioWorldBiblePanel, StudioRelationshipsPanel, StudioSuggestionsPanel, StudioGenerationPanel, StudioReviewPanel, StudioInspectPanel). Zustand store: `studioStore`. View: `StudioView`. Route: `/workspace/:projectId/studio`.
 - Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Unwired API exposure completed 2026-05-05 (mythos CRUD, pattern CRUD, foundation history/review cues, brainstorm promote, backup management, API key management, relationship update/delete, arc selection actions, suggestion archive).
 - Project maintenance service: orphan detection, cleanup, audit log truncation, database compaction. Endpoints under `/projects/maintenance/*`.
 - Route-driven workspace state is the current frontend architecture:
@@ -30,6 +31,7 @@
   - `/workspace/:projectId/braindump`
   - `/workspace/:projectId/generate`
   - `/workspace/:projectId/canon` (supports `?tab=mythos|patterns|packet` deep-links)
+  - `/workspace/:projectId/studio`
 - Inspect deep links are expected to render from the route, and review-driven "Jump to Source" should resolve an inspect run before navigation.
 
 ## Agent Guardrails
