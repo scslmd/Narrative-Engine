@@ -7,8 +7,11 @@ describe('studioStore persistence', () => {
   });
 
   it('has correct defaults when storage is empty', () => {
+    useStudioStore.getState().resetLayout();
+    localStorage.clear();
+    useStudioStore.getState().resetLayout();
     const state = useStudioStore.getState();
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);
@@ -37,7 +40,7 @@ describe('studioStore persistence', () => {
 
   it('parseStoredStudioLayout clamps out-of-bounds widths', () => {
     const result = parseStoredStudioLayout(JSON.stringify({
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'docked',
       contextPanelPinned: true,
       leftRailWidth: 100,
@@ -60,7 +63,7 @@ describe('studioStore persistence', () => {
 
   it('parseStoredStudioLayout returns null for invalid context mode', () => {
     expect(parseStoredStudioLayout(JSON.stringify({
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'invalid',
       contextPanelPinned: true,
       leftRailWidth: 224,
@@ -93,7 +96,7 @@ describe('studioStore persistence', () => {
     useStudioStore.getState().resetLayout();
     const state = useStudioStore.getState();
     expect(state.activePanel).toBe('suggestions');
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);
@@ -102,7 +105,7 @@ describe('studioStore persistence', () => {
     const stored = localStorage.getItem('studio-layout-v1');
     expect(stored).not.toBeNull();
     const parsed = JSON.parse(stored!);
-    expect(parsed.leftRailMode).toBe('expanded');
+    expect(parsed.leftRailMode).toBe('collapsed');
     expect(parsed.contextPanelMode).toBe('docked');
     expect(parsed.leftRailWidth).toBe(224);
     expect(parsed.contextPanelWidth).toBe(416);
@@ -132,7 +135,7 @@ describe('studioStore adaptive layout', () => {
     localStorage.clear();
     useStudioStore.setState({
       activePanel: 'suggestions',
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'docked',
       contextPanelPinned: true,
       leftRailWidth: 224,
@@ -144,7 +147,7 @@ describe('studioStore adaptive layout', () => {
     localStorage.clear();
     useStudioStore.setState({
       activePanel: 'suggestions',
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'docked',
       contextPanelPinned: true,
       leftRailWidth: 224,
@@ -155,7 +158,7 @@ describe('studioStore adaptive layout', () => {
   it('has correct default adaptive state', () => {
     const state = useStudioStore.getState();
     expect(state.activePanel).toBe('suggestions');
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);
@@ -235,7 +238,7 @@ describe('studioStore adaptive layout', () => {
     useStudioStore.getState().resetLayout();
     const state = useStudioStore.getState();
     expect(state.activePanel).toBe('suggestions');
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);
@@ -272,7 +275,7 @@ describe('studioStore adaptive layout', () => {
   afterEach(() => {
     useStudioStore.setState({
       activePanel: 'suggestions',
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'docked',
       contextPanelPinned: true,
       leftRailWidth: 224,
@@ -283,7 +286,7 @@ describe('studioStore adaptive layout', () => {
   it('has correct default adaptive state', () => {
     const state = useStudioStore.getState();
     expect(state.activePanel).toBe('suggestions');
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);
@@ -363,7 +366,7 @@ describe('studioStore adaptive layout', () => {
     useStudioStore.getState().resetLayout();
     const state = useStudioStore.getState();
     expect(state.activePanel).toBe('suggestions');
-    expect(state.leftRailMode).toBe('expanded');
+    expect(state.leftRailMode).toBe('collapsed');
     expect(state.contextPanelMode).toBe('docked');
     expect(state.contextPanelPinned).toBe(true);
     expect(state.leftRailWidth).toBe(224);

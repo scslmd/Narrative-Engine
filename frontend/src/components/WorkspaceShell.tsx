@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { modeToStage } from '../routes'
@@ -32,11 +32,13 @@ const navItems: NavItem[] = [
 export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { mode, setMode, projectId } = useUIStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const { iconMode, showTooltips } = useSettingsStore()
   const iconsOnly = iconMode !== 'labels'
   const showTooltipsEnabled = showTooltips && iconsOnly
   const activeStage = modeToStage[mode]
   const visibleItems = navItems.filter((item) => item.stage === activeStage)
+  const isStudio = mode === 'studio'
 
   const handleNavClick = (key: string) => {
     setMode(key as typeof mode)
@@ -47,6 +49,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full">
+      {!isStudio ? (
       <aside className="lg:w-60 lg:flex-shrink-0">
         <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card p-3 lg:sticky lg:top-0">
           <p className="text-[11px] uppercase tracking-wide font-semibold text-[var(--text-tertiary)] px-1 pb-2">
@@ -85,7 +88,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           })}
           </nav>
         </div>
-      </aside>
+      </aside>) : null}
       <main className="flex-1 min-w-0">{children}</main>
     </div>
   )

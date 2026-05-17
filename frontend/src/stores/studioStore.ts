@@ -98,7 +98,7 @@ const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? loc
 
 export const useStudioStore = create<StudioState>((set) => ({
   activePanel: 'suggestions',
-  leftRailMode: stored?.leftRailMode ?? 'expanded',
+  leftRailMode: stored?.leftRailMode ?? 'collapsed',
   contextPanelMode: stored?.contextPanelMode ?? 'docked',
   contextPanelPinned: stored?.contextPanelPinned ?? true,
   leftRailWidth: stored?.leftRailWidth ?? DEFAULT_LEFT_RAIL_WIDTH,
@@ -144,7 +144,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   resetLayout: () => {
     set({
       activePanel: 'suggestions',
-      leftRailMode: 'expanded',
+      leftRailMode: 'collapsed',
       contextPanelMode: 'docked',
       contextPanelPinned: true,
       leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,

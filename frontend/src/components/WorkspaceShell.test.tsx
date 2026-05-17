@@ -66,17 +66,14 @@ describe('WorkspaceShell', () => {
     expect(screen.getByText('Writing')).toBeInTheDocument();
   });
 
-  it('renders Studio and Writing when mode is studio', () => {
+  it('hides left rail when mode is studio', () => {
     renderShell('studio');
 
-    const buttons = screen.getAllByRole('button', { hidden: false }).filter(
+    const buttons = screen.queryAllByRole('button', { hidden: false }).filter(
       (btn) => btn.classList.contains('nav-item'),
     );
-    expect(buttons).toHaveLength(2);
-    expect(screen.getByText('Studio')).toBeInTheDocument();
-    expect(screen.getByText('Writing')).toBeInTheDocument();
-
-    expect(buttons.length).toBe(2);
+    expect(buttons).toHaveLength(0);
+    expect(screen.queryByText('Workspace sections')).not.toBeInTheDocument();
   });
 
   it('renders 2 nav items when mode is in review stage (review)', () => {
