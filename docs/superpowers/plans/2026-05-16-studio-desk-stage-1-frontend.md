@@ -1,6 +1,6 @@
 # Studio Desk Stage 1 Frontend Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Stage 1 adds an opt-in `/workspace/:projectId/studio` frontend workspace that keeps writing central while exposing existing Narrative Engine tools through project and context panels.
 
@@ -63,13 +63,13 @@ Task ownership:
 
 **Dependencies:** none
 
-- [ ] Add `studio` to `WorkspaceMode`.
+- [x] Add `studio` to `WorkspaceMode`.
 
 ```ts
 export type WorkspaceMode = 'studio' | 'plan' | 'write' | 'review' | 'inspect' | 'braindump' | 'generate' | 'canon'
 ```
 
-- [ ] Add `studio` to `modeToStage`.
+- [x] Add `studio` to `modeToStage`.
 
 ```ts
 export const modeToStage: Record<WorkspaceMode, 'planning' | 'writing' | 'review'> = {
@@ -84,13 +84,13 @@ export const modeToStage: Record<WorkspaceMode, 'planning' | 'writing' | 'review
 }
 ```
 
-- [ ] Add the helper inside `routes`.
+- [x] Add the helper inside `routes`.
 
 ```ts
 studio: (projectId: string) => `/workspace/${projectId}/studio`,
 ```
 
-- [ ] Verify.
+- [x] Verify.
 
 ```powershell
 cd frontend; cmd /c npm.cmd run typecheck
@@ -104,7 +104,7 @@ Expected: exits 0.
 
 **Dependencies:** T001
 
-- [ ] Create the file.
+- [x] Create the file.
 
 ```ts
 import { create } from 'zustand';
@@ -142,7 +142,7 @@ export const useStudioStore = create<StudioState>((set) => ({
 }));
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T003: Create Studio Command Bar
 
@@ -150,9 +150,9 @@ export const useStudioStore = create<StudioState>((set) => ({
 
 **Dependencies:** T002
 
-- [ ] Create `frontend/src/components/studio`.
+- [x] Create `frontend/src/components/studio`.
 
-- [ ] Create the command bar.
+- [x] Create the command bar.
 
 ```tsx
 import { BookOpen, GitPullRequestArrow, Lightbulb, Search, Wand2 } from 'lucide-react';
@@ -207,7 +207,7 @@ export function StudioCommandBar({ projectName = 'Current Project' }: StudioComm
 }
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T004: Create Studio Project Rail
 
@@ -215,7 +215,7 @@ export function StudioCommandBar({ projectName = 'Current Project' }: StudioComm
 
 **Dependencies:** T002
 
-- [ ] Create the rail.
+- [x] Create the rail.
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -276,7 +276,7 @@ export function StudioProjectRail({ projectId }: StudioProjectRailProps) {
 }
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T005: Create Studio Ideas Panel
 
@@ -284,7 +284,7 @@ export function StudioProjectRail({ projectId }: StudioProjectRailProps) {
 
 **Dependencies:** T002
 
-- [ ] Create the panel.
+- [x] Create the panel.
 
 ```tsx
 import { BrainstormWorkspace } from '../brainstorm/BrainstormWorkspace';
@@ -316,7 +316,7 @@ export function StudioIdeasPanel({ projectId }: StudioIdeasPanelProps) {
 }
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T006: Create Studio Characters Panel
 
@@ -324,7 +324,7 @@ export function StudioIdeasPanel({ projectId }: StudioIdeasPanelProps) {
 
 **Dependencies:** T002
 
-- [ ] Create a panel that uses existing services and `CharacterBuilder`.
+- [x] Create a panel that uses existing services and `CharacterBuilder`.
 
 Required imports:
 
@@ -354,7 +354,7 @@ Exact acceptance requirements:
 - If character list query errors, render `<WorkspaceStatus title="Could not load characters" detail="Character profiles are unavailable." tone="error" />`.
 - If selected character cannot be found in edit mode, render `<WorkspaceStatus title="Character not found" detail="Return to the list and choose another profile." tone="error" />`.
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T007: Create Studio World Bible Panel
 
@@ -362,7 +362,7 @@ Exact acceptance requirements:
 
 **Dependencies:** T002
 
-- [ ] Create a panel that uses existing `WorldBibleWorkspace`.
+- [x] Create a panel that uses existing `WorldBibleWorkspace`.
 
 Required imports:
 
@@ -384,7 +384,7 @@ Exact acceptance requirements:
 - Loading state renders `<WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries." />`.
 - Error state renders `<WorkspaceStatus title="Could not load world bible" detail="World bible entries are unavailable." tone="error" />`.
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T008: Create Studio Relationships Panel
 
@@ -392,7 +392,7 @@ Exact acceptance requirements:
 
 **Dependencies:** T002
 
-- [ ] Create a panel using only existing relationship services/components.
+- [x] Create a panel using only existing relationship services/components.
 
 Required imports:
 
@@ -427,7 +427,7 @@ Exact acceptance requirements:
 - `characterNameMap` is built with `useMemo` from `characters`, mapping `character.character_id` to `character.display_name`.
 - Do not include AI extract or scan manuscript buttons in this first pass.
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T009: Create Studio Context Panel Shell
 
@@ -435,7 +435,7 @@ Exact acceptance requirements:
 
 **Dependencies:** T003, T005, T006, T007, T008
 
-- [ ] Create a shell that switches by `activePanel`.
+- [x] Create a shell that switches by `activePanel`.
 
 Required mapping:
 
@@ -472,7 +472,7 @@ Acceptance notes:
 - Empty suggestions are allowed because merged suggestion state currently lives inside `WritingView`.
 - The panel must include a close button that calls `setContextPanelOpen(false)`.
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T010: Create Studio View Composition
 
@@ -480,7 +480,7 @@ Acceptance notes:
 
 **Dependencies:** T003, T004, T009
 
-- [ ] Create the view.
+- [x] Create the view.
 
 ```tsx
 import { useParams } from 'react-router-dom';
@@ -521,7 +521,7 @@ export function StudioView() {
 }
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T011: Treat Studio As Single-Column Workspace
 
@@ -529,7 +529,7 @@ export function StudioView() {
 
 **Dependencies:** T010
 
-- [ ] Update mode detection so Studio receives the same no-right-rail layout as Writing.
+- [x] Update mode detection so Studio receives the same no-right-rail layout as Writing.
 
 Replace:
 
@@ -543,9 +543,9 @@ With:
 const isFocusedWorkspace = mode === 'write' || mode === 'studio';
 ```
 
-- [ ] Replace both uses of `isWriting` in the JSX with `isFocusedWorkspace`.
-- [ ] Do not remove `BottomUtilityLayer` from `Workspace.tsx`; it remains the single workspace-level bottom tray.
-- [ ] Verify typecheck.
+- [x] Replace both uses of `isWriting` in the JSX with `isFocusedWorkspace`.
+- [x] Do not remove `BottomUtilityLayer` from `Workspace.tsx`; it remains the single workspace-level bottom tray.
+- [x] Verify typecheck.
 
 ### Task T012: Register Studio Route
 
@@ -553,25 +553,25 @@ const isFocusedWorkspace = mode === 'write' || mode === 'studio';
 
 **Dependencies:** T011
 
-- [ ] Import `StudioView`.
+- [x] Import `StudioView`.
 
 ```ts
 import { StudioView } from './views/StudioView'
 ```
 
-- [ ] Change workspace index redirect.
+- [x] Change workspace index redirect.
 
 ```tsx
 <Route index element={<Navigate to="studio" replace />} />
 ```
 
-- [ ] Add route before `plan`.
+- [x] Add route before `plan`.
 
 ```tsx
 <Route path="studio" element={<StudioView />} />
 ```
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T013: Expose Studio In Workspace Shell Navigation
 
@@ -579,21 +579,21 @@ import { StudioView } from './views/StudioView'
 
 **Dependencies:** T001, T012
 
-- [ ] Add `MonitorUp` to the lucide import.
+- [x] Add `MonitorUp` to the lucide import.
 
 ```ts
 import { LayoutList, BookOpen, Search, Sparkles, Lightbulb, Scroll, Zap, MonitorUp } from 'lucide-react'
 ```
 
-- [ ] Add nav item before Writing.
+- [x] Add nav item before Writing.
 
 ```ts
 { key: 'studio', label: 'Studio', icon: MonitorUp, gradient: 'from-slate-700 to-slate-900', glow: 'glow-studio', stage: 'writing' },
 ```
 
-- [ ] Do not change `handleNavClick`.
+- [x] Do not change `handleNavClick`.
 
-- [ ] Verify typecheck.
+- [x] Verify typecheck.
 
 ### Task T014: Update WorkspaceShell Tests For Studio Nav
 
@@ -601,7 +601,7 @@ import { LayoutList, BookOpen, Search, Sparkles, Lightbulb, Scroll, Zap, Monitor
 
 **Dependencies:** T013
 
-- [ ] Update the writing-stage test to expect two nav buttons.
+- [x] Update the writing-stage test to expect two nav buttons.
 
 ```ts
 expect(buttons).toHaveLength(2);
@@ -609,7 +609,7 @@ expect(screen.getByText('Studio')).toBeInTheDocument();
 expect(screen.getByText('Writing')).toBeInTheDocument();
 ```
 
-- [ ] Add this test.
+- [x] Add this test.
 
 ```ts
 it('renders Studio and Writing when mode is studio', () => {
@@ -624,7 +624,7 @@ it('renders Studio and Writing when mode is studio', () => {
 });
 ```
 
-- [ ] Run focused test.
+- [x] Run focused test.
 
 ```powershell
 cd frontend; cmd /c npm.cmd run test -- WorkspaceShell
@@ -638,7 +638,7 @@ Expected: pass.
 
 **Dependencies:** T012
 
-- [ ] Create route test using existing test utilities and MSW.
+- [x] Create route test using existing test utilities and MSW.
 
 Minimum assertions:
 
@@ -648,7 +648,7 @@ Minimum assertions:
 - Clicking `Generate` opens the generation panel.
 - Clicking `Characters` opens the characters panel and shows `0 profiles` when `/v1/story-development/characters` returns no items.
 
-- [ ] Use only existing API endpoint mocks:
+- [x] Use only existing API endpoint mocks:
 
 ```ts
 http.get('/v1/story-development/drafting/manuscript-documents', () => HttpResponse.json({ project_id: 'proj-1', items: [], meta: {} }))
@@ -660,7 +660,7 @@ http.get('/v1/story-generation/runs', () => HttpResponse.json([]))
 http.get('/v1/jobs', () => HttpResponse.json([]))
 ```
 
-- [ ] Run focused test.
+- [x] Run focused test.
 
 ```powershell
 cd frontend; cmd /c npm.cmd run test -- StudioView

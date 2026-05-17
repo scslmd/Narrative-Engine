@@ -1,6 +1,6 @@
 # Studio Desk Stage 2 Suggestions Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the Stage 1 empty Studio suggestions panel with real project-level manuscript suggestions from existing writing and manuscript-assist frontend controllers.
 
@@ -33,7 +33,7 @@
 
 **Responsible file:** `frontend/src/hooks/useMergedSuggestions.ts`
 
-- [ ] Create a hook with this exact public interface:
+- [x] Create a hook with this exact public interface:
 
 ```ts
 import { useCallback, useMemo } from 'react';
@@ -51,8 +51,8 @@ export interface UseMergedSuggestionsArgs {
 }
 ```
 
-- [ ] The hook must not call API hooks, React Query hooks, or route hooks. It only merges provided arrays and routes actions.
-- [ ] The hook must export:
+- [x] The hook must not call API hooks, React Query hooks, or route hooks. It only merges provided arrays and routes actions.
+- [x] The hook must export:
 
 ```ts
 export function useMergedSuggestions(args: UseMergedSuggestionsArgs): {
@@ -64,7 +64,7 @@ export function useMergedSuggestions(args: UseMergedSuggestionsArgs): {
 }
 ```
 
-- [ ] Convert every `llmSuggestions` item to `RevisionSuggestion` with these exact fields:
+- [x] Convert every `llmSuggestions` item to `RevisionSuggestion` with these exact fields:
 
 ```ts
 {
@@ -79,7 +79,7 @@ export function useMergedSuggestions(args: UseMergedSuggestionsArgs): {
 }
 ```
 
-- [ ] Accept/reject/archive logic:
+- [x] Accept/reject/archive logic:
   - If `suggestionId` exists in `llmSuggestions`, accept calls `onLlmAccept(suggestionId)`.
   - If `suggestionId` exists in `llmSuggestions`, reject calls `onLlmReject(suggestionId)`.
   - If `suggestionId` exists in `llmSuggestions`, archive calls `onLlmArchive(suggestionId)`.
@@ -87,7 +87,7 @@ export function useMergedSuggestions(args: UseMergedSuggestionsArgs): {
   - If `suggestionId` does not exist in `llmSuggestions`, reject calls `onRevisionReject(suggestionId)`.
   - Archive for non-LLM suggestions is a no-op because no existing archive handler exists.
 
-- [ ] Verify:
+- [x] Verify:
 
 ```powershell
 cd frontend; cmd /c npm.cmd run typecheck
@@ -99,9 +99,9 @@ Expected: exits 0.
 
 **Responsible file:** `frontend/src/views/WritingView.tsx`
 
-- [ ] Remove the local `mergedSuggestions` construction.
-- [ ] Import `useMergedSuggestions`.
-- [ ] Call the hook after `assist` is created:
+- [x] Remove the local `mergedSuggestions` construction.
+- [x] Import `useMergedSuggestions`.
+- [x] Call the hook after `assist` is created:
 
 ```ts
 const mergedSuggestions = useMergedSuggestions({
@@ -115,7 +115,7 @@ const mergedSuggestions = useMergedSuggestions({
 });
 ```
 
-- [ ] Pass these exact props to `AidsPanel`:
+- [x] Pass these exact props to `AidsPanel`:
 
 ```tsx
 suggestions={mergedSuggestions.suggestions}
@@ -124,14 +124,14 @@ onSuggestionReject={(suggestionId) => void mergedSuggestions.handleSuggestionRej
 onSuggestionArchive={(suggestionId) => void mergedSuggestions.handleSuggestionArchive(suggestionId)}
 ```
 
-- [ ] Keep `useManuscriptAssist` in `WritingView` for selection toolbar behavior.
-- [ ] Do not call `useWritingDocumentController` directly from `WritingView`; continue using `useWritingView`.
+- [x] Keep `useManuscriptAssist` in `WritingView` for selection toolbar behavior.
+- [x] Do not call `useWritingDocumentController` directly from `WritingView`; continue using `useWritingView`.
 
 ### S2-T003: Create Studio Suggestions Panel
 
 **Responsible file:** `frontend/src/components/studio/StudioSuggestionsPanel.tsx`
 
-- [ ] Create a component with this exact public contract:
+- [x] Create a component with this exact public contract:
 
 ```tsx
 interface StudioSuggestionsPanelProps {
@@ -143,10 +143,10 @@ export function StudioSuggestionsPanel({ projectId }: StudioSuggestionsPanelProp
 }
 ```
 
-- [ ] Inside the component, call `useWritingDocumentController({ projectId, chapterId: undefined })`.
-- [ ] Determine `selectedDocument` from `writingController.selectedDocument`.
-- [ ] The Studio suggestions panel is project-level in Stage 2. It may use the selected/default document returned by `useWritingDocumentController`; it is not required to synchronize selected-document state with the center `WritingView` until a later shared-workspace-state stage.
-- [ ] Call `useManuscriptAssist` with:
+- [x] Inside the component, call `useWritingDocumentController({ projectId, chapterId: undefined })`.
+- [x] Determine `selectedDocument` from `writingController.selectedDocument`.
+- [x] The Studio suggestions panel is project-level in Stage 2. It may use the selected/default document returned by `useWritingDocumentController`; it is not required to synchronize selected-document state with the center `WritingView` until a later shared-workspace-state stage.
+- [x] Call `useManuscriptAssist` with:
 
 ```ts
 {
@@ -157,31 +157,31 @@ export function StudioSuggestionsPanel({ projectId }: StudioSuggestionsPanelProp
 }
 ```
 
-- [ ] Call `useMergedSuggestions` with the writing controller handlers and assist handlers.
-- [ ] Render `AidsPanel` with the merged suggestions and merged handlers.
+- [x] Call `useMergedSuggestions` with the writing controller handlers and assist handlers.
+- [x] Render `AidsPanel` with the merged suggestions and merged handlers.
 
 ### S2-T004: Use Real Suggestions In StudioContextPanel
 
 **Responsible file:** `frontend/src/components/studio/StudioContextPanel.tsx`
 
-- [ ] Import `StudioSuggestionsPanel`.
-- [ ] Replace the Stage 1 `AidsPanel suggestions={[]}` branch with:
+- [x] Import `StudioSuggestionsPanel`.
+- [x] Replace the Stage 1 `AidsPanel suggestions={[]}` branch with:
 
 ```tsx
 <StudioSuggestionsPanel projectId={projectId} />
 ```
 
-- [ ] Remove now-unused `AidsPanel` import from this file.
+- [x] Remove now-unused `AidsPanel` import from this file.
 
 ### S2-T005: Add Hook Tests
 
 **Responsible file:** `frontend/src/hooks/useMergedSuggestions.test.tsx`
 
-- [ ] Test that backend revision suggestions and LLM suggestions are returned as one array.
-- [ ] Test that LLM `ARCHIVED` maps to `REJECTED`.
-- [ ] Test that accepting an LLM suggestion calls `onLlmAccept`.
-- [ ] Test that accepting a non-LLM suggestion calls `onRevisionAccept`.
-- [ ] Use `renderHook` from Testing Library; do not use MSW because this hook has no network calls.
+- [x] Test that backend revision suggestions and LLM suggestions are returned as one array.
+- [x] Test that LLM `ARCHIVED` maps to `REJECTED`.
+- [x] Test that accepting an LLM suggestion calls `onLlmAccept`.
+- [x] Test that accepting a non-LLM suggestion calls `onRevisionAccept`.
+- [x] Use `renderHook` from Testing Library; do not use MSW because this hook has no network calls.
 
 ## Final Verification
 

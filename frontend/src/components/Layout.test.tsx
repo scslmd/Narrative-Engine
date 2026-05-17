@@ -5,10 +5,15 @@ import userEvent from '@testing-library/user-event';
 import { server } from '../__tests__/setup';
 import { http, HttpResponse } from 'msw';
 import { Layout } from './Layout';
+import { useProjects } from '../hooks/useProjects';
 import { useUIStore } from '../stores/uiStore';
 
 vi.mock('../hooks/useRouteSync', () => ({
   useRouteSync: vi.fn(),
+}));
+
+vi.mock('../hooks/useProjects', () => ({
+  useProjects: vi.fn(),
 }));
 
 const mockProjects = [
@@ -40,11 +45,17 @@ function getStageButton(label: string) {
 
 describe('Layout', () => {
   beforeEach(() => {
+    vi.mocked(useProjects).mockReturnValue({
+      data: mockProjects,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useProjects>);
     act(() => {
       useUIStore.setState({ mode: 'plan', projectId: null, chapterId: null, jobId: null, inspectContext: null });
     });
     server.use(
-      http.get('/v1/projects', () => HttpResponse.json(mockProjects)),
+      http.get('/v1/backup/list', () => HttpResponse.json([])),
+      http.get('/v1/auth/keys', () => HttpResponse.json([])),
       http.get('/health/ready', () =>
         HttpResponse.json({ components: { inference: { backend: 'llama.cpp' } } }),
       ),
@@ -240,4 +251,3 @@ describe('Layout', () => {
     });
   });
 });
-

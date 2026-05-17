@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Engine — Studio Layout Options</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #f9fafb;
+    padding: 32px;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+  .option-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .option-label.a { color: #818cf8; }
+  .option-label.b { color: #34d399; }
+  .option-label.c { color: #fbbf24; }
+  .option-desc {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .mockup-container {
+    margin-bottom: 48px;
+  }
+
+  /* Shared studio styles */
+  .studio {
+    width: 100%;
+    max-width: 1100px;
+    height: 580px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #374151;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+  }
+  .cmd-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #111827;
+    border-bottom: 1px solid #374151;
+    flex-shrink: 0;
+  }
+  .cmd-left { display: flex; align-items: center; gap: 12px; }
+  .cmd-brand {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #64748b;
+  }
+  .cmd-project {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f9fafb;
+  }
+  .cmd-actions { display: flex; gap: 4px; }
+  .cmd-btn {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: #94a3b8;
+    transition: all 0.15s;
+  }
+  .cmd-btn:hover { background: #1e293b; color: #f9fafb; }
+  .cmd-btn.active { background: #6366f1; color: #fff; }
+  .cmd-sep { width: 1px; height: 20px; background: #374151; margin: 0 4px; }
+
+  /* ===== OPTION A: Classic Three-Panel ===== */
+  .studio-a {
+    display: grid;
+    grid-template-columns: 180px 1fr 240px;
+    grid-template-rows: 1fr 48px;
+    flex: 1;
+    min-height: 0;
+  }
+  .rail-left {
+    background: #111827;
+    border-right: 1px solid #374151;
+    padding: 12px;
+    overflow-y: auto;
+  }
+  .rail-section-title {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4b5563;
+    padding: 8px 0 6px;
+  }
+  .rail-item {
+    font-size: 12px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    color: #94a3b8;
+    cursor: pointer;
+  }
+  .rail-item:hover { background: #1e293b; color: #f9fafb; }
+  .rail-item.active { background: rgba(99,102,241,0.15); color: #818cf8; }
+  .rail-item.expanded { color: #d1d5db; }
+  .rail-item .arrow { margin-right: 4px; font-size: 9px; }
+
+  .editor-area-a {
+    background: #0c111e;
+    padding: 24px 32px;
+    overflow-y: auto;
+  }
+  .editor-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #e5e7eb;
+  }
+  .editor-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #9ca3af;
+  }
+  .editor-text .highlight {
+    background: rgba(251, 191, 36, 0.15);
+    border-bottom: 2px solid #fbbf24;
+    padding: 0 2px;
+  }
+
+  .panel-right {
+    background: #111827;
+    border-left: 1px solid #374151;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid #374151;
+    flex-shrink: 0;
+  }
+  .panel-tab {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 8px 10px;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .panel-tab:hover { color: #94a3b8; }
+  .panel-tab.active { color: #818cf8; border-bottom-color: #818cf8; }
+  .panel-content {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .panel-card {
+    background: #1e293b;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .panel-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #d1d5db;
+    margin-bottom: 4px;
+  }
+  .panel-card-text {
+    font-size: 10px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .panel-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+  }
+  .panel-badge.warn { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .panel-badge.ok { background: rgba(52,211,153,0.15); color: #34d399; }
+  .panel-badge.info { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+  .bottom-tray {
+    grid-column: 1 / -1;
+    background: #111827;
+    border-top: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 16px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .tray-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748b;
+  }
+  .tray-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .tray-dot.green { background: #34d399; box-shadow: 0 0 4px rgba(52,211,153,0.4); }
+  .tray-dot.amber { background: #fbbf24; box-shadow: 0 0 4px rgba(251,191,36,0.4); }
+  .tray-dot.blue { background: #818cf8; box-shadow: 0 0 4px rgba(129,140,248,0.4); }
+  .tray-handle {
+    margin-left: auto;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  /* ===== OPTION B: Full-Width Editor + Bottom Dock ===== */
+  .studio-b {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor-area-b {
+    flex: 1;
+    background: #0c111e;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .editor-b-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px 8px;
+  }
+  .editor-b-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e5e7eb;
+  }
+  .editor-b-meta {
+    font-size: 10px;
+    color: #4b5563;
+  }
+  .editor-b-body {
+    flex: 1;
+    padding: 16px 32px 32px;
+    overflow-y: auto;
+  }
+  .editor-b-body .editor-text { max-width: 680px; }
+
+  .b-dock {
+    height: 180px;
+    background: #111827;
+    border-top: 1px solid #374151;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    flex-shrink: 0;
+  }
+  .b-dock-toggle {
+    position: absolute;
+    bottom: 176px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 4px 16px;
+    font-size: 10px;
+    color: #64748b;
+    cursor: pointer;
+    z-index: 5;
+  }
+  .b-dock-rail {
+    border-right: 1px solid #374151;
+    padding: 8px;
+    overflow-y: auto;
+  }
+  .b-dock-panel {
+    padding: 8px 12px;
+    overflow-y: auto;
+    display: flex;
+    gap: 8px;
+  }
+  .b-dock-panel .panel-tabs {
+    position: sticky;
+    top: 0;
+    background: #111827;
+    z-index: 1;
+    padding-right: 8px;
+  }
+  .b-dock-panel .panel-content {
+    padding-top: 4px;
+  }
+
+  /* ===== OPTION C: Floating Workspace ===== */
+  .studio-c {
+    flex: 1;
+    background: #0c111e;
+    position: relative;
+    overflow: hidden;
+  }
+  .c-editor {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 280px;
+    bottom: 16px;
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .c-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 248px;
+    bottom: 16px;
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .c-panel-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #374151;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .c-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .c-rail {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 160px;
+    bottom: 16px;
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .c-editor-shifted {
+    left: 192px;
+  }
+  .c-resize-handle {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+  }
+  .c-resize-handle:hover { background: rgba(99,102,241,0.3); }
+  .c-float-badge {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  .c-float-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #94a3b8;
+    transition: all 0.15s;
+  }
+  .c-float-btn:hover { background: #6366f1; color: #fff; border-color: #6366f1; }
+  .c-status-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: #111827;
+    border-top: 1px solid #374151;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    font-size: 9px;
+    color: #4b5563;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+  .prose-line { margin-bottom: 12px; }
+  .prose-line.empty { height: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Studio Desk — Layout Options</h1>
+<p class="subtitle">Three layout concepts for the single-writing-workspace redesign</p>
+
+<!-- ============================================ -->
+<!-- OPTION A: Classic Three-Panel               -->
+<!-- ============================================ -->
+<div class="mockup-container">
+  <p class="option-label a">Option A — Classic Three-Panel</p>
+  <p class="option-desc">Faithful to design doc. Left rail navigates project artifacts. Center editor is the stable work surface. Right context panel stacks Ideas / Characters / World / Relationships / Generation / Review / Inspect as tabs. Bottom tray shows jobs, suggestions, and lineage. Best for deep, multi-panel work.</p>
+
+  <div class="studio">
+    <div class="cmd-bar">
+      <div class="cmd-left">
+        <span class="cmd-brand">Narrative Engine</span>
+        <span class="cmd-sep"></span>
+        <span class="cmd-project">The Storm Chronicles</span>
+      </div>
+      <div class="cmd-actions">
+        <button class="cmd-btn">Capture</button>
+        <button class="cmd-btn active">Write</button>
+        <button class="cmd-btn">Generate</button>
+        <button class="cmd-btn">Review</button>
+        <button class="cmd-btn">Inspect</button>
+      </div>
+    </div>
+
+    <div class="studio-a">
+      <!-- Left Rail -->
+      <div class="rail-left">
+        <div class="rail-section-title">Manuscripts</div>
+        <div class="rail-item"><span class="arrow">▸</span> Chapter 1</div>
+        <div class="rail-item"><span class="arrow">▸</span> Chapter 2</div>
+        <div class="rail-item active"><span class="arrow">▾</span> Chapter 3</div>
+        <div class="rail-section-title">Drafts</div>
+        <div class="rail-item">Alt opening</div>
+        <div class="rail-item">Variant B</div>
+        <div class="rail-section-title">Planning</div>
+        <div class="rail-item">Sequence Plan</div>
+        <div class="rail-item">Scene Cards</div>
+        <div class="rail-section-title">Canon</div>
+        <div class="rail-item">Characters (12)</div>
+        <div class="rail-item">World Bible (8)</div>
+        <div class="rail-item">Arcs (4)</div>
+        <div class="rail-section-title">Jobs</div>
+        <div class="rail-item">P-300 Draft</div>
+        <div class="rail-item">Checker Run</div>
+      </div>
+
+      <!-- Center Editor -->
+      <div class="editor-area-a">
+        <div class="editor-title">Chapter 3 — The Breaking Point</div>
+        <div class="editor-text">
+          <div class="prose-line">It was not the storm that changed Mara. Storms came and went on the coast; she had learned to read them the way her grandmother read tea leaves — for what they promised, not what they delivered.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">What changed her was the silence after. Three days of glass-flat sea and sky that matched too perfectly, the kind of calm that makes fishermen check their nets twice and mothers pull their children closer.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">She stood at the edge of the wharf, the <span class="highlight">salt-crusted rail</span> biting into her palms, and watched the horizon where the weatherman said nothing was coming. Her grandmother would have smiled at that. The sea never sends nothing.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">Kael found her there at dusk, his shadow stretching long across the weathered planks. "You've been standing there since morning," he said, and she could hear it — the question underneath the observation, the one he never asked directly.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">"I'm waiting," she told him, and for the first time she meant it as an answer, not a deflection.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">The gulls had stopped crying. That was what she noticed first when it came — not the wind, not the darkening water, but the absence of birds. The sky emptied in minutes, the way a room empties when someone walks in who changes everything.</div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="panel-right">
+        <div class="panel-tabs">
+          <div class="panel-tab">Ideas</div>
+          <div class="panel-tab active">Chars</div>
+          <div class="panel-tab">World</div>
+          <div class="panel-tab">Review</div>
+        </div>
+        <div class="panel-content">
+          <div class="panel-card">
+            <div class="panel-card-title">Mara Voss <span class="panel-badge info">Protagonist</span></div>
+            <div class="panel-card-text">Late 20s. Fisher's daughter. Internal need: trust her own judgment over inherited fear. Arc: resistance → acceptance.</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Kael <span class="panel-badge info">Deuteragonist</span></div>
+            <div class="panel-card-text">Early 30s. Returned sailor. Carries the question he never asks. Voice: understated, observant.</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Grandmother <span class="panel-badge warn">Off-screen</span></div>
+            <div class="panel-card-text">Deceased. Present through memory and inherited wisdom. Tea-leaf reader. Key motif: "the sea never sends nothing."</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Continuity <span class="panel-badge warn">Warning</span></div>
+            <div class="panel-card-text">Ch.2 established Mara's left hand injury. Check that "salt-crusted rail biting into her palms" (plural) is consistent.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Tray -->
+      <div class="bottom-tray">
+        <div class="tray-item"><span class="tray-dot green"></span> P-300 Draft Ch.3 — COMPLETED</div>
+        <div class="tray-item"><span class="tray-dot amber"></span> Checker Run — 1 warning</div>
+        <div class="tray-item"><span class="tray-dot blue"></span> 3 suggestions pending</div>
+        <span class="tray-handle">▾</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- OPTION B: Full-Width Editor + Bottom Dock    -->
+<!-- ============================================ -->
+<div class="mockup-container">
+  <p class="option-label b">Option B — Full-Width Editor + Bottom Dock</p>
+  <p class="option-desc">Editor gets maximum vertical space. Support panels slide up from a collapsed bottom dock. Left rail and context panels coexist in the dock row. Best for distraction-free drafting with tools available on demand. Ideal for writers who want the editor to dominate.</p>
+
+  <div class="studio" style="position:relative;">
+    <div class="cmd-bar">
+      <div class="cmd-left">
+        <span class="cmd-brand">Narrative Engine</span>
+        <span class="cmd-sep"></span>
+        <span class="cmd-project">The Storm Chronicles</span>
+        <span class="cmd-sep"></span>
+        <span class="editor-b-meta">Chapter 3 — 1,247 words</span>
+      </div>
+      <div class="cmd-actions">
+        <button class="cmd-btn">Capture</button>
+        <button class="cmd-btn active">Write</button>
+        <button class="cmd-btn">Generate</button>
+        <button class="cmd-btn">Review</button>
+        <button class="cmd-btn">Inspect</button>
+      </div>
+    </div>
+
+    <div class="studio-b">
+      <div class="editor-area-b">
+        <div class="editor-b-header">
+          <div class="editor-b-title">Chapter 3 — The Breaking Point</div>
+        </div>
+        <div class="editor-b-body">
+          <div class="editor-text">
+            <div class="prose-line">It was not the storm that changed Mara. Storms came and went on the coast; she had learned to read them the way her grandmother read tea leaves — for what they promised, not what they delivered.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">What changed her was the silence after. Three days of glass-flat sea and sky that matched too perfectly, the kind of calm that makes fishermen check their nets twice and mothers pull their children closer.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">She stood at the edge of the wharf, the salt-crusted rail biting into her palms, and watched the horizon where the weatherman said nothing was coming. Her grandmother would have smiled at that. The sea never sends nothing.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">Kael found her there at dusk, his shadow stretching long across the weathered planks. "You've been standing there since morning," he said, and she could hear it — the question underneath the observation, the one he never asked directly.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">"I'm waiting," she told him, and for the first time she meant it as an answer, not a deflection.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">The gulls had stopped crying. That was what she noticed first when it came — not the wind, not the darkening water, but the absence of birds. The sky emptied in minutes, the way a room empties when someone walks in who changes everything.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">The first wave hit the pilings with a sound like a fist against a door. Mara didn't flinch. She had been waiting for this exact moment since she was old enough to understand that the sea keeps promises — just not the ones people want to hear.</div>
+            <div class="prose-line empty"></div>
+            <div class="prose-line">Behind her, Kael's hand found her shoulder. Not touching. Close enough that she felt the warmth of it, the intention. "Mara," he said, and it wasn't the question he usually carried. It was something else. Something that sounded like a warning, or maybe a blessing.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="b-dock">
+        <div class="b-dock-rail">
+          <div class="rail-section-title">Manuscripts</div>
+          <div class="rail-item"><span class="arrow">▸</span> Chapter 1</div>
+          <div class="rail-item"><span class="arrow">▸</span> Chapter 2</div>
+          <div class="rail-item active"><span class="arrow">▾</span> Chapter 3</div>
+          <div class="rail-section-title">Drafts</div>
+          <div class="rail-item">Alt opening</div>
+          <div class="rail-item">Variant B</div>
+          <div class="rail-section-title">Planning</div>
+          <div class="rail-item">Sequence Plan</div>
+          <div class="rail-section-title">Canon</div>
+          <div class="rail-item">Characters (12)</div>
+          <div class="rail-item">World Bible (8)</div>
+          <div class="rail-item">Arcs (4)</div>
+        </div>
+        <div class="b-dock-panel">
+          <div style="min-width:70px; flex-shrink:0;">
+            <div class="panel-tabs" style="flex-direction:column;">
+              <div class="panel-tab">Ideas</div>
+              <div class="panel-tab active">Chars</div>
+              <div class="panel-tab">World</div>
+              <div class="panel-tab">Review</div>
+              <div class="panel-tab">Gen</div>
+              <div class="panel-tab">Inspect</div>
+            </div>
+          </div>
+          <div class="panel-content" style="flex:1; overflow-y:auto;">
+            <div class="panel-card">
+              <div class="panel-card-title">Mara Voss <span class="panel-badge info">Protagonist</span></div>
+              <div class="panel-card-text">Late 20s. Fisher's daughter. Internal need: trust her own judgment over inherited fear. Arc: resistance → acceptance.</div>
+            </div>
+            <div class="panel-card">
+              <div class="panel-card-title">Kael <span class="panel-badge info">Deuteragonist</span></div>
+              <div class="panel-card-text">Early 30s. Returned sailor. Carries the question he never asks.</div>
+            </div>
+            <div class="panel-card">
+              <div class="panel-card-title">Continuity <span class="panel-badge warn">Warning</span></div>
+              <div class="panel-card-text">Ch.2 established Mara's left hand injury. Check "palms" (plural) consistency.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- OPTION C: Floating Workspace                 -->
+<!-- ============================================ -->
+<div class="mockup-container">
+  <p class="option-label c">Option C — Floating Workspace</p>
+  <p class="option-desc">Panels are independent floating windows within the workspace. Command bar stays anchored top. Panels can be repositioned, resized, and hidden. A floating toolbar at bottom provides quick panel toggles. Most flexible, supports multi-monitor-style layouts. Best for power users who want custom arrangements.</p>
+
+  <div class="studio">
+    <div class="cmd-bar">
+      <div class="cmd-left">
+        <span class="cmd-brand">Narrative Engine</span>
+        <span class="cmd-sep"></span>
+        <span class="cmd-project">The Storm Chronicles</span>
+      </div>
+      <div class="cmd-actions">
+        <button class="cmd-btn">Capture</button>
+        <button class="cmd-btn active">Write</button>
+        <button class="cmd-btn">Generate</button>
+        <button class="cmd-btn">Review</button>
+        <button class="cmd-btn">Inspect</button>
+        <span class="cmd-sep"></span>
+        <button class="cmd-btn">⊞ Layout</button>
+      </div>
+    </div>
+
+    <div class="studio-c">
+      <!-- Floating Rail -->
+      <div class="c-rail">
+        <div class="rail-section-title">Manuscripts</div>
+        <div class="rail-item"><span class="arrow">▸</span> Chapter 1</div>
+        <div class="rail-item"><span class="arrow">▸</span> Chapter 2</div>
+        <div class="rail-item active"><span class="arrow">▾</span> Chapter 3</div>
+        <div class="rail-section-title">Drafts</div>
+        <div class="rail-item">Alt opening</div>
+        <div class="rail-item">Variant B</div>
+        <div class="rail-section-title">Planning</div>
+        <div class="rail-item">Sequence Plan</div>
+        <div class="rail-item">Scene Cards</div>
+        <div class="rail-section-title">Canon</div>
+        <div class="rail-item">Characters (12)</div>
+        <div class="rail-item">World Bible (8)</div>
+        <div class="rail-item">Arcs (4)</div>
+        <div class="rail-section-title">Jobs</div>
+        <div class="rail-item">P-300 Draft</div>
+        <div class="rail-item">Checker Run</div>
+      </div>
+
+      <!-- Floating Editor -->
+      <div class="c-editor c-editor-shifted">
+        <div class="editor-title">Chapter 3 — The Breaking Point</div>
+        <div class="editor-text">
+          <div class="prose-line">It was not the storm that changed Mara. Storms came and went on the coast; she had learned to read them the way her grandmother read tea leaves — for what they promised, not what they delivered.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">What changed her was the silence after. Three days of glass-flat sea and sky that matched too perfectly, the kind of calm that makes fishermen check their nets twice and mothers pull their children closer.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">She stood at the edge of the wharf, the <span class="highlight">salt-crusted rail</span> biting into her palms, and watched the horizon where the weatherman said nothing was coming. Her grandmother would have smiled at that. The sea never sends nothing.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">Kael found her there at dusk, his shadow stretching long across the weathered planks. "You've been standing there since morning," he said, and she could hear it — the question underneath the observation, the one he never asked directly.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">"I'm waiting," she told him, and for the first time she meant it as an answer, not a deflection.</div>
+          <div class="prose-line empty"></div>
+          <div class="prose-line">The gulls had stopped crying. That was what she noticed first when it came — not the wind, not the darkening water, but the absence of birds.</div>
+        </div>
+      </div>
+
+      <!-- Floating Context Panel -->
+      <div class="c-panel">
+        <div class="c-resize-handle"></div>
+        <div class="c-panel-header">
+          <span>Context</span>
+          <span style="font-size:10px; color:#4b5563;">✕</span>
+        </div>
+        <div class="panel-tabs">
+          <div class="panel-tab">Ideas</div>
+          <div class="panel-tab active">Chars</div>
+          <div class="panel-tab">World</div>
+          <div class="panel-tab">Review</div>
+        </div>
+        <div class="c-panel-body">
+          <div class="panel-card">
+            <div class="panel-card-title">Mara Voss <span class="panel-badge info">Protagonist</span></div>
+            <div class="panel-card-text">Late 20s. Fisher's daughter. Internal need: trust her own judgment over inherited fear. Arc: resistance → acceptance.</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Kael <span class="panel-badge info">Deuteragonist</span></div>
+            <div class="panel-card-text">Early 30s. Returned sailor. Carries the question he never asks. Voice: understated, observant.</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Grandmother <span class="panel-badge warn">Off-screen</span></div>
+            <div class="panel-card-text">Deceased. Present through memory and inherited wisdom. Key motif: "the sea never sends nothing."</div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-title">Continuity <span class="panel-badge warn">Warning</span></div>
+            <div class="panel-card-text">Ch.2 established Mara's left hand injury. Check that "palms" (plural) is consistent.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Toolbar -->
+      <div class="c-float-badge">
+        <div class="c-float-btn" title="Toggle Rail">☰</div>
+        <div class="c-float-btn" title="Ideas">💡</div>
+        <div class="c-float-btn" title="Characters">👤</div>
+        <div class="c-float-btn" title="World Bible">🌍</div>
+        <div class="c-float-btn" title="Generation">⚡</div>
+        <div class="c-float-btn" title="Review">🔍</div>
+        <div class="c-float-btn" title="Inspect">📋</div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="c-status-bar">
+        <span>P-300 Draft Ch.3 — COMPLETED</span>
+        <span style="color:#34d399;">●</span>
+        <span>Checker — 1 warning</span>
+        <span style="color:#fbbf24;">●</span>
+        <span>3 suggestions pending</span>
+        <span style="color:#818cf8;">●</span>
+        <span style="margin-left:auto;">Ln 14, Col 23 · 1,247 words</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Table -->
+<div style="max-width:900px; margin-top:16px;">
+  <p class="section-title" style="font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; margin-bottom:16px;">Comparison</p>
+  <table style="width:100%; border-collapse:collapse; font-size:12px;">
+    <thead>
+      <tr style="border-bottom:1px solid #374151;">
+        <th style="text-align:left; padding:8px 12px; color:#64748b; font-weight:600;">Criteria</th>
+        <th style="text-align:left; padding:8px 12px; color:#818cf8; font-weight:600;">A: Classic</th>
+        <th style="text-align:left; padding:8px 12px; color:#34d399; font-weight:600;">B: Full-Width</th>
+        <th style="text-align:left; padding:8px 12px; color:#fbbf24; font-weight:600;">C: Floating</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:8px 12px; color:#94a3b8;">Editor space</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Constrained (3 columns)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Maximum (full width)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Flexible (user-controlled)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:8px 12px; color:#94a3b8;">Panel accessibility</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Always visible (right panel)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Dock toggle (1 click)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Floating toolbar (1 click)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:8px 12px; color:#94a3b8;">Cognitive load</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Low (fixed layout)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Lowest (minimal chrome)</td>
+        <td style="padding:8px 12px; color:#d1d5db;">High (user arranges)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:8px 12px; color:#94a3b8;">Multi-panel support</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Single right panel + tabs</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Single dock panel + tabs</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Multiple floating panels</td>
+      </tr>
+      <tr style="border-bottom:1px solid #1e293b;">
+        <td style="padding:8px 12px; color:#94a3b8;">Implementation effort</td>
+        <td style="padding:8px 12px; color:#34d399;">Low (grid layout)</td>
+        <td style="padding:8px 12px; color:#34d399;">Low (flex + toggle)</td>
+        <td style="padding:8px 12px; color:#fbbf24;">High (drag, resize, persist)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; color:#94a3b8;">Best for</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Research-backed default</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Drafting-focused writers</td>
+        <td style="padding:8px 12px; color:#d1d5db;">Power users, large screens</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>

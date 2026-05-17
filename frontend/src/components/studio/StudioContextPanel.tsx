@@ -11,6 +11,14 @@ import { NotesPanel } from '../NotesPanel';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
 
+const primaryTabs: Array<{ label: string; panel: StudioPanelKey }> = [
+  { label: 'Suggestions', panel: 'suggestions' },
+  { label: 'Ideas', panel: 'ideas' },
+  { label: 'Characters', panel: 'characters' },
+  { label: 'World', panel: 'worldBible' },
+  { label: 'Review', panel: 'review' },
+];
+
 const panelLabels: Record<StudioPanelKey, string> = {
   suggestions: 'Suggestions',
   ideas: 'Ideas',
@@ -26,11 +34,13 @@ const panelLabels: Record<StudioPanelKey, string> = {
 
 interface StudioContextPanelProps {
   projectId: string;
+  showCloseButton?: boolean;
 }
 
-export function StudioContextPanel({ projectId }: StudioContextPanelProps) {
+export function StudioContextPanel({ projectId, showCloseButton = false }: StudioContextPanelProps) {
   const activePanel = useStudioStore((s) => s.activePanel);
-  const setContextPanelOpen = useStudioStore((s) => s.setContextPanelOpen);
+  const openPanel = useStudioStore((s) => s.openPanel);
+  const setContextPanelMode = useStudioStore((s) => s.setContextPanelMode);
 
   const label = panelLabels[activePanel];
 
@@ -61,29 +71,43 @@ export function StudioContextPanel({ projectId }: StudioContextPanelProps) {
 
   return (
     <div className="flex h-full flex-col">
+      <div
+        className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
+        role="tablist"
+        aria-label="Studio context tabs"
+      >
+        {primaryTabs.map((tab) => {
+          const active = activePanel === tab.panel;
+
+          return (
+            <button
+              key={tab.panel}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => openPanel(tab.panel)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-100 dark:text-slate-950'
+                  : 'text-gray-500 hover:bg-white hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{label}</h2>
-        <button
-          type="button"
-          onClick={() => setContextPanelOpen(false)}
-          className="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-          aria-label="Close panel"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {showCloseButton ? (
+          <button
+            type="button"
+            onClick={() => setContextPanelMode('closed')}
+            className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
           >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
+            Close
+          </button>
+        ) : null}
       </div>
       <div className="flex-1 overflow-y-auto p-4">{renderPanel()}</div>
     </div>

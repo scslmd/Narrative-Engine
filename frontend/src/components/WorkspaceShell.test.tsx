@@ -75,6 +75,8 @@ describe('WorkspaceShell', () => {
     expect(buttons).toHaveLength(2);
     expect(screen.getByText('Studio')).toBeInTheDocument();
     expect(screen.getByText('Writing')).toBeInTheDocument();
+
+    expect(buttons.length).toBe(2);
   });
 
   it('renders 2 nav items when mode is in review stage (review)', () => {

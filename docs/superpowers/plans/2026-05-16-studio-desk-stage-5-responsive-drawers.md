@@ -1,6 +1,6 @@
 # Studio Desk Stage 5 Responsive Drawers Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make Studio usable on tablet and mobile by turning the project rail and context panel into controlled drawers below desktop width.
 
@@ -32,7 +32,7 @@
 
 **Responsible file:** `frontend/src/stores/studioStore.ts`
 
-- [ ] Add methods:
+- [x] Add methods:
 
 ```ts
 toggleLeftRail: () => void;
@@ -40,7 +40,7 @@ toggleContextPanel: () => void;
 closeDrawers: () => void;
 ```
 
-- [ ] Implement:
+- [x] Implement:
 
 ```ts
 toggleLeftRail: () => set((state) => ({ leftRailOpen: !state.leftRailOpen })),
@@ -52,9 +52,9 @@ closeDrawers: () => set({ leftRailOpen: false, contextPanelOpen: false }),
 
 **Responsible file:** `frontend/src/views/StudioView.tsx`
 
-- [ ] Replace inline `gridTemplateColumns` with one mounted `WritingView` and responsive rail/context positioning.
-- [ ] The implementation must render exactly one `<WritingView />` in `StudioView.tsx`.
-- [ ] Use one shared center column:
+- [x] Replace inline `gridTemplateColumns` with one mounted `WritingView` and responsive rail/context positioning.
+- [x] The implementation must render exactly one `<WritingView />` in `StudioView.tsx`.
+- [x] Use one shared center column:
 
 ```tsx
 <main className="min-h-0 overflow-hidden bg-[var(--bg-primary)]">
@@ -62,40 +62,40 @@ closeDrawers: () => set({ leftRailOpen: false, contextPanelOpen: false }),
 </main>
 ```
 
-- [ ] Desktop rail wrapper must use class substring `hidden xl:block`.
-- [ ] Desktop context wrapper must use class substring `hidden xl:block`.
-- [ ] Mobile rail drawer must be separate from the desktop rail and render only when `leftRailOpen`.
-- [ ] Mobile context drawer must be separate from the desktop context and render only when `contextPanelOpen`.
-- [ ] The outer layout must include responsive grid class substring:
+- [x] Desktop rail wrapper must use class substring `hidden xl:block`.
+- [x] Desktop context wrapper must use class substring `hidden xl:block`.
+- [x] Mobile rail drawer must be separate from the desktop rail and render only when `leftRailOpen`.
+- [x] Mobile context drawer must be separate from the desktop context and render only when `contextPanelOpen`.
+- [x] The outer layout must include responsive grid class substring:
 
 ```tsx
 xl:grid-cols-[13rem_minmax(0,1fr)_26rem]
 ```
 
-- [ ] Rail drawer must render when `leftRailOpen` with class substring `absolute left-0 top-0 z-30 h-full w-72`.
-- [ ] Context drawer must render when `contextPanelOpen` with class substring `absolute right-0 top-0 z-30 h-full w-[min(28rem,100%)]`.
-- [ ] Add overlay backdrop button when either drawer is open with exact `aria-label="Close Studio drawers"` and `onClick={closeDrawers}`.
-- [ ] Desktop must still render `StudioProjectRail`, center `WritingView`, and `StudioContextPanel` inline.
+- [x] Rail drawer must render when `leftRailOpen` with class substring `absolute left-0 top-0 z-30 h-full w-72`.
+- [x] Context drawer must render when `contextPanelOpen` with class substring `absolute right-0 top-0 z-30 h-full w-[min(28rem,100%)]`.
+- [x] Add overlay backdrop button when either drawer is open with exact `aria-label="Close Studio drawers"` and `onClick={closeDrawers}`.
+- [x] Desktop must still render `StudioProjectRail`, center `WritingView`, and `StudioContextPanel` inline.
 
 ### S5-T003: Mobile Drawer Buttons
 
 **Responsible file:** `frontend/src/components/studio/StudioCommandBar.tsx`
 
-- [ ] Add two buttons visible below `xl` using class substring `xl:hidden`:
+- [x] Add two buttons visible below `xl` using class substring `xl:hidden`:
   - `Project`
   - `Context`
-- [ ] `Project` calls `toggleLeftRail`.
-- [ ] `Context` calls `toggleContextPanel`.
-- [ ] Keep existing command buttons unchanged.
+- [x] `Project` calls `toggleLeftRail`.
+- [x] `Context` calls `toggleContextPanel`.
+- [x] Keep existing command buttons unchanged.
 
 ### S5-T004: Drawer Tests
 
 **Responsible file:** `frontend/src/views/StudioView.test.tsx`
 
-- [ ] Assert `Project` and `Context` buttons render.
-- [ ] Click `Project` and assert `Studio project map` remains accessible.
-- [ ] Click `Context` and assert current panel label remains accessible.
-- [ ] Click `Close Studio drawers` and assert no exception; do not rely on CSS visibility in jsdom.
+- [x] Assert `Project` and `Context` buttons render.
+- [x] Click `Project` and assert `Studio project map` remains accessible.
+- [x] Click `Context` and assert current panel label remains accessible.
+- [x] Click `Close Studio drawers` and assert no exception; do not rely on CSS visibility in jsdom.
 
 ## Final Verification
 

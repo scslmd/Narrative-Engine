@@ -85,15 +85,19 @@ export function useWritingDocumentController({
       },
     ],
   });
+  const [manuscriptDocumentsQuery, draftArtifactsQuery, revisionSuggestionsQuery] = queries;
+  const manuscriptDocumentsData = manuscriptDocumentsQuery.data as ManuscriptDocument[] | undefined;
+  const draftArtifactsData = draftArtifactsQuery.data as DraftArtifact[] | undefined;
+  const revisionSuggestionsData = revisionSuggestionsQuery.data as RevisionSuggestion[] | undefined;
 
   const manuscriptDocuments = useMemo(
-    () => (queries[0].data as ManuscriptDocument[]) ?? [],
-    [queries[0].data],
+    () => manuscriptDocumentsData ?? [],
+    [manuscriptDocumentsData],
   );
-  const draftArtifacts = (queries[1].data as DraftArtifact[]) ?? [];
+  const draftArtifacts = draftArtifactsData ?? [];
   const revisionSuggestions = useMemo(
-    () => (queries[2].data as RevisionSuggestion[]) ?? [],
-    [queries[2].data],
+    () => revisionSuggestionsData ?? [],
+    [revisionSuggestionsData],
   );
   const openSuggestions = useMemo(
     () => revisionSuggestions.filter((s) => s.status === 'REQUESTED' || s.status === 'PENDING'),
@@ -379,8 +383,8 @@ export function useWritingDocumentController({
     revisionSuggestions,
     openSuggestions,
     selectedDocument,
-    manuscriptQueryLoading: queries[0].isLoading,
-    draftsQueryLoading: queries[1].isLoading,
+    manuscriptQueryLoading: manuscriptDocumentsQuery.isLoading,
+    draftsQueryLoading: draftArtifactsQuery.isLoading,
     wordCount,
     charCount,
     handleEdit,

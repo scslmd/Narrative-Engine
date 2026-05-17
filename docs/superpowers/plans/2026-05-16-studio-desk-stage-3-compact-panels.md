@@ -1,6 +1,6 @@
 # Studio Desk Stage 3 Compact Panels Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace route-sized Generation, Review, and Inspect views inside Studio with compact panel components that fit the right context rail.
 
@@ -33,7 +33,7 @@
 
 **Responsible file:** `frontend/src/components/studio/StudioGenerationPanel.tsx`
 
-- [ ] Create a component with this exact public contract:
+- [x] Create a component with this exact public contract:
 
 ```tsx
 interface StudioGenerationPanelProps {
@@ -45,28 +45,28 @@ export function StudioGenerationPanel({ projectId }: StudioGenerationPanelProps)
 }
 ```
 
-- [ ] Use existing `useGenerationController(projectId)`.
-- [ ] Render a header with exact text `Generation`.
-- [ ] Render existing `StoryGenerationWizard` with:
+- [x] Use existing `useGenerationController(projectId)`.
+- [x] Render a header with exact text `Generation`.
+- [x] Render existing `StoryGenerationWizard` with:
   - `projectId={projectId}`
   - `characters={characters}`
   - `worldEntries={worldEntries}`
   - `onPreview={previewForkRun}`
   - `onSubmit={submitGenerationRun}`
   - `onSubmitted={handleRunSubmitted}`
-- [ ] Render `ErrorBanner error={runsError} onRetry={retryRuns}`.
-- [ ] Render at most the first five runs from `runs.slice(0, 5)`.
-- [ ] Each run must render existing `GenerationRunCard` and call `handleRunSelected(run)` when clicked.
-- [ ] Render existing `GenerationGatePanel` with `gates={gates}`.
-- [ ] If `selectedRun` is non-null, render exact text `Latest status:` and a button that calls `handleForkSelectedRun`.
-- [ ] Do not render `GeneratedStoryReview` in the compact panel; full generated story review remains available in `/generate`.
-- [ ] Do not call `useParams`; the parent passes `projectId`.
+- [x] Render `ErrorBanner error={runsError} onRetry={retryRuns}`.
+- [x] Render at most the first five runs from `runs.slice(0, 5)`.
+- [x] Each run must render existing `GenerationRunCard` and call `handleRunSelected(run)` when clicked.
+- [x] Render existing `GenerationGatePanel` with `gates={gates}`.
+- [x] If `selectedRun` is non-null, render exact text `Latest status:` and a button that calls `handleForkSelectedRun`.
+- [x] Do not render `GeneratedStoryReview` in the compact panel; full generated story review remains available in `/generate`.
+- [x] Do not call `useParams`; the parent passes `projectId`.
 
 ### S3-T002: StudioReviewPanel
 
 **Responsible file:** `frontend/src/components/studio/StudioReviewPanel.tsx`
 
-- [ ] Create a component with this exact public contract:
+- [x] Create a component with this exact public contract:
 
 ```tsx
 interface StudioReviewPanelProps {
@@ -78,19 +78,19 @@ export function StudioReviewPanel({ projectId }: StudioReviewPanelProps) {
 }
 ```
 
-- [ ] Use existing `FindingsList` and `InspectRunLinksList`.
-- [ ] Use local tab state initialized to `'findings'`.
-- [ ] Render two buttons with exact labels `Findings` and `Inspect Links`.
-- [ ] When active tab is `findings`, render `<FindingsList projectId={projectId} />`.
-- [ ] When active tab is `links`, render `<InspectRunLinksList projectId={projectId} />`.
-- [ ] Do not include the inspect-link create form in the compact panel; full authoring remains available in `/review`.
-- [ ] Do not call `useParams`; the parent passes `projectId`.
+- [x] Use existing `FindingsList` and `InspectRunLinksList`.
+- [x] Use local tab state initialized to `'findings'`.
+- [x] Render two buttons with exact labels `Findings` and `Inspect Links`.
+- [x] When active tab is `findings`, render `<FindingsList projectId={projectId} />`.
+- [x] When active tab is `links`, render `<InspectRunLinksList projectId={projectId} />`.
+- [x] Do not include the inspect-link create form in the compact panel; full authoring remains available in `/review`.
+- [x] Do not call `useParams`; the parent passes `projectId`.
 
 ### S3-T003: StudioInspectPanel
 
 **Responsible file:** `frontend/src/components/studio/StudioInspectPanel.tsx`
 
-- [ ] Create a component with this exact public contract:
+- [x] Create a component with this exact public contract:
 
 ```tsx
 export function StudioInspectPanel() {
@@ -98,19 +98,19 @@ export function StudioInspectPanel() {
 }
 ```
 
-- [ ] Render exact guidance text `Open a run from Review or the job tray to inspect steps, lineage, and attempts.`
-- [ ] Render existing `InspectMode` below that guidance text.
-- [ ] Because the Studio route has no `:jobId`, this compact panel is allowed to show InspectMode's empty/default state until the user navigates to a concrete inspect route from Review or the job tray. Do not invent a new job-selection mechanism in this stage.
-- [ ] Do not change `InspectMode`.
+- [x] Render exact guidance text `Open a run from Review or the job tray to inspect steps, lineage, and attempts.`
+- [x] Render existing `InspectMode` below that guidance text.
+- [x] Because the Studio route has no `:jobId`, this compact panel is allowed to show InspectMode's empty/default state until the user navigates to a concrete inspect route from Review or the job tray. Do not invent a new job-selection mechanism in this stage.
+- [x] Do not change `InspectMode`.
 
 ### S3-T004: Swap Context Panel Renderers
 
 **Responsible file:** `frontend/src/components/studio/StudioContextPanel.tsx`
 
-- [ ] Replace `GenerationView` import with `StudioGenerationPanel`.
-- [ ] Replace `ReviewView` import with `StudioReviewPanel`.
-- [ ] Replace `InspectView` import with `StudioInspectPanel`.
-- [ ] Render compact panels exactly as:
+- [x] Replace `GenerationView` import with `StudioGenerationPanel`.
+- [x] Replace `ReviewView` import with `StudioReviewPanel`.
+- [x] Replace `InspectView` import with `StudioInspectPanel`.
+- [x] Render compact panels exactly as:
 
 ```tsx
 generation: <StudioGenerationPanel projectId={projectId} />
@@ -122,9 +122,9 @@ inspect: <StudioInspectPanel />
 
 **Responsible file:** `frontend/src/views/StudioView.test.tsx`
 
-- [ ] Update generation panel assertion to target compact panel text.
-- [ ] Add assertion that clicking `Review` shows `Findings`.
-- [ ] Add assertion that clicking `Inspect` shows the compact inspect guidance text. Do not assert that run details appear inside Studio.
+- [x] Update generation panel assertion to target compact panel text.
+- [x] Add assertion that clicking `Review` shows `Findings`.
+- [x] Add assertion that clicking `Inspect` shows the compact inspect guidance text. Do not assert that run details appear inside Studio.
 
 ## Final Verification
 

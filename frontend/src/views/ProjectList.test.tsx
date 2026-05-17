@@ -30,6 +30,9 @@ describe('ProjectList', () => {
   beforeEach(() => {
     server.use(
       http.get('/v1/projects', () => HttpResponse.json([])),
+      http.post(/\/v1\/projects\/[^/]+\/generate-description$/, () =>
+        HttpResponse.json({ premise_text: 'Generated premise' }),
+      ),
       http.get('/health/ready', () =>
         HttpResponse.json({ components: { inference: { backend: 'llama.cpp' } } }),
       ),
@@ -385,4 +388,3 @@ describe('ProjectList', () => {
     });
   });
 });
-

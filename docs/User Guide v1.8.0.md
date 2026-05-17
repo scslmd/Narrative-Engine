@@ -379,17 +379,34 @@ Multi-step form for configuring a generation run:
 ## Studio Desk (`/workspace/:projectId/studio`)
 Compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Designed for users who want a unified desk rather than navigating between separate workspace modes.
 
-**Layout:** Three-column grid (desktop) or overlay drawers (below `xl:` breakpoint).
-- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels.
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions.
-- **Right rail (Context Panel):** Switchable panel based on active command: Suggestions, Generation, Review, or Inspect.
+**Layout:** Adaptive three-column grid (desktop) or overlay drawers (below `xl:` breakpoint). All layout preferences persist across sessions via `studio-layout-v1` localStorage.
+- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels. Width adjustable between 224px and 320px.
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available space when side panels are hidden.
+- **Right rail (Context Panel):** Switchable panel based on active command: Suggestions, Generation, Review, or Inspect. Width adjustable between 416px and 520px.
 
-**Command Bar (top):** Five command buttons toggle the right context panel.
-- `Capture` — switches to Ideas panel (brainstorm-style ideation)
-- `Write` — switches to Suggestions panel (revision suggestions, diff viewer, history)
-- `Generate` — switches to Generation panel (compact story generation wizard)
-- `Review` — switches to Review panel (checker findings and inspect links)
-- `Inspect` — switches to Inspect panel (job inspection and lineage)
+**Context Panel Modes** (desktop only):
+- **Docked** (default): Context panel occupies the third column alongside the editor. Use "Pin" to lock it in place.
+- **Overlay:** Context panel floats above the editor as a right-aligned panel with a dismissible backdrop. Click the backdrop or the close button to dismiss. Use "Overlay" button to toggle.
+- **Closed:** Third column is hidden entirely, giving the editor maximum width. Reopen by clicking any command button (Capture, Write, Generate, Review, Inspect). Use "Close" button to dismiss.
+
+**Command Bar (top):** Layout controls and command buttons.
+- **Layout Controls** (desktop only, hidden below `xl:` breakpoint):
+  - `Rail` — collapse or expand the left project rail (toggle)
+  - `Rail Width` — toggle left rail between narrow (224px) and wide (320px)
+  - `Panel Width` — toggle right context panel between narrow (416px) and wide (520px)
+  - `Layout` — reset all layout settings to defaults
+- **Command Buttons:**
+  - `Capture` — switches to Ideas panel (brainstorm-style ideation)
+  - `Write` — switches to Suggestions panel (revision suggestions, diff viewer, history)
+  - `Generate` — switches to Generation panel (compact story generation wizard)
+  - `Review` — switches to Review panel (checker findings and inspect links)
+  - `Inspect` — switches to Inspect panel (job inspection and lineage)
+
+**Context Panel Header Controls** (desktop):
+- `Pin` — toggle pinning (prevents auto-switch when changing commands)
+- `Dock` — dock context panel as third column
+- `Overlay` — float context panel over the editor with backdrop
+- `Close` — hide context panel entirely
 
 **Responsive Behavior:** Below `xl:` breakpoint, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. A close-drawer button dismisses both drawers simultaneously.
 
@@ -417,7 +434,7 @@ For a complete, step-by-step walkthrough of generating a novel from project crea
 3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
 4. Shape structure in Planning/Flow tabs.
 5. Capture optional ideation in Brain Dump and Brainstorm.
-6. Draft in Writing (manual, AI, continue, alternate, promote) or use Studio Desk for a compact single-screen workspace.
+6. Draft in Writing (manual, AI, continue, alternate, promote) or use Studio Desk for a compact single-screen workspace with customizable layout.
 7. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
 8. Run Checker and review findings in Review workspace. Create inspect links for traceability.
 9. Inspect problematic runs from deep links or Inspect mode to diagnose failures.

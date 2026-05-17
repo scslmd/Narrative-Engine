@@ -17,6 +17,14 @@ interface StoryImportModalProps {
 type ImportMode = 'story' | 'mythos' | 'patterns';
 
 export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): React.ReactElement {
+  if (!isOpen) {
+    return <></>;
+  }
+
+  return <StoryImportModalContent onClose={onClose} />;
+}
+
+function StoryImportModalContent({ onClose }: Pick<StoryImportModalProps, 'onClose'>): React.ReactElement {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
@@ -219,8 +227,6 @@ export function StoryImportModal({ isOpen, onClose }: StoryImportModalProps): Re
       setIsImporting(false);
     }
   };
-
-  if (!isOpen) return <></>;
 
   const charCount = storyText.length;
   const wordCount = storyText.trim() ? storyText.trim().split(/\s+/).length : 0;

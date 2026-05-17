@@ -52,8 +52,11 @@ export function useManuscriptAssist({
       },
     ],
   });
+  const [assistRunsQuery, llmSuggestionsQuery] = queries;
 
-  const latestAssistId = (queries[0].data as ManuscriptAssistResult[] | undefined)?.[0]?.assist_id;
+  const assistRunsData = assistRunsQuery.data as ManuscriptAssistResult[] | undefined;
+  const llmSuggestionsData = llmSuggestionsQuery.data as LLMRevisionSuggestion[] | undefined;
+  const latestAssistId = assistRunsData?.[0]?.assist_id;
   const gatesQuery = useQueries({
     queries: [
       {
@@ -157,12 +160,12 @@ export function useManuscriptAssist({
   );
 
   const assistRuns: ManuscriptAssistResult[] = useMemo(
-    () => queries[0].data ?? [],
-    [queries[0].data],
+    () => assistRunsData ?? [],
+    [assistRunsData],
   );
   const llmSuggestions: LLMRevisionSuggestion[] = useMemo(
-    () => queries[1].data ?? [],
-    [queries[1].data],
+    () => llmSuggestionsData ?? [],
+    [llmSuggestionsData],
   );
 
   return {

@@ -1,0 +1,82 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e4]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - link "llama.cpp" [ref=e13] [cursor=pointer]:
+          - /url: "#/"
+          - heading "llama.cpp" [level=1] [ref=e14]
+        - generic [ref=e15]:
+          - link "New chat ⌘ O" [ref=e16] [cursor=pointer]:
+            - /url: "?new_chat=true#/"
+            - generic [ref=e17]:
+              - img
+              - text: New chat
+            - generic:
+              - img
+              - generic: ⌘
+              - text: O
+          - button "Search ⌘ K" [ref=e18] [cursor=pointer]:
+            - generic [ref=e19]:
+              - img
+              - text: Search
+            - generic:
+              - generic: ⌘
+              - text: K
+          - link "MCP Servers" [ref=e20] [cursor=pointer]:
+            - /url: "#/settings/mcp"
+            - generic [ref=e21]:
+              - img
+              - text: MCP Servers
+          - link "Settings" [ref=e22] [cursor=pointer]:
+            - /url: "#/settings/chat/general"
+            - generic [ref=e23]:
+              - img
+              - text: Settings
+      - generic [ref=e24]:
+        - generic [ref=e25]: Recent conversations
+        - list [ref=e27]:
+          - paragraph [ref=e29]: No conversations yet
+    - button "Toggle Sidebar" [ref=e31] [cursor=pointer]:
+      - img
+      - generic [ref=e32]: Toggle Sidebar
+    - complementary [ref=e34]:
+      - generic [ref=e35]:
+        - button "New chat" [ref=e37] [cursor=pointer]:
+          - button "New chat" [ref=e38]:
+            - img
+        - button "Search" [ref=e40] [cursor=pointer]:
+          - button "Search" [ref=e41]:
+            - img
+        - button "MCP Servers" [ref=e43] [cursor=pointer]:
+          - button "MCP Servers" [ref=e44]:
+            - img
+        - button "Settings" [ref=e46] [cursor=pointer]:
+          - button "Settings" [ref=e47]:
+            - img
+    - main [ref=e48]:
+      - main "Chat interface with file drop zone" [ref=e49]:
+        - generic [ref=e50]:
+          - generic:
+            - generic:
+              - heading "Hello there" [level=1]
+              - paragraph: Type a message or upload files to get started
+            - generic [ref=e53]:
+              - button "Open prompt picker":
+                - generic: Open prompt picker
+              - button "Open resource picker":
+                - generic: Open resource picker
+              - generic [ref=e55]:
+                - textbox "Type a message..." [active] [ref=e57]
+                - generic [ref=e58]:
+                  - button "Add files, prompts, tools or MCP Servers" [ref=e61]:
+                    - button "Add files, prompts, tools or MCP Servers" [ref=e62]:
+                      - button "Add files, prompts, tools or MCP Servers" [ref=e63] [cursor=pointer]:
+                        - generic [ref=e64]: Add files, prompts, tools or MCP Servers
+                        - img
+                  - button "Qwen3.6_27B_UHv2_NVFP4_MTP" [ref=e66] [cursor=pointer]:
+                    - img [ref=e67]
+                    - generic [ref=e69]: Qwen3.6_27B_UHv2_NVFP4_MTP
+                  - button "Send" [disabled]:
+                    - generic: Send
+                    - img

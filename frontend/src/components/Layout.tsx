@@ -29,7 +29,7 @@ const stageButtons: { id: StageId; label: string; icon: typeof Lightbulb; shadow
 ]
 
 export function Layout({ children }: LayoutProps) {
-  const { mode, _systemTick, toggleMode, setStage } = useThemeStore()
+  const { mode, stage, _systemTick, toggleMode, setStage } = useThemeStore()
   void _systemTick;
   const { mode: uiMode, setMode, projectId } = useUIStore()
   const { iconMode } = useSettingsStore()
@@ -43,8 +43,11 @@ export function Layout({ children }: LayoutProps) {
   const currentProject = projects?.find((p) => p.project_id === projectId)
 
   useEffect(() => {
-    setStage(modeToStage[uiMode])
-  }, [setStage, uiMode])
+    const nextStage = modeToStage[uiMode]
+    if (stage !== nextStage) {
+      setStage(nextStage)
+    }
+  }, [setStage, stage, uiMode])
 
  const handleStageChange = (stageId: StageId) => {
     const nextMode = STAGE_DEFAULT_MODE[stageId] as WorkspaceMode

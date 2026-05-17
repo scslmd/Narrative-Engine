@@ -193,22 +193,6 @@ function computeEdges(
   return edges;
 }
 
-function useDoubleClickHandler(callback: (id: string) => void, id: string) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleClick = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-      callback(id);
-    } else {
-      timeoutRef.current = setTimeout(() => {
-        timeoutRef.current = null;
-      }, 300);
-    }
-  }, [callback, id]);
-  return handleClick;
-}
-
 const NODE_RADIUS = 28;
 const NODE_STROKE = 2;
 
@@ -363,8 +347,6 @@ export function RelationshipMapGraph({
           const strokeWidth = isHovered ? 2.5 : 1.5;
           const d = `M ${edge.sourceX} ${edge.sourceY} Q ${edge.controlX} ${edge.controlY} ${edge.targetX} ${edge.targetY}`;
 
-          const handleEdgeDblClick = useDoubleClickHandler(onEditRelationship ?? (() => {}), edge.id);
-
           return (
             <g key={edge.id}>
               <path
@@ -374,7 +356,7 @@ export function RelationshipMapGraph({
                 strokeWidth={strokeWidth}
                 onMouseEnter={() => setHoveredEdge(edge.id)}
                 onMouseLeave={() => setHoveredEdge(null)}
-                onDoubleClick={handleEdgeDblClick}
+                onDoubleClick={() => onEditRelationship?.(edge.id)}
                 className="cursor-pointer transition-all"
               />
               {isHovered && (
@@ -450,14 +432,12 @@ export function RelationshipMapGraph({
                 (e.targetId === hoveredNode && e.sourceId === node.id)),
           );
 
-          const handleNodeDblClick = useDoubleClickHandler(onOpenCharacter ?? (() => {}), node.id);
-
           return (
             <g
               key={node.id}
               onMouseEnter={() => setHoveredNode(node.id)}
               onMouseLeave={() => setHoveredNode(null)}
-              onDoubleClick={handleNodeDblClick}
+              onDoubleClick={() => onOpenCharacter?.(node.id)}
               className="cursor-pointer"
             >
               <circle

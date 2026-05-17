@@ -397,29 +397,53 @@ Full generation lifecycle: wizard configuration, run monitoring, gate review, an
 ## Phase 10: Studio Desk Workspace
 Route: `/workspace/:projectId/studio`
 
-The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes.
+The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes. All layout preferences persist across sessions.
 
 ### Layout
-The desk has three columns (desktop) or overlay drawers (below `xl:` breakpoint):
-- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels.
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions.
-- **Right rail (Context Panel):** Switchable panel based on active command.
+The desk has an adaptive three-column grid (desktop) or overlay drawers (below `xl:` breakpoint):
+- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels. Adjustable width: 224px (narrow) or 320px (wide).
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available space when side panels are hidden.
+- **Right rail (Context Panel):** Switchable panel based on active command. Adjustable width: 416px (narrow) or 520px (wide).
+
+### Context Panel Modes
+The right context panel supports three display modes (desktop only):
+
+1. **Docked** (default): The context panel occupies the third column alongside the editor. Use the `Pin` button to lock it in place when switching commands.
+2. **Overlay**: The context panel floats above the editor as a right-aligned panel with a dismissible backdrop. Click the backdrop or the panel's close button to dismiss. Use the `Overlay` button to toggle this mode.
+3. **Closed**: The third column is hidden entirely, giving the editor maximum width. Reopen any time by clicking a command button (Capture, Write, Generate, Review, Inspect). Use the `Close` button to dismiss.
 
 ### Command Bar
-Five command buttons at the top toggle the right context panel:
+The command bar contains layout controls (desktop only) and five command buttons:
+
+**Layout Controls** (hidden on mobile):
+- `Rail` — collapse or expand the left project rail
+- `Rail Width` — toggle left rail between narrow (224px) and wide (320px)
+- `Panel Width` — toggle right context panel between narrow (416px) and wide (520px)
+- `Layout` — reset all layout settings to defaults
+
+**Command Buttons:**
 - `Capture` — switches to Ideas panel for brainstorm-style ideation
 - `Write` — switches to Suggestions panel for revision suggestions, diff viewer, and history
 - `Generate` — switches to Generation panel for compact story generation wizard
 - `Review` — switches to Review panel for checker findings and inspect links
 - `Inspect` — switches to Inspect panel for job inspection and lineage
 
+### Context Panel Header Controls
+The context panel header provides four mode controls:
+- `Pin` — toggle pinning (prevents auto-switch when changing commands)
+- `Dock` — dock context panel as third column
+- `Overlay` — float context panel over the editor with backdrop
+- `Close` — hide context panel entirely
+
 ### Using the Desk
 1. Open a project and navigate to Studio Desk from the left rail.
 2. Use the Project Map to switch between planning panels (Characters, World Bible, Relationships, etc.).
 3. Click command buttons to change the right context panel.
-4. Write and revise in the center editor while keeping planning context visible.
-5. Launch generation runs directly from the Generation panel without leaving the desk.
-6. Review checker findings and inspect problematic runs from the Review/Inspect panels.
+4. Adjust layout with the command bar controls: collapse the rail for more editor space, widen the panel for generation config, or reset to defaults.
+5. Switch context panel modes: dock for persistent reference, overlay for temporary review, or close for full-width writing.
+6. Write and revise in the center editor while keeping planning context visible.
+7. Launch generation runs directly from the Generation panel without leaving the desk.
+8. Review checker findings and inspect problematic runs from the Review/Inspect panels.
 
 ### Example Workflow: Writing with Context
 
@@ -431,6 +455,15 @@ Five command buttons at the top toggle the right context panel:
 6. Mid-chapter, click **Capture** to switch the right panel to Ideas. Type a new plot idea.
 7. Click **Write** again to return to Suggestions. Continue editing.
 8. When done, click **Generate** to open the compact generation panel. Configure and launch a new generation run without leaving the desk.
+
+### Example Workflow: Full-Width Writing Session
+
+1. Open Studio Desk and click **Write** to open the Suggestions panel.
+2. Click `Close` in the context panel header — the right panel disappears, editor expands.
+3. Click `Rail` in the command bar to collapse the left rail — editor now fills the full viewport.
+4. Write freely with maximum screen real estate.
+5. When you need suggestions again, click **Write** — the context panel reopens in its previous mode.
+6. Click `Rail` again to restore the left rail.
 
 ### Responsive Behavior
 On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
@@ -780,8 +813,11 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 - Run setup, status tracking, gates, fork.
 
 ### Studio Desk
-- Three-column layout: Project Map (left), Main Content (center), Context Panel (right).
-- Command bar toggles context panel: Capture, Write, Generate, Review, Inspect.
+- Adaptive three-column layout: Project Map (left), Main Content (center), Context Panel (right).
+- Layout preferences persist across sessions (rail mode, panel mode, widths).
+- Command bar: Layout controls (Rail collapse, Rail Width, Panel Width, Layout reset) + 5 command buttons (Capture, Write, Generate, Review, Inspect).
+- Context Panel modes: Docked (third column), Overlay (floats over editor with backdrop), Closed (hidden, reopened via command).
+- Context Panel header controls: Pin, Dock, Overlay, Close.
 - Project Map provides quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, Notes.
 - Context Panel switches between Suggestions, Generation, Review, Inspect panels.
 - Responsive: overlay drawers below `xl:` breakpoint with header toggle buttons.
@@ -806,6 +842,6 @@ A project is operationally complete when:
 - Canon profile/packet has been reviewed.
 - At least one generation run completed (and optionally forked).
 - Export archive captured.
-- (Optional) Studio Desk workspace is configured with preferred panels and command bar layout.
+- (Optional) Studio Desk workspace is configured with preferred panels, context panel mode, and layout widths.
 
 **Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management.

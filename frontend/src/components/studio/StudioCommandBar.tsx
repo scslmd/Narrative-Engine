@@ -16,8 +16,10 @@ interface StudioCommandBarProps {
 export function StudioCommandBar({ projectName = 'Current Project' }: StudioCommandBarProps) {
   const activePanel = useStudioStore((state) => state.activePanel);
   const openPanel = useStudioStore((state) => state.openPanel);
-  const toggleLeftRail = useStudioStore((state) => state.toggleLeftRail);
-  const toggleContextPanel = useStudioStore((state) => state.toggleContextPanel);
+  const leftRailMode = useStudioStore((state) => state.leftRailMode);
+  const contextPanelMode = useStudioStore((state) => state.contextPanelMode);
+  const setLeftRailMode = useStudioStore((state) => state.setLeftRailMode);
+  const setContextPanelMode = useStudioStore((state) => state.setContextPanelMode);
 
   return (
     <header className="flex items-center justify-between gap-3 border-b border-[var(--border-primary)] bg-[var(--bg-primary)] px-4 py-3">
@@ -28,7 +30,9 @@ export function StudioCommandBar({ projectName = 'Current Project' }: StudioComm
       <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={toggleLeftRail}
+            onClick={() => {
+              setLeftRailMode(leftRailMode === 'overlay' ? 'collapsed' : 'overlay');
+            }}
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:hidden"
           >
             <PanelLeft className="h-3.5 w-3.5" />
@@ -36,14 +40,16 @@ export function StudioCommandBar({ projectName = 'Current Project' }: StudioComm
           </button>
           <button
             type="button"
-            onClick={toggleContextPanel}
+            onClick={() => {
+              setContextPanelMode(contextPanelMode === 'overlay' ? 'closed' : 'overlay');
+            }}
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:hidden"
           >
             <PanelRight className="h-3.5 w-3.5" />
             Context
           </button>
         </div>
-        <nav className="flex flex-wrap items-center justify-end gap-1" aria-label="Studio commands">
+        <nav className="ml-auto flex flex-wrap items-center justify-end gap-1" aria-label="Studio commands">
         {commands.map((command) => {
           const Icon = command.icon;
           const active = activePanel === command.panel;

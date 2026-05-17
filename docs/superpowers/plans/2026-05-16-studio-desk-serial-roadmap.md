@@ -4,7 +4,7 @@
 
 **Goal:** Define the complete serial frontend UI/UX implementation path for Concept A, using existing Narrative Engine capabilities only.
 
-**Architecture:** Stage 1 creates an additive Studio route. Stages 2-5 progressively replace placeholders and route-sized panels with reusable panel-friendly frontend units, then add canon annotation parity and responsive drawer behavior.
+**Architecture:** Stage 1 creates an additive Studio route. Stages 2-5 progressively replace placeholders and route-sized panels with reusable panel-friendly frontend units, then add canon annotation parity and responsive drawer behavior. Stages 6-8 add adaptive shell, persistence, and user-facing layout controls.
 
 **Tech Stack:** React 18, TypeScript, React Router, Zustand, React Query, Tailwind CSS, Vitest, Testing Library.
 
@@ -29,8 +29,20 @@
    - Outcome: Studio character and world bible panels load and create canon annotations using existing canon services.
 
 5. **Stage 5: Responsive Studio Drawers**
-   - Plan: `docs/superpowers/plans/2026-05-16-studio-desk-stage-5-responsive-drawers.md`
-   - Outcome: Studio rail and context panel collapse into usable mobile/tablet drawers.
+    - Plan: `docs/superpowers/plans/2026-05-16-studio-desk-stage-5-responsive-drawers.md`
+    - Outcome: Studio rail and context panel collapse into usable mobile/tablet drawers.
+
+6. **Stage 6: Adaptive Shell**
+    - Plan: `docs/superpowers/plans/2026-05-16-studio-desk-stage-6-adaptive-shell.md`
+    - Outcome: Boolean layout state replaced with adaptive modes (`StudioRailMode`, `StudioContextMode`), bounded width state, compact rail mode, and dynamic grid rendering.
+
+7. **Stage 7: Context Modes**
+    - Plan: `docs/superpowers/plans/2026-05-16-studio-desk-stage-7-context-modes.md`
+    - Outcome: `studio-layout-v1` localStorage persistence with deterministic hydration seam. Overlay/closed context modes render correctly. Invalid stored values safely ignored.
+
+8. **Stage 8: Layout Polish**
+    - Plan: `docs/superpowers/plans/2026-05-16-studio-desk-stage-8-layout-polish.md`
+    - Outcome: User-facing layout controls in command bar (`Rail`, `Rail Width`, `Panel Width`, `Layout` reset) and context header (`Pin`, `Dock`, `Overlay`, `Close`). All controls tested through StudioView integration tests.
 
 ## Serial Gate
 
@@ -125,7 +137,54 @@ Proceed to Stage 5 only when all above checks pass.
 cd frontend; cmd /c npm.cmd run test -- StudioView
 ```
 
-The Studio redesign implementation is complete only when Stage 5 and the shared verification gate both pass.
+The Studio redesign implementation is complete only when all 8 stages and the shared verification gate pass.
+
+### Stage 6 Exit Criteria
+
+- `StudioRailMode` (`expanded`/`collapsed`/`overlay`) replaces `leftRailOpen` boolean.
+- `StudioContextMode` (`docked`/`overlay`/`closed`) replaces `contextPanelOpen` boolean.
+- Width state clamped: `leftRailWidth` 192-320, `contextPanelWidth` 320-520.
+- Compact rail mode renders 64px icon-only column when collapsed.
+- Dynamic `gridTemplateColumns` driven by store state.
+- Stage 6 tests pass:
+
+```powershell
+cd frontend; cmd /c npm.cmd run test -- studioStore
+cd frontend; cmd /c npm.cmd run test -- StudioView
+```
+
+Proceed to Stage 7 only when all above checks pass.
+
+### Stage 7 Exit Criteria
+
+- `studio-layout-v1` persists only layout preferences (never `activePanel`).
+- `parseStoredStudioLayout()` returns sanitized layout or `null` for invalid input.
+- `clampStudioWidth()` returns fallback for non-finite values.
+- Overlay context mode renders above editor without replacing `WritingView`.
+- Closed context mode can be reopened by command selection through `openPanel`.
+- Stage 7 tests pass:
+
+```powershell
+cd frontend; cmd /c npm.cmd run test -- studioStore
+cd frontend; cmd /c npm.cmd run test -- StudioView
+```
+
+Proceed to Stage 8 only when all above checks pass.
+
+### Stage 8 Exit Criteria
+
+- `StudioCommandBar` exposes `Layout` reset button with `aria-label="Reset Studio layout"`.
+- `StudioCommandBar` exposes desktop-visible `Rail` collapse/expand control.
+- `StudioCommandBar` exposes `Rail Width` and `Panel Width` controls that write exact numeric values.
+- `StudioContextPanel` exposes `Pin`, `Dock`, `Overlay`, and `Close` controls.
+- `resetLayout()` restores the exact default adaptive state.
+- Studio navigation stays on `/workspace/:projectId/studio` during command and layout control use.
+- Stage 8 tests pass:
+
+```powershell
+cd frontend; cmd /c npm.cmd run test -- StudioView
+cd frontend; cmd /c npm.cmd run test -- WorkspaceShell
+```
 
 ## Scope Lock
 

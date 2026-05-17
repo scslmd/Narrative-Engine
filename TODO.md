@@ -6,7 +6,7 @@
 - Latest verified validation baseline (2026-05-17):
   - Backend parallel: 1473 passed, 7 skipped (~34s)
   - Backend serial: 51 passed (~2s)
-  - Frontend tests: 627 passed (~13s)
+  - Frontend tests: 675 passed (~13s)
   - Frontend lint/typecheck/build: all green (2070 modules)
 - The React frontend is merged and is now the default shipped frontend surface.
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
@@ -129,18 +129,21 @@ Full details archived in `docs/archive/`.
 
 ### Studio Desk Serial Roadmap (2026-05-16)
 
-5-stage serial implementation with verification gates (lint, typecheck, build, tests) passing before each stage advanced. All stages merged to `codex/main`.
+8-stage serial implementation with verification gates (lint, typecheck, build, tests) passing before each stage advanced. All stages merged to `codex/main`.
 
 - **Stage 1** (`fb5d912`): Studio shell with command bar (Capture/Write/Generate/Review/Inspect), project rail (Ideas/Characters/World Bible/Relationships/Canon/Jobs/Notes), and context panel shell. `studioStore` Zustand store with panel/rail state. Route registered at `/workspace/:projectId/studio`.
 - **Stage 2** (`620240b`): `useMergedSuggestions` hook extraction — merges `RevisionSuggestion[]` and `LLMRevisionSuggestion[]`, routes accept/reject/archive to correct handler. `StudioSuggestionsPanel` wired into context panel. `WritingView` refactored to delegate suggestion merging to shared hook.
 - **Stage 3** (`8ee6d5b`): Compact panels for generation/review/inspect. `StudioGenerationPanel` uses `useGenerationController`. `StudioReviewPanel` tab-based UI for Findings/Inspect Links. `StudioInspectPanel` shows guidance text when no run selected. Route views swapped for compact panels in `StudioContextPanel`.
 - **Stage 4** (`85de3e4`): Canon annotation wiring for Characters/World Bible panels. `CharacterBuilder` and `WorldBibleWorkspace` already accept `canonAnnotations` and `onAnnoteField` props — no code changes needed, just prop threading.
 - **Stage 5** (`b40db1e`): Responsive `xl:` breakpoint layout with absolute-positioned overlay drawers below xl width. Desktop grid preserved above xl. Mobile Project/Context drawer toggle buttons in header. Close drawers button with aria-label. Store helpers `toggleLeftRail`, `toggleContextPanel`, `closeDrawers`.
+- **Stage 6** (Adaptive Shell): Replaced boolean `leftRailOpen`/`contextPanelOpen` with `StudioRailMode` (`expanded`/`collapsed`/`overlay`) and `StudioContextMode` (`docked`/`overlay`/`closed`). Added bounded width state (`leftRailWidth` 192-320, `contextPanelWidth` 320-520). Compact rail mode (64px icon-only) for collapsed state. Dynamic `gridTemplateColumns` from store. Overlay panels render as absolute-positioned drawers with backdrop.
+- **Stage 7** (Context Modes): Added `studio-layout-v1` localStorage persistence with `PersistedStudioLayout` interface, `clampStudioWidth()`, and `parseStoredStudioLayout()` hydration seam. All 5 layout fields persist on every setter; `activePanel` excluded. Invalid stored values safely ignored with defaults. Desktop overlay context mode renders as right-aligned absolute panel above editor; closed mode hides third column entirely.
+- **Stage 8** (Layout Controls): `StudioCommandBar` exposes desktop-only `Rail` (collapse/expand), `Rail Width` (224/320 toggle), `Panel Width` (416/520 toggle), and `Layout` reset button (`aria-label="Reset Studio layout"`). `StudioContextPanel` header exposes `Pin`, `Dock`, `Overlay`, `Close` controls with `aria-pressed`. Mobile Project/Context buttons use adaptive overlay toggles.
 
-Components: 11 Studio components in `frontend/src/components/studio/`, 1 hook (`useMergedSuggestions`), 1 store (`studioStore`), 1 view (`StudioView`). 13 integration tests + 4 hook unit tests.
+Components: 11 Studio components in `frontend/src/components/studio/`, 1 hook (`useMergedSuggestions`), 1 store (`studioStore`), 1 view (`StudioView`). 675 frontend tests (35 store + 26 StudioView + 17 WorkspaceShell + 607 other).
 
 Design spec: `docs/superpowers/specs/2026-05-16-studio-desk-redesign-design.md`
-Stage plans: `docs/superpowers/plans/2026-05-16-studio-desk-stage-{1-5}.md` + serial roadmap
+Stage plans: `docs/superpowers/plans/2026-05-16-studio-desk-stage-{1-8}.md` + serial roadmap
 
 ### Guided Setup Planning Extension (2026-05-08)
 

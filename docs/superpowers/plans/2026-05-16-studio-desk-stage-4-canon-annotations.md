@@ -1,6 +1,6 @@
 # Studio Desk Stage 4 Canon Annotation Parity Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Wire existing canon annotation loading and creation into Studio character and world bible panels.
 
@@ -31,13 +31,13 @@
 
 **Responsible file:** `frontend/src/components/studio/StudioCharactersPanel.tsx`
 
-- [ ] Import:
+- [x] Import:
 
 ```ts
 import { createCanonAnnotation, getCanonAnnotations } from '../../services/canonCustomization';
 ```
 
-- [ ] Add query:
+- [x] Add query:
 
 ```ts
 const canonAnnotationsQuery = useQuery({
@@ -46,7 +46,7 @@ const canonAnnotationsQuery = useQuery({
 });
 ```
 
-- [ ] Add mutation:
+- [x] Add mutation:
 
 ```ts
 const canonAnnotationMutation = useMutation({
@@ -57,8 +57,8 @@ const canonAnnotationMutation = useMutation({
 });
 ```
 
-- [ ] Pass `canonAnnotations={canonAnnotationsQuery.data ?? []}` to `CharacterBuilder`.
-- [ ] Pass `onAnnotateField` that calls `canonAnnotationMutation.mutateAsync` with:
+- [x] Pass `canonAnnotations={canonAnnotationsQuery.data ?? []}` to `CharacterBuilder`.
+- [x] Pass `onAnnotateField` that calls `canonAnnotationMutation.mutateAsync` with:
 
 ```ts
 {
@@ -75,13 +75,13 @@ const canonAnnotationMutation = useMutation({
 
 **Responsible file:** `frontend/src/components/studio/StudioWorldBiblePanel.tsx`
 
-- [ ] Import:
+- [x] Import:
 
 ```ts
 import { createCanonAnnotation, getCanonAnnotations } from '../../services/canonCustomization';
 ```
 
-- [ ] Add query:
+- [x] Add query:
 
 ```ts
 const canonAnnotationsQuery = useQuery({
@@ -90,7 +90,7 @@ const canonAnnotationsQuery = useQuery({
 });
 ```
 
-- [ ] Add mutation:
+- [x] Add mutation:
 
 ```ts
 const canonAnnotationMutation = useMutation({
@@ -100,8 +100,8 @@ const canonAnnotationMutation = useMutation({
   },
 });
 ```
-- [ ] Pass `canonAnnotations={canonAnnotationsQuery.data ?? []}` to `WorldBibleWorkspace`.
-- [ ] Pass `onAnnotateField` that calls `canonAnnotationMutation.mutateAsync` with:
+- [x] Pass `canonAnnotations={canonAnnotationsQuery.data ?? []}` to `WorldBibleWorkspace`.
+- [x] Pass `onAnnotateField` that calls `canonAnnotationMutation.mutateAsync` with:
 
 ```ts
 {
@@ -118,7 +118,7 @@ const canonAnnotationMutation = useMutation({
 
 **Responsible file:** `frontend/src/views/StudioView.test.tsx`
 
-- [ ] Add MSW mocks for:
+- [x] Add MSW mocks for:
 
 ```ts
 http.get('/v1/canon/annotations', () => HttpResponse.json([]))
@@ -133,9 +133,9 @@ http.post('/v1/canon/annotations', async () => HttpResponse.json({
 }))
 ```
 
-- [ ] Keep existing Studio route tests passing.
-- [ ] Add an assertion that opening the Characters panel triggers a GET request whose query string includes `target_kind=character`.
-- [ ] Add an assertion that opening the World Bible panel triggers a GET request whose query string includes `target_kind=world_bible`.
+- [x] Keep existing Studio route tests passing.
+- [x] Add an assertion that opening the Characters panel triggers a GET request whose query string includes `target_kind=character`.
+- [x] Add an assertion that opening the World Bible panel triggers a GET request whose query string includes `target_kind=world_bible`.
 
 ## Final Verification
 

@@ -14,11 +14,11 @@
   - `cd frontend && npm run lint` -> passed, 2 pre-existing errors only (2026-05-17)
   - `cd frontend && npm run typecheck` -> passed (2026-05-17)
   - `cd frontend && npm run build` -> passed, 2070 modules (2026-05-17)
-  - `cd frontend && npm run test` -> 627 passed (~13s)
+  - `cd frontend && npm run test` -> 675 passed (~13s)
 - Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2070 modules in production bundle.
 - Frontend services: 147 exported functions across 26 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 1 maintenance + 118 existing). All exports wired to components.
 - Frontend hooks: 30 hook files including 10 new hooks from unwired API exposure work (useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery) + 1 Studio Desk hook (useMergedSuggestions).
-- Studio Desk workspace: 11 components in `frontend/src/components/studio/` (StudioCommandBar, StudioProjectRail, StudioContextPanel, StudioIdeasPanel, StudioCharactersPanel, StudioWorldBiblePanel, StudioRelationshipsPanel, StudioSuggestionsPanel, StudioGenerationPanel, StudioReviewPanel, StudioInspectPanel). Zustand store: `studioStore`. View: `StudioView`. Route: `/workspace/:projectId/studio`.
+- Studio Desk workspace: 11 components in `frontend/src/components/studio/` (StudioCommandBar, StudioProjectRail, StudioContextPanel, StudioIdeasPanel, StudioCharactersPanel, StudioWorldBiblePanel, StudioRelationshipsPanel, StudioSuggestionsPanel, StudioGenerationPanel, StudioReviewPanel, StudioInspectPanel). Zustand store: `studioStore` with adaptive state (`StudioRailMode`: `expanded`/`collapsed`/`overlay`, `StudioContextMode`: `docked`/`overlay`/`closed`), bounded width clamping (192-320 / 320-520), and `studio-layout-v1` localStorage persistence. View: `StudioView` with dynamic three-column grid and overlay panels. Route: `/workspace/:projectId/studio`.
 - Feature coverage: 17/17 backend-to-frontend feature areas fully linked. Unwired API exposure completed 2026-05-05 (mythos CRUD, pattern CRUD, foundation history/review cues, brainstorm promote, backup management, API key management, relationship update/delete, arc selection actions, suggestion archive).
 - Project maintenance service: orphan detection, cleanup, audit log truncation, database compaction. Endpoints under `/projects/maintenance/*`.
 - Route-driven workspace state is the current frontend architecture:
