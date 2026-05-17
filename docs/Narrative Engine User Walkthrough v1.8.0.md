@@ -415,7 +415,7 @@ Five command buttons at the top toggle the right context panel:
 On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
 
 ## Phase 11: End-to-End Novel Walkthrough
-This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation. For a simpler short story walkthrough, see the [User Guide v1.8.0](User%20Guide%20v1.8.0.md).
+This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation.
 
 ### Overview
 We'll build a 12-chapter science fiction novel titled *The Last Lighthouse* with 3 character arcs, 2 sequences (Acts I-II), branching for Act III exploration, and a full canon management workflow. This demonstrates the complete toolchain: foundation → characters → world bible → arcs → planning → generation → revision → checking → canon tightening → re-generation → export.
@@ -657,7 +657,6 @@ A complete 12-chapter novel with:
 - **Truncated output on 12-chapter novel:** Increase `NARRATIVE_MAX_TOKENS_DRAFTER=16000` and `NARRATIVE_MAX_TOKENS_DEFAULT=16000`. Generate in act-sized batches (4 chapters per run).
 
 ### See Also
-- **Short story walkthrough:** [User Guide v1.8.0](User%20Guide%20v1.8.0.md) — simpler 5-chapter example
 - **Branching workflow:** Phase 3 (Branches tab) — create, compare, merge branches
 - **Canon management:** Phase 8 (Canon Workshop) — profiles, scope selection, packet preview
 - **Cascade Discovery:** Phase 3 (Relationships tab) — auto-extract entities from existing manuscript text
@@ -770,4 +769,4 @@ A project is operationally complete when:
 - Export archive captured.
 - (Optional) Studio Desk workspace is configured with preferred panels and command bar layout.
 
-**Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management. For a simpler short story walkthrough, see the [User Guide v1.8.0](User%20Guide%20v1.8.0.md).
+**Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management.
