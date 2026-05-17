@@ -4,10 +4,16 @@ export type IconMode = 'labels' | 'icons-large' | 'icons-small'
 
 export type OutlineDetail = 'headings' | 'detailed'
 
+export type EditorFontFamily = 'default' | 'serif' | 'mono'
+
+export type EditorFontSize = 'small' | 'medium' | 'large'
+
 export interface UserSettings {
   iconMode: IconMode
   showTooltips: boolean
   outlineDetail: OutlineDetail
+  editorFontFamily: EditorFontFamily
+  editorFontSize: EditorFontSize
 }
 
 const STORAGE_KEY = 'narrative-engine:settings'
@@ -16,6 +22,8 @@ const defaultSettings: UserSettings = {
   iconMode: 'labels',
   showTooltips: true,
   outlineDetail: 'headings',
+  editorFontFamily: 'default',
+  editorFontSize: 'medium',
 }
 
 function loadSettings(): UserSettings {
@@ -41,6 +49,8 @@ interface SettingsState extends UserSettings {
   setIconMode: (mode: IconMode) => void
   setShowTooltips: (show: boolean) => void
   setOutlineDetail: (detail: OutlineDetail) => void
+  setEditorFontFamily: (family: EditorFontFamily) => void
+  setEditorFontSize: (size: EditorFontSize) => void
   reset: () => void
 }
 
@@ -58,6 +68,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setOutlineDetail: (outlineDetail) => {
     const newSettings = { ...get(), outlineDetail }
+    set(newSettings)
+    saveSettings(newSettings)
+  },
+  setEditorFontFamily: (editorFontFamily) => {
+    const newSettings = { ...get(), editorFontFamily }
+    set(newSettings)
+    saveSettings(newSettings)
+  },
+  setEditorFontSize: (editorFontSize) => {
+    const newSettings = { ...get(), editorFontSize }
     set(newSettings)
     saveSettings(newSettings)
   },
