@@ -414,211 +414,253 @@ Five command buttons at the top toggle the right context panel:
 ### Responsive Behavior
 On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
 
-## Phase 11: End-to-End Short Story Walkthrough
-This phase walks through generating a complete short story from scratch. Follow these steps with your own story concept or use the example provided.
+## Phase 11: End-to-End Novel Walkthrough
+This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation. For a simpler short story walkthrough, see the [User Guide v1.8.0](User%20Guide%20v1.8.0.md).
 
-### Step 1: Create the Project
+### Overview
+We'll build a 12-chapter science fiction novel titled *The Last Lighthouse* with 3 character arcs, 2 sequences (Acts I-II), branching for Act III exploration, and a full canon management workflow. This demonstrates the complete toolchain: foundation → characters → world bible → arcs → planning → generation → revision → checking → canon tightening → re-generation → export.
+
+### Part 1: Project Foundation
+
+#### Step 1: Create the Project
 1. Open the home page (`/`).
 2. Fill the **New Project** form:
    - **Project Name:** `The Last Lighthouse`
    - **Genre:** `Science Fiction`
-   - **Tone Profile:** `Somber, reflective`
+   - **Tone Profile:** `Somber, reflective, atmospheric`
    - **Story Structure:** `Three Act`
    - **Point of View:** `Third Limited`
    - **Primary Language:** `English`
    - **Premise:** `In a dying coastal world, the last lighthouse keeper must decide whether to maintain the beacon for ships that may no longer exist.`
-3. Click **Create Project**. The project opens in Planning mode.
+3. Click **Create Project**.
 
-### Step 2: Build the Foundation
+#### Step 2: Build the Foundation
 1. Navigate to the **Foundation** tab.
-2. Fill in the core fields:
+2. Fill in:
    - **Premise:** `In a dying coastal world, the last lighthouse keeper must decide whether to maintain the beacon for ships that may no longer exist.`
    - **Logline:** `A lone keeper battles isolation and doubt to keep a lighthouse burning at the end of the world.`
-   - **Thematic Spine:** `Duty vs. futility; hope without evidence; the meaning of service when no one is watching.`
-   - **Tone and Voice Direction:** `Sparse, atmospheric prose. Long descriptive passages alternating with sharp internal monologue. Inspired by Cormac McCarthy and Jeff VanderMeer.`
+   - **Thematic Spine:** `Duty vs. futility; hope without evidence; the meaning of service when no one is watching; the weight of inherited purpose.`
+   - **Tone and Voice Direction:** `Sparse, atmospheric prose. Long descriptive passages alternating with sharp internal monologue. Inspired by Cormac McCarthy and Jeff VanderMeer. No dialogue tags beyond "said". Show the world through sensory experience — salt, light, sound, texture.`
    - **Target Audience:** `Adult literary science fiction readers`
-   - **Narrative Constraints:** `No dialogue tags beyond "said". No exposition dumps. Show the world through the keeper's sensory experience.`
-   - **Complexity Level:** `Medium`
-3. Click **Save Foundation**. A revision is recorded.
+   - **Narrative Constraints:** `No exposition dumps. No omniscient narration. World revealed through keeper's direct experience only. Each chapter ends on an image, not an explanation.`
+   - **Complexity Level:** `High`
+   - **Success Definition:** `A novel that makes the reader feel the weight of isolation and the quiet dignity of purposeful action.`
+3. Click **Save Foundation**.
 
-### Step 3: Create Characters
-1. Navigate to the **Characters** tab.
-2. Click **Add Character** and create:
+### Part 2: Character Architecture
 
-   **Character 1 — Elara Voss (The Keeper)**
-   - **Role in Story:** `Protagonist`
-   - **Archetype:** `The Reluctant Guardian`
-   - **External Goal:** `Keep the lighthouse beacon lit through the final storm season`
-   - **Internal Need:** `Accept that her duty has meaning even without witnesses`
-   - **Misbelief or Wound:** `Believes she was abandoned here as punishment`
-   - **Core Fear:** `That the light means nothing and she wasted her life`
-   - **Primary Strength:** `Unshakable discipline; meticulous attention to detail`
-   - **Fatal Flaw:** `Inability to ask for help; emotional isolation`
-   - **Voice Notes:** `Speaks sparingly. When she does, sentences are short and precise. Internal monologue is richer, more poetic.`
-   - **Backstory Summary:** `Former navigation officer on the last deep-sea fleet. Assigned to the lighthouse after the fleet dissolved. Has not spoken to another person in 14 months.`
-   - Click **Save Character**
+#### Step 3: Create Characters (7 total)
+Navigate to the **Characters** tab. Create each character with full profiles:
 
-   **Character 2 — The Storm (Antagonistic Force)**
-   - **Role in Story:** `Antagonist / Environmental Force`
-   - **Archetype:** `Nature as Adversary`
-   - **External Goal:** `Extinguish the beacon, reclaim the coast`
-   - **Internal Need:** `N/A — elemental force`
-   - **Backstory Summary:** `The storms have been growing for decades. They are the mechanism of the world's decline — salt winds, acid rain, pressure systems that shred the coastline. The keeper's logs describe them with increasing personification over time.`
-   - Click **Save Character**
+**Act I Characters (3):**
+- **Elara Voss** — Protagonist, The Reluctant Guardian. Former navigation officer. 14 months of isolation. Core arc: rigid duty → purposeful choice.
+- **The Storm** — Antagonist, Nature as Adversary. Environmental force with increasing personification. Mechanism of the world's decline.
+- **Captain Reyes** — Catalyst, The Absent Mentor. Exists only in memory and 47 audio logs. Final message: "Someone has to keep the light."
 
-   **Character 3 — Captain Reyes (Memory / Ghost)**
-   - **Role in Story:** `Catalyst / Memory Figure`
-   - **Archetype:** `The Absent Mentor`
-   - **External Goal:** `N/A — exists only in memory and recorded messages`
-   - **Internal Need:** `To be remembered accurately`
-   - **Backstory Summary:** `Elara's former fleet commander. Left a series of audio logs before the fleet dissolved. His final message — "Someone has to keep the light" — is the reason Elara stayed. His logs play throughout the story as structural anchors.`
-   - Click **Save Character**
+**Act II Characters (2):**
+- **Dr. Ilya Moreau** — Ally/Complication, The Reluctant Truth-Teller. Inland settlement scientist. Arrives via drone with data about the world's state. Challenges Elara's isolation.
+- **The Drone (AURA-7)** — Instrument/Character Hybrid. Autonomous delivery system with degraded AI. Serves as the novel's only "conversation" partner. Carries Moreau's messages.
 
-3. Verify all three characters appear in the character list.
+**Act III Characters (2):**
+- **Kai Voss** — Revelation, The Lost Connection. Elara's nephew, presumed dead. Signal detected on long-range radio in Act III. Forces Elara to reconsider her isolation.
+- **The Fleet Remnant** — Collective Character. Ghost ships detected on radar. May or may not be real. Represents hope vs. delusion.
 
-### Step 4: Build the World Bible
-1. Navigate to the **World Bible** tab.
-2. Click **Add Entry** and create:
+For each character, fill all fields: Role, Archetype, External Goal, Internal Need, Misbelief, Core Fear, Strengths, Flaw, Voice Notes, Secrets, Backstory.
 
-   **Entry 1 — The Beacon (Location)**
-   - **Summary:** `The last functioning lighthouse on the eastern coast. Built on a granite outcrop 200 meters above the churning sea. The lens is a first-order Fresnel, powered by a geothermal generator that's failing. The keeper's quarters are three rooms: sleeping chamber, log room, and the lantern gallery.`
-   - **Canonical Facts:** `The beacon has operated continuously for 14 years. The geothermal generator is at 23% capacity. Supply drops ceased 14 months ago.`
-   - Click **Save Entry**
+#### Step 4: Map Relationships
+Navigate to the **Relationships** tab. Create relationship edges:
+- Elara ↔ Captain Reyes: `Mentorship / Loyalty` — "Unbroken chain of duty"
+- Elara ↔ The Storm: `Adversarial / Obsessive` — "The only companion that won't leave"
+- Elara ↔ Dr. Moreau: `Tension / Respect` — "Truth she doesn't want to hear"
+- Elara ↔ Kai Voss: `Grief / Denial` — "The ghost she stopped expecting"
+- Dr. Moreau ↔ Captain Reyes: `Professional Rivalry` — "Disagreed on fleet strategy"
 
-   **Entry 2 — The Drowning (World State)**
-   - **Summary:** `The world is slowly being reclaimed by the sea. Coastal cities are abandoned. The atmosphere is thick with salt and storm. What remains of civilization clusters inland, far from the coast. No ships have been sighted in 11 months.`
-   - **Canonical Facts:** `Sea level has risen 40 meters since the keeper arrived. The last supply drop was from an automated drone. Radio silence from inland settlements for 8 months.`
-   - Click **Save Entry**
+### Part 3: World Bible
 
-   **Entry 3 — The Logs (Artifact)**
-   - **Summary:** `Elara maintains three sets of logs: the official beacon log (daily readings), Captain Reyes's audio logs (stored on a deteriorating tape drive), and her private journal (kept in a waterproof tin). The logs serve as the story's structural backbone.`
-   - **Canonical Facts:** `The official log has 511 daily entries. Reyes's tapes number 47. The private journal has 289 entries spanning 3 years.`
-   - Click **Save Entry**
+#### Step 5: Build World Bible (8 entries)
+Navigate to the **World Bible** tab. Create entries:
 
-### Step 5: Define the Story Arc
-1. Navigate to the **Arcs** tab.
-2. Click **Add Candidate Arc** and create:
+**Locations (3):**
+- **The Beacon** — Last lighthouse, granite outcrop, 200m above sea. Fresnel lens, geothermal generator at 23%. Three rooms: sleeping chamber, log room, lantern gallery.
+- **The Drowning** — World state. Coastal cities abandoned. Sea level +40m. Atmosphere thick with salt and storm. Civilization clusters inland.
+- **The Inland Settlement (Echo Point)** — Dr. Moreau's base. 400km inland. Population unknown. Maintains radio silence except for drone drops.
 
-   **Arc 1 — The Keeper's Choice**
-   - **Summary:** `Elara discovers the geothermal generator will fail within weeks. She must choose: attempt a dangerous repair that could kill her, or let the beacon go dark and abandon her post. Her journey from rigid duty to purposeful choice forms the emotional core.`
-   - **Arc Type:** `Character Arc`
-   - Click **Save Arc**
+**Artifacts (2):**
+- **The Logs** — Three sets: official beacon log (511 entries), Reyes's tapes (47), private journal (289 entries). Structural backbone of the novel.
+- **The Geothermal Generator** — Failing power source. Core of Act II crisis. Repair attempted in Act III.
 
-3. Select the arc and create a **Stage Map**:
-   - **Stage 1:** `Routine — Elara maintains the beacon through worsening storms. Generator readings decline.`
-   - **Stage 2:** `Crisis — Generator drops to 8%. Elara finds Reyes's final tape revealing he knew about the decline.`
-   - **Stage 3:** `Decision — Elara attempts the repair. Fails. The beacon flickers but holds.`
-   - **Stage 4:** `Resolution — Elara chooses to keep the light burning not for ships, but because the act itself is meaningful.`
+**Concepts (3):**
+- **The Silence** — 8 months of radio silence from inland. 11 months without ship sightings. The silence is a character — it presses on Elara.
+- **The Beacon Protocol** — Military protocol requiring continuous operation. The legal/moral framework for Elara's duty. What happens when the protocol's purpose is gone?
+- **The Last Fleet** — Dissolved 3 years before story begins. Reyes chose to stay on the last ship rather than return. Why?
 
-### Step 6: Plan the Structure
-1. Navigate to the **Planning** tab.
-2. Create a **Sequence Plan**:
-   - **Title:** `The Last Light`
-   - **Description:** `A three-act short story in 5 chapters`
-   - Click **Save Sequence**
+### Part 4: Arc Planning
 
-3. Create **Chapter Plans** under the sequence:
+#### Step 6: Define Character Arcs (3 arcs)
+Navigate to the **Arcs** tab. Create candidate arcs and stage maps:
 
-   **Chapter 1 — The Watch**
-   - **Summary:** `Elara performs her nightly routine. The storm outside is the worst in months. Generator readings are abnormal. She plays Reyes's tape #12 as she climbs to the lantern gallery.`
-   - **Active Characters:** `Elara Voss, Captain Reyes (memory)`
-   - Click **Save Chapter**
+**Arc 1 — The Keeper's Choice (Elara)**
+- Stage 1: Routine — maintains beacon through worsening storms
+- Stage 2: Crisis — generator at 8%, discovers Reyes's final tape
+- Stage 3: Decision — attempts repair, fails, beacon flickers but holds
+- Stage 4: Revelation — Kai's signal forces confrontation with isolation
+- Stage 5: Resolution — chooses to keep the light burning for its own meaning
 
-   **Chapter 2 — The Decline**
-   - **Summary:** `Morning inspection reveals the generator is at 8%. Elara reviews the official log — the decline has been accelerating for 6 weeks. She opens her private journal for the first time in months.`
-   - **Active Characters:** `Elara Voss`
-   - Click **Save Chapter**
+**Arc 2 — The Truth Arrives (Elara + Moreau)**
+- Stage 1: Isolation — Elara believes she is alone
+- Stage 2: Contact — drone arrives with Moreau's data
+- Stage 3: Conflict — data reveals the world is worse than she thought
+- Stage 4: Negotiation — Moreau offers her a way out; she refuses
+- Stage 5: Acceptance — Moreau's data confirms the beacon is the last signal
 
-   **Chapter 3 — The Tape**
-   - **Summary:** `Elara discovers Reyes's tape #47 — previously unplayed. Reyes knew about the generator's decline and left repair instructions. The tape also reveals he chose to stay on the last ship rather than return inland.`
-   - **Active Characters:** `Elara Voss, Captain Reyes (memory)`
-   - Click **Save Chapter**
+**Arc 3 — The Ghost Fleet (Elara + Kai)**
+- Stage 1: Denial — Kai presumed dead, Elara has accepted this
+- Stage 2: Signal — long-range radio picks up Kai's voice
+- Stage 3: Doubt — is it real or a ghost signal? radar shows contacts
+- Stage 4: Confrontation — Elara must choose: stay at beacon or respond
+- Stage 5: Synthesis — the beacon IS the response; she keeps it lit for Kai
 
-   **Chapter 4 — The Attempt**
-   - **Summary:** `Elara attempts the repair during a lull in the storm. The work is dangerous — she must enter the geothermal chamber below the beacon. The storm returns mid-repair. She fails but stabilizes the generator at 12%.`
-   - **Active Characters:** `Elara Voss, The Storm`
-   - Click **Save Chapter**
+### Part 5: Structure Planning
 
-   **Chapter 5 — The Light**
-   - **Summary:** `Elara sits in the lantern gallery as dawn breaks. The beacon still burns. She writes her final journal entry: "The ships don't matter. The light does." She returns to her watch.`
-   - **Active Characters:** `Elara Voss`
-   - Click **Save Chapter**
+#### Step 7: Plan Sequences and Chapters
+Navigate to the **Planning** tab.
 
-### Step 7: Generate the Story
-1. Click the **Generate Story** button (or navigate to `/workspace/:projectId/generate`).
-2. Configure the generation wizard:
+**Sequence 1 — Act I: The Watch (Chapters 1-4)**
+- Ch 1: The Watch — Elara's nightly routine. Worst storm in months. Generator abnormal. Reyes's tape #12.
+- Ch 2: The Decline — Morning inspection: 8%. Log review shows 6-week acceleration. Private journal reopened.
+- Ch 3: The Tape — Tape #47 discovered. Reyes knew about decline. Left repair instructions. Chose to stay on last ship.
+- Ch 4: The First Crack — Elara attempts minor repair. Storm returns. She realizes the generator won't last the season.
+
+**Sequence 2 — Act II: The Signal (Chapters 5-8)**
+- Ch 5: The Drone — AURA-7 arrives. Degrading AI. Carries Moreau's data package.
+- Ch 6: The Data — Moreau's findings: sea level rising faster than predicted. Inland settlements failing. Elara is truly last.
+- Ch 7: The Conversation — Elara speaks to AURA-7. The drone's degraded AI creates an uncanny companionship. Moreau offers extraction.
+- Ch 8: The Refusal — Elara rejects Moreau's offer. Storm intensifies. Generator drops to 4%.
+
+**Sequence 3 — Act III: The Light (Chapters 9-12)**
+- Ch 9: The Signal — Long-range radio picks up Kai's voice. Elara's world fractures.
+- Ch 10: The Attempt — Elara enters geothermal chamber. Dangerous repair. Storm returns mid-work. Stabilizes at 12%.
+- Ch 11: The Ghost Fleet — Radar shows contacts. Kai's signal repeats. Are they real? Moreau's data says no.
+- Ch 12: The Light — Dawn breaks. Beacon still burns. Final journal entry: "The ships don't matter. The light does."
+
+For each chapter, set **Active Characters** and write detailed summaries.
+
+### Part 6: Canon Management
+
+#### Step 8: Build Canon Profiles
+Navigate to Canon Workshop (`/workspace/:projectId/canon`).
+
+1. **Overview Tab**: Create canon profile `Act I Profile`:
+   - Select: Elara, The Storm, Captain Reyes
+   - World entries: The Beacon, The Drowning, The Logs
+   - Generation brief: `Generate Act I chapters 1-4. Focus on establishing isolation, routine, and the first signs of crisis. Atmospheric prose. No dialogue beyond Reyes's tapes.`
+   - Click **Save Profile**
+
+2. Create canon profile `Act II Profile`:
+   - Select: All 7 characters
+   - World entries: All 8 entries
+   - Generation brief: `Generate Act II chapters 5-8. Introduce Moreau and AURA-7. The conversation chapter should feel uncanny — the drone's degraded AI creates strange, fragmented exchanges. Moreau's data should feel like a world shrinking.`
+   - Click **Save Profile**
+
+3. Create canon profile `Act III Profile`:
+   - Select: All 7 characters
+   - World entries: All 8 entries
+   - Generation brief: `Generate Act III chapters 9-12. Kai's signal is the emotional climax. The ghost fleet is ambiguous — never confirm or deny. The ending is quiet, not triumphant. Elara's choice is about meaning, not hope.`
+   - Click **Save Profile**
+
+4. **Packet Preview Tab**: Verify each profile's packet size. Adjust if exceeding context limits.
+
+### Part 7: Multi-Run Generation
+
+#### Step 9: Generate Act I
+1. Navigate to Generation (`/workspace/:projectId/generate`).
+2. Configure:
    - **Mode:** `New Arc`
    - **Destination:** `Same Project`
-   - **Canon Scope:** Select all 3 characters and all 3 world bible entries
+   - **Canon Scope:** Use `Act I Profile` (3 characters, 3 world entries)
    - **Continuity Strictness:** `Block`
-   - **Generation Brief:** `Write a 5-chapter short story following the planned structure. Sparse, atmospheric prose. No dialogue tags beyond "said". Show the dying world through Elara's sensory experience — the salt on her skin, the groan of the lens, the taste of old coffee. Each chapter should end on an image, not an explanation. Captain Reyes exists only in memory and recorded tapes. The storm is a living presence. The ending is quiet, not triumphant.`
-   - **Chapter Count:** `5`
-3. Click **Preview Fork** to verify scope: should show 3 characters, 3 world entries, 1 arc.
-4. Click **Start Generation**.
+   - **Generation Brief:** (from Act I Profile)
+   - **Chapter Count:** `4`
+3. Click **Start Generation**.
+4. Monitor run. Review output in Writing workspace.
+5. Revise with Floating Toolbar:
+   - `Sight & color` on storm descriptions
+   - `Show don't tell` on emotional passages
+   - `Tighten & polish` on repetitive routine descriptions
 
-### Step 8: Monitor the Run
-1. A run card appears in the grid showing generation status.
-2. Click the run card to view details:
-   - **Status:** `Processing` → `Completed` (or `Failed` if inference issues)
-   - **Job Count:** 4 (G-200 plan, G-300 draft, G-350 gate, G-400 compile)
-3. If the run fails:
-   - Check the error details in the run card
-   - For `INFERENCE_TRUNCATED`: increase `NARRATIVE_MAX_TOKENS_DEFAULT` in `.env`
-   - For `INFERENCE_TRANSPORT_FAILURE`: verify llama.cpp is running
-   - Click **Retry** to resubmit
+#### Step 10: Generate Act II
+1. Repeat generation with `Act II Profile`.
+2. **Key difference:** 7 characters, 8 world entries — larger canon packet.
+3. Monitor for:
+   - Moreau's voice consistency (scientific, direct, urgent)
+   - AURA-7's degraded AI dialogue (fragmented, uncanny)
+   - Canon consistency with Act I (generator readings, log references)
+4. Run checker after generation. Resolve any canon contradictions.
 
-### Step 9: Review the Output
-1. Once completed, the generated story appears in the **Generated Story Review** panel.
-2. Navigate to **Writing** (`/workspace/:projectId/write`) to view the manuscript.
-3. Review each chapter for:
-   - Canon consistency (character voices match profiles)
-   - Thematic alignment (tone matches Foundation direction)
-   - Structural integrity (chapters follow planned sequence)
+#### Step 11: Generate Act III (with branching)
+1. **Main branch:** Generate Act III with `Act III Profile`.
+2. **Alternative branch:** Create a branch for Act III with different Kai resolution:
+   - Navigate to **Branches** tab → Create branch `Act III - Kai Confirmed`
+   - In branch: Kai's signal is confirmed real. Ghost fleet is real. Ending is hopeful.
+   - Generate this branch.
+3. **Compare:** Use branch comparison to evaluate both endings.
+4. **Decide:** Merge preferred branch or keep both as alternate versions.
 
-### Step 10: Revise with Assist
-1. In the Writing workspace, select text you want to improve.
-2. Use the **Floating Toolbar** for targeted edits:
-   - `Sight & color` — enhance visual atmosphere in storm scenes
-   - `Show don't tell` — convert abstract emotional statements into concrete actions
-   - `Tighten & polish` — remove redundancy in repetitive passages
-3. Review suggestions in the **Aids Panel** (right column).
-4. **Accept** good suggestions, **Reject** ones that break voice, **Archive** ideas for later.
+### Part 8: Review and Polish
 
-### Step 11: Run the Checker
+#### Step 12: Full Novel Review
 1. Navigate to **Review** (`/workspace/:projectId/review`).
-2. In the **Findings** tab, review any checker findings:
-   - Character voice inconsistencies
-   - Canon contradictions
-   - Structural issues
-3. Resolve findings by returning to Writing and making corrections.
-4. Re-run the checker to verify fixes.
+2. Run the Role Model Checker on the full novel.
+3. Review findings:
+   - Character voice drift across 12 chapters
+   - Canon contradictions (generator readings, timeline consistency)
+   - Structural pacing (Act II middle sag, Act III climax)
+4. Resolve findings by returning to Writing and making corrections.
+5. Use **Inspect** to trace problematic runs to their root causes.
 
-### Step 12: Export the Project
-1. Return to the home page (`/`).
-2. Find your project card.
-3. Click **Export** to download a ZIP archive containing:
-   - Project manifest
-   - Bible database (characters, world bible, arcs)
-   - Manuscript documents
-   - Generation run records
-4. Store the archive for backup or transfer.
+#### Step 13: Canon-Tight Revision Loop
+1. Review checker findings.
+2. Annotate canon fields in Characters/World Bible tabs for fields that need strict enforcement.
+3. Re-run generation for chapters with contradictions.
+4. Repeat until checker is clean.
+
+### Part 9: Export and Archive
+
+#### Step 14: Export the Novel
+1. Return to home page (`/`).
+2. Find project card → Click **Export**.
+3. ZIP archive contains:
+   - Project manifest with full metadata
+   - Bible database (7 characters, 8 world entries, 3 arcs, relationships)
+   - 12 manuscript documents (one per chapter)
+   - Generation run records (3 runs + branch runs)
+   - Canon profiles (3 profiles)
+   - Checker findings and resolution history
+4. Store archive. Create a backup.
 
 ### Expected Outcome
-You should now have a complete short story with:
-- 3 character profiles with arcs
-- 3 world bible entries establishing setting
-- 5 planned chapters with active character assignments
-- Generated manuscript content
-- Revision suggestions applied
-- Checker findings resolved
-- Exported project archive
+A complete 12-chapter novel with:
+- 7 character profiles with 3 interwoven arcs
+- 8 world bible entries (3 locations, 2 artifacts, 3 concepts)
+- 5 relationship edges with tension notes
+- 3 sequences (Acts I-III) with 12 planned chapters
+- 3 canon profiles for act-scoped generation
+- Branch comparison for Act III resolution
+- Full checker review with canon-tight revision loop
+- Exported project archive with complete provenance
 
-### Troubleshooting This Walkthrough
-- **Generation produces generic output:** Improve the generation brief with more specific voice and tone instructions. Add more world bible entries for richer context.
-- **Characters feel flat in output:** Add more detail to character profiles — especially Voice Notes, Contradictions, and Secrets fields.
-- **Storm doesn't feel like a character:** Add a world bible entry specifically for the storm's behavior patterns, or increase the Storm character's presence in the generation brief.
-- **Pacing feels rushed:** Increase chapter count to 7-8 and add transitional chapters between major beats.
-- **Output is truncated:** Increase `NARRATIVE_MAX_TOKENS_DRAFTER=16000` in `.env` and restart the server.
+### Novel-Specific Troubleshooting
+- **Character voice drift across chapters:** Use canon annotations on Voice Notes fields. Set continuity strictness to `Block` for voice-related contradictions.
+- **Act II pacing sag:** Add more world bible entries for Act II (Moreau's lab, Echo Point interior). Increase AURA-7's presence in generation brief.
+- **Canon packet too large for Act III:** Split Act III into two generation runs (Ch 9-10, Ch 11-12). Use prior chapter summaries for context continuity.
+- **Branch comparison unclear:** Generate both branches, then use branch comparison tool. Focus on emotional resonance of endings, not just canon consistency.
+- **Truncated output on 12-chapter novel:** Increase `NARRATIVE_MAX_TOKENS_DRAFTER=16000` and `NARRATIVE_MAX_TOKENS_DEFAULT=16000`. Generate in act-sized batches (4 chapters per run).
+
+### See Also
+- **Short story walkthrough:** [User Guide v1.8.0](User%20Guide%20v1.8.0.md) — simpler 5-chapter example
+- **Branching workflow:** Phase 3 (Branches tab) — create, compare, merge branches
+- **Canon management:** Phase 8 (Canon Workshop) — profiles, scope selection, packet preview
+- **Cascade Discovery:** Phase 3 (Relationships tab) — auto-extract entities from existing manuscript text
 
 ## Phase 12: Full Production Workflow
 Use this order for complete project execution.
@@ -728,4 +770,4 @@ A project is operationally complete when:
 - Export archive captured.
 - (Optional) Studio Desk workspace is configured with preferred panels and command bar layout.
 
-**Phase 11 (End-to-End Short Story Walkthrough)** demonstrates all checklist items in a single practical workflow.
+**Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management. For a simpler short story walkthrough, see the [User Guide v1.8.0](User%20Guide%20v1.8.0.md).
