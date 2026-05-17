@@ -36,7 +36,7 @@ export function StudioView() {
           <StudioProjectRail projectId={projectId} compact={leftRailMode === 'collapsed'} />
         </div>
         <main className="min-h-0 overflow-hidden bg-[var(--bg-primary)]">
-          <WritingView />
+          <WritingView embedded />
         </main>
         <div className="min-h-0 overflow-hidden border-l border-[var(--border-primary)] hidden xl:block">
           <StudioContextPanel projectId={projectId} />

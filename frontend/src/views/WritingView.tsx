@@ -39,7 +39,11 @@ const ASSIST_LABELS: Record<ManuscriptAssistKind, string> = {
   ai_generate_draft: 'AI generate draft',
 };
 
-export function WritingView() {
+interface WritingViewProps {
+  embedded?: boolean;
+}
+
+export function WritingView({ embedded = false }: WritingViewProps = {}) {
   const { projectId, chapterId } = useParams<{ projectId: string; chapterId: string }>();
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
@@ -123,9 +127,11 @@ export function WritingView() {
   const hasChapter = !!chapterId;
   const includeParagraphs = outlineDetail === 'detailed';
 
+  const showSidePanels = !embedded && !hasChapter;
+
   return (
-    <div className={`h-full grid gap-4 ${hasChapter ? 'grid-cols-1' : 'xl:grid-cols-[18rem_minmax(0,1fr)_20rem]'}`}>
-      {hasChapter ? null : (
+    <div className={`h-full grid gap-4 ${hasChapter ? 'grid-cols-1' : showSidePanels ? 'xl:grid-cols-[18rem_minmax(0,1fr)_20rem]' : 'grid-cols-1'}`}>
+      {showSidePanels ? (
       <section
         aria-label="Manuscript and drafts panel"
         className={`min-h-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}
@@ -215,11 +221,11 @@ export function WritingView() {
             )}
           </div>
         </div>
-      </section>)}
+      </section>) : null}
 
       <section
         aria-label="Manuscript editor panel"
-        className={`min-h-0 rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card flex flex-col overflow-hidden`}
+        className={`min-h-0 flex flex-col overflow-hidden ${embedded ? '' : `rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card`}`}
       >
         <div className={`px-4 py-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} flex items-center justify-between`}>
           <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
@@ -262,7 +268,7 @@ export function WritingView() {
         )}
       </section>
 
-      {hasChapter ? null : (
+      {showSidePanels ? (
       <section aria-label="Revision suggestions panel" className="min-h-0">
         <AidsPanel
           projectId={projectId}
@@ -271,7 +277,7 @@ export function WritingView() {
           onSuggestionReject={(suggestionId) => void mergedSuggestions.handleSuggestionReject(suggestionId)}
           onSuggestionArchive={(suggestionId) => void mergedSuggestions.handleSuggestionArchive(suggestionId)}
         />
-      </section>)}
+      </section>) : null}
     </div>
   );
 }
