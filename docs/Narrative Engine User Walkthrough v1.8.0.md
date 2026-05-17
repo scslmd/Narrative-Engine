@@ -147,8 +147,8 @@ Route: `/workspace/:projectId/braindump`
 Session-based free writing canvas with AI-powered organization. Use this mode early for ideation spikes and mid-project for problem solving.
 
 ### Session Setup
-1. Open brain dump mode. The view auto-selects the active session, or auto-creates one if none exists for the project.
-2. To create a new session, click `+ New Session`. A title prompt overlay appears ("Name your brain dump"). Enter a name and press Enter to confirm.
+1. Open brain dump mode. The view auto-selects the active session.
+2. To create a new session, click `+ New Session`. An inline title input and writing canvas appear. Enter a session name and start typing.
 3. Sessions are project-scoped and persist across visits.
 
 ### Writing

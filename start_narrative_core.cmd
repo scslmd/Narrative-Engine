@@ -151,11 +151,11 @@ if errorlevel 1 (
 
 :: Start backend with reload
 echo [1/2] Starting backend ...
-start "Narrative Engine Backend" cmd /k "cd /d ""%ROOT%"" && ""%PYTHON%"" -m uvicorn app.main:build_app --factory --reload --host %HOST% --port %PORT% & pause"
+start "Narrative Engine Backend" /D "%ROOT%" cmd /k "%PYTHON% -m uvicorn app.main:build_app --factory --reload --host %HOST% --port %PORT% & pause"
 
 :: Start frontend dev server
 echo [2/2] Starting frontend ...
-start "Narrative Engine Frontend" cmd /k "cd /d ""%ROOT%frontend"" && npm run dev & pause"
+start "Narrative Engine Frontend" /D "%ROOT%frontend" cmd /k "npm run dev & pause"
 
 echo.
 echo ============================================

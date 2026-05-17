@@ -157,8 +157,7 @@ Session-based free writing canvas with AI-powered organization.
 
 ### Session Management
 - Auto-selects the active session on load.
-- Auto-creates a session when none exists for the project.
-- `+ New Session` button opens a title prompt overlay ("Name your brain dump"). Enter a name or press Enter to create.
+- `+ New Session` button opens an inline title input and writing canvas. Enter a session name and start typing.
 - Sessions are project-scoped and persist across visits.
 
 ### Writing Canvas
