@@ -1,5 +1,4 @@
 import { useParams } from 'react-router-dom';
-import { ChevronDown, FileText } from 'lucide-react';
 import { StudioCommandBar } from '../components/studio/StudioCommandBar';
 import { StudioContextPanel } from '../components/studio/StudioContextPanel';
 import { StudioProjectRail } from '../components/studio/StudioProjectRail';
@@ -56,27 +55,14 @@ export function StudioView() {
         <div className="min-h-0 overflow-hidden hidden xl:block">
           <StudioProjectRail projectId={projectId} compact={leftRailMode === 'collapsed'} />
         </div>
-        <main className="min-h-0 overflow-hidden bg-[var(--bg-primary)] flex flex-col">
-          <div className={`flex items-center gap-2 px-4 py-2 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-            <FileText className={`w-3.5 h-3.5 ${isDark ? 'text-blue-400' : 'text-blue-500'}`} />
-            <h3 className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Chapters</h3>
-            <ChevronDown className={`w-3 h-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-            <select
-              value={selectedDocumentId || ''}
-              onChange={handleChapterSelect}
-              disabled={manuscriptQueryLoading || manuscriptDocuments.length === 0}
-              className={`text-xs rounded-md border px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-            >
-              {manuscriptDocuments.map((doc) => (
-                <option key={doc.document_id} value={doc.document_id}>
-                  {doc.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <WritingView embedded />
-          </div>
+        <main className="min-h-0 overflow-hidden bg-[var(--bg-primary)]">
+          <WritingView
+            embedded
+            chapterSelectOptions={manuscriptDocuments}
+            selectedChapterId={selectedDocumentId}
+            isLoadingChapterSelect={manuscriptQueryLoading}
+            onChapterSelect={handleChapterSelect}
+          />
         </main>
         <div className="min-h-0 overflow-hidden border-l border-[var(--border-primary)] hidden xl:block">
           <StudioContextPanel projectId={projectId} />

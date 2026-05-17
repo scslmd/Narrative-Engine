@@ -220,6 +220,10 @@ interface ManuscriptEditorProps {
   selectedRange?: TextRange | null;
   scrollTarget: number | null;
   isDark: boolean;
+  chapterSelectOptions?: Array<{ document_id: string; title: string }>;
+  selectedChapterId?: string | null;
+  isLoadingChapterSelect?: boolean;
+  onChapterSelect?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 export function ManuscriptEditor({
@@ -237,6 +241,10 @@ export function ManuscriptEditor({
   onAssistRequest,
   scrollTarget,
   isDark,
+  chapterSelectOptions,
+  selectedChapterId,
+  isLoadingChapterSelect,
+  onChapterSelect,
 }: ManuscriptEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLElement>(null);
@@ -290,11 +298,28 @@ export function ManuscriptEditor({
     <>
       <header className={`flex items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
         <div>
-          <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-            {document.title}{(() => { const t = extractChapterTitle(document.content); return t ? ` — ${t}` : ''; })()}
-          </h2>
-          {document.chapter_id && (
-            <p className="text-xs mt-0.5 text-subtle">Chapter: {document.chapter_id}</p>
+          {chapterSelectOptions && chapterSelectOptions.length > 0 ? (
+            <select
+              value={selectedChapterId || ''}
+              onChange={onChapterSelect}
+              disabled={isLoadingChapterSelect}
+              className={`text-sm font-semibold rounded-md border px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
+            >
+              {chapterSelectOptions.map((doc) => (
+                <option key={doc.document_id} value={doc.document_id}>
+                  {doc.title}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                {document.title}{(() => { const t = extractChapterTitle(document.content); return t ? ` — ${t}` : ''; })()}
+              </h2>
+              {document.chapter_id && (
+                <p className="text-xs mt-0.5 text-subtle">Chapter: {document.chapter_id}</p>
+              )}
+            </>
           )}
         </div>
         <div className="flex items-center gap-3">

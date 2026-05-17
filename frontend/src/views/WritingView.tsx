@@ -41,9 +41,13 @@ const ASSIST_LABELS: Record<ManuscriptAssistKind, string> = {
 
 interface WritingViewProps {
   embedded?: boolean;
+  chapterSelectOptions?: Array<{ document_id: string; title: string }>;
+  selectedChapterId?: string | null;
+  isLoadingChapterSelect?: boolean;
+  onChapterSelect?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export function WritingView({ embedded = false }: WritingViewProps = {}) {
+export function WritingView({ embedded = false, chapterSelectOptions, selectedChapterId, isLoadingChapterSelect, onChapterSelect }: WritingViewProps = {}) {
   const { projectId, chapterId } = useParams<{ projectId: string; chapterId: string }>();
   const { mode, _systemTick } = useThemeStore();
   void _systemTick;
@@ -227,9 +231,11 @@ export function WritingView({ embedded = false }: WritingViewProps = {}) {
         aria-label="Manuscript editor panel"
         className={`min-h-0 flex flex-col overflow-hidden ${embedded ? '' : `rounded-xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-card`}`}
       >
-        <div className={`px-4 py-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} flex items-center justify-between`}>
-          <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
-        </div>
+        {!embedded && (
+          <div className={`px-4 py-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} flex items-center justify-between`}>
+            <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
+          </div>
+        )}
         {selectedDocument ? (
           <ManuscriptEditor
             document={selectedDocument}
@@ -256,6 +262,10 @@ export function WritingView({ embedded = false }: WritingViewProps = {}) {
             }}
             scrollTarget={scrollTarget?.documentId === selectedDocument.document_id ? scrollTarget?.lineIndex : null}
             isDark={isDark}
+            chapterSelectOptions={embedded ? chapterSelectOptions : undefined}
+            selectedChapterId={embedded ? selectedChapterId : undefined}
+            isLoadingChapterSelect={embedded ? isLoadingChapterSelect : undefined}
+            onChapterSelect={embedded ? onChapterSelect : undefined}
           />
         ) : (
           <div className="h-full flex items-center justify-center">
