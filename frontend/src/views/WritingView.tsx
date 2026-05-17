@@ -14,6 +14,11 @@ import { useToastStore } from '../stores/toastStore';
 import { useThemeStore } from '../stores/themeStore';
 import { resolveEffectiveMode } from '../theme/theme';
 import type { ManuscriptAssistKind } from '../types/manuscriptAssist';
+function extractChapterTitle(content: string): string | null {
+  const match = content.match(/^#\s+(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
 const ASSIST_LABELS: Record<ManuscriptAssistKind, string> = {
   developmental_review: 'Developmental review',
   canon_check: 'Canon check',
@@ -229,7 +234,7 @@ export function WritingView({ embedded = false }: WritingViewProps = {}) {
       >
         <div className={`px-4 py-2.5 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'} flex items-center justify-between`}>
           <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
-          <span className="text-xs text-muted">{selectedDocument ? selectedDocument.title : 'No manuscript selected'}</span>
+          <span className="text-xs text-muted">{selectedDocument ? (() => { const chapterTitle = extractChapterTitle(isEditing ? editContent : selectedDocument.content); return chapterTitle ? `${selectedDocument.title} — ${chapterTitle}` : selectedDocument.title; })() : 'No manuscript selected'}</span>
         </div>
         {selectedDocument ? (
           <ManuscriptEditor

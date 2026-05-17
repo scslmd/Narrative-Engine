@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { modeToStage } from '../routes'
@@ -32,7 +32,6 @@ const navItems: NavItem[] = [
 export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const { mode, setMode, projectId } = useUIStore()
   const navigate = useNavigate()
-  const location = useLocation()
   const { iconMode, showTooltips } = useSettingsStore()
   const iconsOnly = iconMode !== 'labels'
   const showTooltipsEnabled = showTooltips && iconsOnly
