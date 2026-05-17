@@ -1,6 +1,6 @@
 # Narrative Engine - User Guide v1.8.0
 
-Last updated: 2026-05-17
+Last updated: 2026-05-17 (end-to-end walkthrough added)
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
@@ -396,6 +396,9 @@ Compact, single-screen workspace for focused writing with immediate access to al
 - **Generation:** Compact story generation wizard with mode selector, destination, canon scope, and policy configuration.
 - **Review:** Tab-based interface for checker findings and inspect links.
 - **Inspect:** Job inspection with guidance text when no run is selected.
+
+## End-to-End Short Story Walkthrough
+For a complete, step-by-step walkthrough of generating a short story from project creation through export, see **Phase 11: End-to-End Short Story Walkthrough** in the [Narrative Engine User Walkthrough v1.8.0](Narrative%20Engine%20User%20Walkthrough%20v1.8.0.md). It walks through creating a project called "The Last Lighthouse" with 3 characters, 3 world bible entries, 5 planned chapters, and a full generation run.
 
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).
