@@ -6,6 +6,7 @@ const baseDocument = {
   document_id: 'doc-1',
   project_id: 'proj-1',
   title: 'Chapter 1',
+  display_title: null,
   content: 'Hello world',
   chapter_id: null,
   scene_id: null,

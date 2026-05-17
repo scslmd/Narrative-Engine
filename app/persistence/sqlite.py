@@ -632,6 +632,7 @@ CREATE TABLE IF NOT EXISTS manuscript_documents (
     document_id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL,
     title TEXT NOT NULL,
+    display_title TEXT,
     content TEXT NOT NULL,
     chapter_id TEXT,
     scene_id TEXT,

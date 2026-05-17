@@ -761,6 +761,7 @@ class ManuscriptDocument(StrictSchemaModel):
     document_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
+    display_title: str | None = None
     content: str = Field(min_length=1)
     chapter_id: str | None = None
     scene_id: str | None = None
@@ -779,7 +780,7 @@ class ManuscriptDocument(StrictSchemaModel):
         for field_name in ("document_id", "project_id", "title", "content"):
             if field_name in payload:
                 payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
-        for field_name in ("chapter_id", "scene_id", "current_draft_artifact_id"):
+        for field_name in ("chapter_id", "scene_id", "current_draft_artifact_id", "display_title"):
             if field_name in payload:
                 payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
         return payload
@@ -788,6 +789,7 @@ class ManuscriptDocument(StrictSchemaModel):
 class ManuscriptDocumentUpdateRequest(StrictSchemaModel):
     content: str | None = Field(None, max_length=1_000_000)
     title: str | None = Field(None, max_length=500)
+    display_title: str | None = Field(None, max_length=500)
 
 
 class DraftArtifactCreateRequest(StrictSchemaModel):

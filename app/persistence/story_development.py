@@ -760,6 +760,7 @@ class ManuscriptDocumentRecord:
     document_id: str
     project_id: str
     title: str
+    display_title: str | None
     content: str
     chapter_id: str | None
     scene_id: str | None
@@ -4121,6 +4122,7 @@ class StoryDevelopmentRepository:
         document_id: str,
         project_id: str,
         title: str,
+        display_title: str | None = None,
         content: str,
         chapter_id: str | None = None,
         scene_id: str | None = None,
@@ -4147,12 +4149,13 @@ class StoryDevelopmentRepository:
             connection.execute(
                 """
                 INSERT INTO manuscript_documents (
-                    document_id, project_id, title, content, chapter_id, scene_id, current_draft_artifact_id,
+                    document_id, project_id, title, display_title, content, chapter_id, scene_id, current_draft_artifact_id,
                     version, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(document_id) DO UPDATE SET
                     project_id = excluded.project_id,
                     title = excluded.title,
+                    display_title = excluded.display_title,
                     content = excluded.content,
                     chapter_id = excluded.chapter_id,
                     scene_id = excluded.scene_id,
@@ -4164,6 +4167,7 @@ class StoryDevelopmentRepository:
                     document_id,
                     project_id,
                     title,
+                    display_title,
                     content,
                     chapter_id,
                     scene_id,
@@ -5891,6 +5895,7 @@ def _manuscript_document_row_to_record(row) -> ManuscriptDocumentRecord:
         document_id=row["document_id"],
         project_id=row["project_id"],
         title=row["title"],
+        display_title=row["display_title"],
         content=row["content"],
         chapter_id=row["chapter_id"],
         scene_id=row["scene_id"],

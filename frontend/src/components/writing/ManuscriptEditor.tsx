@@ -10,11 +10,6 @@ interface MarkdownRenderProps {
   isDark: boolean;
 }
 
-function extractChapterTitle(content: string): string | null {
-  const match = content.match(/^#\s+(.+)$/m);
-  return match ? match[1].trim() : null;
-}
-
 /** Lightweight markdown renderer for manuscript read mode. Handles headings, inline code, and paragraphs. */
 function renderMarkdown({ content, isDark }: MarkdownRenderProps) {
   if (!content) return <span className="text-muted">(No content)</span>;
@@ -297,7 +292,8 @@ export function ManuscriptEditor({
   return (
     <>
       <header className={`flex items-center justify-between px-5 py-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div>
+        <div className="flex items-center gap-3">
+          <h2 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Editor</h2>
           {chapterSelectOptions && chapterSelectOptions.length > 0 ? (
             <select
               value={selectedChapterId || ''}
@@ -314,7 +310,7 @@ export function ManuscriptEditor({
           ) : (
             <>
               <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                {document.title}{(() => { const t = extractChapterTitle(document.content); return t ? ` — ${t}` : ''; })()}
+                {document.title}{document.display_title ? ` — ${document.display_title}` : ''}
               </h2>
               {document.chapter_id && (
                 <p className="text-xs mt-0.5 text-subtle">Chapter: {document.chapter_id}</p>

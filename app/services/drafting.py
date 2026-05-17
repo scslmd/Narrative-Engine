@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -158,6 +159,7 @@ class DraftingService:
         document_id: str,
         content: str,
         title: str | None = None,
+        display_title: str | None = None,
         chapter_id: str | None = None,
         scene_id: str | None = None,
         current_draft_artifact_id: str | None = None,
@@ -171,6 +173,11 @@ class DraftingService:
             raise DraftingValidationError("title is required when creating a new manuscript document")
 
         normalized_title = self._normalize_text(title, field_name="title") if title is not None else existing.title
+        # Extract display_title from content's first markdown heading if not provided
+        if display_title is None:
+            heading_match = re.match(r'^#\s+(.+)$', normalized_content, re.MULTILINE)
+            display_title = heading_match.group(1).strip() if heading_match else None
+        normalized_display_title = self._normalize_optional_text(display_title, field_name="display_title")
         normalized_chapter_id = (
             self._normalize_optional_text(chapter_id, field_name="chapter_id")
             if chapter_id is not None
@@ -200,6 +207,7 @@ class DraftingService:
             document_id=normalized_document_id,
             project_id=normalized_project_id,
             title=normalized_title,
+            display_title=normalized_display_title,
             content=normalized_content,
             chapter_id=normalized_chapter_id,
             scene_id=normalized_scene_id,
@@ -434,6 +442,7 @@ class DraftingService:
                 "document_id": record.document_id,
                 "project_id": record.project_id,
                 "title": record.title,
+                "display_title": record.display_title,
                 "content": record.content,
                 "chapter_id": record.chapter_id,
                 "scene_id": record.scene_id,

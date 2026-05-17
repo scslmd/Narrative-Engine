@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { StudioCommandBar } from '../components/studio/StudioCommandBar';
 import { StudioContextPanel } from '../components/studio/StudioContextPanel';
@@ -45,6 +46,11 @@ export function StudioView() {
     setEditContent('');
   };
 
+  const chapterOptions = useMemo(() => manuscriptDocuments.map(doc => ({
+    document_id: doc.document_id,
+    title: doc.display_title ? `${doc.title} — ${doc.display_title}` : doc.title,
+  })), [manuscriptDocuments]);
+
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
       <StudioCommandBar />
@@ -58,7 +64,7 @@ export function StudioView() {
         <main className="min-h-0 overflow-hidden bg-[var(--bg-primary)]">
           <WritingView
             embedded
-            chapterSelectOptions={manuscriptDocuments}
+            chapterSelectOptions={chapterOptions}
             selectedChapterId={selectedDocumentId}
             isLoadingChapterSelect={manuscriptQueryLoading}
             onChapterSelect={handleChapterSelect}

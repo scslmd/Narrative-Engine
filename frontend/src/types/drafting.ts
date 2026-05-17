@@ -13,6 +13,7 @@ export interface ManuscriptDocument {
   document_id: string;
   project_id: string;
   title: string;
+  display_title: string | null;
   content: string;
   chapter_id: string | null;
   scene_id: string | null;
