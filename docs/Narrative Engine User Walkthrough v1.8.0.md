@@ -727,3 +727,5 @@ A project is operationally complete when:
 - At least one generation run completed (and optionally forked).
 - Export archive captured.
 - (Optional) Studio Desk workspace is configured with preferred panels and command bar layout.
+
+**Phase 11 (End-to-End Short Story Walkthrough)** demonstrates all checklist items in a single practical workflow.
