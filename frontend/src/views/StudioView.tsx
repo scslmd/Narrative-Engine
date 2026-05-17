@@ -18,7 +18,7 @@ export function StudioView() {
     return <div className="text-sm text-slate-500">No project selected.</div>;
   }
 
-  const railColumn = leftRailMode === 'collapsed' ? '64px' : `${leftRailWidth}px`;
+  const railColumn = leftRailMode === 'collapsed' ? '80px' : `${leftRailWidth}px`;
   const contextColumn = `${contextPanelWidth}px`;
 
   const leftDrawerOpen = leftRailMode === 'overlay';

@@ -70,16 +70,17 @@ function RailButton({ active, compact, item, onClick }: RailButtonProps) {
       onClick={onClick}
       aria-label={item.label}
       aria-pressed={active}
+      title={item.label}
       className={`flex w-full items-center rounded-xl text-left text-xs font-medium transition-colors ${
-        compact ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5'
+        compact ? 'flex-col gap-1 justify-center px-0 py-3' : 'gap-2.5 px-3 py-2.5'
       } ${
         active
           ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border-primary)]'
           : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
       }`}
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      {!compact ? <span className="truncate">{item.label}</span> : null}
+      <Icon className={compact ? 'h-7 w-7 shrink-0' : 'h-3.5 w-3.5 shrink-0'} />
+      {compact ? <span className="text-[9px] font-medium leading-tight text-center truncate w-full">{item.label}</span> : <span className="truncate">{item.label}</span>}
     </button>
   );
 }
@@ -91,7 +92,7 @@ export function StudioProjectRail({ projectId, compact = false }: StudioProjectR
   return (
     <aside
       className={`flex h-full flex-col border-r border-[var(--border-primary)] bg-[var(--bg-secondary)] ${
-        compact ? 'w-16' : ''
+        compact ? 'w-20' : ''
       }`}
     >
       {!compact ? (
