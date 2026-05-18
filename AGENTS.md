@@ -5,12 +5,14 @@
 - The repo now uses a React + TypeScript frontend in `frontend/`.
 - Frontend API calls should prefer the shared Axios client in `frontend/src/lib/api.ts`.
 - The current verified validation baseline is:
-  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1473 passed, 7 skipped (~34s)
-  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~2s)
-  - Full baseline: ~1524 tests, ~66s total (parallel + serial)
+  - Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1596 passed, 6 skipped (~34s)
+  - Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content` -> 53 passed (~2s)
+  - Full baseline: ~1649 tests, ~66s total (parallel + serial)
   - **IMPORTANT: Use timeout >= 5min (300000ms) for parallel cluster, >= 4min (240000ms) for serial tests. Do not stop prematurely on timeout.**
-  - xdist-isolation failures (pass when run directly, verified 2026-05-08):
-    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails only under parallel xdist; passes in isolation
+  - xdist-isolation tests (marked with xdist_group, run serially):
+    - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails under parallel xdist; passes in isolation
+    - `tests/test_discovery_api.py::test_patch_returns_updated` — shared operations_db_path causes DB open failure under xdist
+    - `tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash` — executor thread contention under xdist
   - `cd frontend && npm run lint` -> passed, 2 pre-existing errors only (2026-05-17)
   - `cd frontend && npm run typecheck` -> passed (2026-05-17)
   - `cd frontend && npm run build` -> passed, 2070 modules (2026-05-17)
@@ -176,16 +178,16 @@ python -m pytest -q -p no:cacheprovider -m "not integration"   # unit only (~31s
 
 ### Clustered Parallel Execution (Recommended)
 ```bash
-# Step 1: Run parallel-safe tests in clusters (fast, ~32s, ~1469 tests)
+# Step 1: Run parallel-safe tests in clusters (fast, ~32s, ~1596 tests)
 python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py
 
-# Step 2: Run serial-only tests last with extended timeout (~27s, ~51 tests)
-python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
+# Step 2: Run serial-only tests last with extended timeout (~27s, ~53 tests)
+python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content
 ```
 
 - Parallel cluster runs first because it's fast and catches most failures immediately.
 - Serial tests run last because they share global state (log file, executor threads) and time out if mixed with parallel workers.
-- Full baseline: ~1519 tests, ~59s total (vs. ~250s sequential).
+- Full baseline: ~1649 tests, ~59s total (vs. ~250s sequential).
 
 ### Quality Review Helper
 ```bash
@@ -458,6 +460,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.xdist_group(name="serial-my-f
 - `tests/test_audit_logging.py` — shares `settings.structured_log_filename` log file across all TestClient requests. Run with `-n 0`.
 - `tests/test_rate_limiting.py` — creates checker runs that trigger LocalExecutor daemon threads; timing-dependent; was causing hangs when rate-limit middleware executed downstream on 429 (now fixed). Run with `-n 0`.
 - `tests/test_persistence.py::test_local_executor_persists_pipeline_step_records` — starts/stops executor threads
+- `tests/test_discovery_api.py::test_patch_returns_updated` — shared operations_db_path causes DB open failure under xdist. Marked `xdist_group`.
+- `tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash` — executor thread contention under xdist. Marked `xdist_group`.
 
 **When adding new tests**: If your test writes to a global path (log, cache, singleton DB), either isolate the path via `tmp_path` or mark it `xdist_group`.
 
@@ -514,7 +518,7 @@ React enforces a hard limit of 50 hooks per component instance. Exceeding it thr
 Do not call the repo merge-ready unless all five of these are green:
 
 - `python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py`
-- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters`
+- `python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content`
 - `cd frontend && npm run lint`
 - `cd frontend && npm run typecheck`
 - `cd frontend && npm run build`
