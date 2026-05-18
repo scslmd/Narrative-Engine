@@ -1,18 +1,21 @@
+import { useWritingDocumentController } from '../../domains/writing/useWritingDocumentController';
+import { StudioDraftsPanel } from './StudioDraftsPanel';
 import { StudioGenerationPanel } from './StudioGenerationPanel';
 import { StudioIdeasPanel } from './StudioIdeasPanel';
 import { StudioInspectPanel } from './StudioInspectPanel';
+import { StudioManuscriptsPanel } from './StudioManuscriptsPanel';
 import { StudioCharactersPanel } from './StudioCharactersPanel';
 import { StudioRelationshipsPanel } from './StudioRelationshipsPanel';
 import { StudioReviewPanel } from './StudioReviewPanel';
 import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
 import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
-import { JobLaunchPanel } from '../JobLaunchPanel';
-import { NotesPanel } from '../NotesPanel';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
 
 const primaryTabs: Array<{ label: string; panel: StudioPanelKey }> = [
   { label: 'Suggestions', panel: 'suggestions' },
+  { label: 'Drafts', panel: 'drafts' },
+  { label: 'Manuscripts', panel: 'manuscripts' },
   { label: 'Ideas', panel: 'ideas' },
   { label: 'Characters', panel: 'characters' },
   { label: 'World', panel: 'worldBible' },
@@ -22,25 +25,32 @@ const primaryTabs: Array<{ label: string; panel: StudioPanelKey }> = [
 const panelLabels: Record<StudioPanelKey, string> = {
   suggestions: 'Suggestions',
   ideas: 'Ideas',
+  drafts: 'Drafts',
+  manuscripts: 'Manuscripts',
   characters: 'Characters',
   worldBible: 'World Bible',
   relationships: 'Relationships',
   generation: 'Generation',
   review: 'Review',
   inspect: 'Inspect',
-  notes: 'Notes',
-  jobs: 'Jobs',
 };
 
 interface StudioContextPanelProps {
   projectId: string;
   showCloseButton?: boolean;
+  onManuscriptSelect?: (documentId: string) => void;
 }
 
-export function StudioContextPanel({ projectId, showCloseButton = false }: StudioContextPanelProps) {
+export function StudioContextPanel({ projectId, showCloseButton = false, onManuscriptSelect }: StudioContextPanelProps) {
   const activePanel = useStudioStore((s) => s.activePanel);
   const openPanel = useStudioStore((s) => s.openPanel);
   const setContextPanelMode = useStudioStore((s) => s.setContextPanelMode);
+
+  const writingController = useWritingDocumentController({
+    projectId,
+    chapterId: undefined,
+  });
+  const openSuggestionCount = writingController.openSuggestions.length;
 
   const label = panelLabels[activePanel];
 
@@ -60,12 +70,12 @@ export function StudioContextPanel({ projectId, showCloseButton = false }: Studi
         return <StudioReviewPanel projectId={projectId} />;
       case 'inspect':
         return <StudioInspectPanel />;
-      case 'notes':
-        return <NotesPanel projectId={projectId} />;
-      case 'jobs':
-        return <JobLaunchPanel projectId={projectId} />;
       case 'suggestions':
         return <StudioSuggestionsPanel projectId={projectId} />;
+      case 'drafts':
+        return <StudioDraftsPanel />;
+      case 'manuscripts':
+        return <StudioManuscriptsPanel onSelect={onManuscriptSelect} />;
     }
   };
 
@@ -78,6 +88,7 @@ export function StudioContextPanel({ projectId, showCloseButton = false }: Studi
       >
         {primaryTabs.map((tab) => {
           const active = activePanel === tab.panel;
+          const isSuggestions = tab.panel === 'suggestions';
 
           return (
             <button
@@ -86,13 +97,22 @@ export function StudioContextPanel({ projectId, showCloseButton = false }: Studi
               role="tab"
               aria-selected={active}
               onClick={() => openPanel(tab.panel)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`relative rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 active
                   ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-100 dark:text-slate-950'
                   : 'text-gray-500 hover:bg-white hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
               }`}
             >
               {tab.label}
+              {isSuggestions && openSuggestionCount > 0 && (
+                <span className={`absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                  active
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-amber-400 text-white'
+                }`}>
+                  {openSuggestionCount > 9 ? '9+' : openSuggestionCount}
+                </span>
+              )}
             </button>
           );
         })}

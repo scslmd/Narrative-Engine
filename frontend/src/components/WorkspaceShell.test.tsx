@@ -55,17 +55,6 @@ describe('WorkspaceShell', () => {
     expect(buttons).toHaveLength(4);
   });
 
-  it('renders 2 nav items when mode is in writing stage (write)', () => {
-    renderShell('write');
-
-    const buttons = screen.getAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.classList.contains('nav-item'),
-    );
-    expect(buttons).toHaveLength(2);
-    expect(screen.getByText('Studio')).toBeInTheDocument();
-    expect(screen.getByText('Writing')).toBeInTheDocument();
-  });
-
   it('hides left rail when mode is studio', () => {
     renderShell('studio');
 
@@ -143,20 +132,6 @@ describe('WorkspaceShell', () => {
     expect(useUIStore.getState().mode).toBe('canon');
   });
 
-  it('clicking a nav item in writing stage updates mode correctly', async () => {
-    const user = userEvent.setup();
-    renderShell('write');
-
-    await vi.waitFor(() => {
-      expect(screen.getByText('Writing')).toBeInTheDocument();
-    });
-
-    // Writing is the only item; clicking it should still set mode
-    await user.click(screen.getByText('Writing'));
-
-    expect(useUIStore.getState().mode).toBe('write');
-  });
-
   it('clicking Inspect nav item in review stage updates mode', async () => {
     const user = userEvent.setup();
     renderShell('review');
@@ -205,14 +180,7 @@ describe('WorkspaceShell', () => {
   it('does not show writing nav items when in planning stage', () => {
     renderShell('plan');
 
-    expect(screen.queryByText('Writing')).not.toBeInTheDocument();
-  });
-
-  it('does not show review nav items when in writing stage', () => {
-    renderShell('write');
-
-    expect(screen.queryByText('Review')).not.toBeInTheDocument();
-    expect(screen.queryByText('Inspect')).not.toBeInTheDocument();
+    expect(screen.queryByText('Studio')).not.toBeInTheDocument();
   });
 
   it('does not show planning nav items when in review stage', () => {

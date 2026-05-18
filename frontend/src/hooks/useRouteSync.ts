@@ -25,17 +25,6 @@ export function useRouteSync() {
       return;
     }
 
-    // Try write with chapterId pattern  
-    match = matchPath('/workspace/:projectId/write/:chapterId?', location.pathname);
-    
-    if (match) {
-      const params = match.params as { projectId: string; chapterId?: string };
-      setProjectId(params.projectId);
-      setMode('write');
-      setChapterId(params.chapterId || null);
-      return;
-    }
-
     // Try standard pattern for plan/review
     match = matchPath('/workspace/:projectId/:mode?', location.pathname);
 

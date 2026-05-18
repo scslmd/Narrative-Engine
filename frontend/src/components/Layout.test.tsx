@@ -125,7 +125,7 @@ describe('Layout', () => {
     await vi.waitFor(() => {
       expect(screen.getAllByRole('group', { name: 'Workflow stages' })).toHaveLength(2);
       expect(screen.getAllByText('Planning')).toHaveLength(2);
-      expect(screen.getAllByText('Writing')).toHaveLength(2);
+      expect(screen.getAllByText('Studio')).toHaveLength(2);
       expect(screen.getAllByText('Review')).toHaveLength(2);
     });
   });
@@ -145,9 +145,9 @@ describe('Layout', () => {
     const user = userEvent.setup();
     act(() => {
       useUIStore.getState().setProjectId('test-project');
-      useUIStore.getState().setMode('write');
+      useUIStore.getState().setMode('studio');
     });
-    renderLayout('/workspace/test-project/write');
+    renderLayout('/workspace/test-project/studio');
 
     await vi.waitFor(() => {
       expect(screen.getAllByText('Planning').length).toBeGreaterThanOrEqual(1);
@@ -158,7 +158,7 @@ describe('Layout', () => {
     expect(useUIStore.getState().mode).toBe('plan');
   });
 
-  it('clicking Writing stage button navigates to write mode', async () => {
+  it('clicking Studio stage button navigates to studio mode', async () => {
     const user = userEvent.setup();
     act(() => {
       useUIStore.getState().setProjectId('test-project');
@@ -167,12 +167,12 @@ describe('Layout', () => {
     renderLayout('/workspace/test-project/plan');
 
     await vi.waitFor(() => {
-      expect(screen.getAllByText('Writing').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Studio').length).toBeGreaterThanOrEqual(1);
     });
 
-    await user.click(getStageButton('Writing'));
+    await user.click(getStageButton('Studio'));
 
-    expect(useUIStore.getState().mode).toBe('write');
+    expect(useUIStore.getState().mode).toBe('studio');
   });
 
   it('clicking Review stage button navigates to review mode', async () => {
@@ -195,27 +195,27 @@ describe('Layout', () => {
   it('highlights active stage button with distinct styling', async () => {
     act(() => {
       useUIStore.getState().setProjectId('test-project');
-      useUIStore.getState().setMode('write');
+      useUIStore.getState().setMode('studio');
     });
-    renderLayout('/workspace/test-project/write');
+    renderLayout('/workspace/test-project/studio');
 
     await vi.waitFor(() => {
-      const writingEls = screen.getAllByText('Writing');
-      expect(writingEls.length).toBeGreaterThanOrEqual(1);
+      const studioEls = screen.getAllByText('Studio');
+      expect(studioEls.length).toBeGreaterThanOrEqual(1);
 
       const planningEls = screen.getAllByText('Planning');
       expect(planningEls.length).toBeGreaterThanOrEqual(1);
 
       // Find button parents for each label
-      const writingBtns = writingEls.filter(
+      const studioBtns = studioEls.filter(
         (el) => el.parentElement?.tagName === 'BUTTON',
       );
       const planningBtns = planningEls.filter(
         (el) => el.parentElement?.tagName === 'BUTTON',
       );
 
-      // Active Writing button should have bg-white (desktop) or border-b-2 (mobile)
-      const activeWriting = writingBtns.some((btn) => {
+      // Active Studio button should have bg-white (desktop) or border-b-2 (mobile)
+      const activeStudio = studioBtns.some((btn) => {
         const parent = btn.parentElement;
         return parent?.classList.contains('bg-white') || parent?.classList.contains('border-b-2');
       });
@@ -227,7 +227,7 @@ describe('Layout', () => {
           && !parent?.classList.contains('border-b-2');
       });
 
-      expect(activeWriting).toBe(true);
+      expect(activeStudio).toBe(true);
       expect(inactivePlanning).toBe(true);
     });
   });

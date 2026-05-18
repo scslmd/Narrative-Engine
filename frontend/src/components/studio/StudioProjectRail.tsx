@@ -3,7 +3,7 @@ import {
   BookOpen,
   Brain,
   FileStack,
-  GitBranch,
+  FileText,
   Network,
   NotebookPen,
   Scroll,
@@ -26,6 +26,8 @@ const railSections: RailSection[] = [
   {
     label: 'Develop',
     items: [
+      { label: 'Drafts', panel: 'drafts', icon: FileText },
+      { label: 'Manuscripts', panel: 'manuscripts', icon: BookOpen },
       { label: 'Ideas', panel: 'ideas', icon: Brain },
       { label: 'Suggestions', panel: 'suggestions', icon: NotebookPen },
       { label: 'Review', panel: 'review', icon: FileStack },
@@ -40,14 +42,7 @@ const railSections: RailSection[] = [
       { label: 'Canon', panel: 'generation', icon: Scroll },
     ],
   },
-  {
-    label: 'Utilities',
-    items: [
-      { label: 'Jobs', panel: 'jobs', icon: GitBranch },
-      { label: 'Notes', panel: 'notes', icon: NotebookPen },
-    ],
-  },
-];
+ ];
 
 interface StudioProjectRailProps {
   projectId: string;

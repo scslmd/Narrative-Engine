@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { modeToStage } from '../routes'
-import { LayoutList, BookOpen, Search, Sparkles, Lightbulb, Scroll, Zap, MonitorUp } from 'lucide-react'
+import { LayoutList, Search, Sparkles, Lightbulb, Scroll, Zap, MonitorUp } from 'lucide-react'
 
 interface WorkspaceShellProps {
   children: ReactNode
@@ -23,8 +23,7 @@ const navItems: NavItem[] = [
   { key: 'plan', label: 'Planning', icon: LayoutList, gradient: 'from-blue-500 to-blue-600', glow: 'glow-planning', stage: 'planning' },
   { key: 'canon', label: 'Canon', icon: Scroll, gradient: 'from-indigo-500 to-indigo-600', glow: 'glow-canon', stage: 'planning' },
   { key: 'generate', label: 'Generate', icon: Zap, gradient: 'from-purple-500 to-purple-600', glow: 'glow-generate', stage: 'planning' },
-  { key: 'studio', label: 'Studio', icon: MonitorUp, gradient: 'from-slate-700 to-slate-900', glow: 'glow-studio', stage: 'writing' },
-  { key: 'write', label: 'Writing', icon: BookOpen, gradient: 'from-emerald-500 to-emerald-600', glow: 'glow-writing', stage: 'writing' },
+  { key: 'studio', label: 'Studio', icon: MonitorUp, gradient: 'from-emerald-500 to-emerald-600', glow: 'glow-writing', stage: 'writing' },
   { key: 'review', label: 'Review', icon: Search, gradient: 'from-amber-500 to-amber-600', glow: 'glow-review', stage: 'review' },
   { key: 'inspect', label: 'Inspect', icon: Sparkles, gradient: 'from-violet-500 to-violet-600', glow: 'glow-inspect', stage: 'review' },
 ]

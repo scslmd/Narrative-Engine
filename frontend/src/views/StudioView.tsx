@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { StudioCommandBar } from '../components/studio/StudioCommandBar';
-import { StudioContextPanel } from '../components/studio/StudioContextPanel';
 import { StudioProjectRail } from '../components/studio/StudioProjectRail';
 import { WritingView } from './WritingView';
 import { useStudioStore } from '../stores/studioStore';
@@ -12,11 +11,8 @@ import { resolveEffectiveMode } from '../theme/theme';
 export function StudioView() {
   const { projectId } = useParams<{ projectId: string }>();
   const leftRailMode = useStudioStore((state) => state.leftRailMode);
-  const contextPanelMode = useStudioStore((state) => state.contextPanelMode);
   const leftRailWidth = useStudioStore((state) => state.leftRailWidth);
-  const contextPanelWidth = useStudioStore((state) => state.contextPanelWidth);
   const setLeftRailMode = useStudioStore((state) => state.setLeftRailMode);
-  const setContextPanelMode = useStudioStore((state) => state.setContextPanelMode);
   const { mode: themeMode } = useThemeStore();
   const isDark = resolveEffectiveMode(themeMode) === 'dark';
 
@@ -29,16 +25,17 @@ export function StudioView() {
     setEditContent,
   } = useWritingView(isDark);
 
+  const chapterOptions = useMemo(() => manuscriptDocuments.map(doc => ({
+    document_id: doc.document_id,
+    title: doc.display_title ? `${doc.title} — ${doc.display_title}` : doc.title,
+  })), [manuscriptDocuments]);
+
   if (!projectId) {
     return <div className="text-sm text-slate-500">No project selected.</div>;
   }
 
   const railColumn = leftRailMode === 'collapsed' ? '80px' : `${leftRailWidth}px`;
-  const contextColumn = `${contextPanelWidth}px`;
-
   const leftDrawerOpen = leftRailMode === 'overlay';
-  const contextDrawerOpen = contextPanelMode === 'overlay';
-  const drawerOpen = leftDrawerOpen || contextDrawerOpen;
 
   const handleChapterSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedDocumentId(e.target.value);
@@ -46,17 +43,12 @@ export function StudioView() {
     setEditContent('');
   };
 
-  const chapterOptions = useMemo(() => manuscriptDocuments.map(doc => ({
-    document_id: doc.document_id,
-    title: doc.display_title ? `${doc.title} — ${doc.display_title}` : doc.title,
-  })), [manuscriptDocuments]);
-
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
       <StudioCommandBar />
       <div
-        className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,0)_minmax(0,1fr)_minmax(0,0)]"
-        style={{ gridTemplateColumns: `${railColumn} minmax(0,1fr) ${contextColumn}` }}
+        className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,0)_minmax(0,1fr)]"
+        style={{ gridTemplateColumns: `${railColumn} minmax(0,1fr)` }}
       >
         <div className="min-h-0 overflow-hidden hidden xl:block">
           <StudioProjectRail projectId={projectId} compact={leftRailMode === 'collapsed'} />
@@ -70,9 +62,6 @@ export function StudioView() {
             onChapterSelect={handleChapterSelect}
           />
         </main>
-        <div className="min-h-0 overflow-hidden border-l border-[var(--border-primary)] hidden xl:block">
-          <StudioContextPanel projectId={projectId} />
-        </div>
       </div>
 
       {leftDrawerOpen && (
@@ -81,20 +70,11 @@ export function StudioView() {
         </div>
       )}
 
-      {contextDrawerOpen && (
-        <div className="absolute right-0 top-0 z-30 h-full w-[min(28rem,100%)] overflow-hidden border-l border-[var(--border-primary)] bg-[var(--bg-primary)] xl:hidden">
-          <StudioContextPanel projectId={projectId} showCloseButton />
-        </div>
-      )}
-
-      {drawerOpen && (
+      {leftDrawerOpen && (
         <button
           type="button"
-          aria-label="Close Studio drawers"
-          onClick={() => {
-            setLeftRailMode('collapsed');
-            setContextPanelMode('closed');
-          }}
+          aria-label="Close Studio drawer"
+          onClick={() => setLeftRailMode('collapsed')}
           className="absolute inset-0 z-20 bg-black/20 xl:hidden"
         />
       )}

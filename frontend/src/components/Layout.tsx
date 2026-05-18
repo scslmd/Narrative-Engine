@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, Lightbulb, Moon, Search, Sun, Settings } from 'lucide-react'
+import { ChevronRight, Lightbulb, MonitorUp, Moon, Search, Sun, Settings } from 'lucide-react'
 import { useThemeStore } from '../stores/themeStore'
 import { resolveEffectiveMode } from '../theme/theme'
 import { useUIStore } from '../stores/uiStore'
@@ -18,13 +18,13 @@ type StageId = 'planning' | 'writing' | 'review'
 
 const STAGE_DEFAULT_MODE: Record<StageId, string> = {
   planning: 'plan',
-  writing: 'write',
+  writing: 'studio',
   review: 'review',
 }
 
 const stageButtons: { id: StageId; label: string; icon: typeof Lightbulb; shadow: string; border: string }[] = [
   { id: 'planning', label: 'Planning', icon: Lightbulb, shadow: 'shadow-amber-500/30', border: 'border-amber-500' },
-  { id: 'writing', label: 'Writing', icon: BookOpen, shadow: 'shadow-blue-500/30', border: 'border-blue-500' },
+  { id: 'writing', label: 'Studio', icon: MonitorUp, shadow: 'shadow-blue-500/30', border: 'border-blue-500' },
   { id: 'review', label: 'Review', icon: Search, shadow: 'shadow-emerald-500/30', border: 'border-emerald-500' },
 ]
 

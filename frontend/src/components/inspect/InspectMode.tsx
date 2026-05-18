@@ -80,7 +80,7 @@ export default function InspectMode() {
 
   const handleBackToManuscript = () => {
     if (projectId) {
-      navigate(`/workspace/${projectId}/write`, { replace: true });
+      navigate(`/workspace/${projectId}/studio`, { replace: true });
     } else {
       navigate('/');
     }

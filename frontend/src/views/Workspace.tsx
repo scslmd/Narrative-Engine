@@ -9,7 +9,7 @@ export function Workspace() {
   const location = useLocation();
   const parts = location.pathname.split('/').filter(Boolean);
   const mode = parts.length >= 2 ? parts[parts.length - 2] : 'plan';
-  const isFocusedWorkspace = mode === 'write' || mode === 'studio';
+  const isFocusedWorkspace = mode === 'studio';
 
   if (!projectId) {
     return <div className="text-center py-8 text-gray-500">No project selected</div>;

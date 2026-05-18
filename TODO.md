@@ -16,6 +16,16 @@
 
 ### Pending Work
 
+#### Review Idempotent Job Launch (P-100/P-200/P-300/P-400)
+
+When triggering architect, sequencer, drafter, or compiler, review whether the implementation is idempotent — submitting the same job twice should not produce duplicate runs.
+
+**Areas to review**:
+- `app/services/local_executor.py` — job submission and lease-claim mechanism
+- `app/services/idempotency.py` — idempotency key handling
+- `app/api/story_generation.py` — `POST /v1/story-generation/runs` endpoint
+- Frontend: double-click prevention, concurrent trigger handling
+
 #### AI Relationship Extraction — Frontend JSON Encoding Bug (2026-05-10)
 
 The "AI Extract" button in the Relationships tab works end-to-end but has a subtle frontend encoding issue:

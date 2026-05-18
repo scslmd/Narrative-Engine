@@ -3,14 +3,14 @@ import { create } from 'zustand';
 export type StudioPanelKey =
   | 'suggestions'
   | 'ideas'
+  | 'drafts'
+  | 'manuscripts'
   | 'characters'
   | 'worldBible'
   | 'relationships'
   | 'generation'
   | 'review'
-  | 'inspect'
-  | 'notes'
-  | 'jobs';
+  | 'inspect';
 
 export type StudioRailMode = 'expanded' | 'collapsed' | 'overlay';
 export type StudioContextMode = 'docked' | 'overlay' | 'closed';

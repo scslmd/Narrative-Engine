@@ -6,7 +6,6 @@ import { Layout } from './components/Layout'
 import { ProjectList } from './views/ProjectList'
 import { Workspace } from './views/Workspace'
 import { PlanningView } from './views/PlanningView'
-import { WritingView } from './views/WritingView'
 import { ReviewView } from './views/ReviewView'
 import { InspectView } from './views/InspectView'
 import { BrainDumpView } from './views/BrainDumpView'
@@ -37,8 +36,8 @@ function AppInner() {
             <Route index element={<Navigate to="studio" replace />} />
             <Route path="studio" element={<StudioView />} />
             <Route path="plan" element={<PlanningView />} />
-            <Route path="write" element={<WritingView />} />
-            <Route path="write/:chapterId" element={<WritingView />} />
+            <Route path="write" element={<Navigate to="studio" replace />} />
+            <Route path="write/:chapterId" element={<Navigate to="studio" replace />} />
             <Route path="review" element={<ReviewView />} />
             <Route path="inspect" element={<InspectView />} />
             <Route path="inspect/:jobId" element={<InspectView />} />

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
-import { act, render, screen, userEvent, waitFor, within } from '../__tests__/test-utils';
+import { act, render, screen, userEvent } from '../__tests__/test-utils';
 import { http, HttpResponse } from 'msw';
 import type { CanonAnnotationCreateRequest } from '../types/canonCustomization';
 import { server } from '../__tests__/setup';
@@ -71,14 +71,6 @@ describe('StudioView integration', () => {
     expect(screen.getByText('Studio Desk')).toBeInTheDocument();
   });
 
-  it('renders studio commands navigation', () => {
-    server.use(...writingMocks);
-    renderWithRoute(<StudioView />);
-    expect(
-      screen.getByRole('navigation', { name: 'Studio commands' }),
-    ).toBeInTheDocument();
-  });
-
   it('renders studio project map navigation', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
@@ -93,152 +85,14 @@ describe('StudioView integration', () => {
 
     expect(screen.getByText('Develop')).toBeInTheDocument();
     expect(screen.getByText('Reference')).toBeInTheDocument();
-    expect(screen.getByText('Utilities')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Ideas' }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: 'Characters' }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole('button', { name: 'Notes' }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole('button', { name: 'Jobs' }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('clicking "Generate" opens the compact generation panel', async () => {
-    server.use(
-      ...writingMocks,
-      http.get('/v1/story-development/characters', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-      http.get('/v1/story-development/world-bible', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-      http.get('/v1/story-generation/runs', () => HttpResponse.json([])),
-    );
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: /generate/i }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Generation').length).toBeGreaterThanOrEqual(1);
-    });
-    await waitFor(() => {
-      expect(screen.getAllByText('No generation runs yet.').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('clicking "Review" opens the compact review panel with Findings', async () => {
-    server.use(...writingMocks);
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(
-      within(screen.getByRole('navigation', { name: 'Studio commands' })).getByRole('button', { name: 'Review' }),
-    );
-
-    expect(screen.getAllByText('Findings').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('clicking "Inspect" opens the compact inspect panel with guidance text', async () => {
-    server.use(...writingMocks);
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: /inspect/i }));
-
-    expect(
-      screen.getAllByText(
-        'Open a run from Review or the job tray to inspect steps, lineage, and attempts.',
-      ).length,
-    ).toBeGreaterThanOrEqual(1);
-  });
-
-  it('clicking "Characters" opens the characters panel and shows "0 profiles"', async () => {
-    server.use(
-      ...writingMocks,
-      http.get('/v1/story-development/characters', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-    );
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getAllByRole('button', { name: /characters/i })[0]);
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Characters').length).toBeGreaterThanOrEqual(2);
-    });
-
-    await waitFor(() => {
-      expect(screen.getAllByText('0 profiles').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('opening Characters panel loads without annotation errors', async () => {
-    server.use(
-      ...writingMocks,
-      http.get('/v1/story-development/characters', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-    );
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getAllByRole('button', { name: /characters/i })[0]);
-
-    await waitFor(() => {
-      expect(screen.getAllByText('0 profiles').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('opening World Bible panel loads without annotation errors', async () => {
-    server.use(
-      ...writingMocks,
-      http.get('/v1/story-development/world-bible', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-    );
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getAllByRole('button', { name: /world/i })[0]);
-
-    await waitFor(() => {
-      expect(screen.getAllByText('World Bible').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('renders the primary context tab strip in desktop Studio', () => {
-    server.use(...writingMocks);
-    renderWithRoute(<StudioView />);
-
-    expect(screen.getByRole('tablist', { name: 'Studio context tabs' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Suggestions' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Ideas' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Characters' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'World' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Review' })).toBeInTheDocument();
-  });
-
-  it('clicking the World context tab opens the world bible panel', async () => {
-    server.use(
-      ...writingMocks,
-      http.get('/v1/story-development/world-bible', () =>
-        HttpResponse.json({ items: [] }),
-      ),
-    );
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('tab', { name: 'World' }));
-
-    await waitFor(() => {
-      expect(screen.getAllByText('World Bible').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  it('renders Project and Context drawer buttons', () => {
+  it('renders Project drawer button', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
     expect(screen.getByText('Project')).toBeInTheDocument();
-    expect(screen.getByText('Context')).toBeInTheDocument();
   });
 
   it('clicking Project sets leftRailMode to overlay', async () => {
@@ -249,24 +103,15 @@ describe('StudioView integration', () => {
     expect(useStudioStore.getState().leftRailMode).toBe('overlay');
   });
 
-  it('clicking Context sets contextPanelMode to overlay', async () => {
-    server.use(...writingMocks);
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-    await user.click(screen.getByText('Context'));
-    expect(useStudioStore.getState().contextPanelMode).toBe('overlay');
-  });
-
-  it('clicking "Close Studio drawers" sets collapsed/closed modes', async () => {
+  it('clicking "Close Studio drawer" sets collapsed mode', async () => {
     server.use(...writingMocks);
     act(() => {
       useStudioStore.setState({ leftRailMode: 'overlay' });
     });
     renderWithRoute(<StudioView />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Close Studio drawers' }));
+    await user.click(screen.getByRole('button', { name: 'Close Studio drawer' }));
     expect(useStudioStore.getState().leftRailMode).toBe('collapsed');
-    expect(useStudioStore.getState().contextPanelMode).toBe('closed');
   });
 
   it('collapsed rail mode still leaves project map accessible', () => {
@@ -277,40 +122,6 @@ describe('StudioView integration', () => {
     renderWithRoute(<StudioView />);
     expect(
       screen.getAllByRole('navigation', { name: 'Studio project map' }).length,
-    ).toBeGreaterThanOrEqual(1);
-  });
-
-  it('closed context mode reopens on Review click', async () => {
-    server.use(...writingMocks);
-    act(() => {
-      useStudioStore.setState({ contextPanelMode: 'closed' });
-    });
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(
-      within(screen.getByRole('navigation', { name: 'Studio commands' })).getByRole('button', { name: 'Review' }),
-    );
-
-    expect(useStudioStore.getState().contextPanelMode).toBe('docked');
-    expect(screen.getAllByText('Findings').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('closed context mode reopens on Inspect click', async () => {
-    server.use(...writingMocks);
-    act(() => {
-      useStudioStore.setState({ contextPanelMode: 'closed' });
-    });
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: /inspect/i }));
-
-    expect(useStudioStore.getState().contextPanelMode).toBe('docked');
-    expect(
-      screen.getAllByText(
-        'Open a run from Review or the job tray to inspect steps, lineage, and attempts.',
-      ).length,
     ).toBeGreaterThanOrEqual(1);
   });
 
@@ -333,35 +144,4 @@ describe('StudioView integration', () => {
     expect(screen.queryByRole('button', { name: 'Overlay' })).not.toBeInTheDocument();
   });
 
-  it('desktop Studio keeps the context pane mounted even when stored mode is closed', () => {
-    server.use(...writingMocks);
-    act(() => {
-      useStudioStore.setState({ contextPanelMode: 'closed' });
-    });
-    renderWithRoute(<StudioView />);
-
-    expect(screen.getAllByText('Suggestions').length).toBeGreaterThanOrEqual(1);
   });
-
-  it('desktop Studio keeps the context pane mounted even when stored mode is overlay', () => {
-    server.use(...writingMocks);
-    act(() => {
-      useStudioStore.setState({ contextPanelMode: 'overlay' });
-    });
-    renderWithRoute(<StudioView />);
-
-    expect(screen.getAllByText('Suggestions').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('mobile context close button still closes the context drawer state', async () => {
-    server.use(...writingMocks);
-    act(() => {
-      useStudioStore.setState({ contextPanelMode: 'overlay' });
-    });
-    renderWithRoute(<StudioView />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: 'Close' }));
-    expect(useStudioStore.getState().contextPanelMode).toBe('closed');
-  });
-});
