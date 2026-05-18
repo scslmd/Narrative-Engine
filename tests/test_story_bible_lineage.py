@@ -97,6 +97,7 @@ def _run_phase(
 # TestStoryBibleLineageContentHash
 # ---------------------------------------------------------------------------
 
+@pytest.mark.xdist_group(name="serial-story-bible-lineage")
 class TestStoryBibleLineageContentHash:
     """Tests for story-bible lineage content_hash stability."""
 

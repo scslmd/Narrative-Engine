@@ -1,4 +1,5 @@
 import api from '../lib/api';
+import { idempotencyKey } from '../lib/idempotencyKey';
 import type {
   CanonForkPreviewResponse,
   CanonGenerationPacket,
@@ -10,7 +11,11 @@ import type {
 export async function createGenerationRun(
   request: CanonGenerationRequest,
 ): Promise<GenerationRunResponse> {
-  const response = await api.post('/v1/story-generation/runs', request);
+  const idemKey = idempotencyKey(`gen:${request.source_project_id}`);
+  const response = await api.post('/v1/story-generation/runs', {
+    ...request,
+    idempotency_key: idemKey,
+  });
   return response.data;
 }
 

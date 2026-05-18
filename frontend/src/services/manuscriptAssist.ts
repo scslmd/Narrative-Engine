@@ -1,4 +1,5 @@
 import api from '../lib/api';
+import { idempotencyKey } from '../lib/idempotencyKey';
 import type {
   ApplyAssistSuggestionRequest,
   ApplyAssistSuggestionResponse,
@@ -11,7 +12,11 @@ import type {
 export async function submitManuscriptAssist(
   request: ManuscriptAssistRequest,
 ): Promise<ManuscriptAssistResult> {
-  const response = await api.post('/v1/manuscript-assist/runs', request);
+  const idemKey = idempotencyKey(`assist:${request.project_id}:${request.document_id}:${request.assist_kind}`);
+  const response = await api.post('/v1/manuscript-assist/runs', {
+    ...request,
+    idempotency_key: idemKey,
+  });
   return response.data;
 }
 

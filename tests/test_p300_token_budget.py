@@ -16,14 +16,14 @@ def _make_manifest() -> Manifest:
     })
 
 
-def test_p300_default_max_tokens_is_8000():
+def test_p300_default_max_tokens_is_8192():
     manifest = _make_manifest()
     request = build_p300_drafter_request(
         manifest=manifest,
         payload={"project_id": "test-project"},
         default_model=None,
     )
-    assert request.max_tokens == 8000
+    assert request.max_tokens == 8192
 
 
 def test_p300_max_tokens_overridable_via_payload():

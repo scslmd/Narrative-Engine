@@ -47,7 +47,7 @@ class TestAuditLogging:
 
     def test_versioned_api_request_creates_audit_record(self, audit_client: TestClient) -> None:
         """A request to /v1 endpoint should create an audit record."""
-        audit_client.get('/v1/jobs')
+        audit_client.get('/v1/jobs/', params={'project_id': 'test'})
 
         log_path = settings.audit_log_path
         assert log_path.exists()
@@ -118,7 +118,7 @@ class TestAuditLogging:
 
     def test_audit_record_includes_duration(self, audit_client: TestClient) -> None:
         """Audit record should include request duration."""
-        audit_client.get('/v1/jobs')
+        audit_client.get('/v1/jobs/', params={'project_id': 'test'})
 
         record = read_last_audit_record()
         assert record is not None
@@ -166,7 +166,7 @@ class TestAuditLogging:
         """Audit record timestamp should be ISO format."""
         from datetime import datetime
 
-        audit_client.get('/v1/jobs')
+        audit_client.get('/v1/jobs/', params={'project_id': 'test'})
 
         record = read_last_audit_record()
         assert record is not None
@@ -176,7 +176,7 @@ class TestAuditLogging:
 
     def test_multiple_requests_create_multiple_records(self, audit_client: TestClient) -> None:
         """Multiple requests should create multiple audit records."""
-        audit_client.get('/v1/jobs')
+        audit_client.get('/v1/jobs/', params={'project_id': 'test'})
         audit_client.post('/v1/projects/create', json={'project_name': 'test'})
         audit_client.get('/v1/models')
 
@@ -184,7 +184,7 @@ class TestAuditLogging:
 
     def test_audit_logging_does_not_fail_request(self, audit_client: TestClient) -> None:
         """Request should succeed even if audit logging fails."""
-        response = audit_client.get('/v1/jobs')
+        response = audit_client.get('/v1/jobs/', params={'project_id': 'test'})
 
         assert response.status_code < 500
 
@@ -194,7 +194,7 @@ class TestAuditLoggingOperationField:
 
     def test_audit_record_includes_operation_field(self, audit_client: TestClient) -> None:
         """Audit record should include operation field."""
-        audit_client.get('/v1/jobs')
+        audit_client.get('/v1/jobs/', params={'project_id': 'test'})
 
         record = read_last_audit_record()
         assert record is not None

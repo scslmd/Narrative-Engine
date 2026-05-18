@@ -705,6 +705,7 @@ def test_discard_returns_deleted(tmp_path):
     assert resp.json()["deleted"] is True
 
 
+@pytest.mark.xdist_group(name="serial-discovery-api")
 def test_patch_returns_updated(tmp_path):
     client = TestClient(build_app())
     resp = client.patch(

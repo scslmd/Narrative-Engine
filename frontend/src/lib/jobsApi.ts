@@ -1,4 +1,5 @@
 import api from './api';
+import { idempotencyKey } from './idempotencyKey';
 
 export interface JobCreateRequest {
   project_id: string;
@@ -75,12 +76,15 @@ export const jobsApi = {
   },
 
   create: async (request: JobCreateRequest): Promise<JobDetail> => {
+    const idemKey = idempotencyKey(`job:${request.phase}:${request.project_id}`);
     const response = await api.post('/v1/jobs/create', {
       phase: request.phase,
       payload: {
         project_id: request.project_id,
         ...(request.payload ?? {}),
       },
+    }, {
+      headers: { 'Idempotency-Key': idemKey },
     });
 
     const data = response.data as {

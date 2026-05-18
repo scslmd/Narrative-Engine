@@ -1,6 +1,7 @@
 import type { ModelCatalog, RoleModelCheckRequest, RoleModelCheckStatus } from '../types/checker';
 import type { ArtifactLineageView, StepRecord } from '../types/inspect';
 import api from '../lib/api';
+import { idempotencyKey } from '../lib/idempotencyKey';
 
 export async function getModelCatalog(): Promise<ModelCatalog> {
   const response = await api.get('/v1/models');
@@ -39,7 +40,10 @@ export async function getModelCatalog(): Promise<ModelCatalog> {
 }
 
 export async function runChecker(request: RoleModelCheckRequest): Promise<RoleModelCheckStatus> {
-  const response = await api.post('/v1/role-model-checker/run', request);
+  const idemKey = idempotencyKey(`checker:${request.project_id}`);
+  const response = await api.post('/v1/role-model-checker/run', request, {
+    headers: { 'Idempotency-Key': idemKey },
+  });
 
   if (response.status !== 202 && response.status !== 200) {
     throw new Error(`Failed to run checker: ${response.status}`);
