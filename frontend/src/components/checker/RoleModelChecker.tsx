@@ -14,6 +14,7 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
   const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
   const [checkStatus, setCheckStatus] = useState<RoleModelCheckStatus | null>(null);
   const [polling, setPolling] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
     loadCatalog();
@@ -69,11 +70,15 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
   };
 
   const handleRunCheck = async () => {
+    if (isRunning) return;
+    setIsRunning(true);
     try {
       const status = await runChecker({ project_id: projectId, models: selectedModels });
       setCheckStatus(status);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run checker');
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -139,9 +144,10 @@ export function RoleModelChecker({ projectId }: RoleModelCheckerProps) {
       {!checkStatus && (
         <button
           onClick={handleRunCheck}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          disabled={isRunning}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Run Checker
+          {isRunning ? 'Running...' : 'Run Checker'}
         </button>
       )}
 
