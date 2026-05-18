@@ -116,6 +116,7 @@ export function StudioRelationshipsPanel({ projectId }: StudioRelationshipsPanel
             relationships.find((r) => r.edge_id === edgeId) ?? null,
           )
         }
+        className="h-[800px]"
       />
 
       <RelationshipList

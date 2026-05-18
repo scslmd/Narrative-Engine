@@ -16,8 +16,8 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 1. Open `/` → fill New Project form (name, genre, tone, structure, POV, language) → click **Create Project**
 2. Navigate to **Foundation** tab → fill Premise and Logline → click **Save Foundation**
 3. Navigate to **Characters** tab → click **Add Character** → create one protagonist → click **Save Character**
-4. Open Job Launch panel (right rail) → select **P-100 Architect** → click **Launch** → wait for completion
-5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in Writing workspace
+4. Navigate to **Studio Desk** → click **Jobs** in left rail → select **P-100 Architect** → click **Launch** → wait for completion
+5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in Studio Desk manuscript editor
 
 For a complete walkthrough with 12 chapters, 7 characters, and branching, see Phase 11.
 
@@ -26,12 +26,12 @@ For a complete walkthrough with 12 chapters, 7 characters, and branching, see Ph
 - `/setup-wizard` Conversational setup
 - `/workspace/:projectId/plan` Planning
 - `/workspace/:projectId/braindump` Brain dump
-- `/workspace/:projectId/write` Writing
+- `/workspace/:projectId/write` → redirects to `/studio` (deprecated)
 - `/workspace/:projectId/review` Review
 - `/workspace/:projectId/inspect` Inspect
 - `/workspace/:projectId/canon` Canon
 - `/workspace/:projectId/generate` Generate
-- `/workspace/:projectId/studio` Studio Desk
+- `/workspace/:projectId/studio` Studio Desk (primary writing workspace)
 
 ## Phase 1: Start a Project
 Route: `/`
@@ -63,18 +63,23 @@ You have four start paths.
 ## Phase 2: Understand Workspace Layout
 Route: `/workspace/:projectId/*`
 
-The workspace has fixed structure:
-- Main content area for active mode.
-- Right rail: Notes panel and Job Launch panel.
-- Bottom utility layer for runtime/status.
+The workspace has the following structure:
+- **Left panel (Workspace sections):** 160px navigation rail with stage-specific items and a "Studio Desk" quick link. Hidden in Studio mode (StudioView has its own left rail).
+- **Main content area:** Current mode view.
+- **Right rail:** Notes panel and Job Launch panel. Hidden in Studio mode (StudioView is full-width, 2-column layout).
+- **Bottom utility layer:** Runtime/status bar for job progress.
+
+### Left Panel Navigation
+The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link:
+- **Planning stage:** Brain Dump, Planning, Canon, Generate
+- **Writing stage:** Studio (redirects to Studio Desk)
+- **Review stage:** Review, Inspect
+- **Studio Desk link:** Appears below stage-specific items, separated by a divider. Always accessible from any workspace view.
 
 ### Job Launch Panel
 The Job Launch panel lets you trigger pipeline phases without leaving the current workspace view. Select a phase (P-100 through P-400), click to launch, and monitor recent jobs below. Failed jobs show expandable error details with fix guidance. Completed jobs display processing time. Running jobs show step progress.
 
-Navigation in left rail is stage-aware:
-- Planning stage: Brain Dump, Planning, Canon, Generate
-- Writing stage: Writing
-- Review stage: Review, Inspect
+**Note:** In Studio mode, the right rail (Notes + Job Launch) is hidden. Use the Jobs button in StudioView's left rail to access job launch functionality.
 
 ## Phase 3: Planning Workspace Deep Tour
 Route: `/workspace/:projectId/plan`
@@ -180,35 +185,20 @@ Session-based free writing canvas with AI-powered organization. Use this mode ea
 - If API key auth is enforced and missing, an API key guidance banner appears at the top of the view.
 
 ## Phase 5: Writing Workspace Deep Tour
-Route: `/workspace/:projectId/write`
+Routes: `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` (both redirect to `/studio`)
 
-Three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
+The Writing workspace has been deprecated and now redirects to Studio Desk. All writing functionality (manuscript editing, draft management, floating toolbar, assist actions) is available through StudioView.
 
-**Route-aware layout:** When navigating to a specific chapter via `/workspace/:projectId/write/:chapterId`, the layout collapses to a single column showing only the Editor. The left sidebar and right aids panel are hidden for focused chapter editing. Navigate back to `/workspace/:projectId/write` to restore the full three-column view.
+**Studio Desk provides the same writing capabilities in a 2-column layout:**
+- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Canon, Notes, Jobs
+- Center: Full-width manuscript editor with manuscript navigation, draft management, and revision suggestions
 
-### Left Column: Manuscripts + Drafts
-**Manuscripts section:**
-- Select a manuscript document from the list to open it in the center editor.
-- Click "Edit" to enter edit mode; "Save" or "Cancel" to commit/discard changes.
+**To access writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
 
-**Drafts section:**
-- **Create manual draft** — form with title input and content textarea. Submits a new draft artifact for the selected manuscript.
-- **Continue draft** — per-draft-card button that generates a continuation of the draft's content via LLM. The result appears as a new draft artifact.
-- **Alternate variant** — per-draft-card button that generates an alternate version of the same narrative beat from a different angle.
-- **Promote to manuscript** — per-draft-card button that promotes a finalized draft into a new manuscript document, making it editable in the main editor.
-- **AI draft generation** — form with title input and brief textarea. Generates a complete draft from scratch using LLM, guided by the title and creative brief. Click submit to trigger an async job.
-- **Pending state display** — in-flight AI draft jobs show an amber loading indicator with pulsing dots and the draft title. If the job fails, an error message appears inline. Completed drafts appear in the list automatically.
-
-### Center Column: Manuscript Editor
+### Manuscript Editor (Center)
 1. Toggle between read mode (formatted markdown rendering) and edit mode (textarea).
 2. Word count and character count display update in real-time.
 3. Select text by clicking and dragging to access assist actions via the floating toolbar or Assist dropdown.
-
-### Right Column: Aids Panel
-- Unified suggestions list combining standard revision suggestions and LLM-powered assist suggestions.
-- Each suggestion shows source text, proposed text, and rationale.
-- Actions per suggestion: "Accept" (apply changes), "Reject" (dismiss), "Archive" (save for later reference).
-- Diff view and history support via aids components for tracking changes over time.
 
 ### Assist action flow (Floating Toolbar)
 When you select text in the manuscript editor, a floating toolbar appears near the selection with categorized actions:
@@ -234,14 +224,14 @@ When you select text in the manuscript editor, a floating toolbar appears near t
 
 **Assist Dropdown (fallback):** Click the Assist button in the editor toolbar for the same action menu. Requires explicit click; does not auto-open on selection.
 
-Each action sends a parameterized instruction to the Manuscript Assist backend with the selected text range, surrounding anchor context (~120 characters before/after), and kind-specific LLM prompt. The result appears as suggestions in the Aids panel for review, accept, or reject.
+Each action sends a parameterized instruction to the Manuscript Assist backend with the selected text range, surrounding anchor context (~120 characters before/after), and kind-specific LLM prompt. The result appears as suggestions in the Suggestions panel for review, accept, or reject.
 
 ### Step-by-step assist workflow
 1. Select text in the manuscript editor by clicking and dragging.
 2. The floating toolbar appears near your selection.
 3. Click an action (e.g., "Sight & color" under Sensory detail).
 4. A toast confirms submission; the request processes via Manuscript Assist.
-5. Review the suggestion output in the Aids panel (right column).
+5. Review the suggestion output in the Suggestions panel (accessed via the left rail).
 6. Accept to apply, reject to dismiss, or archive for later reference.
 
 ## Phase 6: Review Workspace
@@ -400,73 +390,61 @@ Route: `/workspace/:projectId/studio`
 The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes. All layout preferences persist across sessions.
 
 ### Layout
-The desk has an adaptive three-column grid (desktop) or overlay drawers (below `xl:` breakpoint):
-- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels. Adjustable width: 224px (narrow) or 320px (wide).
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available space when side panels are hidden.
-- **Right rail (Context Panel):** Switchable panel based on active command. Adjustable width: 416px (narrow) or 520px (wide).
+The desk has a two-column grid (left rail + full-width manuscript editor):
+- **Left rail (Project Map):** Quick navigation between all panels. Collapsible to compact mode (80px icon-only) or expanded (up to 320px).
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill all available width.
 
-### Context Panel Modes
-The right context panel supports three display modes (desktop only):
+**Accessing Studio:** Navigate to Studio Desk from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
 
-1. **Docked** (default): The context panel occupies the third column alongside the editor. Use the `Pin` button to lock it in place when switching commands.
-2. **Overlay**: The context panel floats above the editor as a right-aligned panel with a dismissible backdrop. Click the backdrop or the panel's close button to dismiss. Use the `Overlay` button to toggle this mode.
-3. **Closed**: The third column is hidden entirely, giving the editor maximum width. Reopen any time by clicking a command button (Capture, Write, Generate, Review, Inspect). Use the `Close` button to dismiss.
+### Project Map Panels (Left Rail)
+The left rail provides quick access to 11 panels:
 
-### Command Bar
-The command bar contains layout controls (desktop only) and five command buttons:
+**Develop section:**
+- **Drafts:** Draft artifact lifecycle management
+- **Manuscripts:** Manuscript document selection and editing
+- **Ideas:** Brainstorm-style idea capture and clustering
+- **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
+- **Review:** Checker findings and inspect links
 
-**Layout Controls** (hidden on mobile):
-- `Rail` — collapse or expand the left project rail
-- `Rail Width` — toggle left rail between narrow (224px) and wide (320px)
-- `Panel Width` — toggle right context panel between narrow (416px) and wide (520px)
-- `Layout` — reset all layout settings to defaults
+**Reference section:**
+- **Characters:** Character CRUD with profile editing and canon annotations
+- **World Bible:** World entry CRUD with canon annotations
+- **Relationships:** Relationship graph and list views with CRUD operations
+- **Canon:** Canon profile management and packet preview
 
-**Command Buttons:**
-- `Capture` — switches to Ideas panel for brainstorm-style ideation
-- `Write` — switches to Suggestions panel for revision suggestions, diff viewer, and history
-- `Generate` — switches to Generation panel for compact story generation wizard
-- `Review` — switches to Review panel for checker findings and inspect links
-- `Inspect` — switches to Inspect panel for job inspection and lineage
-
-### Context Panel Header Controls
-The context panel header provides four mode controls:
-- `Pin` — toggle pinning (prevents auto-switch when changing commands)
-- `Dock` — dock context panel as third column
-- `Overlay` — float context panel over the editor with backdrop
-- `Close` — hide context panel entirely
+**Utilities section:**
+- **Notes:** Project-level notes with add/delete functionality
+- **Jobs:** Job launch panel with phase selection and recent job monitoring
 
 ### Using the Desk
-1. Open a project and navigate to Studio Desk from the left rail.
-2. Use the Project Map to switch between planning panels (Characters, World Bible, Relationships, etc.).
-3. Click command buttons to change the right context panel.
-4. Adjust layout with the command bar controls: collapse the rail for more editor space, widen the panel for generation config, or reset to defaults.
-5. Switch context panel modes: dock for persistent reference, overlay for temporary review, or close for full-width writing.
-6. Write and revise in the center editor while keeping planning context visible.
-7. Launch generation runs directly from the Generation panel without leaving the desk.
-8. Review checker findings and inspect problematic runs from the Review/Inspect panels.
+1. Open a project and navigate to Studio Desk from the left panel's "Studio Desk" link.
+2. Use the Project Map to switch between panels (Characters, World Bible, Relationships, etc.).
+3. Write and revise in the center editor.
+4. Select text to access the floating toolbar for assist actions.
+5. Review suggestions in the Suggestions panel (left rail).
+6. Launch jobs from the Jobs panel (left rail).
+7. Take notes in the Notes panel (left rail).
 
 ### Example Workflow: Writing with Context
 
 1. Open Studio Desk for your project.
-2. In the Project Map (left rail), select **Characters** — character list appears in left panel.
-3. Click **Write** in the command bar — Suggestions panel opens in the right panel.
+2. In the Project Map (left rail), select **Characters** — character list appears.
+3. Click **Suggestions** — revision suggestions panel becomes active.
 4. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
-5. Review the suggestion in the right panel. Accept to apply, or reject.
-6. Mid-chapter, click **Capture** to switch the right panel to Ideas. Type a new plot idea.
-7. Click **Write** again to return to Suggestions. Continue editing.
-8. When done, click **Generate** to open the compact generation panel. Configure and launch a new generation run without leaving the desk.
+5. Review the suggestion in the Suggestions panel. Accept to apply, or reject.
+6. Mid-chapter, click **Ideas** to capture a new plot idea.
+7. Click **Suggestions** again to return to revision suggestions. Continue editing.
+8. When done, click **Jobs** to launch a new generation run.
 
 ### Example Workflow: Full-Width Writing Session
 
-1. Open Studio Desk and click **Write** to open the Suggestions panel.
-2. Click `Close` in the context panel header — the right panel disappears, editor expands.
-3. Click `Rail` in the command bar to collapse the left rail — editor now fills the full viewport.
-4. Write freely with maximum screen real estate.
-5. When you need suggestions again, click **Write** — the context panel reopens in its previous mode.
-6. Click `Rail` again to restore the left rail.
+1. Open Studio Desk.
+2. Collapse the left rail to compact mode (80px icon-only) for maximum editor space.
+3. Write freely with the manuscript editor filling the full viewport.
+4. Expand the left rail when you need to access other panels.
 
 ### Responsive Behavior
-On smaller screens, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. Click the close-drawer button to dismiss both drawers simultaneously.
+On smaller screens, the left rail becomes an overlay drawer. A close-drawer button dismisses the drawer.
 
 ## Phase 11: End-to-End Novel Walkthrough
 This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation.
@@ -738,7 +716,7 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 
 - **"I clicked Generate but nothing happened"** — The generation brief is empty or no canon entities are selected. Both are required to enable "Start Generation".
 - **"My characters don't appear in the generated output"** — Characters must be selected in the canon scope (Canon Workshop Overview tab or Generation wizard). Being created in the project is not enough.
-- **"Suggestions panel is empty"** — You must select text in the editor and trigger an assist action (floating toolbar or Assist dropdown). The panel doesn't auto-populate.
+- **"Suggestions panel is empty"** — You must select text in the editor and trigger an assist action (floating toolbar or Assist dropdown). Then click "Suggestions" in the left rail to view results. The panel doesn't auto-populate.
 - **"Project won't export"** — The project needs at least 1 manuscript or draft artifact. Run P-300 Drafter or promote a draft to manuscript first.
 - **"Cascade scan returns no entities"** — Manuscript text must be at least 50 characters and contain character names, interactions, or descriptive details. Very short or sparse text yields no results.
 - **"Inspect shows 'run not found'"** — The job ID in the URL must match an existing checker run or pipeline job. Navigate from Review → Inspect Run Links or the Job Launch panel to get valid IDs.
@@ -813,14 +791,12 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 - Run setup, status tracking, gates, fork.
 
 ### Studio Desk
-- Adaptive three-column layout: Project Map (left), Main Content (center), Context Panel (right).
-- Layout preferences persist across sessions (rail mode, panel mode, widths).
-- Command bar: Layout controls (Rail collapse, Rail Width, Panel Width, Layout reset) + 5 command buttons (Capture, Write, Generate, Review, Inspect).
-- Context Panel modes: Docked (third column), Overlay (floats over editor with backdrop), Closed (hidden, reopened via command).
-- Context Panel header controls: Pin, Dock, Overlay, Close.
-- Project Map provides quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, Notes.
-- Context Panel switches between Suggestions, Generation, Review, Inspect panels.
-- Responsive: overlay drawers below `xl:` breakpoint with header toggle buttons.
+- Two-column layout: Project Map (left rail, 80-320px), Manuscript Editor (full width).
+- Right context panel removed — StudioView fills entire workspace width.
+- Layout preferences persist across sessions (rail mode, widths).
+- Project Map: 11 panels — Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Canon, Notes, Jobs.
+- Left rail collapses to compact icon-only mode (80px) or expands (up to 320px).
+- Responsive: overlay drawer below `xl:` breakpoint.
 
 ## Common Failure Cases and Fixes
 - Missing project context: verify `:projectId` route and selected project.
@@ -842,6 +818,6 @@ A project is operationally complete when:
 - Canon profile/packet has been reviewed.
 - At least one generation run completed (and optionally forked).
 - Export archive captured.
-- (Optional) Studio Desk workspace is configured with preferred panels, context panel mode, and layout widths.
+- (Optional) Studio Desk workspace is configured with preferred rail width and active panel.
 
 **Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management.

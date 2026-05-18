@@ -678,7 +678,7 @@ export function PlanningView() {
                     }}
                     onOpenCharacter={handleOpenCharacter}
                     onEditRelationship={handleEditRelationship}
-                    className="h-[350px]"
+                    className="h-[800px]"
                   />
                 </div>
 

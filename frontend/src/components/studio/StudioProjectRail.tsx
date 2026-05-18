@@ -4,6 +4,7 @@ import {
   Brain,
   FileStack,
   FileText,
+  GitBranch,
   Network,
   NotebookPen,
   Scroll,
@@ -42,7 +43,14 @@ const railSections: RailSection[] = [
       { label: 'Canon', panel: 'generation', icon: Scroll },
     ],
   },
- ];
+  {
+    label: 'Utilities',
+    items: [
+      { label: 'Notes', panel: 'notes', icon: NotebookPen },
+      { label: 'Jobs', panel: 'jobs', icon: GitBranch },
+    ],
+  },
+];
 
 interface StudioProjectRailProps {
   projectId: string;

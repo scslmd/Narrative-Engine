@@ -37,6 +37,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const activeStage = modeToStage[mode]
   const visibleItems = navItems.filter((item) => item.stage === activeStage)
   const isStudio = mode === 'studio'
+  const studioActive = mode === 'studio'
 
   const handleNavClick = (key: string) => {
     setMode(key as typeof mode)
@@ -48,7 +49,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full">
       {!isStudio ? (
-      <aside className="lg:w-60 lg:flex-shrink-0">
+      <aside className="lg:w-[160px] lg:flex-shrink-0">
         <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card p-3 lg:sticky lg:top-0">
           <p className="text-[11px] uppercase tracking-wide font-semibold text-[var(--text-tertiary)] px-1 pb-2">
             Workspace sections
@@ -85,6 +86,29 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             )
           })}
           </nav>
+          <div className="border-t border-[var(--border-primary)] pt-2 mt-2">
+            <button
+              onClick={() => handleNavClick('studio')}
+              aria-current={studioActive ? 'page' : undefined}
+              className={`w-full nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
+                studioActive
+                  ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-card'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+              }`}
+            >
+              <div className={`nav-icon-wrapper w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
+                studioActive
+                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-tertiary)] group-hover:bg-[var(--bg-tertiary)] group-hover:text-[var(--text-secondary)]'
+              }`}>
+                <MonitorUp className="w-4 h-4" />
+              </div>
+              <span className="flex-1 text-left nav-label">Studio Desk</span>
+              {studioActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 nav-label" />
+              )}
+            </button>
+          </div>
         </div>
       </aside>) : null}
       <main className="flex-1 min-w-0">{children}</main>

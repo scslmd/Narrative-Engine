@@ -9,8 +9,8 @@ This guide explains the current frontend interface, what each workspace mode doe
 - `/` - Project List, New Project, Story Import, Project Import
 - `/setup-wizard` - Guided Setup (conversational project creation)
 - `/workspace/:projectId/plan` - Planning workspace
-- `/workspace/:projectId/write` - Writing workspace
-- `/workspace/:projectId/write/:chapterId` - Writing workspace with chapter route context
+- `/workspace/:projectId/write` — redirects to `/studio` (deprecated)
+- `/workspace/:projectId/write/:chapterId` — redirects to `/studio` (deprecated)
 - `/workspace/:projectId/review` - Review workspace
 - `/workspace/:projectId/inspect` - Inspect workspace
 - `/workspace/:projectId/inspect/:jobId` - Inspect workspace deep link
@@ -57,9 +57,17 @@ Capabilities:
 
 ## Workspace Shell Behavior
 The workspace shell includes:
-- Main content area (current mode view).
-- Right rail cards: Notes panel and Job Launch panel.
-- Bottom utility layer for operational status.
+- **Left panel (Workspace sections):** 160px navigation rail with stage-specific nav items and a "Studio Desk" quick link. Hidden in Studio mode (StudioView has its own left rail).
+- **Main content area:** Current mode view.
+- **Right rail:** Notes panel and Job Launch panel. Hidden in Studio mode (StudioView is full-width, 2-column layout).
+- **Bottom utility layer:** Operational status bar for job progress.
+
+### Left Panel Navigation
+The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link:
+- **Planning stage:** Brain Dump, Planning, Canon, Generate
+- **Writing stage:** Studio (redirects to Studio Desk)
+- **Review stage:** Review, Inspect
+- **Studio Desk link:** Appears below stage-specific items, separated by a divider. Always accessible from any workspace view.
 
 ### Job Launch Panel
 - Select pipeline phase (P-100 Architect, P-200 Sequencer, P-300 Drafter, P-400 Compiler).
@@ -69,10 +77,7 @@ The workspace shell includes:
 - Completed jobs show processing time and step name.
 - Processing jobs show current step, elapsed time, and progress counter.
 
-Mode navigation is stage-aware and may hide some modes depending on current stage:
-- Planning stage: Brain Dump, Planning, Canon, Generate
-- Writing stage: Writing
-- Review stage: Review, Inspect
+**Note:** In Studio mode, the right rail (Notes + Job Launch) is hidden. Use the Jobs button in StudioView's left rail to access job launch functionality.
 
 ### Feature Dependencies
 
@@ -379,51 +384,26 @@ Multi-step form for configuring a generation run:
 ## Studio Desk (`/workspace/:projectId/studio`)
 Compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Designed for users who want a unified desk rather than navigating between separate workspace modes.
 
-**Layout:** Adaptive three-column grid (desktop) or overlay drawers (below `xl:` breakpoint). All layout preferences persist across sessions via `studio-layout-v1` localStorage.
-- **Left rail (Project Map):** Quick navigation between Ideas, Characters, World Bible, Relationships, Canon, Jobs, and Notes panels. Width adjustable between 224px and 320px.
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available space when side panels are hidden.
-- **Right rail (Context Panel):** Switchable panel based on active command: Suggestions, Generation, Review, or Inspect. Width adjustable between 416px and 520px.
-
-**Context Panel Modes** (desktop only):
-- **Docked** (default): Context panel occupies the third column alongside the editor. Use "Pin" to lock it in place.
-- **Overlay:** Context panel floats above the editor as a right-aligned panel with a dismissible backdrop. Click the backdrop or the close button to dismiss. Use "Overlay" button to toggle.
-- **Closed:** Third column is hidden entirely, giving the editor maximum width. Reopen by clicking any command button (Capture, Write, Generate, Review, Inspect). Use "Close" button to dismiss.
-
-**Command Bar (top):** Layout controls and command buttons.
-- **Layout Controls** (desktop only, hidden below `xl:` breakpoint):
-  - `Rail` — collapse or expand the left project rail (toggle)
-  - `Rail Width` — toggle left rail between narrow (224px) and wide (320px)
-  - `Panel Width` — toggle right context panel between narrow (416px) and wide (520px)
-  - `Layout` — reset all layout settings to defaults
-- **Command Buttons:**
-  - `Capture` — switches to Ideas panel (brainstorm-style ideation)
-  - `Write` — switches to Suggestions panel (revision suggestions, diff viewer, history)
-  - `Generate` — switches to Generation panel (compact story generation wizard)
-  - `Review` — switches to Review panel (checker findings and inspect links)
-  - `Inspect` — switches to Inspect panel (job inspection and lineage)
-
-**Context Panel Header Controls** (desktop):
-- `Pin` — toggle pinning (prevents auto-switch when changing commands)
-- `Dock` — dock context panel as third column
-- `Overlay` — float context panel over the editor with backdrop
-- `Close` — hide context panel entirely
-
-**Responsive Behavior:** Below `xl:` breakpoint, the left rail and right context panel become overlay drawers. Toggle buttons appear in the header. A close-drawer button dismisses both drawers simultaneously.
+**Layout:** Two-column grid (left rail + full-width manuscript editor). The right context panel has been removed — StudioView fills the entire workspace width. All layout preferences persist across sessions via `studio-layout-v1` localStorage.
+- **Left rail (Project Map):** Quick navigation between all panels. Collapsible to compact mode (80px icon-only) or expanded (up to 320px).
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill all available width.
 
 **Project Rail Panels:**
+- **Drafts:** Draft artifact lifecycle management
+- **Manuscripts:** Manuscript document selection and editing
 - **Ideas:** Brainstorm-style idea capture and clustering
+- **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
+- **Review:** Checker findings and inspect links
 - **Characters:** Character CRUD with profile editing and canon annotations
 - **World Bible:** World entry CRUD with canon annotations
 - **Relationships:** Relationship graph and list views with CRUD operations
 - **Canon:** Canon profile management and packet preview
-- **Jobs:** Job launch panel with phase selection and recent job monitoring
 - **Notes:** Project-level notes with add/delete functionality
+- **Jobs:** Job launch panel with phase selection and recent job monitoring
 
-**Context Panel Panels:**
-- **Suggestions:** Merged revision suggestions from Manuscript Assist and LLM sources. Accept/reject/archive flows with diff viewer.
-- **Generation:** Compact story generation wizard with mode selector, destination, canon scope, and policy configuration.
-- **Review:** Tab-based interface for checker findings and inspect links.
-- **Inspect:** Job inspection with guidance text when no run is selected.
+**Responsive Behavior:** Below `xl:` breakpoint, the left rail becomes an overlay drawer. A close-drawer button dismisses the drawer.
+
+**Accessing Studio:** Navigate to Studio from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
 
 ## End-to-End Walkthrough
 For a complete, step-by-step walkthrough of generating a novel from project creation through export, see **Phase 11: End-to-End Novel Walkthrough** in the [Narrative Engine User Walkthrough v1.8.0](Narrative%20Engine%20User%20Walkthrough%20v1.8.0.md). It walks through creating a 12-chapter novel (*The Last Lighthouse*) with 7 characters, 8 world bible entries, 3 character arcs, 3 sequences, branching for Act III exploration, and a full generation/revision/checker/export workflow.
@@ -434,7 +414,7 @@ For a complete, step-by-step walkthrough of generating a novel from project crea
 3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
 4. Shape structure in Planning/Flow tabs.
 5. Capture optional ideation in Brain Dump and Brainstorm.
-6. Draft in Writing (manual, AI, continue, alternate, promote) or use Studio Desk for a compact single-screen workspace with customizable layout.
+6. Draft in Studio Desk (manuscript editor with draft management) for a compact single-screen workspace. The `/write` route redirects to `/studio`.
 7. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
 8. Run Checker and review findings in Review workspace. Create inspect links for traceability.
 9. Inspect problematic runs from deep links or Inspect mode to diagnose failures.

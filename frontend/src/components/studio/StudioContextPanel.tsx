@@ -1,4 +1,6 @@
 import { useWritingDocumentController } from '../../domains/writing/useWritingDocumentController';
+import { JobLaunchPanel } from '../JobLaunchPanel';
+import { NotesPanel } from '../NotesPanel';
 import { StudioDraftsPanel } from './StudioDraftsPanel';
 import { StudioGenerationPanel } from './StudioGenerationPanel';
 import { StudioIdeasPanel } from './StudioIdeasPanel';
@@ -33,6 +35,8 @@ const panelLabels: Record<StudioPanelKey, string> = {
   generation: 'Generation',
   review: 'Review',
   inspect: 'Inspect',
+  notes: 'Notes',
+  jobs: 'Jobs',
 };
 
 interface StudioContextPanelProps {
@@ -76,6 +80,10 @@ export function StudioContextPanel({ projectId, showCloseButton = false, onManus
         return <StudioDraftsPanel />;
       case 'manuscripts':
         return <StudioManuscriptsPanel onSelect={onManuscriptSelect} />;
+      case 'notes':
+        return <NotesPanel projectId={projectId} />;
+      case 'jobs':
+        return <JobLaunchPanel projectId={projectId} />;
     }
   };
 

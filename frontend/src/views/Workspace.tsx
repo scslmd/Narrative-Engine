@@ -8,7 +8,7 @@ export function Workspace() {
   const { projectId } = useParams<{ projectId: string }>();
   const location = useLocation();
   const parts = location.pathname.split('/').filter(Boolean);
-  const mode = parts.length >= 2 ? parts[parts.length - 2] : 'plan';
+  const mode = parts.length >= 3 ? parts[2] : 'plan';
   const isFocusedWorkspace = mode === 'studio';
 
   if (!projectId) {

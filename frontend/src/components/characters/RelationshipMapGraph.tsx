@@ -210,7 +210,7 @@ export function RelationshipMapGraph({
   const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
+  const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -318,7 +318,7 @@ export function RelationshipMapGraph({
         width="100%"
         height="100%"
         className="absolute inset-0"
-        style={{ minHeight: 300 }}
+        style={{ minHeight: 800 }}
       >
         <defs>
           {Array.from(new Set(relationships.map((r) => r.relation_kind))).map((kind) => {
@@ -344,7 +344,7 @@ export function RelationshipMapGraph({
           const { color, icon: Icon } = getStyleForRelationKind(edge.relationKind);
           const isHovered = hoveredEdge === edge.id;
           const edgeColor = isHovered ? color : `${color}99`;
-          const strokeWidth = isHovered ? 2.5 : 1.5;
+          const strokeWidth = isHovered ? 3.5 : 2.5;
           const d = `M ${edge.sourceX} ${edge.sourceY} Q ${edge.controlX} ${edge.controlY} ${edge.targetX} ${edge.targetY}`;
 
           return (
@@ -452,23 +452,33 @@ export function RelationshipMapGraph({
               />
               <text
                 x={node.x}
-                y={node.y + 1}
+                y={node.y - 6}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-xs font-semibold fill-gray-800 dark:fill-gray-200 pointer-events-none select-none"
                 style={{ fontSize: '10px', opacity: isDimmed ? 0.5 : 1 }}
               >
-                {node.name.length > 10 ? node.name.slice(0, 9) + '\u2026' : node.name}
+                {node.name.length > 10 ? node.name.slice(0, 10) : node.name}
               </text>
               <text
                 x={node.x}
-                y={node.y + NODE_RADIUS + 14}
+                y={node.y + 10}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="text-xs font-semibold fill-gray-800 dark:fill-gray-200 pointer-events-none select-none"
+                style={{ fontSize: '10px', opacity: isDimmed ? 0.5 : 1 }}
+              >
+                {node.name.length > 10 ? node.name.slice(10) : ''}
+              </text>
+              <text
+                x={node.x}
+                y={node.y + NODE_RADIUS + 22}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="text-[8px] fill-gray-400 dark:fill-gray-500 pointer-events-none select-none"
                 style={{ fontSize: '8px', opacity: isDimmed ? 0.3 : 1 }}
               >
-                {node.role.length > 14 ? node.role.slice(0, 13) + '\u2026' : node.role}
+                {node.role.length > 16 ? node.role.slice(0, 15) + '\u2026' : node.role}
               </text>
             </g>
           );

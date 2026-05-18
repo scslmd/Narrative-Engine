@@ -10,7 +10,9 @@ export type StudioPanelKey =
   | 'relationships'
   | 'generation'
   | 'review'
-  | 'inspect';
+  | 'inspect'
+  | 'notes'
+  | 'jobs';
 
 export type StudioRailMode = 'expanded' | 'collapsed' | 'overlay';
 export type StudioContextMode = 'docked' | 'overlay' | 'closed';
