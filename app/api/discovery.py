@@ -15,8 +15,13 @@ from app.schemas.discovery import (
 )
 from app.services.cascade_discovery import CascadeDiscoveryService
 from app.services.discovery_jobs import CascadeJobManager
-from app.persistence.sqlite import connect as connect_sqlite
+from app.persistence.sqlite import connect as connect_sqlite, ensure_operations_db
 from app.settings import settings
+
+
+def _get_db() -> sqlite3.Connection:
+    db_path = ensure_operations_db(settings.operations_db_path)
+    return connect_sqlite(db_path)
 
 router = APIRouter(prefix="/v1/discovery", tags=["discovery"])
 
@@ -69,8 +74,7 @@ async def get_job_status(job_id: str) -> CascadeJobResponse:
 
 @router.get("/staging/{stage_id}")
 async def get_staged_entities(stage_id: str) -> StagedEntitiesResponse:
-    db_path = settings.operations_db_path
-    conn = connect_sqlite(db_path)
+    conn = _get_db()
 
     proj_row = conn.execute(
         "SELECT project_id FROM discovery_staging WHERE stage_id=?",
@@ -122,8 +126,7 @@ async def get_staged_entities(stage_id: str) -> StagedEntitiesResponse:
 async def update_entity_approval(
     stage_id: str, updates: list[EntityApprovalUpdate]
 ) -> dict[str, int]:
-    db_path = settings.operations_db_path
-    conn = connect_sqlite(db_path)
+    conn = _get_db()
     for update in updates:
         conn.execute(
             "UPDATE discovery_staging SET approved=? WHERE stage_id=? AND entity_id=?",
@@ -138,8 +141,7 @@ async def update_entity_approval(
 async def apply_staged_entities(stage_id: str) -> dict[str, int]:
     from app.schemas.discovery import CascadeApplyResponse as _CascadeApplyResponse
 
-    db_path = settings.operations_db_path
-    conn = connect_sqlite(db_path)
+    conn = _get_db()
     conn.execute("BEGIN IMMEDIATE")
 
     proj_row = conn.execute(
@@ -225,8 +227,7 @@ async def apply_staged_entities(stage_id: str) -> dict[str, int]:
 
 @router.post("/staging/{stage_id}/undo")
 async def undo_apply(stage_id: str) -> dict[str, object]:
-    db_path = settings.operations_db_path
-    conn = connect_sqlite(db_path)
+    conn = _get_db()
 
     rows = conn.execute(
         "SELECT entity_type, entity_json FROM discovery_staging "
@@ -256,8 +257,7 @@ async def undo_apply(stage_id: str) -> dict[str, object]:
 
 @router.delete("/staging/{stage_id}")
 async def discard_staging(stage_id: str) -> dict[str, bool]:
-    db_path = settings.operations_db_path
-    conn = connect_sqlite(db_path)
+    conn = _get_db()
     conn.execute("DELETE FROM discovery_staging WHERE stage_id=?", (stage_id,))
     conn.commit()
     conn.close()

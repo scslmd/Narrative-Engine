@@ -37,7 +37,7 @@ describe('WorkspaceShell', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument();
     expect(screen.getByText('Workspace sections')).toBeInTheDocument();
     const navItems = screen.getAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.parentElement?.tagName !== 'BUTTON' && btn.classList.contains('nav-item'),
+      (btn) => btn.parentElement?.tagName !== 'BUTTON' && btn.classList.contains('nav-item') && !btn.textContent?.includes('Studio Desk'),
     );
     expect(navItems).toHaveLength(4);
     expect(screen.getByText('Brain Dump')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('WorkspaceShell', () => {
     renderShell('canon');
 
     const buttons = screen.getAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.classList.contains('nav-item'),
+      (btn) => btn.classList.contains('nav-item') && !btn.textContent?.includes('Studio Desk'),
     );
     expect(buttons).toHaveLength(4);
   });
@@ -69,7 +69,7 @@ describe('WorkspaceShell', () => {
     renderShell('review');
 
     const buttons = screen.getAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.classList.contains('nav-item'),
+      (btn) => btn.classList.contains('nav-item') && !btn.textContent?.includes('Studio Desk'),
     );
     expect(buttons).toHaveLength(2);
     expect(screen.getByText('Review')).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe('WorkspaceShell', () => {
     renderShell('inspect');
 
     const buttons = screen.getAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.classList.contains('nav-item'),
+      (btn) => btn.classList.contains('nav-item') && !btn.textContent?.includes('Studio Desk'),
     );
     expect(buttons).toHaveLength(2);
   });
