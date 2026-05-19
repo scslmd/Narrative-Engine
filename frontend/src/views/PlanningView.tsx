@@ -19,6 +19,7 @@ import { RelationshipEditModal } from '../components/characters/RelationshipEdit
 import { WorldBibleWorkspace } from '../components/bible/WorldBibleWorkspace';
 import FlowEditor from '../components/flow/FlowEditor';
 import { PlanningTab } from '../components/planning/PlanningTab';
+import { ViewShell } from '../components/shell/ViewShell';
 import { usePlanningController } from '../domains/planning/usePlanningController';
 import { useFoundation } from '../hooks/useFoundation';
 import { useBrainstorm } from '../hooks/useBrainstorm';
@@ -38,13 +39,10 @@ import { getJobStatus } from '../services/discovery';
 import type { CharacterProfile, RelationshipEdge, CharacterProfileCreateRequest, CharacterProfileUpdateRequest } from '../types/characters';
 import type { FoundationCreateRequest, FoundationProfile, FoundationUpdateRequest } from '../types/foundation';
 import type { WorldBibleEntry, WorldBibleEntryCreateRequest, WorldBibleEntryUpdateRequest } from '../types/bible';
-
-import { useThemeStore } from '../stores/themeStore';
-import { resolveEffectiveMode } from '../theme/theme';
 import { EmptyState, WorkspaceStatus } from '../components/planning/ui';
 import { getErrorMessage } from '../components/planning/utils';
 
-type PlanningTab =
+type PlanningTabKey =
   | 'manifest'
   | 'planning'
   | 'flow'
@@ -60,59 +58,29 @@ type PlanningTab =
 
 type CharacterEditorMode = 'list' | 'create' | 'edit';
 
-const coreTabs: { key: PlanningTab; label: string; icon: typeof LayoutList }[] = [
-  { key: 'manifest', label: 'Manifest', icon: LayoutList },
-  { key: 'planning', label: 'Planning', icon: Map },
-  { key: 'flow', label: 'Flow', icon: GitBranch },
-  { key: 'arcs', label: 'Arcs', icon: Network },
-  { key: 'branches', label: 'Branches', icon: GitBranch },
-  { key: 'decisions', label: 'Decisions', icon: Sparkles },
-  { key: 'checker', label: 'Checker', icon: FileCheck },
+const allTabs: { key: PlanningTabKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'manifest', label: 'Manifest', icon: <LayoutList className="w-3.5 h-3.5" /> },
+  { key: 'planning', label: 'Planning', icon: <Map className="w-3.5 h-3.5" /> },
+  { key: 'flow', label: 'Flow', icon: <GitBranch className="w-3.5 h-3.5" /> },
+  { key: 'arcs', label: 'Arcs', icon: <Network className="w-3.5 h-3.5" /> },
+  { key: 'branches', label: 'Branches', icon: <GitBranch className="w-3.5 h-3.5" /> },
+  { key: 'decisions', label: 'Decisions', icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { key: 'checker', label: 'Checker', icon: <FileCheck className="w-3.5 h-3.5" /> },
+  { key: 'brainstorm', label: 'Brainstorm', icon: <Lightbulb className="w-3.5 h-3.5" /> },
+  { key: 'foundation', label: 'Foundation', icon: <Anchor className="w-3.5 h-3.5" /> },
+  { key: 'characters', label: 'Characters', icon: <User className="w-3.5 h-3.5" /> },
+  { key: 'world-bible', label: 'World Bible', icon: <Book className="w-3.5 h-3.5" /> },
+  { key: 'relationships', label: 'Relationships', icon: <NetworkIcon className="w-3.5 h-3.5" /> },
 ];
 
-const contentTabs: { key: PlanningTab; label: string; icon: typeof Lightbulb }[] = [
-  { key: 'brainstorm', label: 'Brainstorm', icon: Lightbulb },
-  { key: 'foundation', label: 'Foundation', icon: Anchor },
-  { key: 'characters', label: 'Characters', icon: User },
-  { key: 'world-bible', label: 'World Bible', icon: Book },
-  { key: 'relationships', label: 'Relationships', icon: NetworkIcon },
-];
-
-const tabActiveBgMap: Record<PlanningTab, string> = {
-  manifest: 'bg-indigo-600',
-  planning: 'bg-blue-600',
-  flow: 'bg-blue-600',
-  arcs: 'bg-purple-600',
-  branches: 'bg-teal-600',
-  decisions: 'bg-violet-600',
-  checker: 'bg-rose-600',
-  brainstorm: 'bg-amber-600',
-  foundation: 'bg-emerald-600',
-  characters: 'bg-pink-600',
-  'world-bible': 'bg-indigo-600',
-  relationships: 'bg-cyan-600',
-};
-
-const tabActiveBgDarkMap: Record<PlanningTab, string> = {
-  manifest: 'bg-indigo-500',
-  planning: 'bg-blue-500',
-  flow: 'bg-blue-500',
-  arcs: 'bg-purple-500',
-  branches: 'bg-teal-500',
-  decisions: 'bg-violet-500',
-  checker: 'bg-rose-500',
-  brainstorm: 'bg-amber-500',
-  foundation: 'bg-emerald-500',
-  characters: 'bg-pink-500',
-  'world-bible': 'bg-indigo-500',
-  relationships: 'bg-cyan-500',
-};
+const coreTabKeys: PlanningTabKey[] = ['manifest', 'planning', 'flow', 'arcs', 'branches', 'decisions', 'checker'];
+const contentTabKeys: PlanningTabKey[] = ['brainstorm', 'foundation', 'characters', 'world-bible', 'relationships'];
 
 export function PlanningView() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<PlanningTab>('manifest');
+  const [activeTab, setActiveTab] = useState<PlanningTabKey>('manifest');
   const [characterEditorMode, setCharacterEditorMode] = useState<CharacterEditorMode>('list');
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [showCreateRelationship, setShowCreateRelationship] = useState(false);
@@ -120,9 +88,6 @@ export function PlanningView() {
   const [extractError, setExtractError] = useState<string | null>(null);
   const [showScanDialog, setShowScanDialog] = useState(false);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const { mode, _systemTick } = useThemeStore();
-  void _systemTick;
-  const isDark = resolveEffectiveMode(mode) === 'dark';
 
   const { items: brainstormItems, isLoading: brainstormLoading, addItem: addBrainstormItem, clusterItems: clusterBrainstormItems, promoteItem: promoteBrainstormItem } = useBrainstorm(projectId || '');
 
@@ -186,7 +151,6 @@ export function PlanningView() {
   async function handleExtractRelationships() {
     setExtractError(null);
     try {
-      // Fetch chapter content from the project
       const response = await api.get(`/v1/projects/${projectId}/chapter-1`);
       const chapterText = response.data?.content || '';
 
@@ -289,7 +253,7 @@ export function PlanningView() {
     },
   });
 
-   const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
+  const characters = useMemo(() => charactersQuery.data ?? [], [charactersQuery.data]);
 
   const characterNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -364,7 +328,7 @@ export function PlanningView() {
   }, [activeJobId, setCurrentStageId]);
 
   if (!projectId) {
-    return <div className="text-sm text-subtle">No project selected</div>;
+    return <div className="text-sm text-[var(--text-secondary)]">No project selected</div>;
   }
 
   const selectedCharacter = selectedCharacterId
@@ -373,275 +337,281 @@ export function PlanningView() {
   const worldBibleEntries = worldBibleQuery.data ?? [];
   const canonAnnotations = canonAnnotationsQuery.data ?? [];
 
-  const renderTabButton = (tab: { key: PlanningTab; label: string }, isCore: boolean) => {
-    const isActive = activeTab === tab.key;
-    const Icon = (isCore ? coreTabs : contentTabs).find(t => t.key === tab.key)?.icon;
-    const activeBg = isDark ? tabActiveBgDarkMap[tab.key] : tabActiveBgMap[tab.key];
+  const coreTabs = allTabs.filter((t) => coreTabKeys.includes(t.key));
+  const contentTabs = allTabs.filter((t) => contentTabKeys.includes(t.key));
 
-    return (
-      <button
-        key={tab.key}
-        onClick={() => setActiveTab(tab.key)}
-        aria-current={isActive ? 'page' : undefined}
-        aria-pressed={isActive}
-        aria-label={`Open ${tab.label} tab`}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
-          isActive
-            ? `${activeBg} text-white shadow-sm`
-            : isDark
-              ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80'
-        }`}
-      >
-        {Icon && <Icon className="w-3.5 h-3.5" />}
-        <span>{tab.label}</span>
-      </button>
-    );
-  };
+  const actions = [
+    <button
+      key="generate"
+      type="button"
+      onClick={() => navigate(`/workspace/${projectId}/generate`)}
+      className="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--color-primary)] text-white shadow-sm"
+    >
+      Generate Story
+    </button>,
+  ];
 
   return (
-    <div className="h-full flex flex-col">
-      <div className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white/60'} px-4 py-3`}>
-        <div className="flex items-start gap-3 flex-wrap justify-between">
-          <div>
-            <h2 className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Planning Workspace</h2>
-            <p className="text-xs text-muted">Choose a planning surface and keep decisions synchronized.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => projectId && navigate(`/workspace/${projectId}/generate`)}
-            className="px-3 py-1.5 text-xs font-medium rounded-md bg-indigo-600 text-white shadow-sm"
-          >
-            Generate Story
-          </button>
-        </div>
-        <div className="mt-3 flex items-center gap-1 flex-wrap" role="toolbar" aria-label="Planning sections">
-          <div className="flex items-center gap-1 flex-wrap">
+    <ViewShell title="Planning" subtitle={projectId} actions={actions}>
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-1 flex-wrap border-b border-[var(--border-primary)] px-4 py-2" role="toolbar" aria-label="Planning sections">
           <div className="flex items-center gap-1" role="group" aria-label="Core planning tabs">
-            {coreTabs.map((tab) => renderTabButton(tab, true))}
+            {coreTabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-pressed={isActive}
+                  aria-label={`Open ${tab.label} tab`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    isActive
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <ChevronRight className="w-3.5 h-3.5 mx-1 text-muted" />
+          <ChevronRight className="w-3.5 h-3.5 mx-1 text-[var(--text-tertiary)]" />
           <div className="flex items-center gap-1" role="group" aria-label="Content planning tabs">
-            {contentTabs.map((tab) => renderTabButton(tab, false))}
-          </div>
+            {contentTabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-pressed={isActive}
+                  aria-label={`Open ${tab.label} tab`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                    isActive
+                      ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      <main className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'manifest' && <ManifestViewer projectId={projectId} />}
-        
-        {activeTab === 'planning' && (
-          <PlanningTab isDark={isDark} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
-        )}
+        <main className="flex-1 overflow-y-auto p-4">
+          {activeTab === 'manifest' && <ManifestViewer projectId={projectId} />}
 
-        {activeTab === 'flow' && (
-          <div className="h-full">
-            <FlowEditor projectId={projectId} />
-          </div>
-        )}
+          {activeTab === 'planning' && (
+            <PlanningTab isDark={false} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
+          )}
 
-        {activeTab === 'arcs' && (
-          <PlanningTab isDark={isDark} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
-        )}
+          {activeTab === 'flow' && (
+            <div className="h-full">
+              <FlowEditor projectId={projectId} />
+            </div>
+          )}
 
-        {activeTab === 'branches' && (
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
-            <StoryBranchesList projectId={projectId} />
-          </div>
-        )}
-        {activeTab === 'decisions' && (
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
-            <DecisionTree projectId={projectId} />
-          </div>
-        )}
-        {activeTab === 'checker' && (
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
-            <RoleModelChecker projectId={projectId} />
-          </div>
-        )}
+          {activeTab === 'arcs' && (
+            <PlanningTab isDark={false} activeTab={activeTab} state={planning.state} callbacks={planning.callbacks} />
+          )}
 
-        {activeTab === 'brainstorm' && (
-          <div className="h-full">
-            {brainstormLoading ? (
-              <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." />
-            ) : (
-              <BrainstormWorkspace
-                projectId={projectId}
-                items={brainstormItems}
-                onItemAdd={(request) => void addBrainstormItem(request)}
-                onClusterCreate={(itemIds) => void clusterBrainstormItems(itemIds)}
-                onPromote={async ({ item_id, target_object_kind, target_object_id }) => {
-                await promoteBrainstormItem(item_id, target_object_kind, target_object_id);
-              }}
-              />
-            )}
-          </div>
-        )}
+          {activeTab === 'branches' && (
+            <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
+              <StoryBranchesList projectId={projectId} />
+            </div>
+          )}
+          {activeTab === 'decisions' && (
+            <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
+              <DecisionTree projectId={projectId} />
+            </div>
+          )}
+          {activeTab === 'checker' && (
+            <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
+              <RoleModelChecker projectId={projectId} />
+            </div>
+          )}
 
-        {activeTab === 'foundation' && (
-          <div className="h-full">
-            {foundationLoading ? (
-              <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." />
-            ) : (
-              <FoundationEditor
-                projectId={projectId}
-                foundation={foundation ?? undefined}
-                onSave={(updates) => foundationSaveMutation.mutate(updates)}
-                revisions={revisions}
-                reviewCues={reviewCues}
-              />
-            )}
-          </div>
-        )}
+          {activeTab === 'brainstorm' && (
+            <div className="h-full">
+              {brainstormLoading ? (
+                <WorkspaceStatus title="Loading brainstorm items" detail="Fetching project brainstorm data." />
+              ) : (
+                <BrainstormWorkspace
+                  projectId={projectId}
+                  items={brainstormItems}
+                  onItemAdd={(request) => void addBrainstormItem(request)}
+                  onClusterCreate={(itemIds) => void clusterBrainstormItems(itemIds)}
+                  onPromote={async ({ item_id, target_object_kind, target_object_id }) => {
+                    await promoteBrainstormItem(item_id, target_object_kind, target_object_id);
+                  }}
+                />
+              )}
+            </div>
+          )}
 
-        {activeTab === 'characters' && (
-          <div className="h-full">
-            {charactersQuery.isLoading ? (
-              <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." />
-            ) : charactersQuery.error ? (
-              <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" />
-            ) : characterEditorMode === 'list' ? (
-              <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className={`text-lg font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Characters</h2>
-                    <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {characters.length} profiles in this project
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCharacterId(null);
-                      setCharacterEditorMode('create');
-                    }}
-                    className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-xs font-medium rounded-lg hover:from-pink-600 hover:to-pink-700 shadow-sm transition-all"
-                  >
-                    + New Character
-                  </button>
-                </div>
+          {activeTab === 'foundation' && (
+            <div className="h-full">
+              {foundationLoading ? (
+                <WorkspaceStatus title="Loading foundation" detail="Fetching the active foundation profile." />
+              ) : (
+                <FoundationEditor
+                  projectId={projectId}
+                  foundation={foundation ?? undefined}
+                  onSave={(updates) => foundationSaveMutation.mutate(updates)}
+                  revisions={revisions}
+                  reviewCues={reviewCues}
+                />
+              )}
+            </div>
+          )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {characters.map((character) => (
+          {activeTab === 'characters' && (
+            <div className="h-full">
+              {charactersQuery.isLoading ? (
+                <WorkspaceStatus title="Loading characters" detail="Fetching character profiles for this project." />
+              ) : charactersQuery.error ? (
+                <WorkspaceStatus title="Could not load characters" detail={getErrorMessage(charactersQuery.error)} tone="error" />
+              ) : characterEditorMode === 'list' ? (
+                <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--text-primary)]">Characters</h2>
+                      <p className="text-sm mt-0.5 text-[var(--text-secondary)]">
+                        {characters.length} profiles in this project
+                      </p>
+                    </div>
                     <button
-                      key={character.character_id}
                       onClick={() => {
-                        setSelectedCharacterId(character.character_id);
-                        setCharacterEditorMode('edit');
+                        setSelectedCharacterId(null);
+                        setCharacterEditorMode('create');
                       }}
-                      className={`text-left rounded-lg border p-4 cursor-pointer transition-all duration-150 ${
-                        isDark
-                          ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-card'
-                          : 'bg-white border-slate-200 hover:border-pink-300 hover:shadow-card'
-                      }`}
+                      className="px-3 py-1.5 bg-[var(--color-primary)] text-white text-xs font-medium rounded-lg hover:opacity-90 shadow-sm transition-all"
                     >
-                      <h3 className={`font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{character.display_name}</h3>
-                      <p className="text-sm mt-1 text-body">{character.role_in_story}</p>
+                      + New Character
                     </button>
-                  ))}
-                </div>
+                  </div>
 
-                {characters.length === 0 && (
-                  <EmptyState text="No character profiles configured. Create a character to start building the cast." />
-                )}
-              </div>
-            ) : characterEditorMode === 'create' ? (
-              <CharacterBuilder
-                projectId={projectId}
-                onSave={(character) => characterSaveMutation.mutate(character)}
-                canonAnnotations={canonAnnotations}
-                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
-                  await canonAnnotationMutation.mutateAsync({
-                    project_id: projectId,
-                    target_kind: 'character',
-                    target_id: targetId,
-                    field_path: fieldPath,
-                    annotation_kind: annotationKind,
-                    note,
-                  });
-                }}
-                onCancel={() => {
-                  setCharacterEditorMode('list');
-                  setSelectedCharacterId(null);
-                }}
-              />
-            ) : selectedCharacter ? (
-              <CharacterBuilder
-                projectId={projectId}
-                character={selectedCharacterQuery.data ?? selectedCharacter}
-                onSave={(character) => characterSaveMutation.mutate(character)}
-                canonAnnotations={canonAnnotations}
-                onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
-                  await canonAnnotationMutation.mutateAsync({
-                    project_id: projectId,
-                    target_kind: 'character',
-                    target_id: targetId,
-                    field_path: fieldPath,
-                    annotation_kind: annotationKind,
-                    note,
-                  });
-                }}
-                onCancel={() => {
-                  setCharacterEditorMode('list');
-                  setSelectedCharacterId(null);
-                }}
-              />
-            ) : (
-              <WorkspaceStatus
-                title="Character not found"
-                detail="The selected character is no longer available. Return to the list and pick another profile."
-                tone="error"
-              />
-            )}
-            {selectedCharacterRelationshipsQuery.data && selectedCharacterRelationshipsQuery.data.length > 0 && (
-              <p className="px-4 pb-2 text-xs text-subtle">
-                Selected character relationships: {selectedCharacterRelationshipsQuery.data.length}
-              </p>
-            )}
-          </div>
-        )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {characters.map((character) => (
+                      <button
+                        key={character.character_id}
+                        onClick={() => {
+                          setSelectedCharacterId(character.character_id);
+                          setCharacterEditorMode('edit');
+                        }}
+                        className="text-left rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-4 cursor-pointer transition-all duration-150 hover:border-[var(--border-secondary)] hover:shadow-card"
+                      >
+                        <h3 className="font-medium text-[var(--text-primary)]">{character.display_name}</h3>
+                        <p className="text-sm mt-1 text-[var(--text-secondary)]">{character.role_in_story}</p>
+                      </button>
+                    ))}
+                  </div>
 
-        {activeTab === 'relationships' && (
-          <div className="h-full flex flex-col">
-            {relationshipsQuery.isLoading ? (
-              <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." />
-            ) : relationshipsQuery.error ? (
-              <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" />
-            ) : showCreateRelationship ? (
-              <div className="flex flex-col h-full">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
-                  <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    New Relationship
-                  </h2>
+                  {characters.length === 0 && (
+                    <EmptyState text="No character profiles configured. Create a character to start building the cast." />
+                  )}
                 </div>
+              ) : characterEditorMode === 'create' ? (
+                <CharacterBuilder
+                  projectId={projectId}
+                  onSave={(character) => characterSaveMutation.mutate(character)}
+                  canonAnnotations={canonAnnotations}
+                  onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                    await canonAnnotationMutation.mutateAsync({
+                      project_id: projectId,
+                      target_kind: 'character',
+                      target_id: targetId,
+                      field_path: fieldPath,
+                      annotation_kind: annotationKind,
+                      note,
+                    });
+                  }}
+                  onCancel={() => {
+                    setCharacterEditorMode('list');
+                    setSelectedCharacterId(null);
+                  }}
+                />
+              ) : selectedCharacter ? (
+                <CharacterBuilder
+                  projectId={projectId}
+                  character={selectedCharacterQuery.data ?? selectedCharacter}
+                  onSave={(character) => characterSaveMutation.mutate(character)}
+                  canonAnnotations={canonAnnotations}
+                  onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                    await canonAnnotationMutation.mutateAsync({
+                      project_id: projectId,
+                      target_kind: 'character',
+                      target_id: targetId,
+                      field_path: fieldPath,
+                      annotation_kind: annotationKind,
+                      note,
+                    });
+                  }}
+                  onCancel={() => {
+                    setCharacterEditorMode('list');
+                    setSelectedCharacterId(null);
+                  }}
+                />
+              ) : (
+                <WorkspaceStatus
+                  title="Character not found"
+                  detail="The selected character is no longer available. Return to the list and pick another profile."
+                  tone="error"
+                />
+              )}
+              {selectedCharacterRelationshipsQuery.data && selectedCharacterRelationshipsQuery.data.length > 0 && (
+                <p className="px-4 pb-2 text-xs text-[var(--text-tertiary)]">
+                  Selected character relationships: {selectedCharacterRelationshipsQuery.data.length}
+                </p>
+              )}
+            </div>
+          )}
 
-                <div className="flex-1 overflow-y-auto p-4">
-                  <RelationshipForm
-                    characters={characters}
-                    isSubmitting={relationshipHook.isCreating}
-                    isDark={isDark}
-                    onSubmit={async (data) => {
-                      await relationshipHook.createRelationship(data);
-                      setShowCreateRelationship(false);
-                    }}
-                    onCancel={() => setShowCreateRelationship(false)}
-                  />
+          {activeTab === 'relationships' && (
+            <div className="h-full flex flex-col">
+              {relationshipsQuery.isLoading ? (
+                <WorkspaceStatus title="Loading relationships" detail="Fetching character relationships for this project." />
+              ) : relationshipsQuery.error ? (
+                <WorkspaceStatus title="Could not load relationships" detail={getErrorMessage(relationshipsQuery.error)} tone="error" />
+              ) : showCreateRelationship ? (
+                <div className="flex flex-col h-full">
+                  <div className="px-4 py-3 border-b border-[var(--border-primary)] flex items-center justify-between shrink-0">
+                    <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                      New Relationship
+                    </h2>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <RelationshipForm
+                      characters={characters}
+                      isSubmitting={relationshipHook.isCreating}
+                      isDark={false}
+                      onSubmit={async (data) => {
+                        await relationshipHook.createRelationship(data);
+                        setShowCreateRelationship(false);
+                      }}
+                      onCancel={() => setShowCreateRelationship(false)}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0">
-                  <h2 className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    Relationship Map
-                  </h2>
-                 <div className="flex items-center gap-2">
-                      <span className="text-xs text-subtle">
+              ) : (
+                <div className="flex flex-col h-full">
+                  <div className="px-4 py-3 border-b border-[var(--border-primary)] flex items-center justify-between shrink-0">
+                    <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                      Relationship Map
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--text-tertiary)]">
                         {relationships.length} relationships
                       </span>
                       <button
                         onClick={handleExtractRelationships}
                         disabled={relationshipHook.isExtracting || characters.length < 2}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--color-secondary)] text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Wand2 className="w-3.5 h-3.5" />
                         {relationshipHook.isExtracting ? 'Analyzing...' : 'AI Extract'}
@@ -649,137 +619,138 @@ export function PlanningView() {
                       <button
                         onClick={() => setShowCreateRelationship(true)}
                         disabled={characters.length < 2}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--color-primary)] text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Add Relationship
                       </button>
                       <button
                         onClick={() => setShowScanDialog(true)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--color-secondary)] text-white hover:opacity-90"
                       >
                         Scan Manuscript
                       </button>
                     </div>
-                </div>
-
-                {extractError && (
-                  <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-                    <p className="text-xs text-red-700 dark:text-red-400">{extractError}</p>
                   </div>
-                )}
 
-                <div className="flex-1 overflow-y-auto p-4">
-                  <RelationshipMapGraph
-                    characters={characters}
-                    relationships={relationships}
-                    onDeleteRelationship={(edgeId) => {
-                      void relationshipDeleteMutation.mutate(edgeId);
-                    }}
-                    onOpenCharacter={handleOpenCharacter}
-                    onEditRelationship={handleEditRelationship}
-                    className="h-[800px]"
-                  />
+                  {extractError && (
+                    <div className="px-4 py-2 bg-[var(--color-danger-subtle)] border-b border-[var(--color-danger-border)]">
+                      <p className="text-xs text-[var(--color-danger)]">{extractError}</p>
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <RelationshipMapGraph
+                      characters={characters}
+                      relationships={relationships}
+                      onDeleteRelationship={(edgeId) => {
+                        void relationshipDeleteMutation.mutate(edgeId);
+                      }}
+                      onOpenCharacter={handleOpenCharacter}
+                      onEditRelationship={handleEditRelationship}
+                      className="h-[800px]"
+                    />
+                  </div>
+
+                  <div className="shrink-0 px-4 pb-4">
+                    <RelationshipList
+                      relationships={relationships}
+                      characterNames={characterNameMap}
+                      onDeleteRelationship={(edgeId) => {
+                        void relationshipDeleteMutation.mutate(edgeId);
+                      }}
+                      onUpdateRelationship={handleEditRelationship}
+                      className="h-[250px]"
+                    />
+                  </div>
+
+                  {editingRelationship && (
+                    <RelationshipEditModal
+                      relationship={editingRelationship}
+                      characters={characters}
+                      isSaving={relationshipHook.isUpdating}
+                      isDeleting={relationshipHook.isDeleting}
+                      isOpen={!!editingRelationship}
+                      onClose={() => setEditingRelationship(null)}
+                      onSave={async (edgeId, data) => {
+                        await relationshipHook.updateRelationship(edgeId, data);
+                      }}
+                      onDelete={async (edgeId) => {
+                        await relationshipHook.deleteRelationship(edgeId);
+                      }}
+                      isDark={false}
+                    />
+                  )}
                 </div>
-
-                <div className="shrink-0 px-4 pb-4">
-                  <RelationshipList
-                    relationships={relationships}
-                    characterNames={characterNameMap}
-                    onDeleteRelationship={(edgeId) => {
-                      void relationshipDeleteMutation.mutate(edgeId);
-                    }}
-                    onUpdateRelationship={handleEditRelationship}
-                    className="h-[250px]"
-                  />
-                </div>
-
-                {editingRelationship && (
-                  <RelationshipEditModal
-                    relationship={editingRelationship}
-                    characters={characters}
-                    isSaving={relationshipHook.isUpdating}
-                    isDeleting={relationshipHook.isDeleting}
-                    isOpen={!!editingRelationship}
-                    onClose={() => setEditingRelationship(null)}
-                    onSave={async (edgeId, data) => {
-                      await relationshipHook.updateRelationship(edgeId, data);
-                    }}
-                    onDelete={async (edgeId) => {
-                      await relationshipHook.deleteRelationship(edgeId);
-                    }}
-                    isDark={isDark}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'world-bible' && (
-          <div className="h-full">
-            {worldBibleQuery.isLoading ? (
-              <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." />
-            ) : worldBibleQuery.error ? (
-              <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" />
-            ) : (
-              <>
-                <WorldBibleWorkspace
-                  projectId={projectId}
-                  entries={worldBibleEntries}
-                  canonAnnotations={canonAnnotations}
-                  onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
-                    await canonAnnotationMutation.mutateAsync({
-                      project_id: projectId,
-                      target_kind: 'world_bible',
-                      target_id: targetId,
-                      field_path: fieldPath,
-                      annotation_kind: annotationKind,
-                      note,
-                    });
-                  }}
-                  onEntryAdd={(request) => worldBibleAddMutation.mutate(request)}
-                  onEntryUpdate={(entry, originalTitle) =>
-                    worldBibleUpdateMutation.mutate({ entry, originalTitle })
-                  }
-                />
-                {firstWorldEntryQuery.data && (
-                  <p className="px-4 pb-2 text-xs text-subtle">
-                    Loaded world entry detail: {firstWorldEntryQuery.data.title}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {showScanDialog && (
-          <ScanDialog projectId={projectId} onSubmit={handleScanSubmit} onClose={() => setShowScanDialog(false)} isLoading={scanMutation.isPending} />
-        )}
-
-        {activeJobId && !currentStageId && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
-              <p className="text-lg font-medium text-gray-900 dark:text-white">Scanning manuscript...</p>
-              <p className="text-sm text-gray-500 mt-2">This may take a moment depending on text length.</p>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {currentStageId && stagingQuery.data && (
-          <ReviewDialog
-            stageId={currentStageId}
-            characters={stagingQuery.data.characters}
-            relationships={stagingQuery.data.relationships}
-            worldBible={stagingQuery.data.world_bible}
-            onToggleApproval={handleToggleApproval}
-            onApply={handleApply}
-            onClose={handleReviewClose}
-            applyLoading={applyMutation.isPending}
-          />
-        )}
-      </main>
-    </div>
+          {activeTab === 'world-bible' && (
+            <div className="h-full">
+              {worldBibleQuery.isLoading ? (
+                <WorkspaceStatus title="Loading world bible" detail="Fetching world bible entries for this project." />
+              ) : worldBibleQuery.error ? (
+                <WorkspaceStatus title="Could not load world bible" detail={getErrorMessage(worldBibleQuery.error)} tone="error" />
+              ) : (
+                <>
+                  <WorldBibleWorkspace
+                    projectId={projectId}
+                    entries={worldBibleEntries}
+                    canonAnnotations={canonAnnotations}
+                    onAnnotateField={async (targetId, fieldPath, annotationKind, note) => {
+                      await canonAnnotationMutation.mutateAsync({
+                        project_id: projectId,
+                        target_kind: 'world_bible',
+                        target_id: targetId,
+                        field_path: fieldPath,
+                        annotation_kind: annotationKind,
+                        note,
+                      });
+                    }}
+                    onEntryAdd={(request) => worldBibleAddMutation.mutate(request)}
+                    onEntryUpdate={(entry, originalTitle) =>
+                      worldBibleUpdateMutation.mutate({ entry, originalTitle })
+                    }
+                  />
+                  {firstWorldEntryQuery.data && (
+                    <p className="px-4 pb-2 text-xs text-[var(--text-tertiary)]">
+                      Loaded world entry detail: {firstWorldEntryQuery.data.title}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {showScanDialog && (
+            <ScanDialog projectId={projectId} onSubmit={handleScanSubmit} onClose={() => setShowScanDialog(false)} isLoading={scanMutation.isPending} />
+          )}
+
+          {activeJobId && !currentStageId && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-[var(--bg-primary)] rounded-xl p-6 border border-[var(--border-primary)]">
+                <p className="text-lg font-medium text-[var(--text-primary)]">Scanning manuscript...</p>
+                <p className="text-sm text-[var(--text-secondary)] mt-2">This may take a moment depending on text length.</p>
+              </div>
+            </div>
+          )}
+
+          {currentStageId && stagingQuery.data && (
+            <ReviewDialog
+              stageId={currentStageId}
+              characters={stagingQuery.data.characters}
+              relationships={stagingQuery.data.relationships}
+              worldBible={stagingQuery.data.world_bible}
+              onToggleApproval={handleToggleApproval}
+              onApply={handleApply}
+              onClose={handleReviewClose}
+              applyLoading={applyMutation.isPending}
+            />
+          )}
+        </main>
+      </div>
+    </ViewShell>
   );
 }
 

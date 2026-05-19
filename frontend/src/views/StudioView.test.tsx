@@ -89,28 +89,28 @@ describe('StudioView integration', () => {
     expect(screen.getAllByRole('button', { name: 'Characters' }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders Project drawer button', () => {
+  it('renders Nav drawer button', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
-    expect(screen.getByText('Project')).toBeInTheDocument();
+    expect(screen.getByText('Nav')).toBeInTheDocument();
   });
 
-  it('clicking Project sets leftRailMode to overlay', async () => {
+  it('clicking Nav toggles rail to overlay', async () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
     const user = userEvent.setup();
-    await user.click(screen.getByText('Project'));
+    await user.click(screen.getByText('Nav'));
     expect(useStudioStore.getState().leftRailMode).toBe('overlay');
   });
 
-  it('clicking "Close Studio drawer" sets collapsed mode', async () => {
+  it('clicking "Close left rail drawer" sets collapsed mode', async () => {
     server.use(...writingMocks);
     act(() => {
       useStudioStore.setState({ leftRailMode: 'overlay' });
     });
     renderWithRoute(<StudioView />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Close Studio drawer' }));
+    await user.click(screen.getByRole('button', { name: 'Close left rail drawer' }));
     expect(useStudioStore.getState().leftRailMode).toBe('collapsed');
   });
 

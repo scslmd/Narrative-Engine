@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViewShell Standardization - Mockups</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 2rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #f8fafc; }
+  h2 { font-size: 1.1rem; margin: 2rem 0 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+  h3 { font-size: 0.9rem; margin: 1.5rem 0 0.5rem; color: #64748b; }
+  .subtitle { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
+  .mockup {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+    font-size: 11px;
+  }
+  .mockup-label {
+    padding: 0.5rem 1rem;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+  .command-bar {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    gap: 0.5rem;
+  }
+  .command-bar .title { font-weight: 600; color: #f1f5f9; font-size: 12px; }
+  .command-bar .subtitle-text { color: #64748b; font-size: 10px; }
+  .command-bar .separator { color: #475569; margin: 0 0.25rem; }
+  .command-bar .actions { margin-left: auto; display: flex; gap: 0.375rem; }
+  .command-bar .panel-toggle {
+    padding: 0.2rem 0.5rem;
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    color: #94a3b8;
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 200px 1fr 220px;
+    min-height: 320px;
+  }
+  .grid.no-right {
+    grid-template-columns: 200px 1fr;
+  }
+  .left-rail {
+    background: #0f172a;
+    border-right: 1px solid #334155;
+    padding: 0.75rem;
+  }
+  .left-rail .section-title {
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    padding: 0 0.5rem;
+  }
+  .left-rail .item {
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .left-rail .item:hover { background: #1e293b; }
+  .left-rail .item.active {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    font-weight: 500;
+  }
+  .left-rail .item .icon { width: 14px; text-align: center; opacity: 0.6; }
+  .main-content {
+    padding: 1rem;
+    background: #1e293b;
+    overflow-y: auto;
+  }
+  .right-panel {
+    background: #0f172a;
+    border-left: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+  }
+  .right-panel .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid #334155;
+    background: #1e293b;
+  }
+  .right-panel .panel-tab {
+    flex: 1;
+    padding: 0.4rem 0.25rem;
+    text-align: center;
+    font-size: 9px;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .right-panel .panel-tab.active {
+    color: #60a5fa;
+    border-bottom-color: #3b82f6;
+  }
+  .right-panel .panel-content {
+    padding: 0.75rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .bottom-tray {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    background: #0f172a;
+    border-top: 1px solid #334155;
+    gap: 1rem;
+    font-size: 10px;
+    color: #64748b;
+  }
+  .bottom-tray .status { display: flex; align-items: center; gap: 0.375rem; }
+  .bottom-tray .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .bottom-tray .dot.green { background: #22c55e; }
+  .bottom-tray .dot.yellow { background: #eab308; }
+  .bottom-tray .dot.blue { background: #3b82f6; }
+  .bottom-tray .dot.gray { background: #475569; }
+
+  /* ViewTabs */
+  .view-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #334155;
+    margin-bottom: 1rem;
+  }
+  .view-tab {
+    padding: 0.5rem 1rem;
+    font-size: 11px;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .view-tab:hover { color: #94a3b8; }
+  .view-tab.active {
+    color: #60a5fa;
+    border-bottom-color: #3b82f6;
+    font-weight: 500;
+  }
+
+  /* Cards */
+  .card {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .card-title { font-weight: 600; color: #f1f5f9; font-size: 11px; margin-bottom: 0.375rem; }
+  .card-text { color: #94a3b8; font-size: 10px; line-height: 1.4; }
+  .card-meta { color: #64748b; font-size: 9px; margin-top: 0.375rem; }
+
+  /* Buttons */
+  .btn {
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 10px;
+    border: 1px solid;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .btn-primary {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+  }
+  .btn-secondary {
+    background: transparent;
+    border-color: #475569;
+    color: #94a3b8;
+  }
+  .btn-sm { padding: 0.2rem 0.4rem; font-size: 9px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 500;
+  }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+  .badge-yellow { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+  .badge-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+  .badge-gray { background: rgba(71, 85, 105, 0.3); color: #64748b; }
+
+  /* Comparison table */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .comparison > div { position: relative; }
+  .comparison-label {
+    position: absolute;
+    top: -0.5rem;
+    left: 0.5rem;
+    background: #0f172a;
+    padding: 0 0.5rem;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  /* Before mockup differences */
+  .before-mockup .command-bar { background: #1a1a2e; }
+  .before-mockup .main-content { background: #16213e; }
+  .before-mockup .left-rail { background: #0d1b2a; }
+  .before-mockup .right-panel { background: #0d1b2a; }
+  .before-mockup .view-tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+
+  /* Annotation */
+  .annotation {
+    position: relative;
+  }
+  .annotation::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -0.5rem;
+    right: 0.5rem;
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 500;
+  }
+
+  /* Grid for mockup showcase */
+  .showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    margin: 1rem 0;
+  }
+  .showcase-item {
+    display: flex;
+    flex-direction: column;
+  }
+  .showcase-item .mockup-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .showcase-item .mockup-label .tag {
+    font-size: 9px;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .tag-new { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+  .tag-changed { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+
+  /* Code blocks */
+  code {
+    background: #0f172a;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+  pre {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    margin: 1rem 0;
+  }
+  .arch-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  .arch-box {
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .arch-shell {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+    flex: 1;
+  }
+  .arch-component {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #a78bfa;
+  }
+  .arch-view {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+  }
+  .arch-connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>ViewShell Standardization</h1>
+<p class="subtitle">Visual mockups for shared layout shell, theme migration, and view standardization</p>
+
+<!-- Architecture -->
+<h2>Architecture</h2>
+<div class="arch-diagram">
+  <div class="arch-row">
+    <div class="arch-box arch-shell" style="flex: 3;">ViewShell (shared layout)</div>
+  </div>
+  <div class="arch-connector">├──</div>
+  <div class="arch-row">
+    <div class="arch-box arch-component">CommandBar</div>
+    <div class="arch-box arch-component">LeftRail</div>
+    <div class="arch-box arch-component" style="flex: 2;">Main Content</div>
+    <div class="arch-box arch-component">ContextPanel</div>
+  </div>
+  <div class="arch-connector">└──</div>
+  <div class="arch-row">
+    <div class="arch-box arch-component" style="flex: 1;">BottomUtilityLayer</div>
+  </div>
+  <div class="arch-connector">↓ consumed by</div>
+  <div class="arch-row" style="flex-wrap: wrap;">
+    <div class="arch-box arch-view">PlanningView</div>
+    <div class="arch-box arch-view">ReviewView</div>
+    <div class="arch-box arch-view">GenerationView</div>
+    <div class="arch-box arch-view">CanonView</div>
+    <div class="arch-box arch-view">InspectView</div>
+    <div class="arch-box arch-view">BrainDumpView</div>
+    <div class="arch-box arch-view">WritingView</div>
+    <div class="arch-box arch-view">StudioView</div>
+  </div>
+</div>
+
+<!-- ViewShell Anatomy -->
+<h2>ViewShell Anatomy</h2>
+<div class="mockup">
+  <div class="mockup-label">ViewShell — Full Layout</div>
+  <div class="command-bar">
+    <span class="title">Planning</span>
+    <span class="separator">/</span>
+    <span class="subtitle-text">The Last Horizon</span>
+    <div class="actions">
+      <button class="btn btn-secondary btn-sm">+ New Sequence</button>
+      <button class="btn btn-primary btn-sm">▶ Generate</button>
+      <button class="panel-toggle">☰ Panels</button>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="left-rail">
+      <div class="section-title">Planning</div>
+      <div class="item"><span class="icon">📋</span> Sequences</div>
+      <div class="item active"><span class="icon">📑</span> Chapters</div>
+      <div class="item"><span class="icon">🎬</span> Scenes</div>
+      <div class="item"><span class="icon">🎯</span> Beats</div>
+      <div class="item"><span class="icon">📦</span> Packets</div>
+      <div class="section-title" style="margin-top: 0.75rem;">Project</div>
+      <div class="item"><span class="icon">👥</span> Characters</div>
+      <div class="item"><span class="icon">🌍</span> World Bible</div>
+      <div class="item"><span class="icon">🔗</span> Relationships</div>
+      <div class="item"><span class="icon">📖</span> Foundation</div>
+    </div>
+    <div class="main-content">
+      <div class="view-tabs">
+        <div class="view-tab">Sequences</div>
+        <div class="view-tab active">Chapters</div>
+        <div class="view-tab">Scenes</div>
+        <div class="view-tab">Beats</div>
+        <div class="view-tab">Packets</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Chapter 3: The Storm Approaches <span class="badge badge-green">Ready</span></div>
+        <div class="card-text">Mara confronts the approaching storm while uncovering her father's hidden journal...</div>
+        <div class="card-meta">8 scenes · 4 beats · 12.4K tokens</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Chapter 4: Breaking Point <span class="badge badge-yellow">Drafting</span></div>
+        <div class="card-text">The alliance fractures as betrayal emerges from within the council...</div>
+        <div class="card-meta">6 scenes · 3 beats · 9.1K tokens</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Chapter 5: Aftermath <span class="badge badge-gray">Planned</span></div>
+        <div class="card-text">Rebuilding begins. The cost of war becomes clear to all factions.</div>
+        <div class="card-meta">5 scenes · 2 beats · 7.8K tokens</div>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="panel-tabs">
+        <div class="panel-tab active">Notes</div>
+        <div class="panel-tab">Jobs</div>
+        <div class="panel-tab">Canon</div>
+      </div>
+      <div class="panel-content">
+        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 0.5rem;">
+          <strong style="color: #f1f5f9;">Chapter 3 Notes</strong>
+        </div>
+        <div style="font-size: 10px; color: #64748b; line-height: 1.5;">
+          Remember to connect the storm metaphor to Mara's internal conflict. The journal should reveal the same secret from Chapter 1.
+        </div>
+        <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #334155;">
+          <div style="font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem;">Canon References</div>
+          <div style="font-size: 10px; color: #94a3b8;">📌 Mara's wound (Ch 1)</div>
+          <div style="font-size: 10px; color: #94a3b8;">📌 Storm prophecy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-tray">
+    <div class="status"><div class="dot green"></div> P-300 COMPLETED</div>
+    <div class="status"><div class="dot blue"></div> P-400 PROCESSING</div>
+    <div class="status"><div class="dot gray"></div> 3 suggestions pending</div>
+  </div>
+</div>
+
+<!-- ViewTabs Standard -->
+<h2>ViewTabs — Unified Tab Component</h2>
+<div class="mockup">
+  <div class="mockup-label">ViewTabs — Single Active Color (CSS Variable)</div>
+  <div style="padding: 1rem;">
+    <div class="view-tabs">
+      <div class="view-tab">📋 Sequences</div>
+      <div class="view-tab active">📑 Chapters</div>
+      <div class="view-tab">🎬 Scenes</div>
+      <div class="view-tab">🎯 Beats</div>
+      <div class="view-tab">📦 Packets</div>
+    </div>
+    <div style="margin-top: 0.5rem; font-size: 10px; color: #64748b;">
+      Active tab uses <code>--color-primary</code> (stage-aware). No more 12 color-coded tabs.
+    </div>
+  </div>
+</div>
+
+<!-- Before/After Comparison -->
+<h2>Before / After — PlanningView</h2>
+<div class="comparison">
+  <div>
+    <div class="comparison-label">Before</div>
+    <div class="mockup before-mockup">
+      <div class="command-bar">
+        <span class="title">Planning</span>
+        <span class="separator">/</span>
+        <span class="subtitle-text">The Last Horizon</span>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm">+ New</button>
+        </div>
+      </div>
+      <div style="padding: 0.5rem;">
+        <div class="view-tabs">
+          <div class="view-tab" style="color: #f59e0b;">📋 Seq</div>
+          <div class="view-tab" style="color: #10b981; border-bottom-color: #10b981;">📑 Ch</div>
+          <div class="view-tab" style="color: #6366f1;">🎬 Scn</div>
+          <div class="view-tab" style="color: #ef4444;">🎯 Bt</div>
+          <div class="view-tab" style="color: #8b5cf6;">📦 Pk</div>
+        </div>
+        <div style="padding: 0.75rem; font-size: 10px; color: #94a3b8;">
+          <div style="color: #64748b; font-size: 9px;">isDark ? 'bg-slate-900' : 'bg-white'</div>
+          <div style="color: #64748b; font-size: 9px;">12 color-coded tabs</div>
+          <div style="color: #64748b; font-size: 9px;">p-4 padding, no right panel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="comparison-label">After</div>
+    <div class="mockup">
+      <div class="command-bar">
+        <span class="title">Planning</span>
+        <span class="separator">/</span>
+        <span class="subtitle-text">The Last Horizon</span>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm">+ New Sequence</button>
+          <button class="btn btn-primary btn-sm">▶ Generate</button>
+          <button class="panel-toggle">☰ Panels</button>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="left-rail">
+          <div class="section-title">Planning</div>
+          <div class="item"><span class="icon">📋</span> Sequences</div>
+          <div class="item active"><span class="icon">📑</span> Chapters</div>
+          <div class="item"><span class="icon">🎬</span> Scenes</div>
+          <div class="item"><span class="icon">🎯</span> Beats</div>
+        </div>
+        <div class="main-content">
+          <div class="view-tabs">
+            <div class="view-tab">📋 Sequences</div>
+            <div class="view-tab active">📑 Chapters</div>
+            <div class="view-tab">🎬 Scenes</div>
+            <div class="view-tab">🎯 Beats</div>
+            <div class="view-tab">📦 Packets</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Chapter 3 <span class="badge badge-green">Ready</span></div>
+            <div class="card-text">The storm approaches...</div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="panel-tabs">
+            <div class="panel-tab active">Notes</div>
+            <div class="panel-tab">Jobs</div>
+          </div>
+          <div class="panel-content">
+            <div style="font-size: 10px; color: #64748b;">Context panel content</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-tray">
+        <div class="status"><div class="dot green"></div> P-300 COMPLETED</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Before/After — ReviewView -->
+<h2>Before / After — ReviewView</h2>
+<div class="comparison">
+  <div>
+    <div class="comparison-label">Before</div>
+    <div class="mockup before-mockup">
+      <div class="command-bar">
+        <span class="title">Review</span>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm">Export</button>
+        </div>
+      </div>
+      <div style="padding: 1.25rem;">
+        <div class="view-tabs">
+          <div class="view-tab active" style="color: #f59e0b; border-bottom-color: #f59e0b;">Findings</div>
+          <div class="view-tab" style="color: #f59e0b;">Decisions</div>
+          <div class="view-tab" style="color: #f59e0b;">Inspect Links</div>
+        </div>
+        <div style="padding: 0.75rem; font-size: 10px; color: #94a3b8;">
+          <div style="color: #64748b; font-size: 9px;">isDark ternary theme</div>
+          <div style="color: #64748b; font-size: 9px;">Amber tabs (hardcoded)</div>
+          <div style="color: #64748b; font-size: 9px;">p-5 padding (inconsistent)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="comparison-label">After</div>
+    <div class="mockup">
+      <div class="command-bar">
+        <span class="title">Review</span>
+        <span class="separator">/</span>
+        <span class="subtitle-text">The Last Horizon</span>
+        <div class="actions">
+          <button class="btn btn-secondary btn-sm">Export Report</button>
+          <button class="panel-toggle">☰ Panels</button>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="left-rail">
+          <div class="section-title">Review</div>
+          <div class="item active"><span class="icon">🔍</span> Findings</div>
+          <div class="item"><span class="icon">✅</span> Decisions</div>
+          <div class="item"><span class="icon">🔗</span> Inspect Links</div>
+        </div>
+        <div class="main-content">
+          <div class="view-tabs">
+            <div class="view-tab active">🔍 Findings</div>
+            <div class="view-tab">✅ Decisions</div>
+            <div class="view-tab">🔗 Inspect Links</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Character inconsistency <span class="badge badge-red">High</span></div>
+            <div class="card-text">Mara's fear of water contradicts Chapter 2 where she swims across the river.</div>
+            <div class="card-meta">Chapter 3, Scene 2 · Detected by P-400</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Timeline gap <span class="badge badge-yellow">Medium</span></div>
+            <div class="card-text">3-day gap between Chapter 3 end and Chapter 4 start unexplained.</div>
+            <div class="card-meta">Chapter 3 → 4 transition</div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="panel-tabs">
+            <div class="panel-tab active">Notes</div>
+            <div class="panel-tab">Context</div>
+          </div>
+          <div class="panel-content">
+            <div style="font-size: 10px; color: #64748b;">Review notes and decisions</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-tray">
+        <div class="status"><div class="dot green"></div> Checker COMPLETED</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Before/After — GenerationView -->
+<h2>Before / After — GenerationView</h2>
+<div class="comparison">
+  <div>
+    <div class="comparison-label">Before</div>
+    <div class="mockup before-mockup">
+      <div style="padding: 1rem;">
+        <div style="font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 0.75rem;">Story Generation</div>
+        <div class="card">
+          <div class="card-title">Step 1: Select Mode</div>
+          <div class="card-text">Choose how to generate your story...</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Step 2: Destination</div>
+          <div class="card-text">Where should the generated story go?</div>
+        </div>
+        <div style="margin-top: 0.5rem; font-size: 9px; color: #64748b;">
+          No layout wrapper · No right panel · No left rail
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="comparison-label">After</div>
+    <div class="mockup">
+      <div class="command-bar">
+        <span class="title">Generate</span>
+        <span class="separator">/</span>
+        <span class="subtitle-text">The Last Horizon</span>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm">▶ Start Generation</button>
+          <button class="panel-toggle">☰ Panels</button>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="left-rail">
+          <div class="section-title">Generation</div>
+          <div class="item active"><span class="icon">📝</span> Wizard</div>
+          <div class="item"><span class="icon">📊</span> Run History</div>
+          <div class="item"><span class="icon">🔀</span> Fork Preview</div>
+        </div>
+        <div class="main-content">
+          <div class="card">
+            <div class="card-title">Step 1: Select Mode</div>
+            <div class="card-text">Choose how to generate your story from existing canon...</div>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.375rem;">
+              <button class="btn btn-primary btn-sm">Canon-Driven</button>
+              <button class="btn btn-secondary btn-sm">Freeform</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Step 2: Destination</div>
+            <div class="card-text">Where should the generated story go?</div>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.375rem;">
+              <button class="btn btn-secondary btn-sm">Same Project</button>
+              <button class="btn btn-secondary btn-sm">New Project</button>
+            </div>
+          </div>
+        </div>
+        <div class="right-panel">
+          <div class="panel-tabs">
+            <div class="panel-tab active">Scope</div>
+            <div class="panel-tab">Policy</div>
+          </div>
+          <div class="panel-content">
+            <div style="font-size: 10px; color: #64748b;">Canon scope and policy configuration</div>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-tray">
+        <div class="status"><div class="dot blue"></div> Ready to generate</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Theme Migration -->
+<h2>Theme Migration — CSS Variables</h2>
+<div class="mockup">
+  <div class="mockup-label">Theme Strategy — Before vs After</div>
+  <div style="padding: 1rem;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div>
+        <div style="font-size: 10px; font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">✗ Anti-Patterns (Before)</div>
+        <pre style="margin: 0;"><code>isDark ? 'bg-slate-900' : 'bg-white'
+isDark ? 'text-slate-100' : 'text-slate-900'
+bg-gray-50 dark:bg-slate-900
+tabActiveBgMap[tab.key]  // 12 colors</code></pre>
+      </div>
+      <div>
+        <div style="font-size: 10px; font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">✓ CSS Variables (After)</div>
+        <pre style="margin: 0;"><code>bg-[var(--bg-primary)]
+text-[var(--text-primary)]
+bg-[var(--bg-secondary)]
+bg-[var(--color-primary)]  // stage-aware</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ContextPanel -->
+<h2>ContextPanel — Unified Right Panel</h2>
+<div class="mockup">
+  <div class="mockup-label">ContextPanel — Per-View Content, Shared Component</div>
+  <div style="padding: 0.75rem; font-size: 10px;">
+    <div style="color: #64748b; font-size: 9px; margin-bottom: 0.5rem;">Each view passes its own panel tabs. Shared component, view-controlled content.</div>
+    <pre style="margin: 0;"><code>&lt;ContextPanel
+  tabs={[
+    { id: 'notes', label: 'Notes', content: &lt;NoteEditor /&gt; },
+    { id: 'jobs', label: 'Jobs', content: &lt;JobLauncher /&gt; },
+    { id: 'canon', label: 'Canon', content: &lt;CanonScope /&gt; },
+  ]}
+/&gt;</code></pre>
+  </div>
+</div>
+
+<!-- Migration Checklist -->
+<h2>Migration Checklist</h2>
+<div class="mockup">
+  <div class="mockup-label">Phase 1: Shell Components</div>
+  <div style="padding: 0.75rem; font-size: 10px;">
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Extract <code>ViewShell</code> from StudioView layout
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Extract <code>ViewTabs</code> from PlanningView/ReviewView/CanonWorkshop
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Extract <code>ContextPanel</code> from StudioView context panel
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Migrate StudioView to use ViewShell
+    </div>
+  </div>
+</div>
+<div class="mockup">
+  <div class="mockup-label">Phase 2: View Wrappers</div>
+  <div style="padding: 0.75rem; font-size: 10px;">
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> PlanningView — wrap + ViewTabs + theme migration
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> ReviewView — wrap + ViewTabs + theme migration + padding fix
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> GenerationView — wrap + padding + theme migration
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> CanonView — wrap + ViewTabs + theme migration
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> InspectView — wrap + theme migration
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> BrainDumpView — wrap + minor fixes
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> WritingView — wrap + theme migration
+    </div>
+  </div>
+</div>
+<div class="mockup">
+  <div class="mockup-label">Phase 3: Workspace Shell</div>
+  <div style="padding: 0.75rem; font-size: 10px;">
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Replace WorkspaceShell right sidebar with ViewShell context panel
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Move NotesPanel + JobLaunchPanel to context panels
+    </div>
+    <div style="padding: 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="color: #64748b;">□</span> Remove isDark from all views
+    </div>
+  </div>
+</div>
+
+<!-- File Changes -->
+<h2>New Files</h2>
+<div class="mockup">
+  <div style="padding: 0.75rem; font-size: 10px; font-family: 'Cascadia Code', 'Fira Code', monospace;">
+    <div style="color: #60a5fa;">frontend/src/components/shell/</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">├── ViewShell.tsx</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">├── ViewShell.test.tsx</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">├── ViewTabs.tsx</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">├── ViewTabs.test.tsx</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">├── ContextPanel.tsx</div>
+    <div style="padding-left: 1rem; color: #94a3b8;">└── ContextPanel.test.tsx</div>
+  </div>
+</div>
+
+</body>
+</html>

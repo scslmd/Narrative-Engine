@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BrainDumpCanvas } from '../components/braindump/BrainDumpCanvas';
+import { ViewShell } from '../components/shell/ViewShell';
 import {
   getBrainDumpSessions,
   createBrainDumpSession,
@@ -53,7 +54,6 @@ export function BrainDumpView() {
     },
   });
 
-  // Auto-select existing session or create one
   useEffect(() => {
     if (sessions && sessions.length > 0 && !activeSessionId) {
       const active = sessions.find((s) => s.state === 'active');
@@ -61,7 +61,6 @@ export function BrainDumpView() {
     }
   }, [sessions, activeSessionId]);
 
-  // Create session if none exists
   useEffect(() => {
     if (!sessions || sessions.length === 0 || activeSessionId || !projectId) {
       return;
@@ -91,7 +90,6 @@ export function BrainDumpView() {
     }
   };
 
-  // Show organize summary
   if (organizeResult) {
     const entries = Object.entries(organizeResult.categorized_items)
       .filter(([, items]) => items.length > 0)
@@ -99,43 +97,45 @@ export function BrainDumpView() {
       .join(', ');
 
     return (
-      <div className="flex flex-col h-full">
-        <div className="p-4 bg-[var(--bg-surface)] border-b border-[var(--border-subtle)]">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-            Organized {organizeResult.total_items} items
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">{entries}</p>
-          <button
-            onClick={() => setOrganizeResult(null)}
-            className="mt-2 text-sm text-[var(--primary-accent)] hover:underline"
-          >
-            Continue editing
-          </button>
-        </div>
-        <div className="flex-1 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {Object.entries(organizeResult.categorized_items)
-              .filter(([, items]) => items.length > 0)
-              .map(([type, items]) => (
-                <div
-                  key={type}
-                  className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg p-3"
-                >
-                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-2 capitalize">
-                    {type.replace('_', ' ')}
-                  </h3>
-                  <ul className="space-y-1">
-                    {items.map((item) => (
-                      <li key={item.item_id} className="text-xs text-[var(--text-secondary)] line-clamp-2">
-                        {item.content}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      <ViewShell title="Brain Dump" subtitle={projectId}>
+        <div className="flex flex-col h-full">
+          <div className="p-4 bg-[var(--bg-surface)] border-b border-[var(--border-primary)]">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+              Organized {organizeResult.total_items} items
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)]">{entries}</p>
+            <button
+              onClick={() => setOrganizeResult(null)}
+              className="mt-2 text-sm text-[var(--color-primary)] hover:underline"
+            >
+              Continue editing
+            </button>
+          </div>
+          <div className="flex-1 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {Object.entries(organizeResult.categorized_items)
+                .filter(([, items]) => items.length > 0)
+                .map(([type, items]) => (
+                  <div
+                    key={type}
+                    className="bg-[var(--bg-surface)] border border-[var(--border-primary)] rounded-lg p-3"
+                  >
+                    <h3 className="text-sm font-medium text-[var(--text-primary)] mb-2 capitalize">
+                      {type.replace('_', ' ')}
+                    </h3>
+                    <ul className="space-y-1">
+                      {items.map((item) => (
+                        <li key={item.item_id} className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                          {item.content}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
-      </div>
+      </ViewShell>
     );
   }
 
@@ -147,55 +147,58 @@ export function BrainDumpView() {
     );
   }
 
-  // Error state (check before loading, so auth errors aren't hidden by !activeSession)
   if (error) {
     const isAuthError = error instanceof Error && 'status' in error && error.status === 401;
     return (
-      <div className="flex items-center justify-center h-full">
-        {isAuthError ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2 max-w-md text-center">
-            <p className="text-sm font-medium text-amber-900">API key required</p>
-            <p className="text-sm text-amber-800">
-              Brain Dump requires API authentication. Create an API key in{' '}
-              <button className="font-semibold text-amber-900 underline hover:no-underline cursor-pointer">Settings &gt; API Keys</button>, then set the <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">NARRATIVE_API_KEY</code> environment variable on your server.
-            </p>
-            <p className="text-xs text-amber-700">See <strong>User Guide §Authentication</strong> for setup instructions.</p>
-          </div>
-        ) : (
-          <p className="text-red-400">Failed to load brain dump session.</p>
-        )}
-      </div>
+      <ViewShell title="Brain Dump" subtitle={projectId}>
+        <div className="flex items-center justify-center h-full">
+          {isAuthError ? (
+            <div className="rounded-lg border border-[var(--color-warning-border)] bg-[var(--color-warning-subtle)] p-4 space-y-2 max-w-md text-center">
+              <p className="text-sm font-medium text-[var(--color-warning)]">API key required</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Brain Dump requires API authentication. Create an API key in{' '}
+                <button className="font-semibold text-[var(--color-warning)] underline hover:no-underline cursor-pointer">Settings &gt; API Keys</button>, then set the <code className="px-1 py-0.5 bg-[var(--bg-tertiary)] rounded text-xs">NARRATIVE_API_KEY</code> environment variable on your server.
+              </p>
+              <p className="text-xs text-[var(--text-tertiary)]">See <strong>User Guide §Authentication</strong> for setup instructions.</p>
+            </div>
+          ) : (
+            <p className="text-[var(--color-danger)]">Failed to load brain dump session.</p>
+          )}
+        </div>
+      </ViewShell>
     );
   }
 
-  // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-[var(--text-secondary)]">Loading brain dump session...</p>
-      </div>
+      <ViewShell title="Brain Dump" subtitle={projectId}>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-[var(--text-secondary)]">Loading brain dump session...</p>
+        </div>
+      </ViewShell>
     );
   }
 
-  // No sessions yet — show creation prompt (auto-create is already triggered by useEffect)
   if (!activeSession) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-3">
-          <p className="text-[var(--text-secondary)]">No brain dump sessions yet.</p>
-          <button
-            onClick={() => createMutation.mutate({ project_id: resolvedProjectId })}
-            className="px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-primary)] text-sm font-medium hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors"
-          >
-            + New Session
-          </button>
+      <ViewShell title="Brain Dump" subtitle={projectId}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center space-y-3">
+            <p className="text-[var(--text-secondary)]">No brain dump sessions yet.</p>
+            <button
+              onClick={() => createMutation.mutate({ project_id: resolvedProjectId })}
+              className="px-4 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-primary)] text-sm font-medium hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors"
+            >
+              + New Session
+            </button>
+          </div>
         </div>
-      </div>
+      </ViewShell>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <ViewShell title="Brain Dump" subtitle={projectId}>
       <BrainDumpCanvas
         sessionId={activeSessionId}
         onSave={handleSave}
@@ -203,6 +206,6 @@ export function BrainDumpView() {
         initialTitle={activeSession.title}
         initialState={activeSession.state}
       />
-    </div>
+    </ViewShell>
   );
 }

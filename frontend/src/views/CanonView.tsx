@@ -1,5 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { CanonWorkshop } from '../components/canon/CanonWorkshop';
+import { ViewShell } from '../components/shell/ViewShell';
 import { useCanonController } from '../domains/canon/useCanonController';
 
 export function CanonView() {
@@ -19,25 +20,45 @@ export function CanonView() {
   }
 
   if (controller.isLoading) {
-    return <div className="text-sm text-slate-500">Loading canon workspace...</div>;
+    return (
+      <ViewShell title="Canon" subtitle={projectId}>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-sm text-[var(--text-secondary)]">Loading canon workspace...</p>
+        </div>
+      </ViewShell>
+    );
   }
 
   if (controller.isError) {
     if (controller.isAuthError) {
       return (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-2">
-          <p className="text-sm font-medium text-amber-900">API key required</p>
-          <p className="text-sm text-amber-800">
-            The Canon Workshop requires API authentication. Create an API key in{' '}
-            <button className="font-semibold text-amber-900 underline hover:no-underline cursor-pointer">Settings &gt; API Keys</button>, then set the <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">NARRATIVE_API_KEY</code> environment variable on your server to enable these features.
-          </p>
-          <p className="text-xs text-amber-700">See <strong>User Guide §Authentication</strong> for setup instructions.</p>
-        </div>
+        <ViewShell title="Canon" subtitle={projectId}>
+          <div className="flex items-center justify-center h-full">
+            <div className="rounded-lg border border-[var(--color-warning-border)] bg-[var(--color-warning-subtle)] p-4 space-y-2 max-w-md text-center">
+              <p className="text-sm font-medium text-[var(--color-warning)]">API key required</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                The Canon Workshop requires API authentication. Create an API key in{' '}
+                <button className="font-semibold text-[var(--color-warning)] underline hover:no-underline cursor-pointer">Settings &gt; API Keys</button>, then set the <code className="px-1 py-0.5 bg-[var(--bg-tertiary)] rounded text-xs">NARRATIVE_API_KEY</code> environment variable on your server to enable these features.
+              </p>
+              <p className="text-xs text-[var(--text-tertiary)]">See <strong>User Guide §Authentication</strong> for setup instructions.</p>
+            </div>
+          </div>
+        </ViewShell>
       );
     }
 
-    return <div className="text-sm text-red-600">Failed to load canon workspace data.</div>;
+    return (
+      <ViewShell title="Canon" subtitle={projectId}>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-sm text-[var(--color-danger)]">Failed to load canon workspace data.</p>
+        </div>
+      </ViewShell>
+    );
   }
 
-  return <CanonWorkshop projectId={projectId} initialTab={initialTab} controller={controller} />;
+  return (
+    <ViewShell title="Canon" subtitle={projectId}>
+      <CanonWorkshop projectId={projectId} initialTab={initialTab} controller={controller} />
+    </ViewShell>
+  );
 }

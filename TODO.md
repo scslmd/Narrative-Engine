@@ -16,6 +16,27 @@
 
 ### Pending Work
 
+#### ViewShell Standardization — Sub-component `isDark` Migration (Future)
+
+After ViewShell standardization, sub-components still receive `isDark` props from parent views. Migrate these to CSS variables in a follow-up pass.
+
+**Components to migrate**:
+- `ManuscriptList` — `isDark` prop for card backgrounds, borders
+- `DraftList` — `isDark` prop for item backgrounds
+- `DraftForm` — `isDark` prop for form fields
+- `ManuscriptEditor` — `isDark` prop for toolbar, status bar
+- `RelationshipForm` — `isDark` prop for form fields
+- `RelationshipEditModal` — `isDark` prop for modal content
+- `PlanningTab` — `isDark` prop for card backgrounds (currently `isDark={false}` in PlanningView)
+- `WorldBibleWorkspace` — `isDark` prop for entry cards
+- `CharacterBuilder` — `isDark` prop for form fields
+
+**Approach**: Replace `isDark` ternaries with CSS variable references (`var(--bg-primary)`, `var(--border-primary)`, etc.) in each component. Remove `isDark` prop from interface. Update callers to stop passing `isDark`.
+
+#### Relationship Map Graph — Cytoscape Upgrade (Future)
+
+If character count or relationship density grows and the SVG circular layout becomes inadequate, consider upgrading `RelationshipMapGraph.tsx` to Cytoscape.js for force-directed layout, zoom/pan, and drag-to-rearrange. Current SVG approach is fine at small scale (<20 nodes).
+
 #### Review Idempotent Job Launch (P-100/P-200/P-300/P-400)
 
 When triggering architect, sequencer, drafter, or compiler, review whether the implementation is idempotent — submitting the same job twice should not produce duplicate runs.
@@ -101,6 +122,27 @@ Hidden from basic users: arcs, branches, decisions, flow editor, world bible, re
 - "Advanced" toggle in settings reveals remaining tabs (World Bible, Relationships, Arcs, Branches, Flow, Canon, Brainstorm, Braindump, Inspect, Checker)
 - Alternatively: auto-unlock advanced tabs when user creates content triggering them (e.g., creating 3+ characters unlocks Relationships tab; creating first world bible entry unlocks World Bible tab)
 - Progress indicator shows "X of Y features unlocked" to encourage exploration without overwhelming
+
+#### ViewShell Standardization — Sub-component `isDark` Migration (Future)
+
+After ViewShell standardization, sub-components still receive `isDark` props from parent views. Migrate these to CSS variables in a follow-up pass.
+
+**Components to migrate**:
+- `ManuscriptList` — `isDark` prop for card backgrounds, borders
+- `DraftList` — `isDark` prop for item backgrounds
+- `DraftForm` — `isDark` prop for form fields
+- `ManuscriptEditor` — `isDark` prop for toolbar, status bar
+- `RelationshipForm` — `isDark` prop for form fields
+- `RelationshipEditModal` — `isDark` prop for modal content
+- `PlanningTab` — `isDark` prop for card backgrounds (currently `isDark={false}` in PlanningView)
+- `WorldBibleWorkspace` — `isDark` prop for entry cards
+- `CharacterBuilder` — `isDark` prop for form fields
+
+**Approach**: Replace `isDark` ternaries with CSS variable references (`var(--bg-primary)`, `var(--border-primary)`, etc.) in each component. Remove `isDark` prop from interface. Update callers to stop passing `isDark`.
+
+#### ViewShell Standardization — `PlanningTab` `isDark` Prop Removal (Future)
+
+`PlanningView` passes `isDark={false}` to `PlanningTab` as a temporary measure after ViewShell migration. The `PlanningTab` component still uses `isDark` internally for card backgrounds and borders. Remove the prop and migrate to CSS variables when the sub-component `isDark` migration above is done.
 
 #### Persistence and Runtime Expansion
 
