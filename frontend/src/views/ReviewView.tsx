@@ -5,8 +5,8 @@ import { Search, Link as LinkIcon, X } from 'lucide-react';
 import { FindingsList } from '../components/review';
 import { InspectRunLinksList } from '../components/inspectLinks';
 import { createInspectLink } from '../services/inspectLinks';
-import { useThemeStore } from '../stores/themeStore';
-import { resolveEffectiveMode } from '../theme/theme';
+import { ViewShell } from '../components/shell/ViewShell';
+import { ViewTabs } from '../components/shell/ViewTabs';
 
 interface InspectLinkFormData {
   link_id: string;
@@ -31,9 +31,6 @@ export function ReviewView() {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const { mode, _systemTick } = useThemeStore();
-  void _systemTick;
-  const isDark = resolveEffectiveMode(mode) === 'dark';
 
   const createMutation = useMutation({
     mutationFn: (data: InspectLinkFormData) =>
@@ -82,157 +79,138 @@ export function ReviewView() {
   }, [formData, createMutation]);
 
   if (!projectId) {
-    return <div className="text-sm text-subtle">No project selected</div>;
+    return <div className="text-sm text-[var(--text-secondary)]">No project selected</div>;
   }
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className={`border-b ${isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-200 bg-white/60'} px-4 py-2`}>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setActiveTab('findings')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
-              activeTab === 'findings'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : isDark
-                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80'
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            Findings
-          </button>
-          <button
-            onClick={() => setActiveTab('links')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
-              activeTab === 'links'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : isDark
-                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80'
-            }`}
-          >
-            <LinkIcon className="w-3.5 h-3.5" />
-            Inspect Run Links
-          </button>
-        </div>
-      </div>
+  const tabs = [
+    { id: 'findings', label: 'Findings', icon: <Search className="w-3.5 h-3.5" /> },
+    { id: 'links', label: 'Inspect Run Links', icon: <LinkIcon className="w-3.5 h-3.5" /> },
+  ];
 
-      <main className="flex-1 overflow-y-auto">
-        {activeTab === 'findings' && (
-          <div className="p-5">
-            <FindingsList projectId={projectId} />
-          </div>
-        )}
-        {activeTab === 'links' && (
-          <div className={`p-5 space-y-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-            {!showCreateForm ? (
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${isDark ? 'bg-indigo-950 text-indigo-300 hover:bg-indigo-900' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
-                >
-                  + New Link
-                </button>
-              </div>
-            ) : (
-              <div className={`p-4 rounded-lg border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold">Create Inspect Run Link</h4>
-                  <button onClick={handleResetForm} className={`text-xs ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
-                    <X className="w-4 h-4" />
+  return (
+    <ViewShell title="Review" subtitle={projectId}>
+      <div className="flex flex-col h-full">
+        <ViewTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as 'findings' | 'links')}
+        />
+        <main className="flex-1 overflow-y-auto">
+          {activeTab === 'findings' && (
+            <div className="p-4">
+              <FindingsList projectId={projectId} />
+            </div>
+          )}
+          {activeTab === 'links' && (
+            <div className="p-4 space-y-4 text-[var(--text-primary)]">
+              {!showCreateForm ? (
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="text-xs px-2.5 py-1 rounded-md font-medium transition-colors bg-[var(--color-primary-subtle)] text-[var(--color-primary)] hover:bg-[var(--color-primary-border)]"
+                  >
+                    + New Link
                   </button>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Link ID</label>
-                      <input
-                        type="text"
-                        placeholder="link-1"
-                        value={formData.link_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, link_id: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-32 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Object Kind</label>
-                      <input
-                        type="text"
-                        placeholder="chapter-plan"
-                        value={formData.object_kind}
-                        onChange={(e) => setFormData(prev => ({ ...prev, object_kind: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-40 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Object ID</label>
-                      <input
-                        type="text"
-                        placeholder="abc-123"
-                        value={formData.object_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, object_id: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-32 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Logical Run ID</label>
-                      <input
-                        type="text"
-                        placeholder="run-001"
-                        value={formData.logical_run_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, logical_run_id: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-32 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Run ID</label>
-                      <input
-                        type="text"
-                        placeholder="job-abc"
-                        value={formData.run_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, run_id: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-32 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-medium text-subtle">Run Kind</label>
-                      <input
-                        type="text"
-                        placeholder="pipeline_job"
-                        value={formData.run_kind}
-                        onChange={(e) => setFormData(prev => ({ ...prev, run_kind: e.target.value }))}
-                        className={`text-xs px-2 py-1.5 rounded border outline-none focus:border-indigo-500 w-32 ${isDark ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-800'}`}
-                      />
-                    </div>
-                  </div>
-                  {formError && (
-                    <p className="text-xs text-red-500">{formError}</p>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={handleCreateSubmit}
-                      disabled={createMutation.isPending}
-                      className="text-xs px-2.5 py-1.5 rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 font-medium"
-                    >
-                      {createMutation.isPending ? 'Creating...' : 'Create'}
+              ) : (
+                <div className="p-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-[var(--text-primary)]">Create Inspect Run Link</h4>
+                    <button onClick={handleResetForm} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                      <X className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={handleResetForm}
-                      className={`text-xs px-2.5 py-1.5 rounded-md font-medium ${isDark ? 'text-slate-400 hover:text-slate-200 bg-slate-800' : 'text-slate-500 hover:text-slate-700 bg-slate-100'}`}
-                    >
-                      Cancel
-                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Link ID</label>
+                        <input
+                          type="text"
+                          placeholder="link-1"
+                          value={formData.link_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, link_id: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-32"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Object Kind</label>
+                        <input
+                          type="text"
+                          placeholder="chapter-plan"
+                          value={formData.object_kind}
+                          onChange={(e) => setFormData(prev => ({ ...prev, object_kind: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-40"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Object ID</label>
+                        <input
+                          type="text"
+                          placeholder="abc-123"
+                          value={formData.object_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, object_id: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-32"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Logical Run ID</label>
+                        <input
+                          type="text"
+                          placeholder="run-001"
+                          value={formData.logical_run_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, logical_run_id: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-32"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Run ID</label>
+                        <input
+                          type="text"
+                          placeholder="job-abc"
+                          value={formData.run_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, run_id: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-32"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-medium text-[var(--text-tertiary)]">Run Kind</label>
+                        <input
+                          type="text"
+                          placeholder="pipeline_job"
+                          value={formData.run_kind}
+                          onChange={(e) => setFormData(prev => ({ ...prev, run_kind: e.target.value }))}
+                          className="text-xs px-2 py-1.5 rounded border border-[var(--border-primary)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[var(--color-primary)] w-32"
+                        />
+                      </div>
+                    </div>
+                    {formError && (
+                      <p className="text-xs text-[var(--color-danger)]">{formError}</p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={handleCreateSubmit}
+                        disabled={createMutation.isPending}
+                        className="text-xs px-2.5 py-1.5 rounded-md bg-[var(--color-success)] text-white hover:opacity-90 disabled:opacity-40 font-medium"
+                      >
+                        {createMutation.isPending ? 'Creating...' : 'Create'}
+                      </button>
+                      <button
+                        onClick={handleResetForm}
+                        className="text-xs px-2.5 py-1.5 rounded-md font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-tertiary)]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <InspectRunLinksList projectId={projectId} />
-          </div>
-        )}
-      </main>
-    </div>
+              )}
+              <InspectRunLinksList projectId={projectId} />
+            </div>
+          )}
+        </main>
+      </div>
+    </ViewShell>
   );
 }
