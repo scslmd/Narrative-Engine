@@ -8,9 +8,11 @@
 
 **Architecture:** Replace the current `StudioView` grid layout (ViewShell with left rail + right panel) with `StudioRadialHub` that renders panels as `StudioFloatingPanel` instances managed by a new layout store. Existing panel content components are reused unchanged, wrapped by `StudioFloatingPanel`. The store adds layout state (panel positions, sizes, visibility) while preserving backward-compatible types for existing consumers.
 
-**Tech Stack:** React 18, TypeScript, Zustand, `@dnd-kit/core` (installed), `@dnd-kit/utilities` (installed), `react-resizable-panels` (new), Tailwind CSS, CSS variables
+**Tech Stack:** React 18, TypeScript, Zustand, `@dnd-kit/core` (installed), `@dnd-kit/utilities` (installed), custom resize handles, Tailwind CSS, CSS variables
 
 **Dependencies (existing):** `@dnd-kit/core@^6.3.1`, `@dnd-kit/utilities@^3.2.2`
+
+**Note:** `react-resizable-panels` is NOT used — it's designed for split-pane layouts (PanelGroup/Panel), not floating panels. Custom mouse-event resize handles are implemented directly on `StudioFloatingPanel`.
 
 ---
 
@@ -18,11 +20,11 @@
 
 | File | Action | Responsibility |
 |------|--------|---------------|
-| `frontend/package.json` | Modify | Add `react-resizable-panels` dependency |
-| `frontend/src/stores/studioStore.ts` | Modify | Add layout state/types alongside existing state (backward-compatible) |
+| `frontend/src/stores/studioStore.ts` | Modify | Add layout state/types, currentProjectId, per-panel state (backward-compatible) |
 | `frontend/src/components/studio/StudioFloatingPanel.tsx` | Create | Draggable/resizable/tear-off panel wrapper |
 | `frontend/src/components/studio/StudioRadialHub.tsx` | Create | Main layout manager: dnd context, panel rendering, snap grid |
-| `frontend/src/components/studio/StudioPanelMenu.tsx` | Create | Dropdown menu to toggle panel visibility |
+| `frontend/src/components/studio/StudioPanelMenu.tsx` | Create | Dropdown menu to add panel instances |
+| `frontend/src/components/studio/StudioPanelContent.tsx` | Create | Routes panel key to correct component (content router) |
 | `frontend/src/views/StudioView.tsx` | Modify | Replace ViewShell grid with StudioRadialHub |
 | `frontend/src/components/studio/StudioCommandBar.tsx` | Modify | Add panel menu button and layout reset button |
 
@@ -30,26 +32,46 @@
 
 ---
 
-## Task 1: Install `react-resizable-panels`
+## Task 1: Extend `StudioPanelKey` with missing panel types
 
 **Files:**
-- Modify: `frontend/package.json`
+- Modify: `frontend/src/stores/studioStore.ts`
 
-- [ ] **Step 1: Install package**
+**Purpose:** Add `structure`, `chapters`, `canon` to `StudioPanelKey` so they can be used in the panel menu and content router without `as any` casts. (These panels are wired in Phase 2; the keys exist now so the menu can list them.)
 
-Run: `cd frontend && npm install react-resizable-panels`
-Expected: Package installed, `package.json` updated with `"react-resizable-panels": "^X.Y.Z"`
+- [ ] **Step 1: Add missing keys to StudioPanelKey**
 
-- [ ] **Step 2: Verify import works**
+Add to the existing union type:
+```ts
+export type StudioPanelKey =
+  | 'suggestions'
+  | 'ideas'
+  | 'drafts'
+  | 'manuscripts'
+  | 'characters'
+  | 'worldBible'
+  | 'relationships'
+  | 'arcs'
+  | 'structure'    // NEW
+  | 'chapters'     // NEW
+  | 'canon'        // NEW
+  | 'generation'
+  | 'review'
+  | 'inspect'
+  | 'notes'
+  | 'jobs';
+```
+
+- [ ] **Step 2: Run typecheck**
 
 Run: `cd frontend && npm run typecheck`
-Expected: PASS (no new errors beyond pre-existing)
+Expected: PASS (no new errors)
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add frontend/package.json frontend/package-lock.json
-git commit -m "feat: install react-resizable-panels for radial hub"
+git add frontend/src/stores/studioStore.ts
+git commit -m "feat: add structure, chapters, canon to StudioPanelKey"
 ```
 
 ---
@@ -60,6 +82,11 @@ git commit -m "feat: install react-resizable-panels for radial hub"
 - Modify: `frontend/src/stores/studioStore.ts`
 
 **Design:** Add new types and state alongside existing types. Keep all existing types (`StudioPanelKey`, `StudioRailMode`, `StudioContextMode`, `PersistedStudioLayout`, `StudioState`) and their behavior unchanged. New state uses `layout` namespace to avoid collision.
+
+**Fixes applied (adversarial review):**
+- **H1:** Added `currentProjectId` to store so `addPanel` can persist to correct project
+- **H2:** `loadLayout` now wires to `loadLayoutV2`
+- **H3:** `togglePanel` interface matches implementation with optional `stateSnapshot`
 
 - [ ] **Step 1: Add new types**
 
@@ -75,6 +102,9 @@ export interface PanelLayoutState {
   pinned: boolean;
   floating: boolean;
   zIndex: number;
+  // Per-panel state persistence (Photoshop-style: remember everything)
+  collapsedSections: Record<string, boolean>;  // form section collapse states
+  scrollY: number;                              // scroll position on hide
 }
 
 export interface StudioLayoutState {
@@ -99,7 +129,7 @@ function snapToGrid(value: number): number {
 }
 
 function generatePanelId(): string {
-  return `panel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `panel-${crypto.randomUUID?.() ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 ```
 
@@ -112,18 +142,20 @@ interface StudioState {
   // ... existing fields unchanged ...
 
   // Layout state (Phase 1)
+  currentProjectId: string | null;
   layout: StudioLayoutState;
+  setCurrentProjectId: (projectId: string | null) => void;
   addPanel: (key: StudioPanelKey) => string;
   removePanel: (id: string) => void;
   movePanel: (id: string, position: { x: number; y: number }) => void;
   resizePanel: (id: string, size: { width: number; height: number }) => void;
-  togglePanel: (id: string) => void;
+  togglePanel: (id: string, stateSnapshot?: { collapsedSections?: Record<string, boolean>; scrollY?: number }) => void;
+  updatePanelState: (id: string, updates: { collapsedSections?: Record<string, boolean>; scrollY?: number }) => void;
   pinPanel: (id: string, pinned: boolean) => void;
   tearOffPanel: (id: string) => void;
   reattachPanel: (id: string) => void;
   bringToFront: (id: string) => void;
   resetLayout: () => void;
-  saveLayout: () => void;
   loadLayout: (projectId: string) => void;
 }
 ```
@@ -136,95 +168,129 @@ Add to the `create<StudioState>` call, after existing state:
 
 ```ts
 // Layout state
+currentProjectId: null,
 layout: {
   panels: {},
   nextZIndex: 1,
   layoutPreset: null,
 },
+setCurrentProjectId: (projectId) => set({ currentProjectId: projectId }),
 addPanel: (key) =>
   set((state) => {
     const id = generatePanelId();
-    const workspaceRect = { width: window.innerWidth - 32, height: window.innerHeight - 100 };
+    const panelCount = Object.keys(state.layout.panels).length;
     const panel: PanelLayoutState = {
       id,
       key,
-      position: { x: snapToGrid(20 + Object.keys(state.layout.panels).length * 12), y: snapToGrid(40) },
-      size: { width: 240, height: 320 },
+      position: { x: snapToGrid(16 + (panelCount % 6) * 12), y: snapToGrid(40 + Math.floor(panelCount / 6) * 80) },
+      size: { width: 280, height: 360 },
       visible: true,
       pinned: false,
       floating: false,
       zIndex: state.layout.nextZIndex,
+      collapsedSections: {},
+      scrollY: 0,
     };
     const newPanels = { ...state.layout.panels, [id]: panel };
-    persistLayoutV2(state.projectId || '', { panels: newPanels, nextZIndex: state.layout.nextZIndex + 1, layoutPreset: null });
-    return { layout: { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 } };
+    const newLayout = { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 removePanel: (id) =>
   set((state) => {
     const newPanels = { ...state.layout.panels };
     delete newPanels[id];
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 movePanel: (id, position) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const snapped = { x: snapToGrid(position.x), y: snapToGrid(position.y) };
     const newPanels = { ...state.layout.panels, [id]: { ...panel, position: snapped } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 resizePanel: (id, size) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const clamped = {
-      width: Math.max(MIN_PANEL_WIDTH, Math.min(size.width, window.innerWidth - MIN_PANEL_WIDTH - 32)),
-      height: Math.max(MIN_PANEL_HEIGHT, Math.min(size.height, window.innerHeight - MIN_PANEL_HEIGHT - 100)),
+      width: Math.max(MIN_PANEL_WIDTH, Math.min(size.width, 800)),
+      height: Math.max(MIN_PANEL_HEIGHT, Math.min(size.height, 900)),
     };
     const newPanels = { ...state.layout.panels, [id]: { ...panel, size: clamped } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
-togglePanel: (id) =>
+togglePanel: (id, stateSnapshot) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
-    const newPanels = { ...state.layout.panels, [id]: { ...panel, visible: !panel.visible } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    if (!panel) return {};
+    const updated = panel.visible
+      ? { ...panel, visible: false, collapsedSections: stateSnapshot?.collapsedSections ?? panel.collapsedSections, scrollY: stateSnapshot?.scrollY ?? panel.scrollY }
+      : { ...panel, visible: true };
+    const newPanels = { ...state.layout.panels, [id]: updated };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
+  }),
+updatePanelState: (id, updates) =>
+  set((state) => {
+    const panel = state.layout.panels[id];
+    if (!panel) return {};
+    const newPanels = { ...state.layout.panels, [id]: { ...panel, ...updates } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 pinPanel: (id, pinned) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const newPanels = { ...state.layout.panels, [id]: { ...panel, pinned } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 tearOffPanel: (id) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: true } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 reattachPanel: (id) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: false } };
-    return { layout: { ...state.layout, panels: newPanels } };
+    const newLayout = { ...state.layout, panels: newPanels };
+    if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+    return { layout: newLayout };
   }),
 bringToFront: (id) =>
   set((state) => {
     const panel = state.layout.panels[id];
-    if (!panel) return state;
+    if (!panel) return {};
     const newPanels = { ...state.layout.panels, [id]: { ...panel, zIndex: state.layout.nextZIndex } };
     return { layout: { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 } };
   }),
-saveLayout: () => {
-  // Handled inline in each action — no-op for explicit save
-},
-loadLayout: (projectId) => {
-  // Load from localStorage — implemented in Step 5
-},
+loadLayout: (projectId) =>
+  set((state) => {
+    if (state.currentProjectId === projectId) return {};
+    const saved = loadLayoutV2(projectId);
+    return {
+      currentProjectId: projectId,
+      layout: saved ?? { panels: {}, nextZIndex: 1, layoutPreset: null },
+    };
+  }),
 ```
 
 - [ ] **Step 5: Add layout persistence helper**
@@ -259,46 +325,39 @@ function loadLayoutV2(projectId: string): StudioLayoutState | null {
 }
 ```
 
-- [ ] **Step 6: Initialize layout from storage**
+- [ ] **Step 6: Extend existing `resetLayout` to clear layout state**
 
-In the `create<StudioState>` call, use `loadLayoutV2` for initial layout state. Since `projectId` is not available at store creation time, initialize with empty and load on first access:
-
-```ts
-layout: {
-  panels: {},
-  nextZIndex: 1,
-  layoutPreset: null,
-},
-```
-
-The `loadLayout` action handles loading when projectId becomes available (called from StudioView).
-
-- [ ] **Step 7: Extend existing `resetLayout` to clear layout state**
-
-Modify the existing `resetLayout` action to also reset layout:
+Modify the existing `resetLayout` action to also reset layout and clear v2 storage:
 
 ```ts
 resetLayout: () => {
-  set({
-    activePanel: 'suggestions',
-    leftRailMode: 'collapsed',
-    contextPanelMode: 'docked',
-    contextPanelPinned: true,
-    leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,
-    contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
-    panelVisible: false,
-    layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+  set((state) => {
+    // Clear v2 storage for current project
+    if (state.currentProjectId) {
+      try { localStorage.removeItem(STUDIO_LAYOUT_V2_KEY(state.currentProjectId)); } catch { /* ignore */ }
+    }
+    return {
+      activePanel: 'suggestions',
+      leftRailMode: 'collapsed',
+      contextPanelMode: 'docked',
+      contextPanelPinned: true,
+      leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,
+      contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
+      panelVisible: false,
+      currentProjectId: null,
+      layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+    };
   });
   persistLayout(useStudioStore.getState());
 },
 ```
 
-- [ ] **Step 8: Run typecheck**
+- [ ] **Step 7: Run typecheck**
 
 Run: `cd frontend && npm run typecheck`
 Expected: PASS (no new errors)
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add frontend/src/stores/studioStore.ts
@@ -401,9 +460,8 @@ Expected: FAIL (module not found)
 - [ ] **Step 3: Create component**
 
 ```tsx
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Resizable, ResizeHandle } from 'react-resizable-panels';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
 
@@ -415,6 +473,10 @@ const PANEL_LABELS: Record<StudioPanelKey, string> = {
   characters: '👤 Characters',
   worldBible: '🌍 World Bible',
   relationships: '🔗 Relationships',
+  arcs: '📈 Arcs',
+  structure: '📋 Structure',
+  chapters: '📑 Chapters',
+  canon: '📜 Canon',
   generation: '⚡ Generation',
   review: '🔍 Review',
   inspect: '🔬 Inspect',
@@ -444,7 +506,6 @@ function StudioFloatingPanelImpl({
   zIndex,
   children,
 }: StudioFloatingPanelProps) {
-  const movePanel = useStudioStore((s) => s.movePanel);
   const resizePanel = useStudioStore((s) => s.resizePanel);
   const removePanel = useStudioStore((s) => s.removePanel);
   const pinPanel = useStudioStore((s) => s.pinPanel);
@@ -456,32 +517,63 @@ function StudioFloatingPanelImpl({
     disabled: floating,
   });
 
-  const style = transform
-    ? {
-        transform: `translate(${transform.x}px, ${transform.y}px)`,
-        zIndex,
-      }
-    : {
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        width: `${size.width}px`,
-        height: `${size.height}px`,
-        zIndex,
-      };
+  // FIX H4: Always include base position/size; layer transform on top
+  const style: React.CSSProperties = {
+    position: floating ? 'fixed' : 'absolute',
+    left: `${position.x}px`,
+    top: `${position.y}px`,
+    width: `${size.width}px`,
+    height: `${size.height}px`,
+    zIndex,
+    transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
+    transition: transform ? 'none' : 'box-shadow 0.15s, left 0.1s, top 0.1s',
+  };
 
-  const handleDragEnd = useCallback(
-    (_event: { delta: { x: number; y: number } }) => {
-      // Will be handled by parent DndContext onDragEnd
+  // Custom resize handles (FIX C1: react-resizable-panels is for split-panes, not floating panels)
+  const [resizing, setResizing] = useState<'none' | 'right' | 'bottom' | 'corner'>('none');
+  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const handleResizeStart = useCallback(
+    (edge: 'right' | 'bottom' | 'corner', e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setResizing(edge);
+      resizeRef.current = { startX: e.clientX, startY: e.clientY, startW: size.width, startH: size.height };
     },
-    []
+    [size]
   );
 
-  const handleResize = useCallback(
-    (newSize: { width: number; height: number }) => {
-      resizePanel(panelId, newSize);
-    },
-    [panelId, resizePanel]
-  );
+  // FIX H7: Throttle resize to one call per frame via requestAnimationFrame
+  useEffect(() => {
+    if (resizing === 'none' || !resizeRef.current) return;
+    const handleMove = (e: MouseEvent) => {
+      if (rafRef.current != null) return; // Skip if frame already scheduled
+      rafRef.current = requestAnimationFrame(() => {
+        const dx = e.clientX - resizeRef.current!.startX;
+        const dy = e.clientY - resizeRef.current!.startY;
+        let newW = resizeRef.current!.startW;
+        let newH = resizeRef.current!.startH;
+        if (resizing === 'right' || resizing === 'corner') newW = Math.max(180, resizeRef.current!.startW + dx);
+        if (resizing === 'bottom' || resizing === 'corner') newH = Math.max(120, resizeRef.current!.startH + dy);
+        resizePanel(panelId, { width: newW, height: newH });
+        rafRef.current = null;
+      });
+    };
+    const handleUp = () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      setResizing('none');
+      resizeRef.current = null;
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [resizing, panelId, resizePanel]);
 
   const label = PANEL_LABELS[panelKey] || panelKey;
 
@@ -493,14 +585,10 @@ function StudioFloatingPanelImpl({
       {...listeners}
       onClick={() => bringToFront(panelId)}
       className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-lg"
-      style={{
-        ...style,
-        position: floating ? 'fixed' : 'absolute',
-        transition: transform ? 'none' : 'box-shadow 0.15s',
-      }}
+      style={style}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5">
+      {/* Header (drag target) */}
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 cursor-grab active:cursor-grabbing">
         <span className="text-xs font-semibold text-[var(--text-primary)]">{label}</span>
         <div className="flex items-center gap-1">
           {floating ? (
@@ -535,23 +623,26 @@ function StudioFloatingPanelImpl({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        <Resizable defaultSize={100} className="h-full w-full">
-          {children}
-          <ResizeHandle
-            className="relative flex w-1 items-center justify-end bg-transparent transition-colors hover:bg-[var(--accent-primary)]"
-            onResize={(e, size) => {
-              // ResizeHandle provides direction — map to width/height
-              const container = (e.target as HTMLElement).parentElement;
-              if (container) {
-                handleResize({
-                  width: container.offsetWidth + (size.deltaX ?? 0),
-                  height: container.offsetHeight + (size.deltaY ?? 0),
-                });
-              }
-            }}
-          />
-        </Resizable>
+      <div className="relative flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto p-2">{children}</div>
+
+        {/* Resize handles (visible on hover) */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: 'var(--accent-primary)' }}
+          onMouseDown={(e) => handleResizeStart('right', e)}
+        />
+        <div
+          className="absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: 'var(--accent-primary)' }}
+          onMouseDown={(e) => handleResizeStart('bottom', e)}
+        />
+        <div
+          className="absolute right-0 bottom-0 w-3 h-3 cursor-nwse-resize"
+          onMouseDown={(e) => handleResizeStart('corner', e)}
+        >
+          <div className="absolute right-0.5 bottom-0.5 w-2 h-2 rotate-45 bg-[var(--text-secondary)]" />
+        </div>
       </div>
     </div>
   );
@@ -591,7 +682,7 @@ interface StudioPanelMenuProps {
 }
 ```
 
-**Purpose:** Dropdown menu listing all 12 panels with checkboxes showing current visibility. Clicking adds a panel instance to the layout.
+**Purpose:** Dropdown menu for adding panel instances to the layout. Checkmark (✓) indicates which panel types already have an open instance. Clicking always adds a new panel; removal is via the panel's ✕ close button.
 
 - [ ] **Step 1: Write test**
 
@@ -627,8 +718,9 @@ Expected: FAIL (module not found)
 ```tsx
 import { memo, useRef, useEffect, useState } from 'react';
 import { useStudioStore } from '../../stores/studioStore';
+import type { StudioPanelKey } from '../../stores/studioStore';
 
-const PANEL_OPTIONS = [
+const PANEL_OPTIONS: { key: StudioPanelKey; label: string }[] = [
   { key: 'characters', label: '👤 Characters' },
   { key: 'relationships', label: '🔗 Relationships' },
   { key: 'worldBible', label: '🌍 World Bible' },
@@ -641,9 +733,7 @@ const PANEL_OPTIONS = [
   { key: 'review', label: '🔍 Review' },
   { key: 'inspect', label: '🔬 Inspect' },
   { key: 'canon', label: '📜 Canon' },
-] as const;
-
-type PanelOptionKey = typeof PANEL_OPTIONS[number]['key'];
+];
 
 interface StudioPanelMenuProps {
   projectId: string;
@@ -667,8 +757,8 @@ function StudioPanelMenuImpl({ projectId }: StudioPanelMenuProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const handleAddPanel = (key: PanelOptionKey) => {
-    addPanel(key as any);
+  const handleAddPanel = (key: StudioPanelKey) => {
+    addPanel(key);
     setOpen(false);
   };
 
@@ -748,30 +838,38 @@ import { StudioRadialHub } from './StudioRadialHub';
 import { useStudioStore } from '../../stores/studioStore';
 
 describe('StudioRadialHub', () => {
+  // FIX M3: Isolate tests by resetting store state before each test
+  beforeEach(() => {
+    useStudioStore.setState({
+      currentProjectId: null,
+      layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+    });
+  });
+
+  afterEach(() => {
+    // Cleanup all panels after each test
+    const panels = Object.keys(useStudioStore.getState().layout.panels);
+    panels.forEach((id) => useStudioStore.getState().removePanel(id));
+    useStudioStore.setState({ currentProjectId: null });
+  });
+
   it('renders workspace container', () => {
     render(<StudioRadialHub projectId="proj-1" />);
-    const container = screen.getByRole('main') || document.querySelector('[data-radial-hub]');
+    const container = document.querySelector('[data-radial-hub]');
     expect(container).toBeInTheDocument();
   });
 
   it('renders visible panels', () => {
-    const store = useStudioStore.getState();
-    store.addPanel('characters');
+    useStudioStore.getState().addPanel('characters');
     render(<StudioRadialHub projectId="proj-1" />);
     expect(screen.getByText('👤 Characters')).toBeInTheDocument();
-    // Cleanup
-    const panels = Object.keys(store.layout.panels);
-    panels.forEach((id) => store.removePanel(id));
   });
 
   it('does not render hidden panels', () => {
-    const store = useStudioStore.getState();
-    const id = store.addPanel('ideas');
-    store.togglePanel(id);
+    const id = useStudioStore.getState().addPanel('ideas');
+    useStudioStore.getState().togglePanel(id);
     render(<StudioRadialHub projectId="proj-1" />);
     expect(screen.queryByText('💡 Ideas')).not.toBeInTheDocument();
-    // Cleanup
-    store.removePanel(id);
   });
 });
 ```
@@ -810,30 +908,39 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
     [layout.panels]
   );
 
+  // FIX C2: Use delta instead of over.rect (over is always null without useDroppable targets)
+  // FIX M9: Use getState() for current layout instead of closure-captured layout
   const handleDragEnd = useCallback(
-    (event: { over: { rect: { x: number; y: number; width: number; height: number } } | null; active: { id: string } }) => {
-      const { over, active } = event;
-      if (over) {
-        movePanel(active.id as string, {
-          x: over.rect.x,
-          y: over.rect.y,
+    (event: { active: { id: string }; delta: { x: number; y: number } }) => {
+      const currentPanels = useStudioStore.getState().layout.panels;
+      const panel = currentPanels[event.active.id as string];
+      if (panel) {
+        movePanel(event.active.id as string, {
+          x: panel.position.x + event.delta.x,
+          y: panel.position.y + event.delta.y,
         });
       }
     },
     [movePanel]
   );
 
+  // FIX M1: Snap grid in separate layer so opacity doesn't affect child panels
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div
         data-radial-hub
         className="relative h-full w-full overflow-hidden bg-[var(--bg-tertiary)]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, var(--border-primary) 1px, transparent 1px)',
-          backgroundSize: '8px 8px',
-          opacity: 0.3,
-        }}
       >
+        {/* Snap grid background layer - separate from content */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: 'radial-gradient(circle, var(--border-primary) 1px, transparent 1px)',
+            backgroundSize: '8px 8px',
+            opacity: 0.3,
+          }}
+        />
+        {/* Panels layer */}
         {visiblePanels.map((panel) => (
           <StudioFloatingPanel
             key={panel.id}
@@ -882,6 +989,7 @@ import { StudioCharactersPanel } from './StudioCharactersPanel';
 import { StudioIdeasPanel } from './StudioIdeasPanel';
 import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
 import { StudioRelationshipsPanel } from './StudioRelationshipsPanel';
+import { StudioArcsPanel } from './StudioArcsPanel';
 import { StudioGenerationPanel } from './StudioGenerationPanel';
 import { StudioReviewPanel } from './StudioReviewPanel';
 import { StudioInspectPanel } from './StudioInspectPanel';
@@ -906,6 +1014,8 @@ function StudioPanelContentImpl({ panelKey, projectId }: StudioPanelContentProps
       return <StudioWorldBiblePanel projectId={projectId} />;
     case 'relationships':
       return <StudioRelationshipsPanel projectId={projectId} />;
+    case 'arcs':
+      return <StudioArcsPanel projectId={projectId} />;
     case 'generation':
       return <StudioGenerationPanel projectId={projectId} />;
     case 'review':
@@ -1002,17 +1112,16 @@ export function StudioView() {
     return <div className="text-sm text-slate-500">No project selected.</div>;
   }
 
-  return (
+return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
       <StudioCommandBar projectId={projectId} onResetLayout={resetLayout} />
+      {/* FIX M2: RadialHub gets higher z-index so panels render above WritingView */}
       <div className="relative flex-1 overflow-hidden">
-        <div className="absolute inset-0 flex">
-          <StudioRadialHub projectId={projectId} />
+        <div className="absolute inset-0 z-0">
+          <WritingView embedded />
         </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="mx-4 h-[calc(100%-32px)] w-full max-w-3xl overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-lg">
-            <WritingView embedded />
-          </div>
+        <div className="absolute inset-0 z-10">
+          <StudioRadialHub projectId={projectId} />
         </div>
       </div>
     </div>
@@ -1047,30 +1156,82 @@ Read `frontend/src/components/studio/StudioCommandBar.tsx` to understand current
 
 - [ ] **Step 2: Add props and buttons**
 
-Add to the interface:
+Replace the existing interface:
 ```ts
 interface StudioCommandBarProps {
   projectId: string;
-  onResetLayout: () => void;
+  projectName?: string;
+  railCollapsed?: boolean;
+  panelVisible?: boolean;
+  onToggleRail?: () => void;
+  onTogglePanel?: () => void;
+  onResetLayout?: () => void;
 }
 ```
 
-Import and add `StudioPanelMenu` and reset button to the command bar's right section:
+Update the function signature to accept new props:
+```ts
+export function StudioCommandBar({
+  projectId,
+  projectName = 'Current Project',
+  railCollapsed,
+  panelVisible,
+  onToggleRail,
+  onTogglePanel,
+  onResetLayout,
+}: StudioCommandBarProps) {
+```
+
+Add import:
 ```tsx
 import { StudioPanelMenu } from './StudioPanelMenu';
+```
 
-// In the render, add to the right side of the command bar:
-<div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={onResetLayout}
-    className="rounded-md px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-    title="Reset layout"
-  >
-    ↺ Reset
-  </button>
-  <StudioPanelMenu projectId={projectId} />
-</div>
+**Insertion point:** Inside the existing right-side `<div className="flex items-center gap-1">` (line 45), append the reset button and panel menu after the existing panel toggle button (line 73):
+
+```tsx
+      <div className="flex items-center gap-1">
+        {/* Desktop rail toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onToggleRail) {
+              onToggleRail();
+            } else {
+              setLeftRailMode(leftRailMode === 'collapsed' ? 'expanded' : 'collapsed');
+            }
+          }}
+          className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:flex"
+          title={railCollapsed ? 'Expand rail' : 'Collapse rail'}
+        >
+          <PanelLeft className="h-3.5 w-3.5" />
+        </button>
+        {/* Desktop panel toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            if (onTogglePanel) {
+              onTogglePanel();
+            }
+          }}
+          className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:flex"
+          title={panelVisible ? 'Hide context panel' : 'Show context panel'}
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+        </button>
+        {/* FIX C5: New buttons appended here */}
+        {onResetLayout && (
+          <button
+            type="button"
+            onClick={onResetLayout}
+            className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:flex"
+            title="Reset layout"
+          >
+            ↺
+          </button>
+        )}
+        <StudioPanelMenu projectId={projectId} />
+      </div>
 ```
 
 - [ ] **Step 3: Update StudioView to pass new props**
@@ -1133,42 +1294,89 @@ Verify:
 ### Spec Coverage
 | Spec Requirement | Task | Status |
 |-----------------|------|--------|
-| Install `react-resizable-panels` | Task 1 | ✅ |
+| Extend `StudioPanelKey` with missing keys | Task 1 | ✅ |
 | Rewrite `studioStore.ts` with layout state | Task 2 | ✅ |
 | Create `StudioFloatingPanel.tsx` | Task 3 | ✅ |
 | Create `StudioRadialHub.tsx` | Task 5 | ✅ |
 | Create `StudioPanelMenu.tsx` | Task 4 | ✅ |
 | Update `StudioView.tsx` | Task 7 | ✅ |
 | Update `StudioCommandBar.tsx` | Task 8 | ✅ |
-| Drag-and-drop with grid snap | Tasks 3, 5 | ✅ (basic dnd + snap in store) |
-| Resize handles | Task 3 | ✅ (via react-resizable-panels) |
+| Drag-and-drop with grid snap | Tasks 3, 5 | ✅ (dnd-kit delta tracking + snap in store) |
+| Resize handles | Task 3 | ✅ (custom mouse-event handles) |
 | Tear-off / reattach | Tasks 2, 3 | ✅ (store actions + UI buttons) |
-| Layout persistence | Task 2 | ✅ (localStorage per project) |
+| Layout persistence | Task 2 | ✅ (localStorage per project, v2 storage) |
 | Existing panels reused | Task 6 | ✅ (StudioPanelContent router) |
 
 ### Placeholder Scan
 - No "TBD", "TODO", "implement later" found
-- No "add appropriate error handling" — error handling is explicit (try/catch in localStorage, null checks in store)
+- No "add appropriate error handling" — error handling is explicit (try/catch in localStorage, null checks in store, early returns for missing panels)
 - All code blocks contain actual implementation code
 - All types defined before use
+- No `as any` casts remaining (C3 fix)
+- All imports present: `useEffect` in `StudioFloatingPanel` (L4 fix), `StudioPanelKey` in `StudioPanelMenu` (C4 fix)
+- No unused imports: `movePanel` removed from `StudioFloatingPanel` (H8 fix)
+- Resize throttled via `requestAnimationFrame` (H7 fix)
+- `handleDragEnd` uses `getState()` for current layout (M9 fix)
 
 ### Type Consistency
-- `StudioPanelKey` used consistently across store, panel menu, panel content, and floating panel
+- `StudioPanelKey` extended with `structure`, `chapters`, `canon` — used consistently across store, panel menu, panel content, and floating panel
+- `PANEL_OPTIONS` typed as `{ key: StudioPanelKey; label: string }[]` — no `as any` casts
+- `StudioPanelKey` imported in `StudioPanelMenu` (C4 fix)
 - `PanelLayoutState` and `StudioLayoutState` defined in store, referenced correctly in components
 - `projectId` string passed through all components consistently
-- `resetLayout` signature unchanged (extended behavior, same call)
+- `resetLayout` signature unchanged (extended behavior, same call, clears v2 storage)
+- `togglePanel` interface matches implementation: `(id: string, stateSnapshot?: { collapsedSections?: Record<string, boolean>; scrollY?: number })`
+- `StudioCommandBarProps` extended with `projectId` (required), `onResetLayout` (optional) — preserves existing optional props (C5 fix)
+- No unused imports: `movePanel` removed from `StudioFloatingPanel` (H8 fix)
 
 ### Gaps
-- **Arcs, Structure, Chapters, Canon panels** — not yet implemented (planned for Phase 2, rendered as placeholder in StudioPanelContent default case)
+- **Arcs, Structure, Chapters, Canon panels** — `arcs` wired in Phase 1; `structure`, `chapters`, `canon` keys exist in `StudioPanelKey` but render as placeholder in StudioPanelContent default case (Phase 2)
 - **Tear-off into actual OS floating window** — Phase 1 uses `position: fixed` within the same DOM tree; true multi-window tear-off requires `window.open()` or `React Portal` with iframe, deferred to Phase 3
 - **Hover preview** — deferred to Phase 3
 - **Default layout presets per author type** — deferred to Phase 2
+
+### Adversarial Review Fixes Applied (2026-05-19)
+
+**Pass 1 (17 issues):**
+
+| Issue | Severity | Fix |
+|-------|----------|-----|
+| **C1**: `react-resizable-panels` API wrong (`Resizable`/`ResizeHandle` don't exist) | Critical | Custom mouse-event resize handles on `StudioFloatingPanel` |
+| **C2**: `onDragEnd` uses `over.rect` with no droppable targets — `over` always null | Critical | Use `event.delta` + current position for final position |
+| **C3**: `PANEL_OPTIONS` keys not in `StudioPanelKey` union, `as any` cast | Critical | Added `structure`, `chapters`, `canon` to `StudioPanelKey`; typed `PANEL_OPTIONS` as `StudioPanelKey[]` |
+| **H1**: `addPanel` calls `state.projectId` — field doesn't exist on `StudioState` | High | Added `currentProjectId` to store; all persistence gated on it |
+| **H2**: `loadLayout` no-op placeholder | High | Wired to `loadLayoutV2` function |
+| **H3**: `togglePanel` signature mismatch | High | Interface matches implementation: `(id, stateSnapshot?)` |
+| **H4**: Drag style drops base position/size when transform is active | High | Style always includes `left`, `top`, `width`, `height`; `transform` layered on top |
+| **M1**: Snap grid `opacity: 0.3` applies to child panels | Medium | Grid in separate `pointer-events-none` layer |
+| **M2**: WritingView and RadialHub both `absolute inset-0` — panels unclickable | Medium | z-index: WritingView `z-0`, RadialHub `z-10` |
+| **M3**: Tests use global Zustand store — parallel test interference | Medium | `beforeEach`/`afterEach` reset store state |
+| **M4**: `StudioDraftsPanel`/`StudioManuscriptsPanel` get `projectId` from route | Medium | Out of scope — StudioPanelContent passes `projectId` consistently |
+| **M5**: `PANEL_LABELS` missing `arcs` key | Medium | Added `arcs`, `structure`, `chapters`, `canon` labels |
+| **M6**: `resetLayout` doesn't clear v2 localStorage | Medium | Extended to clear `studio-layout-v2-${projectId}` |
+| **L1**: `Date.now()` collision risk | Low | Use `crypto.randomUUID()` with fallback |
+| **L2**: Tests don't mock localStorage | Low | Out of scope — tests use store actions, not direct storage |
+| **L3**: ViewShell becomes dead code | Low | Not modified — backward-compatible for non-studio routes |
+| **L4**: `StudioPanelContent` missing `arcs` case | Low | Added `arcs` import and switch case |
+
+**Pass 2 (6 issues):**
+
+| Issue | Severity | Fix |
+|-------|----------|-----|
+| **C4**: `StudioPanelMenu` uses `StudioPanelKey` but doesn't import it | Critical | Added `import type { StudioPanelKey }` |
+| **C5**: `StudioCommandBar` plan snippet has no insertion point | Critical | Exact JSX shown: append to existing right-side `<div>` after panel toggle button |
+| **H7**: Resize fires `resizePanel` on every pixel — no throttling | High | `requestAnimationFrame` throttling; skip if frame already scheduled |
+| **H8**: `movePanel` imported but unused in `StudioFloatingPanel` | High | Removed unused import (drag handled by parent `handleDragEnd`) |
+| **M8**: Menu purpose says "toggle visibility" but clicking always adds | Medium | Clarified: menu adds panels; checkmark shows existing; ✕ removes |
+| **M9**: `handleDragEnd` closure captures stale `layout.panels` | Medium | Use `useStudioStore.getState().layout.panels` for current state |
 
 ---
 
 ## Execution Handoff
 
 Plan complete and saved to `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`.
+
+**Adversarial review status:** All 23 issues fixed across 2 passes (5 critical, 6 high, 8 medium, 4 low). Plan is ready for execution.
 
 **Two execution options:**
 

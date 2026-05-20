@@ -1,0 +1,1683 @@
+{
+  "contract_id": "2026-05-20-radial-hub-phases-1-5-fine-grained-contract",
+  "version": 1,
+  "contract_type": "executor_tight_stage_gated_frontend_contract",
+  "sources": [
+    "docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md",
+    "docs/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md",
+    "docs/superpowers/plans/2026-05-19-radial-hub-phase-3-interaction-polish.md",
+    "docs/superpowers/plans/2026-05-19-radial-hub-phase-4-route-migration.md",
+    "docs/superpowers/plans/2026-05-19-radial-hub-phase-5-validation.md"
+  ],
+  "determinism_choices": [
+    "Implement true tear-off as a same-tab React portal mounted to document.body. Do not open OS windows or browser popups.",
+    "Do not create a Phase 2 projectId prop migration for StudioManuscriptsPanel. Keep its current onSelect-only API until useWritingView is explicitly refactored.",
+    "Do not implement the deferred routes.ts rewrite from Phase 4. It is dead code in the current repo and must remain out of scope.",
+    "Treat Phase 5 accessibility work as additive semantics and tests. Do not invent new clickable status-bar behavior.",
+    "Use the existing Axios and service-layer patterns already present in frontend/src/lib/api.ts and frontend/src/services. Do not introduce fetch."
+  ],
+  "global_guardrails": {
+    "do_not_modify": [
+      "app/**",
+      "tests/**",
+      "frontend/src/services/** except when a task explicitly targets a service file",
+      "frontend/src/lib/api.ts",
+      "docs/archive/**"
+    ],
+    "do_not_do": [
+      "Do not add backend APIs, schemas, database fields, or prompt contracts.",
+      "Do not remove existing workspace routes until the redirect stage explicitly replaces them with backward-compatible redirects.",
+      "Do not add mock production data.",
+      "Do not use as any, @ts-ignore, or ad hoc API base URLs.",
+      "Do not expand scope to unrelated refactors."
+    ],
+    "blocker_codes": [
+      "BLOCKED_MISSING_INPUT",
+      "BLOCKED_AMBIGUOUS_INSTRUCTION",
+      "BLOCKED_NONDETERMINISTIC_CHECK",
+      "BLOCKED_PLAN_VIOLATION"
+    ]
+  },
+  "rollback_strategy": {
+    "stage_checkpoint_rule": "After each stage pass criteria are green, create a rollback checkpoint before dispatching the next stage.",
+    "checkpoint_message_template": "checkpoint(radial-hub): complete {stage_id} {stage_name}",
+    "operator_note": "Checkpoint commits or equivalent patch snapshots must include only the files changed for that completed stage."
+  },
+   "omitted_or_deferred_items": [
+        {
+          "reason": "No deterministic code change is required in the current repo state.",
+          "item": "StudioManuscriptsPanel projectId prop migration"
+        },
+        {
+          "reason": "Explicitly deferred in the reviewed plan because the file has no active callers.",
+          "item": "frontend/src/routes.ts Phase 4 canonical studio URL rewrite"
+        },
+        {
+          "reason": "Out of scope for the approved plan set.",
+          "item": "True multi-window tear-off using window.open or OS-native detached windows"
+        },
+        {
+          "reason": "T014 preserves StudioContextPanel as transitional legacy wiring. No task in S1-S5 removes it; deprecation is deferred to post-radial-hub work.",
+          "item": "StudioContextPanel removal / full deprecation"
+        }
+      ],
+  "stages": [
+    {
+      "stage_id": "S1",
+      "stage_name": "Core Infrastructure",
+      "stage_goal": "Create the floating-panel store, wrapper components, panel menu, content router, and first StudioView radial-hub shell.",
+      "entry_criteria": [
+        "Use the existing frontend tree under frontend/src.",
+        "Do not modify existing panel content components except through explicitly listed call sites.",
+        "Stage 1 must stay frontend-only."
+      ],
+      "tasks": [
+        {
+          "task_id": "RH-T001",
+          "name": "Extend studioStore for floating-panel layout state and panel keys",
+          "responsible_file": "frontend/src/stores/studioStore.ts",
+          "serial_dependencies": [],
+          "same_file_serial_group": "studio-store",
+          "summary": "Add structure, chapters, canon to StudioPanelKey and add layout state, persistence helpers, panel actions, currentProjectId, and reset behavior required by the radial hub.",
+          "required_identifiers": [
+            "StudioPanelKey",
+            "PanelLayoutState",
+            "StudioLayoutState",
+            "currentProjectId",
+            "addPanel",
+            "removePanel",
+            "movePanel",
+            "resizePanel",
+            "togglePanel",
+            "updatePanelState",
+            "pinPanel",
+            "tearOffPanel",
+            "reattachPanel",
+            "bringToFront",
+            "loadLayout",
+            "STUDIO_LAYOUT_V2_KEY",
+            "persistLayoutV2",
+            "loadLayoutV2"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx",
+              "frontend/src/components/studio/**"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "The store exposes the full Phase 1 layout API with no as any casts."
+          ]
+        },
+        {
+          "task_id": "RH-T002",
+          "name": "Create initial StudioFloatingPanel tests",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingPanel.test.tsx",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": null,
+          "summary": "Add the initial render, style, and close-button tests for StudioFloatingPanel.",
+          "required_identifiers": [
+            "StudioFloatingPanel",
+            "data-panel-container",
+            "Close panel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.test.tsx"
+          ],
+          "expected_result": [
+            "The test file exists and targets the Phase 1 component API."
+          ]
+        },
+        {
+          "task_id": "RH-T003",
+          "name": "Create StudioFloatingPanel implementation",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingPanel.tsx",
+          "serial_dependencies": ["RH-T001", "RH-T002"],
+          "same_file_serial_group": "studio-floating-panel",
+          "summary": "Implement the draggable, resizable floating panel wrapper with header controls and panel labels.",
+          "required_identifiers": [
+            "StudioFloatingPanel",
+            "PANEL_LABELS",
+            "useDraggable",
+            "resizePanel",
+            "removePanel",
+            "pinPanel",
+            "bringToFront",
+            "reattachPanel",
+            "data-panel-container"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioPanelContent.tsx",
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.test.tsx",
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Focused StudioFloatingPanel tests pass.",
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T004",
+          "name": "Create initial StudioPanelMenu tests",
+          "responsible_file": "frontend/src/components/studio/StudioPanelMenu.test.tsx",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": null,
+          "summary": "Add tests for panel menu opening and panel-option rendering.",
+          "required_identifiers": [
+            "StudioPanelMenu",
+            "Panels"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioPanelMenu.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioPanelMenu.test.tsx"
+          ],
+          "expected_result": [
+            "The test file exists and targets the Phase 1 menu API."
+          ]
+        },
+        {
+          "task_id": "RH-T005",
+          "name": "Create StudioPanelMenu implementation",
+          "responsible_file": "frontend/src/components/studio/StudioPanelMenu.tsx",
+          "serial_dependencies": ["RH-T001", "RH-T004"],
+          "same_file_serial_group": "studio-panel-menu",
+          "summary": "Implement the dropdown menu that adds visible panel instances and reflects active items.",
+          "required_identifiers": [
+            "StudioPanelMenu",
+            "PANEL_OPTIONS",
+            "StudioPanelKey",
+            "addPanel",
+            "bringToFront"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioCommandBar.tsx",
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioPanelMenu.test.tsx",
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Focused StudioPanelMenu tests pass.",
+            "PANEL_OPTIONS includes drafts and manuscripts as well as structure, chapters, canon."
+          ]
+        },
+        {
+          "task_id": "RH-T006",
+          "name": "Create initial StudioRadialHub tests",
+          "responsible_file": "frontend/src/components/studio/StudioRadialHub.test.tsx",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": "studio-radial-hub-tests",
+          "summary": "Add the first rendering and data-radial-hub coverage tests for the layout manager.",
+          "required_identifiers": [
+            "StudioRadialHub",
+            "data-radial-hub"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.test.tsx"
+          ],
+          "expected_result": [
+            "The test file exists and targets the Phase 1 radial-hub API."
+          ]
+        },
+        {
+          "task_id": "RH-T007",
+          "name": "Create StudioRadialHub implementation",
+          "responsible_file": "frontend/src/components/studio/StudioRadialHub.tsx",
+          "serial_dependencies": ["RH-T001", "RH-T003", "RH-T006"],
+          "same_file_serial_group": "studio-radial-hub",
+          "summary": "Implement the DndContext-based hub that loads layout, renders the grid backdrop, and mounts visible non-floating panels.",
+          "required_identifiers": [
+            "StudioRadialHub",
+            "DndContext",
+            "PointerSensor",
+            "loadLayout",
+            "movePanel",
+            "data-radial-hub"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx",
+              "frontend/src/components/studio/StudioFloatingWindow.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.test.tsx",
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Focused StudioRadialHub tests pass.",
+            "Visible non-floating panels render through StudioFloatingPanel."
+          ]
+        },
+        {
+          "task_id": "RH-T008",
+          "name": "Create StudioPanelContent router",
+          "responsible_file": "frontend/src/components/studio/StudioPanelContent.tsx",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": "studio-panel-content",
+          "summary": "Create the panel-key switch component that maps known panel keys to existing panel components and falls back only for not-yet-wired keys.",
+          "required_identifiers": [
+            "StudioPanelContent",
+            "StudioCharactersPanel",
+            "StudioIdeasPanel",
+            "StudioWorldBiblePanel",
+            "StudioRelationshipsPanel",
+            "StudioArcsPanel",
+            "StudioGenerationPanel",
+            "StudioReviewPanel",
+            "StudioInspectPanel",
+            "StudioSuggestionsPanel",
+            "StudioDraftsPanel",
+            "StudioManuscriptsPanel",
+            "NotesPanel",
+            "JobLaunchPanel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioDraftsPanel.tsx",
+              "frontend/src/components/studio/StudioManuscriptsPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "The router covers all Phase 1 known panel keys without as any casts."
+          ]
+        },
+        {
+          "task_id": "RH-T009",
+          "name": "Replace StudioView grid shell with radial hub composition",
+          "responsible_file": "frontend/src/views/StudioView.tsx",
+          "serial_dependencies": ["RH-T007", "RH-T008"],
+          "same_file_serial_group": "studio-view",
+          "summary": "Replace the ViewShell-based StudioView body with WritingView underlay plus StudioRadialHub overlay and command bar reset wiring.",
+          "required_identifiers": [
+            "StudioView",
+            "StudioRadialHub",
+            "StudioCommandBar",
+            "WritingView",
+            "resetLayout"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/WritingView.tsx",
+              "frontend/src/components/shell/ViewShell.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "StudioView renders WritingView behind the radial hub and does not depend on ViewShell."
+          ]
+        },
+        {
+          "task_id": "RH-T010",
+          "name": "Update StudioView tests for radial hub rendering",
+          "responsible_file": "frontend/src/views/StudioView.test.tsx",
+          "serial_dependencies": ["RH-T009"],
+          "same_file_serial_group": "studio-view-tests",
+          "summary": "Update StudioView tests to assert radial-hub rendering on the studio route.",
+          "required_identifiers": [
+            "/workspace/:projectId/studio",
+            "data-radial-hub"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioView.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioView tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T011",
+          "name": "Extend StudioCommandBar with panel menu and reset control",
+          "responsible_file": "frontend/src/components/studio/StudioCommandBar.tsx",
+          "serial_dependencies": ["RH-T005", "RH-T009"],
+          "same_file_serial_group": "studio-command-bar",
+          "summary": "Add projectId and onResetLayout props, keep existing rail and panel toggles, and append reset plus panel menu controls.",
+          "required_identifiers": [
+            "StudioCommandBarProps",
+            "projectId",
+            "onResetLayout",
+            "StudioPanelMenu"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/stores/studioStore.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run lint"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Lint exits 0 or only reports the repo's documented pre-existing errors."
+          ]
+        }
+      ],
+      "stage_pass_criteria": [
+        "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioPanelMenu.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioView.test.tsx",
+        "cd frontend; cmd /c npm.cmd run typecheck",
+        "cd frontend; cmd /c npm.cmd run lint",
+        "cd frontend; cmd /c npm.cmd run build"
+      ],
+      "move_to_next_stage_only_if": [
+        "All Stage 1 task verifications are green.",
+        "StudioView renders data-radial-hub on /workspace/:projectId/studio.",
+        "No Stage 1 task changed backend code or legacy route behavior."
+      ]
+    },
+    {
+      "stage_id": "S2",
+      "stage_name": "Panel Migration",
+      "stage_goal": "Migrate drafts, add the new structure/chapters/canon panels, add presets support, and mount the status bar.",
+      "entry_criteria": [
+        "Stage 1 pass criteria are all green.",
+        "StudioPanelContent, StudioRadialHub, StudioFloatingPanel, and layout actions already exist."
+      ],
+      "tasks": [
+        {
+          "task_id": "RH-T012",
+          "name": "Add StudioDraftsPanel prop-based test coverage",
+          "responsible_file": "frontend/src/components/studio/StudioDraftsPanel.test.tsx",
+          "serial_dependencies": ["RH-T009"],
+          "same_file_serial_group": null,
+          "summary": "Create a focused test proving StudioDraftsPanel renders when projectId is passed as a prop.",
+          "required_identifiers": [
+            "StudioDraftsPanel",
+            "projectId"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioDraftsPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx"
+          ],
+          "expected_result": [
+            "The focused test targets prop-based rendering instead of useParams."
+          ]
+        },
+        {
+          "task_id": "RH-T013",
+          "name": "Migrate StudioDraftsPanel from useParams to projectId prop",
+          "responsible_file": "frontend/src/components/studio/StudioDraftsPanel.tsx",
+          "serial_dependencies": ["RH-T012"],
+          "same_file_serial_group": null,
+          "summary": "Replace route-param usage with an explicit projectId prop and keep the existing draft-assist behavior.",
+          "required_identifiers": [
+            "StudioDraftsPanelProps",
+            "projectId",
+            "useAssistController"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/hooks/useWritingView.ts",
+              "frontend/src/domains/writing/useAssistController.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx",
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "StudioDraftsPanel compiles without useParams and passes its focused test."
+          ]
+        },
+        {
+          "task_id": "RH-T014",
+          "name": "Update StudioContextPanel drafts call site",
+          "responsible_file": "frontend/src/components/studio/StudioContextPanel.tsx",
+          "serial_dependencies": ["RH-T013"],
+          "same_file_serial_group": null,
+          "summary": "Pass projectId into the drafts panel call site as transitional legacy support while StudioContextPanel still exists; leave manuscripts wiring unchanged and do not remove the legacy panel in this stage.",
+          "required_identifiers": [
+            "case 'drafts'",
+            "StudioDraftsPanel projectId={projectId}",
+            "case 'manuscripts'"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioManuscriptsPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T015",
+          "name": "Create StudioStructurePanel implementation",
+          "responsible_file": "frontend/src/components/studio/StudioStructurePanel.tsx",
+          "serial_dependencies": ["RH-T009"],
+          "same_file_serial_group": "new-panel-components",
+          "summary": "Implement the structure panel backed by getSequencePlans and getBeatPlans with loading, error, and empty states.",
+          "required_identifiers": [
+            "StudioStructurePanel",
+            "getSequencePlans",
+            "getBeatPlans",
+            "WorkspaceStatus",
+            "data-structure-panel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/services/planning.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "The panel uses only existing planning services."
+          ]
+        },
+        {
+          "task_id": "RH-T016",
+          "name": "Add StudioStructurePanel tests",
+          "responsible_file": "frontend/src/components/studio/StudioStructurePanel.test.tsx",
+          "serial_dependencies": ["RH-T015"],
+          "same_file_serial_group": null,
+          "summary": "Add focused rendering and empty-state coverage for the structure panel.",
+          "required_identifiers": [
+            "StudioStructurePanel",
+            "data-structure-panel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioStructurePanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioStructurePanel.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioStructurePanel tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T017",
+          "name": "Create StudioChaptersPanel implementation",
+          "responsible_file": "frontend/src/components/studio/StudioChaptersPanel.tsx",
+          "serial_dependencies": ["RH-T009"],
+          "same_file_serial_group": "new-panel-components",
+          "summary": "Implement the chapters panel using getChapterPlans and getChapterPackets with deterministic list rendering and empty states.",
+          "required_identifiers": [
+            "StudioChaptersPanel",
+            "getChapterPlans",
+            "getChapterPackets",
+            "WorkspaceStatus"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/services/planning.ts",
+              "frontend/src/views/WritingView.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T018",
+          "name": "Add StudioChaptersPanel tests",
+          "responsible_file": "frontend/src/components/studio/StudioChaptersPanel.test.tsx",
+          "serial_dependencies": ["RH-T017"],
+          "same_file_serial_group": null,
+          "summary": "Add focused coverage for chapter list rendering and empty-state behavior.",
+          "required_identifiers": [
+            "StudioChaptersPanel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioChaptersPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioChaptersPanel.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioChaptersPanel tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T019",
+          "name": "Create StudioCanonPanel implementation",
+          "responsible_file": "frontend/src/components/studio/StudioCanonPanel.tsx",
+          "serial_dependencies": ["RH-T009"],
+          "same_file_serial_group": "new-panel-components",
+          "summary": "Implement the canon panel using getCanonProfiles and getCanonAnnotations with real annotation kinds, tabs, and empty states.",
+          "required_identifiers": [
+            "StudioCanonPanel",
+            "getCanonProfiles",
+            "getCanonAnnotations",
+            "CanonAnnotationKind"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/services/canon.ts",
+              "frontend/src/components/canon/**"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T020",
+          "name": "Add StudioCanonPanel tests",
+          "responsible_file": "frontend/src/components/studio/StudioCanonPanel.test.tsx",
+          "serial_dependencies": ["RH-T019"],
+          "same_file_serial_group": null,
+          "summary": "Add focused coverage for canon profiles, annotations, and empty-state behavior.",
+          "required_identifiers": [
+            "StudioCanonPanel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioCanonPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioCanonPanel.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioCanonPanel tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T021",
+          "name": "Wire Structure, Chapters, Canon, and Drafts through StudioPanelContent",
+          "responsible_file": "frontend/src/components/studio/StudioPanelContent.tsx",
+          "serial_dependencies": ["RH-T008", "RH-T013", "RH-T015", "RH-T017", "RH-T019"],
+          "same_file_serial_group": "studio-panel-content",
+          "summary": "Extend the panel router so all known radial-hub panel keys resolve to concrete components instead of placeholder fallback.",
+          "required_identifiers": [
+            "case 'drafts'",
+            "case 'structure'",
+            "case 'chapters'",
+            "case 'canon'"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioManuscriptsPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "No known radial-hub panel key falls through to the default placeholder."
+          ]
+        },
+        {
+          "task_id": "RH-T022",
+          "name": "Add layout presets to studioStore",
+          "responsible_file": "frontend/src/stores/studioStore.ts",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": "studio-store",
+          "summary": "Add preset definitions and applyPreset support without changing existing panel actions.",
+          "required_identifiers": [
+            "AuthorPreset",
+            "LAYOUT_PRESETS",
+            "applyPreset"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioLayoutPreset.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "applyPreset creates deterministic panel sets per preset name."
+          ]
+        },
+        {
+          "task_id": "RH-T023",
+          "name": "Create StudioStatusBar implementation",
+          "responsible_file": "frontend/src/components/studio/StudioStatusBar.tsx",
+          "serial_dependencies": ["RH-T022"],
+          "same_file_serial_group": "studio-status-bar",
+          "summary": "Create the bottom status bar with project info, panel count, collapse control, and preset badge.",
+          "required_identifiers": [
+            "StudioStatusBar",
+            "data-status-bar",
+            "data-panel-count"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T024",
+          "name": "Add StudioStatusBar tests",
+          "responsible_file": "frontend/src/components/studio/StudioStatusBar.test.tsx",
+          "serial_dependencies": ["RH-T023"],
+          "same_file_serial_group": null,
+          "summary": "Add focused coverage for status bar rendering and panel count text.",
+          "required_identifiers": [
+            "StudioStatusBar",
+            "data-status-bar",
+            "data-panel-count"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioStatusBar.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioStatusBar.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioStatusBar tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T025",
+          "name": "Add StudioStatusBar to StudioView",
+          "responsible_file": "frontend/src/views/StudioView.tsx",
+          "serial_dependencies": ["RH-T009", "RH-T023"],
+          "same_file_serial_group": "studio-view",
+          "summary": "Mount StudioStatusBar below the WritingView and radial-hub stack.",
+          "required_identifiers": [
+            "StudioStatusBar"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioStatusBar.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run build"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Build exits 0."
+          ]
+        }
+      ],
+      "stage_pass_criteria": [
+        "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioStructurePanel.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioChaptersPanel.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioCanonPanel.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioStatusBar.test.tsx",
+        "cd frontend; cmd /c npm.cmd run typecheck",
+        "cd frontend; cmd /c npm.cmd run build"
+      ],
+      "move_to_next_stage_only_if": [
+        "All Stage 2 focused tests pass.",
+        "The panel router resolves drafts, structure, chapters, and canon without placeholder fallback.",
+        "StudioView renders the status bar below the hub."
+      ]
+    },
+    {
+      "stage_id": "S3",
+      "stage_name": "Interaction Polish",
+      "stage_goal": "Add snap zones, portal-based floating windows, hover previews, keyboard shortcuts, and layout import/export.",
+      "entry_criteria": [
+        "Stage 2 pass criteria are all green."
+      ],
+      "tasks": [
+        {
+          "task_id": "RH-T026",
+          "name": "Create StudioSnapIndicator implementation",
+          "responsible_file": "frontend/src/components/studio/StudioSnapIndicator.tsx",
+          "serial_dependencies": ["RH-T007"],
+          "same_file_serial_group": null,
+          "summary": "Create the snap-zone detector and overlay component used during drag operations.",
+          "required_identifiers": [
+            "SnapZone",
+            "detectSnapZone",
+            "StudioSnapIndicator"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T027",
+          "name": "Add StudioSnapIndicator tests",
+          "responsible_file": "frontend/src/components/studio/StudioSnapIndicator.test.tsx",
+          "serial_dependencies": ["RH-T026"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for snap-zone detection and overlay rendering.",
+          "required_identifiers": [
+            "detectSnapZone",
+            "StudioSnapIndicator"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioSnapIndicator.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioSnapIndicator.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioSnapIndicator tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T028",
+          "name": "Create StudioFloatingWindow implementation",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingWindow.tsx",
+          "serial_dependencies": ["RH-T003"],
+          "same_file_serial_group": null,
+          "summary": "Create the portal-based floating window wrapper mounted to document.body with drag, resize, reattach, and close support.",
+          "required_identifiers": [
+            "StudioFloatingWindow",
+            "createPortal",
+            "reattachPanel",
+            "bringToFront",
+            "data-floating-window"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T028A",
+          "name": "Add StudioFloatingWindow tests",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingWindow.test.tsx",
+          "serial_dependencies": ["RH-T028"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests covering portal render, reattach control exposure, and floating-window container rendering.",
+          "required_identifiers": [
+            "StudioFloatingWindow",
+            "data-floating-window"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingWindow.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioFloatingWindow.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioFloatingWindow tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T029",
+          "name": "Create StudioHoverPreview implementation",
+          "responsible_file": "frontend/src/components/studio/StudioHoverPreview.tsx",
+          "serial_dependencies": ["RH-T021"],
+          "same_file_serial_group": null,
+          "summary": "Create the delayed preview overlay using existing characters, worldBible, and brainstorm service functions only.",
+          "required_identifiers": [
+            "StudioHoverPreview",
+            "getCharacters",
+            "getWorldBibleEntries",
+            "getBrainstormItems",
+            "data-hover-preview"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/lib/api.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T029A",
+          "name": "Add StudioHoverPreview tests",
+          "responsible_file": "frontend/src/components/studio/StudioHoverPreview.test.tsx",
+          "serial_dependencies": ["RH-T029"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for delayed preview rendering, loading state, and empty-state fallback.",
+          "required_identifiers": [
+            "StudioHoverPreview",
+            "data-hover-preview"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioHoverPreview.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioHoverPreview.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioHoverPreview tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T030",
+          "name": "Create usePanelKeyboard hook",
+          "responsible_file": "frontend/src/hooks/usePanelKeyboard.ts",
+          "serial_dependencies": ["RH-T001"],
+          "same_file_serial_group": null,
+          "summary": "Create the panel keyboard hook with Ctrl+Shift+1-9, Ctrl+Shift+W, Ctrl+Alt+W, and Escape semantics.",
+          "required_identifiers": [
+            "usePanelKeyboard",
+            "PANEL_KEY_ORDER"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T030A",
+          "name": "Add usePanelKeyboard tests",
+          "responsible_file": "frontend/src/hooks/usePanelKeyboard.test.ts",
+          "serial_dependencies": ["RH-T030"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for Ctrl+Shift panel shortcuts, Ctrl+Shift+W close, Ctrl+Alt+W reattach, and Escape semantics.",
+          "required_identifiers": [
+            "usePanelKeyboard",
+            "PANEL_KEY_ORDER"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/hooks/usePanelKeyboard.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- usePanelKeyboard.test.ts"
+          ],
+          "expected_result": [
+            "Focused usePanelKeyboard tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T031",
+          "name": "Add debounced persistence and layout import/export to studioStore",
+          "responsible_file": "frontend/src/stores/studioStore.ts",
+          "serial_dependencies": ["RH-T022"],
+          "same_file_serial_group": "studio-store",
+          "summary": "Add debounced v2 persistence, flush helper, layout preset application, exportLayout, and importLayout.",
+          "required_identifiers": [
+            "LAYOUT_DEBOUNCE_MS",
+            "scheduleLayoutPersist",
+            "flushLayoutDebounce",
+            "applyLayoutPreset",
+            "exportLayout",
+            "importLayout"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioLayoutPreset.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T031A",
+          "name": "Add studioStore layout persistence tests",
+          "responsible_file": "frontend/src/stores/studioStore.layoutPersistence.test.ts",
+          "serial_dependencies": ["RH-T031"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for debounced persistence, preset application, and deterministic layout import/export behavior.",
+          "required_identifiers": [
+            "scheduleLayoutPersist",
+            "applyLayoutPreset",
+            "exportLayout",
+            "importLayout"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/stores/studioStore.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- studioStore.layoutPersistence.test.ts"
+          ],
+          "expected_result": [
+            "Focused studioStore layout persistence tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T032",
+          "name": "Create StudioLayoutPreset implementation",
+          "responsible_file": "frontend/src/components/studio/StudioLayoutPreset.tsx",
+          "serial_dependencies": ["RH-T031"],
+          "same_file_serial_group": null,
+          "summary": "Create the layout preset menu with preset application and JSON import/export UI and no projectId prop.",
+          "required_identifiers": [
+            "StudioLayoutPreset",
+            "applyLayoutPreset",
+            "exportLayout",
+            "importLayout",
+            "LAYOUT_PRESETS_MENU"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioCommandBar.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T032A",
+          "name": "Add StudioLayoutPreset tests",
+          "responsible_file": "frontend/src/components/studio/StudioLayoutPreset.test.tsx",
+          "serial_dependencies": ["RH-T032"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for preset selection and import/export control rendering.",
+          "required_identifiers": [
+            "StudioLayoutPreset",
+            "LAYOUT_PRESETS_MENU"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioLayoutPreset.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioLayoutPreset.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioLayoutPreset tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T033",
+          "name": "Integrate layout preset UI into StudioCommandBar",
+          "responsible_file": "frontend/src/components/studio/StudioCommandBar.tsx",
+          "serial_dependencies": ["RH-T011", "RH-T032"],
+          "same_file_serial_group": "studio-command-bar",
+          "summary": "Mount the layout preset control next to the panel menu without changing existing toggle semantics.",
+          "required_identifiers": [
+            "StudioLayoutPreset"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/stores/studioStore.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T033A",
+          "name": "Add StudioCommandBar layout preset integration tests",
+          "responsible_file": "frontend/src/components/studio/StudioCommandBar.layoutPreset.test.tsx",
+          "serial_dependencies": ["RH-T033"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests proving the command bar mounts the layout preset control next to the panel menu without removing existing controls.",
+          "required_identifiers": [
+            "StudioLayoutPreset",
+            "StudioPanelMenu"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioCommandBar.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioCommandBar.layoutPreset.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioCommandBar layout preset integration tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T034",
+          "name": "Apply Phase 3 polish to StudioFloatingPanel",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingPanel.tsx",
+          "serial_dependencies": ["RH-T003", "RH-T029", "RH-T031"],
+          "same_file_serial_group": "studio-floating-panel",
+          "summary": "Add hover-preview wiring, keep requestAnimationFrame-based resize throttling, and preserve drag/resize correctness.",
+          "required_identifiers": [
+            "StudioHoverPreview",
+            "hoverTimerRef",
+            "requestAnimationFrame"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingWindow.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run lint"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Lint exits 0 or only reports the repo's documented pre-existing errors."
+          ]
+        },
+        {
+          "task_id": "RH-T034A",
+          "name": "Add StudioFloatingPanel Phase 3 polish tests",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingPanel.phase3.test.tsx",
+          "serial_dependencies": ["RH-T034"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for hover-preview wiring, resize throttling guardrails, and Phase 3 interaction behavior.",
+          "required_identifiers": [
+            "StudioHoverPreview",
+            "requestAnimationFrame"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.phase3.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioFloatingPanel Phase 3 tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T035",
+          "name": "Apply Phase 3 polish to StudioRadialHub",
+          "responsible_file": "frontend/src/components/studio/StudioRadialHub.tsx",
+          "serial_dependencies": ["RH-T007", "RH-T026", "RH-T028", "RH-T030", "RH-T031"],
+          "same_file_serial_group": "studio-radial-hub",
+          "summary": "Add drag-start bring-to-front, snap-zone detection, snap indicator rendering, floating-window rendering, and viewport clamping.",
+          "required_identifiers": [
+            "StudioSnapIndicator",
+            "detectSnapZone",
+            "StudioFloatingWindow",
+            "usePanelKeyboard",
+            "handleDragStart",
+            "handleDragOver",
+            "handleDragEnd"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingPanel.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run build"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Build exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T035A",
+          "name": "Add StudioRadialHub Phase 3 polish tests",
+          "responsible_file": "frontend/src/components/studio/StudioRadialHub.phase3.test.tsx",
+          "serial_dependencies": ["RH-T035"],
+          "same_file_serial_group": null,
+          "summary": "Add focused tests for snap-indicator rendering, floating-window rendering, drag-start bring-to-front, and viewport clamping behavior.",
+          "required_identifiers": [
+            "StudioSnapIndicator",
+            "StudioFloatingWindow",
+            "handleDragStart",
+            "handleDragEnd"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.phase3.test.tsx"
+          ],
+          "expected_result": [
+            "Focused StudioRadialHub Phase 3 tests pass."
+          ]
+        }
+      ],
+      "stage_pass_criteria": [
+        "cd frontend; cmd /c npm.cmd run test -- StudioSnapIndicator.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioFloatingWindow.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioHoverPreview.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- usePanelKeyboard.test.ts",
+        "cd frontend; cmd /c npm.cmd run test -- studioStore.layoutPersistence.test.ts",
+        "cd frontend; cmd /c npm.cmd run test -- StudioLayoutPreset.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioCommandBar.layoutPreset.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.phase3.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.phase3.test.tsx",
+        "cd frontend; cmd /c npm.cmd run test",
+        "cd frontend; cmd /c npm.cmd run typecheck",
+        "cd frontend; cmd /c npm.cmd run lint",
+        "cd frontend; cmd /c npm.cmd run build"
+      ],
+      "move_to_next_stage_only_if": [
+        "All Stage 3 focused tests and the full frontend test suite are green.",
+        "Snap-zone and portal code compiles cleanly.",
+        "Layout preset UI is mounted in the command bar.",
+        "The store now supports debounced persistence plus import/export."
+      ]
+    },
+    {
+      "stage_id": "S4",
+      "stage_name": "Route Migration",
+      "stage_goal": "Move the workspace to a single studio route with query-param deep links and backward-compatible redirects.",
+      "entry_criteria": [
+        "Stage 3 pass criteria are all green."
+      ],
+      "tasks": [
+        {
+          "task_id": "RH-T036",
+          "name": "Sync activePanel on bringToFront in studioStore",
+          "responsible_file": "frontend/src/stores/studioStore.ts",
+          "serial_dependencies": ["RH-T031"],
+          "same_file_serial_group": "studio-store",
+          "summary": "Update bringToFront so activePanel follows the top-most panel key for URL sync.",
+          "required_identifiers": [
+            "bringToFront",
+            "activePanel"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/hooks/usePanelUrlSync.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T037",
+          "name": "Create usePanelUrlSync hook",
+          "responsible_file": "frontend/src/hooks/usePanelUrlSync.ts",
+          "serial_dependencies": ["RH-T036"],
+          "same_file_serial_group": null,
+          "summary": "Create the two-way panel-to-URL hook with validated tab keys and nullable projectId handling.",
+          "required_identifiers": [
+            "usePanelUrlSync",
+            "PanelUrlSyncOptions",
+            "projectId: string | null",
+            "validKeys",
+            "useSearchParams"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T038",
+          "name": "Integrate usePanelUrlSync into StudioView",
+          "responsible_file": "frontend/src/views/StudioView.tsx",
+          "serial_dependencies": ["RH-T025", "RH-T037"],
+          "same_file_serial_group": "studio-view",
+          "summary": "Add URL-sync initialization to StudioView using projectId ?? null and UI jobId wiring.",
+          "required_identifiers": [
+            "usePanelUrlSync",
+            "useUIStore",
+            "projectId: projectId ?? null"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/hooks/useRouteSync.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T039",
+          "name": "Replace App workspace routes with backward-compatible redirects",
+          "responsible_file": "frontend/src/App.tsx",
+          "serial_dependencies": ["RH-T038"],
+          "same_file_serial_group": "app-routing",
+          "summary": "Replace the legacy view routes with redirect components that preserve tab, jobId, chapterId, and canon subtab semantics.",
+          "required_identifiers": [
+            "PlanRedirect",
+            "ReviewRedirect",
+            "InspectRedirect",
+            "BrainDumpRedirect",
+            "CanonRedirect",
+            "GenerateRedirect",
+            "WriteRedirect",
+            "/workspace/:projectId/studio"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/routes.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run build"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Build exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T039A",
+          "name": "Add App redirect tests for studio route migration",
+          "responsible_file": "frontend/src/App.redirects.test.tsx",
+          "serial_dependencies": ["RH-T039"],
+          "same_file_serial_group": null,
+          "summary": "Add focused route tests covering legacy workspace redirects to studio query-param URLs for plan, review, inspect, braindump, canon, generate, and write routes.",
+          "required_identifiers": [
+            "/workspace/:projectId/studio",
+            "PlanRedirect",
+            "InspectRedirect",
+            "CanonRedirect",
+            "WriteRedirect"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/App.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- App.redirects.test.tsx"
+          ],
+          "expected_result": [
+            "Focused redirect tests pass."
+          ]
+        },
+        {
+          "task_id": "RH-T040",
+          "name": "Update WorkspaceShell navigation to studio query URLs",
+          "responsible_file": "frontend/src/components/WorkspaceShell.tsx",
+          "serial_dependencies": ["RH-T039"],
+          "same_file_serial_group": "workspace-shell",
+          "summary": "Change workspace navigation to go directly to studio or studio?tab=... without using old route segments.",
+          "required_identifiers": [
+            "ROUTE_TO_TAB",
+            "navigate(`/workspace/${projectId}/studio`)",
+            "navigate(`/workspace/${projectId}/studio?tab=${tab}`)"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/routes.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T041",
+          "name": "Simplify useRouteSync for the single-route workspace",
+          "responsible_file": "frontend/src/hooks/useRouteSync.ts",
+          "serial_dependencies": ["RH-T039"],
+          "same_file_serial_group": null,
+          "summary": "Preserve transient segment-based mode derivation for redirect routes, but converge studio renders on the single-route model.",
+          "required_identifiers": [
+            "matchPath('/workspace/:projectId/:segment?')",
+            "setMode('plan')",
+            "segment"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/hooks/usePanelUrlSync.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Non-workspace routes still reset mode safely."
+          ]
+        },
+        {
+          "task_id": "RH-T042",
+          "name": "Derive Layout stage state from studio tab query param",
+          "responsible_file": "frontend/src/components/Layout.tsx",
+          "serial_dependencies": ["RH-T039", "RH-T041"],
+          "same_file_serial_group": null,
+          "summary": "Update stage derivation and stage-button navigation so the stage bar reflects the active studio tab.",
+          "required_identifiers": [
+            "panelToStage",
+            "STAGE_TO_TAB",
+            "location.search"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/routes.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T043",
+          "name": "Update StudioProjectRail bottom links to studio URLs",
+          "responsible_file": "frontend/src/components/studio/StudioProjectRail.tsx",
+          "serial_dependencies": ["RH-T039"],
+          "same_file_serial_group": null,
+          "summary": "Replace legacy plan/canon links with direct studio query-param links.",
+          "required_identifiers": [
+            "to={`/workspace/${projectId}/studio?tab=structure`}",
+            "to={`/workspace/${projectId}/studio?tab=canon`}"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/routes.ts"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        }
+      ],
+      "stage_pass_criteria": [
+        "cd frontend; cmd /c npm.cmd run test -- App.redirects.test.tsx",
+        "cd frontend; cmd /c npm.cmd run typecheck",
+        "cd frontend; cmd /c npm.cmd run build",
+        "Manual redirect checks for /plan, /review, /inspect/:jobId, /braindump, /canon?tab=mythos, /generate, /write/:chapterId resolve to /studio query URLs."
+      ],
+      "move_to_next_stage_only_if": [
+        "Focused redirect tests are green.",
+        "Legacy workspace URLs redirect to studio query-param URLs without 404s.",
+        "Stage buttons and left-rail navigation link directly to studio query URLs.",
+        "StudioView reads initial tab/job/chapter URL state without type errors."
+      ]
+    },
+    {
+      "stage_id": "S5",
+      "stage_name": "Validation, Accessibility, And Mobile Behavior",
+      "stage_goal": "Add the final test and semantic coverage, mobile responsive behavior, and full-suite stage gate.",
+      "entry_criteria": [
+        "Stage 4 pass criteria are all green."
+      ],
+      "tasks": [
+        {
+          "task_id": "RH-T044",
+          "name": "Create useMediaQuery hook",
+          "responsible_file": "frontend/src/hooks/useMediaQuery.ts",
+          "serial_dependencies": ["RH-T035"],
+          "same_file_serial_group": null,
+          "summary": "Create an SSR-safe, reusable media-query hook used by the radial hub and panel menu with no studio-specific branching or panel-coupled behavior.",
+          "required_identifiers": [
+            "useMediaQuery",
+            "typeof window === 'undefined'",
+            "window.matchMedia"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioRadialHub.tsx",
+              "frontend/src/components/studio/StudioPanelMenu.tsx"
+            ],
+            "do_not_do": [
+              "Do not couple the hook to a specific panel key, route, or studio-only condition."
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "The hook is reusable from any frontend component without studio-specific imports."
+          ]
+        },
+        {
+          "task_id": "RH-T045",
+          "name": "Apply final accessibility and mobile behavior to StudioFloatingPanel",
+          "responsible_file": "frontend/src/components/studio/StudioFloatingPanel.tsx",
+          "serial_dependencies": ["RH-T034", "RH-T044"],
+          "same_file_serial_group": "studio-floating-panel",
+          "summary": "Add final ARIA semantics, merged-ref focus management, tabIndex, and touch-friendly resize handles.",
+          "required_identifiers": [
+            "role={panelRole}",
+            "aria-label={panelAriaLabel}",
+            "tabIndex={-1}",
+            "assignPanelRef",
+            "data-resize-handle"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingWindow.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run lint"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Lint exits 0 or only reports the repo's documented pre-existing errors."
+          ]
+        },
+        {
+          "task_id": "RH-T046",
+          "name": "Apply final responsive and accessibility behavior to StudioRadialHub",
+          "responsible_file": "frontend/src/components/studio/StudioRadialHub.tsx",
+          "serial_dependencies": ["RH-T035", "RH-T044", "RH-T045"],
+          "same_file_serial_group": "studio-radial-hub",
+          "summary": "Add role=main, aria-label, mobile stack mode via useMediaQuery, and keep desktop floating behavior for xl and above.",
+          "required_identifiers": [
+            "useMediaQuery('(max-width: 1279px)')",
+            "role=\"main\"",
+            "aria-label=\"Workspace\""
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/views/StudioView.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run build"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Build exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T047",
+          "name": "Apply final responsive and accessibility behavior to StudioPanelMenu",
+          "responsible_file": "frontend/src/components/studio/StudioPanelMenu.tsx",
+          "serial_dependencies": ["RH-T005", "RH-T044"],
+          "same_file_serial_group": "studio-panel-menu",
+          "summary": "Add aria-haspopup/menu semantics and a fixed-position mobile bottom-sheet variant below xl.",
+          "required_identifiers": [
+            "aria-label=\"Panel menu\"",
+            "aria-expanded={open}",
+            "aria-haspopup=\"menu\"",
+            "role=\"menu\"",
+            "role=\"menuitem\""
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioCommandBar.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck",
+            "cd frontend; cmd /c npm.cmd run lint"
+          ],
+          "expected_result": [
+            "Typecheck exits 0.",
+            "Lint exits 0 or only reports the repo's documented pre-existing errors."
+          ]
+        },
+        {
+          "task_id": "RH-T048",
+          "name": "Apply final semantics to StudioStatusBar",
+          "responsible_file": "frontend/src/components/studio/StudioStatusBar.tsx",
+          "serial_dependencies": ["RH-T023"],
+          "same_file_serial_group": "studio-status-bar",
+          "summary": "Add aria-live support to status text and keep the bar non-interactive unless a real action exists.",
+          "required_identifiers": [
+            "aria-live=\"polite\""
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "Do not add role=\"button\" or click handlers unless a real navigation/status action is implemented in the same task."
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run typecheck"
+          ],
+          "expected_result": [
+            "Typecheck exits 0."
+          ]
+        },
+        {
+          "task_id": "RH-T049",
+          "name": "Create integrated radial-hub accessibility tests",
+          "responsible_file": "frontend/src/components/studio/accessibility.test.tsx",
+          "serial_dependencies": ["RH-T045", "RH-T046", "RH-T047", "RH-T048"],
+          "same_file_serial_group": null,
+          "summary": "Create integration tests covering panel ARIA roles, panel menu semantics, and radial-hub accessibility affordances.",
+          "required_identifiers": [
+            "DndContextWrapper",
+            "StudioFloatingPanel",
+            "StudioPanelMenu"
+          ],
+          "guardrails": {
+            "do_not_modify": [
+              "frontend/src/components/studio/StudioFloatingPanel.tsx",
+              "frontend/src/components/studio/StudioPanelMenu.tsx",
+              "frontend/src/components/studio/StudioRadialHub.tsx"
+            ]
+          },
+          "verification": [
+            "cd frontend; cmd /c npm.cmd run test -- accessibility.test.tsx"
+          ],
+          "expected_result": [
+            "Focused accessibility tests pass."
+          ]
+        }
+      ],
+      "stage_pass_criteria": [
+        "cd frontend; cmd /c npm.cmd run test",
+        "cd frontend; cmd /c npm.cmd run lint",
+        "cd frontend; cmd /c npm.cmd run typecheck",
+        "cd frontend; cmd /c npm.cmd run build",
+        "python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py",
+        "python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content"
+      ],
+      "move_to_next_stage_only_if": [
+        "All frontend tests pass.",
+        "Lint, typecheck, and build are green.",
+        "Both backend validation commands pass with the repository's documented timeout expectations.",
+        "Manual mobile and accessibility checks do not reveal regressions."
+      ]
+    }
+  ],
+  "final_validation_notes": [
+    "Use a timeout of at least 300000ms for the parallel pytest cluster and at least 240000ms for the serial pytest command.",
+    "Do not claim merge-readiness until every Stage 5 pass-criteria command is green.",
+    "If any task requires changes outside its responsible_file, stop with BLOCKED_PLAN_VIOLATION and split the work into additional file-owned tasks."
+  ]
+}
