@@ -302,141 +302,172 @@ function WorldBibleEntryEditor({
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Title</label>
-            <input
-              type="text"
-              value={entry.title}
-              onChange={(e) => handleUpdate('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-            />
-            {onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="world_bible"
-                target_id={entry.entry_id}
-                field_path="title"
-                annotations={annotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
-              />
-            )}
-          </div>
+        <div className="flex items-center gap-4 mb-4 text-xs text-gray-500 dark:text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="text-red-500">*</span> Required
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="text-blue-500">📖</span> Canon context (used by story generation)
+          </span>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Summary</label>
-            <textarea
-              value={entry.summary}
-              onChange={(e) => handleUpdate('summary', e.target.value)}
-              placeholder="A brief summary of this entry..."
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-            {onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="world_bible"
-                target_id={entry.entry_id}
-                field_path="summary"
-                annotations={annotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
+        <div className="space-y-6">
+          {/* Core fields */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Core</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={entry.title}
+                onChange={(e) => handleUpdate('title', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
               />
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Canonical Facts</label>
-            <div className="space-y-2">
-              {entry.canonical_facts.map((fact, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={fact}
-                    onChange={(e) => handleArrayChange('canonical_facts', index, e.target.value)}
-                    placeholder="Canonical fact"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => handleRemoveArrayItem('canonical_facts', index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddArrayItem('canonical_facts')}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Fact
-              </button>
+              {onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="world_bible"
+                  target_id={entry.entry_id}
+                  field_path="title"
+                  annotations={annotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
             </div>
-            {onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="world_bible"
-                target_id={entry.entry_id}
-                field_path="canonical_facts"
-                annotations={annotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
-              />
-            )}
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Continuity Warnings</label>
-            <div className="space-y-2">
-              {entry.continuity_warnings.map((warning, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={warning}
-                    onChange={(e) => handleArrayChange('continuity_warnings', index, e.target.value)}
-                    placeholder="Continuity warning"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => handleRemoveArrayItem('continuity_warnings', index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddArrayItem('continuity_warnings')}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Warning
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                Summary <span className="text-red-500">*</span> <span className="text-blue-500" title="Used by story generation">📖</span>
+              </label>
+              <textarea
+                value={entry.summary}
+                onChange={(e) => handleUpdate('summary', e.target.value)}
+                placeholder="A brief summary of this entry..."
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+              {onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="world_bible"
+                  target_id={entry.entry_id}
+                  field_path="summary"
+                  annotations={annotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
             </div>
-            {onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="world_bible"
-                target_id={entry.entry_id}
-                field_path="continuity_warnings"
-                annotations={annotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
-              />
-            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Writer Notes</label>
-            <textarea
-              value={entry.writer_notes || ''}
-              onChange={(e) => handleUpdate('writer_notes', e.target.value)}
-              placeholder="Private notes about this entry..."
-              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
+          {/* Canon fields */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
+              Canon <span className="text-blue-500" title="Used by story generation">📖</span>
+            </h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                Canonical Facts <span className="text-blue-500" title="Used by story generation">📖</span>
+              </label>
+              <div className="space-y-2">
+                {entry.canonical_facts.map((fact, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={fact}
+                      onChange={(e) => handleArrayChange('canonical_facts', index, e.target.value)}
+                      placeholder="Canonical fact"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleRemoveArrayItem('canonical_facts', index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddArrayItem('canonical_facts')}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                >
+                  + Add Fact
+                </button>
+              </div>
+              {onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="world_bible"
+                  target_id={entry.entry_id}
+                  field_path="canonical_facts"
+                  annotations={annotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                Continuity Warnings <span className="text-blue-500" title="Used by story generation">📖</span>
+              </label>
+              <div className="space-y-2">
+                {entry.continuity_warnings.map((warning, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={warning}
+                      onChange={(e) => handleArrayChange('continuity_warnings', index, e.target.value)}
+                      placeholder="Continuity warning"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleRemoveArrayItem('continuity_warnings', index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddArrayItem('continuity_warnings')}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                >
+                  + Add Warning
+                </button>
+              </div>
+              {onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="world_bible"
+                  target_id={entry.entry_id}
+                  field_path="continuity_warnings"
+                  annotations={annotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Notes fields */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Notes</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Writer Notes</label>
+              <textarea
+                value={entry.writer_notes || ''}
+                onChange={(e) => handleUpdate('writer_notes', e.target.value)}
+                placeholder="Private notes about this entry..."
+                className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </div>
           </div>
         </div>
       </div>

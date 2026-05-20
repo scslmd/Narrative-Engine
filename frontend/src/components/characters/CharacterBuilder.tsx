@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { CharacterProfile } from '../../types/characters';
 import type { CanonAnnotation, CanonAnnotationKind } from '../../types/canonCustomization';
@@ -95,20 +96,14 @@ export function CharacterBuilder({
     });
   };
 
+  const [sectionDepth, setSectionDepth] = useState(true);
+  const [sectionContext, setSectionContext] = useState(true);
+  const [sectionTracking, setSectionTracking] = useState(true);
+
   const canSave = Boolean(
     characterId.trim() &&
       displayName.trim() &&
-      roleInStory.trim() &&
-      archetype.trim() &&
-      externalGoal.trim() &&
-      internalNeed.trim() &&
-      misbeliefOrWound.trim() &&
-      coreFear.trim() &&
-      primaryStrength.trim() &&
-      fatalFlaw.trim() &&
-      backstorySummary.trim() &&
-      voiceNotes.trim() &&
-      changeAxis.trim(),
+      roleInStory.trim(),
   );
 
   const handleArrayChange = <T,>(
@@ -164,36 +159,213 @@ export function CharacterBuilder({
             )}
           </div>
         </div>
+        <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-slate-400">
+          <span className="flex items-center gap-1">
+            <span className="text-red-500">*</span> Required
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="text-amber-500">⚡</span> Used by story generation
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Section title="Character ID" description="Stable backend identifier for this character">
-            <input
-              type="text"
-              value={characterId}
-              onChange={(e) => setCharacterId(e.target.value)}
-              placeholder="Enter character id"
-              readOnly={Boolean(character)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg disabled:bg-gray-100 dark:disabled:bg-slate-700"
-            />
-          </Section>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Section title="Display Name" description="The character's name">
+        <div className="max-w-4xl mx-auto space-y-4">
+          {/* Section 1: Core Identity (required) */}
+          <SectionGroup title="Core Identity" description="Essential character information">
+            <Section title="Character ID" badge="required">
               <input
                 type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter character name"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                value={characterId}
+                onChange={(e) => setCharacterId(e.target.value)}
+                placeholder="Enter character id"
+                readOnly={Boolean(character)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg disabled:bg-gray-100 dark:disabled:bg-slate-700"
+              />
+            </Section>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Section title="Display Name" badge="required">
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter character name"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                />
+                {characterId && onAnnotateField && (
+                  <CanonAnnotationToolbar
+                    projectId={projectId}
+                    target_kind="character"
+                    target_id={characterId}
+                    field_path="display_name"
+                    annotations={canonAnnotations}
+                    onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                      onAnnotateField(targetId, fieldPath, annotationKind, note)
+                    }
+                  />
+                )}
+              </Section>
+
+              <Section title="Role in Story" badge="required">
+                <input
+                  type="text"
+                  value={roleInStory}
+                  onChange={(e) => setRoleInStory(e.target.value)}
+                  placeholder="e.g., Protagonist, Antagonist, Mentor"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </Section>
+            </div>
+          </SectionGroup>
+
+          {/* Section 2: Motivation (recommended) */}
+          <SectionGroup title="Motivation" description="What drives this character — used by story generation">
+            <Section title="Archetype" badge="recommended">
+              <input
+                type="text"
+                value={archetype}
+                onChange={(e) => setArchetype(e.target.value)}
+                placeholder="e.g., The Creator, The Sage, The Hero"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </Section>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Section title="External Goal" badge="recommended">
+                <textarea
+                  value={externalGoal}
+                  onChange={(e) => setExternalGoal(e.target.value)}
+                  placeholder="What does this character want to achieve?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+
+              <Section title="Internal Need" badge="recommended">
+                <textarea
+                  value={internalNeed}
+                  onChange={(e) => setInternalNeed(e.target.value)}
+                  placeholder="What does this character need for growth?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+            </div>
+
+            <Section title="Change Axis" badge="recommended">
+              <textarea
+                value={changeAxis}
+                onChange={(e) => setChangeAxis(e.target.value)}
+                placeholder="How does this character change? From what to what?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+          </SectionGroup>
+
+          {/* Section 3: Psychological Depth (collapsible) */}
+          <CollapsibleSection
+            title="Psychological Depth"
+            description="Inner conflicts and personality layers"
+            isExpanded={sectionDepth}
+            onToggle={() => setSectionDepth(!sectionDepth)}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Section title="Misbelief or Wound">
+                <textarea
+                  value={misbeliefOrWound}
+                  onChange={(e) => setMisbeliefOrWound(e.target.value)}
+                  placeholder="What false belief holds this character back?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+
+              <Section title="Core Fear">
+                <textarea
+                  value={coreFear}
+                  onChange={(e) => setCoreFear(e.target.value)}
+                  placeholder="What is this character's deepest fear?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Section title="Primary Strength">
+                <textarea
+                  value={primaryStrength}
+                  onChange={(e) => setPrimaryStrength(e.target.value)}
+                  placeholder="What is this character's greatest strength?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+
+              <Section title="Fatal Flaw">
+                <textarea
+                  value={fatalFlaw}
+                  onChange={(e) => setFatalFlaw(e.target.value)}
+                  placeholder="What flaw holds this character back?"
+                  className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                />
+              </Section>
+            </div>
+
+            <Section title="Contradictions" description="Paradoxical traits">
+              <div className="space-y-2">
+                {contradictions.map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleArrayChange(setContradictions, index, e.target.value)}
+                      placeholder={`Contradiction ${index + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => handleRemoveArrayItem(setContradictions, index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddArrayItem(setContradictions)}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
+                >
+                  + Add Contradiction
+                </button>
+              </div>
+            </Section>
+          </CollapsibleSection>
+
+          {/* Section 4: Context (collapsible) */}
+          <CollapsibleSection
+            title="Context"
+            description="Backstory, voice, and personal boundaries"
+            isExpanded={sectionContext}
+            onToggle={() => setSectionContext(!sectionContext)}
+          >
+            <Section title="Backstory Summary">
+              <textarea
+                value={backstorySummary}
+                onChange={(e) => setBackstorySummary(e.target.value)}
+                placeholder="What happened in this character's past?"
+                className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+              />
+            </Section>
+
+            <Section title="Voice Notes" description="How the character speaks">
+              <textarea
+                value={voiceNotes}
+                onChange={(e) => setVoiceNotes(e.target.value)}
+                placeholder="How does this character speak? What's their voice like?"
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
               {characterId && onAnnotateField && (
                 <CanonAnnotationToolbar
                   projectId={projectId}
                   target_kind="character"
                   target_id={characterId}
-                  field_path="display_name"
+                  field_path="voice_notes"
                   annotations={canonAnnotations}
                   onCreate={(_, targetId, fieldPath, annotationKind, note) =>
                     onAnnotateField(targetId, fieldPath, annotationKind, note)
@@ -202,334 +374,259 @@ export function CharacterBuilder({
               )}
             </Section>
 
-            <Section title="Role in Story" description="Character's narrative function">
-              <input
-                type="text"
-                value={roleInStory}
-                onChange={(e) => setRoleInStory(e.target.value)}
-                placeholder="e.g., Protagonist, Antagonist, Mentor"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </Section>
-          </div>
-
-          <Section title="Archetype" description="Character archetype">
-            <input
-              type="text"
-              value={archetype}
-              onChange={(e) => setArchetype(e.target.value)}
-              placeholder="e.g., The Creator, The Sage, The Hero"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </Section>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Section title="External Goal" description="What the character wants">
-              <textarea
-                value={externalGoal}
-                onChange={(e) => setExternalGoal(e.target.value)}
-                placeholder="What does this character want to achieve?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-
-            <Section title="Internal Need" description="What the character truly needs">
-              <textarea
-                value={internalNeed}
-                onChange={(e) => setInternalNeed(e.target.value)}
-                placeholder="What does this character need for growth?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Section title="Misbelief or Wound" description="The character's limiting belief">
-              <textarea
-                value={misbeliefOrWound}
-                onChange={(e) => setMisbeliefOrWound(e.target.value)}
-                placeholder="What false belief holds this character back?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-
-            <Section title="Core Fear" description="What the character fears most">
-              <textarea
-                value={coreFear}
-                onChange={(e) => setCoreFear(e.target.value)}
-                placeholder="What is this character's deepest fear?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Section title="Primary Strength" description="The character's greatest asset">
-              <textarea
-                value={primaryStrength}
-                onChange={(e) => setPrimaryStrength(e.target.value)}
-                placeholder="What is this character's greatest strength?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-
-            <Section title="Fatal Flaw" description="The character's limiting weakness">
-              <textarea
-                value={fatalFlaw}
-                onChange={(e) => setFatalFlaw(e.target.value)}
-                placeholder="What flaw holds this character back?"
-                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-            </Section>
-          </div>
-
-          <Section title="Contradictions" description="Paradoxical traits">
-            <div className="space-y-2">
-              {contradictions.map((item, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => handleArrayChange(setContradictions, index, e.target.value)}
-                    placeholder={`Contradiction ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Section title="Secrets" description="Hidden truths">
+                <div className="space-y-2">
+                  {secrets.map((item, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => handleArrayChange(setSecrets, index, e.target.value)}
+                        placeholder="Secret"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      <button
+                        onClick={() => handleRemoveArrayItem(setSecrets, index)}
+                        className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                   <button
-                    onClick={() => handleRemoveArrayItem(setContradictions, index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    onClick={() => handleAddArrayItem(setSecrets)}
+                    className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
                   >
-                    Remove
+                    + Add
                   </button>
                 </div>
-              ))}
-              <button
-                onClick={() => handleAddArrayItem(setContradictions)}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Contradiction
-              </button>
+              </Section>
+
+              <Section title="Values" description="What the character holds dear">
+                <div className="space-y-2">
+                  {values.map((item, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => handleArrayChange(setValues, index, e.target.value)}
+                        placeholder="Value"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      <button
+                        onClick={() => handleRemoveArrayItem(setValues, index)}
+                        className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleAddArrayItem(setValues)}
+                    className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </Section>
+
+              <Section title="Taboos" description="What the character rejects">
+                <div className="space-y-2">
+                  {taboos.map((item, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={item}
+                        onChange={(e) => handleArrayChange(setTaboos, index, e.target.value)}
+                        placeholder="Taboo"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      <button
+                        onClick={() => handleRemoveArrayItem(setTaboos, index)}
+                        className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleAddArrayItem(setTaboos)}
+                    className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </Section>
             </div>
-          </Section>
+          </CollapsibleSection>
 
-          <Section title="Backstory Summary" description="The character's past">
-            <textarea
-              value={backstorySummary}
-              onChange={(e) => setBackstorySummary(e.target.value)}
-              placeholder="What happened in this character's past?"
-              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          <Section title="Voice Notes" description="How the character speaks">
-            <textarea
-              value={voiceNotes}
-              onChange={(e) => setVoiceNotes(e.target.value)}
-              placeholder="How does this character speak? What's their voice like?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-            {characterId && onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="character"
-                target_id={characterId}
-                field_path="voice_notes"
-                annotations={canonAnnotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
-              />
-            )}
-          </Section>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Section title="Secrets" description="Hidden truths">
+          {/* Section 5: Tracking (collapsible) */}
+          <CollapsibleSection
+            title="Tracking"
+            description="Arc progression, continuity, and private notes"
+            isExpanded={sectionTracking}
+            onToggle={() => setSectionTracking(!sectionTracking)}
+          >
+            <Section title="Arc Stage Notes" description="Key moments in character development">
               <div className="space-y-2">
-                {secrets.map((item, index) => (
+                {arcStageNotes.map((item, index) => (
                   <div key={index} className="flex gap-2">
                     <input
                       type="text"
                       value={item}
-                      onChange={(e) => handleArrayChange(setSecrets, index, e.target.value)}
-                      placeholder="Secret"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      onChange={(e) => handleArrayChange(setArcStageNotes, index, e.target.value)}
+                      placeholder={`Arc stage ${index + 1}`}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
-                      onClick={() => handleRemoveArrayItem(setSecrets, index)}
-                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      onClick={() => handleRemoveArrayItem(setArcStageNotes, index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       Remove
                     </button>
                   </div>
                 ))}
                 <button
-                  onClick={() => handleAddArrayItem(setSecrets)}
-                  className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
+                  onClick={() => handleAddArrayItem(setArcStageNotes)}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
                 >
-                  + Add
+                  + Add Stage
                 </button>
               </div>
             </Section>
 
-            <Section title="Values" description="What the character holds dear">
+            <Section title="Continuity Facts" description="Details to track">
               <div className="space-y-2">
-                {values.map((item, index) => (
+                {continuityFacts.map((item, index) => (
                   <div key={index} className="flex gap-2">
                     <input
                       type="text"
                       value={item}
-                      onChange={(e) => handleArrayChange(setValues, index, e.target.value)}
-                      placeholder="Value"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      onChange={(e) => handleArrayChange(setContinuityFacts, index, e.target.value)}
+                      placeholder="Continuity fact"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
-                      onClick={() => handleRemoveArrayItem(setValues, index)}
-                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                      onClick={() => handleRemoveArrayItem(setContinuityFacts, index)}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       Remove
                     </button>
                   </div>
                 ))}
                 <button
-                  onClick={() => handleAddArrayItem(setValues)}
-                  className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
+                  onClick={() => handleAddArrayItem(setContinuityFacts)}
+                  className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
                 >
-                  + Add
+                  + Add Fact
                 </button>
               </div>
+              {characterId && onAnnotateField && (
+                <CanonAnnotationToolbar
+                  projectId={projectId}
+                  target_kind="character"
+                  target_id={characterId}
+                  field_path="continuity_facts"
+                  annotations={canonAnnotations}
+                  onCreate={(_, targetId, fieldPath, annotationKind, note) =>
+                    onAnnotateField(targetId, fieldPath, annotationKind, note)
+                  }
+                />
+              )}
             </Section>
 
-            <Section title="Taboos" description="What the character rejects">
-              <div className="space-y-2">
-                {taboos.map((item, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(e) => handleArrayChange(setTaboos, index, e.target.value)}
-                      placeholder="Taboo"
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                    <button
-                      onClick={() => handleRemoveArrayItem(setTaboos, index)}
-                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => handleAddArrayItem(setTaboos)}
-                  className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
-                >
-                  + Add
-                </button>
-              </div>
-            </Section>
-          </div>
-
-          <Section title="Change Axis" description="Character arc trajectory">
-            <textarea
-              value={changeAxis}
-              onChange={(e) => setChangeAxis(e.target.value)}
-              placeholder="How does this character change? From what to what?"
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
-
-          <Section title="Arc Stage Notes" description="Key moments in character development">
-            <div className="space-y-2">
-              {arcStageNotes.map((item, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => handleArrayChange(setArcStageNotes, index, e.target.value)}
-                    placeholder={`Arc stage ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => handleRemoveArrayItem(setArcStageNotes, index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddArrayItem(setArcStageNotes)}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Stage
-              </button>
-            </div>
-          </Section>
-
-          <Section title="Continuity Facts" description="Details to track">
-            <div className="space-y-2">
-              {continuityFacts.map((item, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => handleArrayChange(setContinuityFacts, index, e.target.value)}
-                    placeholder="Continuity fact"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => handleRemoveArrayItem(setContinuityFacts, index)}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => handleAddArrayItem(setContinuityFacts)}
-                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"
-              >
-                + Add Fact
-              </button>
-            </div>
-            {characterId && onAnnotateField && (
-              <CanonAnnotationToolbar
-                projectId={projectId}
-                target_kind="character"
-                target_id={characterId}
-                field_path="continuity_facts"
-                annotations={canonAnnotations}
-                onCreate={(_, targetId, fieldPath, annotationKind, note) =>
-                  onAnnotateField(targetId, fieldPath, annotationKind, note)
-                }
+            <Section title="Writer Notes" description="Private notes for the author">
+              <textarea
+                value={writerNotes}
+                onChange={(e) => setWriterNotes(e.target.value)}
+                placeholder="Private notes about this character..."
+                className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
               />
-            )}
-          </Section>
-
-          <Section title="Writer Notes" description="Private notes for the author">
-            <textarea
-              value={writerNotes}
-              onChange={(e) => setWriterNotes(e.target.value)}
-              placeholder="Private notes about this character..."
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-            />
-          </Section>
+            </Section>
+          </CollapsibleSection>
         </div>
       </div>
     </div>
   );
 }
 
-interface SectionProps {
+/* ── Section Group (always visible) ── */
+
+interface SectionGroupProps {
   title: string;
   description: string;
   children: React.ReactNode;
 }
 
-function Section({ title, description, children }: SectionProps) {
+function SectionGroup({ title, description, children }: SectionGroupProps) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
+        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+/* ── Collapsible Section Group ── */
+
+interface CollapsibleSectionProps {
+  title: string;
+  description: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function CollapsibleSection({ title, description, isExpanded, onToggle, children }: CollapsibleSectionProps) {
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+        )}
+        <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
+        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+      </button>
+      {isExpanded && <div className="space-y-3">{children}</div>}
+    </div>
+  );
+}
+
+/* ── Individual Field Section ── */
+
+interface SectionProps {
+  title: string;
+  description?: string;
+  badge?: 'required' | 'recommended';
+  children: React.ReactNode;
+}
+
+function Section({ title, description, badge, children }: SectionProps) {
+  const badgeElement =
+    badge === 'required' ? (
+      <span className="text-red-500 text-xs ml-1">*</span>
+    ) : badge === 'recommended' ? (
+      <span className="text-amber-500 text-xs ml-1" title="Used by story generation">⚡</span>
+    ) : null;
+
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{title}</h3>
-        <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 flex items-center">
+          {title}
+          {badgeElement}
+        </h3>
+        {description && <p className="text-xs text-gray-500 dark:text-slate-400">{description}</p>}
       </div>
       {children}
     </div>
