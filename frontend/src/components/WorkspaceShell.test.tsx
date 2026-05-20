@@ -130,7 +130,7 @@ describe('WorkspaceShell', () => {
 
     await user.click(screen.getByText('Canon'));
 
-    expect(useUIStore.getState().mode).toBe('canon');
+    expect(useUIStore.getState().mode).toBe('studio');
   });
 
   it('clicking Inspect nav item in review stage updates mode', async () => {
@@ -143,7 +143,7 @@ describe('WorkspaceShell', () => {
 
     await user.click(screen.getByText('Inspect'));
 
-    expect(useUIStore.getState().mode).toBe('inspect');
+    expect(useUIStore.getState().mode).toBe('studio');
   });
 
   it('nav items show correct labels for all planning stage items', () => {

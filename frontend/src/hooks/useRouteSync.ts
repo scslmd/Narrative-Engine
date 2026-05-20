@@ -5,40 +5,31 @@ import { useUIStore } from '../stores/uiStore';
 
 /**
  * Hook that synchronizes route state with UI store.
- * Route is the source of truth - this ensures deep links and refreshes work correctly.
+ * After Phase 4 route migration, all workspace routes resolve to 'studio' mode.
+ * Deep-link params (tab, jobId, chapterId) are handled by usePanelUrlSync in StudioView.
  */
 export function useRouteSync() {
   const location = useLocation();
   const { setMode, setProjectId, setChapterId, setJobId } = useUIStore();
 
   useEffect(() => {
-    // Try inspect with jobId pattern first (most specific)
-    let match: ReturnType<typeof matchPath> | null = null;
-    
-    match = matchPath('/workspace/:projectId/inspect/:jobId?', location.pathname);
-    
-    if (match) {
-      const params = match.params as { projectId: string; jobId?: string };
-      setProjectId(params.projectId);
-      setMode('inspect');
-      setJobId(params.jobId || null);
-      return;
-    }
-
-    // Try standard pattern for plan/review
-    match = matchPath('/workspace/:projectId/:mode?', location.pathname);
+    const match = matchPath('/workspace/:projectId/:segment?', location.pathname);
 
     if (match) {
-      const params = match.params as { projectId: string; mode?: WorkspaceMode };
-      
-      // Set project ID
+      const params = match.params as { projectId: string; segment?: string };
       setProjectId(params.projectId);
-      
-      // Derive mode from route segment or default to 'plan'
-      const derivedMode: WorkspaceMode = (params.mode as WorkspaceMode) || 'plan';
-      setMode(derivedMode);
+      // Keep mode derivation from `segment` for redirect routes to avoid flash:
+      // redirect routes (plan, review, etc.) will render briefly before Navigate fires,
+      // so mode should reflect the segment until the redirect completes.
+      const segment = params.segment;
+      if (segment === 'studio' || !segment) {
+        setMode('studio');
+      } else {
+        setMode(segment as WorkspaceMode);
+      }
+      setChapterId(null);
+      setJobId(null);
     } else {
-      // Not in workspace - reset state
       setProjectId(null);
       setMode('plan');
       setChapterId(null);

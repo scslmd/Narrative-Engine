@@ -447,7 +447,10 @@ export const useStudioStore = create<StudioState>((set) => ({
       const panel = state.layout.panels[id];
       if (!panel) return {};
       const newPanels = { ...state.layout.panels, [id]: { ...panel, zIndex: state.layout.nextZIndex } };
-      return { layout: { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 } };
+      return {
+        activePanel: panel.key,
+        layout: { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 },
+      };
     }),
   loadLayout: (projectId) =>
     set((state) => {

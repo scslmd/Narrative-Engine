@@ -5,6 +5,17 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { modeToStage } from '../routes'
 import { LayoutList, Search, Sparkles, Lightbulb, Scroll, Zap, MonitorUp } from 'lucide-react'
 
+const ROUTE_TO_TAB: Record<string, string | null> = {
+  braindump: 'ideas',
+  plan: 'structure',
+  canon: 'canon',
+  generate: 'generation',
+  studio: null,
+  review: 'review',
+  inspect: 'inspect',
+  write: 'manuscripts',
+};
+
 interface WorkspaceShellProps {
   children: ReactNode
 }
@@ -39,9 +50,14 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const studioActive = mode === 'studio'
 
   const handleNavClick = (key: string) => {
-    setMode(key as typeof mode)
+    setMode('studio');
     if (projectId) {
-      navigate(`/workspace/${projectId}/${key}`)
+      const tab = ROUTE_TO_TAB[key];
+      if (key === 'studio' || !tab) {
+        navigate(`/workspace/${projectId}/studio`);
+      } else {
+        navigate(`/workspace/${projectId}/studio?tab=${tab}`);
+      }
     }
   }
 

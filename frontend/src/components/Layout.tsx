@@ -6,7 +6,7 @@ import { resolveEffectiveMode } from '../theme/theme'
 import { useUIStore } from '../stores/uiStore'
 import { useProjects } from '../hooks/useProjects'
 import { useSettingsStore } from '../stores/settingsStore'
-import { modeToStage, type WorkspaceMode } from '../routes'
+import { modeToStage, panelToStage } from '../routes'
 import { useRouteSync } from '../hooks/useRouteSync'
 import { SettingsPanel } from './SettingsPanel'
 
@@ -15,12 +15,6 @@ interface LayoutProps {
 }
 
 type StageId = 'planning' | 'writing' | 'review'
-
-const STAGE_DEFAULT_MODE: Record<StageId, string> = {
-  planning: 'plan',
-  writing: 'studio',
-  review: 'review',
-}
 
 const stageButtons: { id: StageId; label: string; icon: typeof Lightbulb; shadow: string; border: string }[] = [
   { id: 'planning', label: 'Planning', icon: Lightbulb, shadow: 'shadow-amber-500/30', border: 'border-amber-500' },
@@ -43,17 +37,37 @@ export function Layout({ children }: LayoutProps) {
   const currentProject = projects?.find((p) => p.project_id === projectId)
 
   useEffect(() => {
-    const nextStage = modeToStage[uiMode]
+    let nextStage = modeToStage[uiMode]
+
+    // After Phase 4: derive stage from active panel tab when in studio mode
+    if (uiMode === 'studio') {
+      const params = new URLSearchParams(location.search)
+      const tab = params.get('tab')
+      if (tab && tab in panelToStage) {
+        nextStage = panelToStage[tab]
+      }
+    }
+
     if (stage !== nextStage) {
       setStage(nextStage)
     }
-  }, [setStage, stage, uiMode])
+  }, [setStage, stage, uiMode, location.search])
 
- const handleStageChange = (stageId: StageId) => {
-    const nextMode = STAGE_DEFAULT_MODE[stageId] as WorkspaceMode
-    setMode(nextMode)
+ const STAGE_TO_TAB: Record<StageId, string> = {
+    planning: 'structure',
+    writing: 'manuscripts',
+    review: 'review',
+  }
+
+  const handleStageChange = (stageId: StageId) => {
+    setMode('studio')
     if (!projectId) return
-    navigate(`/workspace/${projectId}/${nextMode}`)
+    const tab = STAGE_TO_TAB[stageId]
+    if (tab) {
+      navigate(`/workspace/${projectId}/studio?tab=${tab}`)
+    } else {
+      navigate(`/workspace/${projectId}/studio`)
+    }
   }
 
   const activeStage = modeToStage[uiMode]

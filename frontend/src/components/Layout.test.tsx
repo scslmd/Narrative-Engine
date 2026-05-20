@@ -155,7 +155,7 @@ describe('Layout', () => {
 
     await user.click(getStageButton('Planning'));
 
-    expect(useUIStore.getState().mode).toBe('plan');
+    expect(useUIStore.getState().mode).toBe('studio');
   });
 
   it('clicking Studio stage button navigates to studio mode', async () => {
@@ -189,7 +189,7 @@ describe('Layout', () => {
 
     await user.click(getStageButton('Review'));
 
-    expect(useUIStore.getState().mode).toBe('review');
+    expect(useUIStore.getState().mode).toBe('studio');
   });
 
   it('highlights active stage button with distinct styling', async () => {

@@ -8,7 +8,9 @@ import { StudioStatusBar } from '../components/studio/StudioStatusBar';
 import { WritingView } from './WritingView';
 import { ViewShell } from '../components/shell/ViewShell';
 import { useStudioStore } from '../stores/studioStore';
+import { useUIStore } from '../stores/uiStore';
 import { useWritingView } from '../hooks/useWritingView';
+import { usePanelUrlSync } from '../hooks/usePanelUrlSync';
 
 export function StudioView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -25,6 +27,16 @@ export function StudioView() {
     setIsEditing,
     setEditContent,
   } = useWritingView(false);
+
+  const setJobId = useUIStore((s) => s.setJobId);
+
+  // Sync active panel with URL query params; handle deep-link params on mount
+  usePanelUrlSync({
+    projectId: projectId ?? null,
+    onJobId: (jobId) => {
+      if (jobId) setJobId(jobId);
+    },
+  });
 
   const chapterOptions = useMemo(() => manuscriptDocuments.map(doc => ({
     document_id: doc.document_id,

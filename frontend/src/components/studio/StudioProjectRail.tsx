@@ -140,15 +140,15 @@ export function StudioProjectRail({ projectId, compact = false }: StudioProjectR
         <div className="space-y-1 border-t border-[var(--border-primary)] px-3 py-3 text-[11px] text-[var(--text-tertiary)]">
           <Link
             className="block rounded-lg px-3 py-2 transition-colors hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]"
-            to={`/workspace/${projectId}/plan`}
+            to={`/workspace/${projectId}/studio?tab=structure`}
           >
-            Open full Planning
+            Open Planning Panel
           </Link>
           <Link
             className="block rounded-lg px-3 py-2 transition-colors hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]"
-            to={`/workspace/${projectId}/canon`}
+            to={`/workspace/${projectId}/studio?tab=canon`}
           >
-            Open full Canon
+            Open Canon Panel
           </Link>
         </div>
       ) : null}
