@@ -1,0 +1,273 @@
+{
+    "contract_id":  "2026-05-20-radial-hub-phases-1-5-fine-grained-contract",
+    "stage_id":  "S5",
+    "stage_name":  "Validation, Accessibility, And Mobile Behavior",
+    "stage_goal":  "Add the final test and semantic coverage, mobile responsive behavior, and full-suite stage gate.",
+    "sources":  [
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-3-interaction-polish.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-4-route-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-5-validation.md"
+                ],
+    "determinism_choices":  [
+                                "Implement true tear-off as a same-tab React portal mounted to document.body. Do not open OS windows or browser popups.",
+                                "Do not create a Phase 2 projectId prop migration for StudioManuscriptsPanel. Keep its current onSelect-only API until useWritingView is explicitly refactored.",
+                                "Do not implement the deferred routes.ts rewrite from Phase 4. It is dead code in the current repo and must remain out of scope.",
+                                "Treat Phase 5 accessibility work as additive semantics and tests. Do not invent new clickable status-bar behavior.",
+                                "Use the existing Axios and service-layer patterns already present in frontend/src/lib/api.ts and frontend/src/services. Do not introduce fetch."
+                            ],
+    "global_guardrails":  {
+                              "do_not_modify":  [
+                                                    "app/**",
+                                                    "tests/**",
+                                                    "frontend/src/services/** except when a task explicitly targets a service file",
+                                                    "frontend/src/lib/api.ts",
+                                                    "docs/archive/**"
+                                                ],
+                              "do_not_do":  [
+                                                "Do not add backend APIs, schemas, database fields, or prompt contracts.",
+                                                "Do not remove existing workspace routes until the redirect stage explicitly replaces them with backward-compatible redirects.",
+                                                "Do not add mock production data.",
+                                                "Do not use as any, @ts-ignore, or ad hoc API base URLs.",
+                                                "Do not expand scope to unrelated refactors."
+                                            ],
+                              "blocker_codes":  [
+                                                    "BLOCKED_MISSING_INPUT",
+                                                    "BLOCKED_AMBIGUOUS_INSTRUCTION",
+                                                    "BLOCKED_NONDETERMINISTIC_CHECK",
+                                                    "BLOCKED_PLAN_VIOLATION"
+                                                ]
+                          },
+    "rollback_strategy":  {
+                              "stage_checkpoint_rule":  "After stage pass criteria are green, create a rollback checkpoint before dispatching the next stage.",
+                              "checkpoint_message_template":  "checkpoint(radial-hub): complete S5 Validation, Accessibility, And Mobile Behavior",
+                              "operator_note":  "Checkpoint commits or equivalent patch snapshots must include only the files changed for this completed stage."
+                          },
+    "omitted_or_deferred_items":  [
+                                      {
+                                          "reason":  "No deterministic code change is required in the current repo state.",
+                                          "item":  "StudioManuscriptsPanel projectId prop migration"
+                                      },
+                                      {
+                                          "reason":  "Explicitly deferred in the reviewed plan because the file has no active callers.",
+                                          "item":  "frontend/src/routes.ts Phase 4 canonical studio URL rewrite"
+                                      },
+                                      {
+                                          "reason":  "Out of scope for the approved plan set.",
+                                          "item":  "True multi-window tear-off using window.open or OS-native detached windows"
+                                      },
+                                      {
+                                          "reason":  "T014 preserves StudioContextPanel as transitional legacy wiring. No task in S1-S5 removes it; deprecation is deferred to post-radial-hub work.",
+                                          "item":  "StudioContextPanel removal / full deprecation"
+                                      }
+                                  ],
+    "previous_stage_ids":  [
+                               "S1",
+                               "S2",
+                               "S3",
+                               "S4"
+                           ],
+    "entry_criteria":  [
+                           "Stage 4 pass criteria are all green."
+                       ],
+    "tasks":  [
+                  {
+                      "task_id":  "RH-T044",
+                      "name":  "Create useMediaQuery hook",
+                      "responsible_file":  "frontend/src/hooks/useMediaQuery.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T035"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create an SSR-safe, reusable media-query hook used by the radial hub and panel menu with no studio-specific branching or panel-coupled behavior.",
+                      "required_identifiers":  [
+                                                   "useMediaQuery",
+                                                   "typeof window === \u0027undefined\u0027",
+                                                   "window.matchMedia"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioRadialHub.tsx",
+                                                               "frontend/src/components/studio/StudioPanelMenu.tsx"
+                                                           ],
+                                         "do_not_do":  [
+                                                           "Do not couple the hook to a specific panel key, route, or studio-only condition."
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "The hook is reusable from any frontend component without studio-specific imports."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T045",
+                      "name":  "Apply final accessibility and mobile behavior to StudioFloatingPanel",
+                      "responsible_file":  "frontend/src/components/studio/StudioFloatingPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T034",
+                                                  "RH-T044"
+                                              ],
+                      "same_file_serial_group":  "studio-floating-panel",
+                      "summary":  "Add final ARIA semantics, merged-ref focus management, tabIndex, and touch-friendly resize handles.",
+                      "required_identifiers":  [
+                                                   "role={panelRole}",
+                                                   "aria-label={panelAriaLabel}",
+                                                   "tabIndex={-1}",
+                                                   "assignPanelRef",
+                                                   "data-resize-handle"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingWindow.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run lint"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Lint exits 0 or only reports the repo\u0027s documented pre-existing errors."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T046",
+                      "name":  "Apply final responsive and accessibility behavior to StudioRadialHub",
+                      "responsible_file":  "frontend/src/components/studio/StudioRadialHub.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T035",
+                                                  "RH-T044",
+                                                  "RH-T045"
+                                              ],
+                      "same_file_serial_group":  "studio-radial-hub",
+                      "summary":  "Add role=main, aria-label, mobile stack mode via useMediaQuery, and keep desktop floating behavior for xl and above.",
+                      "required_identifiers":  [
+                                                   "useMediaQuery(\u0027(max-width: 1279px)\u0027)",
+                                                   "role=\"main\"",
+                                                   "aria-label=\"Workspace\""
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/views/StudioView.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run build"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Build exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T047",
+                      "name":  "Apply final responsive and accessibility behavior to StudioPanelMenu",
+                      "responsible_file":  "frontend/src/components/studio/StudioPanelMenu.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T005",
+                                                  "RH-T044"
+                                              ],
+                      "same_file_serial_group":  "studio-panel-menu",
+                      "summary":  "Add aria-haspopup/menu semantics and a fixed-position mobile bottom-sheet variant below xl.",
+                      "required_identifiers":  [
+                                                   "aria-label=\"Panel menu\"",
+                                                   "aria-expanded={open}",
+                                                   "aria-haspopup=\"menu\"",
+                                                   "role=\"menu\"",
+                                                   "role=\"menuitem\""
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioCommandBar.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run lint"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Lint exits 0 or only reports the repo\u0027s documented pre-existing errors."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T048",
+                      "name":  "Apply final semantics to StudioStatusBar",
+                      "responsible_file":  "frontend/src/components/studio/StudioStatusBar.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T023"
+                                              ],
+                      "same_file_serial_group":  "studio-status-bar",
+                      "summary":  "Add aria-live support to status text and keep the bar non-interactive unless a real action exists.",
+                      "required_identifiers":  [
+                                                   "aria-live=\"polite\""
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "Do not add role=\"button\" or click handlers unless a real navigation/status action is implemented in the same task."
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T049",
+                      "name":  "Create integrated radial-hub accessibility tests",
+                      "responsible_file":  "frontend/src/components/studio/accessibility.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T045",
+                                                  "RH-T046",
+                                                  "RH-T047",
+                                                  "RH-T048"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create integration tests covering panel ARIA roles, panel menu semantics, and radial-hub accessibility affordances.",
+                      "required_identifiers":  [
+                                                   "DndContextWrapper",
+                                                   "StudioFloatingPanel",
+                                                   "StudioPanelMenu"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingPanel.tsx",
+                                                               "frontend/src/components/studio/StudioPanelMenu.tsx",
+                                                               "frontend/src/components/studio/StudioRadialHub.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- accessibility.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused accessibility tests pass."
+                                          ]
+                  }
+              ],
+    "stage_pass_criteria":  [
+                                "cd frontend; cmd /c npm.cmd run test",
+                                "cd frontend; cmd /c npm.cmd run lint",
+                                "cd frontend; cmd /c npm.cmd run typecheck",
+                                "cd frontend; cmd /c npm.cmd run build",
+                                "python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py",
+                                "python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content"
+                            ],
+    "move_to_next_stage_only_if":  [
+                                       "All frontend tests pass.",
+                                       "Lint, typecheck, and build are green.",
+                                       "Both backend validation commands pass with the repository\u0027s documented timeout expectations.",
+                                       "Manual mobile and accessibility checks do not reveal regressions."
+                                   ],
+    "final_validation_notes":  [
+                                   "Use a timeout of at least 300000ms for the parallel pytest cluster and at least 240000ms for the serial pytest command.",
+                                   "Do not claim merge-readiness until every Stage 5 pass-criteria command is green.",
+                                   "If any task requires changes outside its responsible_file, stop with BLOCKED_PLAN_VIOLATION and split the work into additional file-owned tasks."
+                               ]
+}

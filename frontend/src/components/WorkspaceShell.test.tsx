@@ -55,14 +55,15 @@ describe('WorkspaceShell', () => {
     expect(buttons).toHaveLength(4);
   });
 
-  it('hides left rail when mode is studio', () => {
+  it('renders writing nav items when mode is studio', () => {
     renderShell('studio');
 
-    const buttons = screen.queryAllByRole('button', { hidden: false }).filter(
-      (btn) => btn.classList.contains('nav-item'),
-    );
-    expect(buttons).toHaveLength(0);
-    expect(screen.queryByText('Workspace sections')).not.toBeInTheDocument();
+    expect(screen.getByText('Workspace sections')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation');
+    const navButtons = Array.from(nav.querySelectorAll('button.nav-item'));
+    expect(navButtons).toHaveLength(1);
+    expect(navButtons[0]?.textContent?.trim()).toBe('Studio');
+    expect(screen.getByText('Studio Desk')).toBeInTheDocument();
   });
 
   it('renders 2 nav items when mode is in review stage (review)', () => {
@@ -177,10 +178,14 @@ describe('WorkspaceShell', () => {
     expect(screen.getByText('Page Content')).toBeInTheDocument();
   });
 
-  it('does not show writing nav items when in planning stage', () => {
+  it('does not show writing nav items in main nav when in planning stage', () => {
     renderShell('plan');
 
-    expect(screen.queryByText('Studio')).not.toBeInTheDocument();
+    const nav = screen.getByRole('navigation');
+    const studioBtn = Array.from(nav.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.trim() === 'Studio',
+    );
+    expect(studioBtn).toBeUndefined();
   });
 
   it('does not show planning nav items when in review stage', () => {

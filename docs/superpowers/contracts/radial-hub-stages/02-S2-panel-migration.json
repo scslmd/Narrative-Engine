@@ -1,0 +1,465 @@
+{
+    "contract_id":  "2026-05-20-radial-hub-phases-1-5-fine-grained-contract",
+    "stage_id":  "S2",
+    "stage_name":  "Panel Migration",
+    "stage_goal":  "Migrate drafts, add the new structure/chapters/canon panels, add presets support, and mount the status bar.",
+    "sources":  [
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-3-interaction-polish.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-4-route-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-5-validation.md"
+                ],
+    "determinism_choices":  [
+                                "Implement true tear-off as a same-tab React portal mounted to document.body. Do not open OS windows or browser popups.",
+                                "Do not create a Phase 2 projectId prop migration for StudioManuscriptsPanel. Keep its current onSelect-only API until useWritingView is explicitly refactored.",
+                                "Do not implement the deferred routes.ts rewrite from Phase 4. It is dead code in the current repo and must remain out of scope.",
+                                "Treat Phase 5 accessibility work as additive semantics and tests. Do not invent new clickable status-bar behavior.",
+                                "Use the existing Axios and service-layer patterns already present in frontend/src/lib/api.ts and frontend/src/services. Do not introduce fetch."
+                            ],
+    "global_guardrails":  {
+                              "do_not_modify":  [
+                                                    "app/**",
+                                                    "tests/**",
+                                                    "frontend/src/services/** except when a task explicitly targets a service file",
+                                                    "frontend/src/lib/api.ts",
+                                                    "docs/archive/**"
+                                                ],
+                              "do_not_do":  [
+                                                "Do not add backend APIs, schemas, database fields, or prompt contracts.",
+                                                "Do not remove existing workspace routes until the redirect stage explicitly replaces them with backward-compatible redirects.",
+                                                "Do not add mock production data.",
+                                                "Do not use as any, @ts-ignore, or ad hoc API base URLs.",
+                                                "Do not expand scope to unrelated refactors."
+                                            ],
+                              "blocker_codes":  [
+                                                    "BLOCKED_MISSING_INPUT",
+                                                    "BLOCKED_AMBIGUOUS_INSTRUCTION",
+                                                    "BLOCKED_NONDETERMINISTIC_CHECK",
+                                                    "BLOCKED_PLAN_VIOLATION"
+                                                ]
+                          },
+    "rollback_strategy":  {
+                              "stage_checkpoint_rule":  "After stage pass criteria are green, create a rollback checkpoint before dispatching the next stage.",
+                              "checkpoint_message_template":  "checkpoint(radial-hub): complete S2 Panel Migration",
+                              "operator_note":  "Checkpoint commits or equivalent patch snapshots must include only the files changed for this completed stage."
+                          },
+    "omitted_or_deferred_items":  [
+                                      {
+                                          "reason":  "No deterministic code change is required in the current repo state.",
+                                          "item":  "StudioManuscriptsPanel projectId prop migration"
+                                      },
+                                      {
+                                          "reason":  "Explicitly deferred in the reviewed plan because the file has no active callers.",
+                                          "item":  "frontend/src/routes.ts Phase 4 canonical studio URL rewrite"
+                                      },
+                                      {
+                                          "reason":  "Out of scope for the approved plan set.",
+                                          "item":  "True multi-window tear-off using window.open or OS-native detached windows"
+                                      },
+                                      {
+                                          "reason":  "T014 preserves StudioContextPanel as transitional legacy wiring. No task in S1-S5 removes it; deprecation is deferred to post-radial-hub work.",
+                                          "item":  "StudioContextPanel removal / full deprecation"
+                                      }
+                                  ],
+    "previous_stage_ids":  "S1",
+    "entry_criteria":  [
+                           "Stage 1 pass criteria are all green.",
+                           "StudioPanelContent, StudioRadialHub, StudioFloatingPanel, and layout actions already exist."
+                       ],
+    "tasks":  [
+                  {
+                      "task_id":  "RH-T012",
+                      "name":  "Add StudioDraftsPanel prop-based test coverage",
+                      "responsible_file":  "frontend/src/components/studio/StudioDraftsPanel.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T009"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create a focused test proving StudioDraftsPanel renders when projectId is passed as a prop.",
+                      "required_identifiers":  [
+                                                   "StudioDraftsPanel",
+                                                   "projectId"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioDraftsPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "The focused test targets prop-based rendering instead of useParams."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T013",
+                      "name":  "Migrate StudioDraftsPanel from useParams to projectId prop",
+                      "responsible_file":  "frontend/src/components/studio/StudioDraftsPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T012"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Replace route-param usage with an explicit projectId prop and keep the existing draft-assist behavior.",
+                      "required_identifiers":  [
+                                                   "StudioDraftsPanelProps",
+                                                   "projectId",
+                                                   "useAssistController"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/hooks/useWritingView.ts",
+                                                               "frontend/src/domains/writing/useAssistController.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx",
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "StudioDraftsPanel compiles without useParams and passes its focused test."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T014",
+                      "name":  "Update StudioContextPanel drafts call site",
+                      "responsible_file":  "frontend/src/components/studio/StudioContextPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T013"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Pass projectId into the drafts panel call site as transitional legacy support while StudioContextPanel still exists; leave manuscripts wiring unchanged and do not remove the legacy panel in this stage.",
+                      "required_identifiers":  [
+                                                   "case \u0027drafts\u0027",
+                                                   "StudioDraftsPanel projectId={projectId}",
+                                                   "case \u0027manuscripts\u0027"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioManuscriptsPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T015",
+                      "name":  "Create StudioStructurePanel implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioStructurePanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T009"
+                                              ],
+                      "same_file_serial_group":  "new-panel-components",
+                      "summary":  "Implement the structure panel backed by getSequencePlans and getBeatPlans with loading, error, and empty states.",
+                      "required_identifiers":  [
+                                                   "StudioStructurePanel",
+                                                   "getSequencePlans",
+                                                   "getBeatPlans",
+                                                   "WorkspaceStatus",
+                                                   "data-structure-panel"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/services/planning.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "The panel uses only existing planning services."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T016",
+                      "name":  "Add StudioStructurePanel tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioStructurePanel.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T015"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused rendering and empty-state coverage for the structure panel.",
+                      "required_identifiers":  [
+                                                   "StudioStructurePanel",
+                                                   "data-structure-panel"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioStructurePanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioStructurePanel.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioStructurePanel tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T017",
+                      "name":  "Create StudioChaptersPanel implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioChaptersPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T009"
+                                              ],
+                      "same_file_serial_group":  "new-panel-components",
+                      "summary":  "Implement the chapters panel using getChapterPlans and getChapterPackets with deterministic list rendering and empty states.",
+                      "required_identifiers":  [
+                                                   "StudioChaptersPanel",
+                                                   "getChapterPlans",
+                                                   "getChapterPackets",
+                                                   "WorkspaceStatus"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/services/planning.ts",
+                                                               "frontend/src/views/WritingView.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T018",
+                      "name":  "Add StudioChaptersPanel tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioChaptersPanel.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T017"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused coverage for chapter list rendering and empty-state behavior.",
+                      "required_identifiers":  [
+                                                   "StudioChaptersPanel"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioChaptersPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioChaptersPanel.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioChaptersPanel tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T019",
+                      "name":  "Create StudioCanonPanel implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioCanonPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T009"
+                                              ],
+                      "same_file_serial_group":  "new-panel-components",
+                      "summary":  "Implement the canon panel using getCanonProfiles and getCanonAnnotations with real annotation kinds, tabs, and empty states.",
+                      "required_identifiers":  [
+                                                   "StudioCanonPanel",
+                                                   "getCanonProfiles",
+                                                   "getCanonAnnotations",
+                                                   "CanonAnnotationKind"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/services/canon.ts",
+                                                               "frontend/src/components/canon/**"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T020",
+                      "name":  "Add StudioCanonPanel tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioCanonPanel.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T019"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused coverage for canon profiles, annotations, and empty-state behavior.",
+                      "required_identifiers":  [
+                                                   "StudioCanonPanel"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioCanonPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioCanonPanel.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioCanonPanel tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T021",
+                      "name":  "Wire Structure, Chapters, Canon, and Drafts through StudioPanelContent",
+                      "responsible_file":  "frontend/src/components/studio/StudioPanelContent.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T008",
+                                                  "RH-T013",
+                                                  "RH-T015",
+                                                  "RH-T017",
+                                                  "RH-T019"
+                                              ],
+                      "same_file_serial_group":  "studio-panel-content",
+                      "summary":  "Extend the panel router so all known radial-hub panel keys resolve to concrete components instead of placeholder fallback.",
+                      "required_identifiers":  [
+                                                   "case \u0027drafts\u0027",
+                                                   "case \u0027structure\u0027",
+                                                   "case \u0027chapters\u0027",
+                                                   "case \u0027canon\u0027"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioManuscriptsPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "No known radial-hub panel key falls through to the default placeholder."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T022",
+                      "name":  "Add layout presets to studioStore",
+                      "responsible_file":  "frontend/src/stores/studioStore.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T001"
+                                              ],
+                      "same_file_serial_group":  "studio-store",
+                      "summary":  "Add preset definitions and applyPreset support without changing existing panel actions.",
+                      "required_identifiers":  [
+                                                   "AuthorPreset",
+                                                   "LAYOUT_PRESETS",
+                                                   "applyPreset"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioLayoutPreset.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "applyPreset creates deterministic panel sets per preset name."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T023",
+                      "name":  "Create StudioStatusBar implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioStatusBar.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T022"
+                                              ],
+                      "same_file_serial_group":  "studio-status-bar",
+                      "summary":  "Create the bottom status bar with project info, panel count, collapse control, and preset badge.",
+                      "required_identifiers":  [
+                                                   "StudioStatusBar",
+                                                   "data-status-bar",
+                                                   "data-panel-count"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/views/StudioView.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T024",
+                      "name":  "Add StudioStatusBar tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioStatusBar.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T023"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused coverage for status bar rendering and panel count text.",
+                      "required_identifiers":  [
+                                                   "StudioStatusBar",
+                                                   "data-status-bar",
+                                                   "data-panel-count"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioStatusBar.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioStatusBar.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioStatusBar tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T025",
+                      "name":  "Add StudioStatusBar to StudioView",
+                      "responsible_file":  "frontend/src/views/StudioView.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T009",
+                                                  "RH-T023"
+                                              ],
+                      "same_file_serial_group":  "studio-view",
+                      "summary":  "Mount StudioStatusBar below the WritingView and radial-hub stack.",
+                      "required_identifiers":  [
+                                                   "StudioStatusBar"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioStatusBar.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run build"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Build exits 0."
+                                          ]
+                  }
+              ],
+    "stage_pass_criteria":  [
+                                "cd frontend; cmd /c npm.cmd run test -- StudioDraftsPanel.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioStructurePanel.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioChaptersPanel.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioCanonPanel.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioStatusBar.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run typecheck",
+                                "cd frontend; cmd /c npm.cmd run build"
+                            ],
+    "move_to_next_stage_only_if":  [
+                                       "All Stage 2 focused tests pass.",
+                                       "The panel router resolves drafts, structure, chapters, and canon without placeholder fallback.",
+                                       "StudioView renders the status bar below the hub."
+                                   ],
+    "final_validation_notes":  [
+                                   "Use a timeout of at least 300000ms for the parallel pytest cluster and at least 240000ms for the serial pytest command.",
+                                   "Do not claim merge-readiness until every Stage 5 pass-criteria command is green.",
+                                   "If any task requires changes outside its responsible_file, stop with BLOCKED_PLAN_VIOLATION and split the work into additional file-owned tasks."
+                               ]
+}

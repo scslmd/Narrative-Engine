@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form Entry Optimizations - Mockups</title>
+<style>
+  :root { --bg: #f9fafb; --surface: #fff; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --accent: #2563eb; --red: #ef4444; --amber: #f59e0b; --blue-icon: #3b82f6; --green: #16a34a; --purple: #9333ea; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1e293b; color: var(--text); padding: 2rem; }
+  h1.page-title { color: #f1f5f9; text-align: center; margin-bottom: 0.5rem; font-size: 1.5rem; }
+  p.page-sub { color: #94a3b8; text-align: center; margin-bottom: 2rem; font-size: 0.85rem; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; max-width: 1400px; margin: 0 auto; }
+  .form-card { background: var(--bg); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .form-card.full-width { grid-column: 1 / -1; }
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
+  .header h2 { font-size: 1.125rem; font-weight: 600; }
+  .header p.sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+  .header-actions { display: flex; justify-content: space-between; align-items: center; }
+  .header-actions .right { display: flex; gap: 0.5rem; }
+  .btn-primary { background: var(--accent); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: #e5e7eb; color: #374151; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer; }
+  .legend { display: flex; gap: 1rem; margin-top: 0.75rem; font-size: 0.7rem; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 0.25rem; }
+  .body { padding: 1.25rem; overflow-y: auto; }
+  .body.tall { max-height: 520px; }
+  .section-group { margin-bottom: 1rem; }
+  .section-group h3 { font-size: 0.875rem; font-weight: 600; display: flex; align-items: baseline; gap: 0.5rem; }
+  .section-group h3 small { font-size: 0.65rem; font-weight: 400; color: var(--muted); }
+  .section-group.collapsed h3 { cursor: pointer; }
+  .section-group.collapsed h3::before { content: '▶'; font-size: 0.6rem; color: var(--muted); }
+  .section-group.expanded h3::before { content: '▼'; font-size: 0.6rem; color: var(--muted); }
+  .field { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; }
+  .field label { font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.35rem; }
+  .field label small { font-size: 0.6rem; font-weight: 400; color: var(--muted); }
+  .field input, .field textarea, .field select { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.8rem; outline: none; background: var(--surface); }
+  .field textarea { min-height: 3rem; resize: vertical; }
+  .field input:read-only { background: #f3f4f6; }
+  .badge-r { color: var(--red); font-size: 0.65rem; }
+  .badge-a { color: var(--amber); font-size: 0.65rem; }
+  .badge-c { color: var(--blue-icon); font-size: 0.65rem; }
+  .grid-2 { display: grid; grid-cols-2; gap: 0.75rem; }
+  .grid-3 { display: grid; grid-cols-3; gap: 0.75rem; }
+  .array-item { display: flex; gap: 0.5rem; margin-bottom: 0.35rem; }
+  .array-item input { flex: 1; font-size: 0.75rem; padding: 0.4rem 0.6rem; }
+  .btn-remove { color: var(--red); background: none; border: none; font-size: 0.7rem; cursor: pointer; padding: 0.4rem 0.5rem; border-radius: 4px; }
+  .btn-add { background: none; border: none; color: var(--accent); font-size: 0.7rem; cursor: pointer; padding: 0.4rem 0.5rem; border-radius: 4px; }
+  .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; }
+  .tab-bar button { padding: 0.5rem 0.75rem; font-size: 0.7rem; border: none; background: none; cursor: pointer; color: var(--muted); white-space: nowrap; }
+  .tab-bar button.active { color: var(--accent); border-bottom: 2px solid var(--accent); font-weight: 500; }
+  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; cursor: pointer; }
+  .entry-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
+  .tag { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.6rem; font-weight: 500; }
+  .tag-concept { background: #dbeafe; color: #1e40af; }
+  .tag-location { background: #dcfce7; color: #166534; }
+  .tag-event { background: #fee2e2; color: #991b1b; }
+  .tag-creature { background: #ffedd5; color: #9a3412; }
+  .rel-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+  .rel-form h3 { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.75rem; display: flex; justify-content: space-between; }
+  .add-entry-bar { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .add-entry-bar input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+  .add-entry-bar select { border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.5rem; font-size: 0.75rem; }
+  .add-entry-bar button { background: var(--accent); color: #fff; border: none; padding: 0.4rem 0.75rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+  .form-label { font-size: 0.7rem; font-weight: 500; color: var(--muted); margin-bottom: 0.2rem; display: block; }
+  .inline-flex { display: flex; align-items: center; gap: 0.25rem; }
+  .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
+  .content-grid .left { max-height: 480px; overflow-y: auto; }
+  .content-grid .right { max-height: 480px; overflow-y: auto; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.75rem; margin: 1rem 0; font-size: 0.7rem; color: #92400e; }
+  .note strong { display: block; margin-bottom: 0.25rem; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Form Entry Optimizations — Visual Mockups</h1>
+<p class="page-sub">Based on actual implemented components · Branch: codex/form-entry-optimization</p>
+
+<div class="note">
+  <strong>Legend</strong>
+  <span class="badge-r">*</span> Required for save &nbsp;·&nbsp;
+  <span class="badge-a">⚡</span> Recommended — used by story generation (P-300) &nbsp;·&nbsp;
+  <span class="badge-c">📖</span> Canon context — consumed by SceneContext at draft time
+</div>
+
+<div class="grid">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CHARACTER BUILDER                           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="form-card">
+  <div class="header">
+    <div class="header-actions">
+      <div>
+        <h2>New Character</h2>
+        <p class="sub">Build and refine your characters</p>
+      </div>
+      <div class="right">
+        <button class="btn-primary">Save</button>
+        <button class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="badge-r">*</span> Required</span>
+      <span><span class="badge-a">⚡</span> Used by story generation</span>
+    </div>
+  </div>
+  <div class="body tall">
+    <div class="max-w" style="max-width:560px">
+
+      <!-- Section 1: Core Identity (always visible) -->
+      <div class="section-group">
+        <h3>Core Identity <small>Essential character information</small></h3>
+        <div class="field">
+          <label>Character ID <span class="badge-r">*</span></label>
+          <input type="text" placeholder="Enter character id" readonly />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Display Name <span class="badge-r">*</span></label>
+            <input type="text" placeholder="Enter character name" />
+          </div>
+          <div class="field">
+            <label>Role in Story <span class="badge-r">*</span></label>
+            <input type="text" placeholder="e.g., Protagonist, Antagonist" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Motivation (always visible) -->
+      <div class="section-group">
+        <h3>Motivation <small>What drives this character — used by story generation</small></h3>
+        <div class="field">
+          <label>Archetype <span class="badge-a">⚡</span></label>
+          <input type="text" placeholder="e.g., The Creator, The Sage" />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>External Goal <span class="badge-a">⚡</span></label>
+            <textarea placeholder="What does this character want to achieve?"></textarea>
+          </div>
+          <div class="field">
+            <label>Internal Need <span class="badge-a">⚡</span></label>
+            <textarea placeholder="What does this character need for growth?"></textarea>
+          </div>
+        </div>
+        <div class="field">
+          <label>Change Axis <span class="badge-a">⚡</span></label>
+          <textarea placeholder="How does this character change? From what to what?"></textarea>
+        </div>
+      </div>
+
+      <!-- Section 3: Psychological Depth (collapsed) -->
+      <div class="section-group collapsed">
+        <h3>Psychological Depth <small>Inner conflicts and personality layers</small></h3>
+      </div>
+
+      <!-- Section 4: Context (collapsed) -->
+      <div class="section-group collapsed">
+        <h3>Context <small>Backstory, voice, and personal boundaries</small></h3>
+      </div>
+
+      <!-- Section 5: Tracking (collapsed) -->
+      <div class="section-group collapsed">
+        <h3>Tracking <small>Arc progression, continuity, and private notes</small></h3>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- WORLD BIBLE                                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="form-card">
+  <div class="header">
+    <div class="header-actions">
+      <div>
+        <h2>World Bible</h2>
+        <p class="sub">Track locations, characters, concepts, and world details</p>
+      </div>
+    </div>
+    <div class="add-entry-bar">
+      <input type="text" placeholder="Enter entry title" />
+      <input type="text" placeholder="Brief summary" />
+      <select>
+        <option>Concept</option>
+        <option>Location</option>
+        <option>Event</option>
+      </select>
+      <button>Add</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="active">All (4)</button>
+    <button>Concepts</button>
+    <button>Locations</button>
+    <button>Events</button>
+    <button>Creatures</button>
+    <button>Magic</button>
+    <button>Cultures</button>
+    <button>History</button>
+  </div>
+  <div class="content-grid">
+    <div class="left">
+      <div class="card-grid">
+        <div class="entry-card">
+          <span class="tag tag-concept">concept</span>
+          <div style="font-weight:500; margin-top:0.35rem; font-size:0.75rem;">The Veil</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:0.2rem;">Boundary between mortal and divine realms</div>
+        </div>
+        <div class="entry-card">
+          <span class="tag tag-location">location</span>
+          <div style="font-weight:500; margin-top:0.35rem; font-size:0.75rem;">Ironhold Castle</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:0.2rem;">Ancient fortress on the northern cliff</div>
+        </div>
+        <div class="entry-card">
+          <span class="tag tag-event">event</span>
+          <div style="font-weight:500; margin-top:0.35rem; font-size:0.75rem;">The Sundering</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:0.2rem;">Cataclysm that split the continent</div>
+        </div>
+        <div class="entry-card">
+          <span class="tag tag-creature">creature</span>
+          <div style="font-weight:500; margin-top:0.35rem; font-size:0.75rem;">Void Wyrms</div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-top:0.2rem;">Serpentine beings from the abyss</div>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <span class="tag tag-concept">concept</span>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn-primary" style="font-size:0.7rem; padding:0.35rem 0.75rem;">Save &amp; Close</button>
+          <button class="btn-secondary" style="font-size:0.7rem; padding:0.35rem 0.75rem;">Cancel</button>
+        </div>
+      </div>
+      <div class="legend" style="margin-bottom:0.5rem;">
+        <span><span class="badge-r">*</span> Required</span>
+        <span><span class="badge-c">📖</span> Canon context</span>
+      </div>
+
+      <div class="section-group">
+        <h3 style="font-size:0.75rem;">Core</h3>
+        <div class="field">
+          <label>Title <span class="badge-r">*</span></label>
+          <input type="text" value="The Veil" />
+        </div>
+        <div class="field">
+          <label>Summary <span class="badge-r">*</span> <span class="badge-c">📖</span></label>
+          <textarea>Boundary between mortal and divine realms. Crossed only during the Eclipse.</textarea>
+        </div>
+      </div>
+
+      <div class="section-group">
+        <h3 style="font-size:0.75rem;">Canon <span class="badge-c">📖</span></h3>
+        <div class="field">
+          <label>Canonical Facts <span class="badge-c">📖</span></label>
+          <div class="array-item"><input type="text" value="Cannot be crossed without a guide" /><button class="btn-remove">Remove</button></div>
+          <div class="array-item"><input type="text" value="Thins during the Eclipse" /><button class="btn-remove">Remove</button></div>
+          <button class="btn-add">+ Add Fact</button>
+        </div>
+        <div class="field">
+          <label>Continuity Warnings <span class="badge-c">📖</span></label>
+          <div class="array-item"><input type="text" placeholder="Continuity warning" /><button class="btn-remove">Remove</button></div>
+          <button class="btn-add">+ Add Warning</button>
+        </div>
+      </div>
+
+      <div class="section-group">
+        <h3 style="font-size:0.75rem;">Notes</h3>
+        <div class="field">
+          <label>Writer Notes</label>
+          <textarea placeholder="Private notes about this entry..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ARC BUILDER                                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="form-card">
+  <div class="header">
+    <div class="header-actions">
+      <div>
+        <h2>New Arc</h2>
+        <p class="sub">Define character arcs and story threads</p>
+      </div>
+      <div class="right">
+        <button class="btn-primary">Save</button>
+        <button class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="badge-r">*</span> Required</span>
+      <span><span class="badge-a">⚡</span> Used by story generation</span>
+    </div>
+  </div>
+  <div class="body tall">
+    <div style="max-width:560px">
+
+      <div class="section-group">
+        <h3>Core <small>Arc identity</small></h3>
+        <div class="field">
+          <label>Arc ID <span class="badge-r">*</span></label>
+          <input type="text" placeholder="Enter arc id" readonly />
+        </div>
+        <div class="field">
+          <label>Name <span class="badge-r">*</span></label>
+          <input type="text" placeholder="e.g., The Hero's Journey, Redemption Arc" />
+        </div>
+        <div class="field">
+          <label>Summary <span class="badge-r">*</span></label>
+          <textarea placeholder="What is this arc about? What transforms?"></textarea>
+        </div>
+      </div>
+
+      <div class="section-group expanded">
+        <h3>Structure <small>Key turning points and narrative progression</small></h3>
+        <div class="field">
+          <label>Stage Map Notes <span class="badge-a">⚡</span> <small>Key moments in arc progression</small></label>
+          <div class="array-item"><input type="text" placeholder="Stage 1" /><button class="btn-remove">Remove</button></div>
+          <div class="array-item"><input type="text" placeholder="Stage 2" /><button class="btn-remove">Remove</button></div>
+          <button class="btn-add">+ Add Stage</button>
+        </div>
+      </div>
+
+      <div class="section-group collapsed">
+        <h3>Metadata <small>Fit assessment and organization tags</small></h3>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RELATIONSHIP FORM                           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="form-card">
+  <div class="header">
+    <div class="header-actions">
+      <div>
+        <h2>Characters — Relationships</h2>
+        <p class="sub">Define how characters connect to each other</p>
+      </div>
+    </div>
+  </div>
+  <div class="body">
+    <div style="max-width:480px">
+      <div class="rel-form">
+        <h3>New Relationship <span style="font-size:0.7rem; color:var(--muted); cursor:pointer;">✕</span></h3>
+
+        <div class="grid-2">
+          <div>
+            <label class="form-label">From <span class="badge-r">*</span></label>
+            <select style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem;">
+              <option>Select character...</option>
+              <option>Aria Thornfield</option>
+              <option>Kael Ironwood</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">To <span class="badge-r">*</span></label>
+            <select style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem;">
+              <option>Select character...</option>
+              <option>Aria Thornfield</option>
+              <option>Kael Ironwood</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:0.5rem;">
+          <label class="form-label">Relationship Type <span class="badge-r">*</span></label>
+          <select style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem;">
+            <option>FRIEND</option>
+            <option>ALLY</option>
+            <option>ENEMY</option>
+            <option>MENTOR</option>
+            <option>FAMILY</option>
+            <option>RIVAL</option>
+          </select>
+        </div>
+
+        <div style="margin-top:0.5rem;">
+          <label class="form-label">Summary <span class="badge-r">*</span></label>
+          <textarea style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem; min-height:2.5rem; resize:none;" placeholder="Describe the relationship..."></textarea>
+        </div>
+
+        <div class="grid-2" style="margin-top:0.5rem;">
+          <div>
+            <label class="form-label">Tension</label>
+            <input type="text" placeholder="Conflict or friction..." style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem;" />
+          </div>
+          <div>
+            <label class="form-label">Notes</label>
+            <input type="text" placeholder="Additional context..." style="width:100%; border:1px solid var(--border); border-radius:8px; padding:0.35rem 0.5rem; font-size:0.75rem;" />
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.5rem;">
+          <button style="background:none; border:none; color:var(--muted); font-size:0.7rem; padding:0.35rem 0.6rem; border-radius:8px; cursor:pointer;">Cancel</button>
+          <button style="background:var(--accent); color:#fff; border:none; font-size:0.7rem; padding:0.35rem 0.6rem; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:0.35rem;">
+            <span>+</span> Create Relationship
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="note" style="max-width:1400px; margin:1.5rem auto 0;">
+  <strong>Key Changes Summary</strong>
+  <br>• <b>CharacterBuilder:</b> canSave requires only 3 fields (ID, Name, Role) — was 12. Progressive disclosure with 5 collapsible sections.
+  <br>• <b>WorldBibleEntryEditor:</b> Fields grouped into Core → Canon → Notes. Canon context fields marked with 📖 badge.
+  <br>• <b>RelationshipForm:</b> Consistent <span class="badge-r">*</span> markers on all 4 required fields (From, To, Type, Summary).
+  <br>• <b>ArcBuilder:</b> New component. Required: ID, Name, Summary. Collapsible Structure + Metadata sections.
+</div>
+
+</body>
+</html>

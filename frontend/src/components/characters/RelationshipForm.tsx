@@ -114,7 +114,9 @@ export function RelationshipForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={`block text-xs font-medium mb-1 ${textMuted}`}>From</label>
+          <label className={`block text-xs font-medium mb-1 ${textMuted}`}>
+            From <span className="text-red-500">*</span>
+          </label>
           <select
             value={sourceId}
             onChange={(e) => setSourceId(e.target.value)}
@@ -130,7 +132,9 @@ export function RelationshipForm({
         </div>
 
         <div>
-          <label className={`block text-xs font-medium mb-1 ${textMuted}`}>To</label>
+          <label className={`block text-xs font-medium mb-1 ${textMuted}`}>
+            To <span className="text-red-500">*</span>
+          </label>
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
@@ -147,7 +151,9 @@ export function RelationshipForm({
       </div>
 
       <div>
-        <label className={`block text-xs font-medium mb-1 ${textMuted}`}>Relationship Type</label>
+        <label className={`block text-xs font-medium mb-1 ${textMuted}`}>
+          Relationship Type <span className="text-red-500">*</span>
+        </label>
         <select
           value={relationKind}
           onChange={(e) => setRelationKind(e.target.value)}

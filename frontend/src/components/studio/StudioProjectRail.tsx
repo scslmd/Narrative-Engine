@@ -8,6 +8,7 @@ import {
   Network,
   NotebookPen,
   Scroll,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import { useStudioStore, type StudioPanelKey } from '../../stores/studioStore';
@@ -40,6 +41,7 @@ const railSections: RailSection[] = [
       { label: 'Characters', panel: 'characters', icon: Users },
       { label: 'World Bible', panel: 'worldBible', icon: BookOpen },
       { label: 'Relationships', panel: 'relationships', icon: Network },
+      { label: 'Arcs', panel: 'arcs', icon: TrendingUp },
       { label: 'Canon', panel: 'generation', icon: Scroll },
     ],
   },

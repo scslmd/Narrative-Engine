@@ -1,6 +1,6 @@
-# Narrative Engine - Complete User Walkthrough v1.8.0
+# Narrative Engine - Complete User Walkthrough v1.9.0
 
-Last updated: 2026-05-17
+Last updated: 2026-05-19 (form entry optimization: required/optional field fix, progressive disclosure, Arcs panel, canon context badges)
 
 ## Goal
 This walkthrough is the full frontend operating manual. It explains every workspace interface and gives a comprehensive, practical workflow from first launch to advanced generation and iteration.
@@ -66,11 +66,12 @@ Route: `/workspace/:projectId/*`
 The workspace has the following structure:
 - **Left panel (Workspace sections):** 160px navigation rail with stage-specific items and a "Studio Desk" quick link. Hidden in Studio mode (StudioView has its own left rail).
 - **Main content area:** Current mode view.
-- **Right rail:** Notes panel and Job Launch panel. Hidden in Studio mode (StudioView is full-width, 2-column layout).
 - **Bottom utility layer:** Runtime/status bar for job progress.
 
+**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and right context panel via the ViewShell component.
+
 ### Left Panel Navigation
-The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link:
+The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link. The active item is highlighted with a gradient icon background and a dot indicator.
 - **Planning stage:** Brain Dump, Planning, Canon, Generate
 - **Writing stage:** Studio (redirects to Studio Desk)
 - **Review stage:** Review, Inspect
@@ -79,7 +80,7 @@ The left panel displays stage-aware navigation items plus a permanent "Studio De
 ### Job Launch Panel
 The Job Launch panel lets you trigger pipeline phases without leaving the current workspace view. Select a phase (P-100 through P-400), click to launch, and monitor recent jobs below. Failed jobs show expandable error details with fix guidance. Completed jobs display processing time. Running jobs show step progress.
 
-**Note:** In Studio mode, the right rail (Notes + Job Launch) is hidden. Use the Jobs button in StudioView's left rail to access job launch functionality.
+**Access:** In Studio mode, access job launch via the Jobs button in StudioView's left rail. In other workspace modes, the Job Launch panel is embedded within the view.
 
 ## Phase 3: Planning Workspace Deep Tour
 Route: `/workspace/:projectId/plan`
@@ -98,6 +99,8 @@ Top tab row exposes all planning surfaces.
 
 ### Arcs
 - Manage arc candidates, selections, and stage maps.
+- ArcBuilder provides progressive disclosure: Core (Arc ID, Name, Summary — required), Structure (stage map notes — recommended), Metadata (fit notes, tags — optional).
+- Visual indicators: `*` for required, `⚡` for fields used by story generation.
 
 ### Branches
 - Create alternate story branches.
@@ -119,17 +122,21 @@ Top tab row exposes all planning surfaces.
 - Use revision and review-cue context to refine consistency.
 
 ### Characters
-- List, create, and edit character profiles.
+- List, create, and edit character profiles with progressive disclosure.
+- Required fields (marked `*`): Character ID, Display Name, Role in Story.
+- Recommended fields (marked `⚡`): Archetype, External Goal, Internal Need, Change Axis — used by story generation.
+- Optional fields in collapsible sections: Psychological Depth, Context, Tracking.
 - Annotate character fields for canon behavior.
 
 ### World Bible
-- Create and edit world entries.
+- Create and edit world entries with grouped fields: Core (title, summary, type), Canon (canonical facts, continuity warnings), Notes.
+- Fields marked `📖` are consumed by story generation (summary, canonical facts, continuity warnings).
 - Annotate fields and maintain canonical details.
 
 ### Relationships
 The Relationships tab provides an interactive graph visualization with full relationship management:
 
-**Create:** Click "Add Relationship" to open the creation form. Select From/To characters, relationship type, summary, optional tension and notes.
+**Create:** Click "Add Relationship" to open the creation form. Select From/To characters (required, marked `*`), relationship type (required, marked `*`), summary (required, marked `*`), optional tension and notes.
 
 **Edit:** Three interaction paths to modify an existing relationship:
 - Double-click a relationship edge in the graph — opens a centered modal pre-populated with current data. Save sends PATCH, Delete removes with confirmation.
@@ -187,10 +194,12 @@ Session-based free writing canvas with AI-powered organization. Use this mode ea
 ## Phase 5: Writing Workspace Deep Tour
 Routes: `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` (both redirect to `/studio`)
 
-The Writing workspace has been deprecated and now redirects to Studio Desk. All writing functionality (manuscript editing, draft management, floating toolbar, assist actions) is available through StudioView.
+The Writing workspace routes now redirect to Studio Desk. The WritingView component is embedded within StudioView, providing all writing functionality in a unified workspace.
+
+**Accessing writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
 
 **Studio Desk provides the same writing capabilities in a 2-column layout:**
-- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Canon, Notes, Jobs
+- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs
 - Center: Full-width manuscript editor with manuscript navigation, draft management, and revision suggestions
 
 **To access writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
@@ -390,26 +399,29 @@ Route: `/workspace/:projectId/studio`
 The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes. All layout preferences persist across sessions.
 
 ### Layout
-The desk has a two-column grid (left rail + full-width manuscript editor):
-- **Left rail (Project Map):** Quick navigation between all panels. Collapsible to compact mode (80px icon-only) or expanded (up to 320px).
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill all available width.
+The desk has a three-column layout (left rail + manuscript editor + context panel). The context panel is hidden by default for full-width editing.
+- **Command bar:** Top header with "Studio Desk" label, project name, and toggle buttons (rail expand/collapse, context panel show/hide).
+- **Left rail (Project Map):** Quick navigation between all panels. Click a button to open that panel in the context panel. Collapsible to compact mode (80px icon-only) or expanded (192-320px).
+- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available width.
+- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Note: Arcs, Relationships, Canon, Notes, and Jobs panels are accessible via the left rail but do not appear as tabs in the context panel header — they open directly when selected from the rail. Close button hides the panel.
 
 **Accessing Studio:** Navigate to Studio Desk from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
 
 ### Project Map Panels (Left Rail)
-The left rail provides quick access to 11 panels:
+The left rail provides quick access to 12 panels. Clicking a button opens the context panel with that panel active:
 
 **Develop section:**
 - **Drafts:** Draft artifact lifecycle management
-- **Manuscripts:** Manuscript document selection and editing
+- **Manuscripts:** Manuscript document selection and editing. Selecting a manuscript loads it in the center editor.
 - **Ideas:** Brainstorm-style idea capture and clustering
 - **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
 - **Review:** Checker findings and inspect links
 
 **Reference section:**
-- **Characters:** Character CRUD with profile editing and canon annotations
+- **Characters:** Character CRUD with progressive disclosure sections (Core, Motivation, Psychological Depth, Context, Tracking) and canon annotations
 - **World Bible:** World entry CRUD with canon annotations
-- **Relationships:** Relationship graph and list views with CRUD operations
+- **Relationships:** Relationship graph and list views with CRUD operations. All required fields marked with `*`.
+- **Arcs:** Arc candidate management with list/create modes, progressive disclosure sections
 - **Canon:** Canon profile management and packet preview
 
 **Utilities section:**
@@ -418,33 +430,44 @@ The left rail provides quick access to 11 panels:
 
 ### Using the Desk
 1. Open a project and navigate to Studio Desk from the left panel's "Studio Desk" link.
-2. Use the Project Map to switch between panels (Characters, World Bible, Relationships, etc.).
-3. Write and revise in the center editor.
-4. Select text to access the floating toolbar for assist actions.
-5. Review suggestions in the Suggestions panel (left rail).
-6. Launch jobs from the Jobs panel (left rail).
-7. Take notes in the Notes panel (left rail).
+2. The editor opens in full-width mode by default.
+3. Click a rail button (e.g., "Characters") to open the context panel with that panel active.
+4. Write and revise in the center editor.
+5. Select text to access the floating toolbar for assist actions.
+6. Review suggestions in the Suggestions panel (context panel).
+7. Launch jobs from the Jobs panel (context panel).
+8. Use the command bar toggles to show/hide the context panel or expand/collapse the rail.
+9. Click "Close" in the context panel header to hide it and return to full-width editing.
 
 ### Example Workflow: Writing with Context
 
 1. Open Studio Desk for your project.
-2. In the Project Map (left rail), select **Characters** — character list appears.
-3. Click **Suggestions** — revision suggestions panel becomes active.
+2. In the Project Map (left rail), select **Characters** — the context panel opens with the character list.
+3. Click **Suggestions** — revision suggestions panel becomes active in the context panel.
 4. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
 5. Review the suggestion in the Suggestions panel. Accept to apply, or reject.
 6. Mid-chapter, click **Ideas** to capture a new plot idea.
 7. Click **Suggestions** again to return to revision suggestions. Continue editing.
 8. When done, click **Jobs** to launch a new generation run.
+9. Click "Close" in the context panel to return to full-width editing.
 
 ### Example Workflow: Full-Width Writing Session
 
 1. Open Studio Desk.
-2. Collapse the left rail to compact mode (80px icon-only) for maximum editor space.
-3. Write freely with the manuscript editor filling the full viewport.
-4. Expand the left rail when you need to access other panels.
+2. The editor starts in full-width mode (context panel hidden).
+3. Use the command bar toggle to collapse the left rail to compact mode (80px icon-only) for maximum editor space.
+4. Write freely with the manuscript editor filling the full viewport.
+5. Expand the left rail from the command bar when you need to access other panels.
 
 ### Responsive Behavior
-On smaller screens, the left rail becomes an overlay drawer. A close-drawer button dismisses the drawer.
+On smaller screens, the left rail becomes an overlay drawer. A "Project" button in the command bar toggles the drawer.
+
+## Radial Hub Workspace Redesign (Design Approved — Future Release)
+
+A Photoshop-style radial hub workspace is approved for implementation. Design replaces route-based navigation with a single central writing surface surrounded by draggable, resizable, tear-off panels. User chooses which panels to show. No forced navigation. Supports multi-monitor floating panels.
+
+**Design spec:** `docs/superpowers/specs/2026-05-19-radial-hub-workspace-design.md`
+**Implementation plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
 
 ## Phase 11: End-to-End Novel Walkthrough
 This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation.
@@ -497,7 +520,14 @@ Navigate to the **Characters** tab. Create each character with full profiles:
 - **Kai Voss** — Revelation, The Lost Connection. Elara's nephew, presumed dead. Signal detected on long-range radio in Act III. Forces Elara to reconsider her isolation.
 - **The Fleet Remnant** — Collective Character. Ghost ships detected on radar. May or may not be real. Represents hope vs. delusion.
 
-For each character, fill all fields: Role, Archetype, External Goal, Internal Need, Misbelief, Core Fear, Strengths, Flaw, Voice Notes, Secrets, Backstory.
+For each character, fill the required fields first (Character ID, Display Name, Role in Story), then expand optional sections as needed:
+- **Core Identity** (required): Character ID, Display Name, Role in Story
+- **Motivation** (recommended, ⚡): Archetype, External Goal, Internal Need, Change Axis — used by story generation
+- **Psychological Depth** (optional, collapsible): Misbelief, Core Fear, Strengths, Flaw, Contradictions
+- **Context** (optional, collapsible): Backstory, Voice Notes, Secrets, Values, Taboos
+- **Tracking** (optional, collapsible): Arc Stage Notes, Continuity Facts, Writer Notes
+
+The form uses progressive disclosure — only Core Identity and Motivation are visible by default. Expand sections as you develop character depth.
 
 #### Step 4: Map Relationships
 Navigate to the **Relationships** tab. Create relationship edges:
@@ -710,7 +740,7 @@ A complete 12-chapter novel with:
 
 ## Phase 12: Full Production Workflow
 
-For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.8.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
+For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
 
 ## Common Mistakes and Fixes
 
@@ -791,12 +821,15 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 - Run setup, status tracking, gates, fork.
 
 ### Studio Desk
-- Two-column layout: Project Map (left rail, 80-320px), Manuscript Editor (full width).
-- Right context panel removed — StudioView fills entire workspace width.
-- Layout preferences persist across sessions (rail mode, widths).
-- Project Map: 11 panels — Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Canon, Notes, Jobs.
-- Left rail collapses to compact icon-only mode (80px) or expands (up to 320px).
+- Three-column layout: Command Bar (top), Project Map (left rail, 80-320px), Manuscript Editor (center, full width), Context Panel (right, 320px, toggleable).
+- Context panel hidden by default for full-width editing. Opens on rail button click or panel toggle.
+- Context panel tabs: Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review.
+- Layout preferences persist across sessions (rail mode, widths, panel visibility).
+- Project Map: 12 panels — Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs.
+- Left rail collapses to compact icon-only mode (80px) or expands (192-320px).
+- Command bar toggles: rail expand/collapse, context panel show/hide.
 - Responsive: overlay drawer below `xl:` breakpoint.
+- **Future:** Radial Hub Workspace redesign (design approved) will replace this layout with draggable, resizable, tear-off panels around a central writing surface.
 
 ## Common Failure Cases and Fixes
 - Missing project context: verify `:projectId` route and selected project.

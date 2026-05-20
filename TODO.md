@@ -16,6 +16,44 @@
 
 ### Pending Work
 
+#### Radial Hub Workspace Redesign (Active — Implementation Ready)
+
+Replace route-based navigation with Photoshop-style radial hub workspace. Central writing surface surrounded by draggable, resizable, tear-off panels. User chooses which panels to show. No forced navigation.
+
+**Status:** Design approved. Visual mockup confirmed by user (2026-05-19).
+**Research:** `docs/superpowers/research/2026-05-19-radial-hub-workspace-research.md`
+**Design spec:** `docs/superpowers/specs/2026-05-19-radial-hub-workspace-design.md`
+**Implementation plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
+
+Key decisions:
+- Single route `/workspace/:projectId/studio` replaces all workspace routes
+- 12 panels: Characters, Relationships, World Bible, Arcs, Structure, Chapters, Ideas, Manuscripts, Generation, Review, Inspect, Canon
+- Photoshop-style: drag to reposition, resize edges, ⊡ to tear-off into floating window
+- Hover to preview, click to expand
+- Layout persists per project via localStorage
+- Supports 4 author entry points (Idea-First, Character-First, Outline-First, World-First)
+- Integrates 10 story frameworks via Structure panel
+
+Supersedes previous Studio Desk redesign (`2026-05-16-studio-desk-redesign-design.md`) and floating panels plan (`2026-05-16-floating-panels-implementation.md`).
+
+**Phase 1 plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
+**Next:** Execute Phase 1 (9 tasks: install dep, rewrite store, 4 new components, 2 view updates, validation)
+
+#### AI Character Generator (Future)
+
+Generate character bios via LLM from a brief description or archetype. User provides a prompt like "a cynical detective in 1940s Chicago" and the AI fills out the full CharacterProfile (name, role, archetype, goal, need, wound, fear, strength, flaw, backstory, voice, etc.). Integrates with CharacterBuilder as a "Generate from prompt" button. Requires new backend endpoint `POST /v1/story-development/characters/generate` with LLM prompt builder.
+
+#### Character Illustration / Art Storage (Future)
+
+Allow authors to import character art images or prompt AI to generate character illustrations based on character descriptions. Store image references in character profile. Display thumbnail in character cards. Requires:
+- Image upload endpoint with storage in `data/projects/{id}/assets/`
+- Optional AI image generation integration (not yet available in current inference stack)
+- Frontend: image upload UI, thumbnail display in character cards, full-size preview modal
+
+#### Scene Generator (Future)
+
+Generate scene-level content based on the storyline summary (AI-summarized or user-provided). Takes a chapter/sequence plan and generates individual scene drafts with dialogue, action, and description. Integrates with P-300 drafter pipeline. Requires new backend endpoint `POST /v1/story-development/planning/scenes/generate` with LLM prompt builder that consumes scene plan + character context + world constraints.
+
 #### ViewShell Standardization — Sub-component `isDark` Migration (Future)
 
 After ViewShell standardization, sub-components still receive `isDark` props from parent views. Migrate these to CSS variables in a follow-up pass.

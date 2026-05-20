@@ -8,6 +8,7 @@ import { StudioInspectPanel } from './StudioInspectPanel';
 import { StudioManuscriptsPanel } from './StudioManuscriptsPanel';
 import { StudioCharactersPanel } from './StudioCharactersPanel';
 import { StudioRelationshipsPanel } from './StudioRelationshipsPanel';
+import { StudioArcsPanel } from './StudioArcsPanel';
 import { StudioReviewPanel } from './StudioReviewPanel';
 import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
 import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
@@ -32,6 +33,7 @@ const panelLabels: Record<StudioPanelKey, string> = {
   characters: 'Characters',
   worldBible: 'World Bible',
   relationships: 'Relationships',
+  arcs: 'Arcs',
   generation: 'Generation',
   review: 'Review',
   inspect: 'Inspect',
@@ -45,10 +47,10 @@ interface StudioContextPanelProps {
   onManuscriptSelect?: (documentId: string) => void;
 }
 
-export function StudioContextPanel({ projectId, showCloseButton = false, onManuscriptSelect }: StudioContextPanelProps) {
+export function StudioContextPanel({ projectId, showCloseButton = true, onManuscriptSelect }: StudioContextPanelProps) {
   const activePanel = useStudioStore((s) => s.activePanel);
   const openPanel = useStudioStore((s) => s.openPanel);
-  const setContextPanelMode = useStudioStore((s) => s.setContextPanelMode);
+  const setPanelVisible = useStudioStore((s) => s.setPanelVisible);
 
   const writingController = useWritingDocumentController({
     projectId,
@@ -68,6 +70,8 @@ export function StudioContextPanel({ projectId, showCloseButton = false, onManus
         return <StudioWorldBiblePanel projectId={projectId} />;
       case 'relationships':
         return <StudioRelationshipsPanel projectId={projectId} />;
+      case 'arcs':
+        return <StudioArcsPanel projectId={projectId} />;
       case 'generation':
         return <StudioGenerationPanel projectId={projectId} />;
       case 'review':
@@ -90,7 +94,7 @@ export function StudioContextPanel({ projectId, showCloseButton = false, onManus
   return (
     <div className="flex h-full flex-col">
       <div
-        className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 bg-gray-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
+        className="flex items-center gap-1 overflow-x-auto border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-2"
         role="tablist"
         aria-label="Studio context tabs"
       >
@@ -107,17 +111,13 @@ export function StudioContextPanel({ projectId, showCloseButton = false, onManus
               onClick={() => openPanel(tab.panel)}
               className={`relative rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                 active
-                  ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-100 dark:text-slate-950'
-                  : 'text-gray-500 hover:bg-white hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+                  ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border-primary)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {tab.label}
               {isSuggestions && openSuggestionCount > 0 && (
-                <span className={`absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
-                  active
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-amber-400 text-white'
-                }`}>
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
                   {openSuggestionCount > 9 ? '9+' : openSuggestionCount}
                 </span>
               )}
@@ -125,13 +125,13 @@ export function StudioContextPanel({ projectId, showCloseButton = false, onManus
           );
         })}
       </div>
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 px-4 py-3">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{label}</h2>
+      <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-4 py-3">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">{label}</h2>
         {showCloseButton ? (
           <button
             type="button"
-            onClick={() => setContextPanelMode('closed')}
-            className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+            onClick={() => setPanelVisible(false)}
+            className="rounded-md px-2 py-1 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           >
             Close
           </button>

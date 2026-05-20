@@ -1,0 +1,584 @@
+{
+    "contract_id":  "2026-05-20-radial-hub-phases-1-5-fine-grained-contract",
+    "stage_id":  "S3",
+    "stage_name":  "Interaction Polish",
+    "stage_goal":  "Add snap zones, portal-based floating windows, hover previews, keyboard shortcuts, and layout import/export.",
+    "sources":  [
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-3-interaction-polish.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-4-route-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-5-validation.md"
+                ],
+    "determinism_choices":  [
+                                "Implement true tear-off as a same-tab React portal mounted to document.body. Do not open OS windows or browser popups.",
+                                "Do not create a Phase 2 projectId prop migration for StudioManuscriptsPanel. Keep its current onSelect-only API until useWritingView is explicitly refactored.",
+                                "Do not implement the deferred routes.ts rewrite from Phase 4. It is dead code in the current repo and must remain out of scope.",
+                                "Treat Phase 5 accessibility work as additive semantics and tests. Do not invent new clickable status-bar behavior.",
+                                "Use the existing Axios and service-layer patterns already present in frontend/src/lib/api.ts and frontend/src/services. Do not introduce fetch."
+                            ],
+    "global_guardrails":  {
+                              "do_not_modify":  [
+                                                    "app/**",
+                                                    "tests/**",
+                                                    "frontend/src/services/** except when a task explicitly targets a service file",
+                                                    "frontend/src/lib/api.ts",
+                                                    "docs/archive/**"
+                                                ],
+                              "do_not_do":  [
+                                                "Do not add backend APIs, schemas, database fields, or prompt contracts.",
+                                                "Do not remove existing workspace routes until the redirect stage explicitly replaces them with backward-compatible redirects.",
+                                                "Do not add mock production data.",
+                                                "Do not use as any, @ts-ignore, or ad hoc API base URLs.",
+                                                "Do not expand scope to unrelated refactors."
+                                            ],
+                              "blocker_codes":  [
+                                                    "BLOCKED_MISSING_INPUT",
+                                                    "BLOCKED_AMBIGUOUS_INSTRUCTION",
+                                                    "BLOCKED_NONDETERMINISTIC_CHECK",
+                                                    "BLOCKED_PLAN_VIOLATION"
+                                                ]
+                          },
+    "rollback_strategy":  {
+                              "stage_checkpoint_rule":  "After stage pass criteria are green, create a rollback checkpoint before dispatching the next stage.",
+                              "checkpoint_message_template":  "checkpoint(radial-hub): complete S3 Interaction Polish",
+                              "operator_note":  "Checkpoint commits or equivalent patch snapshots must include only the files changed for this completed stage."
+                          },
+    "omitted_or_deferred_items":  [
+                                      {
+                                          "reason":  "No deterministic code change is required in the current repo state.",
+                                          "item":  "StudioManuscriptsPanel projectId prop migration"
+                                      },
+                                      {
+                                          "reason":  "Explicitly deferred in the reviewed plan because the file has no active callers.",
+                                          "item":  "frontend/src/routes.ts Phase 4 canonical studio URL rewrite"
+                                      },
+                                      {
+                                          "reason":  "Out of scope for the approved plan set.",
+                                          "item":  "True multi-window tear-off using window.open or OS-native detached windows"
+                                      },
+                                      {
+                                          "reason":  "T014 preserves StudioContextPanel as transitional legacy wiring. No task in S1-S5 removes it; deprecation is deferred to post-radial-hub work.",
+                                          "item":  "StudioContextPanel removal / full deprecation"
+                                      }
+                                  ],
+    "previous_stage_ids":  [
+                               "S1",
+                               "S2"
+                           ],
+    "entry_criteria":  [
+                           "Stage 2 pass criteria are all green."
+                       ],
+    "tasks":  [
+                  {
+                      "task_id":  "RH-T026",
+                      "name":  "Create StudioSnapIndicator implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioSnapIndicator.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T007"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the snap-zone detector and overlay component used during drag operations.",
+                      "required_identifiers":  [
+                                                   "SnapZone",
+                                                   "detectSnapZone",
+                                                   "StudioSnapIndicator"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioRadialHub.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T027",
+                      "name":  "Add StudioSnapIndicator tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioSnapIndicator.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T026"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for snap-zone detection and overlay rendering.",
+                      "required_identifiers":  [
+                                                   "detectSnapZone",
+                                                   "StudioSnapIndicator"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioSnapIndicator.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioSnapIndicator.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioSnapIndicator tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T028",
+                      "name":  "Create StudioFloatingWindow implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioFloatingWindow.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T003"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the portal-based floating window wrapper mounted to document.body with drag, resize, reattach, and close support.",
+                      "required_identifiers":  [
+                                                   "StudioFloatingWindow",
+                                                   "createPortal",
+                                                   "reattachPanel",
+                                                   "bringToFront",
+                                                   "data-floating-window"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T028A",
+                      "name":  "Add StudioFloatingWindow tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioFloatingWindow.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T028"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests covering portal render, reattach control exposure, and floating-window container rendering.",
+                      "required_identifiers":  [
+                                                   "StudioFloatingWindow",
+                                                   "data-floating-window"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingWindow.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioFloatingWindow.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioFloatingWindow tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T029",
+                      "name":  "Create StudioHoverPreview implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioHoverPreview.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T021"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the delayed preview overlay using existing characters, worldBible, and brainstorm service functions only.",
+                      "required_identifiers":  [
+                                                   "StudioHoverPreview",
+                                                   "getCharacters",
+                                                   "getWorldBibleEntries",
+                                                   "getBrainstormItems",
+                                                   "data-hover-preview"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/lib/api.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T029A",
+                      "name":  "Add StudioHoverPreview tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioHoverPreview.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T029"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for delayed preview rendering, loading state, and empty-state fallback.",
+                      "required_identifiers":  [
+                                                   "StudioHoverPreview",
+                                                   "data-hover-preview"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioHoverPreview.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioHoverPreview.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioHoverPreview tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T030",
+                      "name":  "Create usePanelKeyboard hook",
+                      "responsible_file":  "frontend/src/hooks/usePanelKeyboard.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T001"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the panel keyboard hook with Ctrl+Shift+1-9, Ctrl+Shift+W, Ctrl+Alt+W, and Escape semantics.",
+                      "required_identifiers":  [
+                                                   "usePanelKeyboard",
+                                                   "PANEL_KEY_ORDER"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioRadialHub.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T030A",
+                      "name":  "Add usePanelKeyboard tests",
+                      "responsible_file":  "frontend/src/hooks/usePanelKeyboard.test.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T030"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for Ctrl+Shift panel shortcuts, Ctrl+Shift+W close, Ctrl+Alt+W reattach, and Escape semantics.",
+                      "required_identifiers":  [
+                                                   "usePanelKeyboard",
+                                                   "PANEL_KEY_ORDER"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/hooks/usePanelKeyboard.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- usePanelKeyboard.test.ts"
+                                       ],
+                      "expected_result":  [
+                                              "Focused usePanelKeyboard tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T031",
+                      "name":  "Add debounced persistence and layout import/export to studioStore",
+                      "responsible_file":  "frontend/src/stores/studioStore.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T022"
+                                              ],
+                      "same_file_serial_group":  "studio-store",
+                      "summary":  "Add debounced v2 persistence, flush helper, layout preset application, exportLayout, and importLayout.",
+                      "required_identifiers":  [
+                                                   "LAYOUT_DEBOUNCE_MS",
+                                                   "scheduleLayoutPersist",
+                                                   "flushLayoutDebounce",
+                                                   "applyLayoutPreset",
+                                                   "exportLayout",
+                                                   "importLayout"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioLayoutPreset.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T031A",
+                      "name":  "Add studioStore layout persistence tests",
+                      "responsible_file":  "frontend/src/stores/studioStore.layoutPersistence.test.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T031"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for debounced persistence, preset application, and deterministic layout import/export behavior.",
+                      "required_identifiers":  [
+                                                   "scheduleLayoutPersist",
+                                                   "applyLayoutPreset",
+                                                   "exportLayout",
+                                                   "importLayout"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/stores/studioStore.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- studioStore.layoutPersistence.test.ts"
+                                       ],
+                      "expected_result":  [
+                                              "Focused studioStore layout persistence tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T032",
+                      "name":  "Create StudioLayoutPreset implementation",
+                      "responsible_file":  "frontend/src/components/studio/StudioLayoutPreset.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T031"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the layout preset menu with preset application and JSON import/export UI and no projectId prop.",
+                      "required_identifiers":  [
+                                                   "StudioLayoutPreset",
+                                                   "applyLayoutPreset",
+                                                   "exportLayout",
+                                                   "importLayout",
+                                                   "LAYOUT_PRESETS_MENU"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioCommandBar.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T032A",
+                      "name":  "Add StudioLayoutPreset tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioLayoutPreset.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T032"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for preset selection and import/export control rendering.",
+                      "required_identifiers":  [
+                                                   "StudioLayoutPreset",
+                                                   "LAYOUT_PRESETS_MENU"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioLayoutPreset.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioLayoutPreset.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioLayoutPreset tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T033",
+                      "name":  "Integrate layout preset UI into StudioCommandBar",
+                      "responsible_file":  "frontend/src/components/studio/StudioCommandBar.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T011",
+                                                  "RH-T032"
+                                              ],
+                      "same_file_serial_group":  "studio-command-bar",
+                      "summary":  "Mount the layout preset control next to the panel menu without changing existing toggle semantics.",
+                      "required_identifiers":  [
+                                                   "StudioLayoutPreset"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/stores/studioStore.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T033A",
+                      "name":  "Add StudioCommandBar layout preset integration tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioCommandBar.layoutPreset.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T033"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests proving the command bar mounts the layout preset control next to the panel menu without removing existing controls.",
+                      "required_identifiers":  [
+                                                   "StudioLayoutPreset",
+                                                   "StudioPanelMenu"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioCommandBar.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioCommandBar.layoutPreset.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioCommandBar layout preset integration tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T034",
+                      "name":  "Apply Phase 3 polish to StudioFloatingPanel",
+                      "responsible_file":  "frontend/src/components/studio/StudioFloatingPanel.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T003",
+                                                  "RH-T029",
+                                                  "RH-T031"
+                                              ],
+                      "same_file_serial_group":  "studio-floating-panel",
+                      "summary":  "Add hover-preview wiring, keep requestAnimationFrame-based resize throttling, and preserve drag/resize correctness.",
+                      "required_identifiers":  [
+                                                   "StudioHoverPreview",
+                                                   "hoverTimerRef",
+                                                   "requestAnimationFrame"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingWindow.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run lint"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Lint exits 0 or only reports the repo\u0027s documented pre-existing errors."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T034A",
+                      "name":  "Add StudioFloatingPanel Phase 3 polish tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioFloatingPanel.phase3.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T034"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for hover-preview wiring, resize throttling guardrails, and Phase 3 interaction behavior.",
+                      "required_identifiers":  [
+                                                   "StudioHoverPreview",
+                                                   "requestAnimationFrame"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.phase3.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioFloatingPanel Phase 3 tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T035",
+                      "name":  "Apply Phase 3 polish to StudioRadialHub",
+                      "responsible_file":  "frontend/src/components/studio/StudioRadialHub.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T007",
+                                                  "RH-T026",
+                                                  "RH-T028",
+                                                  "RH-T030",
+                                                  "RH-T031"
+                                              ],
+                      "same_file_serial_group":  "studio-radial-hub",
+                      "summary":  "Add drag-start bring-to-front, snap-zone detection, snap indicator rendering, floating-window rendering, and viewport clamping.",
+                      "required_identifiers":  [
+                                                   "StudioSnapIndicator",
+                                                   "detectSnapZone",
+                                                   "StudioFloatingWindow",
+                                                   "usePanelKeyboard",
+                                                   "handleDragStart",
+                                                   "handleDragOver",
+                                                   "handleDragEnd"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioFloatingPanel.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run build"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Build exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T035A",
+                      "name":  "Add StudioRadialHub Phase 3 polish tests",
+                      "responsible_file":  "frontend/src/components/studio/StudioRadialHub.phase3.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T035"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused tests for snap-indicator rendering, floating-window rendering, drag-start bring-to-front, and viewport clamping behavior.",
+                      "required_identifiers":  [
+                                                   "StudioSnapIndicator",
+                                                   "StudioFloatingWindow",
+                                                   "handleDragStart",
+                                                   "handleDragEnd"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/components/studio/StudioRadialHub.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.phase3.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused StudioRadialHub Phase 3 tests pass."
+                                          ]
+                  }
+              ],
+    "stage_pass_criteria":  [
+                                "cd frontend; cmd /c npm.cmd run test -- StudioSnapIndicator.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioFloatingWindow.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioHoverPreview.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- usePanelKeyboard.test.ts",
+                                "cd frontend; cmd /c npm.cmd run test -- studioStore.layoutPersistence.test.ts",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioLayoutPreset.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioCommandBar.layoutPreset.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioFloatingPanel.phase3.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test -- StudioRadialHub.phase3.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run test",
+                                "cd frontend; cmd /c npm.cmd run typecheck",
+                                "cd frontend; cmd /c npm.cmd run lint",
+                                "cd frontend; cmd /c npm.cmd run build"
+                            ],
+    "move_to_next_stage_only_if":  [
+                                       "All Stage 3 focused tests and the full frontend test suite are green.",
+                                       "Snap-zone and portal code compiles cleanly.",
+                                       "Layout preset UI is mounted in the command bar.",
+                                       "The store now supports debounced persistence plus import/export."
+                                   ],
+    "final_validation_notes":  [
+                                   "Use a timeout of at least 300000ms for the parallel pytest cluster and at least 240000ms for the serial pytest command.",
+                                   "Do not claim merge-readiness until every Stage 5 pass-criteria command is green.",
+                                   "If any task requires changes outside its responsible_file, stop with BLOCKED_PLAN_VIOLATION and split the work into additional file-owned tasks."
+                               ]
+}

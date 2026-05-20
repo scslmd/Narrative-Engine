@@ -36,7 +36,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const showTooltipsEnabled = showTooltips && iconsOnly
   const activeStage = modeToStage[mode]
   const visibleItems = navItems.filter((item) => item.stage === activeStage)
-  const isStudio = mode === 'studio'
   const studioActive = mode === 'studio'
 
   const handleNavClick = (key: string) => {
@@ -48,7 +47,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full">
-      {!isStudio ? (
       <aside className="lg:w-[160px] lg:flex-shrink-0">
         <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card p-3 lg:sticky lg:top-0">
           <p className="text-[11px] uppercase tracking-wide font-semibold text-[var(--text-tertiary)] px-1 pb-2">
@@ -110,7 +108,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             </button>
           </div>
         </div>
-      </aside>) : null}
+      </aside>
       <main className="flex-1 min-w-0">{children}</main>
     </div>
   )

@@ -1,0 +1,338 @@
+{
+    "contract_id":  "2026-05-20-radial-hub-phases-1-5-fine-grained-contract",
+    "stage_id":  "S4",
+    "stage_name":  "Route Migration",
+    "stage_goal":  "Move the workspace to a single studio route with query-param deep links and backward-compatible redirects.",
+    "sources":  [
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-3-interaction-polish.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-4-route-migration.md",
+                    "docs/superpowers/plans/2026-05-19-radial-hub-phase-5-validation.md"
+                ],
+    "determinism_choices":  [
+                                "Implement true tear-off as a same-tab React portal mounted to document.body. Do not open OS windows or browser popups.",
+                                "Do not create a Phase 2 projectId prop migration for StudioManuscriptsPanel. Keep its current onSelect-only API until useWritingView is explicitly refactored.",
+                                "Do not implement the deferred routes.ts rewrite from Phase 4. It is dead code in the current repo and must remain out of scope.",
+                                "Treat Phase 5 accessibility work as additive semantics and tests. Do not invent new clickable status-bar behavior.",
+                                "Use the existing Axios and service-layer patterns already present in frontend/src/lib/api.ts and frontend/src/services. Do not introduce fetch."
+                            ],
+    "global_guardrails":  {
+                              "do_not_modify":  [
+                                                    "app/**",
+                                                    "tests/**",
+                                                    "frontend/src/services/** except when a task explicitly targets a service file",
+                                                    "frontend/src/lib/api.ts",
+                                                    "docs/archive/**"
+                                                ],
+                              "do_not_do":  [
+                                                "Do not add backend APIs, schemas, database fields, or prompt contracts.",
+                                                "Do not remove existing workspace routes until the redirect stage explicitly replaces them with backward-compatible redirects.",
+                                                "Do not add mock production data.",
+                                                "Do not use as any, @ts-ignore, or ad hoc API base URLs.",
+                                                "Do not expand scope to unrelated refactors."
+                                            ],
+                              "blocker_codes":  [
+                                                    "BLOCKED_MISSING_INPUT",
+                                                    "BLOCKED_AMBIGUOUS_INSTRUCTION",
+                                                    "BLOCKED_NONDETERMINISTIC_CHECK",
+                                                    "BLOCKED_PLAN_VIOLATION"
+                                                ]
+                          },
+    "rollback_strategy":  {
+                              "stage_checkpoint_rule":  "After stage pass criteria are green, create a rollback checkpoint before dispatching the next stage.",
+                              "checkpoint_message_template":  "checkpoint(radial-hub): complete S4 Route Migration",
+                              "operator_note":  "Checkpoint commits or equivalent patch snapshots must include only the files changed for this completed stage."
+                          },
+    "omitted_or_deferred_items":  [
+                                      {
+                                          "reason":  "No deterministic code change is required in the current repo state.",
+                                          "item":  "StudioManuscriptsPanel projectId prop migration"
+                                      },
+                                      {
+                                          "reason":  "Explicitly deferred in the reviewed plan because the file has no active callers.",
+                                          "item":  "frontend/src/routes.ts Phase 4 canonical studio URL rewrite"
+                                      },
+                                      {
+                                          "reason":  "Out of scope for the approved plan set.",
+                                          "item":  "True multi-window tear-off using window.open or OS-native detached windows"
+                                      },
+                                      {
+                                          "reason":  "T014 preserves StudioContextPanel as transitional legacy wiring. No task in S1-S5 removes it; deprecation is deferred to post-radial-hub work.",
+                                          "item":  "StudioContextPanel removal / full deprecation"
+                                      }
+                                  ],
+    "previous_stage_ids":  [
+                               "S1",
+                               "S2",
+                               "S3"
+                           ],
+    "entry_criteria":  [
+                           "Stage 3 pass criteria are all green."
+                       ],
+    "tasks":  [
+                  {
+                      "task_id":  "RH-T036",
+                      "name":  "Sync activePanel on bringToFront in studioStore",
+                      "responsible_file":  "frontend/src/stores/studioStore.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T031"
+                                              ],
+                      "same_file_serial_group":  "studio-store",
+                      "summary":  "Update bringToFront so activePanel follows the top-most panel key for URL sync.",
+                      "required_identifiers":  [
+                                                   "bringToFront",
+                                                   "activePanel"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/hooks/usePanelUrlSync.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T037",
+                      "name":  "Create usePanelUrlSync hook",
+                      "responsible_file":  "frontend/src/hooks/usePanelUrlSync.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T036"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Create the two-way panel-to-URL hook with validated tab keys and nullable projectId handling.",
+                      "required_identifiers":  [
+                                                   "usePanelUrlSync",
+                                                   "PanelUrlSyncOptions",
+                                                   "projectId: string | null",
+                                                   "validKeys",
+                                                   "useSearchParams"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/views/StudioView.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T038",
+                      "name":  "Integrate usePanelUrlSync into StudioView",
+                      "responsible_file":  "frontend/src/views/StudioView.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T025",
+                                                  "RH-T037"
+                                              ],
+                      "same_file_serial_group":  "studio-view",
+                      "summary":  "Add URL-sync initialization to StudioView using projectId ?? null and UI jobId wiring.",
+                      "required_identifiers":  [
+                                                   "usePanelUrlSync",
+                                                   "useUIStore",
+                                                   "projectId: projectId ?? null"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/hooks/useRouteSync.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T039",
+                      "name":  "Replace App workspace routes with backward-compatible redirects",
+                      "responsible_file":  "frontend/src/App.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T038"
+                                              ],
+                      "same_file_serial_group":  "app-routing",
+                      "summary":  "Replace the legacy view routes with redirect components that preserve tab, jobId, chapterId, and canon subtab semantics.",
+                      "required_identifiers":  [
+                                                   "PlanRedirect",
+                                                   "ReviewRedirect",
+                                                   "InspectRedirect",
+                                                   "BrainDumpRedirect",
+                                                   "CanonRedirect",
+                                                   "GenerateRedirect",
+                                                   "WriteRedirect",
+                                                   "/workspace/:projectId/studio"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/routes.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck",
+                                           "cd frontend; cmd /c npm.cmd run build"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Build exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T039A",
+                      "name":  "Add App redirect tests for studio route migration",
+                      "responsible_file":  "frontend/src/App.redirects.test.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T039"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Add focused route tests covering legacy workspace redirects to studio query-param URLs for plan, review, inspect, braindump, canon, generate, and write routes.",
+                      "required_identifiers":  [
+                                                   "/workspace/:projectId/studio",
+                                                   "PlanRedirect",
+                                                   "InspectRedirect",
+                                                   "CanonRedirect",
+                                                   "WriteRedirect"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/App.tsx"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run test -- App.redirects.test.tsx"
+                                       ],
+                      "expected_result":  [
+                                              "Focused redirect tests pass."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T040",
+                      "name":  "Update WorkspaceShell navigation to studio query URLs",
+                      "responsible_file":  "frontend/src/components/WorkspaceShell.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T039"
+                                              ],
+                      "same_file_serial_group":  "workspace-shell",
+                      "summary":  "Change workspace navigation to go directly to studio or studio?tab=... without using old route segments.",
+                      "required_identifiers":  [
+                                                   "ROUTE_TO_TAB",
+                                                   "navigate(`/workspace/${projectId}/studio`)",
+                                                   "navigate(`/workspace/${projectId}/studio?tab=${tab}`)"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/routes.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T041",
+                      "name":  "Simplify useRouteSync for the single-route workspace",
+                      "responsible_file":  "frontend/src/hooks/useRouteSync.ts",
+                      "serial_dependencies":  [
+                                                  "RH-T039"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Preserve transient segment-based mode derivation for redirect routes, but converge studio renders on the single-route model.",
+                      "required_identifiers":  [
+                                                   "matchPath(\u0027/workspace/:projectId/:segment?\u0027)",
+                                                   "setMode(\u0027plan\u0027)",
+                                                   "segment"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/hooks/usePanelUrlSync.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0.",
+                                              "Non-workspace routes still reset mode safely."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T042",
+                      "name":  "Derive Layout stage state from studio tab query param",
+                      "responsible_file":  "frontend/src/components/Layout.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T039",
+                                                  "RH-T041"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Update stage derivation and stage-button navigation so the stage bar reflects the active studio tab.",
+                      "required_identifiers":  [
+                                                   "panelToStage",
+                                                   "STAGE_TO_TAB",
+                                                   "location.search"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/routes.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  },
+                  {
+                      "task_id":  "RH-T043",
+                      "name":  "Update StudioProjectRail bottom links to studio URLs",
+                      "responsible_file":  "frontend/src/components/studio/StudioProjectRail.tsx",
+                      "serial_dependencies":  [
+                                                  "RH-T039"
+                                              ],
+                      "same_file_serial_group":  null,
+                      "summary":  "Replace legacy plan/canon links with direct studio query-param links.",
+                      "required_identifiers":  [
+                                                   "to={`/workspace/${projectId}/studio?tab=structure`}",
+                                                   "to={`/workspace/${projectId}/studio?tab=canon`}"
+                                               ],
+                      "guardrails":  {
+                                         "do_not_modify":  [
+                                                               "frontend/src/routes.ts"
+                                                           ]
+                                     },
+                      "verification":  [
+                                           "cd frontend; cmd /c npm.cmd run typecheck"
+                                       ],
+                      "expected_result":  [
+                                              "Typecheck exits 0."
+                                          ]
+                  }
+              ],
+    "stage_pass_criteria":  [
+                                "cd frontend; cmd /c npm.cmd run test -- App.redirects.test.tsx",
+                                "cd frontend; cmd /c npm.cmd run typecheck",
+                                "cd frontend; cmd /c npm.cmd run build",
+                                "Manual redirect checks for /plan, /review, /inspect/:jobId, /braindump, /canon?tab=mythos, /generate, /write/:chapterId resolve to /studio query URLs."
+                            ],
+    "move_to_next_stage_only_if":  [
+                                       "Focused redirect tests are green.",
+                                       "Legacy workspace URLs redirect to studio query-param URLs without 404s.",
+                                       "Stage buttons and left-rail navigation link directly to studio query URLs.",
+                                       "StudioView reads initial tab/job/chapter URL state without type errors."
+                                   ],
+    "final_validation_notes":  [
+                                   "Use a timeout of at least 300000ms for the parallel pytest cluster and at least 240000ms for the serial pytest command.",
+                                   "Do not claim merge-readiness until every Stage 5 pass-criteria command is green.",
+                                   "If any task requires changes outside its responsible_file, stop with BLOCKED_PLAN_VIOLATION and split the work into additional file-owned tasks."
+                               ]
+}
