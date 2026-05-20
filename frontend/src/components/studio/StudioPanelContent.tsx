@@ -11,6 +11,9 @@ import { StudioInspectPanel } from './StudioInspectPanel';
 import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
 import { StudioDraftsPanel } from './StudioDraftsPanel';
 import { StudioManuscriptsPanel } from './StudioManuscriptsPanel';
+import { StudioStructurePanel } from './StudioStructurePanel';
+import { StudioChaptersPanel } from './StudioChaptersPanel';
+import { StudioCanonPanel } from './StudioCanonPanel';
 import { NotesPanel } from '../NotesPanel';
 import { JobLaunchPanel } from '../JobLaunchPanel';
 
@@ -40,9 +43,15 @@ function StudioPanelContentImpl({ panelKey, projectId }: StudioPanelContentProps
     case 'suggestions':
       return <StudioSuggestionsPanel projectId={projectId} />;
     case 'drafts':
-      return <StudioDraftsPanel />;
+      return <StudioDraftsPanel projectId={projectId} />;
     case 'manuscripts':
       return <StudioManuscriptsPanel />;
+    case 'structure':
+      return <StudioStructurePanel projectId={projectId} />;
+    case 'chapters':
+      return <StudioChaptersPanel projectId={projectId} />;
+    case 'canon':
+      return <StudioCanonPanel projectId={projectId} />;
     case 'notes':
       return <NotesPanel projectId={projectId} />;
     case 'jobs':

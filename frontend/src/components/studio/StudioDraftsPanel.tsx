@@ -1,4 +1,3 @@
-import { useParams } from 'react-router-dom';
 import { FileText, Plus, Sparkles } from 'lucide-react';
 import { DraftList } from '../writing/DraftList';
 import { DraftForm } from '../writing/DraftForm';
@@ -7,8 +6,11 @@ import { useAssistController } from '../../domains/writing/useAssistController';
 import { useThemeStore } from '../../stores/themeStore';
 import { resolveEffectiveMode } from '../../theme/theme';
 
-export function StudioDraftsPanel() {
-  const { projectId } = useParams<{ projectId: string }>();
+interface StudioDraftsPanelProps {
+  projectId: string;
+}
+
+export function StudioDraftsPanel({ projectId }: StudioDraftsPanelProps) {
   const { mode: themeMode } = useThemeStore();
   const isDark = resolveEffectiveMode(themeMode) === 'dark';
 

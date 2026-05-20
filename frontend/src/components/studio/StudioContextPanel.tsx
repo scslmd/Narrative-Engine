@@ -84,7 +84,7 @@ export function StudioContextPanel({ projectId, showCloseButton = true, onManusc
       case 'suggestions':
         return <StudioSuggestionsPanel projectId={projectId} />;
       case 'drafts':
-        return <StudioDraftsPanel />;
+        return <StudioDraftsPanel projectId={projectId} />;
       case 'manuscripts':
         return <StudioManuscriptsPanel onSelect={onManuscriptSelect} />;
       case 'notes':

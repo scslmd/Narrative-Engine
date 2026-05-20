@@ -20,6 +20,7 @@ export type StudioPanelKey =
 
 export type StudioRailMode = 'expanded' | 'collapsed' | 'overlay';
 export type StudioContextMode = 'docked' | 'overlay' | 'closed';
+export type AuthorPreset = 'idea-first' | 'character-first' | 'outline-first' | 'world-first';
 
 const STUDIO_LAYOUT_STORAGE_KEY = 'studio-layout-v1';
 const DEFAULT_LEFT_RAIL_WIDTH = 224;
@@ -88,6 +89,35 @@ const STUDIO_LAYOUT_V2_KEY = (projectId: string) => `studio-layout-v2-${projectI
 const MIN_PANEL_WIDTH = 180;
 const MIN_PANEL_HEIGHT = 120;
 const GRID_SIZE = 8;
+
+interface PanelPreset {
+  key: StudioPanelKey;
+}
+
+const LAYOUT_PRESETS: Record<AuthorPreset, PanelPreset[]> = {
+  'idea-first': [
+    { key: 'ideas' },
+    { key: 'manuscripts' },
+    { key: 'characters' },
+  ],
+  'character-first': [
+    { key: 'characters' },
+    { key: 'relationships' },
+    { key: 'arcs' },
+    { key: 'ideas' },
+  ],
+  'outline-first': [
+    { key: 'structure' },
+    { key: 'chapters' },
+    { key: 'generation' },
+  ],
+  'world-first': [
+    { key: 'worldBible' },
+    { key: 'characters' },
+    { key: 'arcs' },
+    { key: 'structure' },
+  ],
+};
 
 function snapToGrid(value: number): number {
   return Math.round(value / GRID_SIZE) * GRID_SIZE;
@@ -173,6 +203,7 @@ interface StudioState {
   reattachPanel: (id: string) => void;
   bringToFront: (id: string) => void;
   loadLayout: (projectId: string) => void;
+  applyPreset: (preset: AuthorPreset) => void;
 }
 
 const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_LAYOUT_STORAGE_KEY) : null);
@@ -386,5 +417,47 @@ export const useStudioStore = create<StudioState>((set) => ({
         currentProjectId: projectId,
         layout: saved ?? { panels: {}, nextZIndex: 1, layoutPreset: null },
       };
+    }),
+  applyPreset: (preset) =>
+    set((state) => {
+      const panels = LAYOUT_PRESETS[preset];
+      if (!panels) return {};
+
+      const newPanels: Record<string, PanelLayoutState> = {};
+      let nextZ = state.layout.nextZIndex;
+
+      for (let i = 0; i < panels.length; i++) {
+        const panelDef = panels[i];
+        const id = `preset-${preset}-${panelDef.key}`;
+        const col = i % 4;
+        const row = Math.floor(i / 4);
+        newPanels[id] = {
+          id,
+          key: panelDef.key,
+          position: {
+            x: snapToGrid(16 + col * 296),
+            y: snapToGrid(40 + row * 380),
+          },
+          size: { width: 280, height: 360 },
+          visible: true,
+          pinned: false,
+          floating: false,
+          zIndex: nextZ++,
+          collapsedSections: {},
+          scrollY: 0,
+        };
+      }
+
+      const newLayout: StudioLayoutState = {
+        panels: newPanels,
+        nextZIndex: nextZ,
+        layoutPreset: preset,
+      };
+
+      if (state.currentProjectId) {
+        persistLayoutV2(state.currentProjectId, newLayout);
+      }
+
+      return { layout: newLayout };
     }),
 }));

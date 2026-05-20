@@ -4,6 +4,7 @@ import { StudioProjectRail } from '../components/studio/StudioProjectRail';
 import { StudioContextPanel } from '../components/studio/StudioContextPanel';
 import { StudioRadialHub } from '../components/studio/StudioRadialHub';
 import { StudioCommandBar } from '../components/studio/StudioCommandBar';
+import { StudioStatusBar } from '../components/studio/StudioStatusBar';
 import { WritingView } from './WritingView';
 import { ViewShell } from '../components/shell/ViewShell';
 import { useStudioStore } from '../stores/studioStore';
@@ -90,6 +91,7 @@ export function StudioView() {
           <StudioRadialHub projectId={projectId} />
         </div>
       </div>
+      <StudioStatusBar projectId={projectId} />
     </div>
   );
 }
