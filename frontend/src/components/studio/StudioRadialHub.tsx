@@ -6,6 +6,7 @@ import { StudioFloatingWindow } from './StudioFloatingWindow';
 import { StudioPanelContent } from './StudioPanelContent';
 import { StudioSnapIndicator, detectSnapZone, type SnapZone } from './StudioSnapIndicator';
 import { usePanelKeyboard } from '../../hooks/usePanelKeyboard';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 interface StudioRadialHubProps {
   projectId: string;
@@ -16,6 +17,8 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
   const movePanel = useStudioStore((s) => s.movePanel);
   const bringToFront = useStudioStore((s) => s.bringToFront);
   const loadLayout = useStudioStore((s) => s.loadLayout);
+
+  const isMobile = useMediaQuery('(max-width: 1279px)');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -147,6 +150,43 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
     [movePanel, workspaceRect]
   );
 
+  if (isMobile) {
+    return (
+      <div
+        data-radial-hub
+        className="flex h-full w-full flex-col overflow-hidden bg-[var(--bg-tertiary)]"
+        role="main"
+        aria-label="Workspace"
+      >
+        {visiblePanels.map((panel: PanelLayoutState) => (
+          <div
+            key={panel.id}
+            className="flex-shrink-0 border-b border-[var(--border-primary)]"
+            style={{ height: '50vh', minHeight: '200px' }}
+          >
+            <StudioFloatingPanel
+              panelId={panel.id}
+              panelKey={panel.key}
+              projectId={projectId}
+              position={{ x: 0, y: 0 }}
+              size={{ width: 9999, height: 9999 }}
+              pinned={true}
+              floating={false}
+              zIndex={panel.zIndex}
+            >
+              <StudioPanelContent panelKey={panel.key} projectId={projectId} />
+            </StudioFloatingPanel>
+          </div>
+        ))}
+        {visiblePanels.length === 0 && (
+          <div className="flex h-full items-center justify-center text-sm text-[var(--text-secondary)]">
+            No panels open. Use the panel menu to add panels.
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -158,9 +198,12 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
         ref={workspaceRef}
         data-radial-hub
         className="relative h-full w-full overflow-hidden bg-[var(--bg-tertiary)]"
+        role="main"
+        aria-label="Workspace"
       >
         <div
           className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
           style={{
             backgroundImage: 'radial-gradient(circle, var(--border-primary) 1px, transparent 1px)',
             backgroundSize: '8px 8px',

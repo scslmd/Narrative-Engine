@@ -37,7 +37,7 @@ function StudioStatusBarImpl({ projectId }: StudioStatusBarProps) {
         <span className="text-[10px] font-medium text-[var(--text-tertiary)]">
           Project: {projectId.length > 12 ? `${projectId.slice(0, 12)}…` : projectId}
         </span>
-        <span data-panel-count className="text-[10px] text-[var(--text-secondary)]">
+        <span data-panel-count aria-live="polite" className="text-[10px] text-[var(--text-secondary)]">
           {panelCount} panel{panelCount !== 1 ? 's' : ''} active
         </span>
         {layout.layoutPreset && (

@@ -53,7 +53,7 @@ function StudioFloatingPanelImpl({
   const reattachPanel = useStudioStore((s) => s.reattachPanel);
   const movePanel = useStudioStore((s) => s.movePanel);
 
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { listeners, setNodeRef, transform } = useDraggable({
     id: panelId,
     disabled: floating,
   });
@@ -148,12 +148,26 @@ function StudioFloatingPanelImpl({
   }, [resizing, panelId, resizePanel, movePanel, size, position]);
 
   const label = PANEL_LABELS[panelKey] || panelKey;
+  const panelRole = floating ? 'dialog' : 'region';
+  const panelAriaLabel = `${label} panel`;
+
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const assignPanelRef = useCallback((node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    panelRef.current = node;
+  }, [setNodeRef]);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, [panelId]);
 
   return (
     <div
-      ref={setNodeRef}
+      ref={assignPanelRef}
       data-panel-container
-      {...attributes}
+      role={panelRole}
+      aria-label={panelAriaLabel}
+      tabIndex={-1}
       {...listeners}
       onClick={() => bringToFront(panelId)}
       className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-lg"
@@ -174,6 +188,7 @@ function StudioFloatingPanelImpl({
           {floating ? (
             <button
               type="button"
+              aria-label="Reattach panel"
               onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
               className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               title="Reattach"
@@ -183,6 +198,7 @@ function StudioFloatingPanelImpl({
           ) : (
             <button
               type="button"
+              aria-label={pinned ? 'Unpin panel' : 'Pin panel'}
               onClick={(e) => { e.stopPropagation(); pinPanel(panelId, !pinned); }}
               className={`rounded px-1.5 py-0.5 text-[10px] ${pinned ? 'text-amber-400' : 'text-[var(--text-secondary)]'} hover:text-[var(--text-primary)]`}
               title={pinned ? 'Unpin' : 'Pin'}
@@ -211,28 +227,38 @@ function StudioFloatingPanelImpl({
         <div className="h-full overflow-y-auto p-2">{children}</div>
 
         <div
-          className="z-10 absolute right-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
+          data-resize-handle="right"
+          className="z-10 absolute right-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity touch-none"
           style={{ background: 'var(--accent-primary)' }}
           onMouseDown={(e) => handleResizeStart('right', e)}
+          aria-hidden="true"
         />
         <div
-          className="z-10 absolute left-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
+          data-resize-handle="left"
+          className="z-10 absolute left-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity touch-none"
           style={{ background: 'var(--accent-primary)' }}
           onMouseDown={(e) => handleResizeStart('left', e)}
+          aria-hidden="true"
         />
         <div
-          className="z-10 absolute left-0 right-0 bottom-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
+          data-resize-handle="bottom"
+          className="z-10 absolute left-0 right-0 bottom-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity touch-none"
           style={{ background: 'var(--accent-primary)' }}
           onMouseDown={(e) => handleResizeStart('bottom', e)}
+          aria-hidden="true"
         />
         <div
-          className="z-10 absolute left-0 right-0 top-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
+          data-resize-handle="top"
+          className="z-10 absolute left-0 right-0 top-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity touch-none"
           style={{ background: 'var(--accent-primary)' }}
           onMouseDown={(e) => handleResizeStart('top', e)}
+          aria-hidden="true"
         />
         <div
-          className="z-10 absolute right-0 bottom-0 w-3 h-3 cursor-nwse-resize"
+          data-resize-handle="corner"
+          className="z-10 absolute right-0 bottom-0 w-3 h-3 cursor-nwse-resize touch-none"
           onMouseDown={(e) => handleResizeStart('corner', e)}
+          aria-hidden="true"
         >
           <div className="absolute right-0.5 bottom-0.5 w-2 h-2 rotate-45 bg-[var(--text-secondary)]" />
         </div>
