@@ -245,9 +245,9 @@ describe('studioStore adaptive layout', () => {
     expect(state.contextPanelWidth).toBe(416);
   });
 
-  it('toggleLeftRail toggles overlay mode', () => {
+  it('toggleLeftRail toggles expanded/collapsed mode', () => {
     useStudioStore.getState().toggleLeftRail();
-    expect(useStudioStore.getState().leftRailMode).toBe('overlay');
+    expect(useStudioStore.getState().leftRailMode).toBe('expanded');
 
     useStudioStore.getState().toggleLeftRail();
     expect(useStudioStore.getState().leftRailMode).toBe('collapsed');
@@ -281,6 +281,102 @@ describe('studioStore adaptive layout', () => {
       leftRailWidth: 224,
       contextPanelWidth: 416,
     });
+  });
+
+  it('setActivePanel changes active panel', () => {
+    useStudioStore.getState().setActivePanel('ideas');
+    expect(useStudioStore.getState().activePanel).toBe('ideas');
+  });
+
+  it('setLeftRailMode changes rail mode', () => {
+    useStudioStore.getState().setLeftRailMode('expanded');
+    expect(useStudioStore.getState().leftRailMode).toBe('expanded');
+
+    useStudioStore.getState().setLeftRailMode('collapsed');
+    expect(useStudioStore.getState().leftRailMode).toBe('collapsed');
+
+    useStudioStore.getState().setLeftRailMode('overlay');
+    expect(useStudioStore.getState().leftRailMode).toBe('overlay');
+  });
+
+  it('setContextPanelMode changes context mode', () => {
+    useStudioStore.getState().setContextPanelMode('closed');
+    expect(useStudioStore.getState().contextPanelMode).toBe('closed');
+
+    useStudioStore.getState().setContextPanelMode('overlay');
+    expect(useStudioStore.getState().contextPanelMode).toBe('overlay');
+  });
+
+  it('setContextPanelPinned toggles pin state', () => {
+    useStudioStore.getState().setContextPanelPinned(false);
+    expect(useStudioStore.getState().contextPanelPinned).toBe(false);
+
+    useStudioStore.getState().setContextPanelPinned(true);
+    expect(useStudioStore.getState().contextPanelPinned).toBe(true);
+  });
+
+  it('setLeftRailWidth clamps between 192 and 320', () => {
+    useStudioStore.getState().setLeftRailWidth(100);
+    expect(useStudioStore.getState().leftRailWidth).toBe(192);
+
+    useStudioStore.getState().setLeftRailWidth(500);
+    expect(useStudioStore.getState().leftRailWidth).toBe(320);
+
+    useStudioStore.getState().setLeftRailWidth(256);
+    expect(useStudioStore.getState().leftRailWidth).toBe(256);
+  });
+
+  it('setContextPanelWidth clamps between 320 and 520', () => {
+    useStudioStore.getState().setContextPanelWidth(200);
+    expect(useStudioStore.getState().contextPanelWidth).toBe(320);
+
+    useStudioStore.getState().setContextPanelWidth(600);
+    expect(useStudioStore.getState().contextPanelWidth).toBe(520);
+
+    useStudioStore.getState().setContextPanelWidth(400);
+    expect(useStudioStore.getState().contextPanelWidth).toBe(400);
+  });
+
+  it('openPanel sets active panel and reopens closed context', () => {
+    useStudioStore.getState().setContextPanelMode('closed');
+    useStudioStore.getState().openPanel('generation');
+    const state = useStudioStore.getState();
+    expect(state.activePanel).toBe('generation');
+    expect(state.contextPanelMode).toBe('docked');
+  });
+
+  it('openPanel keeps context panel mode when not closed', () => {
+    useStudioStore.getState().setContextPanelMode('overlay');
+    useStudioStore.getState().openPanel('review');
+    const state = useStudioStore.getState();
+    expect(state.activePanel).toBe('review');
+    expect(state.contextPanelMode).toBe('overlay');
+  });
+
+  it('resetLayout restores defaults', () => {
+    useStudioStore.getState().setLeftRailMode('collapsed');
+    useStudioStore.getState().setContextPanelMode('closed');
+    useStudioStore.getState().setLeftRailWidth(300);
+    useStudioStore.getState().setContextPanelWidth(500);
+    useStudioStore.getState().setActivePanel('ideas');
+    useStudioStore.getState().setContextPanelPinned(false);
+
+    useStudioStore.getState().resetLayout();
+    const state = useStudioStore.getState();
+    expect(state.activePanel).toBe('suggestions');
+    expect(state.leftRailMode).toBe('collapsed');
+    expect(state.contextPanelMode).toBe('docked');
+    expect(state.contextPanelPinned).toBe(true);
+    expect(state.leftRailWidth).toBe(224);
+    expect(state.contextPanelWidth).toBe(416);
+  });
+
+  it('toggleLeftRail toggles expanded/collapsed mode', () => {
+    useStudioStore.getState().toggleLeftRail();
+    expect(useStudioStore.getState().leftRailMode).toBe('expanded');
+
+    useStudioStore.getState().toggleLeftRail();
+    expect(useStudioStore.getState().leftRailMode).toBe('collapsed');
   });
 
   it('has correct default adaptive state', () => {
@@ -373,9 +469,9 @@ describe('studioStore adaptive layout', () => {
     expect(state.contextPanelWidth).toBe(416);
   });
 
-  it('toggleLeftRail toggles overlay mode', () => {
+  it('toggleLeftRail toggles expanded/collapsed mode', () => {
     useStudioStore.getState().toggleLeftRail();
-    expect(useStudioStore.getState().leftRailMode).toBe('overlay');
+    expect(useStudioStore.getState().leftRailMode).toBe('expanded');
 
     useStudioStore.getState().toggleLeftRail();
     expect(useStudioStore.getState().leftRailMode).toBe('collapsed');

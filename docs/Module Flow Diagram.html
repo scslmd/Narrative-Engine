@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Engine - Module Flow Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
+  --text: #e6edf3; --text2: #8b949e;
+  --blue: #58a6ff; --green: #3fb950; --purple: #bc8cff;
+  --orange: #d29922; --red: #f85149; --cyan: #39d2c0;
+  --pink: #f778ba; --yellow: #e3b341;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+h1 { text-align: center; font-size: 1.5rem; margin-bottom: 6px; }
+.subtitle { text-align: center; color: var(--text2); margin-bottom: 20px; font-size: 0.85rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--text2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; justify-content: center; }
+.tab { padding: 7px 18px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); cursor: pointer; font-size: 0.82rem; color: var(--text2); transition: all 0.15s; }
+.tab:hover { border-color: var(--blue); }
+.tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.cy-container { width: 100%; height: 800px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); position: relative; }
+.cy-container::after { content: 'Scroll to zoom · Drag to pan · Click node for details'; position: absolute; bottom: 8px; right: 12px; font-size: 0.7rem; color: var(--text2); opacity: 0.5; pointer-events: none; }
+.layout-btn { position: absolute; top: 8px; right: 12px; padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg3); cursor: pointer; font-size: 0.75rem; color: var(--text2); z-index: 10; transition: all 0.15s; }
+.layout-btn:hover { border-color: var(--blue); color: var(--blue); }
+#detail-panel { margin-top: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: none; }
+#detail-panel h3 { font-size: 0.95rem; margin-bottom: 8px; }
+#detail-panel p { font-size: 0.82rem; color: var(--text2); line-height: 1.5; }
+#detail-panel .close-btn { float: right; cursor: pointer; color: var(--text2); font-size: 1.1rem; }
+</style>
+</head>
+<body>
+
+<h1>Narrative Engine - Module Access Flow</h1>
+<p class="subtitle">Complete module dependency map across backend (FastAPI) and frontend (React + Vite)</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Frontend</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Entry Points</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>API Routers</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Services</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Persistence</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Middleware</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div>Inference</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>Schemas</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Overview</div>
+  <div class="tab" onclick="switchTab('backend')">Backend Flow</div>
+  <div class="tab" onclick="switchTab('frontend')">Frontend Flow</div>
+  <div class="tab" onclick="switchTab('full')">Full Dependency Graph</div>
+</div>
+
+<div id="tab-overview" class="tab-content active">
+  <div id="cy-overview" class="cy-container" style="height:900px;"></div>
+  <div id="detail-panel"></div>
+</div>
+<div id="tab-backend" class="tab-content">
+  <div id="cy-backend" class="cy-container" style="height:900px;"></div>
+</div>
+<div id="tab-frontend" class="tab-content">
+  <div id="cy-frontend" class="cy-container"></div>
+</div>
+<div id="tab-full" class="tab-content">
+  <div id="cy-full" class="cy-container" style="height:1000px;">
+    <button class="layout-btn" onclick="toggleLayout('cy-full')">Switch Layout (Force-directed)</button>
+  </div>
+</div>
+
+<script>
+cytoscape.use(window.cytoscapeDagre);
+
+// ============ TAB SWITCHING ============
+let currentTab = 'overview';
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  setTimeout(() => { const cy = window['cy-' + name]; if (cy && cy.resize) cy.resize(); }, 50);
+}
+
+// ============ LAYER BACKGROUNDS ============
+const layerColors = {
+  client: '#e3b34115', middleware: '#f8514915', entry: '#58a6ff15',
+  router: '#bc8cff15', service: '#3fb95015', persistence: '#d2992215',
+  inference: '#f778ba15', db: '#d2992220', schema: '#39d2c015',
+  util: '#8b949e15', frontend: '#e3b34115',
+};
+
+// ============ CYTOSCAPE STYLE ============
+const cyStyle = [
+  { selector: 'node', style: {
+    'background-color': 'data(color)',
+    'label': 'data(label)',
+    'color': '#e6edf3',
+    'font-size': '10px',
+    'text-valign': 'center',
+    'text-halign': 'center',
+    'text-outline-color': '#0d1117',
+    'text-outline-width': 2,
+    'shape': 'roundrectangle',
+    'padding': '8px',
+    'width': 'label',
+    'height': 'label',
+    'border-width': 1.5,
+    'border-color': 'data(color)',
+  }},
+  { selector: 'node[group="db"]', style: { 'shape': 'ellipse', 'border-width': 2 }},
+  { selector: 'node[group="entry"]', style: { 'border-width': 2.5, 'border-opacity': 0.8 }},
+  { selector: 'edge', style: {
+    'width': 1.2,
+    'line-color': 'rgba(88, 165, 250, 0.25)',
+    'target-arrow-color': 'rgba(88, 165, 250, 0.25)',
+    'target-arrow-shape': 'triangle',
+    'curve-style': 'bezier',
+    'arrow-scale': 0.6,
+  }},
+  { selector: ':selected', style: { 'border-width': 3, 'border-color': '#fff' }},
+  { selector: '.highlight', style: { 'line-color': '#58a6ff', 'width': 2.5, 'target-arrow-color': '#58a6ff' }},
+];
+
+// ============ HELPERS ============
+function n(id, label, color, layer, group, desc) {
+  return { data: { id, label, color, layer, group: group || layer, desc: desc || '' } };
+}
+function e(s, t) { return { data: { source: s, target: t } }; }
+
+// ============ OVERVIEW GRAPH ============
+const overviewElements = {
+  nodes: [
+    // Layer backgrounds
+
+    // L0: Client
+    n('client', 'React Frontend (Vite)', '#e3b341', 'client', 'client', 'Vite + React + TypeScript. 2070 production modules.'),
+
+    // L1: Middleware
+    n('mw_pt', 'PathTraversal', '#f85149', 'middleware', null, 'SEC-04: Path traversal protection'),
+    n('mw_cors', 'CORS', '#f85149', 'middleware', null, 'REL-06: localhost:5173, localhost:3000'),
+    n('mw_rl', 'RateLimit', '#f85149', 'middleware', null, 'SEC-05: Request rate limiting'),
+    n('mw_al', 'AuditLog', '#f85149', 'middleware', null, 'REL-10: Structured JSONL audit log'),
+    n('mw_key', 'API Key Gate', '#f85149', 'middleware', null, 'Gates all /v1/* routes with HMAC validation'),
+
+    // L2: Entry
+    n('fastapi', 'app/main.py (FastAPI)', '#58a6ff', 'entry', 'entry', 'Application builder. Wires 14 API routers, middleware, SPA routing.'),
+
+    // L3: Routers
+    n('r_auth', 'auth.py', '#bc8cff', 'router', null, '/v1/auth/* — API key CRUD'),
+    n('r_backup', 'backup.py', '#bc8cff', 'router', null, '/v1/backup/* — Backup management'),
+    n('r_health', 'health.py', '#bc8cff', 'router', null, '/health/* — Health & metrics'),
+    n('r_projects', 'projects.py', '#bc8cff', 'router', null, '/v1/projects/* — CRUD, import, extract, maintenance'),
+    n('r_jobs', 'jobs.py', '#bc8cff', 'router', null, '/v1/jobs/* — Job lifecycle'),
+    n('r_sd', 'story_development.py', '#bc8cff', 'router', null, '/v1/story-development/*'),
+    n('r_sg', 'story_generation.py', '#bc8cff', 'router', null, '/v1/story-generation/* — Canon generation'),
+    n('r_ma', 'manuscript_assist.py', '#bc8cff', 'router', null, '/v1/manuscript-assist/*'),
+    n('r_canon', 'canon_customization.py', '#bc8cff', 'router', null, '/v1/canon/* — Profiles & annotations'),
+    n('r_mythos', 'mythos_library.py', '#bc8cff', 'router', null, '/v1/mythos/* — Mythos CRUD'),
+    n('r_pattern', 'pattern_library.py', '#bc8cff', 'router', null, '/v1/patterns/* — Pattern CRUD'),
+    n('r_rmc', 'role_model_checker.py', '#bc8cff', 'router', null, '/v1/role-model-checker/*'),
+    n('r_disc', 'discovery.py', '#bc8cff', 'router', null, '/v1/discovery/* — Cascade discovery'),
+
+    // L4: Services
+    n('s_auth', 'authentication', '#3fb950', 'service', null, 'SEC-02: API key lifecycle'),
+    n('s_backup', 'backup', '#3fb950', 'service', null, 'REL-04: Backup create/restore'),
+    n('s_proj', 'projects', '#3fb950', 'service', null, 'Project CRUD, reconciliation, bootstrap'),
+    n('s_jobs', 'job_manager', '#3fb950', 'service', null, 'Job lifecycle & state machine'),
+    n('s_exec', 'local_executor', '#3fb950', 'service', null, 'Core execution engine. Daemon threads: _job_loop, _checker_loop'),
+    n('s_import', 'story_import', '#3fb950', 'service', null, 'Single-pass story import (<=30K chars)'),
+    n('s_mpass', 'multi_pass_import', '#3fb950', 'service', null, 'Multi-pass import (>30K chars, 5 phases)'),
+    n('s_gen', 'gen_orchestrator', '#3fb950', 'service', null, 'G-200/300/350/400 pipeline orchestration'),
+    n('s_canon', 'canon_packet_builder', '#3fb950', 'service', null, 'Deterministic canon packet with budget truncation'),
+    n('s_fork', 'story_forking', '#3fb950', 'service', null, 'Project forking with ID remapping'),
+    n('s_gates', 'generation_gates', '#3fb950', 'service', null, 'Canon consistency gates (plan, draft, repair)'),
+    n('s_ma', 'manuscript_assist', '#3fb950', 'service', null, 'Assist runs & suggestions'),
+    n('s_pat', 'pattern_extraction', '#3fb950', 'service', null, 'Pattern extraction from text'),
+    n('s_casc', 'cascade_discovery', '#3fb950', 'service', null, 'Cascade entity discovery'),
+    n('s_rmc', 'role_model_checker', '#3fb950', 'service', null, 'Quality checker execution'),
+    n('s_scene', 'scene_context', '#3fb950', 'service', null, 'Prompt context assembly'),
+    n('s_summ', 'chapter_summarizer', '#3fb950', 'service', null, 'Chapter summary extraction for cross-chapter continuity'),
+    n('s_maint', 'project_maintenance', '#3fb950', 'service', null, 'Orphan detection, cleanup, DB compaction'),
+
+    // L5: Persistence
+    n('p_sql', 'sqlite.py', '#d29922', 'persistence', null, 'DB connection, schema creation, migrations'),
+    n('p_sd', 'story_development.py', '#d29922', 'persistence', null, 'All story entity CRUD (single-row ops)'),
+    n('p_jobs', 'jobs.py / steps.py', '#d29922', 'persistence', null, 'Job records, step records & lineage'),
+    n('p_proj', 'projects.py', '#d29922', 'persistence', null, 'Project registry persistence'),
+    n('p_chk', 'checker_runs.py', '#d29922', 'persistence', null, 'Role model checker run records'),
+
+    // L5.5: Inference
+    n('i_base', 'InferenceBackend (ABC)', '#f778ba', 'inference', null, 'Abstract base class for LLM inference'),
+    n('i_oi', 'openai_compatible.py', '#f778ba', 'inference', null, 'OpenAI-compatible API client (llama.cpp, lmstudio, vllm)'),
+    n('i_stub', 'stub.py', '#f778ba', 'inference', null, 'Test stub backend'),
+    n('i_prom', 'runtime_prompts.py', '#f778ba', 'inference', null, 'Prompt builders: P-100 to G-400, import, pattern extraction'),
+
+    // L6: Data stores
+    n('db_ops', 'operations.db', '#d29922', 'db', 'db', 'Central SQLite registry. 40+ tables.'),
+    n('db_bib', 'bible.db', '#d29922', 'db', 'db', 'Per-project SQLite metadata store.'),
+    n('db_fs', 'data/projects/', '#8b949e', 'db', 'db', 'Filesystem: manifest.json, chapters, exports'),
+    n('db_llm', 'LLM: llama.cpp / OpenAI', '#f778ba', 'db', 'db', 'External LLM inference endpoint'),
+
+    // L7: Schemas
+    n('sc_enum', 'enums.py', '#39d2c0', 'schema', null, 'JobPhase, StoryStructure, PovMode'),
+    n('sc_inf', 'inference.py', '#39d2c0', 'schema', null, 'InferenceRequest / InferenceResponse'),
+    n('sc_sd', 'story_development.py', '#39d2c0', 'schema', null, 'CharacterProfile, WorldBibleEntry, Arcs, Planning'),
+    n('sc_gen', 'generation.py', '#39d2c0', 'schema', null, '30 classes: CanonGenerationRequest, CanonScope'),
+    n('sc_jobs', 'jobs.py', '#39d2c0', 'schema', null, 'JobRecord, StepRecord schemas'),
+    n('sc_man', 'manifest.py', '#39d2c0', 'schema', null, 'Manifest, ManifestConfig'),
+    n('sc_other', '+ 18 more', '#39d2c0', 'schema', null, 'story_import, canon_customization, discovery, guided_setup, inspect, manuscript_assist, models, mythos, pattern, projects, role_model_checker'),
+
+    // L7.5: Utils
+    n('u_val', 'input_validation.py', '#8b949e', 'util', null, 'SEC-01: sanitize_string, validate_filename, limit_size'),
+    n('u_json', 'json_extract.py', '#8b949e', 'util', null, 'Robust JSON extraction: direct, markdown fences, balanced braces'),
+    n('u_db', 'db_inserts.py', '#8b949e', 'util', null, 'hash_id(), insert_character_profile()'),
+    n('u_set', 'settings.py', '#8b949e', 'util', null, 'Configuration, inference backend, API keys, paths'),
+    n('u_const', 'constants.py', '#8b949e', 'util', null, 'MAX_BODY_SIZE, UUID_LENGTH'),
+
+    // L8: Frontend
+    n('f_views', 'Views (14)', '#e3b341', 'frontend', null, 'Route-driven: ProjectList, Studio, Planning, Review, Inspect, BrainDump, Canon, Generation, Writing'),
+    n('f_comp', 'Components (100+)', '#e3b341', 'frontend', null, 'studio/ (13), generation/ (11), canon/ (14), planning/ (15), characters/ (5), inspect/ (7), jobs/ (9), ui/ (10)'),
+    n('f_hooks', 'Hooks (30)', '#e3b341', 'frontend', null, 'useApiQuery, useApiMutation, useJobs, useProjects, useManuscriptAssist, useRouteSync'),
+    n('f_stores', 'Stores (12)', '#e3b341', 'frontend', null, 'studioStore, jobStore, workspaceStore, uiStore (Zustand)'),
+    n('f_svcs', 'Services (32)', '#e3b341', 'frontend', null, '147 exported functions across 26 service files'),
+    n('f_api', 'api.ts (Axios)', '#e3b341', 'frontend', null, 'Shared Axios client — single API_BASE, error handling'),
+    n('f_types', 'Types (38)', '#39d2c0', 'frontend', null, 'project, characters, planning, drafting, storyGeneration, storyImport'),
+    n('f_lib', 'lib/', '#8b949e', 'frontend', null, 'queryClient.ts, errorHandling.ts, toast.ts, storage.ts, provenance.ts, diff.ts'),
+  ],
+  edges: [
+    // Client -> Middleware chain
+    e('client', 'mw_pt'), e('mw_pt', 'mw_cors'), e('mw_cors', 'mw_rl'), e('mw_rl', 'mw_al'), e('mw_al', 'mw_key'),
+    // Middleware -> FastAPI
+    e('mw_key', 'fastapi'),
+    // FastAPI -> Routers
+    e('fastapi', 'r_auth'), e('fastapi', 'r_backup'), e('fastapi', 'r_health'),
+    e('fastapi', 'r_projects'), e('fastapi', 'r_jobs'), e('fastapi', 'r_sd'),
+    e('fastapi', 'r_sg'), e('fastapi', 'r_ma'), e('fastapi', 'r_canon'),
+    e('fastapi', 'r_mythos'), e('fastapi', 'r_pattern'), e('fastapi', 'r_rmc'),
+    e('fastapi', 'r_disc'),
+    // Routers -> Services
+    e('r_auth', 's_auth'), e('r_backup', 's_backup'), e('r_projects', 's_proj'), e('r_projects', 's_import'),
+    e('r_projects', 's_maint'), e('r_jobs', 's_jobs'), e('r_sd', 's_scene'), e('r_sg', 's_gen'),
+    e('r_ma', 's_ma'), e('r_pattern', 's_pat'), e('r_rmc', 's_rmc'), e('r_disc', 's_casc'),
+    // Service interconnections
+    e('s_import', 's_mpass'), e('s_gen', 's_canon'), e('s_gen', 's_fork'), e('s_gen', 's_gates'),
+    e('s_gen', 's_jobs'), e('s_exec', 's_scene'), e('s_exec', 's_summ'), e('s_jobs', 's_exec'),
+    // Services -> Persistence
+    e('s_proj', 'p_proj'), e('s_jobs', 'p_jobs'), e('s_import', 'p_sd'), e('s_gen', 'p_sd'),
+    e('s_exec', 'p_jobs'), e('s_rmc', 'p_chk'), e('s_pat', 'p_sd'), e('s_casc', 'p_sd'), e('s_ma', 'p_sd'),
+    // Persistence -> DB
+    e('p_sql', 'db_ops'), e('p_sd', 'db_bib'), e('p_jobs', 'db_ops'), e('p_proj', 'db_ops'),
+    e('p_chk', 'db_ops'), e('p_proj', 'db_fs'),
+    // Services -> Inference
+    e('s_exec', 'i_base'), e('s_import', 'i_base'), e('s_rmc', 'i_base'), e('s_pat', 'i_base'),
+    e('s_casc', 'i_base'), e('s_gen', 'i_base'), e('i_base', 'i_oi'), e('i_base', 'i_stub'),
+    e('i_prom', 'i_base'), e('i_oi', 'db_llm'),
+    // Schemas
+    e('sc_enum', 's_jobs'), e('sc_inf', 'i_base'), e('sc_sd', 'p_sd'), e('sc_gen', 's_gen'),
+    e('sc_jobs', 'p_jobs'), e('sc_man', 's_proj'),
+    // Utils
+    e('u_val', 's_import'), e('u_json', 's_import'), e('u_db', 'p_sd'), e('u_set', 'fastapi'), e('u_const', 'mw_pt'),
+    // Frontend
+    e('client', 'f_views'), e('f_views', 'f_comp'), e('f_views', 'f_hooks'), e('f_views', 'f_stores'),
+    e('f_hooks', 'f_svcs'), e('f_svcs', 'f_api'), e('f_types', 'f_svcs'), e('f_lib', 'f_api'),
+    e('f_api', 'fastapi'),
+  ],
+};
+
+// ============ BACKEND FLOW (linear request pipeline) ============
+const backendElements = {
+  nodes: [
+
+    n('b_cl', 'Browser / API Client', '#e3b341', 'client', 'client'),
+    n('b_pt', 'PathTraversalMiddleware', '#f85149', 'middleware', null),
+    n('b_cors', 'CORSMiddleware', '#f85149', 'middleware', null),
+    n('b_rl', 'RateLimitMiddleware', '#f85149', 'middleware', null),
+    n('b_al', 'AuditLog + API Key Gate', '#f85149', 'middleware', null),
+    n('b_disp', 'FastAPI Router Dispatcher', '#58a6ff', 'entry', 'entry'),
+
+    n('b_ra', 'auth.py', '#bc8cff', 'router', null),
+    n('b_rp', 'projects.py', '#bc8cff', 'router', null),
+    n('b_rj', 'jobs.py', '#bc8cff', 'router', null),
+    n('b_rs', 'story_dev.py', '#bc8cff', 'router', null),
+    n('b_rg', 'story_gen.py', '#bc8cff', 'router', null),
+    n('b_rm', 'manuscript.py', '#bc8cff', 'router', null),
+    n('b_ro', '+ 7 more', '#bc8cff', 'router', null),
+
+    n('b_sa', 'authentication', '#3fb950', 'service', null),
+    n('b_sp', 'projects + bootstrap', '#3fb950', 'service', null),
+    n('b_sj', 'job_manager', '#3fb950', 'service', null),
+    n('b_si', 'story_import', '#3fb950', 'service', null),
+    n('b_sg2', 'gen_orchestrator', '#3fb950', 'service', null),
+    n('b_sm', 'manuscript_assist', '#3fb950', 'service', null),
+    n('b_se', 'local_executor', '#3fb950', 'service', null),
+    n('b_sc', 'canon_packet_builder', '#3fb950', 'service', null),
+    n('b_sga', 'generation_gates', '#3fb950', 'service', null),
+    n('b_sn', 'scene_context', '#3fb950', 'service', null),
+    n('b_ss', 'chapter_summarizer', '#3fb950', 'service', null),
+    n('b_spat', 'pattern_extraction', '#3fb950', 'service', null),
+    n('b_scas', 'cascade_discovery', '#3fb950', 'service', null),
+    n('b_srmc', 'role_model_checker', '#3fb950', 'service', null),
+
+    n('b_psd', 'StoryDevelopmentRepo', '#d29922', 'persistence', null),
+    n('b_pj', 'JobRepository + Steps', '#d29922', 'persistence', null),
+    n('b_pp', 'ProjectPersistence', '#d29922', 'persistence', null),
+    n('b_pch', 'CheckerRunsRepo', '#d29922', 'persistence', null),
+    n('b_ib', 'InferenceBackend', '#f778ba', 'persistence', null),
+    n('b_ip', 'runtime_prompts.py', '#f778ba', 'persistence', null),
+
+    n('b_db1', 'operations.db', '#d29922', 'db', 'db'),
+    n('b_db2', 'bible.db', '#d29922', 'db', 'db'),
+    n('b_db3', 'data/projects/', '#8b949e', 'db', 'db'),
+    n('b_db4', 'LLM: llama.cpp', '#f778ba', 'db', 'db'),
+
+    n('b_ec', 'claim job', '#3fb950', 'exec', null),
+    n('b_ei', 'LLM inference', '#f778ba', 'exec', null),
+    n('b_ep', 'persist output', '#d29922', 'exec', null),
+    n('b_es', 'update status', '#3fb950', 'exec', null),
+  ],
+  edges: [
+    e('b_cl', 'b_pt'), e('b_pt', 'b_cors'), e('b_cors', 'b_rl'), e('b_rl', 'b_al'), e('b_al', 'b_disp'),
+    e('b_disp', 'b_ra'), e('b_disp', 'b_rp'), e('b_disp', 'b_rj'), e('b_disp', 'b_rs'),
+    e('b_disp', 'b_rg'), e('b_disp', 'b_rm'), e('b_disp', 'b_ro'),
+    e('b_ra', 'b_sa'), e('b_rp', 'b_sp'), e('b_rp', 'b_si'), e('b_rj', 'b_sj'),
+    e('b_rs', 'b_sn'), e('b_rg', 'b_sg2'), e('b_rm', 'b_sm'),
+    e('b_sj', 'b_se'), e('b_sg2', 'b_sc'), e('b_sg2', 'b_sga'), e('b_sg2', 'b_sj'),
+    e('b_se', 'b_sn'), e('b_se', 'b_ss'),
+    e('b_sp', 'b_pp'), e('b_sj', 'b_pj'), e('b_si', 'b_psd'), e('b_sg2', 'b_psd'),
+    e('b_se', 'b_pj'), e('b_srmc', 'b_pch'), e('b_spat', 'b_psd'), e('b_scas', 'b_psd'), e('b_sm', 'b_psd'),
+    e('b_psd', 'b_db2'), e('b_pj', 'b_db1'), e('b_pp', 'b_db1'), e('b_pp', 'b_db3'), e('b_pch', 'b_db1'),
+    e('b_se', 'b_ib'), e('b_si', 'b_ib'), e('b_srmc', 'b_ib'), e('b_spat', 'b_ib'),
+    e('b_scas', 'b_ib'), e('b_sg2', 'b_ib'), e('b_ip', 'b_ib'), e('b_ib', 'b_db4'),
+    e('b_se', 'b_ec'), e('b_ec', 'b_ei'), e('b_ei', 'b_ep'), e('b_ep', 'b_es'),
+  ],
+};
+
+// ============ FRONTEND FLOW ============
+const frontendElements = {
+  nodes: [
+
+    n('f_app', 'App.tsx (main.tsx)', '#e3b341', 'entry', 'entry', 'Entry point. Wraps with providers, renders BrowserRouter.'),
+    n('f_prov', 'QueryClient + Toast + BrowserRouter', '#e3b341', 'entry', null, 'React Query, Sonner toasts, React Router v6'),
+
+    n('f_routes', 'Routes', '#e3b341', 'routing', null, 'React Router v6 Routes/Route definitions'),
+    n('f_ws', 'Workspace.tsx', '#e3b341', 'routing', null, 'Renders WorkspaceShell (left nav) + Outlet for child views'),
+    n('f_shell', 'WorkspaceShell', '#e3b341', 'routing', null, 'Left navigation rail. Stage-aware nav. Hidden in Studio mode.'),
+
+    n('f_vp', 'ProjectList', '#e3b341', 'view', null),
+    n('f_vg', 'GuidedSetupView', '#e3b341', 'view', null),
+    n('f_vs', 'StudioView', '#e3b341', 'view', null),
+    n('f_vpl', 'PlanningView', '#e3b341', 'view', null),
+    n('f_vr', 'ReviewView', '#e3b341', 'view', null),
+    n('f_vi', 'InspectView', '#e3b341', 'view', null),
+    n('f_vb', 'BrainDumpView', '#e3b341', 'view', null),
+    n('f_vc', 'CanonView', '#e3b341', 'view', null),
+    n('f_vgn', 'GenerationView', '#e3b341', 'view', null),
+    n('f_vw', 'WritingView', '#e3b341', 'view', null),
+
+    n('f_sc', 'StudioCommandBar', '#e3b341', 'studio', null),
+    n('f_sr', 'StudioProjectRail', '#e3b341', 'studio', null),
+    n('f_se', 'WritingView (editor)', '#e3b341', 'studio', null),
+    n('f_sx', 'StudioContextPanel', '#e3b341', 'studio', null),
+    n('f_sp', '10 context panels', '#e3b341', 'studio', null),
+
+    n('f_av', 'Views (14)', '#e3b341', 'arch', null, 'Route-driven, single source of truth'),
+    n('f_ac', 'Components (100+)', '#e3b341', 'arch', null, 'studio/ (13), generation/ (11), canon/ (14), planning/ (15), characters/ (5), inspect/ (7), jobs/ (9), ui/ (10)'),
+    n('f_ah', 'Hooks (30)', '#e3b341', 'arch', null, 'useApiQuery, useApiMutation, useJobs, useProjects, useManuscriptAssist'),
+    n('f_ast', 'Stores (12)', '#e3b341', 'arch', null, 'studioStore, jobStore, workspaceStore, uiStore (Zustand)'),
+    n('f_asv', 'Services (32)', '#e3b341', 'arch', null, '147 exported functions across 26 service files'),
+    n('f_aa', 'api.ts (Axios)', '#e3b341', 'arch', null, 'Shared Axios client — single API_BASE'),
+    n('f_at', 'Types (38)', '#39d2c0', 'arch', null, 'project, characters, planning, drafting, storyGeneration, storyImport'),
+    n('f_al', 'lib/', '#8b949e', 'arch', null, 'queryClient.ts, errorHandling.ts, toast.ts, storage.ts, provenance.ts, diff.ts'),
+
+    n('f_be', 'Backend API (/v1/*)', '#bc8cff', 'ext', 'entry', 'FastAPI backend endpoints'),
+  ],
+  edges: [
+    e('f_app', 'f_prov'), e('f_prov', 'f_routes'),
+    e('f_routes', 'f_ws'), e('f_ws', 'f_shell'),
+    e('f_ws', 'f_vp'), e('f_ws', 'f_vg'), e('f_ws', 'f_vs'), e('f_ws', 'f_vpl'),
+    e('f_ws', 'f_vr'), e('f_ws', 'f_vi'), e('f_ws', 'f_vb'), e('f_ws', 'f_vc'),
+    e('f_ws', 'f_vgn'), e('f_ws', 'f_vw'),
+    e('f_vs', 'f_sc'), e('f_vs', 'f_sr'), e('f_vs', 'f_se'), e('f_vs', 'f_sx'),
+    e('f_sx', 'f_sp'),
+    e('f_av', 'f_ac'), e('f_av', 'f_ah'), e('f_av', 'f_ast'),
+    e('f_ah', 'f_asv'), e('f_asv', 'f_aa'), e('f_at', 'f_asv'), e('f_al', 'f_aa'),
+    e('f_aa', 'f_be'),
+  ],
+};
+
+// ============ FULL GRAPH = overview + cross-dependencies ============
+const fullExtraEdges = [
+  // Service interconnections (missing from overview)
+  e('s_import', 's_proj'), e('s_mpass', 's_import'),
+  e('s_gen', 's_exec'), e('s_exec', 's_gen'),
+  e('s_rmc', 's_jobs'), e('s_ma', 's_jobs'),
+  e('s_scene', 's_summ'), e('s_canon', 's_scene'),
+  e('s_fork', 's_proj'), e('s_gates', 's_gen'),
+  e('s_maint', 's_proj'), e('s_casc', 's_exec'),
+  // Schema -> service dependencies
+  e('sc_enum', 's_exec'), e('sc_enum', 's_gen'),
+  e('sc_sd', 's_scene'), e('sc_sd', 's_import'), e('sc_sd', 's_gen'),
+  e('sc_inf', 's_gen'),
+  e('sc_other', 's_auth'), e('sc_other', 's_backup'), e('sc_other', 's_ma'),
+  // Utils -> services
+  e('u_val', 's_proj'), e('u_val', 's_ma'),
+  e('u_json', 's_pat'), e('u_json', 's_casc'),
+  e('u_db', 's_import'),
+  e('u_set', 's_exec'), e('u_set', 'i_base'),
+  e('u_const', 's_backup'), e('u_const', 's_ma'),
+  // Frontend interconnections
+  e('f_views', 'f_svcs'), e('f_views', 'f_types'),
+  e('f_comp', 'f_hooks'), e('f_comp', 'f_stores'),
+  e('f_hooks', 'f_stores'),
+];
+const fullElements = { nodes: [...overviewElements.nodes], edges: [...overviewElements.edges, ...fullExtraEdges] };
+
+// ============ LAYOUT TOGGLE ============
+const layoutModes = {};
+function toggleLayout(id) {
+  const cy = window[id];
+  if (!cy) return;
+  const mode = layoutModes[id] || 'dagre';
+  const next = mode === 'dagre' ? 'cose' : 'dagre';
+  layoutModes[id] = next;
+  const btn = cy.container().querySelector('.layout-btn');
+  if (btn) btn.textContent = next === 'dagre' ? 'Switch Layout (Force-directed)' : 'Switch Layout (Hierarchical)';
+  cy.layout({
+    name: next,
+    animate: true,
+    animationDuration: 800,
+    padding: 40,
+    fit: true,
+    nodeDimensionsIncludeLabels: true,
+    avoidOverlap: true,
+    avoidOverlapPadding: 20,
+    idealEdgeLength: 80,
+    nodeOverlap: true,
+  }).run();
+}
+
+// ============ INIT CYTOSCAPE ============
+function initCy(id, elements) {
+  const cy = cytoscape({
+    container: document.getElementById(id),
+    elements: elements,
+    style: cyStyle,
+    minZoom: 0.2,
+    maxZoom: 2,
+    wheelSensitivity: 0.25,
+    layout: {
+      name: 'dagre',
+      rankDir: 'TB',
+      padding: 30,
+      animate: true,
+      animationDuration: 600,
+      fit: true,
+      nodeSep: 20,
+      rankSep: 80,
+      edgeSep: 10,
+      nodeDimensionsIncludeLabels: true,
+      avoidOverlap: true,
+    },
+  });
+
+  // Click handler
+  cy.on('tap', 'node', function(evt) {
+    const d = this.data();
+    const panel = document.getElementById('detail-panel');
+    if (currentTab !== 'overview') return;
+    panel.style.display = 'block';
+    const incoming = this.incomers('edge').length;
+    const outgoing = this.outgoers('edge').length;
+    panel.innerHTML = `
+      <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+      <h3 style="color:${d.color}">${d.label}</h3>
+      <p>${d.desc || 'No description.'}</p>
+      <p style="margin-top:6px;"><strong>Incoming:</strong> ${incoming} &nbsp; <strong>Outgoing:</strong> ${outgoing}</p>
+    `;
+  });
+
+  cy.on('tap', function(evt) {
+    if (evt.target === this) {
+      document.getElementById('detail-panel').style.display = 'none';
+    }
+  });
+
+  // Hover highlight
+  cy.on('mouseover', 'node', function() {
+    this.incomers('edge').addClass('highlight');
+    this.outgoers('edge').addClass('highlight');
+  });
+  cy.on('mouseout', 'node', function() {
+    cy.$('.highlight').removeClass('highlight');
+  });
+
+  return cy;
+}
+
+window['cy-overview'] = initCy('cy-overview', overviewElements);
+window['cy-backend'] = initCy('cy-backend', backendElements);
+window['cy-frontend'] = initCy('cy-frontend', frontendElements);
+window['cy-full'] = initCy('cy-full', fullElements);
+
+window.addEventListener('resize', () => {
+  ['cy-overview', 'cy-backend', 'cy-frontend', 'cy-full'].forEach(id => {
+    const cy = window[id]; if (cy) cy.resize();
+  });
+});
+</script>
+</body>
+</html>

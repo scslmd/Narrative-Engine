@@ -64,8 +64,9 @@ Capabilities:
 The workspace shell includes:
 - **Left panel (Workspace sections):** 160px navigation rail with stage-specific nav items and a "Studio Desk" quick link. Hidden in Studio mode (StudioView has its own left rail).
 - **Main content area:** Current mode view.
-- **Right rail:** Notes panel and Job Launch panel. Hidden in Studio mode (StudioView is full-width, 2-column layout).
 - **Bottom utility layer:** Operational status bar for job progress.
+
+**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and right context panel via the ViewShell component.
 
 ### Left Panel Navigation
 The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link. The active item is highlighted with a gradient icon background and a dot indicator.
@@ -82,7 +83,7 @@ The left panel displays stage-aware navigation items plus a permanent "Studio De
 - Completed jobs show processing time and step name.
 - Processing jobs show current step, elapsed time, and progress counter.
 
-**Note:** In Studio mode, the right rail (Notes + Job Launch) is hidden. Use the Jobs button in StudioView's left rail to access job launch functionality.
+**Access:** In Studio mode, access job launch via the Jobs button in StudioView's left rail. In other workspace modes, the Job Launch panel is embedded within the view.
 
 ### Feature Dependencies
 
@@ -204,9 +205,9 @@ Session-based free writing canvas with AI-powered organization.
 - "Continue editing" button returns to canvas for additional passes.
 
 ## Writing Workspace (`/workspace/:projectId/write`)
-Three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
+**Note:** The `/write` and `/write/:chapterId` routes now redirect to `/studio`. All writing functionality is available through StudioView's embedded WritingView. The WritingView component supports both embedded mode (within StudioView) and standalone mode (via ViewShell wrapper).
 
-**Route-aware layout:** When on `/workspace/:projectId/write/:chapterId`, the layout collapses to a single column showing only the Editor. The left sidebar and right aids panel are hidden for focused chapter editing.
+When embedded in StudioView, the WritingView renders as a single-column editor. When accessed standalone (deprecated), it renders a three-column layout: Manuscripts/Drafts (left), Editor (center), Aids panel (right).
 
 ### Manuscripts
 - Select manuscript documents from the list.
@@ -393,7 +394,7 @@ Compact, single-screen workspace for focused writing with immediate access to al
 - **Command bar:** Top header with "Studio Desk" label, project name, and two toggle buttons (rail expand/collapse, context panel show/hide).
 - **Left rail (Project Map):** Quick navigation between all panels. Click a button to open that panel in the context panel. Collapsible to compact mode (80px icon-only) or expanded (192-320px).
 - **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available width.
-- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Close button hides the panel.
+- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Note: Arcs, Relationships, Canon, Notes, and Jobs panels are accessible via the left rail but do not appear as tabs in the context panel header — they open directly when selected from the rail. Close button hides the panel.
 
 **Left Rail Panels:**
 - **Drafts:** Draft artifact lifecycle management
@@ -428,7 +429,7 @@ A Photoshop-style radial hub workspace is approved for implementation. Design re
 **Implementation plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
 
 ## End-to-End Walkthrough
-For a complete, step-by-step walkthrough of generating a novel from project creation through export, see **Phase 11: End-to-End Novel Walkthrough** in the [Narrative Engine User Walkthrough v1.8.0](Narrative%20Engine%20User%20Walkthrough%20v1.8.0.md). It walks through creating a 12-chapter novel (*The Last Lighthouse*) with 7 characters, 8 world bible entries, 3 character arcs, 3 sequences, branching for Act III exploration, and a full generation/revision/checker/export workflow.
+For a complete, step-by-step walkthrough of generating a novel from project creation through export, see **Phase 11: End-to-End Novel Walkthrough** in the [Narrative Engine User Walkthrough v1.9.0](Narrative%20Engine%20User%20Walkthrough%20v1.8.0.md). It walks through creating a 12-chapter novel (*The Last Lighthouse*) with 7 characters, 8 world bible entries, 3 character arcs, 3 sequences, branching for Act III exploration, and a full generation/revision/checker/export workflow.
 
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).

@@ -8,6 +8,7 @@ export type StudioPanelKey =
   | 'characters'
   | 'worldBible'
   | 'relationships'
+  | 'arcs'
   | 'generation'
   | 'review'
   | 'inspect'
@@ -83,12 +84,14 @@ interface StudioState {
   contextPanelPinned: boolean;
   leftRailWidth: number;
   contextPanelWidth: number;
+  panelVisible: boolean;
   setActivePanel: (panel: StudioPanelKey) => void;
   setLeftRailMode: (mode: StudioRailMode) => void;
   setContextPanelMode: (mode: StudioContextMode) => void;
   setContextPanelPinned: (pinned: boolean) => void;
   setLeftRailWidth: (width: number) => void;
   setContextPanelWidth: (width: number) => void;
+  setPanelVisible: (visible: boolean) => void;
   openPanel: (panel: StudioPanelKey) => void;
   resetLayout: () => void;
   toggleLeftRail: () => void;
@@ -100,11 +103,12 @@ const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? loc
 
 export const useStudioStore = create<StudioState>((set) => ({
   activePanel: 'suggestions',
-  leftRailMode: stored?.leftRailMode ?? 'collapsed',
+  leftRailMode: stored?.leftRailMode ?? 'expanded',
   contextPanelMode: stored?.contextPanelMode ?? 'docked',
   contextPanelPinned: stored?.contextPanelPinned ?? true,
   leftRailWidth: stored?.leftRailWidth ?? DEFAULT_LEFT_RAIL_WIDTH,
   contextPanelWidth: stored?.contextPanelWidth ?? DEFAULT_CONTEXT_PANEL_WIDTH,
+  panelVisible: false,
   setActivePanel: (activePanel) => set({ activePanel }),
   setLeftRailMode: (leftRailMode) => {
     set((state) => {
@@ -138,9 +142,12 @@ export const useStudioStore = create<StudioState>((set) => ({
       return { contextPanelWidth: clamped };
     });
   },
+  setPanelVisible: (panelVisible) => set({ panelVisible }),
   openPanel: (activePanel) =>
     set((state) => ({
       activePanel,
+      panelVisible: true,
+      leftRailMode: state.leftRailMode === 'collapsed' ? 'expanded' : state.leftRailMode,
       contextPanelMode: state.contextPanelMode === 'closed' ? 'docked' : state.contextPanelMode,
     })),
   resetLayout: () => {
@@ -151,13 +158,16 @@ export const useStudioStore = create<StudioState>((set) => ({
       contextPanelPinned: true,
       leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,
       contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
+      panelVisible: false,
     });
     persistLayout(useStudioStore.getState());
   },
   toggleLeftRail: () =>
-    set((state) => ({
-      leftRailMode: state.leftRailMode === 'overlay' ? 'collapsed' : 'overlay',
-    })),
+    set((state) => {
+      const next = state.leftRailMode === 'collapsed' ? 'expanded' : 'collapsed';
+      persistLayout({ ...state, leftRailMode: next });
+      return { leftRailMode: next };
+    }),
   toggleContextPanel: () =>
     set((state) => ({
       contextPanelMode: state.contextPanelMode === 'overlay' ? 'closed' : 'overlay',
@@ -166,5 +176,6 @@ export const useStudioStore = create<StudioState>((set) => ({
     set({
       leftRailMode: 'collapsed',
       contextPanelMode: 'closed',
+      panelVisible: false,
     }),
 }));

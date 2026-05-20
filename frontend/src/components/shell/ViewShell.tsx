@@ -35,7 +35,8 @@ export function ViewShell({
   const leftDrawerOpen = leftRailMode === 'overlay';
 
   const hasLeftRail = !!leftRailContent;
-  const hasRightPanel = showRightPanel && !!rightPanelContent;
+  const hasRightPanelContent = !!rightPanelContent;
+  const hasRightPanel = showRightPanel && hasRightPanelContent;
 
   const gridTemplateColumns = useMemo(() => {
     if (hasLeftRail && hasRightPanel) {
@@ -90,7 +91,7 @@ export function ViewShell({
               ))}
             </div>
           )}
-          {hasRightPanel && (
+          {hasRightPanelContent && (
             <button
               type="button"
               onClick={onToggleRightPanel}
@@ -136,7 +137,7 @@ export function ViewShell({
         />
       )}
 
-      {hasRightPanel && !showRightPanel && (
+      {hasRightPanelContent && !showRightPanel && (
         <div className="absolute right-3 top-16 z-10 hidden gap-1 xl:flex">
           <button
             type="button"

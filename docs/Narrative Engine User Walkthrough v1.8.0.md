@@ -66,8 +66,9 @@ Route: `/workspace/:projectId/*`
 The workspace has the following structure:
 - **Left panel (Workspace sections):** 160px navigation rail with stage-specific items and a "Studio Desk" quick link. Hidden in Studio mode (StudioView has its own left rail).
 - **Main content area:** Current mode view.
-- **Right rail:** Notes panel and Job Launch panel. Hidden in Studio mode (StudioView is full-width, 2-column layout).
 - **Bottom utility layer:** Runtime/status bar for job progress.
+
+**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and right context panel via the ViewShell component.
 
 ### Left Panel Navigation
 The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link. The active item is highlighted with a gradient icon background and a dot indicator.
@@ -79,7 +80,7 @@ The left panel displays stage-aware navigation items plus a permanent "Studio De
 ### Job Launch Panel
 The Job Launch panel lets you trigger pipeline phases without leaving the current workspace view. Select a phase (P-100 through P-400), click to launch, and monitor recent jobs below. Failed jobs show expandable error details with fix guidance. Completed jobs display processing time. Running jobs show step progress.
 
-**Note:** In Studio mode, the right rail (Notes + Job Launch) is hidden. Use the Jobs button in StudioView's left rail to access job launch functionality.
+**Access:** In Studio mode, access job launch via the Jobs button in StudioView's left rail. In other workspace modes, the Job Launch panel is embedded within the view.
 
 ## Phase 3: Planning Workspace Deep Tour
 Route: `/workspace/:projectId/plan`
@@ -193,10 +194,12 @@ Session-based free writing canvas with AI-powered organization. Use this mode ea
 ## Phase 5: Writing Workspace Deep Tour
 Routes: `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` (both redirect to `/studio`)
 
-The Writing workspace has been deprecated and now redirects to Studio Desk. All writing functionality (manuscript editing, draft management, floating toolbar, assist actions) is available through StudioView.
+The Writing workspace routes now redirect to Studio Desk. The WritingView component is embedded within StudioView, providing all writing functionality in a unified workspace.
+
+**Accessing writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
 
 **Studio Desk provides the same writing capabilities in a 2-column layout:**
-- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Canon, Notes, Jobs
+- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs
 - Center: Full-width manuscript editor with manuscript navigation, draft management, and revision suggestions
 
 **To access writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
@@ -400,12 +403,12 @@ The desk has a three-column layout (left rail + manuscript editor + context pane
 - **Command bar:** Top header with "Studio Desk" label, project name, and toggle buttons (rail expand/collapse, context panel show/hide).
 - **Left rail (Project Map):** Quick navigation between all panels. Click a button to open that panel in the context panel. Collapsible to compact mode (80px icon-only) or expanded (192-320px).
 - **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available width.
-- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Close button hides the panel.
+- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Note: Arcs, Relationships, Canon, Notes, and Jobs panels are accessible via the left rail but do not appear as tabs in the context panel header — they open directly when selected from the rail. Close button hides the panel.
 
 **Accessing Studio:** Navigate to Studio Desk from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
 
 ### Project Map Panels (Left Rail)
-The left rail provides quick access to 11 panels. Clicking a button opens the context panel with that panel active:
+The left rail provides quick access to 12 panels. Clicking a button opens the context panel with that panel active:
 
 **Develop section:**
 - **Drafts:** Draft artifact lifecycle management
@@ -737,7 +740,7 @@ A complete 12-chapter novel with:
 
 ## Phase 12: Full Production Workflow
 
-For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.8.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
+For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
 
 ## Common Mistakes and Fixes
 
