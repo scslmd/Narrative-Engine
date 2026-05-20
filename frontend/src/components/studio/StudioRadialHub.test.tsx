@@ -1,7 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, act } from '../../__tests__/test-utils';
 import { useStudioStore } from '../../stores/studioStore';
 import { StudioRadialHub } from './StudioRadialHub';
+
+vi.stubGlobal('ResizeObserver', class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+});
 
 describe('StudioRadialHub', () => {
   beforeEach(() => {

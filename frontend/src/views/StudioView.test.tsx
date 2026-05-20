@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
 import { act, render, screen, userEvent } from '../__tests__/test-utils';
 import { http, HttpResponse } from 'msw';
@@ -6,6 +6,12 @@ import type { CanonAnnotationCreateRequest } from '../types/canonCustomization';
 import { server } from '../__tests__/setup';
 import { useStudioStore } from '../stores/studioStore';
 import { StudioView } from './StudioView';
+
+vi.stubGlobal('ResizeObserver', class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+});
 
 function renderWithRoute(ui: JSX.Element) {
   return render(

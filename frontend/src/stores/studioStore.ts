@@ -153,6 +153,44 @@ function loadLayoutV2(projectId: string): StudioLayoutState | null {
   }
 }
 
+const LAYOUT_DEBOUNCE_MS = 500;
+
+interface LayoutDebounceState {
+  timer: ReturnType<typeof setTimeout> | null;
+  pendingLayout: StudioLayoutState | null;
+  pendingProjectId: string | null;
+}
+
+const _debounce: LayoutDebounceState = { timer: null, pendingLayout: null, pendingProjectId: null };
+
+export function scheduleLayoutPersist(projectId: string, layout: StudioLayoutState): void {
+  _debounce.pendingProjectId = projectId;
+  _debounce.pendingLayout = layout;
+  if (_debounce.timer != null) {
+    clearTimeout(_debounce.timer);
+  }
+  _debounce.timer = setTimeout(() => {
+    if (_debounce.pendingProjectId && _debounce.pendingLayout) {
+      persistLayoutV2(_debounce.pendingProjectId, _debounce.pendingLayout);
+    }
+    _debounce.timer = null;
+    _debounce.pendingLayout = null;
+    _debounce.pendingProjectId = null;
+  }, LAYOUT_DEBOUNCE_MS);
+}
+
+export function flushLayoutDebounce(): void {
+  if (_debounce.timer != null) {
+    clearTimeout(_debounce.timer);
+    _debounce.timer = null;
+  }
+  if (_debounce.pendingProjectId && _debounce.pendingLayout) {
+    persistLayoutV2(_debounce.pendingProjectId, _debounce.pendingLayout);
+  }
+  _debounce.pendingLayout = null;
+  _debounce.pendingProjectId = null;
+}
+
 function persistLayout(state: StudioState): void {
   const layout: PersistedStudioLayout = {
     leftRailMode: state.leftRailMode,
@@ -204,6 +242,8 @@ interface StudioState {
   bringToFront: (id: string) => void;
   loadLayout: (projectId: string) => void;
   applyPreset: (preset: AuthorPreset) => void;
+  exportLayout: () => string;
+  importLayout: (json: string) => boolean;
 }
 
 const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_LAYOUT_STORAGE_KEY) : null);
@@ -318,7 +358,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       };
       const newPanels = { ...state.layout.panels, [id]: panel };
       const newLayout = { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout, currentProjectId: state.currentProjectId };
     });
     return id;
@@ -328,7 +368,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       const newPanels = { ...state.layout.panels };
       delete newPanels[id];
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   movePanel: (id, position) =>
@@ -338,7 +378,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       const snapped = { x: snapToGrid(position.x), y: snapToGrid(position.y) };
       const newPanels = { ...state.layout.panels, [id]: { ...panel, position: snapped } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   resizePanel: (id, size) =>
@@ -351,7 +391,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       };
       const newPanels = { ...state.layout.panels, [id]: { ...panel, size: clamped } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   togglePanel: (id, stateSnapshot) =>
@@ -363,7 +403,7 @@ export const useStudioStore = create<StudioState>((set) => ({
         : { ...panel, visible: true };
       const newPanels = { ...state.layout.panels, [id]: updated };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   updatePanelState: (id, updates) =>
@@ -372,7 +412,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (!panel) return {};
       const newPanels = { ...state.layout.panels, [id]: { ...panel, ...updates } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   pinPanel: (id, pinned) =>
@@ -381,7 +421,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (!panel) return {};
       const newPanels = { ...state.layout.panels, [id]: { ...panel, pinned } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   tearOffPanel: (id) =>
@@ -390,7 +430,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (!panel) return {};
       const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: true } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   reattachPanel: (id) =>
@@ -399,7 +439,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (!panel) return {};
       const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: false } };
       const newLayout = { ...state.layout, panels: newPanels };
-      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
       return { layout: newLayout };
     }),
   bringToFront: (id) =>
@@ -460,4 +500,26 @@ export const useStudioStore = create<StudioState>((set) => ({
 
       return { layout: newLayout };
     }),
+  exportLayout: (): string => {
+    const state = useStudioStore.getState();
+    return JSON.stringify({ panels: state.layout.panels, layoutPreset: state.layout.layoutPreset }, null, 2);
+  },
+  importLayout: (json: string): boolean => {
+    try {
+      const parsed = JSON.parse(json) as { panels?: Record<string, PanelLayoutState>; layoutPreset?: string | null };
+      if (!parsed || typeof parsed !== 'object' || !parsed.panels) return false;
+      const zIdx = Object.values(parsed.panels).reduce((max, p) => Math.max(max, p.zIndex), 0) + 1;
+      const newLayout: StudioLayoutState = {
+        panels: parsed.panels,
+        nextZIndex: zIdx,
+        layoutPreset: parsed.layoutPreset ?? null,
+      };
+      const state = useStudioStore.getState();
+      useStudioStore.setState({ layout: newLayout });
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return true;
+    } catch {
+      return false;
+    }
+  },
 }));

@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
+import { createPortal } from 'react-dom';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
-import { StudioHoverPreview } from './StudioHoverPreview';
 
-const PANEL_LABELS: Record<StudioPanelKey, string> = {
+const PANEL_LABELS: Record<string, string> = {
   suggestions: 'Suggestions',
   ideas: 'Ideas',
   drafts: 'Drafts',
@@ -23,86 +22,111 @@ const PANEL_LABELS: Record<StudioPanelKey, string> = {
   jobs: 'Jobs',
 };
 
-interface StudioFloatingPanelProps {
+interface StudioFloatingWindowProps {
   panelId: string;
   panelKey: StudioPanelKey;
   projectId: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
-  pinned: boolean;
-  floating: boolean;
   zIndex: number;
   children: React.ReactNode;
 }
 
-function StudioFloatingPanelImpl({
+function StudioFloatingWindowImpl({
   panelId,
   panelKey,
-  projectId,
   position,
   size,
-  pinned,
-  floating,
   zIndex,
   children,
-}: StudioFloatingPanelProps) {
+}: StudioFloatingWindowProps) {
   const resizePanel = useStudioStore((s) => s.resizePanel);
   const removePanel = useStudioStore((s) => s.removePanel);
-  const pinPanel = useStudioStore((s) => s.pinPanel);
-  const bringToFront = useStudioStore((s) => s.bringToFront);
   const reattachPanel = useStudioStore((s) => s.reattachPanel);
   const movePanel = useStudioStore((s) => s.movePanel);
+  const bringToFront = useStudioStore((s) => s.bringToFront);
 
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: panelId,
-    disabled: floating,
-  });
-
+  const [pos, setPos] = useState(position);
+  const [sz, setSz] = useState(size);
+  const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState<'none' | 'right' | 'bottom' | 'corner' | 'left' | 'top'>('none');
-  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number; startLeft: number; startTop: number; newW?: number; newH?: number; newLeft?: number; newTop?: number } | null>(null);
-
-  const style: React.CSSProperties = {
-    position: floating ? 'fixed' : 'absolute',
-    left: `${position.x}px`,
-    top: `${position.y}px`,
-    width: `${size.width}px`,
-    height: `${size.height}px`,
-    zIndex,
-    transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
-    transition: transform ? 'none' : 'box-shadow 0.15s, left 0.1s, top 0.1s',
-    ...(resizing !== 'none' ? { boxShadow: '0 0 0 2px var(--accent-primary), 0 10px 40px rgba(0,0,0,0.3)' } : {}),
-  };
+  const dragRef = useRef<{ mouseStartX: number; mouseStartY: number; panelStartX: number; panelStartY: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; startY: number; startW: number; startH: number; startLeft: number; startTop: number } | null>(null);
   const rafRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const [hoveringHeader, setHoveringHeader] = useState(false);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const posRef = useRef(pos);
+  posRef.current = pos;
+  const szRef = useRef(sz);
+  szRef.current = sz;
 
   useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setPos(position);
+  }, [position]);
+
+  useEffect(() => {
+    setSz(size);
+  }, [size]);
+
+  const handleDragStart = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDragging(true);
+    dragRef.current = {
+      mouseStartX: e.clientX,
+      mouseStartY: e.clientY,
+      panelStartX: posRef.current.x,
+      panelStartY: posRef.current.y,
     };
   }, []);
 
+  useEffect(() => {
+    if (!dragging || !dragRef.current) return;
+    const handleMove = (e: PointerEvent) => {
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        const newX = dragRef.current!.panelStartX + (e.clientX - dragRef.current!.mouseStartX);
+        const newY = dragRef.current!.panelStartY + (e.clientY - dragRef.current!.mouseStartY);
+        setPos({ x: newX, y: newY });
+        rafRef.current = null;
+      });
+    };
+    const handleUp = () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      setDragging(false);
+      dragRef.current = null;
+      movePanel(panelId, posRef.current);
+    };
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
+    return () => {
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [dragging, panelId, movePanel]);
+
   const handleResizeStart = useCallback(
-    (edge: 'right' | 'bottom' | 'corner' | 'left' | 'top', e: React.MouseEvent) => {
+    (edge: 'right' | 'bottom' | 'corner' | 'left' | 'top', e: React.PointerEvent) => {
       e.stopPropagation();
       e.preventDefault();
       setResizing(edge);
       resizeRef.current = {
         startX: e.clientX,
         startY: e.clientY,
-        startW: size.width,
-        startH: size.height,
-        startLeft: position.x,
-        startTop: position.y,
+        startW: szRef.current.width,
+        startH: szRef.current.height,
+        startLeft: posRef.current.x,
+        startTop: posRef.current.y,
       };
     },
-    [size, position]
+    []
   );
 
   useEffect(() => {
     if (resizing === 'none' || !resizeRef.current) return;
-    const handleMove = (e: MouseEvent) => {
+    const handleMove = (e: PointerEvent) => {
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
         const r = resizeRef.current!;
@@ -124,7 +148,8 @@ function StudioFloatingPanelImpl({
           newTop = r.startTop + (r.startH - newH);
         }
 
-        resizeRef.current = { ...r, newW, newH, newLeft, newTop };
+        setSz({ width: newW, height: newH });
+        setPos({ x: newLeft, y: newTop });
         rafRef.current = null;
       });
     };
@@ -132,64 +157,52 @@ function StudioFloatingPanelImpl({
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
       setResizing('none');
-      if (resizeRef.current) {
-        resizePanel(panelId, { width: resizeRef.current.newW ?? resizeRef.current.startW, height: resizeRef.current.newH ?? resizeRef.current.startH });
-        movePanel(panelId, { x: resizeRef.current.newLeft ?? resizeRef.current.startLeft, y: resizeRef.current.newTop ?? resizeRef.current.startTop });
-      }
       resizeRef.current = null;
+      resizePanel(panelId, szRef.current);
+      movePanel(panelId, posRef.current);
     };
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleUp);
+    document.addEventListener('pointermove', handleMove);
+    document.addEventListener('pointerup', handleUp);
     return () => {
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleUp);
+      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('pointerup', handleUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [resizing, panelId, resizePanel, movePanel, size, position]);
+  }, [resizing, panelId, resizePanel, movePanel]);
 
   const label = PANEL_LABELS[panelKey] || panelKey;
 
-  return (
+  const portalContent = (
     <div
-      ref={setNodeRef}
-      data-panel-container
-      {...attributes}
-      {...listeners}
+      ref={containerRef}
+      data-floating-window
       onClick={() => bringToFront(panelId)}
-      className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-lg"
-      style={style}
+      className="flex flex-col overflow-hidden rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-2xl"
+      style={{
+        position: 'fixed',
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
+        width: `${sz.width}px`,
+        height: `${sz.height}px`,
+        zIndex,
+        transform: dragging ? 'scale(1.02)' : undefined,
+        transition: dragging ? 'none' : 'box-shadow 0.15s, transform 0.1s',
+      }}
     >
       <div
-        className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 cursor-grab active:cursor-grabbing relative"
-        onMouseEnter={() => {
-          hoverTimerRef.current = setTimeout(() => setHoveringHeader(true), 400);
-        }}
-        onMouseLeave={() => {
-          if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-          setHoveringHeader(false);
-        }}
+        className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={handleDragStart}
       >
         <span className="text-xs font-semibold text-[var(--text-primary)]">{label}</span>
         <div className="flex items-center gap-1">
-          {floating ? (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
-              className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              title="Reattach"
-            >
-              &#x2281;
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); pinPanel(panelId, !pinned); }}
-              className={`rounded px-1.5 py-0.5 text-[10px] ${pinned ? 'text-amber-400' : 'text-[var(--text-secondary)]'} hover:text-[var(--text-primary)]`}
-              title={pinned ? 'Unpin' : 'Pin'}
-            >
-              &#x1F4CC;
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
+            className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            title="Reattach"
+          >
+            &#x2281;
+          </button>
           <button
             type="button"
             aria-label="Close panel"
@@ -200,11 +213,6 @@ function StudioFloatingPanelImpl({
             &#x2715;
           </button>
         </div>
-        <StudioHoverPreview
-          panelKey={panelKey}
-          isHovering={hoveringHeader}
-          projectId={projectId}
-        />
       </div>
 
       <div className="relative flex-1 overflow-hidden">
@@ -213,32 +221,34 @@ function StudioFloatingPanelImpl({
         <div
           className="z-10 absolute right-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
           style={{ background: 'var(--accent-primary)' }}
-          onMouseDown={(e) => handleResizeStart('right', e)}
+          onPointerDown={(e) => handleResizeStart('right', e)}
         />
         <div
           className="z-10 absolute left-0 top-0 bottom-0 w-[2px] cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
           style={{ background: 'var(--accent-primary)' }}
-          onMouseDown={(e) => handleResizeStart('left', e)}
+          onPointerDown={(e) => handleResizeStart('left', e)}
         />
         <div
           className="z-10 absolute left-0 right-0 bottom-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
           style={{ background: 'var(--accent-primary)' }}
-          onMouseDown={(e) => handleResizeStart('bottom', e)}
+          onPointerDown={(e) => handleResizeStart('bottom', e)}
         />
         <div
           className="z-10 absolute left-0 right-0 top-0 h-[2px] cursor-ns-resize opacity-0 hover:opacity-100 transition-opacity"
           style={{ background: 'var(--accent-primary)' }}
-          onMouseDown={(e) => handleResizeStart('top', e)}
+          onPointerDown={(e) => handleResizeStart('top', e)}
         />
         <div
           className="z-10 absolute right-0 bottom-0 w-3 h-3 cursor-nwse-resize"
-          onMouseDown={(e) => handleResizeStart('corner', e)}
+          onPointerDown={(e) => handleResizeStart('corner', e)}
         >
           <div className="absolute right-0.5 bottom-0.5 w-2 h-2 rotate-45 bg-[var(--text-secondary)]" />
         </div>
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(portalContent, document.body) : null;
 }
 
-export const StudioFloatingPanel = memo(StudioFloatingPanelImpl);
+export const StudioFloatingWindow = memo(StudioFloatingWindowImpl);
