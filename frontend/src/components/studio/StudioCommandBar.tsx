@@ -1,20 +1,25 @@
 import { PanelLeft, PanelRight } from 'lucide-react';
 import { useStudioStore } from '../../stores/studioStore';
+import { StudioPanelMenu } from './StudioPanelMenu';
 
 interface StudioCommandBarProps {
+  projectId?: string;
   projectName?: string;
   railCollapsed?: boolean;
   panelVisible?: boolean;
   onToggleRail?: () => void;
   onTogglePanel?: () => void;
+  onResetLayout?: () => void;
 }
 
 export function StudioCommandBar({
+  projectId,
   projectName = 'Current Project',
   railCollapsed,
   panelVisible,
   onToggleRail,
   onTogglePanel,
+  onResetLayout,
 }: StudioCommandBarProps) {
   const leftRailMode = useStudioStore((state) => state.leftRailMode);
   const setLeftRailMode = useStudioStore((state) => state.setLeftRailMode);
@@ -71,6 +76,17 @@ export function StudioCommandBar({
         >
           <PanelRight className="h-3.5 w-3.5" />
         </button>
+        {onResetLayout && (
+          <button
+            type="button"
+            onClick={onResetLayout}
+            className="hidden items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] xl:flex"
+            title="Reset layout"
+          >
+            &#x21BA;
+          </button>
+        )}
+        {projectId && <StudioPanelMenu projectId={projectId} />}
       </div>
     </header>
   );

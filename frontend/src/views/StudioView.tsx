@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { StudioProjectRail } from '../components/studio/StudioProjectRail';
 import { StudioContextPanel } from '../components/studio/StudioContextPanel';
+import { StudioRadialHub } from '../components/studio/StudioRadialHub';
+import { StudioCommandBar } from '../components/studio/StudioCommandBar';
 import { WritingView } from './WritingView';
 import { ViewShell } from '../components/shell/ViewShell';
 import { useStudioStore } from '../stores/studioStore';
@@ -12,6 +14,7 @@ export function StudioView() {
   const leftRailMode = useStudioStore((state) => state.leftRailMode);
   const panelVisible = useStudioStore((state) => state.panelVisible);
   const setPanelVisible = useStudioStore((state) => state.setPanelVisible);
+  const resetLayout = useStudioStore((state) => state.resetLayout);
 
   const {
     manuscriptDocuments,
@@ -46,28 +49,47 @@ export function StudioView() {
   const handleTogglePanel = () => setPanelVisible(!panelVisible);
 
   return (
-    <ViewShell
-      title="Studio Desk"
-      subtitle={projectId}
-      leftRailContent={
-        <StudioProjectRail projectId={projectId} compact={leftRailMode === 'collapsed'} />
-      }
-      rightPanelContent={
-        <StudioContextPanel
-          projectId={projectId}
-          onManuscriptSelect={handleManuscriptSelect}
-        />
-      }
-      showRightPanel={panelVisible}
-      onToggleRightPanel={handleTogglePanel}
-    >
-      <WritingView
-        embedded
-        chapterSelectOptions={chapterOptions}
-        selectedChapterId={selectedDocumentId}
-        isLoadingChapterSelect={manuscriptQueryLoading}
-        onChapterSelect={handleChapterSelect}
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] shadow-card">
+      <StudioCommandBar
+        projectId={projectId}
+        projectName="Studio Desk"
+        railCollapsed={leftRailMode === 'collapsed'}
+        panelVisible={panelVisible}
+        onToggleRail={() => useStudioStore.getState().toggleLeftRail()}
+        onTogglePanel={handleTogglePanel}
+        onResetLayout={resetLayout}
       />
-    </ViewShell>
+      <div className="relative flex-1 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <ViewShell
+            title=""
+            subtitle=""
+            leftRailContent={
+              <StudioProjectRail projectId={projectId} compact={leftRailMode === 'collapsed'} />
+            }
+            rightPanelContent={
+              <StudioContextPanel
+                projectId={projectId}
+                showCloseButton={false}
+                onManuscriptSelect={handleManuscriptSelect}
+              />
+            }
+            showRightPanel={panelVisible}
+            onToggleRightPanel={handleTogglePanel}
+          >
+            <WritingView
+              embedded
+              chapterSelectOptions={chapterOptions}
+              selectedChapterId={selectedDocumentId}
+              isLoadingChapterSelect={manuscriptQueryLoading}
+              onChapterSelect={handleChapterSelect}
+            />
+          </ViewShell>
+        </div>
+        <div className="absolute inset-0 z-10">
+          <StudioRadialHub projectId={projectId} />
+        </div>
+      </div>
+    </div>
   );
 }

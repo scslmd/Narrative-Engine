@@ -68,7 +68,7 @@ describe('StudioView integration', () => {
   it('renders "Studio Desk" heading', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
-    expect(screen.getByText('Studio Desk')).toBeInTheDocument();
+    expect(screen.getAllByText('Studio Desk').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders studio project map navigation', () => {

@@ -9,6 +9,9 @@ export type StudioPanelKey =
   | 'worldBible'
   | 'relationships'
   | 'arcs'
+  | 'structure'
+  | 'chapters'
+  | 'canon'
   | 'generation'
   | 'review'
   | 'inspect'
@@ -62,6 +65,64 @@ export function parseStoredStudioLayout(raw: string | null): PersistedStudioLayo
   };
 }
 
+export interface PanelLayoutState {
+  id: string;
+  key: StudioPanelKey;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  visible: boolean;
+  pinned: boolean;
+  floating: boolean;
+  zIndex: number;
+  collapsedSections: Record<string, boolean>;
+  scrollY: number;
+}
+
+export interface StudioLayoutState {
+  panels: Record<string, PanelLayoutState>;
+  nextZIndex: number;
+  layoutPreset: string | null;
+}
+
+const STUDIO_LAYOUT_V2_KEY = (projectId: string) => `studio-layout-v2-${projectId}`;
+const MIN_PANEL_WIDTH = 180;
+const MIN_PANEL_HEIGHT = 120;
+const GRID_SIZE = 8;
+
+function snapToGrid(value: number): number {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+}
+
+function generatePanelId(): string {
+  return `panel-${crypto.randomUUID?.() ?? Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function persistLayoutV2(projectId: string, layout: StudioLayoutState): void {
+  const key = STUDIO_LAYOUT_V2_KEY(projectId);
+  try {
+    localStorage.setItem(key, JSON.stringify({ panels: layout.panels, layoutPreset: layout.layoutPreset }));
+  } catch {
+    // Storage full or unavailable — ignore
+  }
+}
+
+function loadLayoutV2(projectId: string): StudioLayoutState | null {
+  const key = STUDIO_LAYOUT_V2_KEY(projectId);
+  const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { panels?: Record<string, PanelLayoutState>; layoutPreset?: string | null };
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      panels: parsed.panels ?? {},
+      nextZIndex: Object.values(parsed.panels ?? {}).reduce((max, p) => Math.max(max, p.zIndex), 0) + 1,
+      layoutPreset: parsed.layoutPreset ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function persistLayout(state: StudioState): void {
   const layout: PersistedStudioLayout = {
     leftRailMode: state.leftRailMode,
@@ -97,6 +158,21 @@ interface StudioState {
   toggleLeftRail: () => void;
   toggleContextPanel: () => void;
   closeDrawers: () => void;
+  // Layout state (radial hub)
+  currentProjectId: string | null;
+  layout: StudioLayoutState;
+  setCurrentProjectId: (projectId: string | null) => void;
+  addPanel: (key: StudioPanelKey) => string;
+  removePanel: (id: string) => void;
+  movePanel: (id: string, position: { x: number; y: number }) => void;
+  resizePanel: (id: string, size: { width: number; height: number }) => void;
+  togglePanel: (id: string, stateSnapshot?: { collapsedSections?: Record<string, boolean>; scrollY?: number }) => void;
+  updatePanelState: (id: string, updates: { collapsedSections?: Record<string, boolean>; scrollY?: number }) => void;
+  pinPanel: (id: string, pinned: boolean) => void;
+  tearOffPanel: (id: string) => void;
+  reattachPanel: (id: string) => void;
+  bringToFront: (id: string) => void;
+  loadLayout: (projectId: string) => void;
 }
 
 const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_LAYOUT_STORAGE_KEY) : null);
@@ -151,14 +227,21 @@ export const useStudioStore = create<StudioState>((set) => ({
       contextPanelMode: state.contextPanelMode === 'closed' ? 'docked' : state.contextPanelMode,
     })),
   resetLayout: () => {
-    set({
-      activePanel: 'suggestions',
-      leftRailMode: 'collapsed',
-      contextPanelMode: 'docked',
-      contextPanelPinned: true,
-      leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,
-      contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
-      panelVisible: false,
+    set((state) => {
+      if (state.currentProjectId) {
+        try { localStorage.removeItem(STUDIO_LAYOUT_V2_KEY(state.currentProjectId)); } catch { /* ignore */ }
+      }
+      return {
+        activePanel: 'suggestions',
+        leftRailMode: 'collapsed',
+        contextPanelMode: 'docked',
+        contextPanelPinned: true,
+        leftRailWidth: DEFAULT_LEFT_RAIL_WIDTH,
+        contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
+        panelVisible: false,
+        currentProjectId: null,
+        layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+      };
     });
     persistLayout(useStudioStore.getState());
   },
@@ -177,5 +260,131 @@ export const useStudioStore = create<StudioState>((set) => ({
       leftRailMode: 'collapsed',
       contextPanelMode: 'closed',
       panelVisible: false,
+    }),
+  // Layout state initialization
+  currentProjectId: null,
+  layout: {
+    panels: {},
+    nextZIndex: 1,
+    layoutPreset: null,
+  },
+  setCurrentProjectId: (projectId) => set({ currentProjectId: projectId }),
+  addPanel: (key) => {
+    const id = generatePanelId();
+    set((state) => {
+      const panelCount = Object.keys(state.layout.panels).length;
+      const panel: PanelLayoutState = {
+        id,
+        key,
+        position: { x: snapToGrid(16 + (panelCount % 6) * 12), y: snapToGrid(40 + Math.floor(panelCount / 6) * 80) },
+        size: { width: 280, height: 360 },
+        visible: true,
+        pinned: false,
+        floating: false,
+        zIndex: state.layout.nextZIndex,
+        collapsedSections: {},
+        scrollY: 0,
+      };
+      const newPanels = { ...state.layout.panels, [id]: panel };
+      const newLayout = { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout, currentProjectId: state.currentProjectId };
+    });
+    return id;
+  },
+  removePanel: (id) =>
+    set((state) => {
+      const newPanels = { ...state.layout.panels };
+      delete newPanels[id];
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  movePanel: (id, position) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const snapped = { x: snapToGrid(position.x), y: snapToGrid(position.y) };
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, position: snapped } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  resizePanel: (id, size) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const clamped = {
+        width: Math.max(MIN_PANEL_WIDTH, Math.min(size.width, 800)),
+        height: Math.max(MIN_PANEL_HEIGHT, Math.min(size.height, 900)),
+      };
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, size: clamped } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  togglePanel: (id, stateSnapshot) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const updated = panel.visible
+        ? { ...panel, visible: false, collapsedSections: stateSnapshot?.collapsedSections ?? panel.collapsedSections, scrollY: stateSnapshot?.scrollY ?? panel.scrollY }
+        : { ...panel, visible: true };
+      const newPanels = { ...state.layout.panels, [id]: updated };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  updatePanelState: (id, updates) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, ...updates } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  pinPanel: (id, pinned) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, pinned } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  tearOffPanel: (id) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: true } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  reattachPanel: (id) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, floating: false } };
+      const newLayout = { ...state.layout, panels: newPanels };
+      if (state.currentProjectId) persistLayoutV2(state.currentProjectId, newLayout);
+      return { layout: newLayout };
+    }),
+  bringToFront: (id) =>
+    set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel) return {};
+      const newPanels = { ...state.layout.panels, [id]: { ...panel, zIndex: state.layout.nextZIndex } };
+      return { layout: { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 } };
+    }),
+  loadLayout: (projectId) =>
+    set((state) => {
+      if (state.currentProjectId === projectId) return {};
+      const saved = loadLayoutV2(projectId);
+      return {
+        currentProjectId: projectId,
+        layout: saved ?? { panels: {}, nextZIndex: 1, layoutPreset: null },
+      };
     }),
 }));
