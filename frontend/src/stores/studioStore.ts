@@ -300,6 +300,9 @@ export const useStudioStore = create<StudioState>((set) => ({
     })),
   resetLayout: () => {
     set((state) => {
+      const pinnedPanels = Object.fromEntries(
+        Object.entries(state.layout.panels).filter(([, p]) => p.pinned)
+      );
       if (state.currentProjectId) {
         try { localStorage.removeItem(STUDIO_LAYOUT_V2_KEY(state.currentProjectId)); } catch { /* ignore */ }
       }
@@ -312,7 +315,11 @@ export const useStudioStore = create<StudioState>((set) => ({
         contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
         panelVisible: false,
         currentProjectId: null,
-        layout: { panels: {}, nextZIndex: MIN_PANEL_ZINDEX, layoutPreset: null },
+        layout: {
+          panels: pinnedPanels,
+          nextZIndex: Object.values(pinnedPanels).reduce((max, p) => Math.max(max, p.zIndex), MIN_PANEL_ZINDEX) + 1,
+          layoutPreset: null,
+        },
       };
     });
     persistLayout(useStudioStore.getState());
@@ -366,6 +373,8 @@ export const useStudioStore = create<StudioState>((set) => ({
   },
   removePanel: (id) =>
     set((state) => {
+      const panel = state.layout.panels[id];
+      if (!panel || panel.pinned) return {};
       const newPanels = { ...state.layout.panels };
       delete newPanels[id];
       const newLayout = { ...state.layout, panels: newPanels };
@@ -486,11 +495,19 @@ export const useStudioStore = create<StudioState>((set) => ({
       const panels = LAYOUT_PRESETS[preset];
       if (!panels) return {};
 
-      const newPanels: Record<string, PanelLayoutState> = {};
-      let nextZ = state.layout.nextZIndex;
+      // Preserve pinned panels
+      const pinnedPanels = Object.fromEntries(
+        Object.entries(state.layout.panels).filter(([, p]) => p.pinned)
+      );
+
+      const newPanels: Record<string, PanelLayoutState> = { ...pinnedPanels };
+      let nextZ = Math.max(state.layout.nextZIndex, ...Object.values(pinnedPanels).map(p => p.zIndex));
 
       for (let i = 0; i < panels.length; i++) {
         const panelDef = panels[i];
+        // Skip preset panels that duplicate a pinned panel's key
+        if (Object.values(pinnedPanels).some(p => p.key === panelDef.key)) continue;
+
         const id = `preset-${preset}-${panelDef.key}`;
         const col = i % 4;
         const row = Math.floor(i / 4);

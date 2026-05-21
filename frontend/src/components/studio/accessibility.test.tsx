@@ -86,4 +86,52 @@ describe('Radial Hub Accessibility', () => {
     const menuItems = container.querySelectorAll('[role="menuitem"]');
     expect(menuItems.length).toBeGreaterThan(0);
   });
+
+  it('pinned panel hides close button', () => {
+    useStudioStore.setState({
+      currentProjectId: null,
+      layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+    });
+    render(
+      <DndContextWrapper>
+        <StudioFloatingPanel
+          panelId="test-1"
+          panelKey="characters"
+          projectId="proj-1"
+          position={{ x: 0, y: 0 }}
+          size={{ width: 280, height: 360 }}
+          pinned={true}
+          floating={false}
+          zIndex={1}
+        >
+          <div>Content</div>
+        </StudioFloatingPanel>
+      </DndContextWrapper>
+    );
+    expect(screen.queryByRole('button', { name: 'Close panel' })).not.toBeInTheDocument();
+  });
+
+  it('pinned panel shows pin button', () => {
+    useStudioStore.setState({
+      currentProjectId: null,
+      layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+    });
+    render(
+      <DndContextWrapper>
+        <StudioFloatingPanel
+          panelId="test-1"
+          panelKey="characters"
+          projectId="proj-1"
+          position={{ x: 0, y: 0 }}
+          size={{ width: 280, height: 360 }}
+          pinned={true}
+          floating={false}
+          zIndex={1}
+        >
+          <div>Content</div>
+        </StudioFloatingPanel>
+      </DndContextWrapper>
+    );
+    expect(screen.getByRole('button', { name: 'Unpin panel' })).toBeInTheDocument();
+  });
 });

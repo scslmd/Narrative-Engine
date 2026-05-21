@@ -76,7 +76,7 @@ function StudioFloatingPanelImpl({
     transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
     transition: transform || resizing !== 'none'
       ? 'none'
-      : 'box-shadow 0.15s, left 0.1s, top 0.1s',
+      : 'box-shadow 0.15s',
     ...(resizing !== 'none' ? { boxShadow: '0 0 0 2px var(--accent-primary), 0 10px 40px rgba(0,0,0,0.3)' } : {}),
   };
   const rafRef = useRef<number | null>(null);
@@ -269,15 +269,17 @@ function StudioFloatingPanelImpl({
                 &#x1F4CC;
               </button>
             )}
-            <button
-              type="button"
-              aria-label="Close panel"
-              onClick={(e) => { e.stopPropagation(); removePanel(panelId); }}
-              className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              title="Close"
+          {!pinned && (
+              <button
+                type="button"
+                aria-label="Close panel"
+                onClick={(e) => { e.stopPropagation(); removePanel(panelId); }}
+                className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                title="Close"
             >
               &#x2715;
             </button>
+          )}
           </div>
         </div>
 
