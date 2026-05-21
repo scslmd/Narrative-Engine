@@ -370,6 +370,13 @@ export const useStudioStore = create<StudioState>((set) => ({
   addPanel: (key) => {
     const id = generatePanelId();
     set((state) => {
+      const existing = Object.values(state.layout.panels).find((p) => p.key === key);
+      if (existing) {
+        const newPanels = { ...state.layout.panels, [existing.id]: { ...existing, zIndex: state.layout.nextZIndex, visible: true } };
+        const newLayout = { ...state.layout, panels: newPanels, nextZIndex: state.layout.nextZIndex + 1 };
+        if (state.currentProjectId) scheduleLayoutPersist(state.currentProjectId, newLayout);
+        return { layout: newLayout, currentProjectId: state.currentProjectId };
+      }
       const panelCount = Object.keys(state.layout.panels).length;
       const defaultSize = PANEL_DEFAULT_SIZES[key] ?? { width: 320, height: 400 };
       const panel: PanelLayoutState = {
@@ -487,10 +494,18 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (state.currentProjectId === projectId) return {};
       const saved = loadLayoutV2(projectId);
       if (saved && Object.keys(saved.panels).length > 0) {
+        // Deduplicate: keep only the first instance of each panel key
+        const seen = new Set<StudioPanelKey>();
+        const deduped: Record<string, PanelLayoutState> = {};
+        for (const [id, panel] of Object.entries(saved.panels)) {
+          if (seen.has(panel.key)) continue;
+          seen.add(panel.key);
+          deduped[id] = panel;
+        }
         // Ensure z-indexes are above minimum threshold
         let maxZ = MIN_PANEL_ZINDEX;
         const fixedPanels: Record<string, PanelLayoutState> = {};
-        for (const [id, panel] of Object.entries(saved.panels)) {
+        for (const [id, panel] of Object.entries(deduped)) {
           fixedPanels[id] = panel.zIndex < MIN_PANEL_ZINDEX
             ? { ...panel, zIndex: MIN_PANEL_ZINDEX + parseInt(id, 36) % 100 }
             : panel;
