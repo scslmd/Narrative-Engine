@@ -220,3 +220,98 @@ All new components have dedicated tests; existing tests updated for new prop sig
 2. **Multi-monitor tear-off** — portal approach is same-tab only; true OS window tear-off would require Electron or `window.open()` with postMessage bridge
 3. **Collaborative layouts** — no real-time sync of panel positions across users; would require WebSocket + CRDT
 4. **Panel minimize/maximize** — not yet implemented; would be natural extensions of the floating panel system
+
+---
+
+## Post-Merge Polish (2026-05-21)
+
+**Branch:** `codex/radial-hub`
+**Commits:** `d2fb0bd`, `a212790`, `ed71f5d`, `1b08e46`, `484cb1b`, `a825eab`, `13d2524`, `31d5ac1`
+
+### Panel Sizing (`d2fb0bd`, `a212790`, `ed71f5d`)
+
+**Goal:** Resize panel text, buttons, and spacing to fit properly inside 300–460px wide panels.
+
+**Changes:**
+- Headings: `text-lg` → `text-sm` across all panels
+- Subtext/metadata: `text-sm` → `text-[10px]`/`text-xs`
+- Buttons: `px-3 py-1.5 text-xs` → `px-2 py-1 text-[10px]`
+- Card padding: `p-4` → `p-2.5`
+- Spacing: `space-y-4` → `space-y-2`
+- Empty states: `py-8 text-sm` → `py-6 text-xs`
+- Icons: `w-4 h-4` → `w-3.5 h-3.5`
+- All panels use `flex h-full flex-col` with `shrink-0` header and `flex-1 overflow-y-auto` content
+- Updated 14 files: Characters, Arcs, Relationships, Generation, Review, Inspect, Structure, Chapters, Canon, Drafts, Manuscripts, AidsPanel, StudioContextPanel, StudioPanelContent
+
+**Key Decisions:**
+- **Per-panel default sizes** — replaced uniform 280x360 with `PANEL_DEFAULT_SIZES` map (e.g., characters 360x420, relationships 400x460, generation 380x460)
+- **Compact sizing for narrow panels** — 300–460px width requires smaller text/buttons to avoid overflow
+- **Consistent scale** — same size classes across all panel types for visual coherence
+
+### Pin Behavior (`1b08e46`)
+
+**Goal:** Implement pinned panel behavior — pinned panels survive reset and preset changes.
+
+**Changes:**
+- `pinPanel` action in store toggles `pinned` flag
+- `removePanel` blocks removal of pinned panels
+- `resetLayout` preserves pinned panels, removes unpinned
+- `applyPreset` preserves pinned panels, adds preset panels without duplicating pinned keys
+- Pin button in `StudioFloatingPanel` header shows amber color when pinned, hides close button
+- 4 unit tests in `studioStore.pin.test.tsx`
+
+**Key Decisions:**
+- **Pin = persistent** — pinned panels survive layout resets and preset changes, acting as "always-on" workspace elements
+- **Pin button in header** — replaces close button when pinned; visual feedback via amber color
+- **No pin-to-position** — pinning preserves current position/size; does not lock position during drag
+
+### Resize & Snap Fixes (`484cb1b`)
+
+**Goal:** Fix resize handle visibility, duplicate panel creation, and snap-on-mouseup behavior.
+
+**Changes:**
+- Resize handles now visible during drag with accent color highlight
+- Fixed duplicate panel creation in `StudioFloatingPanel` (removed duplicate `useDraggable` call)
+- Snap detection triggers on mouseup for final position alignment
+- Improved resize handle edge detection for left/top resize directions
+
+### Panel-to-Panel Snapping (`a825eab`, `31d5ac1`)
+
+**Goal:** Enable panels to snap to each other for adjacent layout (side-by-side, stacked).
+
+**Changes:**
+- `detectPanelSnap` function checks for nearby panel edges within `SNAP_THRESHOLD` (64px)
+- **Snap directions:** right of, left of, above, below
+- **Best-match selection:** collects all candidate snaps, returns the one with smallest gap (fixes horizontal snapping issue)
+- **Visual feedback:** Blue snap line appears between panels showing alignment
+- **Priority:** Panel snaps take precedence over workspace-edge snaps
+- **Grid alignment:** Snap positions still grid-snapped (8px) for clean alignment
+- Updated `StudioSnapIndicator.tsx` with `PanelRect` type, `detectPanelSnap`, panel snap visuals
+- Updated `StudioRadialHub.tsx` to pass `otherPanels` to snap detection
+
+**Key Decisions:**
+- **Panel snaps override edge snaps** — when a panel is near another panel, panel snapping takes priority over workspace edge snapping
+- **Overlap requirement** — horizontal snaps (left/right) require vertical overlap; vertical snaps (above/below) require horizontal overlap. This prevents snapping panels that are diagonally far apart.
+- **Best-match over first-match** — the original implementation returned on first match, which could skip horizontal snaps if vertical checks ran first. Best-match ensures the closest snap wins regardless of direction.
+
+### Panel Singularity (`13d2524`)
+
+**Goal:** Enforce one instance per panel type — no duplicate panels.
+
+**Changes:**
+- `addPanel` checks for existing panel with same `key`; if found, brings it to front instead of creating duplicate
+- `loadLayout` deduplicates saved panels on load, keeping only first instance of each panel type
+- Existing duplicate panels are cleaned up on next layout load
+
+**Key Decisions:**
+- **Bring-to-front on duplicate** — clicking a panel menu item for an already-open panel brings it to front (raises z-index, ensures visibility) rather than creating a duplicate
+- **Dedup on load** — saved layouts with duplicate panels are cleaned up automatically, preventing stale duplicates from persisting across sessions
+- **No dedup on drag** — panels retain their individual positions; dedup only applies to `addPanel` and `loadLayout`
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| `npm run test` | 742 passed |
+| `npm run typecheck` | 0 errors |
+| `npm run build` | 2070 modules, 0 errors |
