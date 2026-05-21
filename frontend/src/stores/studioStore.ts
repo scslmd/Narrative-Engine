@@ -86,9 +86,10 @@ export interface StudioLayoutState {
 }
 
 const STUDIO_LAYOUT_V2_KEY = (projectId: string) => `studio-layout-v2-${projectId}`;
-const MIN_PANEL_WIDTH = 180;
-const MIN_PANEL_HEIGHT = 120;
-const GRID_SIZE = 8;
+  const MIN_PANEL_WIDTH = 240;
+  const MIN_PANEL_HEIGHT = 180;
+  const GRID_SIZE = 8;
+  const MIN_PANEL_ZINDEX = 100;
 
 interface PanelPreset {
   key: StudioPanelKey;
@@ -145,7 +146,7 @@ function loadLayoutV2(projectId: string): StudioLayoutState | null {
     if (!parsed || typeof parsed !== 'object') return null;
     return {
       panels: parsed.panels ?? {},
-      nextZIndex: Object.values(parsed.panels ?? {}).reduce((max, p) => Math.max(max, p.zIndex), 0) + 1,
+      nextZIndex: Object.values(parsed.panels ?? {}).reduce((max, p) => Math.max(max, p.zIndex), MIN_PANEL_ZINDEX) + 1,
       layoutPreset: parsed.layoutPreset ?? null,
     };
   } catch {
@@ -311,7 +312,7 @@ export const useStudioStore = create<StudioState>((set) => ({
         contextPanelWidth: DEFAULT_CONTEXT_PANEL_WIDTH,
         panelVisible: false,
         currentProjectId: null,
-        layout: { panels: {}, nextZIndex: 1, layoutPreset: null },
+        layout: { panels: {}, nextZIndex: MIN_PANEL_ZINDEX, layoutPreset: null },
       };
     });
     persistLayout(useStudioStore.getState());
@@ -336,7 +337,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   currentProjectId: null,
   layout: {
     panels: {},
-    nextZIndex: 1,
+    nextZIndex: MIN_PANEL_ZINDEX,
     layoutPreset: null,
   },
   setCurrentProjectId: (projectId) => set({ currentProjectId: projectId }),
@@ -387,7 +388,7 @@ export const useStudioStore = create<StudioState>((set) => ({
       if (!panel) return {};
       const clamped = {
         width: Math.max(MIN_PANEL_WIDTH, Math.min(size.width, 800)),
-        height: Math.max(MIN_PANEL_HEIGHT, Math.min(size.height, 900)),
+        height: Math.max(MIN_PANEL_HEIGHT, Math.min(size.height, 600)),
       };
       const newPanels = { ...state.layout.panels, [id]: { ...panel, size: clamped } };
       const newLayout = { ...state.layout, panels: newPanels };
@@ -456,9 +457,28 @@ export const useStudioStore = create<StudioState>((set) => ({
     set((state) => {
       if (state.currentProjectId === projectId) return {};
       const saved = loadLayoutV2(projectId);
+      if (saved && Object.keys(saved.panels).length > 0) {
+        // Ensure z-indexes are above minimum threshold
+        let maxZ = MIN_PANEL_ZINDEX;
+        const fixedPanels: Record<string, PanelLayoutState> = {};
+        for (const [id, panel] of Object.entries(saved.panels)) {
+          fixedPanels[id] = panel.zIndex < MIN_PANEL_ZINDEX
+            ? { ...panel, zIndex: MIN_PANEL_ZINDEX + parseInt(id, 36) % 100 }
+            : panel;
+          maxZ = Math.max(maxZ, fixedPanels[id].zIndex);
+        }
+        return {
+          currentProjectId: projectId,
+          layout: { ...saved, panels: fixedPanels, nextZIndex: maxZ + 1 },
+        };
+      }
+      // No saved layout — keep existing panels if usePanelUrlSync already created one
+      const hasExisting = Object.keys(state.layout.panels).length > 0;
       return {
         currentProjectId: projectId,
-        layout: saved ?? { panels: {}, nextZIndex: 1, layoutPreset: null },
+        layout: hasExisting
+          ? state.layout
+          : { panels: {}, nextZIndex: MIN_PANEL_ZINDEX, layoutPreset: null },
       };
     }),
   applyPreset: (preset) =>

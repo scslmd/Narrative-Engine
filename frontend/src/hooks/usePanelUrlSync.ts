@@ -23,7 +23,6 @@ interface PanelUrlSyncOptions {
 export function usePanelUrlSync(options: PanelUrlSyncOptions) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activePanel = useStudioStore((s) => s.activePanel);
-  const layout = useStudioStore((s) => s.layout);
   const addPanel = useStudioStore((s) => s.addPanel);
   const bringToFront = useStudioStore((s) => s.bringToFront);
   const setJobId = useUIStore((s) => s.setJobId);
@@ -39,15 +38,22 @@ export function usePanelUrlSync(options: PanelUrlSyncOptions) {
 
     // Validate tab against known panel keys before casting
     const validKeys = ['structure', 'chapters', 'ideas', 'canon', 'generation', 'manuscripts', 'drafts', 'characters', 'relationships', 'worldBible', 'arcs', 'notes', 'jobs', 'suggestions', 'review', 'inspect'] as const;
-    if (tab && validKeys.includes(tab as typeof validKeys[number])) {
-      const panelKey = tab as StudioPanelKey;
-      const existingPanelId = Object.values(layout.panels).find(
-        (p) => p.key === panelKey && p.visible
-      )?.id;
+    const panelKey = tab && validKeys.includes(tab as typeof validKeys[number])
+      ? tab as StudioPanelKey
+      : 'suggestions';
 
-      if (existingPanelId) {
-        bringToFront(existingPanelId);
-      } else {
+    // Read current layout from store at effect time (after loadLayout has run)
+    const currentLayout = useStudioStore.getState().layout;
+    const existingPanelId = Object.values(currentLayout.panels).find(
+      (p) => p.key === panelKey && p.visible
+    )?.id;
+
+    if (existingPanelId) {
+      bringToFront(existingPanelId);
+    } else {
+      // Only create if no panels exist at all (prevents duplicates with loadLayout)
+      const anyPanel = Object.values(currentLayout.panels).find((p) => p.visible);
+      if (!anyPanel) {
         addPanel(panelKey);
       }
     }

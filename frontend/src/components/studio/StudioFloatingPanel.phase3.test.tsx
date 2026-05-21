@@ -56,7 +56,7 @@ describe('StudioFloatingPanel Phase 3 polish', () => {
         <div>Content</div>
       </StudioFloatingPanel>
     );
-    const handles = container.querySelectorAll('.cursor-ew-resize, .cursor-ns-resize');
+    const handles = container.querySelectorAll('[data-resize-handle]');
     expect(handles.length).toBeGreaterThanOrEqual(4);
   });
 

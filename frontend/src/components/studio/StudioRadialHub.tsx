@@ -16,7 +16,6 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
   const layout = useStudioStore((s) => s.layout);
   const movePanel = useStudioStore((s) => s.movePanel);
   const bringToFront = useStudioStore((s) => s.bringToFront);
-  const loadLayout = useStudioStore((s) => s.loadLayout);
 
   const isMobile = useMediaQuery('(max-width: 1279px)');
 
@@ -27,10 +26,6 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
   const [dragState, setDragState] = useState<{ panelId: string; snapZone: SnapZone | null } | null>(null);
 
   usePanelKeyboard();
-
-  useEffect(() => {
-    loadLayout(projectId);
-  }, [projectId, loadLayout]);
 
   useEffect(() => {
     const el = workspaceRef.current;
