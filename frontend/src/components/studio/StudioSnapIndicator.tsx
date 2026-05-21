@@ -25,7 +25,7 @@ export interface PanelRect {
   height: number;
 }
 
-const SNAP_THRESHOLD = 48;
+const SNAP_THRESHOLD = 64;
 const GRID_SIZE = 8;
 
 function snapToGrid(value: number): number {
@@ -43,6 +43,9 @@ export function detectPanelSnap(
   const right = rawX + panelWidth;
   const bottom = rawY + panelHeight;
 
+  let bestSnap: SnapZone | null = null;
+  let bestGap = Infinity;
+
   for (const other of otherPanels) {
     if (other.id === panelId) continue;
 
@@ -50,22 +53,21 @@ export function detectPanelSnap(
     const otherBottom = other.y + other.height;
 
     // Snap to right of another panel
-    if (rawY < otherBottom && bottom > other.y) {
-      const gapX = Math.abs(rawX - otherRight);
-      if (gapX <= SNAP_THRESHOLD) {
-        return {
+    const verticalOverlap = rawY < otherBottom && bottom > other.y;
+    if (verticalOverlap) {
+      const gapRight = Math.abs(rawX - otherRight);
+      if (gapRight <= SNAP_THRESHOLD && gapRight < bestGap) {
+        bestGap = gapRight;
+        bestSnap = {
           id: 'panel-right',
           position: { x: snapToGrid(otherRight), y: snapToGrid(other.y) },
           targetPanelId: other.id,
         };
       }
-    }
-
-    // Snap to left of another panel
-    if (rawY < otherBottom && bottom > other.y) {
-      const gapX = Math.abs(right - other.x);
-      if (gapX <= SNAP_THRESHOLD) {
-        return {
+      const gapLeft = Math.abs(right - other.x);
+      if (gapLeft <= SNAP_THRESHOLD && gapLeft < bestGap) {
+        bestGap = gapLeft;
+        bestSnap = {
           id: 'panel-left',
           position: { x: snapToGrid(other.x - panelWidth), y: snapToGrid(other.y) },
           targetPanelId: other.id,
@@ -74,22 +76,21 @@ export function detectPanelSnap(
     }
 
     // Snap above another panel
-    if (rawX < otherRight && right > other.x) {
-      const gapY = Math.abs(rawY - other.y);
-      if (gapY <= SNAP_THRESHOLD) {
-        return {
+    const horizontalOverlap = rawX < otherRight && right > other.x;
+    if (horizontalOverlap) {
+      const gapAbove = Math.abs(rawY - other.y);
+      if (gapAbove <= SNAP_THRESHOLD && gapAbove < bestGap) {
+        bestGap = gapAbove;
+        bestSnap = {
           id: 'panel-above',
           position: { x: snapToGrid(other.x), y: snapToGrid(other.y - panelHeight) },
           targetPanelId: other.id,
         };
       }
-    }
-
-    // Snap below another panel
-    if (rawX < otherRight && right > other.x) {
-      const gapY = Math.abs(bottom - other.y);
-      if (gapY <= SNAP_THRESHOLD) {
-        return {
+      const gapBelow = Math.abs(bottom - other.y);
+      if (gapBelow <= SNAP_THRESHOLD && gapBelow < bestGap) {
+        bestGap = gapBelow;
+        bestSnap = {
           id: 'panel-below',
           position: { x: snapToGrid(other.x), y: snapToGrid(otherBottom) },
           targetPanelId: other.id,
@@ -98,7 +99,7 @@ export function detectPanelSnap(
     }
   }
 
-  return null;
+  return bestSnap;
 }
 
 export function detectSnapZone(
