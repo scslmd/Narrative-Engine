@@ -170,14 +170,14 @@ export function StudioChaptersPanel({ projectId }: StudioChaptersPanelProps) {
   }
 
   return (
-    <div data-chapters-panel className="space-y-3">
+    <div data-chapters-panel className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Chapters</h3>
-          <div className="flex gap-2 mt-0.5">
+          <div className="flex gap-1.5 mt-0.5">
             {Object.entries(statusCounts).map(([status, count]) => (
-              <span key={status} className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
-                <div className={`h-1.5 w-1.5 rounded-full ${CHAPTER_STATUS_DOTS[status] || 'bg-slate-400'}`} />
+              <span key={status} className="flex items-center gap-0.5 text-[9px] text-[var(--text-tertiary)]">
+                <div className={`h-1 w-1 rounded-full ${CHAPTER_STATUS_DOTS[status] || 'bg-slate-400'}`} />
                 {count}
               </span>
             ))}
@@ -186,14 +186,14 @@ export function StudioChaptersPanel({ projectId }: StudioChaptersPanelProps) {
       </div>
 
       {chapters.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-sm text-[var(--text-tertiary)]">No chapters planned yet.</p>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+        <div className="py-6 text-center">
+          <p className="text-xs text-[var(--text-tertiary)]">No chapters planned yet.</p>
+          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
             Create chapter plans to structure your story.
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
           {chapters.map((chapter) => (
             <ChapterRow
               key={chapter.chapter_id}

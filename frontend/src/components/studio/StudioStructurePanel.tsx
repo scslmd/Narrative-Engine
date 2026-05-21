@@ -125,22 +125,22 @@ export function StudioStructurePanel({ projectId }: StudioStructurePanelProps) {
   const overallProgress = totalBeats > 0 ? (completedBeats / totalBeats) * 100 : 0;
 
   return (
-    <div data-structure-panel className="space-y-4">
+    <div data-structure-panel className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Structure</h3>
-          <p className="text-xs text-[var(--text-tertiary)]">
+          <p className="text-[10px] text-[var(--text-tertiary)]">
             {sequences.length} sequences · {totalBeats} beats
           </p>
         </div>
         <div className="text-right">
-          <div className="text-xs font-medium text-[var(--text-secondary)]">
+          <div className="text-[10px] font-medium text-[var(--text-secondary)]">
             {Math.round(overallProgress)}%
           </div>
         </div>
       </div>
 
-      <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+      <div className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700">
         <div
           className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
           style={{ width: `${overallProgress}%` }}
@@ -148,29 +148,29 @@ export function StudioStructurePanel({ projectId }: StudioStructurePanelProps) {
       </div>
 
       {sequences.length === 0 && beats.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-sm text-[var(--text-tertiary)]">
+        <div className="py-6 text-center">
+          <p className="text-xs text-[var(--text-tertiary)]">
             No structure planned yet.
           </p>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
             Create sequences and beats to track story progress.
           </p>
         </div>
       ) : sequences.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {sequences.map((seq) => (
             <SequenceBlock key={seq.sequence_id} sequence={seq} beats={beats} />
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-[var(--text-secondary)]">Standalone Beats</p>
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-medium text-[var(--text-secondary)]">Standalone Beats</p>
           {beats.map((beat) => (
-            <div key={beat.beat_id} className="flex items-center gap-2">
+            <div key={beat.beat_id} className="flex items-center gap-1.5">
               <div className="w-2">
                 <BeatIndicator beat={beat} />
               </div>
-              <span className="text-xs text-[var(--text-secondary)] truncate">
+              <span className="text-[10px] text-[var(--text-secondary)] truncate">
                 {beat.objective}
               </span>
             </div>

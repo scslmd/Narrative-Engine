@@ -1,9 +1,9 @@
 import { InspectMode } from '../inspect';
 
 export function StudioInspectPanel() {
-  return (
-<div className="flex h-full flex-col">
-        <div className="flex-1 overflow-y-auto p-3">
+return (
+    <div className="flex h-full flex-col">
+        <div className="flex-1 overflow-y-auto p-2.5">
           <InspectMode />
         </div>
       </div>

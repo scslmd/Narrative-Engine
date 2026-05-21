@@ -114,11 +114,11 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
 
   if (mode === 'list') {
     return (
-      <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-primary)] p-5">
-        <div className="flex items-center justify-between mb-5">
+      <div className="flex h-full flex-col">
+        <div className="flex shrink-0 items-center justify-between px-3 py-2 border-b border-[var(--border-primary)]">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Characters</h2>
-            <p className="text-sm mt-0.5 text-slate-500 dark:text-slate-400">
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Characters</h2>
+            <p className="text-[10px] mt-0.5 text-[var(--text-tertiary)]">
               {characters.length} profiles
             </p>
           </div>
@@ -127,37 +127,39 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
               setSelectedCharacterId(null);
               setMode('create');
             }}
-            className="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-xs font-medium rounded-lg hover:from-pink-600 hover:to-pink-700 shadow-sm transition-all"
+            className="px-2 py-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-[10px] font-medium rounded-md hover:from-pink-600 hover:to-pink-700 shadow-sm transition-all"
           >
             New Character
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {characters.map((character) => (
-            <button
-              key={character.character_id}
-              onClick={() => {
-                setSelectedCharacterId(character.character_id);
-                setMode('edit');
-              }}
-              className="text-left rounded-lg border p-4 cursor-pointer transition-all duration-150 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-pink-300 dark:hover:border-slate-700 hover:shadow-card"
-            >
-              <h3 className="font-medium text-slate-900 dark:text-slate-100">
-                {character.display_name}
-              </h3>
-              <p className="text-sm mt-1 text-slate-500 dark:text-slate-400">
-                {character.role_in_story}
-              </p>
-            </button>
-          ))}
-        </div>
-
-        {characters.length === 0 && (
-          <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
-            No character profiles configured. Create a character to start building the cast.
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-1 gap-2">
+            {characters.map((character) => (
+              <button
+                key={character.character_id}
+                onClick={() => {
+                  setSelectedCharacterId(character.character_id);
+                  setMode('edit');
+                }}
+                className="text-left rounded-lg border p-2.5 cursor-pointer transition-all duration-150 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-pink-300 dark:hover:border-slate-700 hover:shadow-card"
+              >
+                <h3 className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                  {character.display_name}
+                </h3>
+                <p className="text-[10px] mt-0.5 text-slate-500 dark:text-slate-400">
+                  {character.role_in_story}
+                </p>
+              </button>
+            ))}
           </div>
-        )}
+
+          {characters.length === 0 && (
+            <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">
+              No character profiles configured. Create a character to start building the cast.
+            </div>
+          )}
+        </div>
       </div>
     );
   }

@@ -11,11 +11,11 @@ export function StudioReviewPanel({ projectId }: StudioReviewPanelProps) {
 
   return (
  <div className="flex h-full flex-col">
-        <div className="flex shrink-0 gap-1 px-4 py-3 border-b border-[var(--border-primary)]">
+        <div className="flex shrink-0 gap-1 px-3 py-1.5 border-b border-[var(--border-primary)]">
           <button
             type="button"
             onClick={() => setActiveTab('findings')}
-            className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${
+            className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
               activeTab === 'findings'
                 ? 'bg-[var(--accent-primary)] text-white'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
@@ -26,7 +26,7 @@ export function StudioReviewPanel({ projectId }: StudioReviewPanelProps) {
           <button
             type="button"
             onClick={() => setActiveTab('links')}
-            className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${
+            className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
               activeTab === 'links'
                 ? 'bg-[var(--accent-primary)] text-white'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
@@ -36,7 +36,7 @@ export function StudioReviewPanel({ projectId }: StudioReviewPanelProps) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-2.5">
           {activeTab === 'findings' ? (
             <FindingsList projectId={projectId} />
           ) : (
