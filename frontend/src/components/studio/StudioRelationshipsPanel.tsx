@@ -77,82 +77,84 @@ export function StudioRelationshipsPanel({ projectId }: StudioRelationshipsPanel
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Relationships
-        </h2>
-        <button
-          type="button"
-          onClick={() => setShowCreateRelationship(true)}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Add Relationship
-        </button>
+     <div className="flex h-full flex-col">
+        <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-[var(--border-primary)]">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+            Relationships
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowCreateRelationship(true)}
+            className="px-2 py-1 text-[10px] font-medium rounded-md bg-cyan-600 text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add Relationship
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+          {showCreateRelationship && (
+            <RelationshipForm
+              characters={characters}
+              isSubmitting={relationshipHook.isCreating}
+              onSubmit={async (data) => {
+                await relationshipHook.createRelationship(data);
+                await invalidateStudioQueries();
+                setShowCreateRelationship(false);
+              }}
+              onCancel={() => setShowCreateRelationship(false)}
+            />
+          )}
+
+          <RelationshipMapGraph
+            characters={characters}
+            relationships={relationships}
+            onDeleteRelationship={async (edgeId) => {
+              await relationshipHook.deleteRelationship(edgeId);
+              await invalidateStudioQueries();
+            }}
+            onEditRelationship={(edgeId) =>
+              setEditingRelationship(
+                relationships.find((r) => r.edge_id === edgeId) ?? null,
+              )
+            }
+            className="h-56"
+          />
+
+          <RelationshipList
+            relationships={relationships}
+            characterNames={characterNameMap}
+            onDeleteRelationship={async (edgeId) => {
+              await relationshipHook.deleteRelationship(edgeId);
+              await invalidateStudioQueries();
+            }}
+            onUpdateRelationship={(edgeId) =>
+              setEditingRelationship(
+                relationships.find((r) => r.edge_id === edgeId) ?? null,
+              )
+            }
+          />
+
+          {editingRelationship && (
+            <RelationshipEditModal
+              isOpen={!!editingRelationship}
+              relationship={editingRelationship}
+              characters={characters}
+              isSaving={relationshipHook.isUpdating}
+              isDeleting={relationshipHook.isDeleting}
+              onClose={() => setEditingRelationship(null)}
+              onSave={async (edgeId, data) => {
+                await relationshipHook.updateRelationship(edgeId, data);
+                await invalidateStudioQueries();
+                setEditingRelationship(null);
+              }}
+              onDelete={async (edgeId) => {
+                await relationshipHook.deleteRelationship(edgeId);
+                await invalidateStudioQueries();
+                setEditingRelationship(null);
+              }}
+            />
+          )}
+        </div>
       </div>
-
-      {showCreateRelationship && (
-        <RelationshipForm
-          characters={characters}
-          isSubmitting={relationshipHook.isCreating}
-          onSubmit={async (data) => {
-            await relationshipHook.createRelationship(data);
-            await invalidateStudioQueries();
-            setShowCreateRelationship(false);
-          }}
-          onCancel={() => setShowCreateRelationship(false)}
-        />
-      )}
-
-      <RelationshipMapGraph
-        characters={characters}
-        relationships={relationships}
-        onDeleteRelationship={async (edgeId) => {
-          await relationshipHook.deleteRelationship(edgeId);
-          await invalidateStudioQueries();
-        }}
-        onEditRelationship={(edgeId) =>
-          setEditingRelationship(
-            relationships.find((r) => r.edge_id === edgeId) ?? null,
-          )
-        }
-        className="h-[800px]"
-      />
-
-      <RelationshipList
-        relationships={relationships}
-        characterNames={characterNameMap}
-        onDeleteRelationship={async (edgeId) => {
-          await relationshipHook.deleteRelationship(edgeId);
-          await invalidateStudioQueries();
-        }}
-        onUpdateRelationship={(edgeId) =>
-          setEditingRelationship(
-            relationships.find((r) => r.edge_id === edgeId) ?? null,
-          )
-        }
-      />
-
-      {editingRelationship && (
-        <RelationshipEditModal
-          isOpen={!!editingRelationship}
-          relationship={editingRelationship}
-          characters={characters}
-          isSaving={relationshipHook.isUpdating}
-          isDeleting={relationshipHook.isDeleting}
-          onClose={() => setEditingRelationship(null)}
-          onSave={async (edgeId, data) => {
-            await relationshipHook.updateRelationship(edgeId, data);
-            await invalidateStudioQueries();
-            setEditingRelationship(null);
-          }}
-          onDelete={async (edgeId) => {
-            await relationshipHook.deleteRelationship(edgeId);
-            await invalidateStudioQueries();
-            setEditingRelationship(null);
-          }}
-        />
-      )}
-    </div>
   );
 }

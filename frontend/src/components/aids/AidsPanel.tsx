@@ -34,7 +34,7 @@ export function AidsPanel({
   };
 
   return (
-    <div className="flex h-full w-96 flex-col border-l border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+    <div className="flex h-full w-full flex-col border-l border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
       <div className="border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:bg-slate-800 p-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Manuscript Aids</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-slate-400 dark:text-slate-400">

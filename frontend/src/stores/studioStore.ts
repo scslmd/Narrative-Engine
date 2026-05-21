@@ -95,6 +95,25 @@ interface PanelPreset {
   key: StudioPanelKey;
 }
 
+const PANEL_DEFAULT_SIZES: Record<StudioPanelKey, { width: number; height: number }> = {
+  suggestions: { width: 320, height: 400 },
+  ideas: { width: 300, height: 380 },
+  drafts: { width: 340, height: 420 },
+  manuscripts: { width: 320, height: 400 },
+  characters: { width: 360, height: 420 },
+  worldBible: { width: 340, height: 400 },
+  relationships: { width: 400, height: 460 },
+  arcs: { width: 360, height: 400 },
+  structure: { width: 340, height: 320 },
+  chapters: { width: 340, height: 420 },
+  canon: { width: 320, height: 380 },
+  generation: { width: 380, height: 460 },
+  review: { width: 340, height: 400 },
+  inspect: { width: 360, height: 400 },
+  notes: { width: 300, height: 380 },
+  jobs: { width: 300, height: 400 },
+};
+
 const LAYOUT_PRESETS: Record<AuthorPreset, PanelPreset[]> = {
   'idea-first': [
     { key: 'ideas' },
@@ -352,11 +371,12 @@ export const useStudioStore = create<StudioState>((set) => ({
     const id = generatePanelId();
     set((state) => {
       const panelCount = Object.keys(state.layout.panels).length;
+      const defaultSize = PANEL_DEFAULT_SIZES[key] ?? { width: 320, height: 400 };
       const panel: PanelLayoutState = {
         id,
         key,
         position: { x: snapToGrid(16 + (panelCount % 6) * 12), y: snapToGrid(40 + Math.floor(panelCount / 6) * 80) },
-        size: { width: 280, height: 360 },
+        size: defaultSize,
         visible: true,
         pinned: false,
         floating: false,
@@ -490,7 +510,7 @@ export const useStudioStore = create<StudioState>((set) => ({
           : { panels: {}, nextZIndex: MIN_PANEL_ZINDEX, layoutPreset: null },
       };
     }),
-  applyPreset: (preset) =>
+   applyPreset: (preset) =>
     set((state) => {
       const panels = LAYOUT_PRESETS[preset];
       if (!panels) return {};
@@ -509,16 +529,17 @@ export const useStudioStore = create<StudioState>((set) => ({
         if (Object.values(pinnedPanels).some(p => p.key === panelDef.key)) continue;
 
         const id = `preset-${preset}-${panelDef.key}`;
+        const defaultSize = PANEL_DEFAULT_SIZES[panelDef.key] ?? { width: 320, height: 400 };
         const col = i % 4;
         const row = Math.floor(i / 4);
         newPanels[id] = {
           id,
           key: panelDef.key,
           position: {
-            x: snapToGrid(16 + col * 296),
-            y: snapToGrid(40 + row * 380),
+            x: snapToGrid(16 + col * (defaultSize.width + 16)),
+            y: snapToGrid(40 + row * (defaultSize.height + 20)),
           },
-          size: { width: 280, height: 360 },
+          size: defaultSize,
           visible: true,
           pinned: false,
           floating: false,
