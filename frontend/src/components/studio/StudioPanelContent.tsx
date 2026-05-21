@@ -58,7 +58,7 @@ function StudioPanelContentImpl({ panelKey, projectId }: StudioPanelContentProps
       return <JobLaunchPanel projectId={projectId} />;
     default:
       return (
-        <div className="flex h-full items-center justify-center p-4 text-sm text-[var(--text-secondary)]">
+        <div className="flex h-full items-center justify-center p-2.5 text-xs text-[var(--text-secondary)]">
           Panel &quot;{panelKey}&quot; not yet implemented.
         </div>
       );
