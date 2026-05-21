@@ -1,15 +1,104 @@
 import { memo } from 'react';
 
+export type SnapZoneId =
+  | 'left-edge'
+  | 'right-edge'
+  | 'top'
+  | 'bottom'
+  | 'center'
+  | 'panel-right'
+  | 'panel-left'
+  | 'panel-above'
+  | 'panel-below';
+
 export interface SnapZone {
-  id: 'left-edge' | 'right-edge' | 'top' | 'bottom' | 'center';
+  id: SnapZoneId;
   position: { x: number; y: number };
+  targetPanelId?: string;
 }
 
-const SNAP_THRESHOLD = 100;
+export interface PanelRect {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const SNAP_THRESHOLD = 48;
 const GRID_SIZE = 8;
 
 function snapToGrid(value: number): number {
   return Math.round(value / GRID_SIZE) * GRID_SIZE;
+}
+
+export function detectPanelSnap(
+  panelId: string,
+  rawX: number,
+  rawY: number,
+  panelWidth: number,
+  panelHeight: number,
+  otherPanels: PanelRect[],
+): SnapZone | null {
+  const right = rawX + panelWidth;
+  const bottom = rawY + panelHeight;
+
+  for (const other of otherPanels) {
+    if (other.id === panelId) continue;
+
+    const otherRight = other.x + other.width;
+    const otherBottom = other.y + other.height;
+
+    // Snap to right of another panel
+    if (rawY < otherBottom && bottom > other.y) {
+      const gapX = Math.abs(rawX - otherRight);
+      if (gapX <= SNAP_THRESHOLD) {
+        return {
+          id: 'panel-right',
+          position: { x: snapToGrid(otherRight), y: snapToGrid(other.y) },
+          targetPanelId: other.id,
+        };
+      }
+    }
+
+    // Snap to left of another panel
+    if (rawY < otherBottom && bottom > other.y) {
+      const gapX = Math.abs(right - other.x);
+      if (gapX <= SNAP_THRESHOLD) {
+        return {
+          id: 'panel-left',
+          position: { x: snapToGrid(other.x - panelWidth), y: snapToGrid(other.y) },
+          targetPanelId: other.id,
+        };
+      }
+    }
+
+    // Snap above another panel
+    if (rawX < otherRight && right > other.x) {
+      const gapY = Math.abs(rawY - other.y);
+      if (gapY <= SNAP_THRESHOLD) {
+        return {
+          id: 'panel-above',
+          position: { x: snapToGrid(other.x), y: snapToGrid(other.y - panelHeight) },
+          targetPanelId: other.id,
+        };
+      }
+    }
+
+    // Snap below another panel
+    if (rawX < otherRight && right > other.x) {
+      const gapY = Math.abs(bottom - other.y);
+      if (gapY <= SNAP_THRESHOLD) {
+        return {
+          id: 'panel-below',
+          position: { x: snapToGrid(other.x), y: snapToGrid(otherBottom) },
+          targetPanelId: other.id,
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 export function detectSnapZone(
@@ -72,9 +161,10 @@ export function detectSnapZone(
 
 interface StudioSnapIndicatorProps {
   snapZone: SnapZone | null;
+  otherPanels?: PanelRect[];
 }
 
-function StudioSnapIndicatorImpl({ snapZone }: StudioSnapIndicatorProps) {
+function StudioSnapIndicatorImpl({ snapZone, otherPanels = [] }: StudioSnapIndicatorProps) {
   if (!snapZone) return null;
 
   if (snapZone.id === 'center') {
@@ -90,6 +180,51 @@ function StudioSnapIndicatorImpl({ snapZone }: StudioSnapIndicatorProps) {
         }}
       />
     );
+  }
+
+  const isPanelSnap = snapZone.id.startsWith('panel-');
+
+  if (isPanelSnap && snapZone.targetPanelId) {
+    const target = otherPanels.find((p) => p.id === snapZone.targetPanelId);
+    if (!target) return null;
+
+    const lineClass = 'pointer-events-none absolute bg-blue-400/60 transition-opacity duration-100';
+
+    if (snapZone.id === 'panel-right') {
+      return (
+        <div
+          className={lineClass}
+          style={{ left: target.x + target.width, top: Math.min(target.y, snapZone.position.y), width: 2, height: Math.max(2, Math.min(target.y + target.height, snapZone.position.y) - Math.min(target.y, snapZone.position.y)) }}
+        />
+      );
+    }
+
+    if (snapZone.id === 'panel-left') {
+      return (
+        <div
+          className={lineClass}
+          style={{ left: target.x - 2, top: Math.min(target.y, snapZone.position.y), width: 2, height: Math.max(2, Math.min(target.y + target.height, snapZone.position.y) - Math.min(target.y, snapZone.position.y)) }}
+        />
+      );
+    }
+
+    if (snapZone.id === 'panel-above') {
+      return (
+        <div
+          className={lineClass}
+          style={{ top: target.y - 2, left: Math.min(target.x, snapZone.position.x), height: 2, width: Math.max(2, Math.min(target.x + target.width, snapZone.position.x) - Math.min(target.x, snapZone.position.x)) }}
+        />
+      );
+    }
+
+    if (snapZone.id === 'panel-below') {
+      return (
+        <div
+          className={lineClass}
+          style={{ top: target.y + target.height, left: Math.min(target.x, snapZone.position.x), height: 2, width: Math.max(2, Math.min(target.x + target.width, snapZone.position.x) - Math.min(target.x, snapZone.position.x)) }}
+        />
+      );
+    }
   }
 
   return (

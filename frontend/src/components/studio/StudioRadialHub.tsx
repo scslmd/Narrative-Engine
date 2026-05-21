@@ -4,7 +4,7 @@ import { useStudioStore, type PanelLayoutState } from '../../stores/studioStore'
 import { StudioFloatingPanel } from './StudioFloatingPanel';
 import { StudioFloatingWindow } from './StudioFloatingWindow';
 import { StudioPanelContent } from './StudioPanelContent';
-import { StudioSnapIndicator, detectSnapZone, type SnapZone } from './StudioSnapIndicator';
+import { StudioSnapIndicator, detectSnapZone, detectPanelSnap, type SnapZone, type PanelRect } from './StudioSnapIndicator';
 import { usePanelKeyboard } from '../../hooks/usePanelKeyboard';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 
@@ -71,21 +71,38 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, [workspaceRect]);
 
+  const allPanels = useMemo(
+    () => Object.values(layout.panels).filter((p: PanelLayoutState) => p.visible),
+    [layout.panels],
+  );
+
   const visiblePanels = useMemo(
     () => Object.values(layout.panels).filter((p: PanelLayoutState) => p.visible && !p.floating),
-    [layout.panels]
+    [layout.panels],
   );
 
   const floatingPanels = useMemo(
     () => Object.values(layout.panels).filter((p: PanelLayoutState) => p.visible && p.floating),
-    [layout.panels]
+    [layout.panels],
+  );
+
+  const otherPanels: PanelRect[] = useMemo(
+    () =>
+      allPanels.map((p: PanelLayoutState) => ({
+        id: p.id,
+        x: p.position.x,
+        y: p.position.y,
+        width: p.size.width,
+        height: p.size.height,
+      })),
+    [allPanels],
   );
 
   const handleDragStart = useCallback(
     (event: DragOverEvent) => {
       bringToFront(String(event.active.id));
     },
-    [bringToFront]
+    [bringToFront],
   );
 
   const handleDragOver = useCallback(
@@ -96,6 +113,20 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
 
       const rawX = panel.position.x + event.delta.x;
       const rawY = panel.position.y + event.delta.y;
+
+      const panelSnap = detectPanelSnap(
+        String(event.active.id),
+        rawX,
+        rawY,
+        panel.size.width,
+        panel.size.height,
+        otherPanels,
+      );
+
+      if (panelSnap) {
+        setDragState({ panelId: String(event.active.id), snapZone: panelSnap });
+        return;
+      }
 
       const snapZone = detectSnapZone(
         String(event.active.id),
@@ -109,7 +140,7 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
 
       setDragState({ panelId: String(event.active.id), snapZone });
     },
-    [workspaceRect]
+    [workspaceRect, otherPanels],
   );
 
   const handleDragEnd = useCallback(
@@ -122,6 +153,20 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
 
       const rawX = panel.position.x + event.delta.x;
       const rawY = panel.position.y + event.delta.y;
+
+      const panelSnap = detectPanelSnap(
+        String(event.active.id),
+        rawX,
+        rawY,
+        panel.size.width,
+        panel.size.height,
+        otherPanels,
+      );
+
+      if (panelSnap) {
+        movePanel(String(event.active.id), panelSnap.position);
+        return;
+      }
 
       const snapZone = detectSnapZone(
         String(event.active.id),
@@ -142,7 +187,7 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
         });
       }
     },
-    [movePanel, workspaceRect]
+    [movePanel, workspaceRect, otherPanels],
   );
 
   if (isMobile) {
@@ -208,6 +253,7 @@ function StudioRadialHubImpl({ projectId }: StudioRadialHubProps) {
 
         <StudioSnapIndicator
           snapZone={dragState?.snapZone ?? null}
+          otherPanels={otherPanels}
         />
 
         {visiblePanels.map((panel: PanelLayoutState) => (
