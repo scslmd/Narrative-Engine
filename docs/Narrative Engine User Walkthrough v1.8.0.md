@@ -16,8 +16,8 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 1. Open `/` → fill New Project form (name, genre, tone, structure, POV, language) → click **Create Project**
 2. Navigate to **Foundation** tab → fill Premise and Logline → click **Save Foundation**
 3. Navigate to **Characters** tab → click **Add Character** → create one protagonist → click **Save Character**
-4. Navigate to **Studio Desk** → click **Jobs** in left rail → select **P-100 Architect** → click **Launch** → wait for completion
-5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in Studio Desk manuscript editor
+4. Navigate to **Studio Desk** → open the **Jobs** panel → select **P-100 Architect** → click **Launch** → wait for completion
+5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in the Manuscripts panel
 
 For a complete walkthrough with 12 chapters, 7 characters, and branching, see Phase 11.
 
@@ -198,9 +198,10 @@ The Writing workspace routes now redirect to Studio Desk. The WritingView compon
 
 **Accessing writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
 
-**Studio Desk provides the same writing capabilities in a 2-column layout:**
-- Left rail: Project Map with Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs
+**Studio Desk provides the same writing capabilities in a floating-panel workspace:**
+- Open panels as needed: Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs, and more
 - Center: Full-width manuscript editor with manuscript navigation, draft management, and revision suggestions
+- Panels can be dragged, resized, snapped together, and pinned to survive layout changes
 
 **To access writing features:** Navigate to Studio Desk from the left panel's "Studio Desk" link, or use the top banner's stage selector (Planning / Studio / Review).
 
@@ -396,78 +397,64 @@ Full generation lifecycle: wizard configuration, run monitoring, gate review, an
 ## Phase 10: Studio Desk Workspace
 Route: `/workspace/:projectId/studio`
 
-The Studio Desk provides a compact, single-screen workspace for focused writing with immediate access to all planning, generation, and review surfaces. Use it when you want a unified desk rather than navigating between separate workspace modes. All layout preferences persist across sessions.
+The Studio Desk is a floating-panel workspace for focused writing with immediate access to all planning, generation, and review surfaces. Panels can be dragged, resized, snapped together, and pinned to survive layout changes. Each panel type can only be opened once — clicking again brings the existing panel to front.
 
-### Layout
-The desk has a three-column layout (left rail + manuscript editor + context panel). The context panel is hidden by default for full-width editing.
-- **Command bar:** Top header with "Studio Desk" label, project name, and toggle buttons (rail expand/collapse, context panel show/hide).
-- **Left rail (Project Map):** Quick navigation between all panels. Click a button to open that panel in the context panel. Collapsible to compact mode (80px icon-only) or expanded (192-320px).
-- **Center (Main Content):** Full writing editor with manuscript navigation, draft management, and revision suggestions. Expands to fill available width.
-- **Right context panel (320px):** Opens when a rail button is clicked or the panel toggle is pressed. Contains tabbed navigation (Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review) and the active panel's content. Note: Arcs, Relationships, Canon, Notes, and Jobs panels are accessible via the left rail but do not appear as tabs in the context panel header — they open directly when selected from the rail. Close button hides the panel.
+### Panel Operations
+- **Open a panel:** Click a panel name in the command bar dropdown or left rail.
+- **Drag:** Click and drag the panel header to reposition.
+- **Resize:** Drag panel edges or corners (240–800px width, 180–600px height).
+- **Snap to panel:** Drag a panel near another panel to snap edges together (side-by-side, stacked). Snap threshold is 64px.
+- **Snap to edge:** Drag a panel to the workspace edge to snap it flush.
+- **Pin:** Click the pin button (📌) to prevent removal. Pinned panels survive layout reset and preset changes.
+- **Close:** Click the close button (✕) to remove a panel. Pinned panels cannot be closed.
 
-**Accessing Studio:** Navigate to Studio Desk from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
-
-### Project Map Panels (Left Rail)
-The left rail provides quick access to 12 panels. Clicking a button opens the context panel with that panel active:
-
-**Develop section:**
-- **Drafts:** Draft artifact lifecycle management
-- **Manuscripts:** Manuscript document selection and editing. Selecting a manuscript loads it in the center editor.
-- **Ideas:** Brainstorm-style idea capture and clustering
+### Panels (16 types)
 - **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
-- **Review:** Checker findings and inspect links
+- **Ideas:** Brainstorm-style idea capture and clustering.
+- **Drafts:** Draft artifact lifecycle management.
+- **Manuscripts:** Manuscript document selection and editing.
+- **Characters:** Character CRUD with progressive disclosure sections and canon annotations.
+- **World Bible:** World entry CRUD with canon annotations.
+- **Relationships:** Relationship graph and list views with CRUD operations.
+- **Arcs:** Arc candidate management with list/create modes and progressive disclosure sections.
+- **Structure:** Sequence, chapter, scene, and beat planning.
+- **Chapters:** Chapter plan management and status tracking.
+- **Canon:** Canon profile management and packet preview.
+- **Generation:** Story generation wizard, run monitoring, gate review.
+- **Review:** Checker findings and inspect links.
+- **Inspect:** Runtime inspection of pipeline jobs and checker runs.
+- **Notes:** Project-level notes with add/delete functionality.
+- **Jobs:** Job launch panel with phase selection and recent job monitoring.
 
-**Reference section:**
-- **Characters:** Character CRUD with progressive disclosure sections (Core, Motivation, Psychological Depth, Context, Tracking) and canon annotations
-- **World Bible:** World entry CRUD with canon annotations
-- **Relationships:** Relationship graph and list views with CRUD operations. All required fields marked with `*`.
-- **Arcs:** Arc candidate management with list/create modes, progressive disclosure sections
-- **Canon:** Canon profile management and packet preview
+### Layout Presets
+Predefined panel layouts accessible via the Layout dropdown in the command bar. Applying a preset preserves pinned panels.
 
-**Utilities section:**
-- **Notes:** Project-level notes with add/delete functionality
-- **Jobs:** Job launch panel with phase selection and recent job monitoring
+### Keyboard Shortcuts
+- `Ctrl+1` through `Ctrl+9`: Switch focus to the 1st through 9th open panel
+- `Ctrl+0`: Reset layout (removes all unpinned panels)
+- `Escape`: Close all floating panels
 
-### Using the Desk
-1. Open a project and navigate to Studio Desk from the left panel's "Studio Desk" link.
-2. The editor opens in full-width mode by default.
-3. Click a rail button (e.g., "Characters") to open the context panel with that panel active.
-4. Write and revise in the center editor.
-5. Select text to access the floating toolbar for assist actions.
-6. Review suggestions in the Suggestions panel (context panel).
-7. Launch jobs from the Jobs panel (context panel).
-8. Use the command bar toggles to show/hide the context panel or expand/collapse the rail.
-9. Click "Close" in the context panel header to hide it and return to full-width editing.
+### URL Sync
+The active panel is reflected in the URL as `?tab=panelKey` (e.g., `?tab=characters`). Deep links work on first load and after refresh.
 
 ### Example Workflow: Writing with Context
 
-1. Open Studio Desk for your project.
-2. In the Project Map (left rail), select **Characters** — the context panel opens with the character list.
-3. Click **Suggestions** — revision suggestions panel becomes active in the context panel.
+1. Open Studio Desk from the left panel's "Studio Desk" link.
+2. Open the **Characters** panel from the command bar — a floating panel appears with the character list.
+3. Open the **Suggestions** panel — position it beside the Characters panel by dragging near its edge.
 4. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
 5. Review the suggestion in the Suggestions panel. Accept to apply, or reject.
-6. Mid-chapter, click **Ideas** to capture a new plot idea.
-7. Click **Suggestions** again to return to revision suggestions. Continue editing.
-8. When done, click **Jobs** to launch a new generation run.
-9. Click "Close" in the context panel to return to full-width editing.
+6. Mid-chapter, open the **Ideas** panel to capture a new plot idea.
+7. Pin the Suggestions panel so it survives layout changes.
+8. When done, open the **Jobs** panel to launch a new generation run.
+9. Press `Ctrl+0` to reset the layout, keeping pinned panels.
 
 ### Example Workflow: Full-Width Writing Session
 
-1. Open Studio Desk.
-2. The editor starts in full-width mode (context panel hidden).
-3. Use the command bar toggle to collapse the left rail to compact mode (80px icon-only) for maximum editor space.
-4. Write freely with the manuscript editor filling the full viewport.
-5. Expand the left rail from the command bar when you need to access other panels.
-
-### Responsive Behavior
-On smaller screens, the left rail becomes an overlay drawer. A "Project" button in the command bar toggles the drawer.
-
-## Radial Hub Workspace Redesign (Design Approved — Future Release)
-
-A Photoshop-style radial hub workspace is approved for implementation. Design replaces route-based navigation with a single central writing surface surrounded by draggable, resizable, tear-off panels. User chooses which panels to show. No forced navigation. Supports multi-monitor floating panels.
-
-**Design spec:** `docs/superpowers/specs/2026-05-19-radial-hub-workspace-design.md`
-**Implementation plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
+1. Open Studio Desk — the writing surface fills the viewport.
+2. Open only the panels you need, positioning them around the writing area.
+3. Close panels you no longer need by clicking ✕.
+4. Use the Layout dropdown to restore a preset arrangement.
 
 ## Phase 11: End-to-End Novel Walkthrough
 This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation.
