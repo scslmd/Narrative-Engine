@@ -178,10 +178,10 @@ The React + Vite frontend is rooted at [`frontend/`](frontend/) and the applicat
 - [`frontend/src/lib/`](frontend/src/lib): API clients, utilities, and configuration (Axios, TanStack Query)
 - [`frontend/src/stores/`](frontend/src/stores): Zustand stores for client state management
 - [`frontend/src/theme/`](frontend/src/theme): Theme configuration and CSS variables
-- [`frontend/src/components/studio/`](frontend/src/components/studio): Studio Desk workspace components (11 components)
+- [`frontend/src/components/studio/`](frontend/src/components/studio): Studio Desk radial hub workspace (11 panel components + 7 infrastructure)
 - [`frontend/src/hooks/useMergedSuggestions.ts`](frontend/src/hooks/useMergedSuggestions.ts): Reusable merge/action hook for revision + LLM suggestions
-- [`frontend/src/stores/studioStore.ts`](frontend/src/stores/studioStore.ts): Zustand store for Studio Desk panel/rail state
-- [`frontend/src/views/StudioView.tsx`](frontend/src/views/StudioView.tsx): Studio Desk main composition view
+- [`frontend/src/stores/studioStore.ts`](frontend/src/stores/studioStore.ts): Zustand store for radial hub panel layout, positioning, pinning, and persistence
+- [`frontend/src/views/StudioView.tsx`](frontend/src/views/StudioView.tsx): Studio Desk main composition view (radial hub + command bar + status bar)
 
 **Configuration files**:
 - `frontend/package.json`: Dependencies and scripts

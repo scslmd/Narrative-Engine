@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-09
+> Living document. Last updated: 2026-05-21
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -282,15 +282,20 @@ Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INF
 /                              → ProjectList (project browser)
 /workspace/:projectId          → Workspace (layout shell)
     /plan                      → PlanningView (foundation, characters, arcs, planning)
-    /write                     → WritingView (drafting workspace)
-    /write/:chapterId          → WritingView (specific chapter)
+    /write                     → WritingView (drafting workspace) [redirects to /studio]
+    /write/:chapterId          → WritingView (specific chapter) [redirects to /studio]
     /review                    → ReviewView (quality review)
     /inspect                   → InspectView (job inspection)
     /inspect/:jobId            → InspectView (specific job)
     /braindump                 → BrainDumpView (raw idea capture)
     /canon                     → CanonView (mythos, patterns, customization)
     /generate                  → GenerationView (story generation wizard)
+    /studio                    → StudioView (radial hub floating panel workspace)
 ```
+
+**Studio Desk** (`/studio`): Floating panel workspace with drag-and-drop, resize, tear-off, and panel-to-panel snapping. Replaces the static left-rail + WritingView layout. URL sync via `?tab=` query param (e.g., `?tab=characters`).
+
+**Panel keys** (16 total): `suggestions`, `ideas`, `drafts`, `manuscripts`, `characters`, `worldBible`, `relationships`, `arcs`, `structure`, `chapters`, `canon`, `generation`, `review`, `inspect`, `notes`, `jobs`
 
 **Route-driven state**: The URL is the source of truth. `useRouteSync` synchronizes route params with Zustand stores on every navigation. This ensures deep links and browser refreshes work correctly.
 
@@ -309,6 +314,39 @@ Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INF
 | `notesStore` | Workspace notes | localStorage |
 
 **Server state**: React Query (`@tanstack/react-query`) with 5-minute stale time, 1 retry. All API calls go through the shared Axios client in `frontend/src/lib/api.ts`.
+
+### Studio Desk Architecture
+
+**Radial hub**: Floating panel workspace (`StudioRadialHub`) with DndKit drag-and-drop, custom resize handles, and panel-to-panel snapping. Panels are singular (one instance per type). Layout persists to localStorage per project (`studio-layout-v2-{projectId}`).
+
+**Store** (`studioStore`):
+- `PanelLayoutState`: position, size, visible, pinned, floating, zIndex, collapsedSections, scrollY
+- `PANEL_DEFAULT_SIZES`: per-panel default dimensions (e.g., characters 360x420, relationships 400x460)
+- Actions: `addPanel`, `removePanel`, `movePanel`, `resizePanel`, `togglePanel`, `pinPanel`, `tearOffPanel`, `reattachPanel`, `bringToFront`, `loadLayout`, `applyPreset`, `exportLayout`, `importLayout`
+- **Panel singularity**: `addPanel` brings existing panel to front instead of creating duplicate
+- **Pin behavior**: Pinned panels survive `resetLayout` and `applyPreset`; `removePanel` blocks removal of pinned panels
+- **Persistence**: Debounced 500ms localStorage writes; deduplication on load
+
+**Panel-to-panel snapping** (`StudioSnapIndicator`):
+- Detects adjacent panel edges within 64px threshold
+- Snap directions: right of, left of, above, below
+- Best-match selection: returns closest snap regardless of direction
+- Overlap requirement: horizontal snaps require vertical overlap, vertical snaps require horizontal overlap
+- Visual feedback: Blue snap line between panels
+
+**URL sync** (`usePanelUrlSync`):
+- `?tab=` query param syncs with active panel
+- Deep links work on first load and after refresh
+- Two-way sync: URL → store (deep links), store → URL (bookmarkability)
+
+**Keyboard shortcuts** (`usePanelKeyboard`):
+- `Ctrl+1-9`: Switch to panel by index
+- `Ctrl+0`: Reset layout
+- `Escape`: Close floating panels
+
+**Components** (11 panel components + 7 infrastructure):
+- Panels: `StudioCharactersPanel`, `StudioArcsPanel`, `StudioRelationshipsPanel`, `StudioGenerationPanel`, `StudioReviewPanel`, `StudioInspectPanel`, `StudioStructurePanel`, `StudioChaptersPanel`, `StudioCanonPanel`, `StudioDraftsPanel`, `StudioManuscriptsPanel`
+- Infrastructure: `StudioFloatingPanel` (draggable/resizable wrapper), `StudioFloatingWindow` (tear-off portal), `StudioPanelContent` (panel key → component router), `StudioPanelMenu` (dropdown selector), `StudioSnapIndicator` (snap visual feedback), `StudioHoverPreview` (drag ghost), `StudioContextPanel` (docked context panel)
 
 ### Service Layer Pattern
 
@@ -355,9 +393,32 @@ App
 │           │           │   ├── ArcsTab / ArcComparisonGraph / ArcStageMapFlow
 │           │           │   ├── StoryboardCardsSection
 │           │           │   └── PlanningSections (sequences, chapters, scenes, beats)
-│           │           ├── WritingView
-│           │           │   ├── ChapterReader
-│           │           │   └── DraftingWorkspace
+│           │           ├── WritingView [redirects to StudioView]
+│           │           ├── StudioView (radial hub floating panel workspace)
+│           │           │   ├── StudioRadialHub (DndContext, drag/resize/snap)
+│           │           │   │   ├── StudioFloatingPanel (per panel instance)
+│           │           │   │   │   └── StudioPanelContent (panel key → component)
+│           │           │   │   │       ├── StudioCharactersPanel
+│           │           │   │   │       ├── StudioArcsPanel
+│           │           │   │   │       ├── StudioRelationshipsPanel
+│           │           │   │   │       ├── StudioGenerationPanel
+│           │           │   │   │       ├── StudioReviewPanel
+│           │           │   │   │       ├── StudioInspectPanel
+│           │           │   │   │       ├── StudioStructurePanel
+│           │           │   │   │       ├── StudioChaptersPanel
+│           │           │   │   │       ├── StudioCanonPanel
+│           │           │   │   │       ├── StudioDraftsPanel
+│           │           │   │   │       ├── StudioManuscriptsPanel
+│           │           │   │   │       ├── StudioIdeasPanel
+│           │           │   │   │       ├── StudioWorldBiblePanel
+│           │           │   │   │       ├── StudioSuggestionsPanel
+│           │           │   │   │       ├── NotesPanel
+│           │           │   │   │       └── JobLaunchPanel
+│           │           │   │   └── StudioSnapIndicator (snap visual feedback)
+│           │           │   ├── StudioCommandBar (panel menu, reset, layout preset)
+│           │           │   ├── StudioProjectRail (left nav with panel links)
+│           │           │   ├── StudioLayoutPreset (preset selector)
+│           │           │   └── StudioStatusBar (bottom status bar)
 │           │           ├── ReviewView
 │           │           ├── InspectView
 │           │           ├── BrainDumpView

@@ -85,6 +85,33 @@ The left panel displays stage-aware navigation items plus a permanent "Studio De
 
 **Access:** In Studio mode, access job launch via the Jobs button in StudioView's left rail. In other workspace modes, the Job Launch panel is embedded within the view.
 
+### Studio Desk (Radial Hub)
+
+**Access:** Navigate to `/workspace/:projectId/studio` or click "Studio Desk" in the left panel.
+
+**Panel workspace:** Drag-and-drop floating panels with resize, tear-off, and panel-to-panel snapping. Each panel type can only be opened once (panel singularity). Clicking a panel menu item for an already-open panel brings it to front.
+
+**Panels** (16 types): Suggestions, Ideas, Drafts, Manuscripts, Characters, World Bible, Relationships, Arcs, Structure, Chapters, Canon, Generation, Review, Inspect, Notes, Jobs.
+
+**Panel operations:**
+- **Drag:** Click and drag the panel header to reposition
+- **Resize:** Drag panel edges or corners (240–800px width, 180–600px height)
+- **Snap:** Drag near another panel to snap edges together (side-by-side, stacked)
+- **Pin:** Click the pin button to prevent removal; pinned panels survive layout reset and preset changes
+- **Close:** Click the close button (hidden for pinned panels)
+- **Tear-off:** Pin panels float as independent windows
+
+**Layout presets:** Predefined panel layouts accessible via the Layout dropdown in the command bar.
+
+**Keyboard shortcuts:**
+- `Ctrl+1-9`: Switch to panel by index
+- `Ctrl+0`: Reset layout (removes unpinned panels)
+- `Escape`: Close floating panels
+
+**URL sync:** Active panel is reflected in the URL as `?tab=panelKey` (e.g., `?tab=characters`). Deep links work on first load and after refresh.
+
+**Persistence:** Panel positions, sizes, and pin state persist to localStorage per project. Layout survives page refresh.
+
 ### Feature Dependencies
 
 Some features require upstream data before they can be used:
