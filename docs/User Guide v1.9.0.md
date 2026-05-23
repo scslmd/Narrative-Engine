@@ -1,6 +1,6 @@
 # Narrative Engine - User Guide v1.9.0
 
-Last updated: 2026-05-19 (form entry optimization: required/optional field fix, progressive disclosure, Arcs panel, canon context badges)
+Last updated: 2026-05-22 (god-file refactor docs sync, Studio Desk layout/state alignment, link fixes)
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
@@ -66,7 +66,7 @@ The workspace shell includes:
 - **Main content area:** Current mode view.
 - **Bottom utility layer:** Operational status bar for job progress.
 
-**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and right context panel via the ViewShell component.
+**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and embeds WritingView directly in a two-column layout. The legacy right context panel is removed.
 
 ### Left Panel Navigation
 The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link. The active item is highlighted with a gradient icon background and a dot indicator.
@@ -461,7 +461,7 @@ Floating-panel workspace for focused writing with immediate access to all planni
 **Responsive Behavior:** Below `xl:` breakpoint, panels adjust to fit the viewport. The command bar provides a project menu for panel access on smaller screens.
 
 ## End-to-End Walkthrough
-For a complete, step-by-step walkthrough of generating a novel from project creation through export, see **Phase 11: End-to-End Novel Walkthrough** in the [Narrative Engine User Walkthrough v1.9.0](Narrative%20Engine%20User%20Walkthrough%20v1.8.0.md). It walks through creating a 12-chapter novel (*The Last Lighthouse*) with 7 characters, 8 world bible entries, 3 character arcs, 3 sequences, branching for Act III exploration, and a full generation/revision/checker/export workflow.
+For a complete, step-by-step walkthrough of generating a novel from project creation through export, see **Phase 11: End-to-End Novel Walkthrough** in the [Narrative Engine User Walkthrough v1.9.0](Narrative%20Engine%20User%20Walkthrough%20v1.9.0.md). It walks through creating a 12-chapter novel (*The Last Lighthouse*) with 7 characters, 8 world bible entries, 3 character arcs, 3 sequences, branching for Act III exploration, and a full generation/revision/checker/export workflow.
 
 ## End-to-End Recommended Workflow
 1. Create project (`/`) or use Guided Setup (`/setup-wizard`).

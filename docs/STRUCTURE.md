@@ -40,7 +40,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/api/jobs.py`](app/api/jobs.py): job lifecycle endpoints, status, and retry flows
 - [`app/api/models.py`](app/api/models.py): model and provider availability endpoints
 - [`app/api/role_model_checker.py`](app/api/role_model_checker.py): checker execution and inspect endpoints
-- [`app/api/story_development.py`](app/api/story_development.py): thin story-development routes for decision review, review routing reads, planning reads, drafting reads, and branching reads or mutations
+- [`app/api/story_development/__init__.py`](app/api/story_development/__init__.py): story-development router package entrypoint and route composition
 - [`app/api/story_generation.py`](app/api/story_generation.py): canon generation runs, fork preview/project, gate results (8 endpoints under `/v1/story-generation`)
 - [`app/api/health.py`](app/api/health.py): liveness, readiness, and metrics endpoints
 - [`app/api/auth.py`](app/api/auth.py): API key management endpoints
@@ -62,12 +62,12 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/services/projects.py`](app/services/projects.py): project-level read and artifact services
 - [`app/services/project_bootstrap.py`](app/services/project_bootstrap.py): project initialization and seed setup
 - [`app/services/job_manager.py`](app/services/job_manager.py): accepted-and-polled job orchestration
-- [`app/services/local_executor.py`](app/services/local_executor.py): lease-claim execution path for runtime-backed phases
+- [`app/services/local_executor/__init__.py`](app/services/local_executor/__init__.py): local executor package entrypoint and execution orchestration
 - [`app/services/role_model_checker.py`](app/services/role_model_checker.py): checker behavior and result shaping
 - [`app/services/role_model_check_manager.py`](app/services/role_model_check_manager.py): checker-run orchestration and persistence coordination
 - [`app/services/model_registry.py`](app/services/model_registry.py): available-model and provider lookup logic
 - [`app/services/protocol.py`](app/services/protocol.py): async/protocol service helpers
-- [`app/services/runtime_prompts.py`](app/services/runtime_prompts.py): prompt construction for runtime-backed roles/phases
+- [`app/services/runtime_prompts/__init__.py`](app/services/runtime_prompts/__init__.py): runtime prompt package entrypoint and prompt-builder exports
 - [`app/services/step_records.py`](app/services/step_records.py): step record and lineage shaping for inspect surfaces
 - [`app/services/validation.py`](app/services/validation.py): validation helpers for backend contracts
 - [`app/services/editable_flow.py`](app/services/editable_flow.py): story-development editable stage flow operations
@@ -117,7 +117,7 @@ The backend code lives under [`app/`](app/). The structure is layered:
 - [`app/persistence/jobs.py`](app/persistence/jobs.py): job persistence, attempts, events, and retry state
 - [`app/persistence/checker_runs.py`](app/persistence/checker_runs.py): checker-run persistence and state transitions
 - [`app/persistence/steps.py`](app/persistence/steps.py): step-record and lineage persistence
-- [`app/persistence/story_development.py`](app/persistence/story_development.py): story-development repository operations, including editable flow, planning, drafting, review, inspect, and branching persistence
+- [`app/persistence/story_development/__init__.py`](app/persistence/story_development/__init__.py): story-development persistence package entrypoint and repository exports
 
 ### Schema Layer
 
@@ -353,7 +353,14 @@ The automated tests live under [`tests/`](tests/). They are organized mostly by 
   - [`tests/test_critic_location_content.py`](tests/test_critic_location_content.py)
   - [`tests/test_drafter_prompt_content.py`](tests/test_drafter_prompt_content.py)
   - [`tests/test_draft_generation_service.py`](tests/test_draft_generation_service.py)
-  - [`tests/test_runtime_prompts.py`](tests/test_runtime_prompts.py)
+- [`tests/test_cascade_prompt_builder.py`](tests/test_cascade_prompt_builder.py)
+- [`tests/test_import_prompt_content.py`](tests/test_import_prompt_content.py)
+- [`tests/test_critic_locations.py`](tests/test_critic_locations.py)
+- [`tests/test_critic_prompt_content.py`](tests/test_critic_prompt_content.py)
+- [`tests/test_manuscript_assist_prompts.py`](tests/test_manuscript_assist_prompts.py)
+- [`tests/test_p100_prompt_content.py`](tests/test_p100_prompt_content.py)
+- [`tests/test_prompt_caching.py`](tests/test_prompt_caching.py)
+- [`tests/test_summarizer_prompt_content.py`](tests/test_summarizer_prompt_content.py)
 
 - Local executor runtime tests:
   - [`tests/test_local_executor_consistency_critic_runtime.py`](tests/test_local_executor_consistency_critic_runtime.py)
@@ -381,8 +388,8 @@ The specification and planning docs live under [`docs/`](docs/). The single sour
   - [`docs/Orchestrator Deterministic Task Spec v0.1.md`](docs/Orchestrator%20Deterministic%20Task%20Spec%20v0.1.md) — task decomposition process template
   - [`docs/Frontend Workspace Behavior Contract v0.1.md`](docs/Frontend%20Workspace%20Behavior%20Contract%20v0.1.md) — frontend routing and state rules
 - User-facing:
- - [`docs/User Guide v1.7.0.md`](docs/User%20Guide%20v1.7.0.md) — end-user onboarding guide
-   - [`docs/Narrative Engine User Walkthrough v1.7.0.md`](docs/Narrative%20Engine%20User%20Walkthrough%20v1.7.0.md) — interactive walkthrough
+ - [`docs/User Guide v1.9.0.md`](docs/User%20Guide%20v1.9.0.md) — end-user onboarding guide
+   - [`docs/Narrative Engine User Walkthrough v1.9.0.md`](docs/Narrative%20Engine%20User%20Walkthrough%20v1.9.0.md) — interactive walkthrough
 - Future blueprints (not yet implemented):
   - [`docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md`](docs/manuscript-editor-llm-assist-blueprint-2026-05-02.md) — LLM-assisted manuscript editing
   - [`docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md`](docs/frontend-canon-customization-enhancement-blueprint-2026-05-02.md) — canon customization UI enhancements
@@ -404,5 +411,5 @@ These directories are runtime state, not source-controlled feature code.
 ## Working Notes
 
 - If you are changing product behavior, consult the relevant doc in [`docs/`](docs/) before editing code.
-- If you are changing story-development backend behavior, keep [`app/schemas/story_development.py`](app/schemas/story_development.py) and [`app/persistence/story_development.py`](app/persistence/story_development.py) aligned.
+- If you are changing story-development backend behavior, keep [`app/schemas/story_development.py`](app/schemas/story_development.py) and [`app/persistence/story_development/__init__.py`](app/persistence/story_development/__init__.py) aligned.
 - If you are adding a new backend slice, prefer the pattern already used here: schema contract, persistence support, service logic, and focused tests.

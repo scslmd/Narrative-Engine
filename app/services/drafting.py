@@ -8,8 +8,8 @@ from app.persistence.story_development import (
     DraftArtifactRecord,
     ManuscriptDocumentRecord,
     RevisionSuggestionRecord,
-    StoryDevelopmentRepository,
 )
+from app.persistence.story_development.contracts import ContinuityRepository, DraftingRepository
 from app.schemas import (
     DraftArtifact,
     ManuscriptDocument,
@@ -38,7 +38,7 @@ class DraftingContext:
 
 
 class DraftingService:
-    def __init__(self, repository: StoryDevelopmentRepository) -> None:
+    def __init__(self, repository: DraftingRepository | ContinuityRepository) -> None:
         self.repository = repository
 
     def register_draft_artifact(

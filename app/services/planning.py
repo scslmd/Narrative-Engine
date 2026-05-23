@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Literal, Sequence
 
-from app.persistence.story_development import PlanningDependencyRecord, StoryDevelopmentRepository
+from app.persistence.story_development import PlanningDependencyRecord
+from app.persistence.story_development.contracts import PlanningRepository
 from app.schemas import ChapterPacket, ChapterPlan, PlanningDependency, ScenePlan, SequencePlan
 
 
@@ -23,7 +24,7 @@ class PlanningNotFoundError(PlanningServiceError):
 
 
 class PlanningService:
-    def __init__(self, repository: StoryDevelopmentRepository) -> None:
+    def __init__(self, repository: PlanningRepository) -> None:
         self.repository = repository
 
     def list_sequence_plans(self, project_id: str) -> tuple[SequencePlan, ...]:

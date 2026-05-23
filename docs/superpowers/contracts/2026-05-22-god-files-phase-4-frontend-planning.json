@@ -1,0 +1,169 @@
+{
+  "contract_id": "GF-P4-2026-05-22",
+  "title": "God Files Refactor Phase 4 - Frontend Planning Controller And View Decomposition",
+  "execution_mode": "serial",
+  "goal": "Decompose usePlanningController and PlanningView into slice-owned hooks and tab-owned containers while preserving route behavior and current UI capabilities.",
+  "required_skills": [
+    "test-driven-development",
+    "verification-before-completion",
+    "requesting-code-review",
+    "receiving-code-review"
+  ],
+  "global_context": {
+    "design_spec": "docs/superpowers/specs/2026-05-22-god-files-architecture-refactor-design.md",
+    "existing_files": [
+      "frontend/src/domains/planning/usePlanningController.ts",
+      "frontend/src/views/PlanningView.tsx",
+      "frontend/src/components/planning/PlanningTab.tsx",
+      "frontend/src/hooks/usePlanningTab.ts"
+    ],
+    "existing_test_files": [
+      "frontend/src/domains/planning/usePlanningController.test.tsx"
+    ],
+    "existing_capability_lock": "Do not add new tabs, new data fields, or new UI behavior. Preserve current planning, arcs, and tab workflows."
+  },
+  "tasks": [
+    {
+      "task_id": "GF-P4-T001",
+      "title": "Add failing tests for the new planning slice hooks and PlanningView container split",
+      "responsible_file": "frontend/src/domains/planning/usePlanningSlices.test.tsx",
+      "serial_dependencies": [],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create failing frontend tests that lock the target planning slice hook import surfaces and the existence of the new view container modules.",
+      "repo_context": [
+        "Current tests cover usePlanningController in frontend/src/domains/planning/usePlanningController.test.tsx.",
+        "Target slice hooks are useSequencePlanning.ts, useChapterPlanning.ts, useScenePlanning.ts, useBeatPlanning.ts, useChapterPackets.ts, useStoryboardPlanning.ts, useArcPlanning.ts, and usePlanningRetries.ts.",
+        "Target view modules are frontend/src/views/planning/PlanningTabShell.tsx plus tab containers and shared coordination-only hooks."
+      ],
+      "implementation_notes": [
+        "Write import and minimal behavior tests that fail until the new modules exist.",
+        "Do not assert new user-facing behavior."
+      ],
+      "verification": {
+        "red": "cd frontend && npm run test -- usePlanningSlices",
+        "expected_red": "FAIL because the new slice hook and view container modules do not exist yet"
+      },
+      "guardrails": [
+        "Do not create tests for tabs or hooks that are not in the approved design spec.",
+        "Do not change current planning behavior expectations."
+      ],
+      "review_before_complete": "Confirm the tests are structural and compatibility-focused, not feature-expanding."
+    },
+    {
+      "task_id": "GF-P4-T002",
+      "title": "Extract focused planning slice hooks and form hooks",
+      "responsible_file": "frontend/src/domains/planning/useSequencePlanning.ts",
+      "serial_dependencies": [
+        "GF-P4-T001"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Use useSequencePlanning.ts as the first extraction anchor, then create the other planning slice and form hooks defined by the design spec.",
+      "repo_context": [
+        "Current usePlanningController owns PlanningTabState, PlanningTabCallbacks, many useQueries calls, and many form state fields.",
+        "The design spec requires explicit source-of-truth ownership for sequence, chapter, scene, beat, packet, storyboard, and arc concerns.",
+        "Form hooks must own modal open state and local draft field state only for the owning feature."
+      ],
+      "implementation_notes": [
+        "Create the slice hooks and form hooks under frontend/src/domains/planning/ and frontend/src/domains/planning/forms/.",
+        "Keep query keys, mutation semantics, and invalidation behavior consistent with current code.",
+        "Do not add new Zustand state or duplicate derived data."
+      ],
+      "verification": {
+        "green": "cd frontend && npm run test -- usePlanningController",
+        "expected_green": "existing planning controller tests continue to pass while the new slice hooks exist"
+      },
+      "guardrails": [
+        "Do not change service calls away from existing frontend services.",
+        "Do not add new hook return fields that the current UI does not need."
+      ],
+      "review_before_complete": "Check each slice hook and confirm it has one source of truth and one feature area."
+    },
+    {
+      "task_id": "GF-P4-T003",
+      "title": "Reduce usePlanningController to a thin compatibility composition hook",
+      "responsible_file": "frontend/src/domains/planning/usePlanningController.ts",
+      "serial_dependencies": [
+        "GF-P4-T002"
+      ],
+      "same_file_serial_group": "GF-P4-CONTROLLER",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Refactor usePlanningController so it composes the slice hooks without owning new business logic or duplicated state.",
+      "repo_context": [
+        "usePlanningController currently returns { state, callbacks } and is consumed by PlanningView, usePlanningTab, and PlanningTab.",
+        "The architecture spec allows it to remain only as a thin compatibility adapter."
+      ],
+      "implementation_notes": [
+        "Preserve the current public return shape so existing consumers keep working during the transition.",
+        "Remove inline ownership where the same data now belongs to a slice hook.",
+        "Do not add new orchestration logic."
+      ],
+      "verification": {
+        "green": "cd frontend && npm run test -- usePlanningController",
+        "expected_green": "planning controller tests pass with the controller acting as a compatibility composition layer"
+      },
+      "guardrails": [
+        "Do not widen PlanningTabState or PlanningTabCallbacks.",
+        "Do not keep duplicate local state once a slice hook owns it."
+      ],
+      "review_before_complete": "Read the entire hook and confirm it is composition-only."
+    },
+    {
+      "task_id": "GF-P4-T004",
+      "title": "Extract PlanningView tab containers and shared coordination-only workflows",
+      "responsible_file": "frontend/src/views/planning/PlanningTabShell.tsx",
+      "serial_dependencies": [
+        "GF-P4-T003"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Use PlanningTabShell.tsx as the first view extraction anchor, then create the tab containers and shared coordination hooks defined in the design spec.",
+      "repo_context": [
+        "Current PlanningView owns activeTab, character selection, relationship editing, discovery scan workflow, multiple queries, and direct usePlanningController consumption.",
+        "The design spec requires shared hooks under frontend/src/views/planning/shared/ to be coordination-only.",
+        "The current PlanningTab component consumes state and callbacks and should keep working during the split."
+      ],
+      "implementation_notes": [
+        "Create PlanningCoreTab.tsx, FlowTab.tsx, ArcsTab.tsx, BranchesTab.tsx, DecisionsTab.tsx, CheckerTab.tsx, BrainstormTab.tsx, FoundationTab.tsx, CharactersTab.tsx, WorldBibleTab.tsx, and RelationshipsTab.tsx.",
+        "Create shared coordination hooks only for tab navigation, character selection, relationship editing, and discovery scan workflow.",
+        "Do not let shared hooks perform direct API calls if a domain hook already owns the data."
+      ],
+      "verification": {
+        "green": [
+          "cd frontend && npm run test -- usePlanningController",
+          "cd frontend && npm run build",
+          "cd frontend && npm run typecheck"
+        ],
+        "expected_green": [
+          "planning controller compatibility remains intact",
+          "frontend build succeeds",
+          "typecheck succeeds"
+        ]
+      },
+      "guardrails": [
+        "Do not change routes or tabs.",
+        "Do not introduce new global UI state.",
+        "Do not let shared hooks become new data ownership layers."
+      ],
+      "review_before_complete": "Inspect PlanningView and the new shared hooks and confirm the shell owns only route-level composition."
+    }
+  ],
+  "phase_completion_requirements": {
+    "mandatory_review": "Run a code review on the frontend planning decomposition before phase completion.",
+    "mandatory_verification": [
+      "cd frontend && npm run test -- usePlanningController",
+      "cd frontend && npm run lint",
+      "cd frontend && npm run typecheck",
+      "cd frontend && npm run build"
+    ]
+  }
+}

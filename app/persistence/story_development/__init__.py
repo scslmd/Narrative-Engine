@@ -19,7 +19,7 @@ from app.schemas import (
     StorySuggestionLifecycleState,
 )
 
-from .sqlite import connect, ensure_operations_db
+from ..sqlite import connect, ensure_operations_db
 
 
 def _now(now: datetime | None = None) -> datetime:

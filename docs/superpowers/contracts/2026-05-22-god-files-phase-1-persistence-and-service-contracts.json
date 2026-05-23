@@ -1,0 +1,656 @@
+{
+  "contract_id": "GF-P1-2026-05-22",
+  "title": "God Files Refactor Phase 1 - Persistence Package Conversion And Narrow Service Contracts",
+  "execution_mode": "serial",
+  "goal": "Convert app/persistence/story_development.py into a package with preserved public compatibility, extract backend persistence domains into owned modules, and move core services to narrow repository contracts without changing product behavior.",
+  "required_skills": [
+    "test-driven-development",
+    "verification-before-completion",
+    "requesting-code-review",
+    "receiving-code-review"
+  ],
+  "global_context": {
+    "design_spec": "docs/superpowers/specs/2026-05-22-god-files-architecture-refactor-design.md",
+    "existing_repo_entrypoint": "app/persistence/story_development.py",
+    "must_preserve_imports": [
+      "from app.persistence.story_development import StoryDevelopmentRepository",
+      "from app.persistence.story_development import DraftArtifactRecord",
+      "from app.persistence.story_development import ManuscriptDocumentRecord",
+      "from app.persistence.story_development import StoryboardCardRecord"
+    ],
+    "existing_capability_lock": "Do not add new endpoints, new tables, new schema fields, or new product behaviors. This phase is architecture-only."
+  },
+  "tasks": [
+    {
+      "task_id": "GF-P1-T001",
+      "title": "Add failing regression tests for the persistence package conversion and repository protocol surface",
+      "responsible_file": "tests/test_story_development_repository_contracts.py",
+      "serial_dependencies": [],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create failing tests that prove the future persistence package exports remain backward compatible and that the protocol module exists.",
+      "repo_context": [
+        "The current import surface is app.persistence.story_development as a single Python module.",
+        "The target architecture requires app/persistence/story_development/ as a package while preserving current import paths for callers.",
+        "The contracts module must export PlanningRepository, BranchingRepository, ReviewRepository, DraftingRepository, GenerationRepository, ManuscriptAssistRepository, CanonRepository, and LibraryRepository."
+      ],
+      "implementation_notes": [
+        "Write import-based tests that currently fail because the package modules and protocol exports do not exist.",
+        "Assert that importing app.persistence.story_development still exposes StoryDevelopmentRepository and representative record types after the package conversion.",
+        "Assert that importing app.persistence.story_development.contracts exposes the named protocol symbols."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_story_development_repository_contracts.py",
+        "expected_red": "FAIL because app.persistence.story_development is not yet a package and contracts.py does not exist"
+      },
+      "guardrails": [
+        "Do not weaken or skip existing persistence tests.",
+        "Do not add placeholder asserts.",
+        "Do not use mocks; import the real modules."
+      ],
+      "review_before_complete": "Read the test file and confirm every assertion locks an existing or explicitly designed surface from the architecture spec, not a speculative API."
+    },
+    {
+      "task_id": "GF-P1-T002",
+      "title": "Convert the monolithic persistence module into a package facade",
+      "responsible_file": "app/persistence/story_development.py",
+      "serial_dependencies": [
+        "GF-P1-T001"
+      ],
+      "same_file_serial_group": "GF-P1-PERSISTENCE-FACADE",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Replace the single-file module with a package-backed facade while preserving all current imports and runtime behavior.",
+      "repo_context": [
+        "Python cannot keep app/persistence/story_development.py and app/persistence/story_development/ side by side as the same import target.",
+        "This task is the package conversion seam. Use a file move so the import target becomes app/persistence/story_development/__init__.py.",
+        "The moved facade must continue exporting StoryDevelopmentRepository and all currently imported record classes."
+      ],
+      "implementation_notes": [
+        "Move the existing file contents to app/persistence/story_development/__init__.py.",
+        "Do not split behavior yet beyond what is necessary to make the package import target work.",
+        "Preserve current symbol exports exactly so the existing test suite can still import through the old path."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_repository_contracts.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py"
+        ],
+        "expected_green": [
+          "repository contract import tests pass",
+          "story development persistence regression tests still pass"
+        ]
+      },
+      "guardrails": [
+        "Do not rename StoryDevelopmentRepository.",
+        "Do not remove record exports used by existing tests.",
+        "Do not begin logic extraction into submodules in this task."
+      ],
+      "review_before_complete": "Review the new package facade and confirm it is still a compatibility layer only, not a partially rewritten domain split."
+    },
+    {
+      "task_id": "GF-P1-T003",
+      "title": "Create the narrow repository protocol definitions",
+      "responsible_file": "app/persistence/story_development/contracts.py",
+      "serial_dependencies": [
+        "GF-P1-T002"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Define the focused repository contracts named in the architecture spec using only existing persistence capabilities.",
+      "repo_context": [
+        "Target services include PlanningService, StoryBranchingService, ReviewRoutingService, DraftingService, ManuscriptAssistService, CanonCustomizationService, StoryGenerationOrchestrator, and GenerationGateService.",
+        "Protocols must describe current methods already implemented by StoryDevelopmentRepository; do not invent new persistence methods."
+      ],
+      "implementation_notes": [
+        "Define method signatures for the existing methods each service actually uses.",
+        "Keep the protocols narrow and domain-scoped."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_repository_contracts.py",
+        "expected_green": "contracts module imports and named protocol symbols exist"
+      },
+      "guardrails": [
+        "Do not define methods that do not already exist on StoryDevelopmentRepository.",
+        "Do not move runtime behavior into this file.",
+        "Do not introduce a new abstract base class hierarchy."
+      ],
+      "review_before_complete": "Compare every protocol method against the real repository methods and remove any speculative or unused method names."
+    },
+    {
+      "task_id": "GF-P1-T004",
+      "title": "Extract planning persistence ownership",
+      "responsible_file": "app/persistence/story_development/planning.py",
+      "serial_dependencies": [
+        "GF-P1-T003"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move planning records, row mappers, and repository methods into a dedicated planning module while preserving package facade behavior.",
+      "repo_context": [
+        "Planning ownership covers sequence_plans, chapter_plans, scene_plans, beat_plans, planning_dependencies, and chapter_packets.",
+        "Relevant tests are tests/test_story_development_persistence.py and tests/test_planning_service.py."
+      ],
+      "implementation_notes": [
+        "Move only planning-owned row mappers, records, and repository methods into this file.",
+        "Keep method names unchanged.",
+        "Re-export or delegate from the package facade so existing callers keep working."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k planning",
+          "python -m pytest -q -p no:cacheprovider tests/test_planning_service.py"
+        ],
+        "expected_green": [
+          "planning persistence tests pass",
+          "PlanningService regression suite passes"
+        ]
+      },
+      "guardrails": [
+        "Do not rename planning record types.",
+        "Do not change ordering semantics or IDs.",
+        "Do not alter schema expectations in app/schemas/story_development.py."
+      ],
+      "review_before_complete": "Inspect the new file and confirm it contains planning-only ownership with no unrelated helper leakage."
+    },
+    {
+      "task_id": "GF-P1-T005",
+      "title": "Extract branching persistence ownership",
+      "responsible_file": "app/persistence/story_development/branching.py",
+      "serial_dependencies": [
+        "GF-P1-T004"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move branching persistence into branching.py with no behavior changes.",
+      "repo_context": [
+        "Branching ownership covers story_decision_nodes, branch_points, story_branches, branch_state_refs, branch_comparisons, and branch_merge_decisions.",
+        "Relevant tests are tests/test_story_branching_service.py and tests/test_story_development_persistence.py."
+      ],
+      "implementation_notes": [
+        "Extract only branching-owned record types, row mappers, and repository methods.",
+        "Preserve StoryDevelopmentRepository method names."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_branching_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k branch"
+        ],
+        "expected_green": [
+          "branching service tests pass",
+          "branching persistence tests pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change branch state normalization behavior.",
+        "Do not move review tables in this task."
+      ],
+      "review_before_complete": "Confirm branching.py owns only branch and decision state, not review routing persistence."
+    },
+    {
+      "task_id": "GF-P1-T006",
+      "title": "Extract review persistence ownership",
+      "responsible_file": "app/persistence/story_development/review.py",
+      "serial_dependencies": [
+        "GF-P1-T005"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move checker findings, review decisions, and inspect run link persistence into review.py with no behavior changes.",
+      "repo_context": [
+        "Review ownership covers checker_findings, review_decisions, and inspect_run_links.",
+        "Relevant tests are tests/test_review_routing_service.py and tests/test_story_development_persistence.py."
+      ],
+      "implementation_notes": [
+        "Extract review-owned records, row mappers, and repository methods only.",
+        "Keep query shapes and ordering semantics unchanged."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_review_routing_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k review"
+        ],
+        "expected_green": [
+          "review routing service tests pass",
+          "review persistence tests pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change audit operation names or route semantics.",
+        "Do not move branch comparisons or merge decisions here."
+      ],
+      "review_before_complete": "Read the extracted review module and ensure its ownership matches the spec exactly."
+    },
+    {
+      "task_id": "GF-P1-T007",
+      "title": "Extract drafting persistence ownership",
+      "responsible_file": "app/persistence/story_development/drafting.py",
+      "serial_dependencies": [
+        "GF-P1-T006"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move draft_artifacts, manuscript_documents, and revision_suggestions persistence into drafting.py.",
+      "repo_context": [
+        "Drafting ownership covers DraftArtifactRecord, ManuscriptDocumentRecord, RevisionSuggestionRecord, and their repository methods.",
+        "Relevant tests are tests/test_drafting_service.py and drafting sections inside tests/test_story_development_persistence.py."
+      ],
+      "implementation_notes": [
+        "Extract only drafting-owned types and methods.",
+        "Preserve record constructors, field names, and method names."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_drafting_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k draft"
+        ],
+        "expected_green": [
+          "drafting service tests pass",
+          "drafting persistence tests pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change manuscript document update semantics.",
+        "Do not change revision suggestion filtering behavior."
+      ],
+      "review_before_complete": "Check that drafting.py contains drafting-only data ownership and no manuscript assist gate records."
+    },
+    {
+      "task_id": "GF-P1-T008",
+      "title": "Extract generation persistence ownership",
+      "responsible_file": "app/persistence/story_development/generation.py",
+      "serial_dependencies": [
+        "GF-P1-T007"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move canon_generation_runs, canon_generation_packets, and generation_gate_results persistence into generation.py.",
+      "repo_context": [
+        "Generation ownership covers canon_generation_runs, canon_generation_packets, and generation_gate_results.",
+        "Relevant tests are tests/test_story_generation_orchestrator.py and tests/test_generation_gates.py."
+      ],
+      "implementation_notes": [
+        "Extract only generation-owned records, row mappers, and repository methods.",
+        "Keep package facade exports and StoryDevelopmentRepository behavior unchanged."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_generation_orchestrator.py tests/test_generation_gates.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k generation"
+        ],
+        "expected_green": [
+          "generation-related tests pass",
+          "generation persistence regressions pass"
+        ]
+      },
+      "guardrails": [
+        "Do not modify endpoint or schema behavior.",
+        "Do not move manuscript assist tables here."
+      ],
+      "review_before_complete": "Review generation.py and confirm it matches the ownership matrix exactly."
+    },
+    {
+      "task_id": "GF-P1-T009",
+      "title": "Extract manuscript assist persistence ownership",
+      "responsible_file": "app/persistence/story_development/manuscript_assist.py",
+      "serial_dependencies": [
+        "GF-P1-T008"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move manuscript_assist_runs, manuscript_assist_suggestions, and manuscript_assist_gate_results persistence into manuscript_assist.py.",
+      "repo_context": [
+        "Manuscript assist ownership covers manuscript_assist_runs, manuscript_assist_suggestions, and manuscript_assist_gate_results.",
+        "Relevant tests are tests/test_manuscript_assist_service.py and manuscript assist persistence or integration suites."
+      ],
+      "implementation_notes": [
+        "Extract only manuscript-assist-owned records, row mappers, and repository methods.",
+        "Preserve suggestion status update behavior."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_manuscript_assist_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k assist"
+        ],
+        "expected_green": [
+          "manuscript assist service tests pass",
+          "manuscript assist persistence regressions pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change suggestion status semantics.",
+        "Do not move drafting tables here."
+      ],
+      "review_before_complete": "Review manuscript_assist.py and confirm it owns only assist persistence."
+    },
+    {
+      "task_id": "GF-P1-T010",
+      "title": "Extract canon persistence ownership",
+      "responsible_file": "app/persistence/story_development/canon.py",
+      "serial_dependencies": [
+        "GF-P1-T009"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move canon_annotations and canon_customization_profiles persistence into canon.py.",
+      "repo_context": [
+        "Canon ownership covers canon_annotations and canon_customization_profiles.",
+        "Relevant tests are tests/test_canon_customization_service.py and canon customization persistence or API suites."
+      ],
+      "implementation_notes": [
+        "Extract only canon-owned records, row mappers, and repository methods.",
+        "Preserve annotation and profile CRUD behavior."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_canon_customization_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k canon"
+        ],
+        "expected_green": [
+          "canon customization tests pass",
+          "canon persistence regressions pass"
+        ]
+      },
+      "guardrails": [
+        "Do not add new canon profile behavior.",
+        "Do not move mythos or pattern tables here."
+      ],
+      "review_before_complete": "Review canon.py and confirm it is limited to canon annotations and customization profiles."
+    },
+    {
+      "task_id": "GF-P1-T011",
+      "title": "Extract library persistence ownership",
+      "responsible_file": "app/persistence/story_development/libraries.py",
+      "serial_dependencies": [
+        "GF-P1-T010"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move mythos_entries and pattern_entries persistence into libraries.py.",
+      "repo_context": [
+        "Libraries ownership covers mythos_entries and pattern_entries.",
+        "Relevant tests are tests/test_mythos_pattern_library_service.py and related API suites."
+      ],
+      "implementation_notes": [
+        "Extract only mythos and pattern library records, row mappers, and repository methods.",
+        "Preserve entry filtering behavior."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_mythos_pattern_library_service.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_persistence.py -k pattern"
+        ],
+        "expected_green": [
+          "library service tests pass",
+          "library persistence regressions pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change entry_type filtering semantics.",
+        "Do not move canon tables here."
+      ],
+      "review_before_complete": "Review libraries.py and confirm it owns only mythos and pattern persistence."
+    },
+    {
+      "task_id": "GF-P1-T012",
+      "title": "Narrow PlanningService to PlanningRepository",
+      "responsible_file": "app/services/planning.py",
+      "serial_dependencies": [
+        "GF-P1-T011"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update PlanningService constructor typing and internal assumptions to depend on PlanningRepository only.",
+      "repo_context": [
+        "StoryDevelopmentRepository should continue to satisfy the protocol structurally.",
+        "Do not create new service methods or adapters."
+      ],
+      "implementation_notes": [
+        "Narrow type hints, docstrings, and internal expectations to planning methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_planning_service.py",
+        "expected_green": "PlanningService regression suite passes"
+      },
+      "guardrails": [
+        "Do not alter behavior or route payload contracts.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Inspect constructor dependencies and confirm only PlanningRepository is required."
+    },
+    {
+      "task_id": "GF-P1-T013",
+      "title": "Narrow StoryBranchingService to BranchingRepository",
+      "responsible_file": "app/services/story_branching.py",
+      "serial_dependencies": [
+        "GF-P1-T012"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update StoryBranchingService to depend on BranchingRepository only.",
+      "repo_context": [
+        "Keep compatibility with StoryDevelopmentRepository instances.",
+        "Do not change branch behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal method assumptions to branching methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_branching_service.py",
+        "expected_green": "StoryBranchingService regression suite passes"
+      },
+      "guardrails": [
+        "Do not introduce adapters that re-centralize repository logic.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm only BranchingRepository methods are required."
+    },
+    {
+      "task_id": "GF-P1-T014",
+      "title": "Narrow ReviewRoutingService to ReviewRepository and BranchingRepository",
+      "responsible_file": "app/services/review_routing.py",
+      "serial_dependencies": [
+        "GF-P1-T013"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update ReviewRoutingService constructor typing to use only the narrow contracts it actually needs.",
+      "repo_context": [
+        "The design spec maps ReviewRoutingService to ReviewRepository plus BranchingRepository."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to review and branching methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_review_routing_service.py",
+        "expected_green": "ReviewRoutingService regression suite passes"
+      },
+      "guardrails": [
+        "Do not change inspect-link behavior.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm the constructor no longer implies monolithic repository ownership."
+    },
+    {
+      "task_id": "GF-P1-T015",
+      "title": "Narrow DraftingService to DraftingRepository and ContinuityRepository",
+      "responsible_file": "app/services/drafting.py",
+      "serial_dependencies": [
+        "GF-P1-T014"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update DraftingService to depend only on DraftingRepository and ContinuityRepository.",
+      "repo_context": [
+        "Keep compatibility with StoryDevelopmentRepository instances.",
+        "Do not alter manuscript or revision suggestion behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to drafting and continuity methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_drafting_service.py",
+        "expected_green": "DraftingService regression suite passes"
+      },
+      "guardrails": [
+        "Do not change document persistence semantics.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm only drafting and continuity protocols are required."
+    },
+    {
+      "task_id": "GF-P1-T016",
+      "title": "Narrow ManuscriptAssistService to ManuscriptAssistRepository and DraftingRepository",
+      "responsible_file": "app/services/manuscript_assist.py",
+      "serial_dependencies": [
+        "GF-P1-T015"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update ManuscriptAssistService to depend only on ManuscriptAssistRepository and DraftingRepository.",
+      "repo_context": [
+        "Do not alter assist run or suggestion behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to assist and drafting methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_manuscript_assist_service.py",
+        "expected_green": "ManuscriptAssistService regression suite passes"
+      },
+      "guardrails": [
+        "Do not change suggestion status semantics.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm only the intended narrow protocols remain."
+    },
+    {
+      "task_id": "GF-P1-T017",
+      "title": "Narrow CanonCustomizationService to CanonRepository",
+      "responsible_file": "app/services/canon_customization.py",
+      "serial_dependencies": [
+        "GF-P1-T016"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update CanonCustomizationService to depend only on CanonRepository.",
+      "repo_context": [
+        "Do not alter canon annotation or profile behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to canon methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_canon_customization_service.py",
+        "expected_green": "CanonCustomizationService regression suite passes"
+      },
+      "guardrails": [
+        "Do not change annotation behavior.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm only CanonRepository methods are required."
+    },
+    {
+      "task_id": "GF-P1-T018",
+      "title": "Narrow StoryGenerationOrchestrator to GenerationRepository, CanonRepository, and PlanningRepository",
+      "responsible_file": "app/services/story_generation_orchestrator.py",
+      "serial_dependencies": [
+        "GF-P1-T017"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update StoryGenerationOrchestrator to depend only on the narrow repository contracts it actually uses.",
+      "repo_context": [
+        "Do not alter generation flow behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to generation, canon, and planning methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_generation_orchestrator.py",
+        "expected_green": "StoryGenerationOrchestrator regression suite passes"
+      },
+      "guardrails": [
+        "Do not change orchestration semantics.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm constructor dependencies match the architecture spec exactly."
+    },
+    {
+      "task_id": "GF-P1-T019",
+      "title": "Narrow GenerationGateService to GenerationRepository, CanonRepository, and PlanningRepository",
+      "responsible_file": "app/services/generation_gates.py",
+      "serial_dependencies": [
+        "GF-P1-T018"
+      ],
+      "same_file_serial_group": "GF-P1-SERVICE-CONTRACTS",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Update GenerationGateService to depend only on the narrow repository contracts it actually uses.",
+      "repo_context": [
+        "Do not alter generation gate or repair policy behavior."
+      ],
+      "implementation_notes": [
+        "Narrow type hints and internal expectations to generation, canon, and planning methods only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_generation_gates.py",
+        "expected_green": "GenerationGateService regression suite passes"
+      },
+      "guardrails": [
+        "Do not change gate semantics.",
+        "No parallel execution for GF-P1-SERVICE-CONTRACTS."
+      ],
+      "review_before_complete": "Confirm constructor dependencies match the architecture spec exactly."
+    }
+  ],
+  "phase_completion_requirements": {
+    "mandatory_review": "Dispatch or perform an explicit code review before marking the phase complete. Fix all Critical and Important findings before moving to the next phase.",
+    "mandatory_verification": [
+      "python -m pytest -q -p no:cacheprovider tests/test_story_development_repository_contracts.py tests/test_story_development_persistence.py tests/test_planning_service.py tests/test_story_branching_service.py tests/test_review_routing_service.py tests/test_drafting_service.py tests/test_manuscript_assist_service.py tests/test_canon_customization_service.py tests/test_story_generation_orchestrator.py tests/test_generation_gates.py"
+    ]
+  }
+}

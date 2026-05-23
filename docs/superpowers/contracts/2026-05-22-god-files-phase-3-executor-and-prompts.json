@@ -1,0 +1,689 @@
+{
+  "contract_id": "GF-P3-2026-05-22",
+  "title": "God Files Refactor Phase 3 - Local Executor And Runtime Prompts",
+  "execution_mode": "serial",
+  "goal": "Convert the LocalExecutor and runtime_prompts god files into package-based, phase-owned modules with explicit context and mutation boundaries while preserving runtime behavior.",
+  "required_skills": [
+    "test-driven-development",
+    "verification-before-completion",
+    "requesting-code-review",
+    "receiving-code-review"
+  ],
+  "global_context": {
+    "design_spec": "docs/superpowers/specs/2026-05-22-god-files-architecture-refactor-design.md",
+    "existing_capability_lock": "Do not add new phases, new artifacts, or new prompt semantics. Preserve current phase behavior and output contracts."
+  },
+  "tasks": [
+    {
+      "task_id": "GF-P3-T001",
+      "title": "Add failing tests for LocalExecutor package conversion, context, and phase protocol imports",
+      "responsible_file": "tests/test_local_executor_packaging.py",
+      "serial_dependencies": [],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Add tests that fail until app.services.local_executor becomes a package exposing executor.py, context.py, and phase_protocol.py.",
+      "repo_context": [
+        "Current import target is app.services.local_executor as a single module exposing LocalExecutor.",
+        "Target package modules include executor.py, context.py, worker_lifecycle.py, artifact_io.py, runtime_inputs.py, phase_protocol.py, planning_phases.py, drafting_phases.py, generation_phases.py, manuscript_assist_phases.py, checker_runtime.py, errors.py, and types.py."
+      ],
+      "implementation_notes": [
+        "Assert LocalExecutor remains importable from app.services.local_executor.",
+        "Assert the package modules named above import successfully.",
+        "Assert phase_protocol exports the shared phase contract symbol chosen by the implementation."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+        "expected_red": "FAIL until package conversion and support modules exist"
+      },
+      "guardrails": [
+        "Do not assert new runtime behavior.",
+        "Do not add new phases."
+      ],
+      "review_before_complete": "Confirm tests lock package surfaces only."
+    },
+    {
+      "task_id": "GF-P3-T002",
+      "title": "Convert local_executor.py into a package-backed compatibility facade",
+      "responsible_file": "app/services/local_executor.py",
+      "serial_dependencies": [
+        "GF-P3-T001"
+      ],
+      "same_file_serial_group": "GF-P3-EXECUTOR-FACADE",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move the LocalExecutor module to app/services/local_executor/__init__.py while preserving the current LocalExecutor import path and behavior.",
+      "repo_context": [
+        "This is the executor package conversion seam.",
+        "The facade must preserve LocalExecutor as the public import surface for callers."
+      ],
+      "implementation_notes": [
+        "Convert the module to a package entrypoint without performing behavior changes yet.",
+        "Preserve all imports used by tests."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_local_executor_multi_phase_runtime.py"
+        ],
+        "expected_green": [
+          "packaging tests pass",
+          "multi-phase runtime regressions still pass"
+        ]
+      },
+      "guardrails": [
+        "Do not split phase logic yet.",
+        "Do not change thread behavior in this task."
+      ],
+      "review_before_complete": "Ensure the package conversion is compatibility-preserving before deeper extraction."
+    },
+    {
+      "task_id": "GF-P3-T003",
+      "title": "Create executor context",
+      "responsible_file": "app/services/local_executor/context.py",
+      "serial_dependencies": [
+        "GF-P3-T002"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create context.py to define the shared execution context and allowed mutation surfaces.",
+      "repo_context": [
+        "The execution context is the only shared mutation boundary.",
+        "Phase modules may perform side effects only through artifact I/O helpers, runtime input helpers, step-record and lineage helpers exposed by the context, and owned service dependencies passed through the context."
+      ],
+      "implementation_notes": [
+        "Do not move phase logic yet.",
+        "Define context structures only."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+        "expected_green": "context import succeeds through the package tests"
+      },
+      "guardrails": [
+        "Do not let context.py import individual phase modules.",
+        "Do not change phase behavior in this task."
+      ],
+      "review_before_complete": "Confirm context.py constrains mutation surfaces instead of hiding them."
+    },
+    {
+      "task_id": "GF-P3-T004",
+      "title": "Create executor phase protocol",
+      "responsible_file": "app/services/local_executor/phase_protocol.py",
+      "serial_dependencies": [
+        "GF-P3-T003"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create the shared phase execution protocol and phase result contract.",
+      "repo_context": [
+        "Every runtime phase must implement the shared protocol defined in phase_protocol.py."
+      ],
+      "implementation_notes": [
+        "Define the phase result type or interface needed by the design spec.",
+        "Keep the protocol independent from concrete phase modules."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+        "expected_green": "phase protocol import succeeds through the package tests"
+      },
+      "guardrails": [
+        "Do not add concrete phase behavior.",
+        "Do not import executor facade internals."
+      ],
+      "review_before_complete": "Confirm the protocol is reusable across all phase modules."
+    },
+    {
+      "task_id": "GF-P3-T005",
+      "title": "Create executor shared types",
+      "responsible_file": "app/services/local_executor/types.py",
+      "serial_dependencies": [
+        "GF-P3-T004"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create executor shared types referenced by the context and phase protocol.",
+      "repo_context": [
+        "Shared executor types must be isolated from concrete phase modules."
+      ],
+      "implementation_notes": [
+        "Move only shared types here.",
+        "Keep names stable where existing tests or imports depend on them."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+        "expected_green": "types import succeeds through the package tests"
+      },
+      "guardrails": [
+        "Do not add new runtime behavior.",
+        "Do not create circular imports with context.py or phase_protocol.py."
+      ],
+      "review_before_complete": "Confirm types.py contains only shared types."
+    },
+    {
+      "task_id": "GF-P3-T006",
+      "title": "Create executor shared errors",
+      "responsible_file": "app/services/local_executor/errors.py",
+      "serial_dependencies": [
+        "GF-P3-T005"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create executor shared error definitions needed by the package split.",
+      "repo_context": [
+        "Shared executor error definitions should be independent from phase modules."
+      ],
+      "implementation_notes": [
+        "Move only shared executor error definitions here."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py",
+        "expected_green": "errors import succeeds through the package tests"
+      },
+      "guardrails": [
+        "Do not add new error semantics.",
+        "Do not hide business logic in exceptions."
+      ],
+      "review_before_complete": "Confirm errors.py is limited to shared executor error definitions."
+    },
+    {
+      "task_id": "GF-P3-T007",
+      "title": "Extract worker lifecycle",
+      "responsible_file": "app/services/local_executor/worker_lifecycle.py",
+      "serial_dependencies": [
+        "GF-P3-T006"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move thread startup, shutdown, and polling loops into worker_lifecycle.py.",
+      "repo_context": [
+        "Current helper methods include start, stop, _job_loop, and _checker_loop."
+      ],
+      "implementation_notes": [
+        "Keep helper semantics unchanged.",
+        "Do not move phase bodies into this file."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_multi_phase_runtime.py tests/test_executor_integration.py",
+        "expected_green": "executor lifecycle regressions pass"
+      },
+      "guardrails": [
+        "Do not change thread behavior.",
+        "Do not move phase-specific logic here."
+      ],
+      "review_before_complete": "Confirm worker_lifecycle.py contains lifecycle-only logic."
+    },
+    {
+      "task_id": "GF-P3-T008",
+      "title": "Extract artifact I/O helpers",
+      "responsible_file": "app/services/local_executor/artifact_io.py",
+      "serial_dependencies": [
+        "GF-P3-T007"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move artifact staging, publish, restore, and finalize helpers into artifact_io.py.",
+      "repo_context": [
+        "Current helper methods include _write_staged_output, _publish_staged_output, _restore_published_output, and _finalize_published_output."
+      ],
+      "implementation_notes": [
+        "Keep file publication semantics unchanged.",
+        "Do not move runtime input or phase-specific logic here."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_executor_integration.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content"
+        ],
+        "expected_green": [
+          "executor integration tests pass",
+          "artifact and lineage-sensitive regression passes"
+        ]
+      },
+      "guardrails": [
+        "Do not change file publication semantics.",
+        "Do not let phase logic leak into artifact_io.py."
+      ],
+      "review_before_complete": "Confirm artifact_io.py contains I/O helpers only."
+    },
+    {
+      "task_id": "GF-P3-T009",
+      "title": "Extract runtime input resolution",
+      "responsible_file": "app/services/local_executor/runtime_inputs.py",
+      "serial_dependencies": [
+        "GF-P3-T008"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move upstream artifact reads and runtime artifact selection resolution into runtime_inputs.py.",
+      "repo_context": [
+        "Current helper methods include _read_optional_artifact and _resolve_runtime_artifact_inputs."
+      ],
+      "implementation_notes": [
+        "Keep selection persistence and resolution semantics unchanged."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_multi_phase_runtime.py tests/test_executor_integration.py",
+        "expected_green": "runtime input resolution regressions pass"
+      },
+      "guardrails": [
+        "Do not move phase bodies here.",
+        "Do not change runtime artifact selection semantics."
+      ],
+      "review_before_complete": "Confirm runtime_inputs.py is isolated to upstream artifact resolution."
+    },
+    {
+      "task_id": "GF-P3-T010",
+      "title": "Convert runtime_prompts.py into a package-backed compatibility facade",
+      "responsible_file": "app/services/runtime_prompts.py",
+      "serial_dependencies": [
+        "GF-P3-T009"
+      ],
+      "same_file_serial_group": "GF-P3-PROMPT-FACADE",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Convert runtime_prompts.py into app/services/runtime_prompts/__init__.py while preserving existing builder imports and helper names.",
+      "repo_context": [
+        "This is the runtime prompts package conversion seam."
+      ],
+      "implementation_notes": [
+        "Keep current prompt builder and output path helper imports working through the package facade.",
+        "Do not split content yet beyond what is needed for the package conversion."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py tests/test_drafter_prompt_content.py",
+        "expected_green": "runtime prompt regressions still pass after package conversion"
+      },
+      "guardrails": [
+        "Do not change prompt wording or output path behavior in this task.",
+        "Do not let the facade become a permanent logic sink."
+      ],
+      "review_before_complete": "Confirm the prompt package conversion preserves imports before deeper extraction."
+    },
+    {
+      "task_id": "GF-P3-T011",
+      "title": "Extract shared prompt fragments",
+      "responsible_file": "app/services/runtime_prompts/shared_fragments.py",
+      "serial_dependencies": [
+        "GF-P3-T010"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Create shared_fragments.py only for prompt fragments reused by at least three builders or across multiple phase families.",
+      "repo_context": [
+        "The design spec forbids complete prompt builders in shared_fragments.py.",
+        "Fragments reused only within one phase family must stay phase-local."
+      ],
+      "implementation_notes": [
+        "Move only truly shared prompt fragments here.",
+        "Do not over-centralize phase-local prompt text."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py tests/test_drafter_prompt_content.py",
+        "expected_green": "prompt-content regressions still pass"
+      },
+      "guardrails": [
+        "No complete prompt builders in this file.",
+        "Do not add condition-heavy shared fragments for one-off cases."
+      ],
+      "review_before_complete": "Review every fragment in the file and verify it satisfies the sharing rule."
+    },
+    {
+      "task_id": "GF-P3-T012",
+      "title": "Extract prompt formatting helpers",
+      "responsible_file": "app/services/runtime_prompts/formatting.py",
+      "serial_dependencies": [
+        "GF-P3-T011"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move shared prompt formatting helpers into formatting.py.",
+      "repo_context": [
+        "Formatting helpers are shared prompt utilities, not builders."
+      ],
+      "implementation_notes": [
+        "Move only formatting behavior here."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "runtime prompt tests pass"
+      },
+      "guardrails": [
+        "Do not move builder logic here.",
+        "Do not change prompt semantics."
+      ],
+      "review_before_complete": "Confirm formatting.py contains shared formatting helpers only."
+    },
+    {
+      "task_id": "GF-P3-T013",
+      "title": "Extract prompt output path helpers",
+      "responsible_file": "app/services/runtime_prompts/output_paths.py",
+      "serial_dependencies": [
+        "GF-P3-T012"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move output path helpers into output_paths.py.",
+      "repo_context": [
+        "Output path helpers must remain separate from prompt content."
+      ],
+      "implementation_notes": [
+        "Move only output path helper functions here."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "output path helper regressions pass through runtime prompt tests"
+      },
+      "guardrails": [
+        "Do not move prompt builder content here.",
+        "Do not change output path names or values."
+      ],
+      "review_before_complete": "Confirm output_paths.py contains no prompt content."
+    },
+    {
+      "task_id": "GF-P3-T014",
+      "title": "Extract planning prompt builders",
+      "responsible_file": "app/services/runtime_prompts/planning.py",
+      "serial_dependencies": [
+        "GF-P3-T013"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move architect, sequencer, and compiler prompt builders into planning.py.",
+      "repo_context": [
+        "Planning phase prompt ownership maps to architect, sequencer, and compiler flows."
+      ],
+      "implementation_notes": [
+        "Keep existing builder names stable through the package facade."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "planning prompt regressions pass"
+      },
+      "guardrails": [
+        "Do not change planning prompt semantics.",
+        "Do not move drafting or generation builders here."
+      ],
+      "review_before_complete": "Confirm planning.py is limited to planning-family builders."
+    },
+    {
+      "task_id": "GF-P3-T015",
+      "title": "Extract drafting prompt builders",
+      "responsible_file": "app/services/runtime_prompts/drafting.py",
+      "serial_dependencies": [
+        "GF-P3-T014"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move drafting prompt builders into drafting.py.",
+      "repo_context": [
+        "Relevant tests include tests/test_drafter_prompt_content.py."
+      ],
+      "implementation_notes": [
+        "Keep existing builder names stable through the package facade."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py tests/test_drafter_prompt_content.py",
+        "expected_green": "drafting prompt regressions pass"
+      },
+      "guardrails": [
+        "Do not change drafting prompt wording unless required for a no-op extraction.",
+        "Do not move manuscript assist builders here."
+      ],
+      "review_before_complete": "Confirm drafting.py is drafting-only."
+    },
+    {
+      "task_id": "GF-P3-T016",
+      "title": "Extract generation prompt builders",
+      "responsible_file": "app/services/runtime_prompts/generation.py",
+      "serial_dependencies": [
+        "GF-P3-T015"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move generation prompt builders into generation.py.",
+      "repo_context": [
+        "Generation prompt ownership includes planner, drafter, gate, and compiler generation flows as currently implemented."
+      ],
+      "implementation_notes": [
+        "Keep existing builder names stable through the package facade."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "generation prompt regressions pass"
+      },
+      "guardrails": [
+        "Do not change generation prompt semantics.",
+        "Do not move checker builders here."
+      ],
+      "review_before_complete": "Confirm generation.py is generation-family only."
+    },
+    {
+      "task_id": "GF-P3-T017",
+      "title": "Extract manuscript assist prompt builders",
+      "responsible_file": "app/services/runtime_prompts/manuscript_assist.py",
+      "serial_dependencies": [
+        "GF-P3-T016"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move manuscript assist prompt builders into manuscript_assist.py.",
+      "repo_context": [
+        "This file owns manuscript assist and repair prompt builders only."
+      ],
+      "implementation_notes": [
+        "Keep existing builder names stable through the package facade."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "manuscript assist prompt regressions pass"
+      },
+      "guardrails": [
+        "Do not change manuscript assist prompt semantics.",
+        "Do not move generation builders here."
+      ],
+      "review_before_complete": "Confirm manuscript_assist.py is limited to assist-family builders."
+    },
+    {
+      "task_id": "GF-P3-T018",
+      "title": "Extract checker prompt builders",
+      "responsible_file": "app/services/runtime_prompts/checker.py",
+      "serial_dependencies": [
+        "GF-P3-T017"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move checker prompt builders into checker.py.",
+      "repo_context": [
+        "Checker prompt ownership is separate from planning, drafting, generation, and manuscript assist."
+      ],
+      "implementation_notes": [
+        "Keep existing builder names stable through the package facade."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_runtime_prompts.py",
+        "expected_green": "checker prompt regressions pass"
+      },
+      "guardrails": [
+        "Do not change checker prompt semantics.",
+        "Do not move generic fragments back into this file if they meet the sharing rule."
+      ],
+      "review_before_complete": "Confirm checker.py is limited to checker prompt builders."
+    },
+    {
+      "task_id": "GF-P3-T019",
+      "title": "Extract planning executor phases",
+      "responsible_file": "app/services/local_executor/planning_phases.py",
+      "serial_dependencies": [
+        "GF-P3-T018"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move planning executor phases into planning_phases.py using the shared context and phase protocol.",
+      "repo_context": [
+        "Planning phases include architect, sequencer, and compiler behavior."
+      ],
+      "implementation_notes": [
+        "Do not let planning phases manage thread lifecycle or direct file writes."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_multi_phase_runtime.py tests/test_executor_integration.py",
+        "expected_green": "planning phase regressions pass"
+      },
+      "guardrails": [
+        "No bypassing artifact I/O or context helpers.",
+        "Do not change planning phase semantics."
+      ],
+      "review_before_complete": "Confirm planning phases use only allowed mutation surfaces."
+    },
+    {
+      "task_id": "GF-P3-T020",
+      "title": "Extract drafting executor phases",
+      "responsible_file": "app/services/local_executor/drafting_phases.py",
+      "serial_dependencies": [
+        "GF-P3-T019"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move single-chapter and multi-chapter drafter behavior into drafting_phases.py.",
+      "repo_context": [
+        "Relevant tests are tests/test_local_executor_drafter_runtime.py."
+      ],
+      "implementation_notes": [
+        "Do not let drafting phases manage thread lifecycle or direct file writes."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_drafter_runtime.py",
+        "expected_green": "drafting phase regressions pass"
+      },
+      "guardrails": [
+        "No bypassing artifact I/O or context helpers.",
+        "Do not change drafter semantics."
+      ],
+      "review_before_complete": "Confirm drafting phases use only allowed mutation surfaces."
+    },
+    {
+      "task_id": "GF-P3-T021",
+      "title": "Extract generation executor phases",
+      "responsible_file": "app/services/local_executor/generation_phases.py",
+      "serial_dependencies": [
+        "GF-P3-T020"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move generation planner, drafter, gate, and compiler behavior into generation_phases.py.",
+      "repo_context": [
+        "Relevant tests are tests/test_local_executor_generation_runtime.py."
+      ],
+      "implementation_notes": [
+        "Do not let generation phases manage thread lifecycle or direct file writes."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_generation_runtime.py",
+        "expected_green": "generation phase regressions pass"
+      },
+      "guardrails": [
+        "No bypassing artifact I/O or context helpers.",
+        "Do not change generation phase semantics."
+      ],
+      "review_before_complete": "Confirm generation phases use only allowed mutation surfaces."
+    },
+    {
+      "task_id": "GF-P3-T022",
+      "title": "Extract manuscript assist executor phases",
+      "responsible_file": "app/services/local_executor/manuscript_assist_phases.py",
+      "serial_dependencies": [
+        "GF-P3-T021"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move manuscript assist and repair behavior into manuscript_assist_phases.py.",
+      "repo_context": [
+        "Relevant tests are tests/test_local_executor_manuscript_assist.py."
+      ],
+      "implementation_notes": [
+        "Do not let manuscript assist phases manage thread lifecycle or direct file writes."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_local_executor_manuscript_assist.py",
+        "expected_green": "manuscript assist phase regressions pass"
+      },
+      "guardrails": [
+        "No bypassing artifact I/O or context helpers.",
+        "Do not change manuscript assist phase semantics."
+      ],
+      "review_before_complete": "Confirm manuscript assist phases use only allowed mutation surfaces."
+    },
+    {
+      "task_id": "GF-P3-T023",
+      "title": "Extract checker runtime",
+      "responsible_file": "app/services/local_executor/checker_runtime.py",
+      "serial_dependencies": [
+        "GF-P3-T022"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Move checker execution behavior into checker_runtime.py.",
+      "repo_context": [
+        "Relevant tests are tests/test_role_model_checker_runtime.py."
+      ],
+      "implementation_notes": [
+        "Keep checker behavior separate from phase family modules."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_role_model_checker_runtime.py",
+        "expected_green": "checker runtime regressions pass"
+      },
+      "guardrails": [
+        "Do not change checker execution semantics.",
+        "Do not re-centralize checker logic into the executor facade."
+      ],
+      "review_before_complete": "Confirm checker_runtime.py contains checker-specific execution only."
+    }
+  ],
+  "phase_completion_requirements": {
+    "mandatory_review": "Run a code review on the executor and prompt package split before phase completion.",
+    "mandatory_verification": [
+      "python -m pytest -q -p no:cacheprovider tests/test_local_executor_packaging.py tests/test_runtime_prompts.py tests/test_drafter_prompt_content.py tests/test_local_executor_drafter_runtime.py tests/test_local_executor_generation_runtime.py tests/test_local_executor_manuscript_assist.py tests/test_local_executor_multi_phase_runtime.py tests/test_executor_integration.py tests/test_role_model_checker_runtime.py"
+    ]
+  }
+}
