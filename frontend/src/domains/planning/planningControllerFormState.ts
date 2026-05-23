@@ -1,0 +1,115 @@
+export interface PlanningControllerFormState {
+  sequenceCreateOpen: boolean;
+  sequenceCreateTitle: string;
+  sequenceCreateSummary: string;
+  sequenceEditOpenId: string | null;
+  sequenceEditTitle: string;
+  sequenceEditSummary: string;
+  chapterCreateOpen: boolean;
+  chapterCreateTitle: string;
+  chapterCreateObjective: string;
+  chapterCreateConflict: string;
+  chapterCreateStakes: string;
+  chapterCreateSequenceId: string;
+  chapterEditOpenId: string | null;
+  chapterEditTitle: string;
+  chapterEditObjective: string;
+  chapterEditConflict: string;
+  chapterEditStakes: string;
+  sceneCreateOpen: boolean;
+  sceneCreateTitle: string;
+  sceneCreateObjective: string;
+  sceneCreateConflict: string;
+  sceneCreateStakes: string;
+  sceneCreateChapterId: string;
+  sceneEditOpenId: string | null;
+  sceneEditTitle: string;
+  sceneEditObjective: string;
+  sceneEditConflict: string;
+  sceneEditStakes: string;
+  beatCreateOpen: boolean;
+  beatCreateObjective: string;
+  beatCreateConflict: string;
+  beatCreateStakes: string;
+  beatEditOpenId: string | null;
+  beatEditObjective: string;
+  beatEditConflict: string;
+  beatEditStakes: string;
+  beatEditArcStage: string;
+  packetCreateOpen: boolean;
+  packetCreateChapterId: string;
+  cardCreateOpen: boolean;
+  cardCreateTitle: string;
+  cardCreateContent: string;
+  cardCreateType: string;
+  cardEditOpenId: string | null;
+  cardEditTitle: string;
+  cardEditContent: string;
+  cardEditType: string;
+  arcCandidateCreateOpen: boolean;
+  arcCandidateCreateId: string;
+  arcCandidateCreateName: string;
+  arcCandidateCreateSummary: string;
+  stageMapCreateOpen: boolean;
+  stageMapCreateArcId: string;
+  stageMapCreateNotes: string;
+  stageMapCreateKinds: string[];
+}
+
+export const INITIAL_PLANNING_CONTROLLER_FORM_STATE: PlanningControllerFormState = {
+  sequenceCreateOpen: false,
+  sequenceCreateTitle: '',
+  sequenceCreateSummary: '',
+  sequenceEditOpenId: null,
+  sequenceEditTitle: '',
+  sequenceEditSummary: '',
+  chapterCreateOpen: false,
+  chapterCreateTitle: '',
+  chapterCreateObjective: '',
+  chapterCreateConflict: '',
+  chapterCreateStakes: '',
+  chapterCreateSequenceId: '',
+  chapterEditOpenId: null,
+  chapterEditTitle: '',
+  chapterEditObjective: '',
+  chapterEditConflict: '',
+  chapterEditStakes: '',
+  sceneCreateOpen: false,
+  sceneCreateTitle: '',
+  sceneCreateObjective: '',
+  sceneCreateConflict: '',
+  sceneCreateStakes: '',
+  sceneCreateChapterId: '',
+  sceneEditOpenId: null,
+  sceneEditTitle: '',
+  sceneEditObjective: '',
+  sceneEditConflict: '',
+  sceneEditStakes: '',
+  beatCreateOpen: false,
+  beatCreateObjective: '',
+  beatCreateConflict: '',
+  beatCreateStakes: '',
+  beatEditOpenId: null,
+  beatEditObjective: '',
+  beatEditConflict: '',
+  beatEditStakes: '',
+  beatEditArcStage: '',
+  packetCreateOpen: false,
+  packetCreateChapterId: '',
+  cardCreateOpen: false,
+  cardCreateTitle: '',
+  cardCreateContent: '',
+  cardCreateType: 'idea',
+  cardEditOpenId: null,
+  cardEditTitle: '',
+  cardEditContent: '',
+  cardEditType: 'idea',
+  arcCandidateCreateOpen: false,
+  arcCandidateCreateId: '',
+  arcCandidateCreateName: '',
+  arcCandidateCreateSummary: '',
+  stageMapCreateOpen: false,
+  stageMapCreateArcId: '',
+  stageMapCreateNotes: '',
+  stageMapCreateKinds: [],
+};
