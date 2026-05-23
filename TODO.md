@@ -3,12 +3,13 @@
 ## Current Truth
 
 - The active documentation surface is `README.md`, `AGENTS.md`, and the current docs under `docs/`.
-- Latest verified validation baseline (2026-05-17):
+- Latest verified validation baseline (2026-05-23):
   - Backend parallel: 1473 passed, 7 skipped (~34s)
   - Backend serial: 51 passed (~2s)
-  - Frontend tests: 675 passed (~13s)
-  - Frontend lint/typecheck/build: all green (2070 modules)
+  - Frontend tests: 778 passed (~14s, 96 test files)
+  - Frontend lint/typecheck/build: all green (2020 modules, 2 pre-existing warnings)
 - The React frontend is merged and is now the default shipped frontend surface.
+- Radial hub workspace + layout management system complete (Phases 1-2 + Layout Management, merged 2026-05-23).
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
 - Temporary review notes, executor task dumps, and stale readiness checklists belong under `docs/archive/`, not in the active docs surface.
 
@@ -20,10 +21,10 @@
 
 Replace route-based navigation with Photoshop-style radial hub workspace. Central writing surface surrounded by draggable, resizable, tear-off panels. User chooses which panels to show. No forced navigation.
 
-**Status:** Design approved. Visual mockup confirmed by user (2026-05-19).
+**Status:** Phases 1-2 complete. Layout Management System complete. Merged to `codex/main` (2026-05-23).
 **Research:** `docs/superpowers/research/2026-05-19-radial-hub-workspace-research.md`
 **Design spec:** `docs/superpowers/specs/2026-05-19-radial-hub-workspace-design.md`
-**Implementation plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
+**Completed plans (archived):** `docs/archive/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`, `docs/archive/superpowers/plans/2026-05-19-radial-hub-phase-2-panel-migration.md`, `docs/archive/superpowers/plans/2026-05-23-layout-management.md`
 
 Key decisions:
 - Single route `/workspace/:projectId/studio` replaces all workspace routes
@@ -31,13 +32,13 @@ Key decisions:
 - Photoshop-style: drag to reposition, resize edges, ⊡ to tear-off into floating window
 - Hover to preview, click to expand
 - Layout persists per project via localStorage
-- Supports 4 author entry points (Idea-First, Character-First, Outline-First, World-First)
+- Supports 9 author presets (Idea-First, Character-First, Outline-First, World-First, Beat-Sheet, Theme-Driven, Showrunner, Revision Lab, World-Builder+)
 - Integrates 10 story frameworks via Structure panel
 
-Supersedes previous Studio Desk redesign (`2026-05-16-studio-desk-redesign-design.md`) and floating panels plan (`2026-05-16-floating-panels-implementation.md`).
-
-**Phase 1 plan:** `docs/superpowers/plans/2026-05-19-radial-hub-phase-1-core-infrastructure.md`
-**Next:** Execute Phase 1 (9 tasks: install dep, rewrite store, 4 new components, 2 view updates, validation)
+**Phase 1 (complete):** Core infrastructure — studioStore layout state, StudioFloatingPanel, StudioRadialHub, StudioPanelMenu, StudioPanelContent, StudioView/CommandBar wire-up.
+**Phase 2 (complete):** Panel migration — DraftsPanel prop migration, 3 new panels (Structure, Chapters, Canon), layout presets, StudioStatusBar.
+**Layout Management (complete):** `layoutPresets.ts` config module, 9 built-in presets, user CRUD with localStorage, `StudioLayoutManager` dropdown UI, factory default reset.
+**Remaining:** Phase 3 (interaction polish), Phase 4 (route migration), Phase 5 (validation).
 
 #### AI Character Generator (Future)
 

@@ -13,11 +13,11 @@
     - `tests/test_local_executor_generation_runtime.py::test_local_executor_runs_generation_phases` — fails under parallel xdist; passes in isolation
     - `tests/test_discovery_api.py::test_patch_returns_updated` — shared operations_db_path causes DB open failure under xdist
     - `tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash` — executor thread contention under xdist
-  - `cd frontend && npm run lint` -> passed, 2 pre-existing errors only (2026-05-17)
-  - `cd frontend && npm run typecheck` -> passed (2026-05-17)
-  - `cd frontend && npm run build` -> passed, 2070 modules (2026-05-17)
-  - `cd frontend && npm run test` -> 675 passed (~13s)
-- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2070 modules in production bundle.
+  - `cd frontend && npm run lint` -> passed, 2 pre-existing errors only (2026-05-23)
+  - `cd frontend && npm run typecheck` -> passed (2026-05-23)
+  - `cd frontend && npm run build` -> passed, 2020 modules (2026-05-23)
+  - `cd frontend && npm run test` -> 778 passed (~14s, 96 test files)
+- Frontend code quality: 0 TODO/FIXME in production, 0 console.log, 0 `as any` casts, 0 `@ts-ignore`, 0 mock data. 2020 modules in production bundle.
 - Frontend services: 147 exported functions across 26 service files (8 story generation + 8 canon customization + 9 manuscript assist + 4 mythos/pattern library + 1 maintenance + 118 existing). All exports wired to components.
 - Frontend hooks: 30 hook files including 10 new hooks from unwired API exposure work (useRelationships, useArcs, useMythosLibrary, usePatternLibrary, useFoundation, useBrainstorm, useBackups, useAuthKeys, useConfirmation, useApiQuery) + 1 Studio Desk hook (useMergedSuggestions).
 - Studio Desk workspace: 11 components in `frontend/src/components/studio/` (StudioCommandBar, StudioProjectRail, StudioIdeasPanel, StudioCharactersPanel, StudioWorldBiblePanel, StudioRelationshipsPanel, StudioSuggestionsPanel, StudioGenerationPanel, StudioReviewPanel, StudioInspectPanel). Zustand store: `studioStore` with adaptive state (`StudioRailMode`: `expanded`/`collapsed`/`overlay`), bounded width clamping (80-320), and `studio-layout-v1` localStorage persistence. View: `StudioView` with two-column grid (left rail + WritingView). Right context panel removed. Route: `/workspace/:projectId/studio`.
