@@ -63,7 +63,7 @@ describe('WorkspaceShell', () => {
     const navButtons = Array.from(nav.querySelectorAll('button.nav-item'));
     expect(navButtons).toHaveLength(1);
     expect(navButtons[0]?.textContent?.trim()).toBe('Studio');
-    expect(screen.getByText('Studio Desk')).toBeInTheDocument();
+    expect(screen.getByText('Studio')).toBeInTheDocument();
   });
 
   it('renders 2 nav items when mode is in review stage (review)', () => {

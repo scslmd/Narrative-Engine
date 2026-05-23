@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import {
+  getBuiltInPresets,
+  getFactoryDefault,
+  loadUserLayout,
+  type AuthorPresetKey,
+} from './layoutPresets';
 
 export type StudioPanelKey =
   | 'suggestions'
@@ -20,7 +26,7 @@ export type StudioPanelKey =
 
 export type StudioRailMode = 'expanded' | 'collapsed' | 'overlay';
 export type StudioContextMode = 'docked' | 'overlay' | 'closed';
-export type AuthorPreset = 'idea-first' | 'character-first' | 'outline-first' | 'world-first';
+export type AuthorPreset = AuthorPresetKey;
 
 const STUDIO_LAYOUT_STORAGE_KEY = 'studio-layout-v1';
 const DEFAULT_LEFT_RAIL_WIDTH = 224;
@@ -91,9 +97,7 @@ const STUDIO_LAYOUT_V2_KEY = (projectId: string) => `studio-layout-v2-${projectI
   const GRID_SIZE = 8;
   const MIN_PANEL_ZINDEX = 100;
 
-interface PanelPreset {
-  key: StudioPanelKey;
-}
+const LAYOUT_PRESETS = getBuiltInPresets();
 
 const PANEL_DEFAULT_SIZES: Record<StudioPanelKey, { width: number; height: number }> = {
   suggestions: { width: 320, height: 400 },
@@ -112,31 +116,6 @@ const PANEL_DEFAULT_SIZES: Record<StudioPanelKey, { width: number; height: numbe
   inspect: { width: 360, height: 400 },
   notes: { width: 300, height: 380 },
   jobs: { width: 300, height: 400 },
-};
-
-const LAYOUT_PRESETS: Record<AuthorPreset, PanelPreset[]> = {
-  'idea-first': [
-    { key: 'ideas' },
-    { key: 'manuscripts' },
-    { key: 'characters' },
-  ],
-  'character-first': [
-    { key: 'characters' },
-    { key: 'relationships' },
-    { key: 'arcs' },
-    { key: 'ideas' },
-  ],
-  'outline-first': [
-    { key: 'structure' },
-    { key: 'chapters' },
-    { key: 'generation' },
-  ],
-  'world-first': [
-    { key: 'worldBible' },
-    { key: 'characters' },
-    { key: 'arcs' },
-    { key: 'structure' },
-  ],
 };
 
 function snapToGrid(value: number): number {
@@ -264,6 +243,8 @@ interface StudioState {
   applyPreset: (preset: AuthorPreset) => void;
   exportLayout: () => string;
   importLayout: (json: string) => boolean;
+  factoryReset: () => void;
+  applyUserLayout: (id: string) => boolean;
 }
 
 const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_LAYOUT_STORAGE_KEY) : null);
@@ -597,5 +578,60 @@ export const useStudioStore = create<StudioState>((set) => ({
     } catch {
       return false;
     }
+  },
+  factoryReset: () => {
+    const def = getFactoryDefault();
+    useStudioStore.setState({
+      activePanel: 'suggestions',
+      leftRailMode: def.v1State.leftRailMode,
+      contextPanelMode: def.v1State.contextPanelMode,
+      contextPanelPinned: def.v1State.contextPanelPinned,
+      leftRailWidth: def.v1State.leftRailWidth,
+      contextPanelWidth: def.v1State.contextPanelWidth,
+      panelVisible: false,
+      layout: {
+        panels: def.panels,
+        nextZIndex: 103,
+        layoutPreset: null,
+      },
+    });
+    persistLayout(useStudioStore.getState());
+    const state = useStudioStore.getState();
+    if (state.currentProjectId) {
+      persistLayoutV2(state.currentProjectId, {
+        panels: def.panels,
+        nextZIndex: 103,
+        layoutPreset: null,
+      });
+    }
+  },
+  applyUserLayout: (id) => {
+    const layout = loadUserLayout(id);
+    if (!layout) return false;
+
+    useStudioStore.setState({
+      leftRailMode: layout.v1State.leftRailMode,
+      contextPanelMode: layout.v1State.contextPanelMode,
+      contextPanelPinned: layout.v1State.contextPanelPinned,
+      leftRailWidth: layout.v1State.leftRailWidth,
+      contextPanelWidth: layout.v1State.contextPanelWidth,
+      activePanel: Object.values(layout.panels).find((p) => p.visible)?.key ?? 'suggestions',
+      layout: {
+        panels: layout.panels,
+        nextZIndex: Object.values(layout.panels).reduce((max, p) => Math.max(max, p.zIndex), 100) + 1,
+        layoutPreset: layout.name,
+      },
+    });
+
+    const state = useStudioStore.getState();
+    if (state.currentProjectId) {
+      persistLayoutV2(state.currentProjectId, {
+        panels: layout.panels,
+        nextZIndex: Object.values(layout.panels).reduce((max, p) => Math.max(max, p.zIndex), 100) + 1,
+        layoutPreset: layout.name,
+      });
+    }
+
+    return true;
   },
 }));

@@ -47,8 +47,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const showTooltipsEnabled = showTooltips && iconsOnly
   const activeStage = modeToStage[mode]
   const visibleItems = navItems.filter((item) => item.stage === activeStage)
-  const studioActive = mode === 'studio'
-
   const handleNavClick = (key: string) => {
     setMode('studio');
     if (projectId) {
@@ -97,32 +95,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                   <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-br ${item.gradient} nav-label`} />
                 )}
               </button>
-            )
+           )
           })}
           </nav>
-          <div className="border-t border-[var(--border-primary)] pt-2 mt-2">
-            <button
-              onClick={() => handleNavClick('studio')}
-              aria-current={studioActive ? 'page' : undefined}
-              className={`w-full nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
-                studioActive
-                  ? 'bg-[var(--color-primary-subtle)] text-[var(--color-primary)] shadow-card'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-              }`}
-            >
-              <div className={`nav-icon-wrapper w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
-                studioActive
-                  ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm'
-                  : 'bg-[var(--bg-secondary)] text-[var(--text-tertiary)] group-hover:bg-[var(--bg-tertiary)] group-hover:text-[var(--text-secondary)]'
-              }`}>
-                <MonitorUp className="w-4 h-4" />
-              </div>
-              <span className="flex-1 text-left nav-label">Studio Desk</span>
-              {studioActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 nav-label" />
-              )}
-            </button>
-          </div>
         </div>
       </aside>
       <main className="flex-1 min-w-0">{children}</main>
