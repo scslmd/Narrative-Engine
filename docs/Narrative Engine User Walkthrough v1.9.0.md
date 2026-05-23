@@ -1,6 +1,6 @@
 # Narrative Engine - Complete User Walkthrough v1.9.0
 
-Last updated: 2026-05-19 (form entry optimization: required/optional field fix, progressive disclosure, Arcs panel, canon context badges)
+Last updated: 2026-05-22 (god-file refactor docs sync, Studio Desk layout/state alignment, link fixes)
 
 ## Goal
 This walkthrough is the full frontend operating manual. It explains every workspace interface and gives a comprehensive, practical workflow from first launch to advanced generation and iteration.
@@ -68,7 +68,7 @@ The workspace has the following structure:
 - **Main content area:** Current mode view.
 - **Bottom utility layer:** Runtime/status bar for job progress.
 
-**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and right context panel via the ViewShell component.
+**Note:** In Studio mode, the WorkspaceShell left panel is hidden. StudioView uses its own left rail (Project Map) and embeds WritingView directly in a two-column layout. The legacy right context panel is removed.
 
 ### Left Panel Navigation
 The left panel displays stage-aware navigation items plus a permanent "Studio Desk" link. The active item is highlighted with a gradient icon background and a dot indicator.
@@ -727,7 +727,7 @@ A complete 12-chapter novel with:
 
 ## Phase 12: Full Production Workflow
 
-For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.8.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
+For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.9.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
 
 ## Common Mistakes and Fixes
 
@@ -808,15 +808,12 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 - Run setup, status tracking, gates, fork.
 
 ### Studio Desk
-- Three-column layout: Command Bar (top), Project Map (left rail, 80-320px), Manuscript Editor (center, full width), Context Panel (right, 320px, toggleable).
-- Context panel hidden by default for full-width editing. Opens on rail button click or panel toggle.
-- Context panel tabs: Suggestions, Drafts, Manuscripts, Ideas, Characters, World, Review.
-- Layout preferences persist across sessions (rail mode, widths, panel visibility).
-- Project Map: 12 panels — Drafts, Manuscripts, Ideas, Suggestions, Review, Characters, World Bible, Relationships, Arcs, Canon, Notes, Jobs.
-- Left rail collapses to compact icon-only mode (80px) or expands (192-320px).
-- Command bar toggles: rail expand/collapse, context panel show/hide.
-- Responsive: overlay drawer below `xl:` breakpoint.
-- **Future:** Radial Hub Workspace redesign (design approved) will replace this layout with draggable, resizable, tear-off panels around a central writing surface.
+- Floating-panel workspace with command bar + adaptive project rail + embedded WritingView in a two-column composition.
+- Panel state is persisted per project (`studio-layout-v1`) and rail width is bounded (80-320px).
+- Rail modes: `expanded`, `collapsed`, `overlay` (used for smaller breakpoints).
+- Right context panel is removed; review/suggestions/generation/inspect are available as Studio panels.
+- Project panels include Suggestions, Ideas, Drafts, Manuscripts, Characters, World Bible, Relationships, Arcs, Structure, Chapters, Canon, Generation, Review, Inspect, Notes, Jobs.
+- `?tab=` deep links open/focus panels, and `/workspace/:projectId/write` routes redirect to `/workspace/:projectId/studio`.
 
 ## Common Failure Cases and Fixes
 - Missing project context: verify `:projectId` route and selected project.

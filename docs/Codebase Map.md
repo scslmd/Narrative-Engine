@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-21
+> Living document. Last updated: 2026-05-22
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -553,14 +553,14 @@ M-550: Manuscript Repair (if gates fail)
 |------|-------|-------------|
 | `app/main.py` | 580 | App factory, middleware chain, router registration, SPA serving |
 | `app/settings.py` | 157 | Configuration dataclass with pytest isolation support |
-| `app/services/local_executor.py` | 2,486 | Job execution engine: 10 phase handlers, artifact lifecycle |
-| `app/services/runtime_prompts.py` | 1,952 | LLM prompt builders for all phases (P-100 through M-550) |
+| `app/services/local_executor/__init__.py` | package | Job execution package entrypoint and orchestration exports |
+| `app/services/runtime_prompts/__init__.py` | package | Runtime prompt package entrypoint and prompt-builder exports |
 | `app/services/story_import.py` | 1,588 | Story import service: single-pass LLM analysis + persistence |
 | `app/services/multi_pass_import.py` | 1,786 | Multi-pass import for stories >30K chars |
 | `app/schemas/story_development.py` | 1,280 | Story entity schemas (Foundation, Character, World Bible, Arcs, Planning) |
 | `app/services/story_knowledge.py` | 915 | Story knowledge graph service |
-| `app/persistence/story_development.py` | 6,689 | Story development repository (CRUD for all story entities) |
-| `app/api/story_development.py` | 3,104 | Story development router (LARGEST router) |
+| `app/persistence/story_development/__init__.py` | package | Story development persistence package entrypoint |
+| `app/api/story_development/__init__.py` | package | Story development router package entrypoint |
 | `app/persistence/sqlite.py` | 2,582 | Database schema definitions + migration system (60+ tables) |
 | `app/persistence/jobs.py` | 732 | Job repository with idempotency support |
 | `app/services/review_routing.py` | 686 | Review routing service for findings and decisions |
@@ -714,7 +714,7 @@ M-550: Manuscript Repair (if gates fail)
 | `/v1/projects` | `projects.py` | Project CRUD + imports | GET /, POST /create, GET /{id}, DELETE /{id}, POST /import-story, POST /import-patterns, POST /{id}/extract-patterns |
 | `/v1/jobs` | `jobs.py` | Job lifecycle | POST /create (202), GET /{id}/status, GET /{id}/logs, GET /{id}/steps, GET /{id}/lineage, GET /{id}/attempts, POST /{id}/retry |
 | `/v1/models` | `models.py` | Model catalog | GET / |
-| `/v1/story-development` | `story_development.py` | Full story development | branches, flow, decisions, review, planning, drafting, brainstorm, braindump, foundation, characters, world-bible, arcs, storyboard, relationships |
+| `/v1/story-development` | `story_development/__init__.py` | Full story development | branches, flow, decisions, review, planning, drafting, brainstorm, braindump, foundation, characters, world-bible, arcs, storyboard, relationships |
 | `/v1/story-generation` | `story_generation.py` | Canon-congruent generation | POST /runs, GET /runs, GET /runs/{id}, POST /runs/{id}/retry, GET /runs/{id}/packet, GET /runs/{id}/gates, POST /fork-preview, POST /fork-project |
 | `/v1/manuscript-assist` | `manuscript_assist.py` | Manuscript editing assist | POST /runs, GET /runs, GET /runs/{id}, POST /runs/{id}/retry, GET /runs/{id}/gates, GET /suggestions, POST /suggestions/{id}/apply, POST /suggestions/{id}/reject, POST /suggestions/{id}/archive |
 | `/v1/canon` | `canon_customization.py` | Canon customization | annotations (CRUD), profiles (CRUD + packet-preview) |
@@ -812,11 +812,11 @@ pytest -n 0 \
 
 | File | Lines |
 |------|-------|
-| `app/persistence/story_development.py` | 6,689 |
-| `app/api/story_development.py` | 3,104 |
+| `app/persistence/story_development/__init__.py` | package |
+| `app/api/story_development/__init__.py` | package |
 | `app/persistence/sqlite.py` | 2,582 |
-| `app/services/local_executor.py` | 2,486 |
-| `app/services/runtime_prompts.py` | 1,952 |
+| `app/services/local_executor/__init__.py` | package |
+| `app/services/runtime_prompts/__init__.py` | package |
 | `app/services/multi_pass_import.py` | 1,786 |
 | `app/services/story_import.py` | 1,588 |
 | `app/schemas/story_development.py` | 1,280 |
@@ -862,4 +862,3 @@ pytest -n 0 \
 | React Query hooks | 37 |
 | Database tables (operations) | 60+ |
 | Database schema version | 22 |
-
