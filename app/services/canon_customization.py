@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.persistence.story_development import StoryDevelopmentRepository
+from app.persistence.story_development.contracts import CanonRepository
 from app.schemas.canon_customization import (
     CanonAnnotation,
     CanonAnnotationCreateRequest,
@@ -13,7 +13,7 @@ from app.utils.db_inserts import hash_id
 
 
 class CanonCustomizationService:
-    def __init__(self, repository: StoryDevelopmentRepository) -> None:
+    def __init__(self, repository: CanonRepository) -> None:
         self.repository = repository
 
     def list_annotations(

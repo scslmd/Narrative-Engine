@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from app.persistence.story_development import StoryDevelopmentRepository
+from app.persistence.story_development.contracts import BranchingRepository
 from app.schemas import (
     BranchComparisonRecord,
     BranchMergeDecision,
@@ -25,7 +25,7 @@ class StoryBranchingValidationError(StoryBranchingServiceError):
 
 
 class StoryBranchingService:
-    def __init__(self, repository: StoryDevelopmentRepository) -> None:
+    def __init__(self, repository: BranchingRepository) -> None:
         self.repository = repository
 
     def create_story_branch(

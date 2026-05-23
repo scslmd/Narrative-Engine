@@ -7,8 +7,8 @@ from app.persistence.story_development import (
     CheckerFindingRecord,
     InspectRunLinkRecord,
     ReviewDecisionRecord,
-    StoryDevelopmentRepository,
 )
+from app.persistence.story_development.contracts import ReviewRepository
 from app.schemas import (
     ChapterPacket,
     CheckerFinding,
@@ -56,7 +56,7 @@ class ReviewRoutingValidationError(ReviewRoutingServiceError):
 class ReviewRoutingService:
     def __init__(
         self,
-        repository: StoryDevelopmentRepository,
+        repository: ReviewRepository,
         *,
         drafting_service: DraftingService | None = None,
         planning_service: PlanningService | None = None,

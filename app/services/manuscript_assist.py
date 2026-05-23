@@ -10,8 +10,8 @@ from app.persistence.story_development import (
     ManuscriptAssistRunRecord,
     ManuscriptAssistSuggestionRecord,
     ManuscriptDocumentRecord,
-    StoryDevelopmentRepository,
 )
+from app.persistence.story_development.contracts import DraftingRepository, ManuscriptAssistRepository
 from app.schemas.jobs import JobCreateRequest
 from app.schemas.manuscript_assist import (
     ApplyAssistSuggestionRequest,
@@ -58,7 +58,7 @@ class ManuscriptAssistService:
     def __init__(
         self,
         *,
-        repository: StoryDevelopmentRepository,
+        repository: ManuscriptAssistRepository | DraftingRepository,
         drafting_service: DraftingService,
         job_manager: JobManager,
         gate_service: ManuscriptAssistGateService | None = None,

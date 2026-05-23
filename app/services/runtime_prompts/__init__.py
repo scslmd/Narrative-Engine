@@ -4,13 +4,13 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from ..schemas.inference import InferenceMessage, InferenceRequest
-from ..schemas.manifest import Manifest
-from ..schemas.pattern_extraction import PatternExtractionAnalysis
-from ..settings import settings
+from ...schemas.inference import InferenceMessage, InferenceRequest
+from ...schemas.manifest import Manifest
+from ...schemas.pattern_extraction import PatternExtractionAnalysis
+from ...settings import settings
 
 if TYPE_CHECKING:
-    from .scene_context import SceneContext
+    from ..scene_context import SceneContext
     from app.schemas.generation import CanonGenerationPacket, GenerationPlan
     from app.schemas.manuscript_assist import ManuscriptAssistPacket
 

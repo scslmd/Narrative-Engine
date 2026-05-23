@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from typing import Any
 
-from app.persistence.story_development import StoryDevelopmentRepository
+from app.persistence.story_development.contracts import CanonRepository, GenerationRepository, PlanningRepository
 from app.schemas.generation import (
     CanonGenerationPacket,
     CanonGenerationRequest,
@@ -32,7 +32,7 @@ class StoryGenerationOrchestrator:
     def __init__(
         self,
         *,
-        repository: StoryDevelopmentRepository,
+        repository: GenerationRepository | CanonRepository | PlanningRepository,
         project_service: ProjectService,
         packet_builder: CanonPacketBuilder,
         forking_service: StoryForkingService,

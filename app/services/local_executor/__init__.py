@@ -9,19 +9,19 @@ from time import sleep
 from typing import Any
 from uuid import UUID
 
-from ..inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
-from ..persistence.story_development import StoryDevelopmentRepository
-from ..persistence.steps import stable_hash_payload, stable_hash_text
-from ..schemas.inference import InferenceMessage, InferenceRequest
-from ..schemas.role_model_checker import RoleModelCheckStartRequest
-from ..services.file_permissions import FilePermissionValidator
-from ..settings import settings
-from ..utils.input_validation import ValidationError, sanitize_filename
-from .job_manager import JobManager
-from .projects import ProjectService
-from .role_model_check_manager import RoleModelCheckManager
-from .role_model_checker import RoleModelCheckerService
-from .runtime_prompts import (
+from ...inference import InferenceBackend, InferenceBackendError, StubInferenceBackend
+from ...persistence.story_development import StoryDevelopmentRepository
+from ...persistence.steps import stable_hash_payload, stable_hash_text
+from ...schemas.inference import InferenceMessage, InferenceRequest
+from ...schemas.role_model_checker import RoleModelCheckStartRequest
+from ...services.file_permissions import FilePermissionValidator
+from ...settings import settings
+from ...utils.input_validation import ValidationError, sanitize_filename
+from ..job_manager import JobManager
+from ..projects import ProjectService
+from ..role_model_check_manager import RoleModelCheckManager
+from ..role_model_checker import RoleModelCheckerService
+from ..runtime_prompts import (
     build_m500_draft_generation_request,
     build_m500_manuscript_assist_request,
     build_m550_manuscript_repair_request,
@@ -38,13 +38,13 @@ from .runtime_prompts import (
     sequence_output_path,
     story_bible_output_path,
 )
-from .generation_gates import GenerationGateService
-from .step_records import StepRecordService
-from .scene_context import SceneContextService
-from .consistency_critic import ConsistencyCriticService
-from .entity_intake import EntityIntakeService
-from .chapter_summarizer import ChapterSummarizerService
-from .manuscript_assist_gates import ManuscriptAssistGateService
+from ..generation_gates import GenerationGateService
+from ..step_records import StepRecordService
+from ..scene_context import SceneContextService
+from ..consistency_critic import ConsistencyCriticService
+from ..entity_intake import EntityIntakeService
+from ..chapter_summarizer import ChapterSummarizerService
+from ..manuscript_assist_gates import ManuscriptAssistGateService
 
 logger = logging.getLogger(__name__)
 
