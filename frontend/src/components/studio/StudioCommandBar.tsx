@@ -1,7 +1,7 @@
 import { PanelLeft, PanelRight } from 'lucide-react';
 import { useStudioStore } from '../../stores/studioStore';
 import { StudioPanelMenu } from './StudioPanelMenu';
-import { StudioLayoutPreset } from './StudioLayoutPreset';
+import { StudioLayoutManager } from './StudioLayoutManager';
 
 interface StudioCommandBarProps {
   projectId?: string;
@@ -88,7 +88,7 @@ export function StudioCommandBar({
           </button>
         )}
         {projectId && <StudioPanelMenu projectId={projectId} />}
-        {projectId && <StudioLayoutPreset />}
+        {projectId && <StudioLayoutManager />}
       </div>
     </header>
   );
