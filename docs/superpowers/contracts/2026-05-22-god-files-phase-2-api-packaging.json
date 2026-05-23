@@ -1,0 +1,206 @@
+{
+  "contract_id": "GF-P2-2026-05-22",
+  "title": "God Files Refactor Phase 2 - Story Development API Package Split",
+  "execution_mode": "serial",
+  "goal": "Convert app/api/story_development.py into a package, move inline API request and response models into schema modules, and split route families into thin domain routers without changing any route behavior or paths.",
+  "required_skills": [
+    "test-driven-development",
+    "verification-before-completion",
+    "requesting-code-review",
+    "receiving-code-review"
+  ],
+  "global_context": {
+    "design_spec": "docs/superpowers/specs/2026-05-22-god-files-architecture-refactor-design.md",
+    "existing_router_builder": "app.api.story_development.build_story_development_router",
+    "must_preserve_routes": "/v1/story-development/*",
+    "existing_test_files": [
+      "tests/test_story_development_api.py",
+      "tests/test_story_development_branches.py",
+      "tests/test_story_development_integration_flow.py",
+      "tests/test_review_routing_post.py",
+      "tests/test_manuscript_review_api.py",
+      "tests/test_manuscript_update_api.py",
+      "tests/test_audit_logging.py"
+    ],
+    "existing_capability_lock": "Do not add new route families, request fields, response fields, or status code behavior."
+  },
+  "tasks": [
+    {
+      "task_id": "GF-P2-T001",
+      "title": "Add failing tests for API package conversion and schema extraction surfaces",
+      "responsible_file": "tests/test_story_development_router_packaging.py",
+      "serial_dependencies": [],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create tests that fail until app.api.story_development becomes a package and the schema modules exist.",
+      "repo_context": [
+        "Current imports use app.api.story_development as a single module with build_story_development_router.",
+        "The target package must still expose build_story_development_router from app.api.story_development.",
+        "Schema targets are app/schemas/story_development_api/common.py, flow.py, brainstorm.py, braindump.py, foundation.py, characters.py, world_bible.py, arcs.py, branches.py, review.py, planning.py, drafting.py, and storyboard.py."
+      ],
+      "implementation_notes": [
+        "Assert build_story_development_router remains importable from app.api.story_development.",
+        "Assert the named schema modules import successfully.",
+        "Assert the named route modules import successfully."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_story_development_router_packaging.py",
+        "expected_red": "FAIL until the package and schema modules are created"
+      },
+      "guardrails": [
+        "Do not add tests for routes that do not already exist.",
+        "Do not encode new behavior expectations."
+      ],
+      "review_before_complete": "Confirm the tests lock package structure and compatibility only."
+    },
+    {
+      "task_id": "GF-P2-T002",
+      "title": "Convert the story development router module into a package facade",
+      "responsible_file": "app/api/story_development.py",
+      "serial_dependencies": [
+        "GF-P2-T001"
+      ],
+      "same_file_serial_group": "GF-P2-API-FACADE",
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Convert app/api/story_development.py into app/api/story_development/__init__.py while preserving build_story_development_router and current route registration behavior.",
+      "repo_context": [
+        "This is the API package conversion seam, analogous to the persistence package conversion.",
+        "The package facade must continue exposing build_story_development_router for all existing tests and import sites."
+      ],
+      "implementation_notes": [
+        "Move the existing router implementation into the package entrypoint as a temporary facade.",
+        "Do not split route families yet beyond what is necessary for the package import target to work."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_router_packaging.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_api.py"
+        ],
+        "expected_green": [
+          "packaging tests pass",
+          "existing story development API regression tests still pass"
+        ]
+      },
+      "guardrails": [
+        "Do not change route paths.",
+        "Do not move inline schemas in this task."
+      ],
+      "review_before_complete": "Review the package facade and confirm it remains a compatibility layer only."
+    },
+    {
+      "task_id": "GF-P2-T003",
+      "title": "Create story development API schema modules and move inline request or response models into them",
+      "responsible_file": "app/schemas/story_development_api/common.py",
+      "serial_dependencies": [
+        "GF-P2-T002"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create the schema package and move inline StrictModel classes out of the router file without changing field names or validation behavior.",
+      "repo_context": [
+        "The current router contains list response wrappers, request models, and PATCH payload models inline.",
+        "The design spec requires these to move into domain-specific schema files under app/schemas/story_development_api/."
+      ],
+      "implementation_notes": [
+        "Use common.py for shared wrappers only and create the domain modules named in the design spec.",
+        "Keep existing snake_case field names and StrictModel inheritance.",
+        "Do not rename request or response classes unless the old names are preserved by imports."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_router_packaging.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_api.py -k validation"
+        ],
+        "expected_green": [
+          "schema package tests pass",
+          "validation-focused API tests still pass"
+        ]
+      },
+      "guardrails": [
+        "Do not add or remove fields.",
+        "Do not move business logic into schema files."
+      ],
+      "review_before_complete": "Compare each moved model against the original inline definition and verify field parity."
+    },
+    {
+      "task_id": "GF-P2-T004",
+      "title": "Create coordination-only API dependency helpers",
+      "responsible_file": "app/api/story_development/dependencies.py",
+      "serial_dependencies": [
+        "GF-P2-T003"
+      ],
+      "required_skills": [
+        "test-driven-development"
+      ],
+      "objective": "Create a dependencies module that exposes service accessors and shared dependency helpers only.",
+      "repo_context": [
+        "The design spec explicitly forbids response projection, PATCH merge logic, and route-family business rules in dependencies.py.",
+        "This module is allowed to own service accessors and auth or context extraction only."
+      ],
+      "implementation_notes": [
+        "Move only shared dependency helpers into this file.",
+        "Do not move route-family transformation logic here.",
+        "Keep the module small and purpose-limited."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_api.py -k isolated",
+        "expected_green": "isolated route-family API tests still pass"
+      },
+      "guardrails": [
+        "No PATCH merge logic in dependencies.py.",
+        "No response shaping utilities in dependencies.py."
+      ],
+      "review_before_complete": "Read the whole file and confirm it is coordination-only."
+    },
+    {
+      "task_id": "GF-P2-T005",
+      "title": "Split story development routes into domain router modules",
+      "responsible_file": "app/api/story_development/planning.py",
+      "serial_dependencies": [
+        "GF-P2-T004"
+      ],
+      "required_skills": [
+        "test-driven-development",
+        "verification-before-completion"
+      ],
+      "objective": "Use planning.py as the first router extraction anchor, then create the other route-family modules named in the design spec and register them through router.py.",
+      "repo_context": [
+        "Target route modules are flow.py, brainstorm.py, braindump.py, foundation.py, characters.py, world_bible.py, arcs.py, branches.py, review.py, planning.py, drafting.py, and storyboard.py.",
+        "Each route file may own HTTP parsing, response codes, and response shaping only.",
+        "Cross-family business rules belong in services, not routers."
+      ],
+      "implementation_notes": [
+        "Create router.py as the central registration-only module.",
+        "Extract route families one by one, preserving current operations and tags.",
+        "Keep build_story_development_router as the compatibility entrypoint."
+      ],
+      "verification": {
+        "green": [
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_api.py tests/test_story_development_branches.py tests/test_review_routing_post.py tests/test_manuscript_review_api.py tests/test_manuscript_update_api.py",
+          "python -m pytest -q -p no:cacheprovider tests/test_story_development_integration_flow.py"
+        ],
+        "expected_green": [
+          "all targeted API route-family tests pass",
+          "full story development integration flow passes"
+        ]
+      },
+      "guardrails": [
+        "Do not change operation names checked in audit logging.",
+        "Do not add new routers or route prefixes.",
+        "Do not move service logic into route modules."
+      ],
+      "review_before_complete": "Check every new route module and confirm it is thin and domain-local."
+    }
+  ],
+  "phase_completion_requirements": {
+    "mandatory_review": "Review the split router package before completion and fix all Important findings.",
+    "mandatory_verification": [
+      "python -m pytest -q -p no:cacheprovider tests/test_story_development_router_packaging.py tests/test_story_development_api.py tests/test_story_development_branches.py tests/test_review_routing_post.py tests/test_manuscript_review_api.py tests/test_manuscript_update_api.py tests/test_story_development_integration_flow.py"
+    ]
+  }
+}
