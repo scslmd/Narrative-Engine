@@ -58,22 +58,19 @@ export function StudioArcsPanel({ projectId }: StudioArcsPanelProps) {
   if (mode === 'list') {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex shrink-0 items-center justify-between px-3 py-2 border-b border-[var(--border-primary)]">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Arcs</h2>
-            <p className="text-[10px] mt-0.5 text-[var(--text-tertiary)]">
-              {arcs.length} candidates
-            </p>
-          </div>
+        <div className="flex shrink-0 items-center justify-between px-2.5 py-1 border-b border-[var(--border-primary)]">
+          <span className="text-[9px] text-[var(--text-tertiary)]">
+            {arcs.length} candidates
+          </span>
           <button
             onClick={() => setMode('create')}
-            className="px-2 py-1 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-[10px] font-medium rounded-md hover:from-violet-600 hover:to-violet-700 shadow-sm transition-all"
+            className="px-1.5 py-0.5 bg-violet-500 text-white text-[9px] font-medium rounded hover:bg-violet-600 transition-colors"
           >
-            New Arc
+            New
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-2">
           <div className="grid grid-cols-1 gap-2">
             {arcs.map((arc) => (
               <div
@@ -103,7 +100,7 @@ export function StudioArcsPanel({ projectId }: StudioArcsPanelProps) {
           </div>
 
           {arcs.length === 0 && (
-            <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-center py-4 text-[10px] text-slate-500 dark:text-slate-400">
               No arc candidates configured. Create an arc to start building story threads.
             </div>
           )}

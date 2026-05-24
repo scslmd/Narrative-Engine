@@ -189,31 +189,31 @@ function StudioFloatingWindowImpl({
         transition: dragging ? 'none' : 'box-shadow 0.15s, transform 0.1s',
       }}
     >
-      <div
-        className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 cursor-grab active:cursor-grabbing select-none"
-        onPointerDown={handleDragStart}
-      >
-        <span className="text-xs font-semibold text-[var(--text-primary)]">{label}</span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
-            className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-            title="Reattach"
-          >
-            &#x2281;
-          </button>
-          <button
-            type="button"
-            aria-label="Close panel"
-            onClick={(e) => { e.stopPropagation(); removePanel(panelId); }}
-            className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-            title="Close"
-          >
-            &#x2715;
-          </button>
-        </div>
-      </div>
+     <div
+         className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 cursor-grab active:cursor-grabbing select-none"
+         onPointerDown={handleDragStart}
+       >
+         <span className="text-[10px] font-semibold text-[var(--text-primary)]">{label}</span>
+         <div className="flex items-center gap-0.5">
+           <button
+             type="button"
+             onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
+             className="rounded px-1 py-0.5 text-[9px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+             title="Reattach"
+           >
+             &#x2281;
+           </button>
+           <button
+             type="button"
+             aria-label="Close panel"
+             onClick={(e) => { e.stopPropagation(); removePanel(panelId); }}
+             className="rounded px-1 py-0.5 text-[9px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+             title="Close"
+           >
+             &#x2715;
+           </button>
+         </div>
+       </div>
 
       <div className="relative flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto p-2">{children}</div>

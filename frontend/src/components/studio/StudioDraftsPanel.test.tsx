@@ -49,6 +49,6 @@ describe('StudioDraftsPanel', () => {
 
   it('renders with projectId prop', () => {
     render(<StudioDraftsPanel projectId="test-proj" />);
-    expect(screen.getByRole('heading', { name: /drafts/i })).toBeInTheDocument();
+    expect(screen.getByText(/0 drafts/)).toBeInTheDocument();
   });
 });

@@ -50,7 +50,7 @@ function ChapterRow({
       }`}
       onClick={() => onSelect(chapter.chapter_id)}
     >
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex items-center gap-2 px-2.5 py-1.5">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
@@ -75,7 +75,7 @@ function ChapterRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-[var(--border-primary)] px-3 py-2 space-y-1.5">
+         <div className="border-t border-[var(--border-primary)] px-2.5 py-1.5 space-y-1">
           {chapter.summary && (
             <p className="text-[10px] leading-relaxed text-[var(--text-secondary)]">
               {chapter.summary}
@@ -170,30 +170,25 @@ export function StudioChaptersPanel({ projectId }: StudioChaptersPanelProps) {
   }
 
   return (
-    <div data-chapters-panel className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Chapters</h3>
-          <div className="flex gap-1.5 mt-0.5">
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <span key={status} className="flex items-center gap-0.5 text-[9px] text-[var(--text-tertiary)]">
-                <div className={`h-1 w-1 rounded-full ${CHAPTER_STATUS_DOTS[status] || 'bg-slate-400'}`} />
-                {count}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div data-chapters-panel className="space-y-1.5">
+       <div className="flex items-center gap-1.5">
+         {Object.entries(statusCounts).map(([status, count]) => (
+           <span key={status} className="flex items-center gap-0.5 text-[9px] text-[var(--text-tertiary)]">
+             <div className={`h-1 w-1 rounded-full ${CHAPTER_STATUS_DOTS[status] || 'bg-slate-400'}`} />
+             {count}
+           </span>
+         ))}
+       </div>
 
-      {chapters.length === 0 ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-[var(--text-tertiary)]">No chapters planned yet.</p>
-          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
-            Create chapter plans to structure your story.
-          </p>
-        </div>
+     {chapters.length === 0 ? (
+         <div className="py-3 text-center">
+           <p className="text-[10px] text-[var(--text-tertiary)]">No chapters planned yet.</p>
+           <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+             Create chapter plans to structure your story.
+           </p>
+         </div>
       ) : (
-        <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+        <div className="space-y-1 max-h-[400px] overflow-y-auto">
           {chapters.map((chapter) => (
             <ChapterRow
               key={chapter.chapter_id}

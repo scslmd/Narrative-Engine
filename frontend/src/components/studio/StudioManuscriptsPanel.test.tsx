@@ -32,6 +32,6 @@ describe('StudioManuscriptsPanel', () => {
 
   it('renders with onSelect prop', () => {
     render(<StudioManuscriptsPanel onSelect={vi.fn()} />);
-    expect(screen.getByRole('heading', { name: /manuscripts/i })).toBeInTheDocument();
+    expect(screen.getByText(/documents/i)).toBeInTheDocument();
   });
 });

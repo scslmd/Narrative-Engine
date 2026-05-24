@@ -242,18 +242,18 @@ function StudioFloatingPanelImpl({
       <div className="flex h-full flex-col overflow-hidden">
         <div
           ref={headerRef}
-          className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 cursor-grab active:cursor-grabbing relative"
+          className="flex shrink-0 items-center justify-between border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1 cursor-grab active:cursor-grabbing relative"
           onMouseEnter={handleHeaderHover}
           onMouseLeave={handleHeaderLeave}
         >
-          <span className="text-xs font-semibold text-[var(--text-primary)]">{label}</span>
-          <div className="flex items-center gap-1">
+          <span className="text-[10px] font-semibold text-[var(--text-primary)]">{label}</span>
+          <div className="flex items-center gap-0.5">
             {floating ? (
               <button
                 type="button"
                 aria-label="Reattach panel"
                 onClick={(e) => { e.stopPropagation(); reattachPanel(panelId); }}
-                className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="rounded px-1 py-0.5 text-[9px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 title="Reattach"
               >
                 &#x2281;
@@ -263,7 +263,7 @@ function StudioFloatingPanelImpl({
                 type="button"
                 aria-label={pinned ? 'Unpin panel' : 'Pin panel'}
                 onClick={(e) => { e.stopPropagation(); pinPanel(panelId, !pinned); }}
-                className={`rounded px-1.5 py-0.5 text-[10px] ${pinned ? 'text-amber-400' : 'text-[var(--text-secondary)]'} hover:text-[var(--text-primary)]`}
+                className={`rounded px-1 py-0.5 text-[9px] ${pinned ? 'text-amber-400' : 'text-[var(--text-secondary)]'} hover:text-[var(--text-primary)]`}
                 title={pinned ? 'Unpin' : 'Pin'}
               >
                 &#x1F4CC;
@@ -274,7 +274,7 @@ function StudioFloatingPanelImpl({
                 type="button"
                 aria-label="Close panel"
                 onClick={(e) => { e.stopPropagation(); removePanel(panelId); }}
-                className="rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="rounded px-1 py-0.5 text-[9px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 title="Close"
             >
               &#x2715;

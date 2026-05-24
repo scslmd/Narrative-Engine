@@ -106,45 +106,42 @@ export function StudioCanonPanel({ projectId }: StudioCanonPanelProps) {
 
   return (
     <div data-canon-panel className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Canon</h3>
-        <div className="flex gap-1">
-          {(['profiles', 'annotations'] as CanonTab[]).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] ring-1 ring-[var(--border-primary)]'
-                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              {tab === 'profiles' ? `${profiles.length}` : `${annotations.length}`}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center justify-end gap-1">
+        {(['profiles', 'annotations'] as CanonTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors ${
+              activeTab === tab
+                ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] ring-1 ring-[var(--border-primary)]'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            {tab === 'profiles' ? `${profiles.length}` : `${annotations.length}`}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'profiles' ? (
-        profiles.length === 0 ? (
-          <div className="py-6 text-center">
-            <p className="text-xs text-[var(--text-tertiary)]">No canon profiles.</p>
-            <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
-              Create profiles to manage canon scope.
-            </p>
-          </div>
+       profiles.length === 0 ? (
+           <div className="py-4 text-center">
+             <p className="text-[10px] text-[var(--text-tertiary)]">No canon profiles.</p>
+             <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+               Create profiles to manage canon scope.
+             </p>
+           </div>
         ) : (
-          <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+      <div className="space-y-1 max-h-[400px] overflow-y-auto">
             {profiles.map((profile) => (
               <ProfileRow key={profile.profile_id} profile={profile} />
             ))}
           </div>
         )
       ) : annotations.length === 0 ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-[var(--text-tertiary)]">No annotations.</p>
-          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+        <div className="py-4 text-center">
+          <p className="text-[10px] text-[var(--text-tertiary)]">No annotations.</p>
+          <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
             Annotations appear when you flag canon fields.
           </p>
         </div>

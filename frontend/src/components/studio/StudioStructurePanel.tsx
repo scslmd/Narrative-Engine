@@ -53,13 +53,13 @@ function SequenceBlock({ sequence, beats }: { sequence: SequencePlan; beats: Bea
   const progress = seqBeats.length > 0 ? (completedCount / seqBeats.length) * 100 : 0;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold text-[var(--text-primary)]">{sequence.title}</h4>
-        <span className="text-[10px] text-[var(--text-tertiary)]">
-          {completedCount}/{seqBeats.length} beats
-        </span>
-      </div>
+    <div className="space-y-1.5">
+       <div className="flex items-center justify-between">
+         <h4 className="text-[10px] font-semibold text-[var(--text-primary)]">{sequence.title}</h4>
+         <span className="text-[9px] text-[var(--text-tertiary)]">
+           {completedCount}/{seqBeats.length} beats
+         </span>
+       </div>
       <div className="flex gap-1">
         {seqBeats.map((beat) => (
           <div key={beat.beat_id} className="flex-1">
@@ -125,52 +125,47 @@ export function StudioStructurePanel({ projectId }: StudioStructurePanelProps) {
   const overallProgress = totalBeats > 0 ? (completedBeats / totalBeats) * 100 : 0;
 
   return (
-    <div data-structure-panel className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Structure</h3>
-          <p className="text-[10px] text-[var(--text-tertiary)]">
-            {sequences.length} sequences · {totalBeats} beats
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] font-medium text-[var(--text-secondary)]">
-            {Math.round(overallProgress)}%
-          </div>
-        </div>
-      </div>
+   <div data-structure-panel className="space-y-1.5">
+       <div className="flex items-center justify-between">
+         <span className="text-[9px] text-[var(--text-tertiary)]">
+           {sequences.length} sequences · {totalBeats} beats
+         </span>
+         <div className="text-[9px] font-medium text-[var(--text-secondary)]">
+           {Math.round(overallProgress)}%
+         </div>
+       </div>
 
-      <div className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+       <div className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700">
         <div
           className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
           style={{ width: `${overallProgress}%` }}
         />
       </div>
 
-      {sequences.length === 0 && beats.length === 0 ? (
-        <div className="py-6 text-center">
-          <p className="text-xs text-[var(--text-tertiary)]">
+  {sequences.length === 0 && beats.length === 0 ? (
+        <div className="py-3 text-center">
+          <p className="text-[10px] text-[var(--text-tertiary)]">
             No structure planned yet.
           </p>
-          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+          <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
             Create sequences and beats to track story progress.
           </p>
         </div>
-      ) : sequences.length > 0 ? (
-        <div className="space-y-2">
+   ) : sequences.length > 0 ? (
+         <div className="space-y-1.5">
           {sequences.map((seq) => (
             <SequenceBlock key={seq.sequence_id} sequence={seq} beats={beats} />
           ))}
         </div>
       ) : (
-        <div className="space-y-1.5">
-          <p className="text-[10px] font-medium text-[var(--text-secondary)]">Standalone Beats</p>
+        <div className="space-y-1">
+          <p className="text-[9px] font-medium text-[var(--text-secondary)]">Standalone Beats</p>
           {beats.map((beat) => (
-            <div key={beat.beat_id} className="flex items-center gap-1.5">
+            <div key={beat.beat_id} className="flex items-center gap-1">
               <div className="w-2">
                 <BeatIndicator beat={beat} />
               </div>
-              <span className="text-[10px] text-[var(--text-secondary)] truncate">
+              <span className="text-[9px] text-[var(--text-secondary)] truncate">
                 {beat.objective}
               </span>
             </div>

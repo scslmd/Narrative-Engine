@@ -115,25 +115,22 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
   if (mode === 'list') {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex shrink-0 items-center justify-between px-3 py-2 border-b border-[var(--border-primary)]">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">Characters</h2>
-            <p className="text-[10px] mt-0.5 text-[var(--text-tertiary)]">
-              {characters.length} profiles
-            </p>
-          </div>
+        <div className="flex shrink-0 items-center justify-between px-2.5 py-1 border-b border-[var(--border-primary)]">
+          <span className="text-[9px] text-[var(--text-tertiary)]">
+            {characters.length} profiles
+          </span>
           <button
             onClick={() => {
               setSelectedCharacterId(null);
               setMode('create');
             }}
-            className="px-2 py-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-[10px] font-medium rounded-md hover:from-pink-600 hover:to-pink-700 shadow-sm transition-all"
+            className="px-1.5 py-0.5 bg-pink-500 text-white text-[9px] font-medium rounded hover:bg-pink-600 transition-colors"
           >
-            New Character
+            New
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-2">
           <div className="grid grid-cols-1 gap-2">
             {characters.map((character) => (
               <button
@@ -155,7 +152,7 @@ export function StudioCharactersPanel({ projectId }: StudioCharactersPanelProps)
           </div>
 
           {characters.length === 0 && (
-            <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-center py-4 text-[10px] text-slate-500 dark:text-slate-400">
               No character profiles configured. Create a character to start building the cast.
             </div>
           )}

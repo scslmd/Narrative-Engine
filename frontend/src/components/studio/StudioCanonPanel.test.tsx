@@ -15,7 +15,7 @@ describe('StudioCanonPanel', () => {
   it('renders panel header', async () => {
     render(<StudioCanonPanel projectId="proj-1" />);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /canon/i })).toBeInTheDocument();
+      expect(document.querySelector('[data-canon-panel]')).toBeInTheDocument();
     });
   });
 

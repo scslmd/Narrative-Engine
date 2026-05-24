@@ -97,11 +97,11 @@ export function StudioContextPanel({ projectId, showCloseButton = true, onManusc
   return (
     <div className="flex h-full flex-col">
       <div
-        className="flex items-center gap-1 overflow-x-auto border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1.5"
-        role="tablist"
-        aria-label="Studio context tabs"
-      >
-        {primaryTabs.map((tab) => {
+         className="flex items-center gap-0.5 overflow-x-auto border-b border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1"
+         role="tablist"
+         aria-label="Studio context tabs"
+       >
+      {primaryTabs.map((tab) => {
           const active = activePanel === tab.panel;
           const isSuggestions = tab.panel === 'suggestions';
 
@@ -112,35 +112,32 @@ export function StudioContextPanel({ projectId, showCloseButton = true, onManusc
               role="tab"
               aria-selected={active}
               onClick={() => openPanel(tab.panel)}
-              className={`relative rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+              className={`relative rounded px-1.5 py-0.5 text-[9px] font-medium transition-colors ${
                 active
-                  ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border-primary)]'
+                  ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] ring-1 ring-[var(--border-primary)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
               }`}
             >
               {tab.label}
               {isSuggestions && openSuggestionCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-white">
                   {openSuggestionCount > 9 ? '9+' : openSuggestionCount}
                 </span>
               )}
             </button>
           );
         })}
-      </div>
-      <div className="flex items-center justify-between border-b border-[var(--border-primary)] px-3 py-2">
-        <h2 className="text-sm font-semibold text-[var(--text-primary)]">{label}</h2>
-        {showCloseButton ? (
+        {showCloseButton && (
           <button
             type="button"
             onClick={() => setPanelVisible(false)}
-            className="rounded-md px-2 py-1 text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="ml-auto rounded px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           >
             Close
           </button>
-        ) : null}
+        )}
       </div>
-      <div className="flex-1 overflow-y-auto p-2.5">{renderPanel()}</div>
+      <div className="flex-1 overflow-y-auto">{renderPanel()}</div>
     </div>
   );
 }
