@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useRevisionHistoryStore } from '../../stores/revisionHistoryStore';
 import {
   continueDraft,
   createAlternateVariant,
@@ -104,8 +105,7 @@ export function useWritingDocumentController({
     [revisionSuggestions],
   );
 
-  const mutations = useMemo(() => {
-    return {
+const mutations = useMemo(() => ({
       createDraft: async (data: { title: string; content: string }) => {
         await createDraftArtifact({
           artifact_id: `draft-${Date.now()}`,
@@ -138,8 +138,7 @@ export function useWritingDocumentController({
         await queryClient.invalidateQueries({ queryKey: ['draft-artifacts', projectId] });
         toast.success('Alternate variant created');
       },
-    };
-  }, [projectId, queryClient, setDraftForm, setExpandedDraft]);
+    }), [projectId, queryClient, setDraftForm, setExpandedDraft]);
 
   const [createDraftPending, setCreateDraftPending] = useState(false);
   const [promotePending, setPromotePending] = useState(false);
@@ -198,11 +197,20 @@ export function useWritingDocumentController({
   const handleSave = useCallback(async () => {
     if (!selectedDocumentId || !projectId) return;
     try {
+      const prevContent = selectedDocument ? selectedDocument.content : editContent;
       await updateManuscriptContent(selectedDocumentId, projectId, editContent);
       await queryClient.invalidateQueries({ queryKey: ['manuscript-documents', projectId] });
       await queryClient.invalidateQueries({
         queryKey: ['revision-suggestions', projectId, selectedDocumentId],
       });
+
+      useRevisionHistoryStore.getState().addEntry({
+        documentId: selectedDocumentId,
+        version: selectedDocument?.version ?? 0,
+        content: prevContent,
+        timestamp: Date.now(),
+      });
+
       setIsEditing(false);
       setEditContent('');
 
@@ -219,7 +227,7 @@ export function useWritingDocumentController({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save manuscript');
     }
-  }, [selectedDocumentId, projectId, editContent, queryClient, setIsEditing, setEditContent]);
+  }, [selectedDocumentId, projectId, editContent, selectedDocument, queryClient, setIsEditing, setEditContent]);
 
   const handleSuggestionAccept = useCallback(
     async (suggestionId: string) => {
@@ -352,6 +360,20 @@ export function useWritingDocumentController({
     }
   }, [mutations, setContinuePending]);
 
+  const handleUndo = useCallback(() => {
+    if (!selectedDocumentId) return;
+    const history = useRevisionHistoryStore.getState().getHistory(selectedDocumentId);
+    if (history.length > 0) {
+      setEditContent(history[0].content);
+      setIsEditing(true);
+    }
+  }, [selectedDocumentId, setEditContent, setIsEditing]);
+
+  const revisionHistory = useMemo(() => {
+    if (!selectedDocumentId) return [];
+    return useRevisionHistoryStore.getState().getHistory(selectedDocumentId);
+  }, [selectedDocumentId, manuscriptDocuments]);
+
   const alternateVariantAction = useCallback(async (artifactId: string) => {
     setAlternatePending(true);
     try {
@@ -403,5 +425,7 @@ export function useWritingDocumentController({
     alternatePending,
     continueDraftAction,
     alternateVariantAction,
+    handleUndo,
+    revisionHistory,
   };
 }

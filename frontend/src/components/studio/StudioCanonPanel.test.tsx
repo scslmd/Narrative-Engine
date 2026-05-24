@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '../../__tests__/test-utils';
+import { render, waitFor } from '../../__tests__/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { StudioCanonPanel } from './StudioCanonPanel';
 

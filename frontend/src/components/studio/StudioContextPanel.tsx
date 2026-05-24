@@ -61,7 +61,7 @@ export function StudioContextPanel({ projectId, showCloseButton = true, onManusc
   });
   const openSuggestionCount = writingController.openSuggestions.length;
 
-  const label = panelLabels[activePanel];
+  void panelLabels[activePanel];
 
   const renderPanel = () => {
     switch (activePanel) {

@@ -151,9 +151,10 @@ interface ManuscriptListProps {
   isDark: boolean;
   includeParagraphs?: boolean;
   onNavigate?: (documentId: string, lineIndex: number) => void;
+  highlightBase?: string | null;
 }
 
-export function ManuscriptList({ documents, selectedDocumentId, isLoading, onSelect, isDark, includeParagraphs = false, onNavigate }: ManuscriptListProps) {
+export function ManuscriptList({ documents, selectedDocumentId, isLoading, onSelect, isDark, includeParagraphs = false, onNavigate, highlightBase }: ManuscriptListProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const groups = useMemo(() => {
@@ -255,20 +256,26 @@ export function ManuscriptList({ documents, selectedDocumentId, isLoading, onSel
 
                   return (
                     <div key={doc.document_id}>
-                      {/* Version label */}
-                      <button
+                     {/* Version label */}
+                       <button
                         onClick={() => onSelect(doc.document_id)}
                         className={`w-full text-left px-2 py-0.5 rounded-md text-sm transition-all ${
-                          selectedDocumentId === doc.document_id
+                          doc.document_id === highlightBase
                             ? isDark
-                              ? 'bg-blue-950/40 text-blue-300'
-                              : 'bg-blue-50 text-blue-700'
-                            : isDark
-                              ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                              ? 'bg-amber-950/40 text-amber-300 ring-1 ring-amber-800'
+                              : 'bg-amber-50 text-amber-700 ring-1 ring-amber-300'
+                            : selectedDocumentId === doc.document_id
+                              ? isDark
+                                ? 'bg-blue-950/40 text-blue-300'
+                                : 'bg-blue-50 text-blue-700'
+                              : isDark
+                                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                       >
-                        <span className="truncate block">v{doc.version}</span>
+                        <span className="truncate block">
+                          {doc.document_id === highlightBase ? 'BASE ' : ''}v{doc.version}
+                        </span>
                       </button>
 
                       {/* Outline tree under version */}

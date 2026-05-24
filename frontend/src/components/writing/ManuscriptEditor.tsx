@@ -12,39 +12,109 @@ interface MarkdownRenderProps {
   fontClass: string;
 }
 
-/** Lightweight markdown renderer for manuscript read mode. Handles headings, inline code, and paragraphs. */
+/** Render inline markdown formatting: bold, italic, strikethrough, links, inline code. */
+function renderInline(text: string, keyPrefix: string, isDark: boolean) {
+  const codeBg = isDark ? 'bg-slate-800 text-amber-300' : 'bg-slate-100 text-amber-700';
+  const linkColor = isDark ? 'text-violet-400' : 'text-violet-600';
+
+  // Split by all inline patterns at once
+  const parts = text.split(/(\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|___([^_]+)___|__([^_]+)__|\*([^*]+)\*|_([^_]+)_|~~([^~]+)~~|\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`)/g);
+  if (parts.length === 1) return <span key={keyPrefix}>{parts[0]}</span>;
+
+  const elements: JSX.Element[] = [];
+  let i = 0;
+  while (i < parts.length) {
+    const part = parts[i];
+    if (!part) { i++; continue; }
+
+    // Bold+italic ***text***
+    if (part.startsWith('***') && part.endsWith('***')) {
+      elements.push(<strong key={keyPrefix + '-' + i} className="font-bold italic">{part.slice(3, -3)}</strong>);
+      i++; continue;
+    }
+    // Bold **text**
+    if (part.startsWith('**') && part.endsWith('**')) {
+      elements.push(<strong key={keyPrefix + '-' + i} className="font-bold">{part.slice(2, -2)}</strong>);
+      i++; continue;
+    }
+    // Bold __text__
+    if (part.startsWith('__') && part.endsWith('__')) {
+      elements.push(<strong key={keyPrefix + '-' + i} className="font-bold">{part.slice(2, -2)}</strong>);
+      i++; continue;
+    }
+    // Italic ___text___ or *text* or _text_
+    if (part.startsWith('___') && part.endsWith('___')) {
+      elements.push(<em key={keyPrefix + '-' + i} className="italic">{part.slice(3, -3)}</em>);
+      i++; continue;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      elements.push(<em key={keyPrefix + '-' + i} className="italic">{part.slice(1, -1)}</em>);
+      i++; continue;
+    }
+    if (part.startsWith('_') && part.endsWith('_')) {
+      elements.push(<em key={keyPrefix + '-' + i} className="italic">{part.slice(1, -1)}</em>);
+      i++; continue;
+    }
+    // Strikethrough ~~text~~
+    if (part.startsWith('~~') && part.endsWith('~~')) {
+      elements.push(<del key={keyPrefix + '-' + i} className="line-through opacity-70">{part.slice(2, -2)}</del>);
+      i++; continue;
+    }
+    // Link [text](url)
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      elements.push(
+        <a key={keyPrefix + '-' + i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={`${linkColor} underline hover:opacity-80`}>
+          {linkMatch[1]}
+        </a>,
+      );
+      i++; continue;
+    }
+    // Inline code `text`
+    if (part.startsWith('`') && part.endsWith('`')) {
+      elements.push(<code key={keyPrefix + '-' + i} className={`px-1.5 py-0.5 rounded text-xs font-mono ${codeBg}`}>{part.slice(1, -1)}</code>);
+      i++; continue;
+    }
+    elements.push(<span key={keyPrefix + '-' + i}>{part}</span>);
+    i++;
+  }
+  return <>{elements}</>;
+}
+
+/** Lightweight markdown renderer for manuscript read mode. Handles headings, bold, italic, strikethrough, lists, blockquotes, links, inline code, code blocks, and horizontal rules. */
 function renderMarkdown({ content, isDark, fontClass }: MarkdownRenderProps) {
   if (!content) return <span className="text-muted">(No content)</span>;
 
   const headingBase = isDark ? 'text-slate-100 font-semibold' : 'text-slate-900 font-semibold';
-  const codeBg = isDark ? 'bg-slate-800 text-amber-300' : 'bg-slate-100 text-amber-700';
   const textColor = isDark ? 'text-slate-300' : 'text-slate-700';
+  const quoteColor = isDark ? 'border-slate-600 text-slate-400' : 'border-slate-300 text-slate-500';
 
-  const renderInlineCode = (line: string, keyPrefix: string) => {
-    const parts = line.split(/(`[^`]+`)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code key={keyPrefix + '-' + i} className={`px-1.5 py-0.5 rounded text-xs font-mono ${codeBg}`}>
-            {part.slice(1, -1)}
-          </code>
-        );
-      }
-      return <span key={keyPrefix + '-' + i}>{part}</span>;
-    });
-  };
-
-  const paragraphs = content.split(/\n\n+/);
+  const lines = content.split('\n');
   const elements: JSX.Element[] = [];
-  let idx = 0;
-  let lineCounter = 0;
+  let lineIdx = 0;
+  let elementIdx = 0;
 
-  for (const para of paragraphs) {
-    const trimmed = para.trim();
-    if (!trimmed) continue;
+  while (lineIdx < lines.length) {
+    const line = lines[lineIdx];
+
+    // Skip empty lines
+    if (!line.trim()) {
+      lineIdx++;
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line.trim())) {
+      elements.push(
+        <hr key={`hr-${elementIdx}`} className={`my-4 border-0 ${isDark ? 'border-slate-700' : 'border-slate-200'}`} data-line={lineIdx} />,
+      );
+      elementIdx++;
+      lineIdx++;
+      continue;
+    }
 
     // Heading: # ## ###
-    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/m);
+    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
     if (headingMatch) {
       const level = headingMatch[1].length as 1 | 2 | 3;
       const text = headingMatch[2];
@@ -53,33 +123,116 @@ function renderMarkdown({ content, isDark, fontClass }: MarkdownRenderProps) {
         2: 'text-lg mt-5 mb-2',
         3: 'text-base mt-4 mb-2',
       };
-      const anchorId = `heading-${lineCounter}`;
       elements.push(
-        <div key={idx} id={anchorId} data-line={lineCounter}>
+        <div key={`h-${elementIdx}`} data-line={lineIdx}>
           <p className={`${headingBase} ${sizes[level]}`}>
-            {renderInlineCode(text, `h${idx}`)}
+            {renderInline(text, `h${elementIdx}`, isDark)}
           </p>
         </div>,
       );
-      idx++;
-      lineCounter += para.split('\n').length;
+      elementIdx++;
+      lineIdx++;
       continue;
     }
 
-    // Regular paragraph (may contain newlines within)
-    const lines = trimmed.split('\n');
-    elements.push(
-      <p key={idx} data-line={lineCounter} className={`${fontClass} leading-relaxed mb-3 ${textColor}`}>
-        {lines.map((line, li) => (
-          <span key={li}>
-            {renderInlineCode(line, `p${idx}-${li}`)}
-            {li < lines.length - 1 && <br />}
-          </span>
-        ))}
-      </p>,
-    );
-    idx++;
-    lineCounter += lines.length;
+    // Blockquote: > text
+    if (line.startsWith('>')) {
+      const quoteLines: string[] = [];
+      while (lineIdx < lines.length && lines[lineIdx].startsWith('>')) {
+        quoteLines.push(lines[lineIdx].replace(/^>\s?/, ''));
+        lineIdx++;
+      }
+      elements.push(
+        <blockquote key={`bq-${elementIdx}`} data-line={lineIdx} className={`border-l-4 ${quoteColor} pl-4 my-3 italic`}>
+          {quoteLines.map((qLine, i) => (
+            <span key={i}>
+              {renderInline(qLine, `bq${elementIdx}-${i}`, isDark)}
+              <br />
+            </span>
+          ))}
+        </blockquote>,
+      );
+      elementIdx++;
+      continue;
+    }
+
+    // Unordered list: - item or * item
+    if (/^(\s*[-*])\s+/.test(line)) {
+      const listItems: string[] = [];
+      while (lineIdx < lines.length && /^(\s*[-*])\s+/.test(lines[lineIdx])) {
+        listItems.push(lines[lineIdx].replace(/^\s*[-*]\s+/, ''));
+        lineIdx++;
+      }
+      elements.push(
+        <ul key={`ul-${elementIdx}`} data-line={lineIdx} className={`list-disc pl-6 my-3 space-y-1 ${textColor}`}>
+          {listItems.map((item, i) => (
+            <li key={i}>{renderInline(item, `li${elementIdx}-${i}`, isDark)}</li>
+          ))}
+        </ul>,
+      );
+      elementIdx++;
+      continue;
+    }
+
+    // Ordered list: 1. item
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const listItems: string[] = [];
+      while (lineIdx < lines.length && /^\s*\d+\.\s+/.test(lines[lineIdx])) {
+        listItems.push(lines[lineIdx].replace(/^\s*\d+\.\s+/, ''));
+        lineIdx++;
+      }
+      elements.push(
+        <ol key={`ol-${elementIdx}`} data-line={lineIdx} className={`list-decimal pl-6 my-3 space-y-1 ${textColor}`}>
+          {listItems.map((item, i) => (
+            <li key={i}>{renderInline(item, `oli${elementIdx}-${i}`, isDark)}</li>
+          ))}
+        </ol>,
+      );
+      elementIdx++;
+      continue;
+    }
+
+    // Code block: ```...```
+    if (line.startsWith('```')) {
+      const codeLines: string[] = [];
+      lineIdx++;
+      while (lineIdx < lines.length && !lines[lineIdx].startsWith('```')) {
+        codeLines.push(lines[lineIdx]);
+        lineIdx++;
+      }
+      const codeBg = isDark ? 'bg-slate-800' : 'bg-slate-100';
+      const codeText = isDark ? 'text-slate-300' : 'text-slate-700';
+      elements.push(
+        <pre key={`code-${elementIdx}`} data-line={lineIdx} className={`${codeBg} ${codeText} rounded-lg p-4 my-3 overflow-x-auto font-mono text-xs leading-relaxed`}>
+          <code>{codeLines.join('\n')}</code>
+        </pre>,
+      );
+      elementIdx++;
+      lineIdx++;
+      continue;
+    }
+
+    // Regular paragraph - collect consecutive non-empty, non-special lines
+    const paraLines: string[] = [];
+    while (lineIdx < lines.length && lines[lineIdx].trim() &&
+      !lines[lineIdx].match(/^(#{1,3}|>\s|(\s*[-*])\s|(\s*\d+\.)\s|```)/)) {
+      paraLines.push(lines[lineIdx]);
+      lineIdx++;
+    }
+
+    if (paraLines.length > 0) {
+      elements.push(
+        <p key={`p-${elementIdx}`} data-line={lineIdx} className={`${fontClass} leading-relaxed mb-3 ${textColor}`}>
+          {paraLines.map((pLine, i) => (
+            <span key={i}>
+              {renderInline(pLine, `p${elementIdx}-${i}`, isDark)}
+              {i < paraLines.length - 1 && <br />}
+            </span>
+          ))}
+        </p>,
+      );
+      elementIdx++;
+    }
   }
 
   return <>{elements}</>;
@@ -250,6 +403,34 @@ export function ManuscriptEditor({
   const [selectionState, setSelectionState] = useState<{ start: number; end: number } | null>(null);
   const { editorFontFamily, editorFontSize, setEditorFontFamily, setEditorFontSize } = useSettingsStore();
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if (ctrl && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (isEditing) {
+          onSave();
+        }
+      }
+
+      if (ctrl && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        if (!isEditing) {
+          onEdit();
+        }
+      }
+
+      if (e.key === 'Escape' && isEditing) {
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, onSave, onEdit, onCancel]);
+
   const editorFontClass = useMemo(() => {
     const familyClass = editorFontFamily === 'serif' ? 'font-serif' : editorFontFamily === 'mono' ? 'font-mono' : 'font-sans';
     const sizeClass = editorFontSize === 'small' ? 'text-xs' : editorFontSize === 'large' ? 'text-base' : 'text-sm';
@@ -371,6 +552,7 @@ export function ManuscriptEditor({
             <button
               onClick={onEdit}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors bg-blue-600 hover:bg-blue-500 text-white`}
+              title="Edit (Ctrl+E)"
             >
               <Edit3 className="w-3.5 h-3.5" />
               Edit
@@ -385,6 +567,7 @@ export function ManuscriptEditor({
             <button
               onClick={onSave}
               className="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+              title="Save (Ctrl+S)"
             >
               <Save className="w-3.5 h-3.5" />
               Save

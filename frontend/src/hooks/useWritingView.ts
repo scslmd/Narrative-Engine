@@ -8,6 +8,7 @@ import {
   useWritingDocumentController,
   type DraftFormState,
 } from '../domains/writing/useWritingDocumentController';
+import type { RevisionEntry } from '../stores/revisionHistoryStore';
 import type { RevisionSuggestion } from '../types/aids';
 import type { DraftArtifact, ManuscriptDocument } from '../types/drafting';
 
@@ -55,6 +56,8 @@ export interface WritingViewHookResult {
   handleGenerateDraftForm: () => void;
   handleGenerateDraft: () => void;
   generateDraftPending: boolean;
+  revisionHistory: RevisionEntry[];
+  handleUndo: () => void;
 }
 
 export function useWritingView(isDark: boolean): WritingViewHookResult {
@@ -109,5 +112,7 @@ export function useWritingView(isDark: boolean): WritingViewHookResult {
     handleGenerateDraftForm: assistController.handleGenerateDraftForm,
     handleGenerateDraft: assistController.handleGenerateDraft,
     generateDraftPending: assistController.generateDraftPending,
+    revisionHistory: writingController.revisionHistory,
+    handleUndo: writingController.handleUndo,
   };
 }
