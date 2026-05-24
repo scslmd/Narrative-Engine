@@ -12,6 +12,9 @@ import { StudioArcsPanel } from './StudioArcsPanel';
 import { StudioReviewPanel } from './StudioReviewPanel';
 import { StudioSuggestionsPanel } from './StudioSuggestionsPanel';
 import { StudioWorldBiblePanel } from './StudioWorldBiblePanel';
+import { StudioResearchPanel } from './StudioResearchPanel';
+import { StudioRevisionPanel } from './StudioRevisionPanel';
+import { StudioPolishPanel } from './StudioPolishPanel';
 import { useStudioStore } from '../../stores/studioStore';
 import type { StudioPanelKey } from '../../stores/studioStore';
 
@@ -42,6 +45,9 @@ const panelLabels: Record<StudioPanelKey, string> = {
   inspect: 'Inspect',
   notes: 'Notes',
   jobs: 'Jobs',
+  research: 'Research',
+  revision: 'Revision',
+  polish: 'Polish',
 };
 
 interface StudioContextPanelProps {
@@ -91,6 +97,12 @@ export function StudioContextPanel({ projectId, showCloseButton = true, onManusc
         return <NotesPanel projectId={projectId} />;
       case 'jobs':
         return <JobLaunchPanel projectId={projectId} />;
+      case 'research':
+        return <StudioResearchPanel projectId={projectId} />;
+      case 'revision':
+        return <StudioRevisionPanel projectId={projectId} />;
+      case 'polish':
+        return <StudioPolishPanel projectId={projectId} />;
     }
   };
 

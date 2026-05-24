@@ -22,7 +22,10 @@ export type StudioPanelKey =
   | 'review'
   | 'inspect'
   | 'notes'
-  | 'jobs';
+  | 'jobs'
+  | 'research'
+  | 'revision'
+  | 'polish';
 
 export type StudioRailMode = 'expanded' | 'collapsed' | 'overlay';
 export type StudioContextMode = 'docked' | 'overlay' | 'closed';
@@ -116,6 +119,9 @@ const PANEL_DEFAULT_SIZES: Record<StudioPanelKey, { width: number; height: numbe
   inspect: { width: 360, height: 400 },
   notes: { width: 300, height: 380 },
   jobs: { width: 300, height: 400 },
+  research: { width: 320, height: 400 },
+  revision: { width: 340, height: 420 },
+  polish: { width: 360, height: 400 },
 };
 
 function snapToGrid(value: number): number {

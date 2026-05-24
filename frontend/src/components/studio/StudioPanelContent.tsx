@@ -14,6 +14,9 @@ import { StudioManuscriptsPanel } from './StudioManuscriptsPanel';
 import { StudioStructurePanel } from './StudioStructurePanel';
 import { StudioChaptersPanel } from './StudioChaptersPanel';
 import { StudioCanonPanel } from './StudioCanonPanel';
+import { StudioResearchPanel } from './StudioResearchPanel';
+import { StudioRevisionPanel } from './StudioRevisionPanel';
+import { StudioPolishPanel } from './StudioPolishPanel';
 import { NotesPanel } from '../NotesPanel';
 import { JobLaunchPanel } from '../JobLaunchPanel';
 
@@ -56,6 +59,12 @@ function StudioPanelContentImpl({ panelKey, projectId }: StudioPanelContentProps
       return <NotesPanel projectId={projectId} />;
     case 'jobs':
       return <JobLaunchPanel projectId={projectId} />;
+    case 'research':
+      return <StudioResearchPanel projectId={projectId} />;
+    case 'revision':
+      return <StudioRevisionPanel projectId={projectId} />;
+    case 'polish':
+      return <StudioPolishPanel projectId={projectId} />;
     default:
       return (
         <div className="flex h-full items-center justify-center p-2.5 text-xs text-[var(--text-secondary)]">

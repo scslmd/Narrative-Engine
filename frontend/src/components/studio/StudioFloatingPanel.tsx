@@ -21,6 +21,9 @@ const PANEL_LABELS: Record<StudioPanelKey, string> = {
   inspect: 'Inspect',
   notes: 'Notes',
   jobs: 'Jobs',
+  research: 'Research',
+  revision: 'Revision',
+  polish: 'Polish',
 };
 
 interface StudioFloatingPanelProps {

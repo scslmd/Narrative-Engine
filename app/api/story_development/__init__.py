@@ -11,6 +11,8 @@ from app.services.manuscript_review import ManuscriptReviewService
 from app.services.editable_flow import EditableFlowService
 from app.services.editable_flow_persistence import SQLiteEditableFlowRepository
 from app.services.foundation import FoundationService
+from app.services.research import ResearchService
+from app.services.revision import RevisionService
 from app.services.planning import PlanningService
 from app.services.review_routing import ReviewRoutingService
 from app.services.story_branching import StoryBranchingService
@@ -18,6 +20,7 @@ from app.services.story_decision_review import StoryDecisionReviewService
 from app.services.story_knowledge import StoryKnowledgeService
 from app.services.chapter_packets import ChapterPacketService
 from app.services.sequence_plans import SequencePlanService
+from app.services.polish import PolishService
 from app.services.storyboard_cards import StoryboardCardService
 from .arcs import register_arc_routes
 from .braindump import register_braindump_routes
@@ -28,6 +31,9 @@ from .drafting import register_drafting_routes
 from .flow import register_flow_routes
 from .foundation import register_foundation_routes
 from .planning import register_planning_routes
+from .polish import register_polish_routes
+from .research import register_research_routes
+from .revision import register_revision_routes
 from .review import register_review_routes
 from .storyboard import register_storyboard_routes
 from .world_bible import register_world_bible_routes
@@ -53,6 +59,7 @@ def build_story_development_router(
     brainstorm_service = BrainstormService(repository)
     braindump_service = BrainDumpService(repository, inferencer=inferencer)
     foundation_service = FoundationService(repository)
+    research_service = ResearchService(repository)
     story_knowledge_service = StoryKnowledgeService(repository)
     relationship_extraction_service = RelationshipExtractionService(
         story_knowledge_service=story_knowledge_service,
@@ -61,6 +68,8 @@ def build_story_development_router(
     chapter_packet_service = ChapterPacketService(repository)
     sequence_plan_service = SequencePlanService(repository)
     storyboard_card_service = StoryboardCardService(repository)
+    polish_service = PolishService(repository)
+    revision_service = RevisionService(repository)
 
     # Register domain routes
     register_branch_routes(router, branching_service)
@@ -75,5 +84,8 @@ def build_story_development_router(
     register_planning_routes(router, planning_service, chapter_packet_service, sequence_plan_service, repository)
     register_drafting_routes(router, drafting_service, manuscript_review_service)
     register_storyboard_routes(router, storyboard_card_service)
+    register_polish_routes(router, polish_service)
+    register_research_routes(router, research_service)
+    register_revision_routes(router, revision_service)
 
     return router

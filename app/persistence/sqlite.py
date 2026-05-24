@@ -6,7 +6,7 @@ from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
 
-OPERATIONS_DB_VERSION = 22
+OPERATIONS_DB_VERSION = 23
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
 
@@ -1039,6 +1039,34 @@ CREATE TABLE IF NOT EXISTS pattern_entries (
     FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS research_items (
+    item_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_url TEXT,
+    source_type TEXT NOT NULL DEFAULT 'other',
+    genre_tags_json TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'active',
+    citations_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS revision_passes (
+    pass_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    pass_type TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    checklist_json TEXT NOT NULL DEFAULT '[]',
+    notes TEXT,
+    completed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS discovery_staging (
     stage_id TEXT NOT NULL,
     project_id TEXT NOT NULL,
@@ -1052,6 +1080,34 @@ CREATE TABLE IF NOT EXISTS discovery_staging (
     dedup_action TEXT DEFAULT 'new' CHECK(dedup_action IN ('new', 'exact_merge', 'fuzzy_merge', 'enrich')),
     created_at TEXT NOT NULL,
     PRIMARY KEY (stage_id, entity_id),
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
+
+CREATE TABLE IF NOT EXISTS polish_reports (
+    report_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    readability_score REAL NOT NULL DEFAULT 0.0,
+    word_count INTEGER NOT NULL DEFAULT 0,
+    sentence_count INTEGER NOT NULL DEFAULT 0,
+    avg_sentence_length REAL NOT NULL DEFAULT 0.0,
+    passive_voice_count INTEGER NOT NULL DEFAULT 0,
+    repetitive_words_json TEXT NOT NULL DEFAULT '[]',
+    style_issues_json TEXT NOT NULL DEFAULT '[]',
+    generated_at TEXT NOT NULL,
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
+
+CREATE TABLE IF NOT EXISTS export_statuses (
+    export_id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    format TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    artifact_path TEXT,
+    error_message TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
     FOREIGN KEY (project_id) REFERENCES projects(project_id)
 );
 """
@@ -1152,9 +1208,19 @@ CREATE INDEX IF NOT EXISTS idx_canon_annotations_project_kind ON canon_annotatio
 CREATE INDEX IF NOT EXISTS idx_canon_profiles_project_status ON canon_customization_profiles(project_id, status, updated_at);
 CREATE INDEX IF NOT EXISTS idx_mythos_entries_project_type ON mythos_entries(project_id, entry_type, name);
 CREATE INDEX IF NOT EXISTS idx_pattern_entries_project_type ON pattern_entries(project_id, pattern_type, name);
+CREATE INDEX IF NOT EXISTS idx_research_items_project ON research_items(project_id);
+CREATE INDEX IF NOT EXISTS idx_research_items_status ON research_items(status);
+CREATE INDEX IF NOT EXISTS idx_research_items_genre_tags ON research_items(genre_tags_json);
 CREATE INDEX IF NOT EXISTS idx_discovery_staging_stage ON discovery_staging(stage_id);
 CREATE INDEX IF NOT EXISTS idx_discovery_staging_project ON discovery_staging(project_id);
+CREATE INDEX IF NOT EXISTS idx_revision_passes_project ON revision_passes(project_id);
+CREATE INDEX IF NOT EXISTS idx_revision_passes_type ON revision_passes(pass_type);
+CREATE INDEX IF NOT EXISTS idx_revision_passes_status ON revision_passes(status);
+CREATE INDEX IF NOT EXISTS idx_revision_passes_project_type_status ON revision_passes(project_id, pass_type, status);
 CREATE INDEX IF NOT EXISTS idx_discovery_staging_created ON discovery_staging(created_at);
+CREATE INDEX IF NOT EXISTS idx_polish_reports_project ON polish_reports(project_id);
+CREATE INDEX IF NOT EXISTS idx_polish_reports_document ON polish_reports(project_id, document_id);
+CREATE INDEX IF NOT EXISTS idx_export_statuses_project ON export_statuses(project_id);
 """
 
 
@@ -1371,6 +1437,7 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _rename_table_if_exists(connection, "inspect_run_links", "inspect_run_links__legacy")
         _rename_table_if_exists(connection, "draft_artifacts", "draft_artifacts__legacy")
         _rename_table_if_exists(connection, "manuscript_documents", "manuscript_documents__legacy")
+        _rename_table_if_exists(connection, "revision_passes", "revision_passes__legacy")
         _rename_table_if_exists(connection, "revision_suggestions", "revision_suggestions__legacy")
         _rename_table_if_exists(connection, "runtime_artifact_selections", "runtime_artifact_selections__legacy")
         _rename_table_if_exists(connection, "story_flow_definitions", "story_flow_definitions__legacy")
@@ -1469,6 +1536,7 @@ def _rebuild_operations_schema(connection: sqlite3.Connection) -> None:
         _copy_inspect_run_links_legacy(connection)
         _copy_draft_artifacts_legacy(connection)
         _copy_manuscript_documents_legacy(connection)
+        _copy_revision_passes_legacy(connection)
         _copy_revision_suggestions_legacy(connection)
         _copy_runtime_artifact_selections_legacy(connection)
         _copy_story_flow_definitions_legacy(connection)
@@ -1536,6 +1604,7 @@ def _reset_partial_rebuild_state(connection: sqlite3.Connection) -> None:
         ("inspect_run_links", "inspect_run_links__legacy"),
         ("draft_artifacts", "draft_artifacts__legacy"),
         ("manuscript_documents", "manuscript_documents__legacy"),
+        ("revision_passes", "revision_passes__legacy"),
         ("revision_suggestions", "revision_suggestions__legacy"),
         ("runtime_artifact_selections", "runtime_artifact_selections__legacy"),
         ("story_flow_definitions", "story_flow_definitions__legacy"),
@@ -1939,9 +2008,9 @@ def _copy_arc_candidates_legacy(connection: sqlite3.Connection) -> None:
                     row["project_id"],
                     row["name"],
                     row["summary"],
-                    row.get("stage_map_notes_json") or "[]",
-                    row.get("fit_notes_json") or "[]",
-                    row.get("tags_json") or "[]",
+                    row["stage_map_notes_json"] or "[]",
+                    row["fit_notes_json"] or "[]",
+                    row["tags_json"] or "[]",
                     row["created_at"],
                     row["updated_at"],
                 ),
@@ -2041,17 +2110,17 @@ def _copy_arc_selections_legacy(connection: sqlite3.Connection) -> None:
                     comparison_notes_json, stage_map_id, created_at, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (
-                    row["selection_id"],
-                    row["project_id"],
-                    row["selected_arc_id"],
-                    row["selected_arc_json"],
-                    row.get("rejected_candidate_ids_json") or "[]",
-                    row.get("comparison_notes_json") or "[]",
-                    row.get("stage_map_id"),
-                    row["created_at"],
-                    row["updated_at"],
-                ),
+             (
+                     row["selection_id"],
+                     row["project_id"],
+                     row["selected_arc_id"],
+                     row["selected_arc_json"],
+                     row["rejected_candidate_ids_json"] or "[]",
+                     row["comparison_notes_json"] or "[]",
+                     row["stage_map_id"],
+                     row["created_at"],
+                     row["updated_at"],
+                 ),
             )
         return
 
@@ -2331,6 +2400,23 @@ def _copy_revision_suggestions_legacy(connection: sqlite3.Connection) -> None:
     )
 
 
+def _copy_revision_passes_legacy(connection: sqlite3.Connection) -> None:
+    if not _table_exists(connection, "revision_passes__legacy"):
+        return
+    connection.execute(
+        """
+        INSERT INTO revision_passes (
+            pass_id, project_id, pass_type, status, checklist_json, notes,
+            completed_at, created_at, updated_at
+        )
+        SELECT
+            pass_id, project_id, pass_type, status, checklist_json, notes,
+            completed_at, created_at, updated_at
+        FROM revision_passes__legacy
+        """
+    )
+
+
 def _copy_identical_schema_legacy(connection: sqlite3.Connection, table_name: str) -> None:
     """Copy rows from legacy table to current table when schema is identical."""
     legacy_name = f"{table_name}__legacy"
@@ -2529,6 +2615,7 @@ def _drop_legacy_tables(connection: sqlite3.Connection) -> None:
         "inspect_run_links__legacy",
         "draft_artifacts__legacy",
         "manuscript_documents__legacy",
+        "revision_passes__legacy",
         "revision_suggestions__legacy",
         "runtime_artifact_selections__legacy",
         "story_flow_definitions__legacy",

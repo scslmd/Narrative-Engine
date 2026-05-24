@@ -89,8 +89,8 @@ describe('StudioView integration', () => {
     server.use(...writingMocks);
     renderWithRoute(<StudioView />);
 
-    expect(screen.getByText('Develop')).toBeInTheDocument();
-    expect(screen.getByText('Reference')).toBeInTheDocument();
+    expect(screen.getByText('Ideation')).toBeInTheDocument();
+    expect(screen.getByText('Planning')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Ideas' }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('button', { name: 'Characters' }).length).toBeGreaterThanOrEqual(1);
   });

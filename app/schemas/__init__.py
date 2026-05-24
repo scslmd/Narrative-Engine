@@ -130,6 +130,10 @@ from .story_development import (
     StoryboardCard,
     WorkspaceNote,
     WorldBibleEntry,
+    ResearchItem,
+    ResearchItemCreateRequest,
+    ResearchItemUpdateRequest,
+    ResearchItemListResponse,
 )
 from .role_model_checker import (
     RoleCheckResult,
@@ -271,4 +275,8 @@ __all__ = [
     'GenerationRunStatus',
     'WorkspaceNote',
     'WorldBibleEntry',
+    'ResearchItem',
+    'ResearchItemCreateRequest',
+    'ResearchItemUpdateRequest',
+    'ResearchItemListResponse',
 ]

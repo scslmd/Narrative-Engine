@@ -27,6 +27,9 @@ const PREVIEW_LABELS: Record<StudioPanelKey, string> = {
   inspect: 'Job Inspector',
   notes: 'Notes',
   jobs: 'Jobs',
+  research: 'Research Items',
+  revision: 'Revision Passes',
+  polish: 'Polish Analysis',
 };
 
 async function fetchCharacterPreview(projectId: string): Promise<string> {

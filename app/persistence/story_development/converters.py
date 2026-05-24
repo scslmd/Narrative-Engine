@@ -1008,6 +1008,22 @@ def _world_bible_row_to_record(row) -> WorldBibleEntryRecord:
     )
 
 
+def _research_item_row_to_record(row) -> ResearchItemRecord:
+    return ResearchItemRecord(
+        item_id=row["item_id"],
+        project_id=row["project_id"],
+        title=row["title"],
+        content=row["content"],
+        source_url=row["source_url"],
+        source_type=row["source_type"],
+        genre_tags=_parse_json_list(row["genre_tags_json"]),
+        status=row["status"],
+        citations=_parse_json_list(row["citations_json"]),
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
 def _storyboard_card_row_to_record(row) -> StoryboardCardRecord:
     return StoryboardCardRecord(
         card_id=row["card_id"],
@@ -1035,6 +1051,66 @@ def _brain_dump_session_row_to_record(row) -> BrainDumpSessionRecord:
         state=row["state"],
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _polish_report_row_to_record(row) -> PolishReportRecord:
+    return PolishReportRecord(
+        report_id=row["report_id"],
+        project_id=row["project_id"],
+        document_id=row["document_id"],
+        readability_score=float(row["readability_score"] or 0.0),
+        word_count=int(row["word_count"]),
+        sentence_count=int(row["sentence_count"]),
+        avg_sentence_length=float(row["avg_sentence_length"] or 0.0),
+        passive_voice_count=int(row["passive_voice_count"]),
+        repetitive_words=_parse_json_list(row["repetitive_words_json"]),
+        style_issues=_parse_json_list(row["style_issues_json"]),
+        generated_at=datetime.fromisoformat(row["generated_at"]),
+    )
+
+
+def _export_status_row_to_record(row) -> ExportStatusRecord:
+    return ExportStatusRecord(
+        export_id=row["export_id"],
+        project_id=row["project_id"],
+        document_id=row["document_id"],
+        format=row["format"],
+        status=row["status"],
+        artifact_path=row["artifact_path"],
+        error_message=row["error_message"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
+    )
+
+
+def _revision_checklist_item_row_to_record(row) -> RevisionChecklistItemRecord:
+    return RevisionChecklistItemRecord(
+        item_id=row["item_id"],
+        label=row["label"],
+        done=bool(row["done"]),
+    )
+
+
+def _revision_pass_row_to_record(row) -> RevisionPassRecord:
+    raw = json.loads(row["checklist_json"] or "[]")
+    checklist = [
+        RevisionChecklistItemRecord(
+            item_id=item["item_id"],
+            label=item["label"],
+            done=bool(item["done"]),
+        )
+        for item in raw
+    ]
+    return RevisionPassRecord(
+        pass_id=row["pass_id"],
+        project_id=row["project_id"],
+        pass_type=row["pass_type"],
+        status=row["status"],
+        checklist=checklist,
+        notes=row["notes"],
+        created_at=datetime.fromisoformat(row["created_at"]),
+        completed_at=datetime.fromisoformat(row["completed_at"]) if row["completed_at"] else None,
     )
 
 

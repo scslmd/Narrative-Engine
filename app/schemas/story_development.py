@@ -1289,3 +1289,264 @@ class StoryboardCard(StrictSchemaModel):
         else:
             payload["metadata"] = {}
         return payload
+
+
+# --- Research ---
+
+
+class ResearchItem(StrictSchemaModel):
+    item_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    source_url: str | None = None
+    source_type: str = Field(default="other", min_length=1)
+    genre_tags: list[str] = Field(default_factory=list)
+    status: str = Field(default="active", min_length=1)
+    citations: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("item_id", "project_id", "title", "content"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("source_url", "source_type", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        payload["genre_tags"] = _normalize_text_list(payload.get("genre_tags", []), field_name="genre_tags")
+        payload["citations"] = _normalize_text_list(payload.get("citations", []), field_name="citations")
+        return payload
+
+
+class ResearchItemCreateRequest(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    source_url: str | None = None
+    source_type: str = Field(default="other", min_length=1)
+    status: str = Field(default="active", min_length=1)
+    genre_tags: list[str] = Field(default_factory=list)
+    citations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("project_id", "title", "content"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "source_url" in payload:
+            payload["source_url"] = _normalize_optional_text(payload["source_url"], field_name="source_url")
+        if "source_type" in payload:
+            payload["source_type"] = _normalize_optional_text(payload["source_type"], field_name="source_type")
+        payload["genre_tags"] = _normalize_text_list(payload.get("genre_tags", []), field_name="genre_tags")
+        payload["citations"] = _normalize_text_list(payload.get("citations", []), field_name="citations")
+        return payload
+
+
+class ResearchItemUpdateRequest(StrictSchemaModel):
+    title: str | None = Field(None, min_length=1)
+    content: str | None = Field(None, min_length=1)
+    source_url: str | None = None
+    source_type: str | None = None
+    genre_tags: list[str] | None = None
+    status: str | None = None
+    citations: list[str] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("title", "content", "source_url", "source_type", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        if "genre_tags" in payload:
+            payload["genre_tags"] = _normalize_text_list(payload["genre_tags"], field_name="genre_tags")
+        if "citations" in payload:
+            payload["citations"] = _normalize_text_list(payload["citations"], field_name="citations")
+        return payload
+
+
+class ResearchItemListResponse(StrictSchemaModel):
+    project_id: str
+    items: list[ResearchItem] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+# --- Revision ---
+
+
+class RevisionChecklistItem(StrictSchemaModel):
+    item_id: str = Field(min_length=1)
+    label: str = Field(min_length=1)
+    done: bool = False
+
+
+class RevisionPass(StrictSchemaModel):
+    pass_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    pass_type: str = Field(min_length=1)
+    status: str = Field(default="pending", min_length=1)
+    checklist: list[RevisionChecklistItem] = Field(default_factory=list)
+    notes: str | None = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    completed_at: datetime | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("pass_id", "project_id", "pass_type", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        return payload
+
+
+class RevisionPassCreateRequest(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    pass_type: str = Field(min_length=1)
+    status: str = Field(default="pending", min_length=1)
+    notes: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("project_id", "pass_type", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "notes" in payload:
+            payload["notes"] = _normalize_optional_text(payload["notes"], field_name="notes")
+        return payload
+
+
+class RevisionPassUpdateRequest(StrictSchemaModel):
+    status: str | None = None
+    notes: str | None = None
+    checklist: list[RevisionChecklistItem] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("status", "notes"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class RevisionPassListResponse(StrictSchemaModel):
+    project_id: str
+    items: list[RevisionPass] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)
+
+
+# --- Polish ---
+
+
+class PolishReport(StrictSchemaModel):
+    report_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    readability_score: float = 0.0
+    word_count: int = 0
+    sentence_count: int = 0
+    avg_sentence_length: float = 0.0
+    passive_voice_count: int = 0
+    repetitive_words: list[str] = Field(default_factory=list)
+    style_issues: list[str] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=_utcnow)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("report_id", "project_id", "document_id"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        payload["repetitive_words"] = _normalize_text_list(payload.get("repetitive_words", []), field_name="repetitive_words")
+        payload["style_issues"] = _normalize_text_list(payload.get("style_issues", []), field_name="style_issues")
+        return payload
+
+
+class ExportRequest(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    format: str = Field(default="markdown", min_length=1)
+    include_frontmatter: bool = False
+    include_toc: bool = False
+    stylesheet: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("project_id", "document_id", "format"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        if "stylesheet" in payload:
+            payload["stylesheet"] = _normalize_optional_text(payload["stylesheet"], field_name="stylesheet")
+        return payload
+
+
+class ExportStatus(StrictSchemaModel):
+    export_id: str = Field(min_length=1)
+    project_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    format: str = Field(min_length=1)
+    status: str = Field(default="queued", min_length=1)
+    artifact_path: str | None = None
+    error_message: str | None = None
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("export_id", "project_id", "document_id", "format", "status"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
+        for field_name in ("artifact_path", "error_message"):
+            if field_name in payload:
+                payload[field_name] = _normalize_optional_text(payload[field_name], field_name=field_name)
+        return payload
+
+
+class PolishReportListResponse(StrictSchemaModel):
+    project_id: str
+    items: list[PolishReport] = Field(default_factory=list)
+    meta: dict[str, str] = Field(default_factory=dict)

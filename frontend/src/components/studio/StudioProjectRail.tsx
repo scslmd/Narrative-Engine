@@ -24,31 +24,48 @@ interface RailSection {
   items: RailItem[];
 }
 
-const railSections: RailSection[] = [
+export const railSections: RailSection[] = [
   {
-    label: 'Develop',
+    label: 'Ideation',
     items: [
-      { label: 'Drafts', panel: 'drafts', icon: FileText },
-      { label: 'Manuscripts', panel: 'manuscripts', icon: BookOpen },
       { label: 'Ideas', panel: 'ideas', icon: Brain },
-      { label: 'Suggestions', panel: 'suggestions', icon: NotebookPen },
-      { label: 'Review', panel: 'review', icon: FileStack },
+      { label: 'Research', panel: 'research', icon: BookOpen },
+      { label: 'Notes', panel: 'notes', icon: NotebookPen },
     ],
   },
   {
-    label: 'Reference',
+    label: 'Planning',
     items: [
       { label: 'Characters', panel: 'characters', icon: Users },
       { label: 'World Bible', panel: 'worldBible', icon: BookOpen },
       { label: 'Relationships', panel: 'relationships', icon: Network },
       { label: 'Arcs', panel: 'arcs', icon: TrendingUp },
-      { label: 'Canon', panel: 'generation', icon: Scroll },
+      { label: 'Structure', panel: 'structure', icon: FileStack },
+      { label: 'Chapters', panel: 'chapters', icon: Scroll },
     ],
   },
   {
-    label: 'Utilities',
+    label: 'Drafting',
     items: [
-      { label: 'Notes', panel: 'notes', icon: NotebookPen },
+      { label: 'Manuscripts', panel: 'manuscripts', icon: BookOpen },
+      { label: 'Drafts', panel: 'drafts', icon: FileText },
+      { label: 'Generation', panel: 'generation', icon: Brain },
+    ],
+  },
+  {
+    label: 'Revision',
+    items: [
+      { label: 'Revision', panel: 'revision', icon: FileStack },
+      { label: 'Suggestions', panel: 'suggestions', icon: NotebookPen },
+      { label: 'Review', panel: 'review', icon: FileStack },
+      { label: 'Inspect', panel: 'inspect', icon: GitBranch },
+    ],
+  },
+  {
+    label: 'Polish',
+    items: [
+      { label: 'Polish', panel: 'polish', icon: Scroll },
+      { label: 'Canon', panel: 'canon', icon: BookOpen },
       { label: 'Jobs', panel: 'jobs', icon: GitBranch },
     ],
   },

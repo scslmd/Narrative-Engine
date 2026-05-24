@@ -77,6 +77,9 @@ from .planning import (
     _PlanningSequencePlanMixin,
 )
 from .review import _CheckerFindingMixin, _InspectLinkMixin, _ReviewDecisionMixin
+from .revision import _RevisionMixin
+from .polish import _ExportStatusMixin, _PolishMixin
+from .research import _ResearchMixin
 from .storyboard import _StoryboardMixin
 from .world_bible import _WorldBibleMixin
 
@@ -135,8 +138,12 @@ class StoryDevelopmentRepository(
     _CheckerFindingMixin,
     _InspectLinkMixin,
     _ReviewDecisionMixin,
+    _RevisionMixin,
 
+    _PolishMixin,
+    _ExportStatusMixin,
     _StoryboardMixin,
+    _ResearchMixin,
     _WorldBibleMixin,
 
 ):
@@ -185,7 +192,11 @@ class StoryDevelopmentRepository(
         _CheckerFindingMixin.__init__(self, db_path)
         _InspectLinkMixin.__init__(self, db_path)
         _ReviewDecisionMixin.__init__(self, db_path)
+        _RevisionMixin.__init__(self, db_path)
+        _PolishMixin.__init__(self, db_path)
+        _ExportStatusMixin.__init__(self, db_path)
         _StoryboardMixin.__init__(self, db_path)
+        _ResearchMixin.__init__(self, db_path)
         _WorldBibleMixin.__init__(self, db_path)
 
 

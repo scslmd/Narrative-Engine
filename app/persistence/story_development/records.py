@@ -740,6 +740,21 @@ class RevisionSuggestionRecord:
 
 
 @dataclass(frozen=True)
+class ResearchItemRecord:
+    item_id: str
+    project_id: str
+    title: str
+    content: str
+    source_url: str | None
+    source_type: str
+    genre_tags: list[str]
+    status: str
+    citations: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
 class StoryboardCardRecord:
     """Record for storyboard cards used in planning workspace.
     
@@ -757,6 +772,53 @@ class StoryboardCardRecord:
     character_ids: list[str]  # Associated characters
     dependencies: list[str]  # Card IDs this card depends on
     metadata: dict[str, Any]  # Flexible metadata field
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True)
+class RevisionChecklistItemRecord:
+    item_id: str
+    label: str
+    done: bool
+
+
+@dataclass(frozen=True)
+class RevisionPassRecord:
+    pass_id: str
+    project_id: str
+    pass_type: str
+    status: str
+    checklist: list[RevisionChecklistItemRecord]
+    notes: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+@dataclass(frozen=True)
+class PolishReportRecord:
+    report_id: str
+    project_id: str
+    document_id: str
+    readability_score: float
+    word_count: int
+    sentence_count: int
+    avg_sentence_length: float
+    passive_voice_count: int
+    repetitive_words: list[str]
+    style_issues: list[str]
+    generated_at: datetime
+
+
+@dataclass(frozen=True)
+class ExportStatusRecord:
+    export_id: str
+    project_id: str
+    document_id: str
+    format: str
+    status: str
+    artifact_path: str | None
+    error_message: str | None
     created_at: datetime
     updated_at: datetime
 
