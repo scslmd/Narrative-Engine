@@ -115,46 +115,16 @@ def _build_client(tmp_path: Path) -> tuple[TestClient, StoryDevelopmentRepositor
 
 # ============================================================================
 # Storyboard Card Integration Tests
+# (Only tests unique from test_storyboard_cards.py)
 # ============================================================================
 
 class TestStoryboardCardEndpoints:
     """Integration tests for storyboard card API endpoints."""
 
-    def test_create_storyboard_card(self, tmp_path: Path) -> None:
-        """Creating a storyboard card should return 201 with the card data."""
-        client, _, project_id = _build_client(tmp_path)
-        card_id = f"card-{uuid4().hex[:8]}"
-        
-        response = client.post(
-            "/story-development/storyboard/cards",
-            json={
-                "project_id": project_id,
-                "card_id": card_id,
-                "title": "Opening Scene",
-                "content": "The protagonist enters the dark forest.",
-                "card_type": "scene",
-                "column_id": "planned",
-                "position": 0,
-                "tags": ["forest", "opening"],
-                "character_ids": ["char-protag"],
-                "dependencies": [],
-            },
-        )
-        
-        assert response.status_code == 201
-        data = response.json()
-        assert data["card_id"] == card_id
-        assert data["title"] == "Opening Scene"
-        assert data["card_type"] == "scene"
-        assert data["column_id"] == "planned"
-        assert data["position"] == 0
-        assert "forest" in data["tags"]
-        assert "char-protag" in data["character_ids"]
-
     def test_create_storyboard_card_validation_error(self, tmp_path: Path) -> None:
         """Creating a card with invalid card_type should return 400."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.post(
             "/story-development/storyboard/cards",
             json={
@@ -165,148 +135,15 @@ class TestStoryboardCardEndpoints:
                 "card_type": "invalid_type",
             },
         )
-        
+
         assert response.status_code == 400
         assert "card_type" in response.json()["detail"].lower() or "valid" in response.json()["detail"].lower()
-
-    def test_get_storyboard_card(self, tmp_path: Path) -> None:
-        """Getting a card by ID should return 200."""
-        client, repo, project_id = _build_client(tmp_path)
-        card_id = f"card-{uuid4().hex[:8]}"
-        
-        repo.create_storyboard_card(
-            card_id=card_id,
-            project_id=project_id,
-            title="Retrieval Test Card",
-            content="Content for retrieval",
-        )
-        
-        response = client.get(f"/story-development/storyboard/cards/{card_id}", params={"project_id": project_id})
-        
-        assert response.status_code == 200
-        assert response.json()["card_id"] == card_id
-        assert response.json()["title"] == "Retrieval Test Card"
-
-    def test_get_storyboard_card_not_found(self, tmp_path: Path) -> None:
-        """Getting a non-existent card should return 404."""
-        client, _, project_id = _build_client(tmp_path)
-        
-        response = client.get("/story-development/storyboard/cards/nonexistent", params={"project_id": project_id})
-        
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
-
-    def test_list_storyboard_cards(self, tmp_path: Path) -> None:
-        """Listing cards should return all cards for the project."""
-        client, repo, project_id = _build_client(tmp_path)
-        
-        for i in range(3):
-            repo.create_storyboard_card(
-                card_id=f"list-card-{i}",
-                project_id=project_id,
-                title=f"List Card {i}",
-                content=f"Content {i}",
-            )
-        
-        response = client.get("/story-development/storyboard/cards", params={"project_id": project_id})
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["items"]) == 3
-        assert data["project_id"] == project_id
-
-    def test_list_storyboard_cards_filtered_by_type(self, tmp_path: Path) -> None:
-        """Listing cards with card_type filter should return filtered results."""
-        client, repo, project_id = _build_client(tmp_path)
-        
-        repo.create_storyboard_card(
-            card_id="scene-1",
-            project_id=project_id,
-            title="Scene",
-            content="Scene content",
-            card_type="scene",
-        )
-        repo.create_storyboard_card(
-            card_id="idea-1",
-            project_id=project_id,
-            title="Idea",
-            content="Idea content",
-            card_type="idea",
-        )
-        
-        response = client.get(
-            "/story-development/storyboard/cards",
-            params={"project_id": project_id, "card_type": "scene"},
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["items"]) == 1
-        assert data["items"][0]["card_type"] == "scene"
-
-    def test_list_storyboard_cards_filtered_by_column(self, tmp_path: Path) -> None:
-        """Listing cards with column filter should return filtered results."""
-        client, repo, project_id = _build_client(tmp_path)
-        
-        repo.create_storyboard_card(
-            card_id="card-planned",
-            project_id=project_id,
-            title="Planned",
-            content="Planned content",
-            column_id="planned",
-        )
-        repo.create_storyboard_card(
-            card_id="card-drafting",
-            project_id=project_id,
-            title="Drafting",
-            content="Drafting content",
-            column_id="drafting",
-        )
-        
-        response = client.get(
-            "/story-development/storyboard/cards",
-            params={"project_id": project_id, "column_id": "planned"},
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["items"]) == 1
-        assert data["items"][0]["column_id"] == "planned"
-
-    def test_list_storyboard_cards_filtered_by_tag(self, tmp_path: Path) -> None:
-        """Listing cards with tag filter should return cards containing that tag."""
-        client, repo, project_id = _build_client(tmp_path)
-        
-        repo.create_storyboard_card(
-            card_id="card-urgent",
-            project_id=project_id,
-            title="Urgent",
-            content="Urgent content",
-            tags=["urgent"],
-        )
-        repo.create_storyboard_card(
-            card_id="card-regular",
-            project_id=project_id,
-            title="Regular",
-            content="Regular content",
-            tags=["regular"],
-        )
-        
-        response = client.get(
-            "/story-development/storyboard/cards",
-            params={"project_id": project_id, "tag": "urgent"},
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["items"]) == 1
-        assert "urgent" in data["items"][0]["tags"]
 
     def test_update_storyboard_card(self, tmp_path: Path) -> None:
         """Updating a card should return the updated data."""
         client, repo, project_id = _build_client(tmp_path)
         card_id = f"card-{uuid4().hex[:8]}"
-        
+
         repo.create_storyboard_card(
             card_id=card_id,
             project_id=project_id,
@@ -314,7 +151,7 @@ class TestStoryboardCardEndpoints:
             content="Original content",
             card_type="idea",
         )
-        
+
         response = client.patch(
             f"/story-development/storyboard/cards/{card_id}",
             params={"project_id": project_id},
@@ -323,7 +160,7 @@ class TestStoryboardCardEndpoints:
                 "content": "Updated content",
             },
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Updated Title"
@@ -333,44 +170,41 @@ class TestStoryboardCardEndpoints:
         """Deleting a card should return 204."""
         client, repo, project_id = _build_client(tmp_path)
         card_id = f"card-{uuid4().hex[:8]}"
-        
+
         repo.create_storyboard_card(
             card_id=card_id,
             project_id=project_id,
             title="To Delete",
             content="Content",
         )
-        
+
         response = client.delete(f"/story-development/storyboard/cards/{card_id}", params={"project_id": project_id})
-        
+
         assert response.status_code == 204
-        
-        # Verify it's deleted
+
         get_response = client.get(f"/story-development/storyboard/cards/{card_id}", params={"project_id": project_id})
         assert get_response.status_code == 404
 
     def test_delete_storyboard_card_not_found(self, tmp_path: Path) -> None:
         """Deleting a non-existent card should return 404."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.delete("/story-development/storyboard/cards/nonexistent", params={"project_id": project_id})
-        
+
         assert response.status_code == 404
 
     def test_upsert_storyboard_card(self, tmp_path: Path) -> None:
         """Upserting an existing card should update it."""
         client, repo, project_id = _build_client(tmp_path)
         card_id = f"card-{uuid4().hex[:8]}"
-        
-        # Create initial card
+
         repo.create_storyboard_card(
             card_id=card_id,
             project_id=project_id,
             title="Original Title",
             content="Original content",
         )
-        
-        # Upsert with same card_id
+
         response = client.put(
             f"/story-development/storyboard/cards/{card_id}",
             params={"project_id": project_id},
@@ -382,7 +216,7 @@ class TestStoryboardCardEndpoints:
                 "card_type": "scene",
             },
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Upserted Title"
@@ -392,11 +226,11 @@ class TestStoryboardCardEndpoints:
     def test_reindex_storyboard_column(self, tmp_path: Path) -> None:
         """Reindexing should update positions in order."""
         client, repo, project_id = _build_client(tmp_path)
-        
+
         card_id_1 = f"card-{uuid4().hex[:8]}"
         card_id_2 = f"card-{uuid4().hex[:8]}"
         card_id_3 = f"card-{uuid4().hex[:8]}"
-        
+
         for cid in [card_id_1, card_id_2, card_id_3]:
             repo.create_storyboard_card(
                 card_id=cid,
@@ -405,13 +239,13 @@ class TestStoryboardCardEndpoints:
                 content="Content",
                 column_id="planned",
             )
-        
+
         response = client.put(
             "/story-development/storyboard/cards/planned/reindex",
             params={"project_id": project_id},
             json={"card_ids": [card_id_3, card_id_1, card_id_2]},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 3
@@ -424,16 +258,14 @@ class TestStoryboardCardEndpoints:
         """Updating a card from a different project should return 404."""
         client, repo, project_id = _build_client(tmp_path)
         card_id = f"card-{uuid4().hex[:8]}"
-        
-        # Create card in project_a
+
         repo.create_storyboard_card(
             card_id=card_id,
             project_id=project_id,
             title="Card",
             content="Content",
         )
-        
-        # Try to update from a different project_id
+
         response = client.patch(
             f"/story-development/storyboard/cards/{card_id}",
             params={"project_id": "different-project"},
@@ -443,7 +275,7 @@ class TestStoryboardCardEndpoints:
                 "card_type": "note",
             },
         )
-        
+
         assert response.status_code == 404
 
 
@@ -458,7 +290,7 @@ class TestChapterPacketEndpoints:
         """Creating a chapter packet should return 201."""
         client, _, project_id = _build_client(tmp_path)
         packet_id = f"packet-{uuid4().hex[:8]}"
-        
+
         response = client.post(
             "/story-development/planning/chapter-packets",
             json={
@@ -471,7 +303,7 @@ class TestChapterPacketEndpoints:
                 "status": "draft",
             },
         )
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["packet_id"] == packet_id
@@ -482,7 +314,7 @@ class TestChapterPacketEndpoints:
     def test_create_chapter_packet_validation_error(self, tmp_path: Path) -> None:
         """Creating a packet with empty packet_id should return 400."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.post(
             "/story-development/planning/chapter-packets",
             json={
@@ -491,14 +323,14 @@ class TestChapterPacketEndpoints:
                 "chapter_id": "chapter-1",
             },
         )
-        
+
         assert response.status_code == 422
 
     def test_get_chapter_packet(self, tmp_path: Path) -> None:
         """Getting a packet by ID should return 200."""
         client, repo, project_id = _build_client(tmp_path)
         packet_id = f"packet-{uuid4().hex[:8]}"
-        
+
         repo.upsert_chapter_packet(
             packet_id=packet_id,
             project_id=project_id,
@@ -506,12 +338,12 @@ class TestChapterPacketEndpoints:
             included_reference_ids=["ref-3"],
             status=StoryArtifactLifecycleState.CANONICAL.value,
         )
-        
+
         response = client.get(
             f"/story-development/planning/chapter-packets/{packet_id}",
             params={"project_id": project_id},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["packet_id"] == packet_id
@@ -520,26 +352,26 @@ class TestChapterPacketEndpoints:
     def test_get_chapter_packet_not_found(self, tmp_path: Path) -> None:
         """Getting a non-existent packet should return 404."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.get(
             "/story-development/planning/chapter-packets/nonexistent",
             params={"project_id": project_id},
         )
-        
+
         assert response.status_code == 404
 
     def test_update_chapter_packet(self, tmp_path: Path) -> None:
         """Updating a packet should return 200 with new data."""
         client, repo, project_id = _build_client(tmp_path)
         packet_id = f"packet-{uuid4().hex[:8]}"
-        
+
         repo.upsert_chapter_packet(
             packet_id=packet_id,
             project_id=project_id,
             chapter_id="chapter-3",
             status=StoryArtifactLifecycleState.DRAFT.value,
         )
-        
+
         response = client.patch(
             f"/story-development/planning/chapter-packets/{packet_id}",
             params={"project_id": project_id},
@@ -548,7 +380,7 @@ class TestChapterPacketEndpoints:
                 "scene_goals": ["resolve conflict"],
             },
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == StoryArtifactLifecycleState.CANONICAL.value
@@ -557,28 +389,28 @@ class TestChapterPacketEndpoints:
     def test_update_chapter_packet_not_found(self, tmp_path: Path) -> None:
         """Updating a non-existent packet should return 404."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.patch(
             "/story-development/planning/chapter-packets/nonexistent",
             params={"project_id": project_id},
             json={"status": "canonical"},
         )
-        
+
         assert response.status_code == 404
 
     def test_list_chapter_packets_still_works(self, tmp_path: Path) -> None:
         """Existing GET endpoint should still work after adding write endpoints."""
         client, repo, project_id = _build_client(tmp_path)
-        
+
         repo.upsert_chapter_packet(
             packet_id=f"list-pkt-{uuid4().hex[:8]}",
             project_id=project_id,
             chapter_id="chapter-5",
             status=StoryArtifactLifecycleState.DRAFT.value,
         )
-        
+
         response = client.get("/story-development/planning/chapter-packets", params={"project_id": project_id})
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) >= 1
@@ -596,7 +428,7 @@ class TestSequencePlanEndpoints:
         """Creating a sequence plan should return 201."""
         client, _, project_id = _build_client(tmp_path)
         seq_id = f"seq-{uuid4().hex[:8]}"
-        
+
         response = client.post(
             "/story-development/planning/sequence-plans",
             json={
@@ -610,7 +442,7 @@ class TestSequencePlanEndpoints:
                 "position": 1,
             },
         )
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["sequence_id"] == seq_id
@@ -622,7 +454,7 @@ class TestSequencePlanEndpoints:
     def test_create_sequence_plan_validation_error(self, tmp_path: Path) -> None:
         """Creating a sequence plan with empty sequence_id should return 400."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.post(
             "/story-development/planning/sequence-plans",
             json={
@@ -631,14 +463,14 @@ class TestSequencePlanEndpoints:
                 "title": "Test",
             },
         )
-        
+
         assert response.status_code == 422
 
     def test_get_sequence_plan(self, tmp_path: Path) -> None:
         """Getting a sequence plan by ID should return 200."""
         client, repo, project_id = _build_client(tmp_path)
         seq_id = f"seq-{uuid4().hex[:8]}"
-        
+
         repo.upsert_sequence_plan(
             sequence_id=seq_id,
             project_id=project_id,
@@ -646,12 +478,12 @@ class TestSequencePlanEndpoints:
             summary="Retrieval summary",
             status=StoryArtifactLifecycleState.CANONICAL.value,
         )
-        
+
         response = client.get(
             f"/story-development/planning/sequence-plans/{seq_id}",
             params={"project_id": project_id},
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["sequence_id"] == seq_id
@@ -660,19 +492,19 @@ class TestSequencePlanEndpoints:
     def test_get_sequence_plan_not_found(self, tmp_path: Path) -> None:
         """Getting a non-existent sequence plan should return 404."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.get(
             "/story-development/planning/sequence-plans/nonexistent",
             params={"project_id": project_id},
         )
-        
+
         assert response.status_code == 404
 
     def test_update_sequence_plan(self, tmp_path: Path) -> None:
         """Updating a sequence plan should return 200 with new data."""
         client, repo, project_id = _build_client(tmp_path)
         seq_id = f"seq-{uuid4().hex[:8]}"
-        
+
         repo.upsert_sequence_plan(
             sequence_id=seq_id,
             project_id=project_id,
@@ -681,7 +513,7 @@ class TestSequencePlanEndpoints:
             status=StoryArtifactLifecycleState.DRAFT.value,
             position=1,
         )
-        
+
         response = client.patch(
             f"/story-development/planning/sequence-plans/{seq_id}",
             params={"project_id": project_id},
@@ -691,7 +523,7 @@ class TestSequencePlanEndpoints:
                 "beat_ids": ["beat-3", "beat-4"],
             },
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["title"] == "Updated Title"
@@ -701,28 +533,28 @@ class TestSequencePlanEndpoints:
     def test_update_sequence_plan_not_found(self, tmp_path: Path) -> None:
         """Updating a non-existent sequence plan should return 404."""
         client, _, project_id = _build_client(tmp_path)
-        
+
         response = client.patch(
             "/story-development/planning/sequence-plans/nonexistent",
             params={"project_id": project_id},
             json={"title": "Updated"},
         )
-        
+
         assert response.status_code == 404
 
     def test_list_sequence_plans_still_works(self, tmp_path: Path) -> None:
         """Existing GET endpoint should still work after adding write endpoints."""
         client, repo, project_id = _build_client(tmp_path)
-        
+
         repo.upsert_sequence_plan(
             sequence_id=f"list-seq-{uuid4().hex[:8]}",
             project_id=project_id,
             title="List Sequence",
             summary="List summary",
         )
-        
+
         response = client.get("/story-development/planning/sequence-plans", params={"project_id": project_id})
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) >= 1
@@ -732,7 +564,7 @@ class TestSequencePlanEndpoints:
         """Updating a sequence plan from a different project should return 404."""
         client, repo, project_id = _build_client(tmp_path)
         seq_id = f"seq-{uuid4().hex[:8]}"
-        
+
         repo.upsert_sequence_plan(
             sequence_id=seq_id,
             project_id=project_id,
@@ -740,12 +572,11 @@ class TestSequencePlanEndpoints:
             summary="Original summary",
             status=StoryArtifactLifecycleState.DRAFT.value,
         )
-        
-        # Try to update from a different project_id
+
         response = client.patch(
             f"/story-development/planning/sequence-plans/{seq_id}",
             params={"project_id": "different-project"},
             json={"title": "Hacked"},
         )
-        
+
         assert response.status_code == 404

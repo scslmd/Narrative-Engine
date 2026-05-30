@@ -40,7 +40,10 @@ def register_revision_routes(
     @router.get("/revision/passes/{pass_id}", response_model=RevisionPass)
     def get_revision_pass(pass_id: str, project_id: str) -> RevisionPass:
         try:
-            return service.get_pass(pass_id)
+            revision_pass = service.get_pass(pass_id)
+            if revision_pass.project_id != project_id:
+                raise RevisionNotFoundError(pass_id)
+            return revision_pass
         except RevisionNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -60,6 +63,9 @@ def register_revision_routes(
         payload: RevisionPassUpdateRequest,
     ) -> RevisionPass:
         try:
+            existing = service.get_pass(pass_id)
+            if existing.project_id != project_id:
+                raise RevisionNotFoundError(pass_id)
             return service.update_pass(
                 pass_id,
                 status=payload.status,
@@ -74,6 +80,9 @@ def register_revision_routes(
     @router.post("/revision/passes/{pass_id}/complete", response_model=RevisionPass)
     def complete_revision_pass(pass_id: str, project_id: str) -> RevisionPass:
         try:
+            existing = service.get_pass(pass_id)
+            if existing.project_id != project_id:
+                raise RevisionNotFoundError(pass_id)
             return service.complete_pass(pass_id)
         except RevisionNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

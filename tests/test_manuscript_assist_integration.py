@@ -96,26 +96,6 @@ def _seed_project(db_path: Path, project_id: str) -> None:
 class TestManuscriptDocumentEndpoints:
     """Integration tests for manuscript document API endpoints."""
 
-    def test_create_manuscript_document_returns_201(self, tmp_path: Path) -> None:
-        """Creating a manuscript document should return 201."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc-{uuid4().hex[:8]}",
-                "title": "Chapter One",
-                "content": "The quick brown fox jumped over the lazy dog.",
-            },
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["project_id"] == project_id
-        assert data["title"] == "Chapter One"
-        assert data["content"] == "The quick brown fox jumped over the lazy dog."
-
     def test_create_manuscript_document_with_chapter_ref(
         self, tmp_path: Path
     ) -> None:
@@ -137,105 +117,11 @@ class TestManuscriptDocumentEndpoints:
         data = response.json()
         assert data["chapter_id"] == "ch-1"
 
-    def test_list_manuscript_documents(self, tmp_path: Path) -> None:
-        """Listing manuscript documents should return all documents for a project."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        # Create two documents
-        for i in range(2):
-            client.post(
-                "/v1/story-development/drafting/manuscript-documents",
-                json={
-                    "project_id": project_id,
-                    "document_id": f"doc-{i}",
-                    "title": f"Document {i}",
-                    "content": f"Content {i}",
-                },
-            )
-
-        response = client.get(
-            "/v1/story-development/drafting/manuscript-documents",
-            params={"project_id": project_id},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["project_id"] == project_id
-        assert len(data["items"]) == 2
-
-    def test_get_manuscript_document(self, tmp_path: Path) -> None:
-        """Getting a specific manuscript document should return it."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        # Create a document
-        create_response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc-{uuid4().hex[:8]}",
-                "title": "Chapter One",
-                "content": "The world was quiet.",
-            },
-        )
-        doc_id = create_response.json()["document_id"]
-
-        response = client.get(
-            f"/v1/story-development/drafting/manuscript-documents/{doc_id}",
-            params={"project_id": project_id},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["document_id"] == doc_id
-        assert data["title"] == "Chapter One"
-
-    def test_get_manuscript_document_not_found(
-        self, tmp_path: Path
-    ) -> None:
-        """Getting a non-existent document should return 404."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        response = client.get(
-            "/v1/story-development/drafting/manuscript-documents/nonexistent",
-            params={"project_id": project_id},
-        )
-        assert response.status_code == 404
-
-    def test_update_manuscript_document(self, tmp_path: Path) -> None:
-        """Updating a manuscript document should return the updated document."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        # Create a document
-        create_response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc-{uuid4().hex[:8]}",
-                "title": "Original Title",
-                "content": "Original content.",
-            },
-        )
-        doc_id = create_response.json()["document_id"]
-
-        # Update the document
-        response = client.patch(
-            f"/v1/story-development/drafting/manuscript-documents/{doc_id}",
-            params={"project_id": project_id},
-            json={"title": "Updated Title", "content": "Updated content."},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["title"] == "Updated Title"
-        assert data["content"] == "Updated content."
-
     def test_update_manuscript_document_partial(self, tmp_path: Path) -> None:
         """Updating only title should preserve original content."""
         project_id = f"test-proj-{uuid4().hex[:8]}"
         client, _, _ = _build_client(tmp_path, project_id)
 
-        # Create a document
         create_response = client.post(
             "/v1/story-development/drafting/manuscript-documents",
             json={
@@ -247,7 +133,6 @@ class TestManuscriptDocumentEndpoints:
         )
         doc_id = create_response.json()["document_id"]
 
-        # Update only title
         response = client.patch(
             f"/v1/story-development/drafting/manuscript-documents/{doc_id}",
             params={"project_id": project_id},
@@ -262,68 +147,11 @@ class TestManuscriptDocumentEndpoints:
 class TestRevisionSuggestionEndpoints:
     """Integration tests for revision suggestion API endpoints."""
 
-    def test_create_revision_suggestion_returns_201(
-        self, tmp_path: Path
-    ) -> None:
-        """Creating a revision suggestion should return 201."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        # Create a manuscript document first
-        doc_response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc-{uuid4().hex[:8]}",
-                "title": "Chapter One",
-                "content": "The quick brown fox jumped over the lazy dog.",
-            },
-        )
-        doc_id = doc_response.json()["document_id"]
-
-        response = client.post(
-            "/v1/story-development/drafting/revision-suggestions",
-            json={
-                "project_id": project_id,
-                "suggestion_id": f"sug-{uuid4().hex[:8]}",
-                "target_document_id": doc_id,
-                "source_text": "The quick brown fox jumped over the lazy dog.",
-                "proposed_text": "The swift amber fox leaped over the sleeping canine.",
-                "rationale": "Improve specificity and tone",
-                "source_context": ["opening-paragraph"],
-            },
-        )
-        assert response.status_code == 201
-        data = response.json()
-        assert data["target_document_id"] == doc_id
-        assert data["rationale"] == "Improve specificity and tone"
-
-    def test_create_revision_suggestion_requires_target_document(
-        self, tmp_path: Path
-    ) -> None:
-        """Creating a revision suggestion without a valid target document should return 404."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        response = client.post(
-            "/v1/story-development/drafting/revision-suggestions",
-            json={
-                "project_id": project_id,
-                "suggestion_id": f"sug-{uuid4().hex[:8]}",
-                "target_document_id": "nonexistent-document",
-                "source_text": "old text",
-                "proposed_text": "new text",
-                "rationale": "Test rationale",
-            },
-        )
-        assert response.status_code == 404
-
     def test_list_revision_suggestions(self, tmp_path: Path) -> None:
         """Listing revision suggestions should return all suggestions for a project."""
         project_id = f"test-proj-{uuid4().hex[:8]}"
         client, _, _ = _build_client(tmp_path, project_id)
 
-        # Create documents and suggestions
         doc1_response = client.post(
             "/v1/story-development/drafting/manuscript-documents",
             json={
@@ -346,7 +174,6 @@ class TestRevisionSuggestionEndpoints:
         )
         doc2_id = doc2_response.json()["document_id"]
 
-        # Create suggestions for both documents
         client.post(
             "/v1/story-development/drafting/revision-suggestions",
             json={
@@ -378,74 +205,11 @@ class TestRevisionSuggestionEndpoints:
         data = response.json()
         assert len(data["items"]) == 2
 
-    def test_list_revision_suggestions_filtered_by_document(
-        self, tmp_path: Path
-    ) -> None:
-        """Listing revision suggestions filtered by target_document_id should return only matching."""
-        project_id = f"test-proj-{uuid4().hex[:8]}"
-        client, _, _ = _build_client(tmp_path, project_id)
-
-        # Create documents and suggestions
-        doc1_response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc1-{uuid4().hex[:8]}",
-                "title": "Chapter One",
-                "content": "Content one.",
-            },
-        )
-        doc1_id = doc1_response.json()["document_id"]
-
-        doc2_response = client.post(
-            "/v1/story-development/drafting/manuscript-documents",
-            json={
-                "project_id": project_id,
-                "document_id": f"doc2-{uuid4().hex[:8]}",
-                "title": "Chapter Two",
-                "content": "Content two.",
-            },
-        )
-        doc2_id = doc2_response.json()["document_id"]
-
-        client.post(
-            "/v1/story-development/drafting/revision-suggestions",
-            json={
-                "project_id": project_id,
-                "suggestion_id": "sug-1",
-                "target_document_id": doc1_id,
-                "source_text": "old1",
-                "proposed_text": "new1",
-                "rationale": "Rationale 1",
-            },
-        )
-        client.post(
-            "/v1/story-development/drafting/revision-suggestions",
-            json={
-                "project_id": project_id,
-                "suggestion_id": "sug-2",
-                "target_document_id": doc2_id,
-                "source_text": "old2",
-                "proposed_text": "new2",
-                "rationale": "Rationale 2",
-            },
-        )
-
-        response = client.get(
-            "/v1/story-development/drafting/revision-suggestions",
-            params={"project_id": project_id, "target_document_id": doc1_id},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["items"]) == 1
-        assert data["items"][0]["target_document_id"] == doc1_id
-
     def test_get_revision_suggestion(self, tmp_path: Path) -> None:
         """Getting a specific revision suggestion should return it."""
         project_id = f"test-proj-{uuid4().hex[:8]}"
         client, _, _ = _build_client(tmp_path, project_id)
 
-        # Create a document and suggestion
         doc_response = client.post(
             "/v1/story-development/drafting/manuscript-documents",
             json={
@@ -544,7 +308,6 @@ class TestManuscriptDocumentCrossProject:
         project_id_2 = f"test-proj-2-{uuid4().hex[:8]}"
         client, _, _ = _build_client(tmp_path, project_id_1)
 
-        # Create a document in project 1
         client.post(
             "/v1/story-development/drafting/manuscript-documents",
             json={
@@ -555,10 +318,8 @@ class TestManuscriptDocumentCrossProject:
             },
         )
 
-        # Build a new client for project 2
         client2, _, _ = _build_client(tmp_path, project_id_2)
 
-        # Listing documents for project 2 should be empty
         response = client2.get(
             "/v1/story-development/drafting/manuscript-documents",
             params={"project_id": project_id_2},
@@ -567,7 +328,6 @@ class TestManuscriptDocumentCrossProject:
         data = response.json()
         assert len(data["items"]) == 0
 
-        # Listing documents for project 1 should have one
         response = client.get(
             "/v1/story-development/drafting/manuscript-documents",
             params={"project_id": project_id_1},

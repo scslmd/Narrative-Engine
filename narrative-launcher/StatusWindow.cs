@@ -8,8 +8,10 @@ namespace NarrativeLauncher;
 public class StatusWindow : Form
 {
     private readonly ServiceManager _services;
+    private readonly Action? _onQuit;
     private readonly Label[] _statusLabels = new Label[3];
     private readonly PictureBox[] _statusDots = new PictureBox[3];
+    private readonly FlowLayoutPanel _duplicatePanel;
     private readonly System.Windows.Forms.Timer _refreshTimer;
     private readonly Stopwatch _uptime = Stopwatch.StartNew();
 
@@ -28,14 +30,14 @@ public class StatusWindow : Form
     private static readonly Color Violet = Color.FromArgb(167, 139, 250);
     private static readonly Color Emerald = Color.FromArgb(52, 211, 153);
 
-    public StatusWindow(ServiceManager services)
+    public StatusWindow(ServiceManager services, Action? onQuit = null)
     {
         _services = services;
+        _onQuit = onQuit;
 
         Text = "Narrative Engine";
-        Size = new Size(420, 300);
-        MinimumSize = new Size(420, 300);
-        MaximumSize = new Size(420, 300);
+        Size = new Size(420, 400);
+        MinimumSize = new Size(420, 400);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
@@ -46,9 +48,19 @@ public class StatusWindow : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 6,
+            RowCount = 7,
             Padding = new Padding(20),
             ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
+            RowStyles =
+            {
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.Percent, 100),
+            },
         };
 
         // Brand row: icon + title
@@ -95,47 +107,101 @@ public class StatusWindow : Form
 
         // Service rows
         var titles = new[] { "Backend", "Frontend", "LLM" };
-        var ports = new[] { "8000", "5173", "8080" };
+        var ports = new[] { "8000", "8000", "8080" };
         var icons = new[] { "API", "UI", "AI" };
         var iconColors = new[] { Indigo, Emerald, Violet };
+        var restartHandlers = new Action[3];
+        restartHandlers[0] = () => _services.RestartBackend();
+        restartHandlers[1] = async () => await _services.RestartFrontendAsync();
+        restartHandlers[2] = () => RestartLlm();
+        var restartEnabled = new[] { true, true, _services.IsLlmMonitored() };
 
         for (int i = 0; i < 3; i++)
         {
-            var rowCard = CreateServiceRow(titles[i], ports[i], icons[i], iconColors[i], i);
+            var rowCard = CreateServiceRow(titles[i], ports[i], icons[i], iconColors[i], i, restartHandlers[i], restartEnabled[i]);
             panel.Controls.Add(rowCard, 0, i + 3);
         }
 
-        // Bottom row: uptime + quit button
-        var bottomPanel = new FlowLayoutPanel
+        // Bottom row: action buttons
+        var bottomPanel = CreateBottomPanel();
+        panel.Controls.Add(bottomPanel, 0, 6);
+
+        // Duplicate processes section
+        _duplicatePanel = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoSize = true,
+            Margin = new Padding(0, 8, 0, 0),
+        };
+        panel.Controls.Add(_duplicatePanel, 0, 5);
+        Controls.Add(panel);
+
+        // Refresh timer
+        _refreshTimer = new System.Windows.Forms.Timer { Interval = 3000 };
+        _refreshTimer.Tick += async (s, e) => await UpdateStatusInternal();
+        _refreshTimer.Start();
+
+        _ = UpdateStatusInternal();
+    }
+
+    private void RestartLlm()
+    {
+        if (_services.Llm.Process is { HasExited: false } proc)
+        {
+            proc.Kill();
+            proc.WaitForExit(2000);
+        }
+    }
+
+    private Control CreateBottomPanel()
+    {
+        var panel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.RightToLeft,
         };
 
-        var quitBtn = new Button
+        var quitBtn = CreateActionButton("Quit", Color.FromArgb(239, 68, 68), () =>
         {
-            Text = "Quit",
+            if (_onQuit != null) _onQuit();
+            else Application.Exit();
+        });
+        panel.Controls.Add(quitBtn);
+
+        var restartAllBtn = CreateActionButton("Restart All", Indigo, () =>
+        {
+            _services.RestartBackend();
+            _ = _services.RestartFrontendAsync();
+        });
+        panel.Controls.Add(restartAllBtn);
+
+        var logsBtn = CreateActionButton("View Logs", Color.FromArgb(100, 116, 139), () =>
+        {
+            _services.ViewLogs();
+        });
+        panel.Controls.Add(logsBtn);
+
+        return panel;
+    }
+
+    private Button CreateActionButton(string text, Color bgColor, Action onClick)
+    {
+        var btn = new Button
+        {
+            Text = text,
             Font = new Font("Inter", 12F, FontStyle.Bold),
-            BackColor = Color.FromArgb(239, 68, 68),
+            BackColor = bgColor,
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Width = 80,
+            Width = 100,
             Height = 34,
             Cursor = Cursors.Hand,
         };
-        quitBtn.FlatAppearance.BorderSize = 0;
-        quitBtn.Click += (_, _) => Application.Exit();
-        bottomPanel.Controls.Add(quitBtn);
-
-        panel.Controls.Add(bottomPanel, 0, 5);
-        Controls.Add(panel);
-
-        // Refresh timer
-        _refreshTimer = new System.Windows.Forms.Timer { Interval = 3000 };
-        _refreshTimer.Tick += (s, e) => UpdateStatusInternal();
-        _refreshTimer.Start();
-
-        UpdateStatusInternal();
+        btn.FlatAppearance.BorderSize = 0;
+        btn.Click += (_, _) => onClick();
+        return btn;
     }
 
     private PictureBox CreateBrandBadge()
@@ -168,7 +234,7 @@ public class StatusWindow : Form
         return pb;
     }
 
-    private Control CreateServiceRow(string name, string port, string iconText, Color iconColor, int index)
+    private Control CreateServiceRow(string name, string port, string iconText, Color iconColor, int index, Action restartHandler, bool restartEnabled)
     {
         var row = new FlowLayoutPanel
         {
@@ -214,22 +280,42 @@ public class StatusWindow : Form
             Text = port,
             Font = new Font("Cascadia Code", 11F, FontStyle.Regular),
             ForeColor = TextMuted,
-            BackColor = Color.FromArgb(100, 116, 139),
+            BackColor = Color.FromArgb(30, 41, 59),
             AutoSize = false,
             Width = 52,
             Height = 22,
             TextAlign = ContentAlignment.MiddleCenter,
         };
-        portPill.BackColor = Color.FromArgb(30, 41, 59);
-        portPill.ForeColor = TextMuted;
         row.Controls.Add(portPill);
+
+        // Restart button
+        var restartBtn = new Button
+        {
+            Text = "Restart",
+            Font = new Font("Inter", 9F, FontStyle.Bold),
+            BackColor = restartEnabled ? Indigo : TextMuted,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Width = 64,
+            Height = 22,
+            Cursor = Cursors.Hand,
+            Margin = new Padding(8, 0, 8, 0),
+            Enabled = restartEnabled,
+        };
+        restartBtn.FlatAppearance.BorderSize = 0;
+        restartBtn.Click += (_, _) =>
+        {
+            restartHandler();
+            _ = UpdateStatusInternal();
+        };
+        row.Controls.Add(restartBtn);
 
         // Right section: dot + status text
         var rightPanel = new FlowLayoutPanel
         {
             FlowDirection = FlowDirection.LeftToRight,
             AutoSize = true,
-            Margin = new Padding(16, 0, 0, 0),
+            Margin = new Padding(0, 0, 0, 0),
         };
 
         var dot = new PictureBox
@@ -285,38 +371,209 @@ public class StatusWindow : Form
         return pb;
     }
 
-    public new void Refresh() => UpdateStatusInternal();
+    public new void Refresh() => _ = UpdateStatusInternal();
 
-    private void UpdateStatusInternal()
+    private static readonly HttpClient _pingClient = new() { Timeout = TimeSpan.FromSeconds(2) };
+
+    private async Task<bool> PingAsync(ServiceInfo svc)
     {
-        var servicesArr = new ServiceInfo[] { _services.Backend, _services.Frontend, _services.Llm };
-        for (int i = 0; i < 3; i++)
+        try
         {
-            var svc = servicesArr[i];
-            var lbl = _statusLabels[i];
-            var dot = _statusDots[i];
+            using var resp = await _pingClient.GetAsync($"http://127.0.0.1:{svc.Port}{svc.CheckUrl}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
-            if (svc.Healthy)
+    private async Task UpdateStatusInternal()
+    {
+        await UpdateBackendStatusAsync();
+        UpdateFrontendStatus();
+        await UpdateLlmStatusAsync();
+
+        UpdateDuplicates();
+    }
+
+    private async Task UpdateBackendStatusAsync()
+    {
+        var lbl = _statusLabels[0];
+        var dot = _statusDots[0];
+        if (await PingAsync(_services.Backend))
+        {
+            lbl.Text = "Running";
+            lbl.ForeColor = Success;
+            UpdateDot(dot, Success);
+            return;
+        }
+
+        if (_services.Backend.Process is { HasExited: false })
+        {
+            lbl.Text = "Starting...";
+            lbl.ForeColor = Warning;
+            UpdateDot(dot, Warning);
+            return;
+        }
+
+        lbl.Text = "Stopped";
+        lbl.ForeColor = Danger;
+        UpdateDot(dot, Danger);
+    }
+
+    private void UpdateFrontendStatus()
+    {
+        var lbl = _statusLabels[1];
+        var dot = _statusDots[1];
+        if (_services.IsFrontendReady())
+        {
+            lbl.Text = "Built";
+            lbl.ForeColor = Success;
+            UpdateDot(dot, Success);
+            return;
+        }
+
+        if (_services.Frontend.Process is { HasExited: false })
+        {
+            lbl.Text = "Building...";
+            lbl.ForeColor = Warning;
+            UpdateDot(dot, Warning);
+            return;
+        }
+
+        lbl.Text = "Not Built";
+        lbl.ForeColor = Danger;
+        UpdateDot(dot, Danger);
+    }
+
+    private async Task UpdateLlmStatusAsync()
+    {
+        var lbl = _statusLabels[2];
+        var dot = _statusDots[2];
+        if (!_services.IsLlmMonitored())
+        {
+            lbl.Text = "Not Managed";
+            lbl.ForeColor = TextMuted;
+            UpdateDot(dot, TextMuted);
+            return;
+        }
+
+        if (await PingAsync(_services.Llm))
+        {
+            lbl.Text = "Running";
+            lbl.ForeColor = Success;
+            UpdateDot(dot, Success);
+            return;
+        }
+
+        if (_services.Llm.Process is { HasExited: false })
+        {
+            lbl.Text = "Starting...";
+            lbl.ForeColor = Warning;
+            UpdateDot(dot, Warning);
+            return;
+        }
+
+        lbl.Text = "Stopped";
+        lbl.ForeColor = Danger;
+        UpdateDot(dot, Danger);
+    }
+
+    private void UpdateDuplicates()
+    {
+        _duplicatePanel.Controls.Clear();
+        var duplicates = _services.FindDuplicates();
+
+        if (duplicates.Length == 0) return;
+
+        var headerPanel = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            Margin = new Padding(0, 0, 0, 4),
+        };
+
+        var label = new Label
+        {
+            Text = $"Duplicate Processes ({duplicates.Length})",
+            Font = new Font("Inter", 10F, FontStyle.Bold),
+            ForeColor = Warning,
+            AutoSize = false,
+            Height = 16,
+            Dock = DockStyle.Left,
+        };
+        headerPanel.Controls.Add(label);
+
+        var spacer = new Panel { Dock = DockStyle.Fill };
+        headerPanel.Controls.Add(spacer);
+
+        var killAllBtn = new Button
+        {
+            Text = "Kill All",
+            Font = new Font("Inter", 9F, FontStyle.Bold),
+            BackColor = Color.FromArgb(239, 68, 68),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Width = 60,
+            Height = 22,
+            Cursor = Cursors.Hand,
+        };
+        killAllBtn.FlatAppearance.BorderSize = 0;
+        killAllBtn.Click += (_, _) =>
+        {
+            _services.KillAllDuplicates();
+            _ = UpdateStatusInternal();
+        };
+        headerPanel.Controls.Add(killAllBtn);
+
+        _duplicatePanel.Controls.Add(headerPanel);
+
+        foreach (var dup in duplicates)
+        {
+            var row = new FlowLayoutPanel
             {
-                lbl.Text = "Running";
-                lbl.ForeColor = Success;
-                UpdateDot(dot, Success);
-            }
-            else
+                FlowDirection = FlowDirection.LeftToRight,
+                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Margin = new Padding(0, 2, 0, 0),
+            };
+
+            var nameLbl = new Label
             {
-                if (svc.Process is { HasExited: false })
-                {
-                    lbl.Text = "Starting...";
-                    lbl.ForeColor = Warning;
-                    UpdateDot(dot, Warning);
-                }
-                else
-                {
-                    lbl.Text = "Stopped";
-                    lbl.ForeColor = Danger;
-                    UpdateDot(dot, Danger);
-                }
-            }
+                Text = $"{dup.Name} (PID {dup.Pid})",
+                Font = new Font("Inter", 10F),
+                ForeColor = TextMuted,
+                AutoSize = false,
+                Width = 140,
+                Height = 20,
+            };
+            row.Controls.Add(nameLbl);
+
+            var spacer2 = new Panel { Dock = DockStyle.Fill };
+            row.Controls.Add(spacer2);
+
+            var killBtn = new Button
+            {
+                Text = "Kill",
+                Font = new Font("Inter", 9F, FontStyle.Bold),
+                BackColor = Color.FromArgb(239, 68, 68),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Width = 48,
+                Height = 22,
+                Cursor = Cursors.Hand,
+            };
+            killBtn.FlatAppearance.BorderSize = 0;
+            killBtn.Click += (_, _) =>
+            {
+                _services.KillProcess(dup.Pid);
+                _ = UpdateStatusInternal();
+            };
+            row.Controls.Add(killBtn);
+
+            _duplicatePanel.Controls.Add(row);
         }
     }
 

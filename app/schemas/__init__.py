@@ -134,6 +134,11 @@ from .story_development import (
     ResearchItemCreateRequest,
     ResearchItemUpdateRequest,
     ResearchItemListResponse,
+    PolishAnalyzeRequest,
+    PolishReport,
+    ExportRequest,
+    ExportStatus,
+    PolishReportListResponse,
 )
 from .role_model_checker import (
     RoleCheckResult,
@@ -279,4 +284,9 @@ __all__ = [
     'ResearchItemCreateRequest',
     'ResearchItemUpdateRequest',
     'ResearchItemListResponse',
+    'PolishAnalyzeRequest',
+    'PolishReport',
+    'ExportRequest',
+    'ExportStatus',
+    'PolishReportListResponse',
 ]

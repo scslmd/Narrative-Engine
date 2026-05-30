@@ -349,7 +349,7 @@ function StudioLayoutManagerImpl() {
 
       {toast && (
         <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-2.5 text-xs text-[var(--text-primary)] shadow-xl">
-          <span dangerouslySetInnerHTML={{ __html: toast.msg }} />
+          <span>{toast.msg}</span>
           {toast.action && (
             <button
               onClick={() => {

@@ -14,7 +14,10 @@ public class TrayManager
     public Action<string>? OnMenuClick { get; set; }
     private StatusWindow? _statusWindow;
 
-    // Frontend-aligned colors
+    public void SetStatusWindow(StatusWindow window)
+    {
+        _statusWindow = window;
+    }
     private static readonly Color Indigo = Color.FromArgb(99, 102, 241);
     private static readonly Color Violet = Color.FromArgb(167, 139, 250);
     private static readonly Color Amber = Color.FromArgb(245, 158, 11);
@@ -63,10 +66,7 @@ public class TrayManager
         {
             _statusWindow = new StatusWindow(services);
         }
-        else
-        {
-            _statusWindow.Refresh();
-        }
+        _statusWindow.Refresh();
         _statusWindow.Show();
         _statusWindow.BringToFront();
     }
@@ -76,7 +76,7 @@ public class TrayManager
         _menu.Items.Clear();
 
         _menu.Items.Add(CreateMenuItem("Open Frontend", "open",
-            (_, _) => OpenUrl("http://localhost:5173")));
+            (_, _) => OpenUrl("http://127.0.0.1:8000")));
         _menu.Items.Add(CreateMenuItem("Open API Docs", "docs",
             (_, _) => OpenUrl("http://127.0.0.1:8000/docs")));
         _menu.Items.Add(new ToolStripSeparator());
@@ -95,7 +95,7 @@ public class TrayManager
         _menu.Items.Add(CreateMenuItem("View Logs", "logs",
             (_, _) => OpenUrl("file:///C:/Users/SLuh/AppData/Local/Temp/opencode/bg-out.log")));
         _menu.Items.Add(CreateMenuItem("Exit", "exit",
-            (_, _) => Application.Exit()));
+            (_, _) => OnMenuClick?.Invoke("exit")));
     }
 
     public void UpdateIcon(bool allHealthy)
@@ -110,12 +110,14 @@ public class TrayManager
         _tray.Icon = newIcon;
     }
 
-    public void UpdateTooltip(ServiceInfo backend, ServiceInfo frontend, ServiceInfo llm)
+    public void UpdateTooltip(ServiceInfo backend, ServiceInfo frontend, bool llmMonitored, ServiceInfo llm)
     {
         var b = backend.Healthy ? "\u2713" : "\u2717";
         var f = frontend.Healthy ? "\u2713" : "\u2717";
-        var l = llm.Healthy ? "\u2713" : "\u2717";
-        _tray.Text = $"Narrative Engine\nBackend {b} | Frontend {f} | LLM {l}";
+        var llmLine = llmMonitored
+            ? $"LLM {(llm.Healthy ? "\u2713" : "\u2717")}"
+            : "LLM -";
+        _tray.Text = $"Narrative Engine\nBackend {b} | Frontend {f} | {llmLine}\nDouble-click for status";
     }
 
     public void ShowBalloonTip(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)

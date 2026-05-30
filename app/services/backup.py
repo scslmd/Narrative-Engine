@@ -297,15 +297,18 @@ class BackupService:
     
     def delete_backup(self, backup_id: str) -> bool:
         """Delete a specific backup.
-        
+
         Args:
             backup_id: Backup ID to delete
-            
+
         Returns:
-            True if deleted, False if not found
+            True if deleted, False if not found or invalid
         """
-        backup_file = self._find_backup(backup_id)
-        
+        try:
+            backup_file = self._find_backup(backup_id)
+        except BackupError:
+            return False
+
         if not backup_file.exists():
             return False
         
@@ -329,27 +332,39 @@ class BackupService:
             raise BackupError(f"Failed to delete backup: {e}") from e
     
     def _find_backup(self, backup_id: str) -> Path:
-        """Find backup file by ID or path."""
-        # If it's an absolute path, use it directly
+        """Find backup file by ID.
+
+        Only accepts simple identifiers (alphanumeric, underscore, hyphen).
+        Rejects absolute paths, path separators, and .. components to prevent
+        path traversal attacks.
+        """
+        # Reject absolute paths
         if Path(backup_id).is_absolute():
-            return Path(backup_id)
-        
+            raise BackupError(f"Invalid backup_id: absolute paths are not allowed")
+
+        # Reject path separators and parent directory traversal
+        import re
+        if not re.match(r'^[A-Za-z0-9_\-]+$', backup_id):
+            raise BackupError(
+                f"Invalid backup_id: must be alphanumeric, underscore, or hyphen"
+            )
+
         # Try as full filename in backups directory (with .db extension)
         candidate = self.backups_dir / f"{backup_id}.db"
         if candidate.exists():
             return candidate
-        
+
         # If backup_id doesn't start with "narrative_ops_", add prefix
         if not backup_id.startswith("narrative_ops_"):
             candidate2 = self.backups_dir / f"narrative_ops_{backup_id}.db"
             if candidate2.exists():
                 return candidate2
-        
+
         # Try matching prefix (in case only partial ID provided)
         matches = list(self.backups_dir.glob(f"{backup_id}*"))
         if len(matches) == 1:
             return matches[0]
-        
+
         # Return the candidate even if it doesn't exist (caller will check)
         return candidate
     

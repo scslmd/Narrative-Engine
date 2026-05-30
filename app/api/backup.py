@@ -13,7 +13,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
     router = APIRouter(prefix=prefix, tags=["backup"])
 
 
-    @router.post("/create")
+    @router.post("/create", status_code=201)
     async def create_backup(description: str | None = None) -> dict:
         """Create a new database backup."""
         try:

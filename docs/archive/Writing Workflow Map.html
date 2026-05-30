@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Engine — Writing Workflow Map</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --text-dim: #a1a1aa;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-green: #22c55e;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-cyan: #06b6d4;
+    --accent-pink: #ec4899;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  /* Stage Pipeline */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+
+  .stage {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .stage-number {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stage-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .stage-panels {
+    list-style: none;
+  }
+
+  .stage-panels li {
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stage-panels li:last-child {
+    border-bottom: none;
+  }
+
+  .stage-1 .stage-number { color: var(--accent-blue); }
+  .stage-1 .stage-title { color: var(--accent-blue); }
+  .stage-1 { border-top: 3px solid var(--accent-blue); }
+
+  .stage-2 .stage-number { color: var(--accent-purple); }
+  .stage-2 .stage-title { color: var(--accent-purple); }
+  .stage-2 { border-top: 3px solid var(--accent-purple); }
+
+  .stage-3 .stage-number { color: var(--accent-cyan); }
+  .stage-3 .stage-title { color: var(--accent-cyan); }
+  .stage-3 { border-top: 3px solid var(--accent-cyan); }
+
+  .stage-4 .stage-number { color: var(--accent-green); }
+  .stage-4 .stage-title { color: var(--accent-green); }
+  .stage-4 { border-top: 3px solid var(--accent-green); }
+
+  .stage-5 .stage-number { color: var(--accent-orange); }
+  .stage-5 .stage-title { color: var(--accent-orange); }
+  .stage-5 { border-top: 3px solid var(--accent-orange); }
+
+  .stage-6 .stage-number { color: var(--accent-pink); }
+  .stage-6 .stage-title { color: var(--accent-pink); }
+  .stage-6 { border-top: 3px solid var(--accent-pink); }
+
+  /* Arrows between stages */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 48px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  .arrow-row .arrow {
+    flex: 1;
+    text-align: center;
+    font-size: 20px;
+  }
+
+  /* Non-linear loops */
+  .loops-section {
+    margin-bottom: 48px;
+  }
+
+  .loops-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .loop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .loop-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .loop-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--accent-orange);
+  }
+
+  .loop-steps {
+    list-style: none;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .loop-steps li::before {
+    content: "→ ";
+    color: var(--accent-green);
+  }
+
+  /* Iteration example */
+  .iteration-section {
+    margin-bottom: 48px;
+  }
+
+  .iteration-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .iteration-flow {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .iteration-step {
+    display: flex;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .iteration-step:last-child {
+    border-bottom: none;
+  }
+
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .step-num.gen { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+  .step-num.chg { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+  .step-num.rerun { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+
+  .step-content h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .step-content p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .step-content code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* Route table */
+  .routes-section {
+    margin-bottom: 48px;
+  }
+
+  .routes-section h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .route-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .route-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .route-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .route-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .route-table code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .stage-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-ideation { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+  .badge-planning { background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); }
+  .badge-research { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
+  .badge-drafting { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+  .badge-revision { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+  .badge-polish { background: rgba(236, 72, 153, 0.2); color: var(--accent-pink); }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .footer a {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .pipeline {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .loop-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .pipeline {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Narrative Engine — Writing Workflow Map</h1>
+<p class="subtitle">
+  6-stage process derived from writer research. Authors loop, backtrack, and iterate between stages —
+  the application supports non-linear navigation at every step.
+</p>
+
+<!-- Stage Pipeline -->
+<div class="pipeline">
+  <div class="stage stage-1">
+    <div class="stage-number">Stage 1</div>
+    <div class="stage-title">Ideation</div>
+    <ul class="stage-panels">
+      <li>Ideas</li>
+      <li>Notes</li>
+    </ul>
+  </div>
+  <div class="stage stage-2">
+    <div class="stage-number">Stage 2</div>
+    <div class="stage-title">Planning</div>
+    <ul class="stage-panels">
+      <li>Characters</li>
+      <li>World Bible</li>
+      <li>Relationships</li>
+      <li>Arcs</li>
+      <li>Structure</li>
+      <li>Chapters</li>
+    </ul>
+  </div>
+  <div class="stage stage-3">
+    <div class="stage-number">Stage 3</div>
+    <div class="stage-title">Research</div>
+    <ul class="stage-panels">
+      <li>Research</li>
+    </ul>
+  </div>
+  <div class="stage stage-4">
+    <div class="stage-number">Stage 4</div>
+    <div class="stage-title">Drafting</div>
+    <ul class="stage-panels">
+      <li>Manuscripts</li>
+      <li>Drafts</li>
+      <li>Generation</li>
+    </ul>
+  </div>
+  <div class="stage stage-5">
+    <div class="stage-number">Stage 5</div>
+    <div class="stage-title">Revision</div>
+    <ul class="stage-panels">
+      <li>Revision</li>
+      <li>Suggestions</li>
+      <li>Review</li>
+      <li>Inspect</li>
+    </ul>
+  </div>
+  <div class="stage stage-6">
+    <div class="stage-number">Stage 6</div>
+    <div class="stage-title">Polish</div>
+    <ul class="stage-panels">
+      <li>Polish</li>
+      <li>Canon</li>
+      <li>Jobs</li>
+    </ul>
+  </div>
+</div>
+
+<div class="arrow-row">
+  <span class="arrow">Ideation → Planning → Research → Drafting → Revision → Polish</span>
+</div>
+
+<!-- Non-linear Loops -->
+<div class="loops-section">
+  <h2>Non-Linear Navigation</h2>
+  <div class="loop-grid">
+    <div class="loop-card">
+      <h3>Mid-Draft Ideation</h3>
+      <ul class="loop-steps">
+        <li>Drafting → discover missing concept</li>
+        <li>Open Ideas panel → capture idea</li>
+        <li>Promote to Characters / World Bible</li>
+        <li>Return to drafting with new context</li>
+      </ul>
+    </div>
+    <div class="loop-card">
+      <h3>Just-in-Time Research</h3>
+      <ul class="loop-steps">
+        <li>Drafting → encounter detail gap</li>
+        <li>Open Research panel → add reference</li>
+        <li>Fill in factual details</li>
+        <li>Return to drafting with verified info</li>
+      </ul>
+    </div>
+    <div class="loop-card">
+      <h3>Canon-Tight Loop</h3>
+      <ul class="loop-steps">
+        <li>Revision → Checker finds contradiction</li>
+        <li>Inspect → trace root cause</li>
+        <li>Annotate canon field for enforcement</li>
+        <li>Re-run generation → verify fix</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Iteration Example -->
+<div class="iteration-section">
+  <h2>Generate → Change → Regenerate</h2>
+  <div class="iteration-flow">
+    <div class="iteration-step">
+      <div class="step-num gen">1</div>
+      <div class="step-content">
+        <h4>Generate</h4>
+        <p>Run generation for Ch 7 (The Conversation). AURA-7 speaks in full sentences.</p>
+      </div>
+    </div>
+    <div class="iteration-step">
+      <div class="step-num chg">2</div>
+      <div class="step-content">
+        <h4>Discover Issue</h4>
+        <p>Conversation reads like two humans talking. AURA-7 should sound like a degraded AI.</p>
+      </div>
+    </div>
+    <div class="iteration-step">
+      <div class="step-num chg">3</div>
+      <div class="step-content">
+        <h4>Change Canon</h4>
+        <p>Characters → AURA-7 → Voice Notes: <code>"Speech is fragmented. Random pauses. Occasional garbled words."</code></p>
+      </div>
+    </div>
+    <div class="iteration-step">
+      <div class="step-num rerun">4</div>
+      <div class="step-content">
+        <h4>Regenerate</h4>
+        <p>Re-run Ch 7 with <code>Block</code> continuity strictness. AURA-7 now speaks: <code>"The sea... rises. 40 meters. You are... the last light."</code></p>
+      </div>
+    </div>
+    <div class="iteration-step">
+      <div class="step-num gen">5</div>
+      <div class="step-content">
+        <h4>Verify &amp; Continue</h4>
+        <p>Read revised chapter. Pattern carries forward to Ch 8. Move to Revision stage.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Route Map -->
+<div class="routes-section">
+  <h2>Route Map</h2>
+  <table class="route-table">
+    <thead>
+      <tr>
+        <th>Route</th>
+        <th>Stage</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/</code></td>
+        <td><span class="stage-badge badge-ideation">Ideation</span></td>
+        <td>Project list and creation</td>
+      </tr>
+      <tr>
+        <td><code>/setup-wizard</code></td>
+        <td><span class="stage-badge badge-ideation">Ideation</span></td>
+        <td>Conversational setup</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/plan</code></td>
+        <td><span class="stage-badge badge-planning">Planning</span></td>
+        <td>Planning workspace (12 tabs)</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/braindump</code></td>
+        <td><span class="stage-badge badge-ideation">Ideation</span></td>
+        <td>Brain dump sessions</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/studio</code></td>
+        <td>All stages</td>
+        <td>Studio Desk (floating-panel workspace)</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/review</code></td>
+        <td><span class="stage-badge badge-revision">Revision</span></td>
+        <td>Checker findings triage</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/inspect</code></td>
+        <td><span class="stage-badge badge-revision">Revision</span></td>
+        <td>Job/run inspection</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/canon</code></td>
+        <td><span class="stage-badge badge-polish">Polish</span></td>
+        <td>Canon Workshop (profiles, scope)</td>
+      </tr>
+      <tr>
+        <td><code>/workspace/:id/generate</code></td>
+        <td><span class="stage-badge badge-drafting">Drafting</span></td>
+        <td>Story Generation (wizard, runs)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  Based on research from 6 authoritative sources: Jerry Jenkins (23-step process), Reedsy Blog (revision methodology),
+  The Write Practice (creative process), wikiHow (structured workflow), The Atlantic (productivity research),
+  The Write Practice Research (genre analysis).
+  <br>See <code>docs/superpowers/research/2026-05-23-writers-process-research.md</code> for full source list.
+</div>
+
+</body>
+</html>

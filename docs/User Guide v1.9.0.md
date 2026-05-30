@@ -1,9 +1,18 @@
-# Narrative Engine - User Guide v1.9.0
+# Narrative Engine - User Guide v1.9.1
 
-Last updated: 2026-05-22 (god-file refactor docs sync, Studio Desk layout/state alignment, link fixes)
+Last updated: 2026-05-30 (Compact rail mode, entity count badges, tray launcher, typed rail icons)
 
 ## Purpose
 This guide explains the current frontend interface, what each workspace mode does, and how to complete production workflows from project creation through generation, review, and iteration.
+
+## Getting Started
+
+**Starting the application:**
+- **Tray Launcher (recommended):** Run `narrative-launcher\narrative-launcher.exe` — starts backend + frontend automatically, system tray icon with green/orange status indicator, no console window. Right-click tray icon for Open Frontend, API Docs, Restart Services, View Logs, Exit.
+- **Development mode:** Run `start_narrative_core.cmd --dev` — spawns separate windows for uvicorn (with `--reload`) and Vite dev server (hot-reload).
+- **Production mode:** Run `start_narrative_core.cmd` — builds frontend once, runs uvicorn in current terminal.
+
+**Preconditions:** Backend running, frontend running, inference backend configured for LLM-dependent features. If `NARRATIVE_API_KEY` is enabled, configure API key usage for protected flows.
 
 ## Core Routes
 - `/` - Project List, New Project, Story Import, Project Import
@@ -91,7 +100,21 @@ The left panel displays stage-aware navigation items plus a permanent "Studio De
 
 **Panel workspace:** Drag-and-drop floating panels with resize, tear-off, and panel-to-panel snapping. Each panel type can only be opened once (panel singularity). Clicking a panel menu item for an already-open panel brings it to front.
 
-**Panels** (16 types): Suggestions, Ideas, Drafts, Manuscripts, Characters, World Bible, Relationships, Arcs, Structure, Chapters, Canon, Generation, Review, Inspect, Notes, Jobs.
+**Panels** (19 types): Suggestions, Ideas, Drafts, Manuscripts, Characters, World Bible, Relationships, Arcs, Structure, Chapters, Canon, Generation, Review, Inspect, Notes, Jobs, Research, Revision, Polish.
+
+**Rail Sections** (5 workflow stages):
+- **Ideation:** Ideas, Research, Notes
+- **Planning:** Characters, World Bible, Relationships, Arcs, Structure, Chapters
+- **Drafting:** Manuscripts, Drafts, Generation
+- **Revision:** Revision, Suggestions, Review, Inspect
+- **Polish:** Polish, Canon, Jobs
+
+**Rail Modes:**
+- **Expanded (default):** Full-width rail with panel names, section headers, and entity count badges. Shows counts for Characters, World Bible, Relationships, Arcs, and other panels with queryable data.
+- **Compact (icon-only):** Collapses rail to 64px width, showing only icons. Entity count badges remain visible as small overlays on icons. Activates automatically below the `xl:` breakpoint or via the rail toggle button. Frees maximum screen space for writing.
+- **Overlay:** Rail overlays the writing area instead of pushing content. Useful for temporary panel access without layout disruption.
+
+**Entity Count Badges:** Rail buttons display live entity counts (e.g., "3" for 3 characters, "5" for 5 world entries). Counts are deterministic — they use named query definitions for consistent ordering across sessions. Panels that don't support counts (Generation, Review, Inspect, Canon, Notes, Polish) display no badge.
 
 **Panel operations:**
 - **Drag:** Click and drag the panel header to reposition
@@ -420,8 +443,13 @@ Floating-panel workspace for focused writing with immediate access to all planni
 
 **Opening Studio Desk:** Navigate from the left panel's "Studio Desk" link (available on all workspace views), or use the top banner's stage selector (Planning / Studio / Review).
 
+**Left Rail (Project Map):** The Studio Desk's left rail provides quick access to all panels, organized by workflow stage. The rail adapts to screen size and user preference:
+- **Expanded mode (default):** Full-width rail with panel names, section headers, and entity count badges showing live counts for queryable panels (Characters, World Bible, Relationships, Arcs, etc.).
+- **Compact mode (icon-only):** Collapses to 64px width, showing only icons with entity count badges as small overlays. Activates automatically below the `xl:` breakpoint or via the rail toggle button. Frees maximum screen space for writing.
+- **Overlay mode:** Rail overlays the writing area instead of pushing content. Useful for temporary panel access without layout disruption.
+
 **Panel Operations:**
-- **Open a panel:** Click a panel name in the command bar dropdown. Each panel type can only be opened once — clicking again brings the existing panel to front.
+- **Open a panel:** Click a panel name in the command bar dropdown or left rail. Each panel type can only be opened once — clicking again brings the existing panel to front.
 - **Drag:** Click and drag the panel header to reposition.
 - **Resize:** Drag panel edges or corners (240–800px width, 180–600px height).
 - **Snap to panel:** Drag a panel near another panel to snap edges together (side-by-side, stacked). Snap threshold is 64px.
@@ -438,9 +466,9 @@ Floating-panel workspace for focused writing with immediate access to all planni
 
 **URL Sync:** The active panel is reflected in the URL as `?tab=panelKey` (e.g., `?tab=characters`). Deep links open the specified panel on page load. The `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` routes redirect to `/studio`.
 
-**Persistence:** Panel positions, sizes, and pin state persist to localStorage per project (`studio-layout-v2-{projectId}`). Layout survives page refresh.
+**Persistence:** Panel positions, sizes, and pin state persist to localStorage per project (`studio-layout-v2-{projectId}`). Layout survives page refresh. Rail mode persists to `studio-layout-v1` localStorage key.
 
-**Panels** (16 types):
+**Panels** (19 types):
 - **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
 - **Ideas:** Brainstorm-style idea capture and clustering.
 - **Drafts:** Draft artifact lifecycle management.
@@ -457,6 +485,9 @@ Floating-panel workspace for focused writing with immediate access to all planni
 - **Inspect:** Runtime inspection of pipeline jobs and checker runs.
 - **Notes:** Project-level notes with add/delete functionality.
 - **Jobs:** Job launch panel with phase selection and recent job monitoring.
+- **Research:** Research item management for books, articles, papers, and reference notes. Create, update, and archive research items with source URLs, genre tags, and citations. Soft delete via status change to "archived".
+- **Revision:** Revision pass lifecycle management. Create structured revision passes (structural, character, scene, line_edit, copy_edit) with default checklists. Track pass status (pending, in_progress, completed). 409 conflict on mutation after completion.
+- **Polish:** Document analysis and export. Analyze manuscripts for readability (Flesch score), passive voice, repetitive words, and style issues. Export manuscripts to multiple formats with async status polling.
 
 **Responsive Behavior:** Below `xl:` breakpoint, panels adjust to fit the viewport. The command bar provides a project menu for panel access on smaller screens.
 
@@ -469,14 +500,17 @@ For a complete, step-by-step walkthrough of generating a novel from project crea
 3. (Optional) Run Cascade Discovery to auto-extract characters, relationships, and world entities from existing manuscript text — review and approve discovered entities before committing.
 4. Shape structure in Planning/Flow tabs.
 5. Capture optional ideation in Brain Dump and Brainstorm.
-6. Draft in Studio Desk — floating-panel workspace for writing, planning, and review. Open panels as needed, snap them together, and pin critical panels to survive layout changes. The `/write` route redirects to `/studio`.
-7. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
-8. Run Checker and review findings in Review workspace. Create inspect links for traceability.
-9. Inspect problematic runs from deep links or Inspect mode to diagnose failures.
-10. Use Canon Workshop to tighten packet scope, manage profiles, and validate generation context.
-11. Launch Story Generation runs: configure wizard, monitor status, review gates, fork successful runs.
-12. Iterate via branches, decisions, and additional drafts.
-13. Export project archive for backup and transfer.
+6. Conduct background research using the Research panel: add reference items, tag by genre, track citations.
+7. Draft in Studio Desk — floating-panel workspace for writing, planning, and review. Open panels as needed, snap them together, and pin critical panels to survive layout changes. The `/write` route redirects to `/studio`.
+8. Use Manuscript Assist for targeted edits: floating toolbar for sensory detail, rewrite, and continue actions; Aids panel for suggestion review.
+9. Run Revision passes: create structured revision passes (structural, character, scene, line_edit, copy_edit) with checklists. Track progress from pending to completed.
+10. Run Checker and review findings in Review workspace. Create inspect links for traceability.
+11. Inspect problematic runs from deep links or Inspect mode to diagnose failures.
+12. Analyze manuscripts using the Polish panel: readability scores, passive voice detection, repetitive word analysis, style issue detection.
+13. Use Canon Workshop to tighten packet scope, manage profiles, and validate generation context.
+14. Launch Story Generation runs: configure wizard, monitor status, review gates, fork successful runs.
+15. Iterate via branches, decisions, and additional drafts.
+16. Export manuscripts in desired format (Polish panel) or export project archive for backup and transfer.
 
 ## Authentication
 
@@ -501,6 +535,9 @@ When API key is required but not configured, the view shows a guidance banner at
 - Job fails with "Cannot reach LLM server" (`INFERENCE_TRANSPORT_FAILURE`): verify llama.cpp (or your configured backend) is running and that `NARRATIVE_INFERENCE_BASE_URL` in `.env` matches the server address.
 - Job fails with "LLM circuit breaker open": the backend has been failing repeatedly. Fix the underlying issue and wait for the circuit to reset, or restart the server.
 - Cascade scan returns no entities: ensure manuscript text is at least 50 characters and contains character names, interactions, or descriptive details. Very short or sparse text may yield no discoverable entities.
+- Research items not appearing: verify project ID matches and check status filter (archived items are hidden by default).
+- Revision pass won't update: a completed pass cannot be modified. Create a new pass for additional revisions.
+- Polish analysis shows zero score: ensure manuscript text is at least 10 words for meaningful readability metrics.
 
 ## Glossary
 - Assist action: a Manuscript Assist operation triggered by text selection (sensory detail, rewrite, continue).
@@ -511,6 +548,10 @@ When API key is required but not configured, the view shows a guidance banner at
 - Inspect link: mapping from review object to inspectable run.
 - Manuscript Assist: LLM-powered targeted editing system that processes selection context and returns revision suggestions.
 - Manuscript document: editable narrative document in writing workspace.
+- Research item: a reference entry (book, article, paper, site, note) with source URL, genre tags, citations, and status (active/archived/cited).
+- Revision pass: a structured revision workflow with checklist items, status tracking (pending/in_progress/completed), and default checklists per pass type (structural, character, scene, line_edit, copy_edit).
+- Polish report: a document analysis containing readability score (Flesch), word/sentence counts, passive voice detection, repetitive words, and style issues.
+- Export status: an async export operation with status polling (queued/processing/completed/failed) and artifact path tracking.
 - Run: one execution instance of checker or generation pipeline.
 - Sensory detail: expand actions that add sensory-specific description (sight, sound, smell, touch, taste, metaphor, show-don't-tell).
 - Radial hub: floating-panel workspace where panels can be dragged, resized, snapped together, and pinned. Panel singularity ensures only one instance per panel type.

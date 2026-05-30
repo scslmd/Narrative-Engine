@@ -589,3 +589,157 @@ def test_edge_ids_are_deterministic(tmp_path) -> None:
         "source-project", target_project_id, ["char-1", "char-2"]
     )
     assert edges_second[0] == edges_first[0]
+
+
+def test_batch_character_inserts_single_transaction(tmp_path) -> None:
+    """copy_selected_characters uses a single shared connection for all inserts."""
+    project_service = ProjectService(tmp_path)
+    repo = StoryDevelopmentRepository(tmp_path / "data" / "state" / "narrative_ops.db")
+    project_service.create_project(
+        ProjectCreateRequest(
+            project_id="source-project",
+            project_name="Source Project",
+            genre="Fantasy",
+            tone_profile="Neutral",
+            story_structure="THREE_ACT",
+        )
+    )
+    for i in range(5):
+        repo.upsert_character_profile(
+            character_id=f"char-{i}",
+            project_id="source-project",
+            display_name=f"Character {i}",
+            role_in_story="supporting",
+        )
+    service = StoryForkingService(repository=repo, project_service=project_service)
+    request = CanonGenerationRequest(
+        source_project_id="source-project",
+        mode=GenerationMode.NEW_PROJECT_CHARACTER_FORK,
+        destination=GenerationDestination(
+            destination_kind=DestinationKind.NEW_PROJECT,
+            target_project_name="Forked",
+        ),
+        canon_scope=CanonScope(
+            source_project_id="source-project",
+            character_ids=[f"char-{i}" for i in range(5)],
+        ),
+        generation_brief="Fork story",
+    )
+    target_project_id = service.create_fork_project(request)
+    copied_chars = service.copy_selected_characters(
+        "source-project", target_project_id, [f"char-{i}" for i in range(5)]
+    )
+    assert len(copied_chars) == 5
+    target_chars = repo.list_character_profiles(target_project_id)
+    assert len(target_chars) == 5
+    for i, char in enumerate(target_chars):
+        assert char.display_name == f"Character {i}"
+        assert f"forked from source-project:char-{i}" in (char.voice_notes or "")
+
+
+def test_batch_world_entry_inserts_single_transaction(tmp_path) -> None:
+    """copy_selected_world_entries uses a single shared connection for all inserts."""
+    project_service = ProjectService(tmp_path)
+    repo = StoryDevelopmentRepository(tmp_path / "data" / "state" / "narrative_ops.db")
+    project_service.create_project(
+        ProjectCreateRequest(
+            project_id="source-project",
+            project_name="Source Project",
+            genre="Fantasy",
+            tone_profile="Neutral",
+            story_structure="THREE_ACT",
+        )
+    )
+    for i in range(5):
+        repo.upsert_world_bible_entry(
+            project_id="source-project",
+            entry_type="location",
+            title=f"Location {i}",
+            summary=f"Summary for location {i}.",
+            canonical_facts=[f"Fact {i}"],
+        )
+    service = StoryForkingService(repository=repo, project_service=project_service)
+    request = CanonGenerationRequest(
+        source_project_id="source-project",
+        mode=GenerationMode.NEW_PROJECT_CHARACTER_FORK,
+        destination=GenerationDestination(
+            destination_kind=DestinationKind.NEW_PROJECT,
+            target_project_name="Forked",
+        ),
+        canon_scope=CanonScope(
+            source_project_id="source-project",
+            character_ids=[],
+            scope_mode="full_project",
+        ),
+        generation_brief="Fork story",
+    )
+    target_project_id = service.create_fork_project(request)
+    refs = [{"entry_type": "location", "title": f"Location {i}"} for i in range(5)]
+    copied_world = service.copy_selected_world_entries(
+        "source-project", target_project_id, refs
+    )
+    assert len(copied_world) == 5
+    target_entries = repo.list_world_bible_entries(target_project_id)
+    assert len(target_entries) == 5
+    for i, entry in enumerate(target_entries):
+        assert entry.title == f"Location {i}"
+        assert entry.summary == f"Summary for location {i}."
+        assert entry.canonical_facts == [f"Fact {i}"]
+        assert f"forked from source-project:location:Location {i}" in (entry.writer_notes or "")
+
+
+def test_batch_relationship_inserts_single_transaction(tmp_path) -> None:
+    """copy_selected_relationships uses a single shared connection for all inserts."""
+    project_service = ProjectService(tmp_path)
+    repo = StoryDevelopmentRepository(tmp_path / "data" / "state" / "narrative_ops.db")
+    project_service.create_project(
+        ProjectCreateRequest(
+            project_id="source-project",
+            project_name="Source Project",
+            genre="Fantasy",
+            tone_profile="Neutral",
+            story_structure="THREE_ACT",
+        )
+    )
+    for i in range(5):
+        repo.upsert_character_profile(
+            character_id=f"char-{i}",
+            project_id="source-project",
+            display_name=f"Character {i}",
+            role_in_story="supporting",
+        )
+    for i in range(4):
+        repo.upsert_relationship_edge(
+            project_id="source-project",
+            source_character_id=f"char-{i}",
+            target_character_id=f"char-{i+1}",
+            relation_kind="ally",
+            summary=f"Alliance {i}.",
+        )
+    service = StoryForkingService(repository=repo, project_service=project_service)
+    request = CanonGenerationRequest(
+        source_project_id="source-project",
+        mode=GenerationMode.NEW_PROJECT_CHARACTER_FORK,
+        destination=GenerationDestination(
+            destination_kind=DestinationKind.NEW_PROJECT,
+            target_project_name="Forked",
+        ),
+        canon_scope=CanonScope(
+            source_project_id="source-project",
+            character_ids=[f"char-{i}" for i in range(5)],
+        ),
+        generation_brief="Fork story",
+    )
+    target_project_id = service.create_fork_project(request)
+    service.copy_selected_characters(
+        "source-project", target_project_id, [f"char-{i}" for i in range(5)]
+    )
+    copied_edges = service.copy_selected_relationships(
+        "source-project", target_project_id, [f"char-{i}" for i in range(5)]
+    )
+    assert len(copied_edges) == 4
+    for edge_id in copied_edges:
+        edge = repo.get_relationship_edge(edge_id)
+        assert edge.relation_kind == "ally"
+        assert edge.source_character_id.startswith("fork-character-")
+        assert edge.target_character_id.startswith("fork-character-")

@@ -1,0 +1,575 @@
+{
+  "contract_id": "WF-OPT-2026-05-23",
+  "title": "Workflow Optimization - TDD Atomic Deterministic Implementation Contract",
+  "execution_mode": "serial",
+  "goal": "Implement Research, Revision, and Polish capabilities plus Studio rail reorganization with strict `/v1/story-development/*` contracts, using test-first delivery and deterministic file ownership.",
+  "required_skills": [
+    "test-driven-development",
+    "superpowers-task-contract-validation",
+    "verification-before-completion",
+    "requesting-code-review",
+    "receiving-code-review"
+  ],
+  "global_context": {
+    "design_spec": "docs/superpowers/plans/2026-05-23-workflow-optimization-plan.md",
+    "flow_spec": "docs/superpowers/plans/2026-05-23-workflow-optimization-flow.md",
+    "api_namespace_lock": "All new routes must be under /v1/story-development/*.",
+    "panel_key_lock": "Studio panel keys must end at exactly 19 including research, revision, polish.",
+    "capability_lock": "No opportunistic refactors outside listed files."
+  },
+  "tasks": [
+    {
+      "task_id": "WF-OPT-T001",
+      "title": "Add failing API contract tests for Research endpoints",
+      "responsible_file": "tests/test_story_development_research_api.py",
+      "serial_dependencies": [],
+      "required_skills": ["test-driven-development"],
+      "objective": "Create failing tests that lock route paths, status codes, and query parameter behavior for Research APIs.",
+      "implementation_notes": [
+        "Cover list/get/create/patch/delete endpoints under /v1/story-development/research/items.",
+        "Assert project_id scoping and expected 201/200/204 response codes.",
+        "Assert invalid enum values return 422."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_red": "FAIL because Research routes/schemas are not yet implemented."
+      },
+      "guardrails": [
+        "Do not mock FastAPI router registration.",
+        "Do not assert undocumented fields.",
+        "Do not test unversioned paths."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T002",
+      "title": "Implement Research schemas",
+      "responsible_file": "app/schemas/story_development.py",
+      "serial_dependencies": ["WF-OPT-T001"],
+      "same_file_serial_group": "WF-OPT-SCHEMAS",
+      "required_skills": ["test-driven-development"],
+      "objective": "Add strict request/response schema models for Research.",
+      "implementation_notes": [
+        "Add ResearchItem, ResearchItemCreateRequest, ResearchItemUpdateRequest, ResearchItemListResponse.",
+        "Use exact literals from plan for source_type and status."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_green": "Schema validation paths progress; route tests may still fail until router/service/persistence are added."
+      },
+      "guardrails": [
+        "Do not rename existing schema fields.",
+        "Do not add non-spec enums."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T003",
+      "title": "Implement Research persistence mixin and record mapping",
+      "responsible_file": "app/persistence/story_development/research.py",
+      "serial_dependencies": ["WF-OPT-T002"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Create deterministic SQLite persistence for Research CRUD.",
+      "implementation_notes": [
+        "Implement _ResearchMixin with create/get/list/update/delete behavior.",
+        "Implement soft delete via status update.",
+        "Map rows with a dedicated converter function."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_green": "Research persistence paths satisfy API tests once service/router and registration are wired."
+      },
+      "guardrails": [
+        "Do not modify unrelated repository tables.",
+        "Do not introduce global file paths; use existing repository runtime paths."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T004",
+      "title": "Implement Research service behavior",
+      "responsible_file": "app/services/research.py",
+      "serial_dependencies": ["WF-OPT-T003"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Add ResearchService with deterministic CRUD and filtering behavior.",
+      "implementation_notes": [
+        "Include create/get/list/update/delete methods only.",
+        "Enforce project scoping and NotFound behavior."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_green": "Research API tests pass once router wiring is complete."
+      },
+      "guardrails": [
+        "Do not add speculative search/ranking features.",
+        "Do not add external network calls."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T005",
+      "title": "Implement and register Research router",
+      "responsible_file": "app/api/story_development/research.py",
+      "serial_dependencies": ["WF-OPT-T004"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Add `/v1/story-development/research/*` route handlers and response codes.",
+      "implementation_notes": [
+        "Expose list/get/create/patch/delete handlers.",
+        "Use existing dependency patterns used by story-development routers."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_green": "Research API contract tests fully pass."
+      },
+      "guardrails": [
+        "Do not mount unversioned paths.",
+        "Do not bypass service layer for business logic."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T006",
+      "title": "Wire Research mixin and route registration",
+      "responsible_file": "app/persistence/story_development/__init__.py",
+      "serial_dependencies": ["WF-OPT-T005"],
+      "same_file_serial_group": "WF-OPT-PERSISTENCE-INIT",
+      "required_skills": ["test-driven-development"],
+      "objective": "Add _ResearchMixin to repository composition with correct initialization order.",
+      "implementation_notes": [
+        "Update MRO and constructor init calls only as required for Research.",
+        "Preserve existing repository behavior."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_research_api.py",
+        "expected_green": "Repository-backed Research endpoints execute successfully."
+      },
+      "guardrails": [
+        "Do not reorder unrelated mixins without necessity.",
+        "Do not change unrelated repository methods."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T007",
+      "title": "Add failing API contract tests for Revision endpoints",
+      "responsible_file": "tests/test_story_development_revision_api.py",
+      "serial_dependencies": ["WF-OPT-T006"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Create failing tests for Revision pass lifecycle and checklist behavior.",
+      "implementation_notes": [
+        "Cover list/get/create/update/complete/checklist routes.",
+        "Assert checklist mutation conflict after completion returns 409."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_red": "FAIL because Revision capability is not yet implemented."
+      },
+      "guardrails": [
+        "Do not overfit to implementation internals.",
+        "Do not skip completed-pass conflict scenario."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T008",
+      "title": "Implement Revision schemas",
+      "responsible_file": "app/schemas/story_development.py",
+      "serial_dependencies": ["WF-OPT-T007"],
+      "same_file_serial_group": "WF-OPT-SCHEMAS",
+      "required_skills": ["test-driven-development"],
+      "objective": "Add strict Revision schema models and enums.",
+      "implementation_notes": [
+        "Add RevisionPassType, RevisionPassStatus, RevisionChecklistItem, RevisionPass and request models.",
+        "Preserve snake_case and strict model behavior."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_green": "Schema validations align; endpoint behavior may still fail pending service/router."
+      },
+      "guardrails": [
+        "Do not alter existing unrelated schema contracts.",
+        "Do not add extra pass types."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T009",
+      "title": "Implement Revision persistence",
+      "responsible_file": "app/persistence/story_development/revision.py",
+      "serial_dependencies": ["WF-OPT-T008"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Implement deterministic Revision pass storage and completion timestamp behavior.",
+      "implementation_notes": [
+        "Create _RevisionMixin with list filters by project/type/status.",
+        "Persist checklist structure and completed_at timestamps."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_green": "Persistence-dependent tests pass after service/router wiring."
+      },
+      "guardrails": [
+        "Do not modify drafting suggestion persistence.",
+        "Do not write shared global paths."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T010",
+      "title": "Implement Revision service",
+      "responsible_file": "app/services/revision.py",
+      "serial_dependencies": ["WF-OPT-T009"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Add RevisionService lifecycle methods and checklist policy.",
+      "implementation_notes": [
+        "Add create/get/list/update/complete/get_checklist methods.",
+        "Enforce 409 conflict for forbidden checklist edits after completion."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_green": "Service-driven contract scenarios pass."
+      },
+      "guardrails": [
+        "Do not alter existing review decision APIs.",
+        "Do not invent automatic pass generation."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T011",
+      "title": "Implement Revision router",
+      "responsible_file": "app/api/story_development/revision.py",
+      "serial_dependencies": ["WF-OPT-T010"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Expose `/v1/story-development/revision/*` handlers with required status codes.",
+      "implementation_notes": [
+        "Implement passes CRUD + complete + checklist endpoint.",
+        "Map service exceptions to 404/409/422 as specified."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_green": "Revision API tests pass."
+      },
+      "guardrails": [
+        "Do not mount under /review routes.",
+        "Do not add unrequested endpoints."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T012",
+      "title": "Wire Revision mixin and route registration",
+      "responsible_file": "app/api/story_development/__init__.py",
+      "serial_dependencies": ["WF-OPT-T011"],
+      "same_file_serial_group": "WF-OPT-API-INIT",
+      "required_skills": ["test-driven-development"],
+      "objective": "Register revision routes in story-development API package.",
+      "implementation_notes": [
+        "Import and call register_revision_routes() in package router setup.",
+        "Preserve existing route registration order unless required for correctness."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_revision_api.py",
+        "expected_green": "Revision endpoints are mounted and testable through app startup."
+      },
+      "guardrails": [
+        "Do not remove existing route registrations.",
+        "Do not add broad refactors in api init."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T013",
+      "title": "Add failing API contract tests for Polish analyze/export",
+      "responsible_file": "tests/test_story_development_polish_api.py",
+      "serial_dependencies": ["WF-OPT-T012"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Create failing tests for Polish analyze, report listing, export request, and export status.",
+      "implementation_notes": [
+        "Assert analyze returns readability metrics contract.",
+        "Assert export request returns 202 and export_id.",
+        "Assert status endpoint returns queued/running/completed/failed states."
+      ],
+      "verification": {
+        "red": "python -m pytest -q -p no:cacheprovider tests/test_story_development_polish_api.py",
+        "expected_red": "FAIL because Polish capability is not yet implemented."
+      },
+      "guardrails": [
+        "Do not assert undocumented file-system artifact paths.",
+        "Do not call external tooling in tests."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T014",
+      "title": "Implement Polish schemas",
+      "responsible_file": "app/schemas/story_development.py",
+      "serial_dependencies": ["WF-OPT-T013"],
+      "same_file_serial_group": "WF-OPT-SCHEMAS",
+      "required_skills": ["test-driven-development"],
+      "objective": "Add strict Polish report and export request/response models.",
+      "implementation_notes": [
+        "Add PolishReport, ExportFormat, ExportRequest, ExportStatus schema models.",
+        "Use exact format literals: docx, epub, pdf, markdown."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_polish_api.py",
+        "expected_green": "Schema-dependent assertions align; behavior may still fail pre-router/service."
+      },
+      "guardrails": [
+        "Do not rename existing manuscript schema fields.",
+        "Do not add export formats not listed in spec."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T015",
+      "title": "Implement Polish persistence",
+      "responsible_file": "app/persistence/story_development/polish.py",
+      "serial_dependencies": ["WF-OPT-T014"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Implement optional report persistence and export status storage.",
+      "implementation_notes": [
+        "Implement save/get list behavior for reports and export job state records as required by API tests.",
+        "Keep persistence bounded to story-development repository conventions."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_polish_api.py",
+        "expected_green": "Persistence path supports API behavior after service/router wiring."
+      },
+      "guardrails": [
+        "Do not alter backup or jobs subsystem tables.",
+        "Do not introduce blocking I/O loops."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T016",
+      "title": "Implement Polish service",
+      "responsible_file": "app/services/polish.py",
+      "serial_dependencies": ["WF-OPT-T015"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Add analyze and export orchestration logic with deterministic status state transitions.",
+      "implementation_notes": [
+        "Implement analyze_document, list_reports, export_manuscript, get_export_status.",
+        "Use deterministic readability/statistic calculations expected by tests."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_polish_api.py",
+        "expected_green": "Service-layer contract behavior passes once router is mounted."
+      },
+      "guardrails": [
+        "Do not implement speculative style-engine features.",
+        "Do not add background daemons outside existing patterns."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T017",
+      "title": "Implement Polish router and registration",
+      "responsible_file": "app/api/story_development/polish.py",
+      "serial_dependencies": ["WF-OPT-T016"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Expose `/v1/story-development/polish/*` endpoints with required 200/202 status behavior.",
+      "implementation_notes": [
+        "Add analyze/reports/export/export-status routes.",
+        "Return 202 for export creation with export_id payload."
+      ],
+      "verification": {
+        "green": "python -m pytest -q -p no:cacheprovider tests/test_story_development_polish_api.py",
+        "expected_green": "Polish API tests pass."
+      },
+      "guardrails": [
+        "Do not register under /manuscript-assist namespace.",
+        "Do not mutate unrelated route modules."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T018",
+      "title": "Add failing Studio panel key and routing tests",
+      "responsible_file": "frontend/src/components/studio/__tests__/studioWorkflowRouting.test.tsx",
+      "serial_dependencies": ["WF-OPT-T017"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Create failing frontend tests that lock 19 panel keys and stage-based rail grouping.",
+      "implementation_notes": [
+        "Assert rail sections: Ideation, Planning, Drafting, Revision, Polish.",
+        "Assert keys include research/revision/polish and renderable panel content paths.",
+        "Assert inspect deep link compatibility remains intact."
+      ],
+      "verification": {
+        "red": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_red": "FAIL because new keys/panels are not fully wired."
+      },
+      "guardrails": [
+        "Do not snapshot unstable layout internals.",
+        "Do not loosen existing test assertions."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T019",
+      "title": "Add Studio panel keys and defaults",
+      "responsible_file": "frontend/src/stores/studioStore.ts",
+      "serial_dependencies": ["WF-OPT-T018"],
+      "same_file_serial_group": "WF-OPT-STUDIO-CORE",
+      "required_skills": ["test-driven-development"],
+      "objective": "Update StudioPanelKey union and PANEL_DEFAULT_SIZES to include research/revision/polish.",
+      "implementation_notes": [
+        "Preserve existing keys and add three new keys.",
+        "Add deterministic default sizes for each new key."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Key-count and store-level assertions pass."
+      },
+      "guardrails": [
+        "Do not remove existing keys.",
+        "Do not change unrelated layout persistence behavior."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T020",
+      "title": "Implement Research frontend contracts",
+      "responsible_file": "frontend/src/services/research.ts",
+      "serial_dependencies": ["WF-OPT-T019"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Implement Research service calls using shared Axios client and canonical endpoints.",
+      "implementation_notes": [
+        "Use frontend/src/lib/api.ts client only.",
+        "Use snake_case params and `/v1/story-development/research/*` routes."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Service contract tests pass after hook/panel wiring."
+      },
+      "guardrails": [
+        "Do not introduce file-local API_BASE.",
+        "Do not use fetch for this API family."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T021",
+      "title": "Implement Revision frontend contracts",
+      "responsible_file": "frontend/src/services/revision.ts",
+      "serial_dependencies": ["WF-OPT-T020"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Implement Revision service calls and lifecycle endpoints.",
+      "implementation_notes": [
+        "Cover passes list/get/create/update/complete and checklist fetch.",
+        "Use /v1/story-development/revision/* endpoints only."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Revision service usage paths are testable by panel integration tests."
+      },
+      "guardrails": [
+        "Do not repurpose existing review service APIs.",
+        "Do not camelCase backend payload fields."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T022",
+      "title": "Implement Polish frontend contracts",
+      "responsible_file": "frontend/src/services/polish.ts",
+      "serial_dependencies": ["WF-OPT-T021"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Implement Polish analyze/report/export/status services.",
+      "implementation_notes": [
+        "Use async export initiation and status polling endpoint pattern.",
+        "Preserve exact export format literals."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Polish service paths are verified by panel tests."
+      },
+      "guardrails": [
+        "Do not add unsupported export formats.",
+        "Do not bypass shared API client."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T023",
+      "title": "Wire new panel components into Studio panel content switch",
+      "responsible_file": "frontend/src/components/studio/StudioPanelContent.tsx",
+      "serial_dependencies": ["WF-OPT-T022"],
+      "same_file_serial_group": "WF-OPT-STUDIO-CORE",
+      "required_skills": ["test-driven-development"],
+      "objective": "Ensure research, revision, and polish panel keys resolve to concrete components.",
+      "implementation_notes": [
+        "Import and switch-case map StudioResearchPanel, StudioRevisionPanel, StudioPolishPanel.",
+        "Maintain exhaustiveness for all panel keys."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "No dead-end panel routes remain."
+      },
+      "guardrails": [
+        "Do not remove existing panel cases.",
+        "Do not leave placeholder JSX."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T024",
+      "title": "Reorganize Studio rail by workflow stage",
+      "responsible_file": "frontend/src/components/studio/StudioProjectRail.tsx",
+      "serial_dependencies": ["WF-OPT-T023"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Restructure rail sections to Ideation/Planning/Drafting/Revision/Polish with deterministic key mapping.",
+      "implementation_notes": [
+        "Include research in Ideation and polish in Polish stage.",
+        "Keep existing usable keys and labels aligned with panel key union."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Rail grouping and click-navigation tests pass."
+      },
+      "guardrails": [
+        "Do not map label to wrong panel key.",
+        "Do not leave orphaned navigation entries."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T025",
+      "title": "Reorganize Studio context panel labels/tabs",
+      "responsible_file": "frontend/src/components/studio/StudioContextPanel.tsx",
+      "serial_dependencies": ["WF-OPT-T024"],
+      "required_skills": ["test-driven-development"],
+      "objective": "Align context tabs and labels to new stage model and panel inventory.",
+      "implementation_notes": [
+        "Add labels for research/revision/polish and preserve existing panel labels.",
+        "Match tab ordering to stage ordering."
+      ],
+      "verification": {
+        "green": "cd frontend; cmd /c npm.cmd run test -- studioWorkflowRouting",
+        "expected_green": "Context panel navigation and labels pass tests."
+      },
+      "guardrails": [
+        "Do not remove inspect/review pathways.",
+        "Do not break current route-driven mode behavior."
+      ]
+    },
+    {
+      "task_id": "WF-OPT-T026",
+      "title": "Run merge-readiness verification suite",
+      "responsible_file": "docs/superpowers/plans/2026-05-23-workflow-optimization-plan.md",
+      "serial_dependencies": ["WF-OPT-T025"],
+      "required_skills": ["verification-before-completion"],
+      "objective": "Execute full required verification commands and record outcomes before claiming completion.",
+      "implementation_notes": [
+        "Run frontend lint/typecheck/build/test.",
+        "Run backend parallel cluster with timeout >= 300000ms.",
+        "Run backend serial suite with timeout >= 240000ms."
+      ],
+      "verification": {
+        "green": [
+          "cd frontend && npm run lint",
+          "cd frontend && npm run typecheck",
+          "cd frontend && npm run build",
+          "cd frontend && npm run test",
+          "python -m pytest -q -p no:cacheprovider -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py",
+          "python -m pytest -q -p no:cacheprovider -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content"
+        ],
+        "expected_green": "All required checks pass with no skipped verification commands."
+      },
+      "guardrails": [
+        "Do not claim merge-ready if any required command is not run.",
+        "Do not shorten required test timeouts."
+      ]
+    }
+  ],
+  "phase_completion_requirements": {
+    "mandatory_review": "Run code review on all changed files and resolve Critical/Important findings before final handoff.",
+    "mandatory_verification": [
+      "All commands in WF-OPT-T026 must pass."
+    ],
+    "blocker_codes": [
+      "BLOCKED_MISSING_INPUT",
+      "BLOCKED_AMBIGUOUS_INSTRUCTION",
+      "BLOCKED_NONDETERMINISTIC_CHECK",
+      "BLOCKED_PLAN_VIOLATION"
+    ]
+  }
+}
+

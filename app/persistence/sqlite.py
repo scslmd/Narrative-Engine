@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from pathlib import Path
 
 from ..request_identity import checker_request_scope, job_request_scope, request_hash
@@ -9,6 +10,45 @@ from ..request_identity import checker_request_scope, job_request_scope, request
 OPERATIONS_DB_VERSION = 23
 PROJECT_DB_VERSION = 1
 SQLITE_BUSY_TIMEOUT_MS = 5000
+
+
+class _ThreadLocalCache:
+    """Thread-local cache for SQLite connections keyed by database path."""
+
+    def __init__(self) -> None:
+        self._local = threading.local()
+
+    def _get_store(self) -> dict[str, sqlite3.Connection]:
+        if not hasattr(self._local, "cache"):
+            self._local.cache = {}
+        return self._local.cache
+
+    def get(self, db_path: str) -> sqlite3.Connection | None:
+        store = self._get_store()
+        conn = store.get(db_path)
+        if conn is not None:
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except Exception:
+                del store[db_path]
+        return None
+
+    def set(self, db_path: str, conn: sqlite3.Connection) -> None:
+        store = self._get_store()
+        store[db_path] = conn
+
+    def clear(self) -> None:
+        if hasattr(self._local, "cache"):
+            for conn in self._local.cache.values():
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+            self._local.cache.clear()
+
+
+_connection_cache = _ThreadLocalCache()
 
 
 OPERATIONS_SCHEMA = """
@@ -1245,8 +1285,13 @@ CREATE INDEX IF NOT EXISTS idx_artifacts_updated_at ON artifacts(updated_at);
 
 def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(str(db_path), timeout=SQLITE_BUSY_TIMEOUT_MS / 1000)
+    path_str = str(db_path)
+    cached = _connection_cache.get(path_str)
+    if cached is not None:
+        return cached
+    connection = sqlite3.connect(path_str, timeout=SQLITE_BUSY_TIMEOUT_MS / 1000)
     connection.row_factory = sqlite3.Row
+    _connection_cache.set(path_str, connection)
     _configure_connection(connection)
     return connection
 

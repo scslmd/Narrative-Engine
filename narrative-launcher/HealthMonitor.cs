@@ -11,13 +11,14 @@ public class HealthMonitor
     private readonly System.Timers.Timer _timer;
     private readonly Dictionary<string, int> _consecutiveFailures = new();
     private readonly Dictionary<string, bool> _wasHealthy = new();
+    private readonly bool _monitorLlm;
 
     // Hysteresis: require N consecutive failures before marking unhealthy
     const int FailureThreshold = 2;
-    // Grace period: don't poll for first 15s after launch (3 ticks at 5s each)
-    const int GracePeriodTicks = 3;
-    // LLM warmup: skip LLM check for first 10s (2 ticks at 5s each)
-    const int LlmWarmupTicks = 2;
+    // Grace period: don't poll for first 5s after launch (1 tick)
+    const int GracePeriodTicks = 1;
+    // LLM warmup: skip LLM check for first 5s (1 tick)
+    const int LlmWarmupTicks = 1;
 
     private int _elapsedSeconds = 0;
 
@@ -25,11 +26,15 @@ public class HealthMonitor
     {
         _services = services;
         _tray = tray;
+        _monitorLlm = _services.IsLlmMonitored();
         _timer = new System.Timers.Timer(5000); // 5 second polling interval
         _timer.Elapsed += OnTick;
         _wasHealthy["backend"] = false;
         _wasHealthy["frontend"] = false;
-        _wasHealthy["llm"] = false;
+        _wasHealthy["llm"] = !_monitorLlm;
+        _consecutiveFailures["backend"] = 0;
+        _consecutiveFailures["frontend"] = 0;
+        _consecutiveFailures["llm"] = 0;
     }
 
     public void Start() => _timer.Start();
@@ -42,20 +47,23 @@ public class HealthMonitor
         // Grace period: don't poll during startup
         if (_elapsedSeconds <= GracePeriodTicks) return;
 
-        var services = new[]
-        {
-            ("backend", _services.Backend, $"http://127.0.0.1:{_services.Backend.Port}{_services.Backend.CheckUrl}"),
-            ("frontend", _services.Frontend, $"http://localhost:{_services.Frontend.Port}{_services.Frontend.CheckUrl}"),
-            ("llm", _services.Llm, $"http://127.0.0.1:{_services.Llm.Port}{_services.Llm.CheckUrl}"),
-        };
+        var backendHealthy = await Ping($"http://127.0.0.1:{_services.Backend.Port}{_services.Backend.CheckUrl}");
+        UpdateStatus("backend", _services.Backend, backendHealthy);
 
-        foreach (var (key, info, url) in services)
-        {
-            // Skip LLM during warmup period
-            if (key == "llm" && _elapsedSeconds < LlmWarmupTicks) continue;
+        var frontendHealthy = _services.IsFrontendReady();
+        UpdateStatus("frontend", _services.Frontend, frontendHealthy);
 
-            var healthy = await Ping(url);
-            UpdateStatus(key, info, healthy);
+        if (_monitorLlm)
+        {
+            if (_elapsedSeconds >= LlmWarmupTicks)
+            {
+                var llmHealthy = await Ping($"http://127.0.0.1:{_services.Llm.Port}{_services.Llm.CheckUrl}");
+                UpdateStatus("llm", _services.Llm, llmHealthy);
+            }
+        }
+        else
+        {
+            _services.Llm.Healthy = true;
         }
 
         UpdateTray();
@@ -101,18 +109,18 @@ public class HealthMonitor
 
     private void UpdateTray()
     {
-        var allHealthy = _services.Backend.Healthy && _services.Frontend.Healthy && _services.Llm.Healthy;
+        var allHealthy = _services.Backend.Healthy && _services.Frontend.Healthy && (!_monitorLlm || _services.Llm.Healthy);
         var unhealthy = new List<string>();
         if (!_services.Backend.Healthy) unhealthy.Add("Backend");
         if (!_services.Frontend.Healthy) unhealthy.Add("Frontend");
-        if (!_services.Llm.Healthy) unhealthy.Add("LLM");
+        if (_monitorLlm && !_services.Llm.Healthy) unhealthy.Add("LLM");
 
         // Update on UI thread (NotifyIcon lives on main thread)
         _tray.Invoke(() =>
         {
             _tray.UpdateIcon(allHealthy);
             _tray.PopulateMenu(allHealthy, unhealthy.ToArray());
-            _tray.UpdateTooltip(_services.Backend, _services.Frontend, _services.Llm);
+            _tray.UpdateTooltip(_services.Backend, _services.Frontend, _monitorLlm, _services.Llm);
         });
     }
 }

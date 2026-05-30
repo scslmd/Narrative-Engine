@@ -3,15 +3,46 @@
 ## Current Truth
 
 - The active documentation surface is `README.md`, `AGENTS.md`, and the current docs under `docs/`.
-- Latest verified validation baseline (2026-05-23):
-  - Backend parallel: 1473 passed, 7 skipped (~34s)
-  - Backend serial: 51 passed (~2s)
-  - Frontend tests: 778 passed (~14s, 96 test files)
-  - Frontend lint/typecheck/build: all green (2020 modules, 2 pre-existing warnings)
+- Latest verified validation baseline (2026-05-30):
+  - Backend parallel: 1637 passed, 6 skipped (~38s)
+  - Backend serial: 53 passed (~28s)
+  - Frontend tests: 787 passed (~14s, 97 test files)
+  - Frontend lint/typecheck/build: all green (2049 modules, 2 pre-existing errors)
 - The React frontend is merged and is now the default shipped frontend surface.
 - Radial hub workspace + layout management system complete (Phases 1-2 + Layout Management, merged 2026-05-23).
 - Inspect deep links and review-driven "Jump to Source" navigation are route-based and renderable through the existing inspect screen.
 - Temporary review notes, executor task dumps, and stale readiness checklists belong under `docs/archive/`, not in the active docs surface.
+- Code review findings (2026-05-29): 16/37 completed (43.2%), 20 remaining, 1 in progress.
+
+## Code Review Findings Progress (2026-05-29)
+
+37 findings from `docs/Code-Review-Findings-Merged-2026-05-29.md`. 16 completed (43.2%).
+
+### Completed (16/37)
+- **NE-01**: Launcher exclude reused backend from duplicate-kill lists (ServiceManager.cs)
+- **NE-02**: Production launcher frontend static-on-backend model (port 8000)
+- **NE-03**: Force frontend rebuild on launcher restart
+- **NE-04**: Render Studio rail buttons in compact mode
+- **NE-05**: Entity count badges deterministic + hide unsupported panels
+- **NE-06**: Treat LLM as unmanaged in launcher UI
+- **NE-07**: Polish analyze/export error mapping
+- **NE-08**: Reject unsupported Polish export options
+- **NE-13**: Removed root-level `Image/` directory
+- **NE-14**: Type rail icon map with exact keys
+- **NE-15**: Thread-local SQLite connection cache (Audit HIGH)
+- **NE-16**: Removed `dangerouslySetInnerHTML` from toast
+- **NE-17**: Validate backup_id format (path traversal)
+- **NE-18**: Fence user content in LLM import prompts
+- **NE-19**: Batch story_forking inserts with shared connection
+- **NE-32**: Added `status_code=201` to backup create endpoint
+
+### In Progress (1/37)
+- NE-09 through NE-12: Restore deleted test files from `codex/main` (22 tests across 4 files)
+
+### Remaining (20/37)
+- NE-20 through NE-21: Batch inserts (generation_phases, planning sync)
+- NE-22 through NE-31: Pagination across 10 routers
+- NE-33 through NE-37: Remaining infrastructure findings
 
 ## Active Backlog
 

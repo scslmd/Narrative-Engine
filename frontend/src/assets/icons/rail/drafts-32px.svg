@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Drafts icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M16 12h26l8 8v32H16z" />
+<path d="M42 12v9h8" />
+<path d="M23 27h14" />
+<path d="M23 35h10" />
+<path d="M36 44l11-11 5 5-11 11-7 2z" />
+  </g>
+</svg>

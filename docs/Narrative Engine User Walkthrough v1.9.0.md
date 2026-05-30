@@ -1,6 +1,6 @@
-# Narrative Engine - Complete User Walkthrough v1.9.0
+# Narrative Engine - Complete User Walkthrough v1.9.1
 
-Last updated: 2026-05-22 (god-file refactor docs sync, Studio Desk layout/state alignment, link fixes)
+Last updated: 2026-05-30 (Compact rail mode, entity count badges, tray launcher, typed rail icons)
 
 ## Goal
 This walkthrough is the full frontend operating manual. It explains every workspace interface and gives a comprehensive, practical workflow from first launch to advanced generation and iteration.
@@ -11,6 +11,11 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 - Inference backend is configured for LLM-dependent features.
 - If `NARRATIVE_API_KEY` is enabled on the server, configure API key usage for protected flows.
 
+**Starting the application:**
+- **Tray Launcher (recommended):** Run `narrative-launcher\narrative-launcher.exe` — starts backend + frontend automatically, system tray icon with status indicator, no console window.
+- **Development mode:** Run `start_narrative_core.cmd --dev` — spawns separate windows for uvicorn (with `--reload`) and Vite dev server (hot-reload).
+- **Production mode:** Run `start_narrative_core.cmd` — builds frontend once, runs uvicorn in current terminal.
+
 ## Quick Start: Your First Project in 10 Minutes
 
 1. Open `/` → fill New Project form (name, genre, tone, structure, POV, language) → click **Create Project**
@@ -19,7 +24,7 @@ This walkthrough is the full frontend operating manual. It explains every worksp
 4. Navigate to **Studio Desk** → open the **Jobs** panel → select **P-100 Architect** → click **Launch** → wait for completion
 5. Select **P-300 Drafter** → click **Launch** → wait for completion → view generated chapter in the Manuscripts panel
 
-For a complete walkthrough with 12 chapters, 7 characters, and branching, see Phase 11.
+For a complete walkthrough with 12 chapters, 7 characters, and branching, see Phase 13.
 
 ## Frontend Map
 - `/` Project list and creation
@@ -191,7 +196,90 @@ Session-based free writing canvas with AI-powered organization. Use this mode ea
 ### Auth Behavior
 - If API key auth is enforced and missing, an API key guidance banner appears at the top of the view.
 
-## Phase 5: Writing Workspace Deep Tour
+## Phase 4b: Ideation Workspace
+Route: Studio Desk (`/workspace/:projectId/studio`) → Ideas and Notes panels
+
+Ideation is the first stage of the writing process. The Ideas panel captures structured brainstorm items that can be promoted into planning objects. The Notes panel provides freeform scratch space for reminders, prompts, and mid-session thoughts. Use both during any stage — they survive the entire project lifecycle.
+
+### Ideas Panel — Structured Brainstorm Capture
+1. Open Studio Desk → click **Ideas** in the left rail (Ideation section).
+2. Click **Add Idea** to create a new brainstorm item.
+3. Fill in the idea content — a plot concept, character idea, world detail, or "what if?" scenario.
+4. Ideas appear in a list with timestamps and status indicators.
+5. **Cluster ideas:** Select multiple related ideas and click "Cluster" to group them. The LLM categorizes the cluster (e.g., "character arcs", "world rules").
+6. **Promote ideas:** Select ideas that are ready for downstream use and click "Promote". The system creates planning entities from the selected ideas:
+   - Character ideas → Character profiles in the Characters panel
+   - World ideas → World Bible entries
+   - Plot ideas → Scene or chapter plans
+7. Promoted ideas are marked with a status badge and remain in the Ideas list for reference.
+
+### Notes Panel — Freeform Scratch Space
+1. Open Studio Desk → click **Notes** in the left rail (Ideation section).
+2. Click **Add Note** to create a new note.
+3. Enter title and content — a reminder, writing prompt, or mid-session thought.
+4. Notes appear in a list. Click a note to edit its content.
+5. **Delete notes:** Click the delete action on any note to remove it permanently.
+6. Notes persist across sessions and survive project exports.
+
+### When to Use Ideas vs. Notes
+| Use Ideas when | Use Notes when |
+|---|---|
+| The item might become a character, world entry, or plot point | It's a reminder or scratch thought |
+| You want to cluster related concepts | You don't need categorization |
+| You plan to promote it into planning objects | It's temporary or personal |
+
+### Example Workflow: Mid-Draft Ideation
+1. You're drafting Ch 5 and realize you need a new character for the drone scene.
+2. Open the **Ideas** panel → add idea: `"AURA-7 drone with degraded AI — speaks in fragments, carries Moreau's data."`
+3. Promote the idea → a Character profile is created for AURA-7 in the Characters panel.
+4. Open the **Notes** panel → add note: `"Remember: AURA-7's voice should feel like a broken radio. Check voice consistency in Ch 7."`
+5. Return to drafting. The idea is captured, promoted, and the reminder is tracked.
+
+## Phase 5: Research Workflow
+Route: Studio Desk (`/workspace/:projectId/studio`) → Research panel
+
+Research is woven throughout the writing process — pre-writing research informs concept development, just-in-time research supports active drafting, and revision research fills discovered gaps. The Research panel manages all three phases in one repository.
+
+### Pre-Writing Research
+1. Open Studio Desk → click **Research** in the left rail (Research section).
+2. Click **Add Research Item** to create a new entry.
+3. Fill in:
+   - **Title** — descriptive name for the source (e.g., "Geothermal Energy Primer")
+   - **Type** — select from Books, Articles, Papers, Reference Notes
+   - **Source URL** — link to the source material (optional but recommended)
+   - **Genre Tags** — tag for genre-specific organization (e.g., "science-fiction", "historical")
+   - **Notes** — key findings, quotes, or summaries relevant to your project
+   - **Citations** — proper citation for nonfiction or academic sources
+4. Click **Save**. The item appears in the research list.
+
+### Just-in-Time Research During Drafting
+1. While writing in the center editor, open the **Research** panel alongside your manuscript.
+2. As you encounter details that need verification (e.g., geothermal generator specifications), create a new research item with your findings.
+3. Use the research list as a reference sidebar while drafting — no need to switch contexts.
+4. Items can be updated with new findings as your research evolves.
+
+### Revision Research
+1. After completing a draft pass, review the **Revision** panel for discovered gaps.
+2. For each gap, create a targeted research item to fill the hole.
+3. Use the research item's notes field to record the specific detail you looked up.
+4. Link research items to scenes/chapters by referencing chapter IDs in notes.
+
+### Managing Research Items
+- **Update:** Click an existing item to edit its content. Research evolves as your project does.
+- **Archive:** Click the archive action to hide completed research items. Archived items are hidden by default but can be restored by changing status to "active".
+- **Browse:** The research list displays all items with type badges, status indicators, and source URLs.
+
+### Genre-Specific Research Patterns
+| Genre | Research Focus | Panel Tips |
+|-------|---------------|------------|
+| **Science Fiction** | Scientific principles, technology, world consistency | Tag items with specific science domains. Cross-reference with World Bible entries. |
+| **Fantasy** | Mythology, magic systems, cultural development | Create reference notes for magic rules. Link to world bible entries. |
+| **Historical Fiction** | Period details, clothing, speech, technology | Use citations field for source tracking. Tag by time period. |
+| **Mystery/Thriller** | Procedures, forensics, investigation methods | Create items for each clue mechanism. Cross-reference with plot beats. |
+| **Romance** | Relationship dynamics, emotional authenticity | Tag items by emotional beat or trope. |
+| **Nonfiction** | Subject expertise, fact verification | Use citations rigorously. Archive completed fact-checks. |
+
+## Phase 6: Writing Workspace Deep Tour
 Routes: `/workspace/:projectId/write` and `/workspace/:projectId/write/:chapterId` (both redirect to `/studio`)
 
 The Writing workspace routes now redirect to Studio Desk. The WritingView component is embedded within StudioView, providing all writing functionality in a unified workspace.
@@ -244,7 +332,85 @@ Each action sends a parameterized instruction to the Manuscript Assist backend w
 5. Review the suggestion output in the Suggestions panel (accessed via the left rail).
 6. Accept to apply, reject to dismiss, or archive for later reference.
 
-## Phase 6: Review Workspace
+## Phase 8: Revision Workflow
+Route: Studio Desk (`/workspace/:projectId/studio`) → Revision panel
+
+Revision is iterative and multi-layered. Authors do not revise once — they revise in passes, each with a different focus. The Revision panel manages structured revision passes with default checklists aligned to the proven revision methodology.
+
+### Creating a Revision Pass
+1. Open Studio Desk → click **Revision** in the left rail (Revision section).
+2. Click **Create Pass** to start a new revision pass.
+3. Select a checklist type:
+   - **Structural** — big picture: timeline, pacing, plot holes, character arcs, worldbuilding consistency
+   - **Character** — development: motivations, voice consistency, arc progression, flat character rounding
+   - **Scene** — pacing: scene-by-scene flow, dialogue, transitions, sensory detail, scene necessity
+   - **Line Edit** — prose: word choice, repetitive phrases, sentence variety, cliches, purple prose
+   - **Copy Edit** — mechanics: grammar, spelling, punctuation, consistency (eye color, timeline details)
+4. The pass appears in the list with status `pending` and a checklist of items.
+
+### Structural Revision (Layer 1 — Big Picture)
+1. Read through the entire manuscript with fresh eyes.
+2. In the Revision panel, open the **Structural** pass checklist.
+3. Work through each item:
+   - **Map timeline** — check for contradictions across chapters
+   - **Assess pacing** — does the story flow? Identify sags and rushes
+   - **Identify plot holes** — logical gaps that break immersion
+   - **Evaluate character arcs** — do characters change meaningfully?
+   - **Check worldbuilding consistency** — rules established in the world bible
+4. Check off items as you complete them. Navigate to the Writing view to make corrections.
+5. Use the **Suggestions** panel to get LLM-assisted structural feedback on specific passages.
+
+### Character Revision (Layer 2)
+1. Open the **Character** pass checklist.
+2. For each character:
+   - Verify motivations are clear and consistent
+   - Check voice is distinct from other characters
+   - Add depth through backstory references and internal conflict
+   - Round out flat characters with unique speech patterns, habits, quirks
+3. Cross-reference with the **Characters** panel to update profiles based on what you discover during revision.
+4. Use canon annotations on Voice Notes fields to enforce character voice in re-generation.
+
+### Scene Revision (Layer 3)
+1. Open the **Scene** pass checklist.
+2. Work through scenes sequentially:
+   - Hone pacing — does each scene move the story forward?
+   - Improve dialogue — does it advance plot or deepen character?
+   - Strengthen transitions between scenes
+   - Add sensory details using the floating toolbar (`Sight & color`, `Sound & rhythm`, etc.)
+   - Cut unnecessary scenes or combine overlapping ones
+3. Use the **Ideas** panel to capture mid-revision insights about scene reordering.
+
+### Line Edit (Layer 4)
+1. Open the **Line Edit** pass checklist.
+2. Read the manuscript aloud or use text-to-speech to catch awkward phrasing.
+3. Use the floating toolbar:
+   - `Tighten & polish` — remove redundancy, improve flow
+   - `Compress` — reduce word count while preserving meaning
+   - `Rewrite in different voice` — match established tone
+4. Fix repetitive phrases and bad habits.
+5. Check for consistency in details (eye color, timeline, character names).
+
+### Copy Edit (Layer 5)
+1. Open the **Copy Edit** pass checklist.
+2. Final grammar, spelling, punctuation pass.
+3. Remove any remaining cliches.
+4. Verify formatting consistency.
+
+### Tracking Progress
+- Each pass shows status: `pending`, `in_progress`, `completed`.
+- A completed pass cannot be modified (409 conflict). Create a new pass for additional revisions.
+- Use the checklist to track which layers are done and which remain.
+- Wait at least a few weeks between finishing the draft and beginning revision when possible — this puts you in a "reader" mindset.
+
+### Revision Loop
+1. Complete one layer of revision.
+2. Run the checker to find remaining issues.
+3. Use **Inspect** to trace problems to their root causes.
+4. Annotate canon fields for strict enforcement.
+5. Re-run generation for chapters with issues.
+6. Repeat until the checker is clean and you've gone from making your writing *better* to merely making it *different*.
+
+## Phase 7: Review Workspace
 Route: `/workspace/:projectId/review`
 
 Two-tab interface for reviewing checker findings and maintaining run traceability.
@@ -269,7 +435,7 @@ Maintain mappings from review objects to inspectable runs so you can trace any f
 3. Saved links appear in the list and enable navigation from review objects directly to the Inspect workspace (`/workspace/:projectId/inspect/:jobId`).
 4. Use "Cancel" to discard a form without saving.
 
-## Phase 7: Inspect Workspace
+## Phase 8: Inspect Workspace
 Routes:
 - `/workspace/:projectId/inspect` — empty state with guidance to navigate from Review or Job Launch panel.
 - `/workspace/:projectId/inspect/:jobId` — deep link that auto-resolves the job ID against both checker and jobs services.
@@ -296,7 +462,7 @@ Routes:
 3. For pipeline jobs, click "Retry Job" to submit a new execution attempt with the same configuration.
 4. The new attempt appears in the list with an incremented attempt number. Use this to diagnose repeated failures or compare outputs across attempts.
 
-## Phase 8: Canon Workshop
+## Phase 9: Canon Workshop
 Route: `/workspace/:projectId/canon`
 Deep-link tab query: `?tab=overview|mythos|patterns|packet`
 
@@ -336,7 +502,7 @@ Four-tab workspace for managing canon scope, profiles, mythos/pattern libraries,
 ### Auth Behavior
 - If API key auth is enforced and missing, an API key guidance banner appears with setup instructions.
 
-## Phase 9: Story Generation Workspace
+## Phase 10: Story Generation Workspace
 Route: `/workspace/:projectId/generate`
 
 Full generation lifecycle: wizard configuration, run monitoring, gate review, and project forking.
@@ -394,10 +560,20 @@ Full generation lifecycle: wizard configuration, run monitoring, gate review, an
 2. The review displays the run ID and manuscript artifact ID (if available).
 3. Use this output to evaluate quality before forking or iterating.
 
-## Phase 10: Studio Desk Workspace
+## Phase 11: Studio Desk Workspace
 Route: `/workspace/:projectId/studio`
 
 The Studio Desk is a floating-panel workspace for focused writing with immediate access to all planning, generation, and review surfaces. Panels can be dragged, resized, snapped together, and pinned to survive layout changes. Each panel type can only be opened once — clicking again brings the existing panel to front.
+
+### Left Rail (Project Map)
+The left rail provides quick access to all panels, organized by workflow stage. Entity count badges display live counts on rail buttons for queryable panels (Characters, World Bible, Relationships, Arcs, etc.), helping you see at a glance how many entities exist in each area.
+
+**Rail Modes:**
+- **Expanded (default):** Full-width rail with panel names, section headers, and entity count badges.
+- **Compact (icon-only):** Collapses to 64px width, showing only icons with small count overlays. Activates automatically below the `xl:` breakpoint or via the rail toggle button. Frees maximum screen space for writing.
+- **Overlay:** Rail overlays the writing area instead of pushing content. Useful for temporary panel access without layout disruption.
+
+Rail mode persists to localStorage and survives page refresh.
 
 ### Panel Operations
 - **Open a panel:** Click a panel name in the command bar dropdown or left rail.
@@ -408,7 +584,7 @@ The Studio Desk is a floating-panel workspace for focused writing with immediate
 - **Pin:** Click the pin button (📌) to prevent removal. Pinned panels survive layout reset and preset changes.
 - **Close:** Click the close button (✕) to remove a panel. Pinned panels cannot be closed.
 
-### Panels (16 types)
+### Panels (19 types)
 - **Suggestions:** Revision suggestions from Manuscript Assist. Accept/reject/archive flows with diff viewer.
 - **Ideas:** Brainstorm-style idea capture and clustering.
 - **Drafts:** Draft artifact lifecycle management.
@@ -425,6 +601,17 @@ The Studio Desk is a floating-panel workspace for focused writing with immediate
 - **Inspect:** Runtime inspection of pipeline jobs and checker runs.
 - **Notes:** Project-level notes with add/delete functionality.
 - **Jobs:** Job launch panel with phase selection and recent job monitoring.
+- **Research:** Research item management for books, articles, papers, and reference notes. Create, update, and archive research items with source URLs, genre tags, and citations.
+- **Revision:** Revision pass lifecycle management. Create structured revision passes with default checklists (structural, character, scene, line_edit, copy_edit). Track pass status from pending to completed.
+- **Polish:** Document analysis and export. Analyze manuscripts for readability, passive voice, repetitive words, and style issues. Export in multiple formats with async status polling.
+
+### Rail Sections (6 workflow stages)
+- **Ideation:** Ideas, Notes
+- **Planning:** Characters, World Bible, Relationships, Arcs, Structure, Chapters
+- **Research:** Research
+- **Drafting:** Manuscripts, Drafts, Generation
+- **Revision:** Revision, Suggestions, Review, Inspect
+- **Polish:** Polish, Canon, Jobs
 
 ### Layout Presets
 Predefined panel layouts accessible via the Layout dropdown in the command bar. Applying a preset preserves pinned panels.
@@ -440,27 +627,91 @@ The active panel is reflected in the URL as `?tab=panelKey` (e.g., `?tab=charact
 ### Example Workflow: Writing with Context
 
 1. Open Studio Desk from the left panel's "Studio Desk" link.
-2. Open the **Characters** panel from the command bar — a floating panel appears with the character list.
-3. Open the **Suggestions** panel — position it beside the Characters panel by dragging near its edge.
-4. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
-5. Review the suggestion in the Suggestions panel. Accept to apply, or reject.
-6. Mid-chapter, open the **Ideas** panel to capture a new plot idea.
-7. Pin the Suggestions panel so it survives layout changes.
-8. When done, open the **Jobs** panel to launch a new generation run.
-9. Press `Ctrl+0` to reset the layout, keeping pinned panels.
+2. Check entity count badges on the rail — see how many characters, world entries, and arcs you have at a glance.
+3. Open the **Characters** panel from the command bar — a floating panel appears with the character list.
+4. Open the **Suggestions** panel — position it beside the Characters panel by dragging near its edge.
+5. In the center editor, select a paragraph and use the floating toolbar → `Sight & color`.
+6. Review the suggestion in the Suggestions panel. Accept to apply, or reject.
+7. Mid-chapter, open the **Ideas** panel to capture a new plot idea.
+8. Pin the Suggestions panel so it survives layout changes.
+9. When done, open the **Jobs** panel to launch a new generation run.
+10. Press `Ctrl+0` to reset the layout, keeping pinned panels.
 
 ### Example Workflow: Full-Width Writing Session
 
 1. Open Studio Desk — the writing surface fills the viewport.
-2. Open only the panels you need, positioning them around the writing area.
-3. Close panels you no longer need by clicking ✕.
-4. Use the Layout dropdown to restore a preset arrangement.
+2. Toggle the rail to **compact mode** (icon-only, 64px) to maximize writing space. Entity count badges remain visible on icons.
+3. Open only the panels you need, positioning them around the writing area.
+4. Close panels you no longer need by clicking ✕.
+5. Use the Layout dropdown to restore a preset arrangement.
+6. Toggle the rail back to expanded mode when you need full panel names.
 
-## Phase 11: End-to-End Novel Walkthrough
+### Example Workflow: Compact Rail for Maximum Writing Space
+
+1. Open Studio Desk.
+2. Click the rail toggle button (or resize window below `xl:` breakpoint) to enter compact mode.
+3. The rail collapses to 64px, showing only icons with entity count badges.
+4. Write with maximum horizontal space. Click any icon to open its panel.
+5. Panels open as floating panels; the rail stays compact until you toggle it back.
+
+## Phase 12: Polish and Preparation
+Route: Studio Desk (`/workspace/:projectId/studio`) → Polish panel
+
+The final stage transforms a revised manuscript into a polished, submission-ready document. The Polish panel provides automated analysis and multi-format export.
+
+### Document Analysis
+1. Open Studio Desk → click **Polish** in the left rail (Polish section).
+2. Select a manuscript from the dropdown.
+3. Click **Analyze** to run automated checks:
+   - **Readability score** — Flesch-Kincaid grade level and readability metrics
+   - **Passive voice** — percentage of passive constructions with examples
+   - **Repetitive words** — most frequent words beyond acceptable thresholds
+   - **Style issues** — sentence length variation, paragraph balance, dialogue tags
+4. Review the analysis report. Use the suggestions to target final edits.
+5. Return to the Writing view to make corrections flagged by the analysis.
+6. Re-run analysis after edits to verify improvements.
+
+### Manuscript Formatting
+1. In the Polish panel, select your final manuscript.
+2. Choose export format:
+   - **Markdown** — for further editing or version control
+   - **PDF** — for sharing with beta readers or agents
+   - **DOCX** — for traditional publishing submission
+   - **Plain Text** — for minimal formatting needs
+3. Configure formatting options:
+   - Font (serif for print, sans-serif for digital)
+   - Line spacing (double-spaced for submission, single for final)
+   - Margins and page layout
+4. Click **Export** to generate the formatted file.
+5. The export runs asynchronously — status polling shows progress.
+
+### Final Checklist
+Before submission, verify:
+- Readability score matches target audience level
+- Passive voice is within acceptable range (<15% for fiction)
+- No repetitive word patterns remain
+- Manuscript follows industry formatting standards
+- Beta reader feedback has been incorporated
+- All revision passes are completed
+
+### Export and Archive
+1. Return to the home page (`/`).
+2. Find your project card → click **Export**.
+3. The ZIP archive contains:
+   - Project manifest with full metadata
+   - Bible database (characters, world entries, arcs, relationships)
+   - All manuscript documents
+   - Generation run records
+   - Canon profiles
+   - Checker findings and resolution history
+   - Research items and revision pass records
+4. Store the archive. Create a backup for version history.
+
+## Phase 13: End-to-End Novel Walkthrough
 This phase walks through generating a complete novel from scratch using multi-arc planning, branching, canon management, and iterative generation.
 
 ### Overview
-We'll build a 12-chapter science fiction novel titled *The Last Lighthouse* with 3 character arcs, 2 sequences (Acts I-II), branching for Act III exploration, and a full canon management workflow. This demonstrates the complete toolchain: foundation → characters → world bible → arcs → planning → generation → revision → checking → canon tightening → re-generation → export.
+We'll build a 12-chapter science fiction novel titled *The Last Lighthouse* with 3 character arcs, 2 sequences (Acts I-II), branching for Act III exploration, and a full canon management workflow. This demonstrates the complete writing process: ideation → planning → research → drafting → revision → polish → export.
 
 ### Part 1: Project Foundation
 
@@ -488,6 +739,25 @@ We'll build a 12-chapter science fiction novel titled *The Last Lighthouse* with
    - **Complexity Level:** `High`
    - **Success Definition:** `A novel that makes the reader feel the weight of isolation and the quiet dignity of purposeful action.`
 3. Click **Save Foundation**.
+
+### Part 1b: Ideation Capture
+
+#### Step 2b: Capture Ideas and Notes
+Navigate to Studio Desk → open the **Ideas** and **Notes** panels.
+
+**Ideas panel — capture core concepts:**
+1. Add idea: `"Lighthouse keeper in a dying coastal world. Last beacon. Ships that may no longer exist."`
+2. Add idea: `"Geothermal generator failing — creates ticking clock."`
+3. Add idea: `"Ghost fleet at the end — ambiguous. Never confirm or deny."`
+4. Cluster ideas: select all three → cluster creates "core premise" group.
+5. Promote the generator idea → creates a World Bible entry for "The Geothermal Generator".
+
+**Notes panel — track writing reminders:**
+1. Add note: `"Voice: sparse, atmospheric. No dialogue tags beyond 'said'. Each chapter ends on an image."`
+2. Add note: `"Act structure: 3 acts, 12 chapters. Acts I-III = Watch/Signal/Light."`
+3. Add note: `"End tone: quiet, not triumphant. Meaning over hope."`
+
+These ideas and notes serve as reference throughout the project. The promoted generator idea is now in the World Bible for formal development.
 
 ### Part 2: Character Architecture
 
@@ -524,9 +794,24 @@ Navigate to the **Relationships** tab. Create relationship edges:
 - Elara ↔ Kai Voss: `Grief / Denial` — "The ghost she stopped expecting"
 - Dr. Moreau ↔ Captain Reyes: `Professional Rivalry` — "Disagreed on fleet strategy"
 
-### Part 3: World Bible
+### Part 3: Research
 
-#### Step 5: Build World Bible (8 entries)
+#### Step 5: Build Research Repository
+Navigate to Studio Desk → open the **Research** panel.
+
+For a science fiction novel, pre-writing research establishes the factual foundation:
+
+1. **Create research items** for key scientific concepts:
+   - **Geothermal Energy Primer** — Type: Reference Notes. Notes: "Geothermal generators use temperature differentials. Fresnel lens design: 1822, Augustin-Jean Fresnel. Typical coastal lighthouse height: 20-100m."
+   - **Climate Science Reference** — Type: Articles. Source URL: link to IPCC report. Notes: "Sea level rise: 3.3mm/year average. Coastal cities at risk: NYC, Tokyo, Mumbai."
+   - **Radio Communication** — Type: Reference Notes. Notes: "Long-range radio: HF band 3-30 MHz. Signal degradation over 400km. Static patterns from solar activity."
+2. Tag items with `science-fiction` genre tag for organization.
+3. Use research items as reference during drafting — open the Research panel alongside the manuscript editor.
+4. As you discover gaps during drafting, create just-in-time research items to fill holes.
+
+### Part 4: World Bible
+
+#### Step 6: Build World Bible (8 entries)
 Navigate to the **World Bible** tab. Create entries:
 
 **Locations (3):**
@@ -543,9 +828,9 @@ Navigate to the **World Bible** tab. Create entries:
 - **The Beacon Protocol** — Military protocol requiring continuous operation. The legal/moral framework for Elara's duty. What happens when the protocol's purpose is gone?
 - **The Last Fleet** — Dissolved 3 years before story begins. Reyes chose to stay on the last ship rather than return. Why?
 
-### Part 4: Arc Planning
+### Part 5: Arc Planning
 
-#### Step 6: Define Character Arcs (3 arcs)
+#### Step 7: Define Character Arcs (3 arcs)
 Navigate to the **Arcs** tab. Create candidate arcs and stage maps:
 
 **Arc 1 — The Keeper's Choice (Elara)**
@@ -569,9 +854,9 @@ Navigate to the **Arcs** tab. Create candidate arcs and stage maps:
 - Stage 4: Confrontation — Elara must choose: stay at beacon or respond
 - Stage 5: Synthesis — the beacon IS the response; she keeps it lit for Kai
 
-### Part 5: Structure Planning
+### Part 6: Structure Planning
 
-#### Step 7: Plan Sequences and Chapters
+#### Step 8: Plan Sequences and Chapters
 Navigate to the **Planning** tab.
 
 **Sequence 1 — Act I: The Watch (Chapters 1-4)**
@@ -594,9 +879,9 @@ Navigate to the **Planning** tab.
 
 For each chapter, set **Active Characters** and write detailed summaries.
 
-### Part 6: Canon Management
+### Part 7: Canon Management
 
-#### Step 8: Build Canon Profiles
+#### Step 9: Build Canon Profiles
 Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 
 1. **Overview Tab**: Create canon profile `Act I Profile`:
@@ -619,9 +904,9 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 
 4. **Packet Preview Tab**: Verify each profile's packet size. Adjust if exceeding context limits.
 
-### Part 7: Multi-Run Generation
+### Part 8: Multi-Run Generation
 
-#### Step 9: Generate Act I
+#### Step 10: Generate Act I
 1. Navigate to Generation (`/workspace/:projectId/generate`).
 2. Configure:
    - **Mode:** `New Arc`
@@ -642,7 +927,7 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 - **Canon contradiction (gate failure):** Check gate results panel. Relax continuity strictness to `Warn` or fix the conflicting canon entry.
 - **Generic/flat output:** Improve generation brief with specific voice instructions. Add more world bible entries for richer context.
 
-#### Step 10: Generate Act II
+#### Step 11: Generate Act II
 1. Repeat generation with `Act II Profile`.
 2. **Key difference:** 7 characters, 8 world entries — larger canon packet.
 3. Monitor for:
@@ -656,7 +941,7 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 - **Character voice drift:** Check Moreau's Voice Notes field. Annotate it in Characters tab for strict enforcement. Re-run with `Block` continuity.
 - **AURA-7 dialogue not uncanny enough:** Add specific instruction to generation brief: "AURA-7's speech is fragmented, with random pauses and occasional garbled words. It should feel like talking to a broken radio."
 
-#### Step 11: Generate Act III (with branching)
+#### Step 12: Generate Act III (with branching)
 1. **Main branch:** Generate Act III with `Act III Profile`.
 2. **Alternative branch:** Create a branch for Act III with different Kai resolution:
    - Navigate to **Branches** tab → Create branch `Act III - Kai Confirmed`
@@ -670,9 +955,62 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 - **Kai's emotional impact weak:** Add Kai's relationship edge to canon scope. Increase Kai's presence in generation brief.
 - **Branch comparison takes too long:** Generate main branch first. Only create alternate branch if the ending feels unsatisfactory.
 
-### Part 8: Review and Polish
+### Part 9: Revision
 
-#### Step 12: Full Novel Review
+#### Step 13: Multi-Layer Revision
+Navigate to Studio Desk → open the **Revision** panel.
+
+**Layer 1 — Structural Revision:**
+1. Create a **Structural** revision pass.
+2. Read through all 12 chapters. Check:
+   - Timeline consistency (generator readings: 23% → 8% → 4% → 12%)
+   - Pacing (Act II middle sag between Ch 6-7)
+   - Character arc progression (Elara's isolation → choice)
+3. Check off structural items as you verify them.
+
+**Layer 2 — Character Revision:**
+1. Create a **Character** revision pass.
+2. Verify Elara's voice is consistent across all 12 chapters (sparse, atmospheric).
+3. Check Moreau's voice is distinct from Elara's (scientific, direct, urgent).
+4. Verify AURA-7's dialogue feels fragmented and uncanny.
+5. Update character profiles in the **Characters** panel based on discoveries.
+
+**Layer 3 — Scene Revision:**
+1. Create a **Scene** revision pass.
+2. Work through each chapter:
+   - Use `Sight & color` on storm descriptions
+   - Use `Show don't tell` on emotional passages
+   - Use `Tighten & polish` on repetitive routine descriptions
+3. Strengthen transitions between chapters.
+
+**Layer 4 — Line Edit:**
+1. Create a **Line Edit** revision pass.
+2. Read chapters aloud to catch awkward phrasing.
+3. Fix repetitive phrases (e.g., overuse of "silence", "dark", "alone").
+4. Improve sentence variety.
+
+**Layer 5 — Copy Edit:**
+1. Create a **Copy Edit** revision pass.
+2. Final grammar, spelling, punctuation pass.
+3. Verify consistency in details (generator percentages, log numbers, timeline).
+
+### Part 10: Polish
+
+#### Step 14: Final Polish
+Navigate to Studio Desk → open the **Polish** panel.
+
+1. Select the complete manuscript.
+2. Click **Analyze** to run automated checks:
+   - Readability score: verify matches adult literary fiction level
+   - Passive voice: check percentage is below 15%
+   - Repetitive words: identify overused terms
+   - Style issues: review sentence length variation
+3. Make final corrections flagged by analysis.
+4. Re-run analysis to verify improvements.
+5. Export in desired format (Markdown, PDF, DOCX).
+6. Create project archive for version history.
+
+#### Step 15: Full Novel Review
 1. Navigate to **Review** (`/workspace/:projectId/review`).
 2. Run the Role Model Checker on the full novel.
 3. Review findings:
@@ -682,15 +1020,24 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
 4. Resolve findings by returning to Writing and making corrections.
 5. Use **Inspect** to trace problematic runs to their root causes.
 
-#### Step 13: Canon-Tight Revision Loop
+#### Step 16: Canon-Tight Revision Loop
 1. Review checker findings.
 2. Annotate canon fields in Characters/World Bible tabs for fields that need strict enforcement.
 3. Re-run generation for chapters with contradictions.
 4. Repeat until checker is clean.
 
-### Part 9: Export and Archive
+**Concrete example — Generate, change, regenerate:**
+1. **Generate:** You generated Ch 7 (The Conversation). Elara speaks to AURA-7.
+2. **Discover issue:** Reading the output, AURA-7 sounds too coherent — full sentences, no fragmentation. The conversation reads like two humans talking.
+3. **Change the canon:** Navigate to Characters → The Drone (AURA-7). Edit Voice Notes: `"Speech is fragmented. Random pauses. Occasional garbled words. No sentences longer than 8 words. Example: 'The data... says you are last. But the last... is not alone.'"` Save.
+4. **Update the generation brief:** Navigate to Generation. Edit the Act III Profile brief to include: `"AURA-7's speech is fragmented, with random pauses and occasional garbled words. It should feel like talking to a broken radio."`
+5. **Regenerate:** Re-run generation for Ch 7 with `Block` continuity strictness. The new output has AURA-7 speaking in fragments: `"The sea... rises. 40 meters. You are... the last light."`
+6. **Verify:** Read the revised chapter. AURA-7 now sounds like a degrading AI. The conversation feels uncanny.
+7. **Continue:** Move to Ch 8. The pattern carries forward — each chapter builds on the corrected voice.
 
-#### Step 14: Export the Novel
+### Part 11: Export and Archive
+
+#### Step 17: Export the Novel
 1. Return to home page (`/`).
 2. Find project card → Click **Export**.
 3. ZIP archive contains:
@@ -700,6 +1047,7 @@ Navigate to Canon Workshop (`/workspace/:projectId/canon`).
    - Generation run records (3 runs + branch runs)
    - Canon profiles (3 profiles)
    - Checker findings and resolution history
+   - Research items and revision pass records
 4. Store archive. Create a backup.
 
 ### Expected Outcome
@@ -722,12 +1070,15 @@ A complete 12-chapter novel with:
 
 ### See Also
 - **Branching workflow:** Phase 3 (Branches tab) — create, compare, merge branches
-- **Canon management:** Phase 8 (Canon Workshop) — profiles, scope selection, packet preview
+- **Canon management:** Phase 9 (Canon Workshop) — profiles, scope selection, packet preview
 - **Cascade Discovery:** Phase 3 (Relationships tab) — auto-extract entities from existing manuscript text
+- **Research workflow:** Phase 5 — pre-writing, just-in-time, and revision research
+- **Revision workflow:** Phase 8 — multi-layered revision (structural, character, scene, line edit, copy edit)
+- **Polish workflow:** Phase 12 — document analysis, formatting, export
 
-## Phase 12: Full Production Workflow
+## Phase 14: Full Production Workflow
 
-For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.9.0.md). The walkthrough's Phase 11 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
+For the complete production workflow order, see **End-to-End Recommended Workflow** in the [User Guide v1.9.0](User%20Guide%20v1.9.0.md). The walkthrough's Phase 13 demonstrates this workflow across a full 12-chapter novel with multi-arc planning, branching, and canon management.
 
 ## Common Mistakes and Fixes
 
@@ -738,8 +1089,11 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 - **"Cascade scan returns no entities"** — Manuscript text must be at least 50 characters and contain character names, interactions, or descriptive details. Very short or sparse text yields no results.
 - **"Inspect shows 'run not found'"** — The job ID in the URL must match an existing checker run or pipeline job. Navigate from Review → Inspect Run Links or the Job Launch panel to get valid IDs.
 - **"Checker finds no findings"** — The checker needs completed runs to analyze. Run at least one pipeline job (P-100 through P-400) before expecting findings.
+- **"Research items not appearing"** — Verify the project ID matches. Archived items are hidden by default; change status to "active" to restore visibility.
+- **"Revision pass won't update"** — A completed pass cannot be modified (409 conflict). Create a new pass for additional revisions.
+- **"Polish analysis shows zero score"** — Ensure manuscript text is at least 10 words for meaningful readability metrics.
 
-## Phase 13: Advanced Iteration Patterns
+## Phase 15: Advanced Iteration Patterns
 
 ### Pattern A: Canon-tight revision loop
 1. Write draft.
@@ -829,12 +1183,17 @@ For the complete production workflow order, see **End-to-End Recommended Workflo
 ## Completion Checklist
 A project is operationally complete when:
 - Foundation, characters, world bible, and relationships are populated (manually or via Cascade Discovery).
+- Ideas captured and promoted to downstream planning objects (or intentionally skipped).
+- Notes used for project reminders and mid-session thoughts.
 - At least one manuscript exists and has been revised.
+- Research items cataloged (books, articles, references) with citations tracked.
+- Revision passes completed (structural, character, scene, line_edit, copy_edit) with checklists checked off.
+- Polish analysis run: readability score, passive voice, and style issues reviewed.
 - Checker findings have been reviewed.
 - At least one inspectable run is present.
 - Canon profile/packet has been reviewed.
 - At least one generation run completed (and optionally forked).
-- Export archive captured.
+- Manuscript exported in desired format or project archive captured.
 - (Optional) Studio Desk workspace is configured with preferred rail width and active panel.
 
-**Phase 11 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management.
+**Phase 13 (End-to-End Novel Walkthrough)** demonstrates all checklist items across a full novel workflow with multi-arc planning, branching, and canon management.

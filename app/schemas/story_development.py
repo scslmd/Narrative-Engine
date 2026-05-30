@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -1499,7 +1500,7 @@ class PolishReport(StrictSchemaModel):
 class ExportRequest(StrictSchemaModel):
     project_id: str = Field(min_length=1)
     document_id: str = Field(min_length=1)
-    format: str = Field(default="markdown", min_length=1)
+    format: Literal["docx", "epub", "pdf", "markdown"] = "markdown"
     include_frontmatter: bool = False
     include_toc: bool = False
     stylesheet: str | None = None
@@ -1516,6 +1517,39 @@ class ExportRequest(StrictSchemaModel):
                 payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
         if "stylesheet" in payload:
             payload["stylesheet"] = _normalize_optional_text(payload["stylesheet"], field_name="stylesheet")
+        return payload
+
+    @model_validator(mode="after")
+    def validate_unsupported_options(self) -> ExportRequest:
+        unsupported = []
+        if self.include_frontmatter:
+            unsupported.append("include_frontmatter")
+        if self.include_toc:
+            unsupported.append("include_toc")
+        if self.stylesheet is not None:
+            unsupported.append("stylesheet")
+        if unsupported:
+            raise ValueError(
+                f"Export options are not supported: {', '.join(unsupported)}"
+            )
+        return self
+
+
+class PolishAnalyzeRequest(StrictSchemaModel):
+    project_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    text: str = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+
+        payload = dict(value)
+        for field_name in ("project_id", "document_id", "text"):
+            if field_name in payload:
+                payload[field_name] = _normalize_text(payload[field_name], field_name=field_name)
         return payload
 
 

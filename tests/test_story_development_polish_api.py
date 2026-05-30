@@ -47,6 +47,10 @@ def _build_client(tmp_path: Path) -> tuple[TestClient, StoryDevelopmentRepositor
     return TestClient(app), repository
 
 
+def _seed_additional_project(db_path: Path, project_id: str) -> None:
+    _seed_project(db_path, project_id)
+
+
 # --- Analyze Tests ---
 
 
@@ -199,4 +203,55 @@ def test_export_with_options(tmp_path: Path) -> None:
             "stylesheet": "custom.css",
         },
     )
-    assert response.status_code == 202
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert any("Export options are not supported" in str(d) for d in detail)
+
+
+def test_export_stylesheet_only_returns_422(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    response = client.post(
+        "/story-development/polish/export",
+        json={
+            "project_id": "polish-api",
+            "document_id": "doc-1",
+            "format": "markdown",
+            "stylesheet": "custom.css",
+        },
+    )
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert any("Export options are not supported" in str(d) for d in detail)
+
+
+def test_export_invalid_format_returns_422(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    response = client.post(
+        "/story-development/polish/export",
+        json={
+            "project_id": "polish-api",
+            "document_id": "doc-1",
+            "format": "txt",
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_get_export_status_wrong_project_returns_404(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    _seed_additional_project(db_path, "polish-other")
+    export_resp = client.post(
+        "/story-development/polish/export",
+        json={
+            "project_id": "polish-api",
+            "document_id": "doc-1",
+            "format": "pdf",
+        },
+    )
+    export_id = export_resp.json()["export_id"]
+    response = client.get(
+        f"/story-development/polish/export/{export_id}",
+        params={"project_id": "polish-other"},
+    )
+    assert response.status_code == 404

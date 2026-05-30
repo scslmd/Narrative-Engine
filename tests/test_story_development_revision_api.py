@@ -47,6 +47,10 @@ def _build_client(tmp_path: Path) -> tuple[TestClient, StoryDevelopmentRepositor
     return TestClient(app), repository
 
 
+def _seed_additional_project(db_path: Path, project_id: str) -> None:
+    _seed_project(db_path, project_id)
+
+
 # --- List Tests ---
 
 
@@ -242,3 +246,41 @@ def test_checklist_mutation_after_completion_returns_409(tmp_path: Path) -> None
         },
     )
     assert response.status_code == 409
+
+
+def test_get_revision_pass_wrong_project_returns_404(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    _seed_additional_project(db_path, "revision-other")
+    create_resp = client.post(
+        "/story-development/revision/passes",
+        json={"project_id": "revision-api", "pass_type": "character"},
+    )
+    pass_id = create_resp.json()["pass_id"]
+    response = client.get(
+        f"/story-development/revision/passes/{pass_id}",
+        params={"project_id": "revision-other"},
+    )
+    assert response.status_code == 404
+
+
+def test_complete_revision_pass_wrong_project_returns_404_without_mutation(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    _seed_additional_project(db_path, "revision-other")
+    create_resp = client.post(
+        "/story-development/revision/passes",
+        json={"project_id": "revision-api", "pass_type": "copy_edit"},
+    )
+    pass_id = create_resp.json()["pass_id"]
+    complete_resp = client.post(
+        f"/story-development/revision/passes/{pass_id}/complete",
+        params={"project_id": "revision-other"},
+    )
+    assert complete_resp.status_code == 404
+    verify_resp = client.get(
+        f"/story-development/revision/passes/{pass_id}",
+        params={"project_id": "revision-api"},
+    )
+    assert verify_resp.status_code == 200
+    assert verify_resp.json()["status"] != "completed"

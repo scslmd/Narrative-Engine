@@ -44,7 +44,10 @@ def register_research_routes(
     def get_research_item(item_id: str, project_id: str) -> ResearchItem:
         """Get a specific research item."""
         try:
-            return service.get_item(item_id)
+            item = service.get_item(item_id)
+            if item.project_id != project_id:
+                raise ResearchNotFoundError(item_id)
+            return item
         except ResearchNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Research item not found.") from exc
 
@@ -75,6 +78,9 @@ def register_research_routes(
     ) -> ResearchItem:
         """Update a research item."""
         try:
+            existing = service.get_item(item_id)
+            if existing.project_id != project_id:
+                raise ResearchNotFoundError(item_id)
             updates: dict[str, object] = {}
             if payload.title is not None:
                 updates["title"] = payload.title
@@ -102,6 +108,9 @@ def register_research_routes(
     def delete_research_item(item_id: str, project_id: str) -> None:
         """Delete (soft archive) a research item."""
         try:
+            item = service.get_item(item_id)
+            if item.project_id != project_id:
+                raise ResearchNotFoundError(item_id)
             service.delete_item(item_id)
         except ResearchNotFoundError as exc:
             raise HTTPException(status_code=404, detail="Research item not found.") from exc

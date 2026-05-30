@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Ideas icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M24 51h16" />
+<path d="M26 45h12" />
+<path d="M27 40c0-5-8-8-8-18a13 13 0 0 1 26 0c0 10-8 13-8 18" />
+<path d="M28 40h8" />
+<path d="M29 30v-5a3 3 0 0 1 6 0v5" />
+<path d="M17 16l-5-3" />
+<path d="M47 16l5-3" />
+<path d="M32 9V4" />
+<path d="M14 28H8" />
+<path d="M56 28h-6" />
+  </g>
+</svg>

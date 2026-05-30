@@ -47,6 +47,10 @@ def _build_client(tmp_path: Path) -> tuple[TestClient, StoryDevelopmentRepositor
     return TestClient(app), repository
 
 
+def _seed_additional_project(db_path: Path, project_id: str) -> None:
+    _seed_project(db_path, project_id)
+
+
 # --- List Tests ---
 
 
@@ -299,3 +303,42 @@ def test_delete_research_item_soft_deletes(tmp_path: Path) -> None:
     )
     assert response.status_code == 200
     assert response.json()["status"] == "archived"
+
+
+def test_get_research_item_wrong_project_returns_404(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    _seed_additional_project(db_path, "research-other")
+    create_resp = client.post(
+        "/story-development/research/items",
+        json={"project_id": "research-api", "title": "Scoped", "content": "Scoped content"},
+    )
+    item_id = create_resp.json()["item_id"]
+    response = client.get(
+        f"/story-development/research/items/{item_id}",
+        params={"project_id": "research-other"},
+    )
+    assert response.status_code == 404
+
+
+def test_update_research_item_wrong_project_returns_404_without_mutation(tmp_path: Path) -> None:
+    client, _ = _build_client(tmp_path)
+    db_path = tmp_path / "data" / "state" / "narrative_ops.db"
+    _seed_additional_project(db_path, "research-other")
+    create_resp = client.post(
+        "/story-development/research/items",
+        json={"project_id": "research-api", "title": "Original", "content": "Original content"},
+    )
+    item_id = create_resp.json()["item_id"]
+    update_resp = client.patch(
+        f"/story-development/research/items/{item_id}",
+        params={"project_id": "research-other"},
+        json={"title": "Hijacked"},
+    )
+    assert update_resp.status_code == 404
+    verify_resp = client.get(
+        f"/story-development/research/items/{item_id}",
+        params={"project_id": "research-api"},
+    )
+    assert verify_resp.status_code == 200
+    assert verify_resp.json()["title"] == "Original"

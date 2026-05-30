@@ -304,3 +304,106 @@ def test_restore_backup_rejects_corrupt_backup_before_overwrite(
     conn.close()
     
     assert value == "original_data"
+
+
+class TestBackupIdPathTraversal:
+    """Test that backup_id validation prevents path traversal attacks."""
+
+    @pytest.fixture
+    def backup_service(self, tmp_path: Path) -> BackupService:
+        """Create backup service with test data."""
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        db_path = state_dir / "narrative_ops.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY)")
+        conn.commit()
+        conn.close()
+        return BackupService(tmp_path)
+
+    def test_find_backup_rejects_absolute_path_unix(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject absolute Unix paths."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service._find_backup("/etc/passwd")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_find_backup_rejects_absolute_path_windows(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject absolute Windows paths."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service._find_backup("C:\\Windows\\System32\\config\\SAM")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_find_backup_rejects_parent_directory_traversal(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject paths containing .. components."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service._find_backup("../state/narrative_ops")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_find_backup_rejects_path_separators(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject paths containing separators."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service._find_backup("subdir/malicious")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_find_backup_rejects_windows_path_separators(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject paths containing backslash separators."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service._find_backup("subdir\\malicious")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_find_backup_accepts_valid_backup_id(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should accept valid alphanumeric backup IDs."""
+        # Create a backup first
+        result = backup_service.create_backup()
+        backup_id = result["backup_id"]
+
+        # Should find the backup
+        found = backup_service._find_backup(backup_id)
+        assert found.exists()
+
+    def test_find_backup_accepts_timestamp_id(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should accept timestamp-style backup IDs."""
+        result = backup_service.create_backup()
+        backup_id = result["backup_id"]
+
+        # Try with just the timestamp portion
+        timestamp_part = backup_id.replace("narrative_ops_", "")
+        found = backup_service._find_backup(timestamp_part)
+        assert found.exists()
+
+    def test_restore_backup_rejects_absolute_path(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject absolute paths in restore endpoint."""
+        with pytest.raises(BackupError) as exc_info:
+            backup_service.restore_backup("/etc/passwd")
+        assert "invalid" in str(exc_info.value).lower() or "rejected" in str(exc_info.value).lower()
+
+    def test_delete_backup_rejects_absolute_path(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject absolute paths in delete endpoint."""
+        # Should raise BackupError (not delete arbitrary file)
+        result = backup_service.delete_backup("/etc/passwd")
+        assert result is False
+
+    def test_delete_backup_rejects_parent_traversal(
+        self, backup_service: BackupService
+    ) -> None:
+        """Should reject parent directory traversal in delete endpoint."""
+        result = backup_service.delete_backup("../state/narrative_ops")
+        assert result is False

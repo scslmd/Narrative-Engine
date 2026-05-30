@@ -32,6 +32,25 @@ export type StudioContextMode = 'docked' | 'overlay' | 'closed';
 export type AuthorPreset = AuthorPresetKey;
 
 const STUDIO_LAYOUT_STORAGE_KEY = 'studio-layout-v1';
+const STUDIO_WORKFLOW_STORAGE_KEY = 'studio-workflow-v1';
+
+const STAGE_PANELS: Record<number, StudioPanelKey[]> = {
+  0: ['ideas', 'notes'],
+  1: ['characters', 'worldBible', 'relationships', 'arcs', 'structure', 'chapters'],
+  2: ['research'],
+  3: ['manuscripts', 'drafts', 'generation'],
+  4: ['revision', 'suggestions', 'review', 'inspect'],
+  5: ['polish', 'canon', 'jobs'],
+};
+
+function findStageIndex(panel: StudioPanelKey): number {
+  for (const [index, panels] of Object.entries(STAGE_PANELS)) {
+    if (panels.includes(panel)) {
+      return parseInt(index, 10);
+    }
+  }
+  return -1;
+}
 const DEFAULT_LEFT_RAIL_WIDTH = 224;
 const DEFAULT_CONTEXT_PANEL_WIDTH = 416;
 const MIN_LEFT_RAIL_WIDTH = 192;
@@ -47,9 +66,44 @@ export interface PersistedStudioLayout {
   contextPanelWidth: number;
 }
 
+export interface WorkflowState {
+  visitedStages: Set<number>;
+  collapsedSections: Record<number, boolean>;
+}
+
 export function clampStudioWidth(value: unknown, min: number, max: number, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   return Math.max(min, Math.min(max, value));
+}
+
+export function parseStoredWorkflowState(raw: string | null): WorkflowState {
+  if (raw === null) return { visitedStages: new Set(), collapsedSections: {} };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { visitedStages: new Set(), collapsedSections: {} };
+  }
+  if (typeof parsed !== 'object' || parsed === null) return { visitedStages: new Set(), collapsedSections: {} };
+  const obj = parsed as Record<string, unknown>;
+  const visited = Array.isArray(obj.visitedStages)
+    ? new Set<number>(obj.visitedStages.filter((n: unknown) => typeof n === 'number'))
+    : new Set<number>();
+  const collapsed = typeof obj.collapsedSections === 'object' && obj.collapsedSections !== null
+    ? obj.collapsedSections as Record<number, boolean>
+    : {};
+  return { visitedStages: visited, collapsedSections: collapsed };
+}
+
+function persistWorkflowState(state: WorkflowState): void {
+  try {
+    localStorage.setItem(STUDIO_WORKFLOW_STORAGE_KEY, JSON.stringify({
+      visitedStages: [...state.visitedStages],
+      collapsedSections: state.collapsedSections,
+    }));
+  } catch {
+    // Storage full or unavailable — ignore
+  }
 }
 
 export function parseStoredStudioLayout(raw: string | null): PersistedStudioLayout | null {
@@ -231,6 +285,10 @@ interface StudioState {
   toggleLeftRail: () => void;
   toggleContextPanel: () => void;
   closeDrawers: () => void;
+  visitedStages: Set<number>;
+  collapsedSections: Record<number, boolean>;
+  markStageVisited: (stageIndex: number) => void;
+  toggleSection: (sectionIndex: number) => void;
   // Layout state (radial hub)
   currentProjectId: string | null;
   layout: StudioLayoutState;
@@ -254,6 +312,7 @@ interface StudioState {
 }
 
 const stored = parseStoredStudioLayout(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_LAYOUT_STORAGE_KEY) : null);
+const workflow = parseStoredWorkflowState(typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_WORKFLOW_STORAGE_KEY) : null);
 
 export const useStudioStore = create<StudioState>((set) => ({
   activePanel: 'suggestions',
@@ -263,6 +322,8 @@ export const useStudioStore = create<StudioState>((set) => ({
   leftRailWidth: stored?.leftRailWidth ?? DEFAULT_LEFT_RAIL_WIDTH,
   contextPanelWidth: stored?.contextPanelWidth ?? DEFAULT_CONTEXT_PANEL_WIDTH,
   panelVisible: false,
+  visitedStages: workflow.visitedStages,
+  collapsedSections: workflow.collapsedSections,
   setActivePanel: (activePanel) => set({ activePanel }),
   setLeftRailMode: (leftRailMode) => {
     set((state) => {
@@ -298,12 +359,22 @@ export const useStudioStore = create<StudioState>((set) => ({
   },
   setPanelVisible: (panelVisible) => set({ panelVisible }),
   openPanel: (activePanel) =>
-    set((state) => ({
-      activePanel,
-      panelVisible: true,
-      leftRailMode: state.leftRailMode === 'collapsed' ? 'expanded' : state.leftRailMode,
-      contextPanelMode: state.contextPanelMode === 'closed' ? 'docked' : state.contextPanelMode,
-    })),
+    set((state) => {
+      const stageIndex = findStageIndex(activePanel);
+      const visited = stageIndex >= 0
+        ? new Set([...state.visitedStages, stageIndex])
+        : state.visitedStages;
+      if (stageIndex >= 0 && !state.visitedStages.has(stageIndex)) {
+        persistWorkflowState({ visitedStages: visited, collapsedSections: state.collapsedSections });
+      }
+      return {
+        activePanel,
+        panelVisible: true,
+        leftRailMode: state.leftRailMode === 'collapsed' ? 'expanded' : state.leftRailMode,
+        contextPanelMode: state.contextPanelMode === 'closed' ? 'docked' : state.contextPanelMode,
+        visitedStages: visited,
+      };
+    }),
   resetLayout: () => {
     set((state) => {
       const pinnedPanels = Object.fromEntries(
@@ -345,6 +416,20 @@ export const useStudioStore = create<StudioState>((set) => ({
       leftRailMode: 'collapsed',
       contextPanelMode: 'closed',
       panelVisible: false,
+    }),
+  markStageVisited: (stageIndex) =>
+    set((state) => {
+      const next = new Set(state.visitedStages);
+      next.add(stageIndex);
+      persistWorkflowState({ visitedStages: next, collapsedSections: state.collapsedSections });
+      return { visitedStages: next };
+    }),
+  toggleSection: (sectionIndex) =>
+    set((state) => {
+      const next = { ...state.collapsedSections };
+      next[sectionIndex] = !next[sectionIndex];
+      persistWorkflowState({ visitedStages: state.visitedStages, collapsedSections: next });
+      return { collapsedSections: next };
     }),
   // Layout state initialization
   currentProjectId: null,

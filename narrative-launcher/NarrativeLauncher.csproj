@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="NarrativeLauncher.Tests\**\*.cs" />
+  </ItemGroup>
 </Project>

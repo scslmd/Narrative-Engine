@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Manuscripts icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M20 17h23l9 9v29H20z" />
+<path d="M43 17v10h9" />
+<path d="M12 25h8" />
+<path d="M12 25v30h30" />
+  </g>
+</svg>

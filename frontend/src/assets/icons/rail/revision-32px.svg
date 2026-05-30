@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Revision icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M50 26a18 18 0 0 0-31-9" />
+<path d="M50 14v12H38" />
+<path d="M14 38a18 18 0 0 0 31 9" />
+<path d="M14 50V38h12" />
+  </g>
+</svg>

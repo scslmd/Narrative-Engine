@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Review icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<rect x="17" y="15" width="34" height="39" rx="4" />
+<path d="M27 15a5 5 0 0 1 10 0h4v7H23v-7z" />
+<path d="M25 32l3 3 6-7" />
+<path d="M39 33h6" />
+<path d="M25 43l3 3 6-7" />
+<path d="M39 44h6" />
+  </g>
+</svg>

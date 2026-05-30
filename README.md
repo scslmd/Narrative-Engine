@@ -23,6 +23,9 @@ Narrative-Engine supports:
 - story generation orchestration: generate canon-congruent sequels or alternates from existing projects
 - canon workshop: annotate source material, create reusable generation profiles, manage mythos/pattern libraries
 - manuscript LLM assist: AI-powered line edits, expansions, rewrites, and developmental checks with version conflict protection
+- research management: catalog books, articles, papers, and reference notes with source URLs, genre tags, and citations
+- revision workflow: structured revision passes (structural, character, scene, line_edit, copy_edit) with default checklists and status tracking
+- polish analysis: document readability scoring (Flesch), passive voice detection, repetitive word analysis, style issue detection, and multi-format export
 
 ## Runtime Requirements
 
@@ -117,6 +120,15 @@ Implemented and working now:
 - pattern extraction: generalized extraction of archetypal patterns, narrative structure, voice profile, thematic constraints, and entities from any story text; supports Same World / New Characters / Transposed generation modes
 - multi-pass story import: large stories (>30K chars) automatically chunked and analyzed per-chapter with LLM consolidation for characters, world bible, arcs, and planning
 - sample stories: 4 curated stories (2 public domain from Project Gutenberg, 2 original) in `docs/sample-stories/` for walkthrough testing and feature demonstration
+- research capability: research item CRUD with soft delete, genre tags, citations, and source tracking (`research_items` table)
+- revision capability: revision pass lifecycle with default checklists per pass type, status tracking, and 409 conflict on mutation after completion (`revision_passes` table)
+- polish capability: document analysis (readability, passive voice, repetitive words, style issues) and async export with status polling (`polish_reports`, `export_statuses` tables)
+- studio desk: 19-panel floating workspace with 5-stage rail reorganization (Ideation, Planning, Drafting, Revision, Polish)
+- narrative launcher: Windows tray launcher with service management, health monitoring, and system tray icon (NE-01 through NE-06)
+- thread-local SQLite connection cache: per-thread per-path connection reuse to reduce connection churn (NE-15)
+- backup path traversal protection: backup_id format validation rejecting absolute paths, '..', and path separators (NE-17)
+- import prompt user content fencing: <![USER_CONTENT_START]> delimiters around story text to prevent prompt injection (NE-18)
+- story forking batch inserts: shared connection with BEGIN IMMEDIATE for batch character/relationship/world entry copies (NE-19)
 
 ## Quickstart
 
@@ -130,9 +142,9 @@ Implemented and working now:
 
 Current verified baseline:
 
-- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1473 passed, 7 skipped (~34s)
-- Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters` -> 51 passed (~2s)
-- Full baseline: ~1524 tests, ~66s total
+- Parallel cluster: `pytest -n auto --dist=loadfile --basetemp=.tmp_xdist --ignore=tests/test_audit_logging.py --ignore=tests/test_rate_limiting.py --ignore=tests/test_smoke.py --ignore=tests/test_local_executor_manuscript_assist.py --ignore=tests/test_story_generation_e2e.py` -> 1637 passed, 6 skipped (~38s)
+- Serial tests: `pytest -n 0 tests/test_audit_logging.py tests/test_rate_limiting.py tests/test_persistence.py::test_local_executor_persists_pipeline_step_records tests/test_smoke.py tests/test_local_executor_manuscript_assist.py tests/test_story_generation_e2e.py tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters tests/test_discovery_api.py::test_patch_returns_updated tests/test_story_bible_lineage.py::TestStoryBibleLineageContentHash::test_story_bible_content_hash_matches_file_content` -> 53 passed (~28s)
+- Full baseline: ~1690 tests, ~66s total
 
 ### Frontend
 
@@ -164,27 +176,27 @@ See [AGENTS.md](AGENTS.md) for the current active dev guide and doc set.
 
 Latest local full-suite verification:
 
-- Parallel cluster: 1473 passed, 7 skipped (~34s)
-- Serial tests: 51 passed (~2s)
-- `cd frontend && npm run lint` -> passed
+- Parallel cluster: 1637 passed, 6 skipped (~38s)
+- Serial tests: 53 passed (~28s)
+- `cd frontend && npm run lint` -> passed (2 pre-existing errors only)
 - `cd frontend && npm run typecheck` -> passed
-- `cd frontend && npm run build` -> passed, 2025 modules
-- `cd frontend && npm run test` -> 554 passed (~13s)
+- `cd frontend && npm run build` -> passed, 2049 modules
+- `cd frontend && npm run test` -> 787 passed (~14s, 97 test files)
 
-**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard. 2026-05-02: added Canon Workshop and Manuscript Assist, all 17/17 feature areas linked. 2026-05-08: added Guided Setup Wizard with LLM-generated story planning (sequences + chapters).
+**Frontend Quality Gate**: Full score achieved with production-grade improvements to routing/state synchronization, structured error handling, type safety, and ESLint compliance. 2026-04-23 integration audit: removed 37 dead service functions (42% of exports), added Story Import UI. 2026-05-01: added Story Generation wizard. 2026-05-02: added Canon Workshop and Manuscript Assist, all 17/17 feature areas linked. 2026-05-08: added Guided Setup Wizard with LLM-generated story planning (sequences + chapters). 2026-05-24: added Research, Revision, Polish capabilities (19-panel Studio Desk, 5-stage rail). 2026-05-30: compact rail mode, deterministic entity count badges, typed rail icons, removed dangerouslySetInnerHTML.
 
 ## Core Docs
 
 - [AGENTS.md](AGENTS.md) - development guidelines, API patterns, feature documentation, and merge readiness checks (single source of truth)
 - [docs/STRUCTURE.md](docs/STRUCTURE.md) - project structure overview
-- [docs/User Guide v1.7.0.md](docs/User%20Guide%20v1.7.0.md) - user-facing guide
-- [docs/Narrative Engine User Walkthrough v1.7.0.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.7.0.md) - complete step-by-step walkthrough of all features (includes Phase 0 sample stories)
+- [docs/User Guide v1.9.0.md](docs/User%20Guide%20v1.9.0.md) - user-facing guide
+- [docs/Narrative Engine User Walkthrough v1.9.0.md](docs/Narrative%20Engine%20User%20Walkthrough%20v1.9.0.md) - complete step-by-step walkthrough of all features (includes Phase 0 sample stories)
 - [docs/QUALITY_GUIDELINES.md](docs/QUALITY_GUIDELINES.md) - code review scoring rubrics
 
 ## Planning Docs
 
 - [TODO.md](TODO.md) - active backlog and implementation notes
-- [docs/story-generation-orchestration-blueprint-2026-05-02.md](docs/story-generation-orchestration-blueprint-2026-05-02.md) - story generation architecture (implemented)
+- [docs/archive/story-generation-orchestration-blueprint-2026-05-02.md](docs/archive/story-generation-orchestration-blueprint-2026-05-02.md) - story generation architecture (implemented)
 
 ## Archive
 

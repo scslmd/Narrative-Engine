@@ -24,18 +24,40 @@ if (!hasVenv || !hasNodeModules)
     (_, hasNodeModules, _) = checker.Check();
 }
 
-// Check for port conflicts
-if (await PortInUse(8000))
-    tray.ShowBalloonTip("Port Conflict", "Backend port 8000 is already in use", ToolTipIcon.Warning);
-
-// Start services
-Console.WriteLine("Starting backend and frontend...");
-services.StartBackend();
-services.StartFrontend();
+// Check if backend is already running
+var backendRunning = await services.IsBackendRunningAsync();
+if (backendRunning)
+{
+    Console.WriteLine("Backend already running, skipping start.");
+    await services.AttachExternalBackendAsync();
+}
+else
+{
+    // Build frontend if needed, then start backend
+    Console.WriteLine("Building frontend...");
+    await services.StartFrontendAsync();
+    Console.WriteLine("Starting backend...");
+    services.StartBackend();
+}
 
 var monitor = new HealthMonitor(services, tray);
 monitor.Start();
-Console.WriteLine("Running. Right-click tray icon for menu. Ctrl+C to exit.");
+
+// Shared exit handler
+var tcs = new TaskCompletionSource();
+var exit = () =>
+{
+    if (tcs.Task.IsCompleted) return;
+    tcs.SetResult();
+};
+
+// Wire status window with exit callback
+var statusWindow = new StatusWindow(services, async () =>
+{
+    await services.StopAsync();
+    exit();
+});
+tray.SetStatusWindow(statusWindow);
 
 // Wire menu actions
 tray.OnMenuClick = async (action) =>
@@ -49,18 +71,24 @@ tray.OnMenuClick = async (action) =>
 
         case "restart-frontend":
             RestartService(services.Frontend);
-            services.StartFrontend();
+            await services.StartFrontendAsync();
+            break;
+
+        case "exit":
+            await services.StopAsync();
+            exit();
             break;
     }
 };
 
 // Wait for Exit (Ctrl+C or tray menu)
-var tcs = new TaskCompletionSource();
 Console.CancelKeyPress += (_, e) =>
 {
     e.Cancel = true;
-    tcs.SetResult();
+    exit();
 };
+
+Console.WriteLine("Running. Right-click tray icon for menu. Ctrl+C to exit.");
 await tcs.Task;
 
 await services.StopAsync();
@@ -79,13 +107,6 @@ static string GetRootDir()
         dir = Path.GetDirectoryName(dir);
     }
     return Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!;
-}
-
-static async Task<bool> PortInUse(int port)
-{
-    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
-    try { await client.GetAsync($"http://127.0.0.1:{port}/"); return true; }
-    catch { return false; }
 }
 
 static void RestartService(ServiceInfo service)

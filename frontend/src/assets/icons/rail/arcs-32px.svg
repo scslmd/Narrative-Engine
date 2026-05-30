@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Arcs icon, 32px</title>
+  <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M12 50h40" />
+<path d="M12 50V14" />
+<path d="M18 42l10-12 8 7 13-18" />
+<path d="M42 19h7v7" />
+  </g>
+</svg>

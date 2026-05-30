@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Desk — Workflow Integration Mockup</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-hover: #222533;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --text-muted: #52525b;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #22c55e;
+    --accent-orange: #f59e0b;
+    --accent-pink: #ec4899;
+    --rail-width: 240px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Left Rail */
+  .rail {
+    width: var(--rail-width);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .rail-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rail-header h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+  }
+
+  .rail-header button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+  }
+
+  /* Workflow Progress Bar */
+  .workflow-progress {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .workflow-progress h4 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .progress-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .progress-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    position: relative;
+  }
+
+  .progress-dot.completed {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--accent-green);
+    border: 2px solid var(--accent-green);
+  }
+
+  .progress-dot.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent-blue);
+    border: 2px solid var(--accent-blue);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .progress-dot.upcoming {
+    background: transparent;
+    color: var(--text-muted);
+    border: 2px solid var(--border);
+  }
+
+  .progress-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .progress-line.filled {
+    background: var(--accent-green);
+  }
+
+  .progress-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Rail Sections */
+  .rail-sections {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .rail-section {
+    margin-bottom: 4px;
+  }
+
+  .rail-section-header {
+    padding: 8px 16px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rail-section-header .stage-badge {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .rail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px 8px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 13px;
+    color: var(--text-dim);
+    position: relative;
+  }
+
+  .rail-item:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+
+  .rail-item.active {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--text);
+  }
+
+  .rail-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .stage-1 .rail-item.active { background: rgba(59, 130, 246, 0.1); }
+  .stage-1 .rail-item.active::before { background: var(--accent-blue); }
+  .stage-1 .rail-section-header .stage-badge { background: var(--accent-blue); }
+
+  .stage-2 .rail-item.active { background: rgba(139, 92, 246, 0.1); }
+  .stage-2 .rail-item.active::before { background: var(--accent-purple); }
+  .stage-2 .rail-section-header .stage-badge { background: var(--accent-purple); }
+
+  .stage-3 .rail-item.active { background: rgba(6, 182, 212, 0.1); }
+  .stage-3 .rail-item.active::before { background: var(--accent-cyan); }
+  .stage-3 .rail-section-header .stage-badge { background: var(--accent-cyan); }
+
+  .stage-4 .rail-item.active { background: rgba(34, 197, 94, 0.1); }
+  .stage-4 .rail-item.active::before { background: var(--accent-green); }
+  .stage-4 .rail-section-header .stage-badge { background: var(--accent-green); }
+
+  .stage-5 .rail-item.active { background: rgba(245, 158, 11, 0.1); }
+  .stage-5 .rail-item.active::before { background: var(--accent-orange); }
+  .stage-5 .rail-section-header .stage-badge { background: var(--accent-orange); }
+
+  .stage-6 .rail-item.active { background: rgba(236, 72, 153, 0.1); }
+  .stage-6 .rail-item.active::before { background: var(--accent-pink); }
+  .stage-6 .rail-section-header .stage-badge { background: var(--accent-pink); }
+
+  .rail-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .rail-item.active svg {
+    opacity: 1;
+  }
+
+  .rail-item .item-badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-muted);
+  }
+
+  /* Main Content */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-header {
+    height: 48px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  .main-header h2 {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .breadcrumb {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .breadcrumb span {
+    color: var(--text-dim);
+  }
+
+  /* Editor Area */
+  .editor-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .editor {
+    flex: 1;
+    padding: 32px 48px;
+    overflow-y: auto;
+  }
+
+  .editor-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .editor-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .editor-content {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    max-width: 680px;
+  }
+
+  .editor-content p {
+    margin-bottom: 16px;
+  }
+
+  /* Floating Panel */
+  .floating-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: move;
+  }
+
+  .panel-header h4 {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .panel-header button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .panel-body {
+    padding: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .panel-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .panel-item:last-child {
+    border-bottom: none;
+  }
+
+  .panel-item .label {
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .panel-item .value {
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  /* Annotations */
+  .annotation {
+    position: absolute;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--accent-blue);
+    max-width: 220px;
+    line-height: 1.5;
+  }
+
+  .annotation::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 6px solid rgba(59, 130, 246, 0.4);
+  }
+
+  .annotation-1 {
+    top: 80px;
+    left: calc(var(--rail-width) + 16px);
+  }
+
+  .annotation-2 {
+    top: 220px;
+    left: calc(var(--rail-width) + 16px);
+  }
+
+  .annotation-3 {
+    bottom: 40px;
+    right: 360px;
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 20px;
+    left: calc(var(--rail-width) + 20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 11px;
+  }
+
+  .legend h5 {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Left Rail -->
+<div class="rail">
+  <div class="rail-header">
+    <h3>Project Map</h3>
+    <button>☰</button>
+  </div>
+
+  <!-- Workflow Progress -->
+  <div class="workflow-progress">
+    <h4>Writing Progress</h4>
+    <div class="progress-dots">
+      <div class="progress-dot completed">1</div>
+      <div class="progress-line filled"></div>
+      <div class="progress-dot completed">2</div>
+      <div class="progress-line filled"></div>
+      <div class="progress-dot completed">3</div>
+      <div class="progress-line"></div>
+      <div class="progress-dot active">4</div>
+      <div class="progress-line"></div>
+      <div class="progress-dot upcoming">5</div>
+      <div class="progress-line"></div>
+      <div class="progress-dot upcoming">6</div>
+    </div>
+    <div class="progress-label">Stage 4 of 6 — Drafting</div>
+  </div>
+
+  <!-- Rail Sections -->
+  <div class="rail-sections">
+    <div class="rail-section stage-1">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Ideation
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 3-2 5.5-4 7l-3 3.5-3-3.5c-2-1.5-4-4-4-7a7 7 0 0 1 7-7z"/><path d="M12 2v4"/><path d="M9 5l1.5-1.5"/><path d="M15 5l-1.5-1.5"/></svg>
+        Ideas
+        <span class="item-badge">3</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Notes
+        <span class="item-badge">3</span>
+      </div>
+    </div>
+
+    <div class="rail-section stage-2">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Planning
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Characters
+        <span class="item-badge">7</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        World Bible
+        <span class="item-badge">8</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Relationships
+        <span class="item-badge">5</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Arcs
+        <span class="item-badge">3</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        Structure
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Chapters
+        <span class="item-badge">12</span>
+      </div>
+    </div>
+
+    <div class="rail-section stage-3">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Research
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Research
+        <span class="item-badge">3</span>
+      </div>
+    </div>
+
+    <div class="rail-section stage-4">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Drafting
+      </div>
+      <div class="rail-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Manuscripts
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
+        Drafts
+        <span class="item-badge">2</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Generation
+      </div>
+    </div>
+
+    <div class="rail-section stage-5">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Revision
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Revision
+        <span class="item-badge">0</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Suggestions
+        <span class="item-badge">4</span>
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Review
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Inspect
+      </div>
+    </div>
+
+    <div class="rail-section stage-6">
+      <div class="rail-section-header">
+        <div class="stage-badge"></div>
+        Polish
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Polish
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Canon
+      </div>
+      <div class="rail-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Jobs
+        <span class="item-badge">3</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="main-header">
+    <div class="breadcrumb">
+      The Last Lighthouse / <span>Chapter 7: The Conversation</span>
+    </div>
+  </div>
+
+  <div class="editor-area">
+    <div class="editor">
+      <div class="editor-title">The Conversation</div>
+      <div class="editor-meta">Chapter 7 · Act II · 2,340 words · Last edited 12 min ago</div>
+      <div class="editor-content">
+        <p>Elara stood in the log room, the AURA-7 drone humming on its charging dock. Its single lens blinked at irregular intervals — the signature of degraded AI.</p>
+        <p>"The sea... rises," the drone said. "40 meters. You are... the last light."</p>
+        <p>She paused. The words were fragmented, but the rhythm felt intentional — like a radio tuned between stations, catching signals from somewhere far away.</p>
+        <p>"Moreau says the inland settlements are failing."</p>
+        <p>"Moreau... says many things. The data... is not... complete."</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Annotations -->
+<div class="annotation annotation-1">
+  <strong>Workflow Progress</strong><br>
+  Visual indicator at top of rail. Shows current stage, completed stages, and remaining stages. Click any dot to jump to that stage's panels.
+</div>
+
+<div class="annotation annotation-2">
+  <strong>Stage-Aware Active State</strong><br>
+  Active panel gets colored left bar matching its stage color. Item badges show entity counts (characters, chapters, etc.).
+</div>
+
+<div class="annotation annotation-3">
+  <strong>Floating Panels</strong><br>
+  Open panels from rail. Drag, resize, snap, pin. Panel state persists via <code>studio-layout-v1</code> localStorage.
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <h5>Stage Colors</h5>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-blue)"></div> Ideation</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-purple)"></div> Planning</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-cyan)"></div> Research</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-green)"></div> Drafting</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-orange)"></div> Revision</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--accent-pink)"></div> Polish</div>
+</div>
+
+</body>
+</html>

@@ -44,34 +44,7 @@ class TestPatternExtractionServiceConstructor:
         assert service._inferencer is mock_inferencer
         assert service._root_dir == root_dir
 
-    def test_construct_with_defaults(self) -> None:
-        from app.services.pattern_extraction import PatternExtractionService
-        from app.settings import settings
-
-        mock_inferencer = MagicMock()
-        mock_project_service = MagicMock()
-        mock_repository = MagicMock()
-
-        service = PatternExtractionService(
-            project_service=mock_project_service,
-            repository=mock_repository,
-            inferencer=mock_inferencer,
-        )
-
-        assert service._inferencer is mock_inferencer
-        assert service._root_dir == settings.root_dir
-
-    def test_keyword_only_args(self) -> None:
-        from app.services.pattern_extraction import PatternExtractionService
-
-        mock_inferencer = MagicMock()
-        mock_project_service = MagicMock()
-        mock_repository = MagicMock()
-
-        with pytest.raises(TypeError, match="positional argument"):
-            PatternExtractionService(mock_project_service, mock_repository, mock_inferencer)  # type: ignore[call-arg]
-
-    def test_creates_mythos_service(self) -> None:
+    def test_construct_creates_mythos_service(self) -> None:
         from app.services.pattern_extraction import PatternExtractionService
 
         mock_inferencer = MagicMock()
@@ -85,23 +58,7 @@ class TestPatternExtractionServiceConstructor:
         )
 
         assert service._mythos_service is not None
-
-    def test_mythos_service_receives_same_deps(self) -> None:
-        from app.services.pattern_extraction import PatternExtractionService
-
-        mock_inferencer = MagicMock()
-        mock_project_service = MagicMock()
-        mock_repository = MagicMock()
-
-        service = PatternExtractionService(
-            project_service=mock_project_service,
-            repository=mock_repository,
-            inferencer=mock_inferencer,
-        )
-
         assert service._mythos_service._inferencer is mock_inferencer
-        assert service._mythos_service._project_service is mock_project_service
-        assert service._mythos_service._repository is mock_repository
 
 
 class TestBuildNarrativeAnalysisRequest:

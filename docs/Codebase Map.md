@@ -1,6 +1,6 @@
 # Narrative Engine — Codebase Map
 
-> Living document. Last updated: 2026-05-22
+> Living document. Last updated: 2026-05-24
 > Total codebase: ~78,000 lines (43,555 Python backend + 14,043 TypeScript + 20,272 TSX frontend)
 
 ---
@@ -252,7 +252,7 @@ Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INF
 
 | Database | Path | Purpose | Schema Version |
 |----------|------|---------|----------------|
-| Operations DB | `data/state/narrative_ops.db` | Central registry, jobs, 60+ tables | v22 |
+| Operations DB | `data/state/narrative_ops.db` | Central registry, jobs, 64 tables | v23 |
 | Project DB | `data/projects/{id}/bible.db` | Project-local metadata | v1 |
 
 **Operations DB tables (60+):**
@@ -269,6 +269,7 @@ Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INF
 - Canon: `canon_annotations`, `canon_customization_profiles`
 - Libraries: `mythos_entries`, `pattern_entries`
 - Continuity: `continuity_threads`, `continuity_states`, `continuity_findings`, `draft_briefs`, `drafting_context_packets`
+- Workflow: `research_items`, `revision_passes`, `polish_reports`, `export_statuses`
 
 **Connection settings:** WAL mode, FK enforcement, 5000ms busy timeout.
 
@@ -295,7 +296,14 @@ Factory: `build_inference_backend(settings)` selects backend from `NARRATIVE_INF
 
 **Studio Desk** (`/studio`): Floating panel workspace with drag-and-drop, resize, tear-off, and panel-to-panel snapping. Replaces the static left-rail + WritingView layout. URL sync via `?tab=` query param (e.g., `?tab=characters`).
 
-**Panel keys** (16 total): `suggestions`, `ideas`, `drafts`, `manuscripts`, `characters`, `worldBible`, `relationships`, `arcs`, `structure`, `chapters`, `canon`, `generation`, `review`, `inspect`, `notes`, `jobs`
+**Panel keys** (19 total): `suggestions`, `ideas`, `drafts`, `manuscripts`, `characters`, `worldBible`, `relationships`, `arcs`, `structure`, `chapters`, `canon`, `generation`, `review`, `inspect`, `notes`, `jobs`, `research`, `revision`, `polish`
+
+**Rail sections** (5 workflow stages):
+- **Ideation:** Ideas, Research, Notes
+- **Planning:** Characters, World Bible, Relationships, Arcs, Structure, Chapters
+- **Drafting:** Manuscripts, Drafts, Generation
+- **Revision:** Revision, Suggestions, Review, Inspect
+- **Polish:** Polish, Canon, Jobs
 
 **Route-driven state**: The URL is the source of truth. `useRouteSync` synchronizes route params with Zustand stores on every navigation. This ensures deep links and browser refreshes work correctly.
 
@@ -642,6 +650,9 @@ M-550: Manuscript Repair (if gates fail)
 | `EditableFlowService` | `services/editable_flow.py` | Customizable workflow stage management |
 | `StoryDecisionReviewService` | `services/story_decision_review.py` | Decision nodes, findings, review decisions |
 | `ReviewRoutingService` | `services/review_routing.py` | Review finding routing and inspection links |
+| `ResearchService` | `services/research.py` | Research item CRUD (books, articles, papers, notes) with soft delete |
+| `RevisionService` | `services/revision.py` | Revision pass lifecycle with default checklists per pass type |
+| `PolishService` | `services/polish.py` | Document analysis (readability, passive voice, style) and export management |
 
 ### Story Import & Extraction
 
@@ -714,7 +725,7 @@ M-550: Manuscript Repair (if gates fail)
 | `/v1/projects` | `projects.py` | Project CRUD + imports | GET /, POST /create, GET /{id}, DELETE /{id}, POST /import-story, POST /import-patterns, POST /{id}/extract-patterns |
 | `/v1/jobs` | `jobs.py` | Job lifecycle | POST /create (202), GET /{id}/status, GET /{id}/logs, GET /{id}/steps, GET /{id}/lineage, GET /{id}/attempts, POST /{id}/retry |
 | `/v1/models` | `models.py` | Model catalog | GET / |
-| `/v1/story-development` | `story_development/__init__.py` | Full story development | branches, flow, decisions, review, planning, drafting, brainstorm, braindump, foundation, characters, world-bible, arcs, storyboard, relationships |
+| `/v1/story-development` | `story_development/__init__.py` | Full story development | branches, flow, decisions, review, planning, drafting, brainstorm, braindump, foundation, characters, world-bible, arcs, storyboard, relationships, research, revision, polish |
 | `/v1/story-generation` | `story_generation.py` | Canon-congruent generation | POST /runs, GET /runs, GET /runs/{id}, POST /runs/{id}/retry, GET /runs/{id}/packet, GET /runs/{id}/gates, POST /fork-preview, POST /fork-project |
 | `/v1/manuscript-assist` | `manuscript_assist.py` | Manuscript editing assist | POST /runs, GET /runs, GET /runs/{id}, POST /runs/{id}/retry, GET /runs/{id}/gates, GET /suggestions, POST /suggestions/{id}/apply, POST /suggestions/{id}/reject, POST /suggestions/{id}/archive |
 | `/v1/canon` | `canon_customization.py` | Canon customization | annotations (CRUD), profiles (CRUD + packet-preview) |
@@ -772,7 +783,7 @@ pytest -n 0 \
   tests/test_local_executor_drafter_runtime.py::test_multi_chapter_pipeline_generates_sequential_chapters
 ```
 
-**Total baseline: ~1,519 tests, ~59s**
+**Total baseline: ~1,708 tests, ~59s**
 
 ### Test Categories
 
@@ -853,12 +864,12 @@ pytest -n 0 \
 | Frontend TS/TSX files | ~170 |
 | Frontend lines of code | ~34,315 |
 | Total lines of code | ~77,870 |
-| Test files | 126 |
-| Total tests | ~1,519 |
+| Test files | 132 |
+| Total tests | ~1,708 |
 | API route groups | 12 |
 | Service modules | 57 |
 | Schema files | 21 |
 | Zustand stores | 9 |
 | React Query hooks | 37 |
 | Database tables (operations) | 60+ |
-| Database schema version | 22 |
+| Database schema version | 23 |

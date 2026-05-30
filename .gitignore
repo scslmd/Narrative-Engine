@@ -22,6 +22,8 @@ frontend/dist/
 frontend/node_modules/
 narrative-launcher/bin/
 narrative-launcher/obj/
+narrative-launcher/*/bin/
+narrative-launcher/*/obj/
 *.db
 
 # Test scripts and requirements (redundant with pyproject.toml)
