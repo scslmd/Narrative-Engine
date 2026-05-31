@@ -244,6 +244,11 @@ class CircuitBreakerRegistry:
         with self._lock:
             return {name: cb.get_state() for name, cb in self._breakers.items()}
 
+    @classmethod
+    def reset_all(cls) -> None:
+        """Reset all circuit breakers. Use for test isolation."""
+        _registry._breakers.clear()
+
 
 # Global registry instance
 _registry = CircuitBreakerRegistry()

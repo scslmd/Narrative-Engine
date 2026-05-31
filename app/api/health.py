@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 @router.get("/", deprecated=False, summary="Liveness probe (unversioned by policy)")
-async def health_check() -> dict:
+def health_check() -> dict:
     """Basic liveness probe.
     
     Returns 200 if the application is running.
@@ -32,7 +32,7 @@ async def health_check() -> dict:
 
 
 @router.get("/ready", deprecated=False, summary="Readiness probe (unversioned by policy)")
-async def readiness_check() -> dict:
+def readiness_check() -> dict:
     """Deep readiness probe (REL-06).
     
     Checks all critical components:
@@ -134,7 +134,7 @@ async def readiness_check() -> dict:
 
 
 @router.get("/llm", deprecated=False, summary="LLM health probe (unversioned by policy)")
-async def llm_health_check() -> dict:
+def llm_health_check() -> dict:
     """Check if the configured inference backend is reachable.
 
     Uses a lightweight /models call to verify connectivity without blocking
@@ -163,7 +163,7 @@ async def llm_health_check() -> dict:
 
 
 @router.get("/metrics", deprecated=False, summary="Metrics endpoint (unversioned by policy)")
-async def get_metrics() -> dict:
+def get_metrics() -> dict:
     """Prometheus-style metrics endpoint (REL-05).
     
     Returns current system metrics:

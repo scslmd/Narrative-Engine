@@ -1,9 +1,12 @@
+import logging
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 from ...services.file_permissions import FilePermissionValidator
 from .helpers import upstream_artifact_sources as _upstream_artifact_sources
+
+_logger = logging.getLogger(__name__)
 
 class _ArtifactIOMixin:
 
@@ -35,18 +38,18 @@ class _ArtifactIOMixin:
         try:
             if output_path.exists():
                 output_path.unlink()
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to remove output %s during restore: %s", output_path, e)
         try:
             if backup_output_path is not None and backup_output_path.exists():
                 backup_output_path.replace(output_path)
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to restore backup %s to %s: %s", backup_output_path, output_path, e)
         try:
             if staged_output_path.exists():
                 staged_output_path.unlink()
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to remove staged %s during restore: %s", staged_output_path, e)
     def _finalize_published_output(
         self,
         *,

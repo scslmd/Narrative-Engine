@@ -404,14 +404,31 @@ class BackupService:
 _backup_service: BackupService | None = None
 
 
-def get_backup_service(data_root: Path | None = None) -> BackupService:
-    """Get or create backup service instance."""
+def get_backup_service(
+    data_root: Path | None = None,
+    service: BackupService | None = None,
+) -> BackupService:
+    """Get or create backup service instance.
+
+    Args:
+        data_root: Data directory for backup storage (legacy parameter).
+        service: Pre-built service instance for test isolation.
+    """
     global _backup_service
-    
+
+    if service is not None:
+        _backup_service = service
+        return _backup_service
+
     if _backup_service is None:
         if data_root is None:
             data_root = Path(__file__).resolve().parents[2] / "data"
-        
         _backup_service = BackupService(data_root)
-    
+
     return _backup_service
+
+
+def _reset_backup_service() -> None:
+    """Reset backup service singleton. Use for test isolation."""
+    global _backup_service
+    _backup_service = None

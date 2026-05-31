@@ -416,15 +416,26 @@ def fingerprint_api_key_from_parts(prefix: str, secret: str) -> str:
 _key_store: APIKeyStore | None = None
 
 
-def get_auth_service(data_root: Path | None = None) -> APIKeyStore:
-    """Get or create authentication service instance."""
+def get_auth_service(
+    data_root: Path | None = None,
+    service: APIKeyStore | None = None,
+) -> APIKeyStore:
+    """Get or create authentication service instance.
+
+    Args:
+        data_root: Data directory for API key storage (legacy parameter).
+        service: Pre-built service instance for test isolation.
+    """
     global _key_store
-    
+
+    if service is not None:
+        _key_store = service
+        return _key_store
+
     if _key_store is None:
         if data_root is None:
             data_root = Path(__file__).resolve().parents[2] / "data"
-        
         db_path = data_root / "state" / "api_keys.db"
         _key_store = APIKeyStore(db_path)
-    
+
     return _key_store

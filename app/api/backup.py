@@ -14,7 +14,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
 
 
     @router.post("/create", status_code=201)
-    async def create_backup(description: str | None = None) -> dict:
+    def create_backup(description: str | None = None) -> dict:
         """Create a new database backup."""
         try:
             service = get_backup_service()
@@ -25,7 +25,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
 
 
     @router.post("/restore/{backup_id}")
-    async def restore_backup(backup_id: str) -> dict:
+    def restore_backup(backup_id: str) -> dict:
         """Restore database from backup."""
         try:
             service = get_backup_service()
@@ -36,7 +36,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
 
 
     @router.get("/list")
-    async def list_backups() -> dict:
+    def list_backups() -> dict:
         """List all available backups."""
         try:
             service = get_backup_service()
@@ -47,7 +47,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
 
 
     @router.get("/latest")
-    async def get_latest_backup() -> dict | None:
+    def get_latest_backup() -> dict | None:
         """Get metadata for most recent backup."""
         try:
             service = get_backup_service()
@@ -58,7 +58,7 @@ def build_backup_router(*, prefix: str = "/backup") -> APIRouter:
 
 
     @router.delete("/{backup_id}")
-    async def delete_backup(backup_id: str) -> dict:
+    def delete_backup(backup_id: str) -> dict:
         """Delete a specific backup."""
         try:
             service = get_backup_service()
