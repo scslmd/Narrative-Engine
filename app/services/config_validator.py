@@ -9,9 +9,12 @@ Validates critical configuration at application startup:
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 from pathlib import Path
 from typing import Any
+
+_logger = logging.getLogger(__name__)
 
 
 class ConfigValidationError(Exception):
@@ -82,7 +85,7 @@ class ConfigValidator:
         
         # For local-first use, API key is optional but should be set for security
         if not api_key:
-            print("[WARN] API_KEY environment variable not set. Authentication will be disabled.")
+            _logger.warning("API_KEY environment variable not set. Authentication will be disabled.")
             return True  # Not a hard failure for local development
         
         if len(api_key) < 8:
@@ -100,12 +103,12 @@ class ConfigValidator:
 
         backend = settings.inference_backend
         if backend == "stub":
-            print("[WARN] Inference backend is 'stub'. Imports/extractions will produce placeholder content.")
+            _logger.warning("Inference backend is 'stub'. Imports/extractions will produce placeholder content.")
             return True  # Stub backend is acceptable for development
 
         inference_url = settings.inference_base_url
         if not inference_url:
-            print(f"[WARN] No inference URL configured for backend '{backend}'. Using stub behavior.")
+            _logger.warning("No inference URL configured for backend '%s'. Using stub behavior.", backend)
             return True
 
         try:
@@ -116,13 +119,13 @@ class ConfigValidator:
             with urllib.request.urlopen(inference_url, timeout=timeout) as response:
                 status_code = response.status
                 if status_code != 200:
-                    print(f"[WARN] Inference backend returned {status_code}, but is reachable")
+                    _logger.warning("Inference backend returned %d, but is reachable", status_code)
 
             return True
 
         except Exception as e:
-            print(f"[WARN] Inference backend unreachable at {inference_url}: {e}")
-            print("[WARN] Imports/extractions will fail until backend is available.")
+            _logger.warning("Inference backend unreachable at %s: %s", inference_url, e)
+            _logger.warning("Imports/extractions will fail until backend is available.")
             return True  # Don't block startup for unreachable backend
     
     def _validate_database(self) -> bool:
@@ -154,7 +157,7 @@ class ConfigValidator:
             fk_status = cursor.fetchone()[0]
             
             if not fk_status:
-                print("[WARN] Foreign keys disabled in SQLite. Enabling...")
+                _logger.warning("Foreign keys disabled in SQLite. Enabling...")
                 cursor.execute("PRAGMA foreign_keys = ON")
             
             test_conn.commit()
@@ -251,7 +254,7 @@ class ConfigValidator:
                 )
             
             if mode & stat.S_IWGRP:
-                print(f"[WARN] Projects directory {base_dir} is group-writable")
+                _logger.warning("Projects directory %s is group-writable", base_dir)
                 
         except OSError as e:
             raise ConfigValidationError(
@@ -288,35 +291,35 @@ class ConfigValidator:
 
 def validate_config_at_startup() -> None:
     """Run configuration validation at application startup.
-    
+
     Raises ConfigValidationError if critical checks fail.
     """
     validator = ConfigValidator()
-    
-    print("=" * 60)
-    print("Configuration Validation (REL-07)")
-    print("=" * 60)
-    
+
+    _logger.info("=" * 60)
+    _logger.info("Configuration Validation (REL-07)")
+    _logger.info("=" * 60)
+
     try:
         success = validator.validate_all(fail_fast=False)
-        
+
         report = validator.get_validation_report()
-        
+
         for result in validator.validation_results:
             status_icon = "[OK]" if result["status"] == "passed" else "[FAIL]"
-            print(f"{status_icon} {result['component']}: {result['status']}")
+            _logger.info("%s %s: %s", status_icon, result['component'], result['status'])
             if result.get("message"):
-                print(f"   {result['message']}")
-        
-        print("=" * 60)
-        
+                _logger.info("   %s", result['message'])
+
+        _logger.info("=" * 60)
+
         if not success:
             failed_count = report["failed"] + report["errors"]
-            print(f"WARNING: {failed_count} validation check(s) did not pass.")
-            print("Application may have limited functionality.")
-            
+            _logger.warning("%d validation check(s) did not pass.", failed_count)
+            _logger.warning("Application may have limited functionality.")
+
     except ConfigValidationError as e:
-        print(f"[FAIL] {e.component}: FAILED")
-        print(f"   {e.message}")
-        print("=" * 60)
+        _logger.error("[FAIL] %s: FAILED", e.component)
+        _logger.error("   %s", e.message)
+        _logger.error("=" * 60)
         raise

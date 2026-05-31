@@ -467,16 +467,6 @@ def build_app(*, start_executor: bool = True) -> FastAPI:
     app.include_router(build_role_model_checker_router(role_check_manager, role_check_service, prefix='/v1/role-model-checker'))
     app.include_router(discovery_api.init_discovery_router(discovery_service, discovery_job_manager))
 
-    @app.post('/projects/create/debug', include_in_schema=False)
-    async def debug_create_project(request: Request) -> dict:
-        body = await request.body()
-        return {
-            'path': str(request.url.path),
-            'method': request.method,
-            'body_len': len(body),
-            'body': body.decode('utf-8')[:1000],
-        }
-
     # Global 422 logger
     from fastapi.exceptions import RequestValidationError
     @app.exception_handler(RequestValidationError)

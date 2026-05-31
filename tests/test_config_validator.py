@@ -66,14 +66,28 @@ class TestConfigValidator:
     
     def test_api_key_validation_warns_when_not_set(self) -> None:
         """API key validation should warn but not fail when key is not set."""
+        import logging
+        from io import StringIO
+
         validator = ConfigValidator()
-        
-        with patch.dict(os.environ, {}, clear=True):
-            with patch('builtins.print') as mock_print:
+
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        handler.setLevel(logging.WARNING)
+
+        logger = logging.getLogger('app.services.config_validator')
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+
+        try:
+            with patch.dict(os.environ, {}, clear=True):
                 result = validator._validate_api_key()
-                
+
                 assert result is True  # Not a hard failure
-                mock_print.assert_called_once()
+                log_output = log_capture.getvalue()
+                assert 'API_KEY' in log_output
+        finally:
+            logger.removeHandler(handler)
     
     def test_database_validation_creates_directory_if_needed(self) -> None:
         """Database validation should create directory if it doesn't exist."""

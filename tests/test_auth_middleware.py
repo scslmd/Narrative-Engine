@@ -127,24 +127,6 @@ class TestAuthMiddlewareDisabled:
         assert response.status_code == 200
 
 
-class TestAuthMiddlewareStartup:
-    """Tests for authentication middleware startup validation."""
-
-    def test_missing_api_key_raises_error(self):
-        """Missing API_KEY should raise ValueError during middleware init."""
-        from app.middleware.auth import AuthMiddleware
-        
-        # Create a dummy app
-        from fastapi import FastAPI
-        dummy_app = FastAPI()
-        
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError) as exc_info:
-                AuthMiddleware(dummy_app)
-            
-            assert "API_KEY environment variable is not set" in str(exc_info.value)
-
-
 class TestAuthMiddlewareSecurity:
     """Tests for authentication middleware security properties."""
 

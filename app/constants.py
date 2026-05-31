@@ -27,3 +27,6 @@ BACKUP_RETENTION_DAYS: Final[int] = 7
 # Rate Limiting
 RATE_LIMIT_REQUESTS: Final[int] = 100
 RATE_LIMIT_WINDOW_SECONDS: Final[int] = 60
+
+# Disk Space Thresholds
+DISK_QUOTA_BYTES: Final[int] = 1_073_741_824  # 1 GB

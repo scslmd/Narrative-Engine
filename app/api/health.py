@@ -86,7 +86,8 @@ async def readiness_check() -> dict:
                 stat = os.statvfs(project_dir)
                 free_bytes = stat.f_bavail * stat.f_frsize
             
-            min_free_bytes = 1_073_741_824  # 1 GB
+            from app.constants import DISK_QUOTA_BYTES
+            min_free_bytes = DISK_QUOTA_BYTES
             
             if free_bytes < min_free_bytes:
                 issues.append({
